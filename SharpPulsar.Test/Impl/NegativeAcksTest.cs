@@ -39,8 +39,7 @@ namespace SharpPulsar.Test.Impl
         {
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled());
-            ///ProducerBaseSetup(_common.PulsarSystem, output);
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.184.218.188:6650");
         }
 		[Fact]
         public void TestNegativeAcksBatch()

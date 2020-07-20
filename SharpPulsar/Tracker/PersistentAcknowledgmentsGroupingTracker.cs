@@ -380,10 +380,15 @@ namespace SharpPulsar.Tracker
 	        else
 	        {
                 var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
-				var cmd = Commands.NewAck(consumerId, msgId.LedgerId, msgId.EntryId, lastCumulativeAckSet?.ToLongArray(), ackType, validationError, map);
+				var cmd = Commands.NewAck(consumerId, msgId.LedgerId, msgId.EntryId, lastCumulativeAckSet == null ? null : lastCumulativeAckSet.ToLongArray(), ackType, validationError, map);
 				var payload = new Payload(cmd, requestid, "NewAck");
                 _broker.Tell(payload);
-			}
+
+                /*var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
+                var cmd = Commands.NewAck(_consumerid, message.MessageId.LedgerId, message.MessageId.EntryId, message.MessageId.AckSet, CommandAck.AckType.Individual, null, new Dictionary<string, long>());
+                var payload = new Payload(cmd, requestid, "AckMessages");
+                _broker.Tell(payload);*/
+            }
         }
 	}
 

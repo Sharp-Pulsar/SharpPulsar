@@ -57,7 +57,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly ConcurrentQueue<ConsumedMessage> _incomingMessages;
         private readonly List<string> _pendingChunckedMessageUuidQueue;
         private readonly IActorRef _network;
-        private int _requestedFlowPermits = 1000;
+        private int _requestedFlowPermits = 2000;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
         private Seek _seek;
         private readonly bool _createTopicIfDoesNotExist;
@@ -271,7 +271,6 @@ namespace SharpPulsar.Akka.Consumer
                         else if (_conf.ConsumptionType == ConsumptionType.Queue)
                             _pulsarManager.Tell(new ConsumedMessage(_self, msg1, message.AckSets, _consumerName));
                     }
-                    IncreaseAvailablePermits(1);
                     _incomingMessages.TryDequeue(out message);
                 }
             }
@@ -331,23 +330,12 @@ namespace SharpPulsar.Akka.Consumer
 
         private void RedeliverUnacknowledgedMessages()
         {
-            var currentSize = _incomingMessages.Count;
-            _incomingMessages.Clear();
-            _incomingMessagesSize = 0;
             _unAckedMessageTracker.Tell(new Clear());
 
             var requestid = Interlocked.Increment(ref IdGenerators.RequestId);
             var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerid);
             var payload = new Payload(cmd, requestid, "RedeliverUnacknowledgedMessages");
             _broker.Tell(payload);
-            if(currentSize> 0)
-            {
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and send {currentSize} permits");
-                }
-                IncreaseAvailablePermits(currentSize);
-            }
         }
 
         private void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
@@ -384,14 +372,6 @@ namespace SharpPulsar.Akka.Consumer
                 }
             });
             
-            if (messagesFromQueue > 0)
-            {
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug($"[{_subscriptionName}] [{_topicName}] [{_consumerName}] Redeliver unacked messages and increase {messagesFromQueue} permits");
-                }
-                IncreaseAvailablePermits(messagesFromQueue);
-            }
         }
         private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
         {
@@ -462,7 +442,6 @@ namespace SharpPulsar.Akka.Consumer
                     _broker.Tell(payload);
                 });
             }
-            IncreaseAvailablePermits(messageIds.Count);
         }
         private bool ProcessPossibleToDlq(long ledgerid, long entryid, int partitionindex, int batchindex)
         {
@@ -544,8 +523,6 @@ namespace SharpPulsar.Akka.Consumer
                     {
                         _log.Debug($"[{_topicName}] [{_subscriptionName}] Ignoring message as it was already being acked earlier by same consumer {_consumerName}/{msgId}");
                     }
-
-                    IncreaseAvailablePermits(numMessages);
                     return;
                 }
 
@@ -709,10 +686,6 @@ namespace SharpPulsar.Akka.Consumer
                 _log.Debug($"[{_subscriptionName}] [{_consumerName}] enqueued messages in batch. queue size - {_incomingMessages.Count}, available queue size - {MaxReceiverQueueSize - _incomingMessages.Count}");
             }
 
-            if (skippedMessages > 0)
-            {
-                IncreaseAvailablePermits(skippedMessages);
-            }
         }
         
         private bool IsPriorBatchIndex(long idx)
@@ -746,8 +719,6 @@ namespace SharpPulsar.Akka.Consumer
         private void MessageProcessed(Message msg)
         {
             _lastDequeuedMessageId = msg.MessageId;
-
-            IncreaseAvailablePermits(500);
             _stats.UpdateNumMsgsReceived(msg);
 
             TrackMessage(msg);
@@ -759,12 +730,6 @@ namespace SharpPulsar.Akka.Consumer
             if (!_eventSourced)
                 SendFlow(1);
         }
-        private void IncreaseAvailablePermits(int permits)
-        {
-            if (!_eventSourced)
-                SendFlow(permits);
-        }
-       
         private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId)
         {
 
@@ -795,7 +760,6 @@ namespace SharpPulsar.Akka.Consumer
                 // means we lost the first chunk: should never happen
                 _log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id {chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
                 chunkedMsgCtx?.Recycle();
-                IncreaseAvailablePermits();
                 _chunkedMessagesMap.Remove(msgMetadata.Uuid);
                 if (_expireTimeOfIncompleteChunkedMessageMillis > 0 && DateTimeHelper.CurrentUnixTimeMillis() > ((long)msgMetadata.PublishTime + _expireTimeOfIncompleteChunkedMessageMillis))
                 {
@@ -816,7 +780,6 @@ namespace SharpPulsar.Akka.Consumer
             // if final chunk is not received yet then release payload and return
             if (msgMetadata.ChunkId != (msgMetadata.NumChunksFromMsg - 1))
             {
-                IncreaseAvailablePermits();
                 return null;
             }
 
@@ -1411,7 +1374,6 @@ namespace SharpPulsar.Akka.Consumer
             });
             Receive<MessageReceived>(m =>
             {
-                _requestedFlowPermits--;
                 var msgId = new MessageIdData
                 {
                     entryId = (ulong)m.MessageId.EntryId,
@@ -1421,12 +1383,7 @@ namespace SharpPulsar.Akka.Consumer
                     AckSets = m.MessageId.AckSet
                 };
                 MessageReceived(msgId, m.RedeliveryCount, m.Data, m.MessageId.AckSet);
-                if (_requestedFlowPermits == 500)
-                {
-                    _requestedFlowPermits = 1000;
-                    IncreaseAvailablePermits(500);
-                }
-                else IncreaseAvailablePermits();
+                IncreaseAvailablePermits();
             });
             Receive<AckMessage>(AckMessage);
             Receive<AckMessages>(AckMessages);

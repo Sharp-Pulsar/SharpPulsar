@@ -39,14 +39,14 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled(), operationTime:60000);
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime:60000, brokerService: "pulsar://52.184.218.188:6650");
 		}
 		
         [Fact]
 		public void TestUnAckMessageRedeliveryWithReceive()
 		{
 			var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 3000, forceTopic: true, acknowledgmentGroupTime:0));
+            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 30000, forceTopic: true, acknowledgmentGroupTime:0));
 
             var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive"));
             
@@ -75,13 +75,8 @@ namespace SharpPulsar.Test.Api
 			}
 			
 			Assert.Equal(10,messageReceived);
-            Thread.Sleep(4000);
-            /*for (var i = 10; i < 20; i++)
-            {
-                var send = new Send(Encoding.UTF8.GetBytes("my-message-" + i));
-                var receipt = _common.PulsarSystem.Send(send, producer.Producer);
-                _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
-            }*/
+            Thread.Sleep(31000);
+
             messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, 0, customHander: (m) =>
             {
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);

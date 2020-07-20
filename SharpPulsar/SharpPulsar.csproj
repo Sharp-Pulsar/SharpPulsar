@@ -42,7 +42,6 @@
     <PackageReference Include="Apache.Avro" Version="1.10.0" />
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="avroschemagenerator" Version="1.6.0" />
-    <PackageReference Include="BeetleX" Version="1.5.1.7" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.12.3" />
     <PackageReference Include="IdentityModel" Version="4.3.0" />

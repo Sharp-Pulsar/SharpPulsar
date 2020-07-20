@@ -178,7 +178,7 @@ namespace SharpPulsar.Akka.Configuration
 		public ConsumerConfigBuilder NegativeAckRedeliveryDelay(long redeliveryDelayMs)
         {
             Condition.CheckArgument(redeliveryDelayMs >= 0, "redeliveryDelay needs to be >= 0");
-            _conf.NegativeAckRedeliveryDelayMicros = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(redeliveryDelayMs);
+            _conf.NegativeAckRedeliveryDelayMs = redeliveryDelayMs;
             return this;
 		}
 

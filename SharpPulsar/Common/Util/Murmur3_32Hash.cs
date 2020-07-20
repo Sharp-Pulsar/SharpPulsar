@@ -70,8 +70,9 @@ namespace SharpPulsar.Common.Util
 
 			var k1 = 0;
 			for (var i = 0; i < reminder; i++)
-			{
-				k1 ^= (int)Convert.ToUInt32(byteBuffer.Get()) << (i * 8);
+            {
+                var v = (uint)byteBuffer.Get();
+				k1 ^= (int)Convert.ToUInt32(v) << (i * 8);
 			}
 
 			h1 ^= MixK1(k1);

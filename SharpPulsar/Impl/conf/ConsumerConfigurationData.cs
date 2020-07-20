@@ -45,7 +45,7 @@ namespace SharpPulsar.Impl.Conf
 
 		public long AcknowledgementsGroupTimeMs { get; set; } = 100;
 
-		public long NegativeAckRedeliveryDelayMicros { get; set; } = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(60000);
+		public long NegativeAckRedeliveryDelayMs { get; set; } = 30000;
 
 		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
 

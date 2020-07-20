@@ -49,7 +49,7 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled());
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.184.218.188:6650");
         }
 		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 		
@@ -451,7 +451,7 @@ namespace SharpPulsar.Test.Api
 				Message noMessages = null;
 				try
 				{
-					noMessages = (Message)_common.PulsarSystem.Receive(check.Key, 100).Message;
+					noMessages = (Message)_common.PulsarSystem.Receive(check.Key, 100)?.Message;
 				}
 				catch (PulsarClientException)
 				{
