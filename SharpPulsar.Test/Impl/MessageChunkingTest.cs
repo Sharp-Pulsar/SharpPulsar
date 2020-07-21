@@ -39,19 +39,19 @@ namespace SharpPulsar.Test.Impl
         {
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.184.218.188:6650");
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 120000, brokerService: "pulsar://52.247.20.224:6650");
         }
 		[Fact]
 		public void TestLargeMessage()
 		{
 			//this.conf.MaxMessageSize = 5;
-			const int totalMessages = 5;
-			const string topicName = "persistent://public/default/my-topic1";
+			const int totalMessages = 2;
+			var topicName = $"persistent://public/default/my-topic1-{DateTimeHelper.CurrentUnixTimeMillis()}";
 
 			var consumer =_common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topicName, "TestLargeMessage", "my-subscriber-name", acknowledgmentGroupTime: 0, forceTopic: true));
 
 
-			var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topicName, "TestLargeMessage", 1,  enableChunking: true, maxMessageSize: totalMessages));
+			var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topicName, "TestLargeMessage", enableChunking: true, maxMessageSize: 5));
 			
 			IList<string> publishedMessages = new List<string>();
 			for (int i = 0; i < totalMessages; i++)
@@ -67,7 +67,7 @@ namespace SharpPulsar.Test.Impl
 			for (int i = 0; i < totalMessages; i++)
 			{
 				msg = _common.PulsarSystem.Receive("TestLargeMessage", 5000);
-				string receivedMessage = ((byte[])msg.Message.Value).GetString();
+				string receivedMessage = ((byte[])(object)msg.Message.Data).GetString();
 				_output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
 				string expectedMessage = publishedMessages[i];
 				TestMessageOrderAndDuplicates(messageSet, receivedMessage, expectedMessage);

@@ -20,6 +20,12 @@ namespace SharpPulsar.Tracker
                 //no ops
             });
         }
+
+        protected override void Unhandled(object message)
+        {
+            // no ops
+        }
+
         public static Props Prop()
         {
             return Props.Create(()=> new UnAckedMessageTrackerDisabled());

@@ -447,7 +447,7 @@ namespace SharpPulsar.Akka.Producer
             var compressedPayload = payload;
             // Batch will be compressed when closed
             // If a message has a delayed delivery time, we'll always send it individually
-            if (!BatchMessagingEnabled || msgMetadata.DeliverAtTime > 0)
+            if (!BatchMessagingEnabled || msgMetadata.ShouldSerializeDeliverAtTime())
             {
                 compressedPayload = _compressor.Encode(payload);
                 // validate msg-Size (For batching this will be check at the batch completion Size)

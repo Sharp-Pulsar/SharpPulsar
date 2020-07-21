@@ -609,8 +609,7 @@ namespace SharpPulsar.Akka.Consumer
 
             // create ack tracker for entry aka batch
             var acker = BatchMessageAcker.NewAcker(batchSize);
-            
-            var skippedMessages = 0;
+
             try
             {
                 long index = 0;
@@ -634,14 +633,13 @@ namespace SharpPulsar.Akka.Consumer
                         {
                             _log.Debug($"[{_subscriptionName}] [{_consumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
                         }
-                        ++skippedMessages;
+
                         continue;
                     }
 
                     if (singleMessageMetadata.CompactedOut)
                     {
                         // message has been compacted out, so don't send to the user
-                        ++skippedMessages;
                         continue;
                     }
 
@@ -654,7 +652,6 @@ namespace SharpPulsar.Akka.Consumer
                     {
                         if (bitArray.Get(i))
                         {
-                            ++skippedMessages;
                             continue;
                         }
                     }
@@ -742,9 +739,8 @@ namespace SharpPulsar.Akka.Consumer
 
             if (msgMetadata.ChunkId == 0)
             {
-                var chunkedMsgBuffer = compressedPayload;
                 var totalChunks = msgMetadata.NumChunksFromMsg;
-                _chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, chunkedMsgBuffer));
+                _chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, new List<byte>()));
                 _pendingChunckedMessageCount++;
                 if (_maxPendingChuckedMessage > 0 && _pendingChunckedMessageCount > _maxPendingChuckedMessage)
                 {
@@ -1642,12 +1638,12 @@ namespace SharpPulsar.Akka.Consumer
         internal MessageId[] ChunkedMessageIds;
         internal long ReceivedTime;
 
-        internal static ChunkedMessageCtx Get(int numChunksFromMsg, byte[] chunkedMsg)
+        internal static ChunkedMessageCtx Get(int numChunksFromMsg, List<byte> chunkedMsg)
         {
             var ctx = new ChunkedMessageCtx
             {
                 TotalChunks = numChunksFromMsg,
-                ChunkedMsgBuffer = new List<byte>(chunkedMsg),
+                ChunkedMsgBuffer = chunkedMsg,
                 ChunkedMessageIds = new MessageId[numChunksFromMsg],
                 ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
             };

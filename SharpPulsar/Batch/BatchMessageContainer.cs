@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Event;
-using Google.Protobuf.Collections;
-using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Utilities;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;

@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime:60000, brokerService: "pulsar://52.184.218.188:6650");
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime:60000, brokerService: "pulsar://52.247.20.224:6650");
 		}
 		
         [Fact]
