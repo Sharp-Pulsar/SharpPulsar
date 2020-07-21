@@ -344,34 +344,34 @@ namespace SharpPulsar.Test.Api
             foreach (var c in consumers)
 			{
 				var messagesForThisConsumer = 0;
-                var messages = _common.PulsarSystem.Messages(c.name, true, 0, customHander: (m) =>
+				for(var i = 0;i < 1000; i++)
                 {
-                    var receivedMessage = Convert.ToInt32(((byte[])(object)m.Message.Data).GetString());
-                    
-                    if (m.Message.HasKey() || m.Message.HasOrderingKey())
+                    var msg = _common.PulsarSystem.Receive(c.name);
+                    if (msg != null)
                     {
-                        var key = m.Message.HasOrderingKey() ? ((byte[])(object)m.Message.OrderingKey).GetString() : m.Message.Key;
+                        var receivedMessage = Convert.ToInt32(((byte[])(object)msg.Message.Data).GetString());
+
+                        if (msg.Message.HasKey() || msg.Message.HasOrderingKey())
+                        {
+                            var key = msg.Message.HasOrderingKey() ? ((byte[])(object)msg.Message.OrderingKey).GetString() : msg.Message.Key;
 
 
-                        if (!keyToConsumer.ContainsKey(key))
-                        {
-                            // This is a new key
-                            keyToConsumer[key] = c.consr;
+                            if (!keyToConsumer.ContainsKey(key))
+                            {
+                                // This is a new key
+                                keyToConsumer[key] = c.consr;
+                            }
+                            else
+                            {
+                                // The consumer should be the same
+                                Assert.Equal(c.consr, keyToConsumer[key]);
+                            }
                         }
-                        else
-                        {
-                            // The consumer should be the same
-                            Assert.Equal(c.consr, keyToConsumer[key]);
-                        }
-                    }
-					return receivedMessage;
-                });
-                foreach (var message in messages)
-                {
-                    _output.WriteLine($"Received message: [{message}]");
-                    ++totalMessages;
-                    ++messagesForThisConsumer;
-				}
+                        _output.WriteLine($"Received message: [{receivedMessage}]");
+                        ++totalMessages;
+                        ++messagesForThisConsumer;
+					}
+                }
                 messagesPerConsumer[c.consr] = messagesForThisConsumer;
 			}
 
