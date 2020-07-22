@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
+using Nito.AsyncEx;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Api;
@@ -40,7 +41,8 @@ namespace SharpPulsar.Akka.Consumer
                 var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
                 var request = Commands.NewPartitionMetadataRequest(topic, requestId);
                 var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
-                var p = _network.Ask<Partitions>(pay).GetAwaiter().GetResult();
+                var ask = _network.Ask<Partitions>(pay);
+                var p = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
                 HandlePartition(p);
             }
             BecomeReady();
@@ -69,7 +71,8 @@ namespace SharpPulsar.Akka.Consumer
                     var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
                     var request = Commands.NewPartitionMetadataRequest(topic.Raw, requestId);
                     var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic.Raw);
-                    var p = _network.Ask<Partitions>(pay).GetAwaiter().GetResult();
+                    var ask = _network.Ask<Partitions>(pay);
+                    var p = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
                     HandlePartition(p);
                 }
             });

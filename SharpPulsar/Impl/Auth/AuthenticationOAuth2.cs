@@ -28,13 +28,13 @@ namespace SharpPulsar.Impl.Auth
 	/// <summary>
 	/// STS Token based authentication provider.
 	/// </summary>
-	public class AuthenticationSts : IAuthentication, IEncodedAuthenticationParameterSupport
+	public class AuthenticationOAuth2 : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
         private string _clientId;
         private string _clientSecret;
         private string _authority;
-        public AuthenticationSts(string clientid, string secret, string authority)
+        public AuthenticationOAuth2(string clientid, string secret, string authority)
         {
             _clientId = clientid;
             _clientSecret = secret;
@@ -46,9 +46,9 @@ namespace SharpPulsar.Impl.Auth
 			// noop
 		}
 
-		public string AuthMethodName => "sts";
+		public string AuthMethodName => "token";
 
-		public IAuthenticationDataProvider AuthData => new AuthenticationDataSts(_clientId, _clientSecret, _authority);
+		public IAuthenticationDataProvider AuthData => new AuthenticationDataOAuth2(_clientId, _clientSecret, _authority);
 
 		public void Configure(string encodedAuthParamString)
 		{

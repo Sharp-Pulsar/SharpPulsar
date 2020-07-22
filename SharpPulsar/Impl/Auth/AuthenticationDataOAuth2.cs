@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using IdentityModel.Client;
 using SharpPulsar.Exceptions;
+using Nito.AsyncEx;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,20 +29,19 @@ using SharpPulsar.Exceptions;
 namespace SharpPulsar.Impl.Auth
 {
 
-	public class AuthenticationDataSts : IAuthenticationDataProvider
+	public class AuthenticationDataOAuth2 : IAuthenticationDataProvider
     {
-        private string _clientId;
-        private string _clientSecret;
-        private string _authority;
-        private HttpClient _client;
-        private DiscoveryDocumentResponse _disco;
-		public AuthenticationDataSts(string clientid, string secret, string authority)
+        private readonly string _clientId;
+        private readonly string _clientSecret;
+        private readonly HttpClient _client;
+        private readonly DiscoveryDocumentResponse _disco;
+		public AuthenticationDataOAuth2(string clientid, string secret, string authority)
         {
             _clientId = clientid;
             _clientSecret = secret;
-            _authority = authority;
             _client = new HttpClient();
-            _disco = _client.GetDiscoveryDocumentAsync(_authority).GetAwaiter().GetResult();
+            var discoTask = _client.GetDiscoveryDocumentAsync(authority);
+            _disco = SynchronizationContextSwitcher.NoContext(async () => await discoTask ).Result;
             if (_disco.IsError) throw new Exception(_disco.Error);
         }
 
@@ -59,14 +59,14 @@ namespace SharpPulsar.Impl.Auth
 			{
 				try
 				{
-                    var response = _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+                    var responseTask = _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
                     {
                         Address = _disco.TokenEndpoint,
 
                         ClientId = _clientId,
                         ClientSecret = _clientSecret,
-                    }).GetAwaiter().GetResult();
-
+                    });
+                    var response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
                     if (response.IsError) throw new Exception(response.Error);
                     return response.AccessToken;
 				}
@@ -81,15 +81,15 @@ namespace SharpPulsar.Impl.Auth
         {
             if (data != null)
             {
-                var result = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
+                var resultTask = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
                 {
                     Address = _disco.IntrospectionEndpoint,
 
                     ClientId = _clientId,
                     ClientSecret = _clientSecret,
                     Token = Encoding.UTF8.GetString((byte[])(object)data.Bytes)
-                }).GetAwaiter().GetResult();
-
+                });
+                var result = SynchronizationContextSwitcher.NoContext(async () => await resultTask).Result;
                 if (result.IsError)
                 {
                     throw new PulsarClientException(result.Error);

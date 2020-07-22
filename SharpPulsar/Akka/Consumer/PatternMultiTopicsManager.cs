@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
+using Nito.AsyncEx;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
@@ -49,7 +50,8 @@ namespace SharpPulsar.Akka.Consumer
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace.ToString(), requestId, CommandGetTopicsOfNamespace.Mode.Persistent);
             var payload = new Payload(request, requestId, "GetTopicsOfNamespace");
-            var t =_network.Ask<NamespaceTopics>(payload).GetAwaiter().GetResult();
+            var ask =_network.Ask<NamespaceTopics>(payload);
+            var t = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
             var topics = TopicsPatternFilter(t.Topics, _topicPattern);
             if (!_initialized)
             {

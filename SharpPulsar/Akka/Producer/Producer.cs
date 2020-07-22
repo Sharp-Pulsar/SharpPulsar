@@ -21,6 +21,7 @@ using System.Threading;
 using Akka.Event;
 using DotNetty.Common.Utilities;
 using IdentityModel;
+using Nito.AsyncEx;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Naming;
@@ -932,7 +933,8 @@ namespace SharpPulsar.Akka.Producer
         {
             var request = Commands.NewGetOrCreateSchema(requestId, topic, schemaInfo);
             var payload = new Payload(request, requestId, "GetOrCreateSchema");
-            return  _broker.Ask<GetOrCreateSchemaServerResponse>(payload, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).GetAwaiter().GetResult();
+            var ask = _broker.Ask<GetOrCreateSchemaServerResponse>(payload, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs));
+            return SynchronizationContextSwitcher.NoContext(async () => await ask).Result; 
         }
         
         private long GetHighestSequenceId(OpSendMsg op)
@@ -1027,7 +1029,8 @@ namespace SharpPulsar.Akka.Producer
         {
             var requestId = op.SequenceId;
             var pay = new Payload(op.Cmd, requestId, "CommandMessage");
-            return _broker.Ask<SentReceipt>(pay, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs)).GetAwaiter().GetResult();
+            var ask = _broker.Ask<SentReceipt>(pay, TimeSpan.FromMilliseconds(_clientConfiguration.OperationTimeoutMs));
+            return SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
         private bool PopulateMessageSchema(Message msg)
         {

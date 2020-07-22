@@ -65,7 +65,7 @@ namespace SharpPulsar.Impl
 		}
         public static IAuthentication NewAuthenticationSts(string client, string secret, string authority)
         {
-            return new AuthenticationSts(client, secret, authority);
+            return new AuthenticationOAuth2(client, secret, authority);
         }
 		public static IAuthentication NewAuthenticationToken(Func<string> supplier)
 		{

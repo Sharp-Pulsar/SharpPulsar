@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Akka.Actor;
+using Nito.AsyncEx;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Api;
@@ -262,7 +263,9 @@ namespace SharpPulsar.Tracker
                         else msgId = (MessageId)msgid;
                         // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                         // them
-                        var chunkMsgIdsResponse = Context.Parent.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).GetAwaiter().GetResult();
+                        var ask = Context.Parent.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+                        var chunkMsgIdsResponse = SynchronizationContextSwitcher.NoContext(async () => await ask).Result; 
+                        
                         var chunkMsgIds = chunkMsgIdsResponse.MessageIds;
 
                         if (chunkMsgIds != null && chunkMsgIds.Length > 1)
@@ -338,7 +341,8 @@ namespace SharpPulsar.Tracker
 		
         private void NewAckCommand(long consumerId, IMessageId msgid, BitSet lastCumulativeAckSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> map, bool flush)
         {
-            var chunkMsgIdsResponse = Context.Parent.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgid)).GetAwaiter().GetResult();
+            var ask = Context.Parent.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgid));
+            var chunkMsgIdsResponse = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
             var chunkMsgIds = chunkMsgIdsResponse.MessageIds;
             MessageId msgId;
             if (msgid is BatchMessageId id)

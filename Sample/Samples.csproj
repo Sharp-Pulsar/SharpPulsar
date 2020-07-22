@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
+    <PackageReference Include="Nito.AsyncEx.Tasks" Version="5.0.0" />
     <PackageReference Include="system.text.json" Version="4.7.2" />
   </ItemGroup>
 

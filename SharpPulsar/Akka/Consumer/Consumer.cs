@@ -34,6 +34,7 @@ using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Utils;
 using System.Collections.Concurrent;
+using Nito.AsyncEx;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Akka.Consumer
@@ -463,7 +464,8 @@ namespace SharpPulsar.Akka.Consumer
 
                 _log.Info($"[{_topicName}][{_subscriptionName}] Get topic last message Id");
 
-                var result = _broker.Ask<LastMessageIdResponse>(payload).GetAwaiter().GetResult();
+                var ask = _broker.Ask<LastMessageIdResponse>(payload);
+                var result = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
 
                 _log.Info($"[{_topicName}][{_subscriptionName}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
                 
@@ -516,7 +518,8 @@ namespace SharpPulsar.Akka.Consumer
                 var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && _conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
                 var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
-                var isDup = _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId)).GetAwaiter().GetResult();
+                var ask = _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
+                var isDup = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
                 if (isDup)
                 {
                     if (_log.IsDebugEnabled)
@@ -1008,8 +1011,8 @@ namespace SharpPulsar.Akka.Consumer
             else if (ackType == CommandAck.AckType.Cumulative)
             {
                 OnAcknowledgeCumulative(messageId, null);
-                var removed = _unAckedMessageTracker.Ask<int>(new RemoveMessagesTill(messageId)).GetAwaiter()
-                    .GetResult();
+                var ask = _unAckedMessageTracker.Ask<int>(new RemoveMessagesTill(messageId));
+                var removed = SynchronizationContextSwitcher.NoContext(async () => await ask).Result; ;
                 _stats.IncrementNumAcksSent(removed);
             }
 
@@ -1277,7 +1280,8 @@ namespace SharpPulsar.Akka.Consumer
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetSchema(requestId, topic, BytesSchemaVersion.Of(version));
             var payload = new Payload(request, requestId, "GetSchema");
-            var schema = _broker.Ask<SchemaResponse>(payload).GetAwaiter().GetResult();
+            var ask = _broker.Ask<SchemaResponse>(payload);
+            var schema = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
         public void NewSubscribe()
         {
