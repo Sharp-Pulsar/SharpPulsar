@@ -49,7 +49,7 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _output = output;
             _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.179.218.80:6650");
+            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.177.137.243:6651");
         }
 		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 		
@@ -60,13 +60,6 @@ namespace SharpPulsar.Test.Api
 		{
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = topicType + "://public/default/key_shared-" + Guid.NewGuid();
-
-			var consumer1 = CreateConsumer(topic, "consumer1");
-
-			var consumer2 = CreateConsumer(topic, "consumer2");
-
-			var consumer3 = CreateConsumer(topic, "consumer3");
-
 			var producer = CreateProducer(topic, enableBatch, "HashRangeAutoSplitSticky");
 
 			for (var i = 0; i < 1000; i++)
@@ -75,6 +68,13 @@ namespace SharpPulsar.Test.Api
                 var send = new Send(i.ToString().GetBytes(), config.ToImmutableDictionary());
 				_common.PulsarSystem.Send(send, producer);
 			}
+
+
+            var consumer1 = CreateConsumer(topic, "consumer1");
+
+            var consumer2 = CreateConsumer(topic, "consumer2");
+
+            var consumer3 = CreateConsumer(topic, "consumer3");
 
 			ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)>{(consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
 		}
@@ -98,12 +98,6 @@ namespace SharpPulsar.Test.Api
 			//this.conf.SubscriptionKeySharedEnable = true;
             var topic = topicType + "://public/default/key_shared-" + Guid.NewGuid();
 
-            var consumer1 = CreateConsumer(topic, "consumer1");
-
-            var consumer2 = CreateConsumer(topic, "consumer2");
-
-            var consumer3 = CreateConsumer(topic, "consumer3");
-
             var producer = CreateProducer(topic, enableBatch, "TestSendAndReceiveWithBatching");
 
             for (var i = 0; i < 1000; i++)
@@ -116,7 +110,14 @@ namespace SharpPulsar.Test.Api
 				_common.PulsarSystem.Send(send, producer);
             }
 
-            ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)> { (consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
+
+            var consumer1 = CreateConsumer(topic, "consumer1");
+
+            var consumer2 = CreateConsumer(topic, "consumer2");
+
+            var consumer3 = CreateConsumer(topic, "consumer3");
+
+			ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)> { (consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
 
 		}
 
@@ -133,12 +134,6 @@ namespace SharpPulsar.Test.Api
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = "persistent://public/default/key_shared_exclusive-" + Guid.NewGuid();
 
-            CreateConsumer(topic, "consumer1", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(0, 20000)));
-
-            CreateConsumer(topic, "consumer2", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(20001, 40000)));
-
-            CreateConsumer(topic, "consumer3", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(40001, KeySharedPolicy.DefaultHashRangeSize)));
-			
             var producer = CreateProducer(topic, enableBatch, "TestSendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector");
 
 			var consumer1ExpectMessages = 0;
@@ -168,6 +163,13 @@ namespace SharpPulsar.Test.Api
                     _common.PulsarSystem.Send(send, producer);
 				}
 			}
+
+
+            CreateConsumer(topic, "consumer1", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(0, 20000)));
+
+            CreateConsumer(topic, "consumer2", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(20001, 40000)));
+
+            CreateConsumer(topic, "consumer3", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(40001, KeySharedPolicy.DefaultHashRangeSize)));
 
 			IList<KeyValue<string, int>> checkList = new List<KeyValue<string, int>>();
 			checkList.Add(new KeyValue<string, int>("consumer1", consumer1ExpectMessages));
@@ -237,12 +239,6 @@ namespace SharpPulsar.Test.Api
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = "persistent://public/default/key_shared_ordering_key-" + Guid.NewGuid();
 
-			var consumer1 = CreateConsumer(topic, "consumer1");
-
-            var consumer2 = CreateConsumer(topic, "consumer2");
-
-            var consumer3 = CreateConsumer(topic, "consumer3");
-
             var producer = CreateProducer(topic, enableBatch, "TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector", 20);
 
 
@@ -258,7 +254,13 @@ namespace SharpPulsar.Test.Api
 
 			}
 
-            ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)> { (consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
+
+            var consumer1 = CreateConsumer(topic, "consumer1");
+
+            var consumer2 = CreateConsumer(topic, "consumer2");
+
+            var consumer3 = CreateConsumer(topic, "consumer3");
+			ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)> { (consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
 		}
         [Fact]
         public void TestOrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()
@@ -344,35 +346,40 @@ namespace SharpPulsar.Test.Api
             foreach (var c in consumers)
 			{
 				var messagesForThisConsumer = 0;
-				for(var i = 0;i < 1000; i++)
+                while (true)
                 {
-                    var msg = _common.PulsarSystem.Receive(c.name);
-                    if (msg != null)
+					var msg = _common.PulsarSystem.Receive(c.name, 100);
+                    if (msg == null)
                     {
-                        var receivedMessage = Convert.ToInt32(((byte[])(object)msg.Message.Data).GetString());
+                        // Go to next consumer
+                        messagesPerConsumer[c.consr] = messagesForThisConsumer;
+                        break;
+                    }
 
-                        if (msg.Message.HasKey() || msg.Message.HasOrderingKey())
+                    ++totalMessages;
+                    ++messagesForThisConsumer;
+                    _common.PulsarSystem.Acknowledge(msg); 
+                    
+                    if (msg.Message.HasKey() || msg.Message.HasOrderingKey())
+                    {
+                        var orderingKey = msg.Message.HasOrderingKey() ? ((byte[]) (object) msg.Message?.OrderingKey).GetString(): string.Empty;
+
+						string key = msg.Message.HasOrderingKey() ? orderingKey : msg.Message.Key;
+                        
+                        if (!keyToConsumer.TryGetValue(key, out var assignedConsumer))
                         {
-                            var key = msg.Message.HasOrderingKey() ? ((byte[])(object)msg.Message.OrderingKey).GetString() : msg.Message.Key;
-
-
-                            if (!keyToConsumer.ContainsKey(key))
-                            {
-                                // This is a new key
-                                keyToConsumer[key] = c.consr;
-                            }
-                            else
-                            {
-                                // The consumer should be the same
-                                Assert.Equal(c.consr, keyToConsumer[key]);
-                            }
+                            // This is a new key
+                            keyToConsumer[key] = c.consr;
                         }
-                        _output.WriteLine($"Received message: [{receivedMessage}]");
-                        ++totalMessages;
-                        ++messagesForThisConsumer;
-					}
-                }
-                messagesPerConsumer[c.consr] = messagesForThisConsumer;
+                        else
+                        {
+                            // The consumer should be the same
+							_output.WriteLine($"The consumer should be the same: [{assignedConsumer}] > [{c.consr}] (OrderingKey: {orderingKey}, Key: {msg.Message.Key})");
+                            Assert.Equal(c.consr, assignedConsumer);
+
+                        }
+                    }
+				}
 			}
 
 			const double percentError = 0.40; // 40 %

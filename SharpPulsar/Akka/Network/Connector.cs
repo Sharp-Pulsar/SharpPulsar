@@ -26,6 +26,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Nito.AsyncEx;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Network
@@ -68,20 +69,23 @@ namespace SharpPulsar.Akka.Network
 
             try
             {
-                if (!SniProxy)
+                if (!_encrypt)
                 {
                     tcpClient.Connect(endPoint.Host, endPoint.Port);
                     return tcpClient.GetStream();
                 }
-
-                var proxy = new Uri(_clientConfiguration.ProxyServiceUrl);
-                var addresses = Dns.GetHostAddressesAsync(proxy.Host).GetAwaiter().GetResult();
-                var socket = ConnectAsync(addresses, proxy.Port).GetAwaiter().GetResult();
+                if(SniProxy)
+                    endPoint = new Uri(_clientConfiguration.ProxyServiceUrl);
+                var addressesTask = Dns.GetHostAddressesAsync(endPoint.Host);
+                var addresses = SynchronizationContextSwitcher.NoContext(async () => await addressesTask).Result;
+                var socketTask = ConnectAsync(addresses, endPoint.Port);
+                var socket = SynchronizationContextSwitcher.NoContext(async () => await socketTask).Result;
                 return new NetworkStream(socket, true);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 tcpClient.Dispose();
+
                 throw;
             }
         }
@@ -112,7 +116,7 @@ namespace SharpPulsar.Akka.Network
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                await socket.ConnectAsync(serverAddresses, port).ConfigureAwait(false);
+                await socket.ConnectAsync(serverAddresses, port);
                 return socket;
             }
 
@@ -156,7 +160,7 @@ namespace SharpPulsar.Akka.Network
             throw new ArgumentException();
         }
 
-        private bool SniProxy => _encrypt && _clientConfiguration.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfiguration.ProxyServiceUrl);
+        private bool SniProxy => _clientConfiguration.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfiguration.ProxyServiceUrl);
 
         private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -220,5 +224,46 @@ namespace SharpPulsar.Akka.Network
             }
             return true;
         }
+        /*
+         *
+         private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            bool result;
+            switch (sslPolicyErrors)
+            {
+                case SslPolicyErrors.None:
+                    result = true;
+                    break;
+                case SslPolicyErrors.RemoteCertificateChainErrors:
+
+                    if (_trustedCertificateAuthority is null)
+                        return false;
+
+                    chain.ChainPolicy.ExtraStore.Add(_trustedCertificateAuthority);
+                    _ = chain.Build((X509Certificate2)certificate);
+                    for (var i = 0; i < chain.ChainElements.Count; i++)
+                    {
+                        if (chain.ChainElements[i].Certificate.Thumbprint == _trustedCertificateAuthority.Thumbprint)
+                            return true;
+                    }
+                    return false;
+                case SslPolicyErrors.RemoteCertificateNameMismatch:
+                    var cert = new X509Certificate2(certificate);
+                    var cn = cert.GetNameInfo(X509NameType.SimpleName, false);
+                    var cleanName = cn?.Substring(cn.LastIndexOf('*') + 1);
+                    string[] addresses = { _serviceUrl, _serviceSniName };
+
+                    // if the ending of the sni and servername do match the common name of the cert, fail
+                    result = addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
+                    break;
+
+                default:
+                    result = false;
+                    break;
+            }
+
+            return result;
+        }
+         */
     }
 }
