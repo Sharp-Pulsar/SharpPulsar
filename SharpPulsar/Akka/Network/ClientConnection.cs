@@ -20,6 +20,12 @@ using AuthData = SharpPulsar.Impl.Auth.AuthData;
 
 namespace SharpPulsar.Akka.Network
 {
+    //https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure-private-dns.md#manifest-for-clusters-with-rbac-enabled-cluster-access
+    //https://noobient.com/2018/04/10/free-wildcard-certificates-using-azure-dns-lets/
+    //https://cert-manager.io/docs/configuration/acme/dns01/azuredns/
+    //https://dev.to/mimetis/using-dns01-challenge-and-let-s-encrypt-to-secure-your-aks-kubernetes-cluster-5g42s
+    //http://www.wahidsaleemi.com/2020/01/get-a-free-domain-for-you-azure-labs/
+    //https://github.com/kubernetes-sigs/external-dns/blob/7505f29e4cec80ca20468b38c03b660a8481277d/docs/tutorials/azure.md
     public class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
         private readonly IAuthentication _authentication;
