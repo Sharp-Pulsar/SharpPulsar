@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Extension;
+using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -51,7 +52,7 @@ namespace SharpPulsar.Protocol
 				return Array.Empty<KeyValue>();
 			}
 
-			return metadata.SetOfKeyValuePairs().Select(e => new KeyValueBuilder().SetKey(e.Key).SetValue(e.Value).Build()).ToList();
+			return HashMapHelper.SetOfKeyValuePairs(metadata).Select(e => new KeyValueBuilder().SetKey(e.Key).SetValue(e.Value).Build()).ToList();
 		}
 
 		private static IDictionary<string, string> ToMap(IList<KeyValue> keyValues)

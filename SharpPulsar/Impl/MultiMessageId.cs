@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using SharpPulsar.Api;
 using SharpPulsar.Extension;
+using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -71,7 +72,7 @@ namespace SharpPulsar.Impl
 			}
 
 			var result = 0;
-			foreach (var entry in _map.SetOfKeyValuePairs())
+			foreach (var entry in HashMapHelper.SetOfKeyValuePairs(_map))
 			{
 				var otherMessage = otherMap[entry.Key];
 				if (otherMessage == null)
