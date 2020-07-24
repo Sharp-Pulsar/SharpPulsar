@@ -34,6 +34,7 @@
     <Compile Remove="Impl\Schema\GenerateSchema.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
+    <Compile Remove="Presto\FixJsonDataUtils.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +45,7 @@
     <PackageReference Include="avroschemagenerator" Version="1.6.0" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
     <PackageReference Include="Google.Protobuf" Version="3.12.3" />
+    <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
     <PackageReference Include="IdentityModel" Version="4.3.0" />
     <PackageReference Include="JsonSubTypes" Version="1.7.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />

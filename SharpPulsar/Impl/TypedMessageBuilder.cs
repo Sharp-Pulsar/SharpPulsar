@@ -6,6 +6,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Utility;
+using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
@@ -127,7 +128,7 @@ namespace SharpPulsar.Impl
 
 		public ITypedMessageBuilder Properties(IDictionary<string, string> properties)
 		{
-			foreach (var entry in properties.SetOfKeyValuePairs())
+			foreach (var entry in HashMapHelper.SetOfKeyValuePairs(properties))
 			{
 				if(entry.Key == null)
 					throw new NullReferenceException("Need Non-Null name");

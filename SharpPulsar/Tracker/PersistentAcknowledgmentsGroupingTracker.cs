@@ -14,6 +14,7 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Utils;
+using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 using IAcknowledgmentsGroupingTracker = SharpPulsar.Tracker.Api.IAcknowledgmentsGroupingTracker;
 using MessageId = SharpPulsar.Impl.MessageId;
 
@@ -289,7 +290,7 @@ namespace SharpPulsar.Tracker
 
                 if (!_pendingIndividualBatchIndexAcks.IsEmpty)
                 {
-                    using var iterator = _pendingIndividualBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
+                    using var iterator = HashMapHelper.SetOfKeyValuePairs(_pendingIndividualBatchIndexAcks).GetEnumerator();
 
                     foreach (var kv in _pendingIndividualBatchIndexAcks)
                     {

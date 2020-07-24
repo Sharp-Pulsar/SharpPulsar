@@ -1,0 +1,42 @@
+﻿using System.Collections.Generic;
+using SharpPulsar.Presto.Facebook.Type;
+
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+namespace SharpPulsar.Presto
+{
+	public class StageStats
+	{
+		public string StageId {get; set; }
+		public string State { get; set; }
+		public bool Done {get; set; }
+		public int Nodes {get; set; }
+		public int TotalSplits {get; set; }
+		public int QueuedSplits {get; set; }
+		public int RunningSplits {get; set; }
+		public int CompletedSplits {get; set; }
+		public long CpuTimeMillis {get; set; }
+		public long WallTimeMillis {get; set; }
+		public long ProcessedRows {get; set; }
+		public long ProcessedBytes {get; set; }
+		public IList<StageStats> SubStages { get; set; }
+
+		public override string ToString()
+		{
+			return StringHelper.Build(this).Add("state", State).Add("done", Done).Add("nodes", Nodes).Add("totalSplits", TotalSplits).Add("queuedSplits", QueuedSplits).Add("runningSplits", RunningSplits).Add("completedSplits", CompletedSplits).Add("cpuTimeMillis", CpuTimeMillis).Add("wallTimeMillis", WallTimeMillis).Add("processedRows", ProcessedRows).Add("processedBytes", ProcessedBytes).Add("subStages", SubStages).ToString();
+		}
+
+	}
+
+}

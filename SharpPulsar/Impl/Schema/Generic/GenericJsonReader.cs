@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using SharpPulsar.Common;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 

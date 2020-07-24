@@ -36,6 +36,26 @@ namespace SharpPulsar.Precondition
             }
 
         }
+        public static T RequireNonNull<T>(T value, string parameter, string message)
+        {
+            if (value == null)
+            {
+                throw new ArgumentException(message, parameter);
+            }
+
+            return value;
+
+        }
+        public static T RequireNonNull<T>(T value, string message)
+        {
+            if (value == null)
+            {
+                throw new ArgumentException(message);
+            }
+
+            return value;
+
+        }
         public static void CheckArgument(bool check, string message, params object[] args)
         {
             if (!check)

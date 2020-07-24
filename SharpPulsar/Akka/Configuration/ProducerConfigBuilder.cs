@@ -8,6 +8,7 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Utils;
+using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -189,7 +190,7 @@ namespace SharpPulsar.Akka.Configuration
                 throw new ArgumentException("properties cannot be null");
 			if (properties.Count == 0)
 				throw new ArgumentException("properties cannot be empty");
-			properties.SetOfKeyValuePairs().ToList().ForEach(entry =>
+			HashMapHelper.SetOfKeyValuePairs(properties).ToList().ForEach(entry =>
             {
                 var (key, value) = entry;
                 if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
