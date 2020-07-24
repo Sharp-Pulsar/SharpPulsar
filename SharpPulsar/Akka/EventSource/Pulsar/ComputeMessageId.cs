@@ -1,8 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using PulsarAdmin.Models;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.Akka.EventSource.Pulsar
 {
     public sealed class ComputeMessageId
     {

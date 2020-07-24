@@ -19,6 +19,7 @@ using SharpPulsar.Akka.Admin.Api.Models;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.EventSource;
+using SharpPulsar.Akka.EventSource.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.Function.Api;
 using SharpPulsar.Akka.InternalCommands;

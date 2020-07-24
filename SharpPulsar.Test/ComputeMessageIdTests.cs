@@ -11,6 +11,7 @@ using SharpPulsar.Akka;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.EventSource;
+using SharpPulsar.Akka.EventSource.Pulsar;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;

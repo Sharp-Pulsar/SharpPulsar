@@ -6,6 +6,7 @@ using Akka.Actor;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.EventSource;
+using SharpPulsar.Akka.EventSource.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;

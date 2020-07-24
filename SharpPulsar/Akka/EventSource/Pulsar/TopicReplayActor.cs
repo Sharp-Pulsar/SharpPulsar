@@ -13,7 +13,7 @@ using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.Akka.EventSource.Pulsar
 {
     public class TopicReplayActor : ReceiveActor, IWithUnboundedStash
     {

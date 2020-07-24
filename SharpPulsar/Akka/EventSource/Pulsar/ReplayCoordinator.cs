@@ -12,7 +12,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
 using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.Akka.EventSource.Pulsar
 {
     public class ReplayCoordinator: ReceiveActor, IWithUnboundedStash
     {

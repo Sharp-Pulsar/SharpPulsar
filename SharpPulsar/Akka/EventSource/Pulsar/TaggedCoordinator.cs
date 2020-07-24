@@ -15,7 +15,7 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.Akka.EventSource.Pulsar
 {
     public class TaggedCoordinator:ReceiveActor, IWithUnboundedStash
     {
