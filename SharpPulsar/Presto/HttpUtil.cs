@@ -1,6 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using MihaZupan;
+using SharpPulsar.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,80 +23,89 @@ using System.IO;
  */
 namespace SharpPulsar.Presto
 {
-    using HostAndPort = com.google.common.net.HostAndPort;
-	using Call = okhttp3.Call;
-	using Callback = okhttp3.Callback;
-    using Interceptor = okhttp3.Interceptor;
-	using JavaNetCookieJar = okhttp3.JavaNetCookieJar;
-	using OkHttpClient = okhttp3.OkHttpClient;
-	using Response = okhttp3.Response;
-
-
-
-	public sealed class HttpUtil
+	public static class HttpUtil
 	{
-		private HttpUtil()
-		{
-		}
 		
-		public static Interceptor userAgent(string userAgent)
+		public static void UserAgent(this HttpClient httpclient, string userAgent)
 		{
-			return chain => chain.proceed(chain.request().newBuilder().header(USER_AGENT, userAgent).build());
+			httpclient.DefaultRequestHeaders.Add("User-Agent", userAgent); ;
 		}
 
-		public static Interceptor BasicAuth(string user, string password)
+		public static void BasicAuth(this HttpClient client, string user, string password)
 		{
-			requireNonNull(user, "user is null");
-			requireNonNull(password, "password is null");
+			Condition.RequireNonNull(user, "user is null");
+            Condition.RequireNonNull(password, "password is null");
 			if (user.Contains(":"))
 			{
 				throw new ClientException("Illegal character ':' found in username");
 			}
 
-			string credential = Credentials.basic(user, password);
-			return chain => chain.proceed(chain.request().newBuilder().header(AUTHORIZATION, credential).build());
+            var authToken = Encoding.ASCII.GetBytes($"{user}:{password}");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                Convert.ToBase64String(authToken));
+			
 		}
 
-		public static Interceptor TokenAuth(string accessToken)
+		public static void TokenAuth(this HttpClient client, string accessToken)
 		{
-			requireNonNull(accessToken, "accessToken is null");
-			checkArgument(CharMatcher.inRange((char) 33, (char) 126).matchesAllOf(accessToken));
-
-			return chain => chain.proceed(chain.request().newBuilder().addHeader(AUTHORIZATION, "Bearer " + accessToken).build());
+            Condition.RequireNonNull(accessToken, "accessToken is null");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 		}
 
-		public static void SetupTimeouts(OkHttpClient.Builder clientBuilder, int timeout, TimeUnit unit)
+		public static void SetupTimeouts(this HttpClient client, int timeoutMilis)
 		{
-			clientBuilder.connectTimeout(timeout, unit).readTimeout(timeout, unit).writeTimeout(timeout, unit);
+			client.Timeout = TimeSpan.FromMilliseconds(timeoutMilis);
 		}
 
-		public static void SetupSocksProxy(OkHttpClient.Builder clientBuilder, Optional<HostAndPort> socksProxy)
+		public static HttpClient SetupSocksProxy(string host, int port)
 		{
-			setupProxy(clientBuilder, socksProxy, SOCKS);
+            var proxy = new HttpToSocks5Proxy(host, port);
+            var handler = new HttpClientHandler { Proxy = proxy };
+            return new HttpClient(handler, true);
 		}
 
-		public static void SetupHttpProxy(OkHttpClient.Builder clientBuilder, Optional<HostAndPort> httpProxy)
+		public static HttpClient SetupHttpProxy(string proxyHost, int proxyPort, string proxyUserName, string proxyPassword, bool needServerAuthentication = false, string serverUserName = "", string serverPassword = "")
 		{
-			setupProxy(clientBuilder, httpProxy, HTTP);
+            // First create a proxy object
+            var proxy = new WebProxy
+            {
+                Address = new Uri($"http://{proxyHost}:{proxyPort}"),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+
+                // *** These creds are given to the proxy server, not the web server ***
+                Credentials = new NetworkCredential(
+                    userName: proxyUserName,
+                    password: proxyPassword)
+            };
+
+            // Now create a client handler which uses that proxy
+            var httpClientHandler = new HttpClientHandler
+            {
+                Proxy = proxy,
+            };
+            if (needServerAuthentication)
+            {
+                httpClientHandler.PreAuthenticate = true;
+                httpClientHandler.UseDefaultCredentials = false;
+
+                // *** These creds are given to the web server, not the proxy server ***
+                httpClientHandler.Credentials = new NetworkCredential(
+                    userName: serverUserName,
+                    password: serverPassword);
+            }
+            /*var handler = new HttpClientHandler();
+            handler.DefaultProxyCredentials = CredentialCache.DefaultCredentials;
+            */
+            return new HttpClient(httpClientHandler, disposeHandler:true);
 		}
-
-		public static void SetupProxy(OkHttpClient.Builder clientBuilder, Optional<HostAndPort> proxy, Proxy.Type type)
-		{
-			proxy.map(HttpUtil.toUnresolvedAddress).map(address => new Proxy(type, address)).ifPresent(clientBuilder.proxy);
-		}
-
-		private static InetSocketAddress ToUnresolvedAddress(HostAndPort address)
-		{
-			return InetSocketAddress.createUnresolved(address.Host, address.Port);
-		}
-
-
-		public static void SetupKerberos(OkHttpClient.Builder clientBuilder, string remoteServiceName, bool useCanonicalHostname, Optional<string> principal, Optional<File> kerberosConfig, Optional<File> keytab, Optional<File> credentialCache)
+        //COME BACK TO THIS AND USE https://github.com/dotnet/Kerberos.NET
+        /*public static void SetupKerberos(OkHttpClient.Builder clientBuilder, string remoteServiceName, bool useCanonicalHostname, Optional<string> principal, Optional<File> kerberosConfig, Optional<File> keytab, Optional<File> credentialCache)
 		{
 			SpnegoHandler handler = new SpnegoHandler(remoteServiceName, useCanonicalHostname, principal, kerberosConfig, keytab, credentialCache);
 			clientBuilder.addInterceptor(handler);
 			clientBuilder.authenticator(handler);
-		}
-	}
+		}*/
+    }
 
 }

@@ -2,7 +2,7 @@
 {
     public class PrestoWarning
     {
-        public SharpPulsar.Presto.WarningCode WarningCode { get; set; }
+        public WarningCode WarningCode { get; set; }
         public  string Message { get; set; }
     }
 }

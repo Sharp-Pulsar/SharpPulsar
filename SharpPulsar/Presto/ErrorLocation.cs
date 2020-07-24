@@ -13,6 +13,7 @@
  */
 
 using SharpPulsar.Precondition;
+using SharpPulsar.Presto.Facebook.Type;
 
 namespace SharpPulsar.Presto
 {
@@ -32,9 +33,9 @@ namespace SharpPulsar.Presto
 
 
 		public override string ToString()
-		{
-			return StringHelper.Build(this).Add("lineNumber", LineNumber).Add("columnNumber", ColumnNumber).ToString();
-		}
+        {
+            return StringHelper.Build(this).Add("lineNumber", LineNumber).Add("columnNumber", ColumnNumber).ToString();
+        }
 	}
 
 }

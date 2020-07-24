@@ -23,7 +23,7 @@ namespace SharpPulsar.Presto
 		{
 		}
 
-		public static StatementClient NewStatementClient(HttpClient httpClient, ClientSession session, string query)
+		public static IStatementClient NewStatementClient(HttpClient httpClient, ClientSession session, string query)
 		{
 			return new StatementClientV1(httpClient, session, query);
 		}

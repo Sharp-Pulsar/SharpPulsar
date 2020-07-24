@@ -16,7 +16,7 @@
 namespace SharpPulsar.Presto
 {
 
-	public interface QueryData
+	public interface IQueryData
 	{
 		IEnumerable<IList<object>> Data {get;}
 	}

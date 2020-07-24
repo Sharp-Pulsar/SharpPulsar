@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
-using Akka.Util;
-using Org.BouncyCastle.Asn1.Ocsp;
-using RestSharp;
-using SharpPulsar.Presto;
+using System.Web;
+using Nito.AsyncEx;
+using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
 /*
@@ -24,286 +27,200 @@ using SharpPulsar.Presto.Facebook.Type;
  */
 namespace SharpPulsar.Presto
 {
-	public class StatementClientV1 : StatementClient
+	public class StatementClientV1 : IStatementClient
 	{
-		private static readonly MediaType MediaTypeText = MediaType.parse("text/plain; charset=utf-8");
-		private static readonly JsonCodec<QueryResults> QueryResultsCodec = jsonCodec(typeof(QueryResults));
+        private readonly string _userAgentValue;
 
-		private static readonly Splitter SessionHeaderSplitter = Splitter.on('=').limit(2).trimResults();
-		private static readonly string UserAgentValue = typeof(StatementClientV1).Name + "/" + firstNonNull(typeof(StatementClientV1).Assembly.ImplementationVersion, "unknown");
+		private readonly HttpClient _httpClient;
+		public string Query { get; }
+		private QueryResults _currentResults;
 
-		private readonly OkHttpClient _httpClient;
-		public virtual Query {get;}
-		private readonly AtomicReference<QueryResults> _currentResults = new AtomicReference<QueryResults>();
-		private readonly AtomicReference<string> _setCatalog = new AtomicReference<string>();
-		private readonly AtomicReference<string> _setSchema = new AtomicReference<string>();
-		private readonly IDictionary<string, string> _setSessionProperties = new ConcurrentDictionary<string, string>();
-		private readonly ISet<string> _resetSessionProperties = Sets.newConcurrentHashSet();
-		private readonly IDictionary<string, SelectedRole> _setRoles = new ConcurrentDictionary<string, SelectedRole>();
-		private readonly IDictionary<string, string> _addedPreparedStatements = new ConcurrentDictionary<string, string>();
-		private readonly ISet<string> _deallocatedPreparedStatements = Sets.newConcurrentHashSet();
-		private readonly AtomicReference<string> _startedTransactionId = new AtomicReference<string>();
-		private readonly AtomicBoolean _clearTransactionId = new AtomicBoolean();
-		public virtual TimeZone {get;}
-		private readonly Duration _requestTimeoutNanos;
+		public TimeZoneKey TimeZone { get; }
+		private readonly long _requestTimeoutNanos;
 		private readonly string _user;
 
-		private readonly AtomicReference<State> _state = new AtomicReference<State>(State.Running);
+		private State _state = State.Running;
 
 		public StatementClientV1(HttpClient httpClient, ClientSession session, string query)
 		{
-			requireNonNull(httpClient, "httpClient is null");
-			requireNonNull(session, "session is null");
-			requireNonNull(query, "query is null");
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            _userAgentValue = typeof(StatementClientV1).Name + "/" + fvi;
+			Condition.RequireNonNull(httpClient, "httpClient is null");
+			Condition.RequireNonNull(session, "session is null");
+			Condition.RequireNonNull(query, "query is null");
 
-			this._httpClient = httpClient;
-			this.TimeZone = session.TimeZone;
-			this.Query = query;
-			this._requestTimeoutNanos = session.ClientRequestTimeout;
-			this._user = session.User;
+			_httpClient = httpClient;
+			TimeZone = session.TimeZone;
+			Query = query;
+			_requestTimeoutNanos = session.ClientRequestTimeout;
+			_user = session.User;
 
-			Request request = buildQueryRequest(session, query);
+			var request = BuildQueryRequest(session, query);
 
-			JsonResponse<QueryResults> response = JsonResponse.execute(QueryResultsCodec, httpClient, request);
-			if ((response.StatusCode != HTTP_OK) || !response.hasValue())
+			var responseTask = JsonResponse<QueryResults>.Execute(httpClient, request);
+			var response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
+			if ((response.ResponseMessage.StatusCode != HttpStatusCode.Accepted) || !response.HasValue())
 			{
-				_state.compareAndSet(State.Running, State.ClientError);
-				throw requestFailedException("starting query", request, response);
+				if (_state == State.Running)
+					_state = State.ClientError;
+				throw RequestFailedException("starting query", request, response);
 			}
 
-			processResponse(response.Headers, response.Value);
+			ProcessResponse(response.Headers, response.Value);
 		}
 
-		private Request buildQueryRequest(ClientSession session, string query)
+		private HttpRequestMessage BuildQueryRequest(ClientSession session, string query)
 		{
-			HttpUrl url = HttpUrl.get(session.Server);
+			var url = new Uri($"{session.Server.TrimEnd('/')}/v1/statement");
 			if (url == null)
 			{
 				throw new ClientException("Invalid server URL: " + session.Server);
 			}
-			url = url.newBuilder().encodedPath("/v1/statement").build();
+			var builder = PrepareRequest(HttpMethod.Post, url, query, "text/plain");
 
-			Request.Builder builder = prepareRequest(url).post(RequestBody.create(MediaTypeText, query));
-
-			if (!string.ReferenceEquals(session.Source, null))
+			if (!string.IsNullOrWhiteSpace(session.Source))
 			{
-				builder.addHeader(PRESTO_SOURCE, session.Source);
+				builder.Headers.Add(PrestoHeaders.PrestoSource, session.Source);
 			}
-
-			session.TraceToken.ifPresent(token => builder.addHeader(PRESTO_TRACE_TOKEN, token));
+			if (!string.IsNullOrWhiteSpace(session.TraceToken))
+			{
+				builder.Headers.Add(PrestoHeaders.PrestoTraceToken, session.TraceToken);
+			}
 
 			if (session.ClientTags != null && session.ClientTags.Count > 0)
 			{
-				builder.addHeader(PRESTO_CLIENT_TAGS, Joiner.on(",").join(session.ClientTags));
+				builder.Headers.Add(PrestoHeaders.PrestoClientTags, string.Join(",", session.ClientTags));
 			}
-			if (!string.ReferenceEquals(session.ClientInfo, null))
+			if (!string.IsNullOrWhiteSpace(session.ClientInfo))
 			{
-				builder.addHeader(PRESTO_CLIENT_INFO, session.ClientInfo);
+				builder.Headers.Add(PrestoHeaders.PrestoClientInfo, session.ClientInfo);
 			}
-			if (!string.ReferenceEquals(session.Catalog, null))
+			if (!ReferenceEquals(session.Catalog, null))
 			{
-				builder.addHeader(PRESTO_CATALOG, session.Catalog);
+				builder.Headers.Add(PrestoHeaders.PrestoCatalog, session.Catalog);
 			}
-			if (!string.ReferenceEquals(session.Schema, null))
+			if (!ReferenceEquals(session.Schema, null))
 			{
-				builder.addHeader(PRESTO_SCHEMA, session.Schema);
+				builder.Headers.Add(PrestoHeaders.PrestoSchema, session.Schema);
 			}
-			builder.addHeader(PRESTO_TIME_ZONE, session.TimeZone.Id);
+			builder.Headers.Add(PrestoHeaders.PrestoTimeZone, session.TimeZone.Id);
 			if (session.Locale != null)
 			{
-				builder.addHeader(PRESTO_LANGUAGE, session.Locale.toLanguageTag());
+				builder.Headers.Add(PrestoHeaders.PrestoLanguage, session.Locale.Name);
 			}
 
 			IDictionary<string, string> property = session.Properties;
 			foreach (KeyValuePair<string, string> entry in property.SetOfKeyValuePairs())
 			{
-				builder.addHeader(PRESTO_SESSION, entry.Key + "=" + entry.Value);
+				builder.Headers.Add(PrestoHeaders.PrestoSession, entry.Key + "=" + entry.Value);
 			}
 
 			IDictionary<string, string> resourceEstimates = session.ResourceEstimates;
 			foreach (KeyValuePair<string, string> entry in resourceEstimates.SetOfKeyValuePairs())
 			{
-				builder.addHeader(PRESTO_RESOURCE_ESTIMATE, entry.Key + "=" + entry.Value);
+				builder.Headers.Add(PrestoHeaders.PrestoResourceEstimate, entry.Key + "=" + entry.Value);
 			}
 
 			IDictionary<string, SelectedRole> roles = session.Roles;
 			foreach (KeyValuePair<string, SelectedRole> entry in roles.SetOfKeyValuePairs())
 			{
-				builder.addHeader(PrestoHeaders.PrestoRole, entry.Key + '=' + urlEncode(entry.Value.ToString()));
+				builder.Headers.Add(PrestoHeaders.PrestoRole, entry.Key + '=' + UrlEncode(entry.Value.ToString()));
 			}
 
 			IDictionary<string, string> extraCredentials = session.ExtraCredentials;
 			foreach (KeyValuePair<string, string> entry in extraCredentials.SetOfKeyValuePairs())
 			{
-				builder.addHeader(PRESTO_EXTRA_CREDENTIAL, entry.Key + "=" + entry.Value);
+				builder.Headers.Add(PrestoHeaders.PrestoExtraCredential, entry.Key + "=" + entry.Value);
 			}
 
 			IDictionary<string, string> statements = session.PreparedStatements;
 			foreach (KeyValuePair<string, string> entry in statements.SetOfKeyValuePairs())
 			{
-				builder.addHeader(PRESTO_PREPARED_STATEMENT, urlEncode(entry.Key) + "=" + urlEncode(entry.Value));
+				builder.Headers.Add(PrestoHeaders.PrestoPreparedStatement, UrlEncode(entry.Key) + "=" + UrlEncode(entry.Value));
 			}
 
-			builder.addHeader(PRESTO_TRANSACTION_ID, string.ReferenceEquals(session.TransactionId, null) ? "NONE" : session.TransactionId);
+			builder.Headers.Add(PrestoHeaders.PrestoTransactionId, string.IsNullOrWhiteSpace(session.TransactionId) ? "NONE" : session.TransactionId);
 
-			return builder.build();
+			return builder;
 		}
 
 
 
-		public virtual bool Running
+		public bool Running => _state == State.Running;
+
+		public bool ClientAborted => _state == State.ClientAborted;
+
+		public bool ClientError => _state == State.ClientError;
+
+		public bool Finished => _state == State.Finished;
+
+		public StatementStats Stats => _currentResults.Stats;
+
+		public QueryStatusInfo CurrentStatusInfo()
 		{
-			get
-			{
-				return _state.get() == State.Running;
-			}
+			Condition.CheckArgument(Running, "current position is not valid (cursor past end)");
+			return _currentResults;
 		}
 
-		public virtual bool ClientAborted
+		public IQueryData CurrentData()
 		{
-			get
-			{
-				return _state.get() == State.ClientAborted;
-			}
+			Condition.CheckArgument(Running, "current position is not valid (cursor past end)");
+			return _currentResults;
 		}
 
-		public virtual bool ClientError
+		public QueryStatusInfo FinalStatusInfo()
 		{
-			get
-			{
-				return _state.get() == State.ClientError;
-			}
+			Condition.CheckArgument(!Running, "current position is still valid");
+			return _currentResults;
 		}
 
-		public virtual bool Finished
+		public string SetCatalog { get; set; }
+
+        public string SetSchema { get; set; }
+
+        public IDictionary<string, string> SetSessionProperties { get; set; } = new ConcurrentDictionary<string, string>();
+
+        public ISet<string> ResetSessionProperties { get; set; } = new HashSet<string>();
+
+        public IDictionary<string, SelectedRole> SetRoles { get; set; } = new ConcurrentDictionary<string, SelectedRole>();
+
+        public IDictionary<string, string> AddedPreparedStatements { get; set; } = new ConcurrentDictionary<string, string>();
+
+        public ISet<string> DeallocatedPreparedStatements { get; set; } = new HashSet<string>();
+
+        public string StartedTransactionId { get; private set; }
+
+        public bool ClearTransactionId { get; private set; }
+
+        private HttpRequestMessage PrepareRequest(HttpMethod mode, Uri uri, string data = "", string mediaType = "")
 		{
-			get
-			{
-				return _state.get() == State.Finished;
-			}
+			var request = new HttpRequestMessage(mode, uri);
+			request.Headers.Add(PrestoHeaders.PrestoUser, _user);
+			request.Headers.Add("User-Agent", _userAgentValue);
+			if (!string.IsNullOrWhiteSpace(data))
+				request.Content = new StringContent(data, Encoding.UTF8, mediaType);
+			return request;
 		}
 
-		public virtual StatementStats Stats
-		{
-			get
-			{
-				return _currentResults.get().Stats;
-			}
-		}
-
-		public virtual QueryStatusInfo currentStatusInfo()
-		{
-			checkState(Running, "current position is not valid (cursor past end)");
-			return _currentResults.get();
-		}
-
-		public virtual QueryData currentData()
-		{
-			checkState(Running, "current position is not valid (cursor past end)");
-			return _currentResults.get();
-		}
-
-		public virtual QueryStatusInfo finalStatusInfo()
-		{
-			checkState(!Running, "current position is still valid");
-			return _currentResults.get();
-		}
-
-		public virtual Optional<string> SetCatalog
-		{
-			get
-			{
-				return Optional.ofNullable(_setCatalog.get());
-			}
-		}
-
-		public virtual Optional<string> SetSchema
-		{
-			get
-			{
-				return Optional.ofNullable(_setSchema.get());
-			}
-		}
-
-		public virtual IDictionary<string, string> SetSessionProperties
-		{
-			get
-			{
-				return ImmutableMap.copyOf(_setSessionProperties);
-			}
-		}
-
-		public virtual ISet<string> ResetSessionProperties
-		{
-			get
-			{
-				return ImmutableSet.copyOf(_resetSessionProperties);
-			}
-		}
-
-		public virtual IDictionary<string, SelectedRole> SetRoles
-		{
-			get
-			{
-				return ImmutableMap.copyOf(_setRoles);
-			}
-		}
-
-		public virtual IDictionary<string, string> AddedPreparedStatements
-		{
-			get
-			{
-				return ImmutableMap.copyOf(_addedPreparedStatements);
-			}
-		}
-
-		public virtual ISet<string> DeallocatedPreparedStatements
-		{
-			get
-			{
-				return ImmutableSet.copyOf(_deallocatedPreparedStatements);
-			}
-		}
-
-		public virtual string StartedTransactionId
-		{
-			get
-			{
-				return _startedTransactionId.get();
-			}
-		}
-
-		public virtual bool ClearTransactionId
-		{
-			get
-			{
-				return _clearTransactionId.get();
-			}
-		}
-
-		private Request.Builder PrepareRequest(HttpUrl url)
-		{
-			return (new Request.Builder()).addHeader(PRESTO_USER, _user).addHeader(USER_AGENT, UserAgentValue).url(url);
-		}
-
-		public virtual bool Advance()
+		public bool Advance()
 		{
 			if (!Running)
 			{
 				return false;
 			}
 
-			URI nextUri = currentStatusInfo().NextUri;
+			var nextUri = CurrentStatusInfo().NextUri;
 			if (nextUri == null)
 			{
-				_state.compareAndSet(State.Running, State.Finished);
+				_state = State.Finished;
 				return false;
 			}
 
-			Request request = prepareRequest(HttpUrl.get(nextUri)).build();
+			var request = PrepareRequest(HttpMethod.Get, nextUri);
 
 			Exception cause = null;
-			long start = System.nanoTime();
+			var start = DateTime.Now;
 			long attempts = 0;
 
 			while (true)
@@ -313,11 +230,11 @@ namespace SharpPulsar.Presto
 					return false;
 				}
 
-				Duration sinceStart = Duration.nanosSince(start);
-				if (attempts > 0 && sinceStart.compareTo(_requestTimeoutNanos) > 0)
+				var sinceStart = (DateTime.Now - start).Ticks;
+				if (attempts > 0 && sinceStart.CompareTo(_requestTimeoutNanos) > 0)
 				{
-					_state.compareAndSet(State.Running, State.ClientError);
-					throw new Exception(format("Error fetching next (attempts: %s, duration: %s)", attempts, sinceStart), cause);
+					_state = State.ClientError;
+					throw new Exception($"Error fetching next (attempts:{attempts}, duration: {sinceStart})", cause);
 				}
 
 				if (attempts > 0)
@@ -325,9 +242,9 @@ namespace SharpPulsar.Presto
 					// back-off on retry
 					try
 					{
-						MILLISECONDS.sleep(attempts * 100);
+						Thread.Sleep(TimeSpan.FromMilliseconds(attempts * 100));
 					}
-					catch (InterruptedException)
+					catch (Exception)
 					{
 						try
 						{
@@ -337,7 +254,7 @@ namespace SharpPulsar.Presto
 						{
 							Thread.CurrentThread.Interrupt();
 						}
-						_state.compareAndSet(State.Running, State.ClientError);
+						_state = State.ClientError;
 						throw new Exception("StatementClient thread was interrupted");
 					}
 				}
@@ -346,7 +263,8 @@ namespace SharpPulsar.Presto
 				JsonResponse<QueryResults> response;
 				try
 				{
-					response = JsonResponse.execute(QueryResultsCodec, _httpClient, request);
+					var responseTask = JsonResponse<QueryResults>.Execute(_httpClient, request);
+					response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
 				}
 				catch (Exception e)
 				{
@@ -354,138 +272,134 @@ namespace SharpPulsar.Presto
 					continue;
 				}
 
-				if ((response.StatusCode == HTTP_OK) && response.hasValue())
+				if ((response.ResponseMessage.StatusCode == HttpStatusCode.Accepted) && response.HasValue())
 				{
-					processResponse(response.Headers, response.Value);
+					ProcessResponse(response.Headers, response.Value);
 					return true;
 				}
 
-				if (response.StatusCode != HTTP_UNAVAILABLE)
+				if (response.ResponseMessage.StatusCode != HttpStatusCode.ServiceUnavailable)
 				{
-					_state.compareAndSet(State.Running, State.ClientError);
-					throw requestFailedException("fetching next", request, response);
+					if (_state == State.Running)
+						_state = State.ClientError;
+					throw RequestFailedException("fetching next", request, response);
 				}
 			}
 		}
 
-		private void ProcessResponse(Headers headers, QueryResults results)
+		private void ProcessResponse(HttpResponseHeaders headers, QueryResults results)
 		{
-			_setCatalog.set(headers.get(PRESTO_SET_CATALOG));
-			_setSchema.set(headers.get(PRESTO_SET_SCHEMA));
-
-			foreach (string setSession in headers.values(PRESTO_SET_SESSION))
+			SetCatalog = headers.GetValues(PrestoHeaders.PrestoSetCatalog).First();
+			SetSchema = headers.GetValues(PrestoHeaders.PrestoSetSchema).First();
+			var sessions = headers.GetValues(PrestoHeaders.PrestoSetSession);
+			foreach (string setSession in sessions)
 			{
-				IList<string> keyValue = SessionHeaderSplitter.splitToList(setSession);
+				IList<string> keyValue = setSession.Split('=').Take(2).Select(x => x.Trim()).ToList();
 				if (keyValue.Count != 2)
 				{
 					continue;
 				}
-				_setSessionProperties[keyValue[0]] = keyValue[1];
+				SetSessionProperties[keyValue[0]] = keyValue[1];
 			}
-			_resetSessionProperties.addAll(headers.values(PRESTO_CLEAR_SESSION));
-
-			foreach (string setRole in headers.values(PRESTO_SET_ROLE))
+			headers.GetValues(PrestoHeaders.PrestoClearSession).ToList().ForEach(x => ResetSessionProperties.Add(x));
+			var roles = headers.GetValues(PrestoHeaders.PrestoSetRole);
+			foreach (string setRole in roles)
 			{
-				IList<string> keyValue = SessionHeaderSplitter.splitToList(setRole);
+				IList<string> keyValue = setRole.Split('=').Take(2).Select(x => x.Trim()).ToList();
 				if (keyValue.Count != 2)
 				{
 					continue;
 				}
-				_setRoles[keyValue[0]] = SelectedRole.valueOf(urlDecode(keyValue[1]));
+				SetRoles[keyValue[0]] = SelectedRole.ValueOf(UrlDecode(keyValue[1]));
 			}
-
-			foreach (string entry in headers.values(PRESTO_ADDED_PREPARE))
+			var prepares = headers.GetValues(PrestoHeaders.PrestoAddedPrepare);
+			foreach (string entry in prepares)
 			{
-				IList<string> keyValue = SessionHeaderSplitter.splitToList(entry);
+				IList<string> keyValue = entry.Split('=').Take(2).Select(x => x.Trim()).ToList();
 				if (keyValue.Count != 2)
 				{
 					continue;
 				}
-				_addedPreparedStatements[urlDecode(keyValue[0])] = urlDecode(keyValue[1]);
+				AddedPreparedStatements[UrlDecode(keyValue[0])] = UrlDecode(keyValue[1]);
 			}
-			foreach (string entry in headers.values(PRESTO_DEALLOCATED_PREPARE))
+			var deAllocs = headers.GetValues(PrestoHeaders.PrestoDeallocatedPrepare);
+			foreach (string entry in deAllocs)
 			{
-				_deallocatedPreparedStatements.Add(urlDecode(entry));
+				DeallocatedPreparedStatements.Add(UrlDecode(entry));
 			}
 
-			string startedTransactionId = headers.get(PRESTO_STARTED_TRANSACTION_ID);
-			if (!string.ReferenceEquals(startedTransactionId, null))
+			string startedTransactionId = headers.GetValues(PrestoHeaders.PrestoStartedTransactionId).First();
+			if (!string.IsNullOrWhiteSpace(startedTransactionId))
 			{
-				this._startedTransactionId.set(startedTransactionId);
+				StartedTransactionId = startedTransactionId;
 			}
-			if (headers.get(PRESTO_CLEAR_TRANSACTION_ID) != null)
+			string clearedTransactionId = headers.GetValues(PrestoHeaders.PrestoClearTransactionId).First();
+			if (clearedTransactionId != null)
 			{
-				_clearTransactionId.set(true);
+				ClearTransactionId = true;
 			}
 
-			_currentResults.set(results);
+			_currentResults = results;
 		}
 
-		private Exception RequestFailedException(string task, Request request, JsonResponse<QueryResults> response)
+		private Exception RequestFailedException(string task, HttpRequestMessage request, JsonResponse<QueryResults> response)
 		{
-			if (!response.hasValue())
+			if (!response.HasValue())
 			{
-				if (response.StatusCode == HTTP_UNAUTHORIZED)
+				if (response.ResponseMessage.StatusCode == HttpStatusCode.Unauthorized)
 				{
-					return new ClientException("Authentication failed" + Optional.ofNullable(response.StatusMessage).map(message => ": " + message).orElse(""));
+					return new ClientException("Authentication failed: " + response.ResponseMessage.ReasonPhrase);
 				}
-				return new Exception(format("Error %s at %s returned an invalid response: %s [Error: %s]", task, request.url(), response, response.ResponseBody), response.Exception);
+				return new Exception($"Error [{task}] at [{response.ResponseMessage.RequestMessage.RequestUri}] returned an invalid response: [{response.ResponseBody}] [Error: {response.Exception}]");
 			}
-			return new Exception(format("Error %s at %s returned HTTP %s", task, request.url(), response.StatusCode));
+			return new Exception($"Error [{task}] at [{response.ResponseMessage.RequestMessage.RequestUri}] returned HTTP [{response.ResponseMessage.StatusCode}]");
 		}
 
-		public virtual void CancelLeafStage()
+		public void CancelLeafStage()
 		{
-			checkState(!ClientAborted, "client is closed");
+			Condition.CheckArgument(!ClientAborted, "client is closed");
 
-			URI uri = currentStatusInfo().PartialCancelUri;
+			var uri = CurrentStatusInfo().PartialCancelUri;
 			if (uri != null)
 			{
-				httpDelete(uri);
+				HttpDelete(uri);
 			}
 		}
 
-		public virtual void Dispose()
+		public void Dispose()
 		{
 			// If the query is not done, abort the query.
-			if (_state.compareAndSet(State.Running, State.ClientAborted))
+			if (_state == State.Running)
 			{
-				URI uri = _currentResults.get().NextUri;
+				var uri = _currentResults.NextUri;
 				if (uri != null)
 				{
-					httpDelete(uri);
+					HttpDelete(uri);
 				}
+
+				_state = State.ClientAborted;
 			}
 		}
 
-		private void httpDelete(URI uri)
+		private void HttpDelete(Uri uri)
 		{
-			Request request = prepareRequest(HttpUrl.get(uri)).delete().build();
-			_httpClient.newCall(request).enqueue(new NullCallback());
+			_httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Delete, uri));
 		}
 
-		private static string urlEncode(string value)
+		private static string UrlEncode(string value)
 		{
-			try
-			{
-				return URLEncoder.encode(value, "UTF-8");
-			}
-			catch (UnsupportedEncodingException e)
-			{
-				throw new AssertionError(e);
-			}
+			return HttpUtility.UrlEncode(value, Encoding.UTF8);
+			;
 		}
 
-		private static string urlDecode(string value)
+		private static string UrlDecode(string value)
 		{
-			try
-			{
-				return URLDecoder.decode(value, "UTF-8");
-			}
-			catch (UnsupportedEncodingException e)
-			{
-				throw new AssertionError(e);
-			}
+			return HttpUtility.UrlDecode(value, Encoding.UTF8);
+		}
+
+		public void Close()
+		{
+			throw new NotImplementedException();
 		}
 
 		public enum State

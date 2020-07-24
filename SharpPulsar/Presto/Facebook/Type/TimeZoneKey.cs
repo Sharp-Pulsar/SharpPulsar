@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using SharpPulsar.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +91,7 @@ namespace SharpPulsar.Presto.Facebook.Type
 
 		public static TimeZoneKey GetTimeZoneKey(string zoneId)
 		{
-            ParameterCondition.RequireNonNull(zoneId, "ZoneId", "Zone id is null");
+            Condition.RequireNonNull(zoneId, "ZoneId", "Zone id is null");
 			CheckArgument(zoneId.Length > 0, "Zone id is an empty string");
 			
 			var zoneKey = ZoneIdToKey[zoneId.ToLower(CultureInfo.GetCultureInfo("en-US"))] ?? ZoneIdToKey[NormalizeZoneId(zoneId)];
@@ -127,7 +128,7 @@ namespace SharpPulsar.Presto.Facebook.Type
         [JsonConstructor]
 		public TimeZoneKey(string id, short key)
 		{
-			Id = ParameterCondition.RequireNonNull(id, "id", "id is null");
+			Id = Condition.RequireNonNull(id, "id", "id is null");
 			if (key < 0)
 			{
 				throw new ArgumentException("key is negative");

@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+//COME BACK TO THIS AND USE https://github.com/dotnet/Kerberos.NET
 namespace SharpPulsar.Presto
 {
+	/*
     using ImmutableMap = com.google.common.collect.ImmutableMap;
 	using Krb5LoginModule = com.sun.security.auth.module.Krb5LoginModule;
 	using Duration = io.airlift.units.Duration;
@@ -47,8 +50,6 @@ namespace SharpPulsar.Presto
 		private readonly Optional<File> keytab;
 		private readonly Optional<File> credentialCache;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @GuardedBy("this") private Session clientSession;
 		private Session clientSession;
 
 		public SpnegoHandler(string remoteServiceName, bool useCanonicalHostname, Optional<string> principal, Optional<File> kerberosConfig, Optional<File> keytab, Optional<File> credentialCache)
@@ -62,8 +63,6 @@ namespace SharpPulsar.Presto
 			kerberosConfig.ifPresent(file => System.setProperty("java.security.krb5.conf", file.AbsolutePath));
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public okhttp3.Response intercept(Chain chain) throws java.io.IOException
 		public override Response intercept(Chain chain)
 		{
 			// eagerly send authentication if possible
@@ -157,8 +156,6 @@ namespace SharpPulsar.Presto
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private Session createSession() throws javax.security.auth.login.LoginException, org.ietf.jgss.GSSException
 		private Session createSession()
 		{
 			// TODO: do we need to call logout() on the LoginContext?
@@ -204,8 +201,6 @@ namespace SharpPulsar.Presto
 				});
 
 				outerInstance.principal.ifPresent(value => options.put("principal", value));
-
-//JAVA TO C# CONVERTER WARNING: The .NET Type.FullName property will not always yield results identical to the Java Class.getName method:
 				return new AppConfigurationEntry[] {new AppConfigurationEntry(typeof(Krb5LoginModule).FullName, REQUIRED, options.build())};
 			}
 		}
@@ -248,13 +243,9 @@ namespace SharpPulsar.Presto
 
 		public interface GssSupplier<T>
 		{
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: T get() throws org.ietf.jgss.GSSException;
 			T get();
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private static <T> T doAs(javax.security.auth.Subject subject, GssSupplier<T> action) throws org.ietf.jgss.GSSException
 		private static T doAs<T>(Subject subject, GssSupplier<T> action)
 		{
 			try
@@ -312,13 +303,12 @@ namespace SharpPulsar.Presto
 				}
 			}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: public boolean needsRefresh() throws org.ietf.jgss.GSSException
 			public virtual bool needsRefresh()
 			{
 				return clientCredential.RemainingLifetime < MIN_CREDENTIAL_LIFETIME.getValue(SECONDS);
 			}
 		}
 	}
+	*/
 
 }

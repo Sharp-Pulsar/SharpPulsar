@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using PrestoWarning = SharpPulsar.Presto.PrestoWarning;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");

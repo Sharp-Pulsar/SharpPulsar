@@ -17,7 +17,7 @@ using SharpPulsar.Presto.Facebook.Type;
  */
 namespace SharpPulsar.Presto
 {
-	public interface StatementClient:IDisposable
+	public interface IStatementClient:IDisposable
 	{
 		string Query {get;}
 
@@ -35,7 +35,7 @@ namespace SharpPulsar.Presto
 
 		QueryStatusInfo CurrentStatusInfo();
 
-		QueryData CurrentData();
+		IQueryData CurrentData();
 
 		QueryStatusInfo FinalStatusInfo();
 

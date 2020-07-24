@@ -15,37 +15,10 @@
 using SharpPulsar.Precondition;
 
 namespace SharpPulsar.Presto
-
-	public class NodeVersion
+{
+    public class NodeVersion
 	{
-		public static readonly NodeVersion Unknown = new NodeVersion("<unknown>");
-
-		public string  Version {get;}
-		public NodeVersion(string version)
-		{
-			this.Version = Condition.RequireNonNull(version, "version is null");
-		}
-	
-		public override bool Equals(object o)
-		{
-			if (this == o)
-			{
-				return true;
-			}
-			if (o == null || this.GetType() != o.GetType())
-			{
-				return false;
-			}
-
-			NodeVersion that = (NodeVersion) o;
-			return Objects.equals(Version, that.Version);
-		}
-
-		public override int GetHashCode()
-		{
-			return Objects.hash(Version);
-		}
-
+		public string  Version {get; set; }
 		public override string ToString()
 		{
 			return Version;

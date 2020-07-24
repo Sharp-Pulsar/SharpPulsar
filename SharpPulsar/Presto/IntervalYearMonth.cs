@@ -14,7 +14,7 @@ using System.Text.RegularExpressions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace SharpPulsar.Sql
+namespace SharpPulsar.Presto
 {
 	
 	public sealed class IntervalYearMonth

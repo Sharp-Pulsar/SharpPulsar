@@ -11,33 +11,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using SharpPulsar.Presto.Facebook.Type;
+
 namespace SharpPulsar.Presto
 {
 	public class QueryError
 	{
-        public string Message { get;}
-        public string SqlState { get;}
-        public int ErrorCode { get; }
-        public string ErrorName { get;}
-        public string ErrorType { get;}
-        public ErrorLocation ErrorLocation { get;}
-        public FailureInfo FailureInfo { get;}
-
-        public QueryError(string message, string sqlState, int errorCode, string errorName, string errorType, ErrorLocation errorLocation, FailureInfo failureInfo)
-		{
-			Message = message;
-			SqlState = sqlState;
-			ErrorCode = errorCode;
-			ErrorName = errorName;
-			ErrorType = errorType;
-			ErrorLocation = errorLocation;
-			FailureInfo = failureInfo;
-		}
-
-
+        public string Message { get; set; }
+        public string SqlState { get; set;}
+        public int ErrorCode { get; set; }
+        public string ErrorName { get; set; }
+        public string ErrorType { get; set; }
+        public ErrorLocation ErrorLocation { get; set; }
+        public FailureInfo FailureInfo { get; set; }
+        
 		public override string ToString()
 		{
-			return toStringHelper(this).add("message", Message).add("sqlState", SqlState).add("errorCode", ErrorCode).add("errorName", ErrorName).add("errorType", ErrorType).add("errorLocation", ErrorLocation).add("failureInfo", FailureInfo).ToString();
+			return StringHelper.Build(this).Add("message", Message).Add("sqlState", SqlState).Add("errorCode", ErrorCode).Add("errorName", ErrorName).Add("errorType", ErrorType).Add("errorLocation", ErrorLocation).Add("failureInfo", FailureInfo).ToString();
 		}
 	}
 

@@ -3,11 +3,10 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Mime;
-using System.Text;
-using System.Threading;
-using Org.BouncyCastle.Asn1.Ocsp;
+using System.Text.Json;
+using System.Threading.Tasks;
 using SharpPulsar.Precondition;
+using SharpPulsar.Presto.Facebook.Type;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,18 +25,15 @@ namespace SharpPulsar.Presto
 {
     public sealed class JsonResponse<T>
 	{
-		public int StatusCode {get;}
-		public string StatusMessage {get;}
-		public object Headers {get;}
+		public HttpResponseMessage ResponseMessage { get; }
+		public HttpResponseHeaders Headers {get;}
 		public string ResponseBody {get;}
 		private readonly bool _hasValue;
 		private readonly T _value;
 		public Exception Exception {get;}
-		private JsonResponse(int statusCode, string statusMessage, string responseBody, string method, string url, string request = "", WebHeaderCollection headers = null)
+		private JsonResponse(string responseBody, HttpResponseMessage responseMessage)
 		{
-			StatusCode = statusCode;
-			StatusMessage = statusMessage;
-			Headers = Condition.RequireNonNull(headers, "headers is null");
+			Headers = Condition.RequireNonNull(responseMessage?.Headers, "headers is null");
 			ResponseBody = Condition.RequireNonNull(responseBody, "responseBody is null");
 
 			_hasValue = false;
@@ -45,22 +41,20 @@ namespace SharpPulsar.Presto
 			Exception = null;
 		}
 
-		private JsonResponse(int statusCode, string statusMessage, HttpHeaders headers, string responseBody, JsonCodec<T> jsonCodec)
+		private JsonResponse(HttpResponseMessage responseMessage, string responseBody)
 		{
-			StatusCode = statusCode;
-			StatusMessage = statusMessage;
-			Headers = Condition.RequireNonNull(headers, "headers is null");
+			Headers = Condition.RequireNonNull(responseMessage?.Headers, "headers is null");
 			ResponseBody = Condition.RequireNonNull(responseBody, "responseBody is null");
 
 			T value = default(T);
 			ArgumentException exception = null;
 			try
 			{
-				value = jsonCodec.fromJson(responseBody);
+				value = JsonSerializer.Deserialize<T>(responseBody);
 			}
 			catch (ArgumentException e)
 			{
-				exception = new ArgumentException(format("Unable to create %s from JSON response:\n[%s]", jsonCodec.Type, responseBody), e);
+				exception = new ArgumentException($"Unable to create {typeof(T).Name} from JSON response:\n[{responseBody}]", e);
 			}
 			_hasValue = (exception == null);
 			_value = value;
@@ -89,44 +83,42 @@ namespace SharpPulsar.Presto
 
 		
 		public override string ToString()
-		{
-			return StringHelper.Build(this).Add("statusCode", StatusCode).Add("statusMessage", StatusMessage).Add("headers", Headers.ToMultimap()).Add("hasValue", _hasValue).Add("value", _value).ToString();
+        {
+            return StringHelper.Build(this).Add("statusCode", ResponseMessage.StatusCode).Add("statusMessage", ResponseMessage.ReasonPhrase).Add("headers", Headers).Add("hasValue", _hasValue).Add("value", _value).ToString();
 		}
 
-		public static JsonResponse<T> Execute<T>(JsonCodec<T> codec, HttpClient client, Request request)
+		public static async Task<JsonResponse<T>> Execute(HttpClient client, HttpRequestMessage request)
 		{
-			try
-			{
-					using (var response = client.GetAsync(request))
-					{
-					    if ((response.Result.StatusCode == HttpStatusCode.RedirectKeepVerb) || (response.Result.StatusCode == HttpStatusCode.PermanentRedirect))
-					    {
-						    string location = response.Result.Headers.Location.AbsoluteUri;
-						    if (!ReferenceEquals(location, null))
-						    {
-							    request = request.newBuilder().url(location).build();
-							    return Execute(codec, client, request);
-						    }
-					    }
-        
-					ResponseBody responseBody = requireNonNull(response.body());
-					string body = responseBody.@string();
-					if (IsJson(responseBody.contentType()))
-					{
-						return new JsonResponse<T>(response.code(), response.message(), response.headers(), body, codec);
-					}
-					return new JsonResponse<T>(response.code(), response.message(), response.headers(), body);
-					}
-			}
-			catch (IOException e)
+            var req = request;
+            using var response = await client.SendAsync(req);
+            if ((response.StatusCode == HttpStatusCode.RedirectKeepVerb) || (response.StatusCode == HttpStatusCode.PermanentRedirect))
             {
-                throw;
+                var location = response.Headers.Location;
+                if (!ReferenceEquals(location, null))
+                {
+                    req.RequestUri = location;
+                    return await Execute(client, req);
+                }
             }
-		}
 
-		private static bool IsJson(MediaType type)
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            if (stream != null)
+            {
+                using var sr = new StreamReader(stream);
+                var stringBody = sr.ReadToEnd();
+                var responseBody = Condition.RequireNonNull(stringBody, "content is null");
+                if (IsJson(response.Content.Headers.ContentType.MediaType))
+                {
+                    return new JsonResponse<T>(response, responseBody);
+                }
+                return new JsonResponse<T>(responseBody, response);
+            }
+            throw new NullReferenceException();
+        }
+
+		private static bool IsJson(string type)
 		{
-			return (type != null) && "application".Equals(type) && "json".Equals(type.subtype());
+			return (type != null) && type.StartsWith("application") && type.EndsWith("json");
 		}
 	}
 

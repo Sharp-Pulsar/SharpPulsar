@@ -11,33 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-using SharpPulsar.Precondition;
-using SharpPulsar.Presto.Facebook.Type;
-
 namespace SharpPulsar.Presto
 {
     public class Column
 	{
-		public string Name {get;}
-		public string Type {get;}
-		public ClientTypeSignature TypeSignature {get;}
-
-		public Column(string name, IType type) : this(name, type.GetTypeSignature())
-		{
-		}
-
-		public Column(string name, TypeSignature signature) : this(name, signature.ToString(), new ClientTypeSignature(signature))
-		{
-		}
-
-		public Column(string name, string type, ClientTypeSignature typeSignature)
-		{
-			this.Name = Condition.RequireNonNull(name, "name", "name is null");
-			this.Type = Condition.RequireNonNull(type, "type", "type is null");
-			this.TypeSignature = typeSignature;
-		}
-
-	}
+		public string Name {get; set; }
+		public string Type {get; set; }
+		public ClientTypeSignature TypeSignature {get; set; }
+    }
 
 }

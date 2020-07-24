@@ -8,6 +8,7 @@ using AvroSchemaGenerator;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Utilities.Encoders;
 using SharpPulsar.Api.Schema;
+using SharpPulsar.Common;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Protocol.Builder;

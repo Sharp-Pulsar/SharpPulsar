@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using SharpPulsar.Precondition;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +35,7 @@ namespace SharpPulsar.Presto.Facebook.Type
 		{
 			if(type == null)
 				throw new NullReferenceException( "type is null");
-			_role = ParameterCondition.RequireNonNull(role,"Role", "role is null");
+			_role = Condition.RequireNonNull(role,"Role", "role is null");
 			if (type == Type.Role && !string.IsNullOrWhiteSpace(role))
 			{
 				throw new ArgumentException("Role must be present for the selected role type: " + type);

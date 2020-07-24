@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using SharpPulsar.Precondition;
 
@@ -33,87 +31,18 @@ namespace SharpPulsar.Presto
             Condition.RequireNonNull(suppressed, "suppressed", "suppressed is null");
             Condition.RequireNonNull(stack, "stack", "stack is null");
 
-			this.Type = type;
-			this.Message = message;
-			this.Cause = cause;
-			this.Suppressed = new List<FailureInfo>(suppressed);
-			this.Stack = new List<string>(stack);
-			this._errorLocation = errorLocation;
+			Type = type;
+			Message = message;
+			Cause = cause;
+			Suppressed = new List<FailureInfo>(suppressed);
+			Stack = new List<string>(stack);
+			_errorLocation = errorLocation;
 		}
 
 		public virtual IList<FailureInfo> Suppressed { get; }
 
 		public virtual IList<string> Stack { get; }
 
-		public virtual Exception ToException()
-		{
-			return ToException(this);
-		}
-
-		private static FailureException ToException(FailureInfo failureInfo)
-		{
-			if (failureInfo == null)
-			{
-				return null;
-			}
-			FailureException failure = new FailureException(failureInfo.Type, failureInfo.Message, ToException(failureInfo.Cause));
-			foreach (FailureInfo suppressed in failureInfo.Suppressed)
-			{
-				failure.AddSuppressed(ToException(suppressed));
-			}
-			ImmutableList.Builder<StackTraceElement> stackTraceBuilder = ImmutableList.builder();
-			foreach (string stack in failureInfo.Stack)
-			{
-				stackTraceBuilder.add(ToStackTraceElement(stack));
-			}
-			ImmutableList<StackTraceElement> stackTrace = stackTraceBuilder.build();
-			failure.StackTrace = stackTrace.toArray(new StackTraceElement[stackTrace.size()]);
-			return failure;
-		}
-
-		public static StackTraceElement ToStackTraceElement(string stack)
-		{
-			Matcher matcher = StackTracePattern.matcher(stack);
-			if (matcher.matches())
-			{
-				string declaringClass = matcher.group(1);
-				string methodName = matcher.group(2);
-				string fileName = matcher.group(3);
-				int number = -1;
-				if (fileName.Equals("Native Method"))
-				{
-					fileName = null;
-					number = -2;
-				}
-				else if (matcher.group(4) != null)
-				{
-					number = int.Parse(matcher.group(4));
-				}
-				return new StackTraceElement(declaringClass, methodName, fileName, number);
-			}
-			return new StackTraceElement("Unknown", stack, null, -1);
-		}
-
-		public class FailureException : Exception
-		{
-			internal readonly string Type;
-
-			public FailureException(string type, string message, FailureException cause) : base(message, cause)
-			{
-				this.Type = Condition.RequireNonNull(type, "type","type is null");
-			}
-
-
-			public override string ToString()
-			{
-				string message = outerInstance.Message;
-				if (!string.ReferenceEquals(message, null))
-				{
-					return Type + ": " + message;
-				}
-				return Type;
-			}
-		}
+		
 	}
-
 }
