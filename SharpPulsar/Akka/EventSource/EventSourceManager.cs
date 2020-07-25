@@ -6,5 +6,6 @@ namespace SharpPulsar.Akka.EventSource
 {
     public class EventSourceManager
     {
+        //EventTopics
     }
 }
