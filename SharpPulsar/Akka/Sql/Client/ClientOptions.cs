@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Net;
+using SharpPulsar.Precondition;
 using SharpPulsar.Presto;
+using SharpPulsar.Presto.Facebook.Type;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,178 +25,142 @@ namespace SharpPulsar.Akka.Sql.Client
 
 	public class ClientOptions
 	{
-		private static readonly Splitter NAME_VALUE_SPLITTER = Splitter.on('=').limit(2);
-		private static readonly CharMatcher PRINTABLE_ASCII = CharMatcher.inRange((char) 0x21, (char) 0x7E); // spaces are not allowed
-        public string server = "localhost:8080";
+        public string Server = "localhost:8080";
+		
+        public string KeystorePath;
 
-        public string krb5RemoteServiceName;
+        public string KeystorePassword;
 
-        public string krb5ConfigPath = "/etc/krb5.conf";
+        public string TruststorePath;
 
-        public string krb5KeytabPath = "/etc/krb5.keytab";
+        public string TruststorePassword;
 
-        public string krb5CredentialCachePath = defaultCredentialCachePath().orElse(null);
+        public string AccessToken;
 
-        public string krb5Principal;
+        public string User = Environment.UserName;
 
-        public bool krb5DisableRemoteServiceHostnameCanonicalization;
+        public string Password;
 
-        public string keystorePath;
+        public string Source = "presto-cli";
 
-        public string keystorePassword;
+        public string ClientInfo;
 
-        public string truststorePath;
+        public string ClientTags = "";
 
-        public string truststorePassword;
+        public string Catalog;
 
-        public string accessToken;
+        public string Schema;
 
-        public string user = System.getProperty("user.name");
+        public string File;
 
-        public bool password;
+        public bool Debug;
 
-        public string source = "presto-cli";
+        public string LogLevelsFile;
 
-        public string clientInfo;
+        public string Execute;
 
-        public string clientTags = "";
+        public readonly IList<ClientResourceEstimate> ResourceEstimates = new List<ClientResourceEstimate>();
 
-        public string catalog;
+        public readonly IList<ClientSessionProperty> SessionProperties = new List<ClientSessionProperty>();
 
-        public string schema;
+        public readonly IList<ClientExtraCredential> ExtraCredentials = new List<ClientExtraCredential>();
 
-        public string file;
+        public Uri SocksProxy;
 
-        public bool debug;
+        public Uri HttpProxy;
 
-        public string logLevelsFile;
+        public TimeSpan ClientRequestTimeout = TimeSpan.FromMinutes(2);
 
-        public string execute;
-
-        public readonly IList<ClientResourceEstimate> resourceEstimates = new List<ClientResourceEstimate>();
-
-        public readonly IList<ClientSessionProperty> sessionProperties = new List<ClientSessionProperty>();
-
-        public readonly IList<ClientExtraCredential> extraCredentials = new List<ClientExtraCredential>();
-
-        public HostAndPort socksProxy;
-
-        public HostAndPort httpProxy;
-
-        public Duration clientRequestTimeout = new Duration(2, MINUTES);
-
-        public bool ignoreErrors;
+        public bool IgnoreErrors;
 
 
-		public virtual ClientSession toClientSession()
+		public virtual ClientSession ToClientSession()
 		{
-			return new ClientSession(parseServer(server), user, source, null, parseClientTags(clientTags), clientInfo, catalog, schema, TimeZone.Default.ID, Locale.Default, toResourceEstimates(resourceEstimates), toProperties(sessionProperties), emptyMap(), emptyMap(), toExtraCredentials(extraCredentials), null, clientRequestTimeout);
+			return new ClientSession(ParseServer(Server), User, Source, null, ParseClientTags(ClientTags), ClientInfo, Catalog, Schema, TimeZoneInfo.Local.Id, CultureInfo.CurrentCulture, ToResourceEstimates(ResourceEstimates), ToProperties(SessionProperties), new Dictionary<string, string>(), new Dictionary<string, SelectedRole>(), ToExtraCredentials(ExtraCredentials), null, ClientRequestTimeout);
 		}
 
-		public static URI parseServer(string server)
+		public static Uri ParseServer(string server)
 		{
-			server = server.ToLower(ENGLISH);
+			server = server.ToLower();
 			if (server.StartsWith("http://", StringComparison.Ordinal) || server.StartsWith("https://", StringComparison.Ordinal))
 			{
-				return URI.create(server);
+				return new Uri(server);
 			}
 
-			HostAndPort host = HostAndPort.fromString(server);
-			try
-			{
-				return new URI("http", null, host.Host, host.getPortOrDefault(80), null, null, null);
-			}
-			catch (URISyntaxException e)
-			{
-				throw new System.ArgumentException(e);
-			}
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+			//port = host.getPortOrDefault(80)
+			return new Uri($"http://{host.HostName}:{80}");
 		}
 
-		public static ISet<string> parseClientTags(string clientTagsString)
+		public static ISet<string> ParseClientTags(string clientTagsString)
 		{
-			Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
-			return ImmutableSet.copyOf(splitter.split(nullToEmpty(clientTagsString)));
+			return clientTagsString.Split(',').ToHashSet();
 		}
 
-		public static IDictionary<string, string> toProperties(IList<ClientSessionProperty> sessionProperties)
+		public static IDictionary<string, string> ToProperties(IList<ClientSessionProperty> sessionProperties)
 		{
-			ImmutableMap.Builder<string, string> builder = ImmutableMap.builder();
+			var builder = new Dictionary<string, string>();
 			foreach (ClientSessionProperty sessionProperty in sessionProperties)
 			{
 				string name = sessionProperty.Name;
-				if (sessionProperty.Catalog.Present)
+				if (!string.IsNullOrWhiteSpace(sessionProperty.Catalog))
 				{
-					name = sessionProperty.Catalog.get() + "." + name;
+					name = sessionProperty.Catalog + "." + name;
 				}
-				builder.put(name, sessionProperty.Value);
+				builder.Add(name, sessionProperty.Value);
 			}
-			return builder.build();
+			return builder;
 		}
 
-		public static IDictionary<string, string> toResourceEstimates(IList<ClientResourceEstimate> estimates)
+		public static IDictionary<string, string> ToResourceEstimates(IList<ClientResourceEstimate> estimates)
 		{
-			ImmutableMap.Builder<string, string> builder = ImmutableMap.builder();
+			var builder = new Dictionary<string, string>();
 			foreach (ClientResourceEstimate estimate in estimates)
 			{
-				builder.put(estimate.Resource, estimate.Estimate);
+				builder.Add(estimate.Resource, estimate.Estimate);
 			}
-			return builder.build();
+			return builder;
 		}
 
-		public static IDictionary<string, string> toExtraCredentials(IList<ClientExtraCredential> extraCredentials)
+		public static IDictionary<string, string> ToExtraCredentials(IList<ClientExtraCredential> extraCredentials)
 		{
-			ImmutableMap.Builder<string, string> builder = ImmutableMap.builder();
+			var builder = new Dictionary<string, string>();
 			foreach (ClientExtraCredential credential in extraCredentials)
 			{
-				builder.put(credential.Name, credential.Value);
+				builder.Add(credential.Name, credential.Value);
 			}
-			return builder.build();
+			return builder;
 		}
 
 		public sealed class ClientResourceEstimate
 		{
-			internal readonly string resource;
-			internal readonly string estimate;
-
 			public ClientResourceEstimate(string resourceEstimate)
 			{
-				IList<string> nameValue = NAME_VALUE_SPLITTER.splitToList(resourceEstimate);
-				checkArgument(nameValue.Count == 2, "Resource estimate: %s", resourceEstimate);
+				IList<string> nameValue = resourceEstimate.Split('=');
+                Condition.CheckArgument(nameValue.Count == 2, $"Resource estimate: {resourceEstimate}");
 
-				this.resource = nameValue[0];
-				this.estimate = nameValue[1];
-				checkArgument(resource.Length > 0, "Resource name is empty");
-				checkArgument(estimate.Length > 0, "Resource estimate is empty");
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(resource), "Resource contains spaces or is not US_ASCII: %s", resource);
-				checkArgument(resource.IndexOf('=') < 0, "Resource must not contain '=': %s", resource);
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(estimate), "Resource estimate contains spaces or is not US_ASCII: %s", resource);
+				Resource = nameValue[0];
+				Estimate = nameValue[1];
+                Condition.CheckArgument(Resource.Length > 0, "Resource name is empty");
+                Condition.CheckArgument(Estimate.Length > 0, "Resource estimate is empty");
+                //Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(Resource), "Resource contains spaces or is not US_ASCII: %s", Resource);
+                Condition.CheckArgument(Resource.IndexOf('=') < 0, $"Resource must not contain '=': {Resource}");
+				//Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(Estimate), "Resource estimate contains spaces or is not US_ASCII: %s", Resource);
 			}
 
 			public ClientResourceEstimate(string resource, string estimate)
 			{
-				this.resource = requireNonNull(resource, "resource is null");
-				this.estimate = estimate;
+				this.Resource = Condition.RequireNonNull(resource, "resource is null");
+				this.Estimate = estimate;
 			}
 
-			public string Resource
-			{
-				get
-				{
-					return resource;
-				}
-			}
+            public string Resource { get; }
 
-			public string Estimate
-			{
-				get
-				{
-					return estimate;
-				}
-			}
+            public string Estimate { get; }
 
-			public override string ToString()
+            public override string ToString()
 			{
-				return resource + '=' + estimate;
+				return Resource + '=' + Estimate;
 			}
 
 			public override bool Equals(object o)
@@ -200,101 +169,78 @@ namespace SharpPulsar.Akka.Sql.Client
 				{
 					return true;
 				}
-				if (o == null || this.GetType() != o.GetType())
+				if (o == null || GetType() != o.GetType())
 				{
 					return false;
 				}
 				ClientResourceEstimate other = (ClientResourceEstimate) o;
-				return Objects.equals(resource, other.resource) && Objects.equals(estimate, other.estimate);
+				return Equals(Resource, other.Resource) && Equals(Estimate, other.Estimate);
 			}
 
 			public override int GetHashCode()
 			{
-				return Objects.hash(resource, estimate);
+				return HashCode.Combine(Resource, Estimate);
 			}
 		}
 
 		public sealed class ClientSessionProperty
 		{
-			internal static readonly Splitter NAME_SPLITTER = Splitter.on('.');
-			internal readonly Optional<string> catalog;
-			internal readonly string name;
-			internal readonly string value;
-
 			public ClientSessionProperty(string property)
 			{
-				IList<string> nameValue = NAME_VALUE_SPLITTER.splitToList(property);
-				checkArgument(nameValue.Count == 2, "Session property: %s", property);
+				IList<string> nameValue = property.Split('=');
+                Condition.CheckArgument(nameValue.Count == 2, $"Session property: {property}");
 
-				IList<string> nameParts = NAME_SPLITTER.splitToList(nameValue[0]);
-				checkArgument(nameParts.Count == 1 || nameParts.Count == 2, "Invalid session property: %s", property);
+				IList<string> nameParts = nameValue[0].Split('.');
+                Condition.CheckArgument(nameParts.Count == 1 || nameParts.Count == 2, $"Invalid session property: {property}");
 				if (nameParts.Count == 1)
 				{
-					catalog = null;
-					name = nameParts[0];
+					Catalog = null;
+					Name = nameParts[0];
 				}
 				else
 				{
-					catalog = nameParts[0];
-					name = nameParts[1];
+					Catalog = nameParts[0];
+					Name = nameParts[1];
 				}
-				value = nameValue[1];
+				Value = nameValue[1];
 
-				verifyProperty(catalog, name, value);
+				VerifyProperty(Catalog, Name, Value);
 			}
 
-			public ClientSessionProperty(Optional<string> catalog, string name, string value)
+			public ClientSessionProperty(string catalog, string name, string value)
 			{
-				this.catalog = requireNonNull(catalog, "catalog is null");
-				this.name = requireNonNull(name, "name is null");
-				this.value = requireNonNull(value, "value is null");
+				this.Catalog = Condition.RequireNonNull(catalog, "catalog is null");
+				Name = Condition.RequireNonNull(name, "name is null");
+				Value = Condition.RequireNonNull(value, "value is null");
 
-				verifyProperty(catalog, name, value);
+				VerifyProperty(catalog, name, value);
 			}
 
-			internal static void verifyProperty(Optional<string> catalog, string name, string value)
+			internal static void VerifyProperty(string catalog, string name, string value)
 			{
-				checkArgument(!catalog.Present || !catalog.get().Empty, "Invalid session property: %s.%s:%s", catalog, name, value);
-				checkArgument(name.Length > 0, "Session property name is empty");
-				checkArgument(catalog.orElse("").IndexOf('=') < 0, "Session property catalog must not contain '=': %s", name);
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(catalog.orElse("")), "Session property catalog contains spaces or is not US_ASCII: %s", name);
-				checkArgument(name.IndexOf('=') < 0, "Session property name must not contain '=': %s", name);
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(name), "Session property name contains spaces or is not US_ASCII: %s", name);
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(value), "Session property value contains spaces or is not US_ASCII: %s", value);
+				Condition.CheckArgument(!string.IsNullOrWhiteSpace(catalog), $"Invalid session property: {catalog}.{name}:{value}", catalog, name, value);
+                Condition.CheckArgument(name.Length > 0, "Session property name is empty");
+                Condition.CheckArgument(catalog?.IndexOf('=') < 0, $"Session property catalog must not contain '=': {name}");
+                //Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(catalog.orElse("")), "Session property catalog contains spaces or is not US_ASCII: %s", name);
+                Condition.CheckArgument(name.IndexOf('=') < 0, $"Session property name must not contain '=': {name}");
+                //Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(name), "Session property name contains spaces or is not US_ASCII: %s", name);
+                //Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(value), "Session property value contains spaces or is not US_ASCII: %s", value);
 			}
 
-			public Optional<string> Catalog
-			{
-				get
-				{
-					return catalog;
-				}
-			}
+            public string Catalog { get; }
 
-			public string Name
-			{
-				get
-				{
-					return name;
-				}
-			}
+            public string Name { get; }
 
-			public string Value
-			{
-				get
-				{
-					return value;
-				}
-			}
+            public string Value { get; }
 
-			public override string ToString()
+            public override string ToString()
 			{
-				return (catalog.Present ? catalog.get() + '.' : "") + name + '=' + value;
+				return (!string.IsNullOrWhiteSpace(Catalog) ? Catalog + '.' : "") + Name + '=' + Value;
 			}
 
 			public override int GetHashCode()
 			{
-				return Objects.hash(catalog, name, value);
+				return HashCode.Combine(Catalog, Name, Value);
 			}
 
 			public override bool Equals(object obj)
@@ -303,59 +249,44 @@ namespace SharpPulsar.Akka.Sql.Client
 				{
 					return true;
 				}
-				if (obj == null || this.GetType() != obj.GetType())
+				if (obj == null || GetType() != obj.GetType())
 				{
 					return false;
 				}
 				ClientSessionProperty other = (ClientSessionProperty) obj;
-				return Objects.equals(this.catalog, other.catalog) && Objects.equals(this.name, other.name) && Objects.equals(this.value, other.value);
+				return Equals(Catalog, other.Catalog) && Equals(Name, other.Name) && Equals(Value, other.Value);
 			}
 		}
 
 		public sealed class ClientExtraCredential
 		{
-			internal readonly string name;
-			internal readonly string value;
-
 			public ClientExtraCredential(string extraCredential)
 			{
-				IList<string> nameValue = NAME_VALUE_SPLITTER.splitToList(extraCredential);
-				checkArgument(nameValue.Count == 2, "Extra credential: %s", extraCredential);
+				IList<string> nameValue = extraCredential.Split('=');
+				Condition.CheckArgument(nameValue.Count == 2, $"Extra credential: {extraCredential}");
 
-				this.name = nameValue[0];
-				this.value = nameValue[1];
-				checkArgument(name.Length > 0, "Credential name is empty");
-				checkArgument(value.Length > 0, "Credential value is empty");
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(name), "Credential name contains spaces or is not US_ASCII: %s", name);
-				checkArgument(name.IndexOf('=') < 0, "Credential name must not contain '=': %s", name);
-				checkArgument(PRINTABLE_ASCII.matchesAllOf(value), "Credential value contains space or is not US_ASCII: %s", name);
+				Name = nameValue[0];
+				Value = nameValue[1];
+                Condition.CheckArgument(Name.Length > 0, "Credential name is empty");
+                Condition.CheckArgument(Value.Length > 0, "Credential value is empty");
+                //Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(Name), "Credential name contains spaces or is not US_ASCII: %s", Name);
+                Condition.CheckArgument(Name.IndexOf('=') < 0, $"Credential name must not contain '=': {Name}");
+                //Condition.CheckArgument(PRINTABLE_ASCII.matchesAllOf(Value), "Credential value contains space or is not US_ASCII: %s", Name);
 			}
 
 			public ClientExtraCredential(string name, string value)
 			{
-				this.name = requireNonNull(name, "name is null");
-				this.value = value;
+				Name = Condition.RequireNonNull(name, "name is null");
+				Value = value;
 			}
 
-			public string Name
-			{
-				get
-				{
-					return name;
-				}
-			}
+            public string Name { get; }
 
-			public string Value
-			{
-				get
-				{
-					return value;
-				}
-			}
+            public string Value { get; }
 
-			public override string ToString()
+            public override string ToString()
 			{
-				return name + '=' + value;
+				return Name + '=' + Value;
 			}
 
 			public override bool Equals(object o)
@@ -364,17 +295,17 @@ namespace SharpPulsar.Akka.Sql.Client
 				{
 					return true;
 				}
-				if (o == null || this.GetType() != o.GetType())
+				if (o == null || GetType() != o.GetType())
 				{
 					return false;
 				}
 				ClientExtraCredential other = (ClientExtraCredential) o;
-				return Objects.equals(name, other.name) && Objects.equals(value, other.value);
+				return Equals(Name, other.Name) && Equals(Value, other.Value);
 			}
 
 			public override int GetHashCode()
 			{
-				return Objects.hash(name, value);
+				return HashCode.Combine(Name, Value);
 			}
 		}
 	}

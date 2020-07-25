@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -247,15 +248,24 @@ namespace SharpPulsar.Akka
 
         public IEnumerable<SqlData> PulsarSql(InternalCommands.Sql data)
         {
-            if(string.IsNullOrWhiteSpace(data.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Query) || data.Log == null)
+            bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+            if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null)
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
+            if (hasQuery)
+            {
+                data.ClientOptions.Execute.TrimEnd(';');
+                data.ClientOptions.Execute += ";";
+            }
+            else
+            {
+                data.ClientOptions.Execute = File.ReadAllText(data.ClientOptions.File);
+            }
+
             _pulsarManager.Tell(data);
-            var hasRow = true;
-            while (hasRow)
+            while (true)
             {
                 if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, CancellationToken.None))
                 {
-                    hasRow = sqlData.HasRow;
                     yield return sqlData;
                 }
                 else
@@ -266,20 +276,32 @@ namespace SharpPulsar.Akka
         }
         public IEnumerable<LiveSqlData> PulsarSql(LiveSql data)
         {
-            if (string.IsNullOrWhiteSpace(data.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.Command) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
+            bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+            if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
-            if (!data.Command.Contains("__publish_time__ > {time}"))
+
+            if (hasQuery)
             {
-                if (data.Command.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
+                data.ClientOptions.Execute.TrimEnd(';');
+                data.ClientOptions.Execute += ";";
+            }
+            else
+            {
+                data.ClientOptions.Execute = File.ReadAllText(data.ClientOptions.File);
+            }
+
+            if (!data.ClientOptions.Execute.Contains("__publish_time__ > {time}"))
+            {
+                if (data.ClientOptions.Execute.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new ArgumentException("add '__publish_time__ > {time}' to where clause");
                 }
-                throw new ArgumentException("add 'where __publish_time__ > {time}' to '"+data.Command+"'");
+                throw new ArgumentException("add 'where __publish_time__ > {time}' to '"+data.ClientOptions.Execute + "'");
             }
             if(!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
 
-            _pulsarManager.Tell(new LiveSql(data.Command, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Server, data.Log, data.ExceptionHandler));
+            _pulsarManager.Tell(new LiveSql(data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(),data.Log, data.ExceptionHandler));
             
             foreach (var liveData in _managerState.LiveDataQueue.GetConsumingEnumerable())
             {
@@ -607,7 +629,7 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
             var topic = TopicName.Get(entries.Topic).ToString();
 
-            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server));
+            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server, entries.Source));
             if (_managerState.MaxQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
             {
                 return msg;
@@ -635,7 +657,7 @@ namespace SharpPulsar.Akka
             var max = Math.Min(replay.To, replay.Max);
             var takeCount = max - replay.From;
 
-            _pulsarManager.Tell(new NextPlay(topic, max, @from, replay.To, replay.Tagged));
+            _pulsarManager.Tell(new NextPlay(topic, max, @from, replay.To, replay.Source, replay.Tagged));
             var count = 1;
             if (customHandler == null)
             {
@@ -710,7 +732,7 @@ namespace SharpPulsar.Akka
             var max = Math.Min(replay.To, replay.Max);
             var takeCount = max - replay.From;
 
-            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, @from, replay.To, max, replay.Tag, replay.Tagged);
+            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, @from, replay.To, max, replay.Tag, replay.Tagged, replay.Source);
             
             _pulsarManager.Tell(start);
 

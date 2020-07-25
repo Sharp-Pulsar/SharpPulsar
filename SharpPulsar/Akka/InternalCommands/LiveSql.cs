@@ -1,25 +1,22 @@
 ﻿
 using System;
-using System.Globalization;
+using SharpPulsar.Akka.Sql.Client;
 
 namespace SharpPulsar.Akka.InternalCommands
 {
     public class LiveSql
     {
-        public LiveSql(string command, int frequency, DateTime startAtPublishTime, string topic, string server, Action<string> log, Action<Exception> exceptionHandler)
+        public LiveSql(ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
         {
-            Command = command;
+            ClientOptions = options;
             Frequency = frequency;
             StartAtPublishTime = startAtPublishTime;
             Topic = topic;
-            Server = server;
             Log = log;
             ExceptionHandler = exceptionHandler;
         }
         public Action<Exception> ExceptionHandler { get; }
         public Action<string> Log { get; }
-        public string Server { get; }
-        public string Command { get; }
         /// <summary>
         /// Frequency in Milliseconds
         /// </summary>
@@ -29,5 +26,6 @@ namespace SharpPulsar.Akka.InternalCommands
         /// </summary>
         public DateTime StartAtPublishTime { get; }
         public string Topic { get; }
+        public ClientOptions ClientOptions { get; }
     }
 }

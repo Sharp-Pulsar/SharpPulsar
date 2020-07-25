@@ -1,25 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using SharpPulsar.Akka.Sql.Message;
 
 namespace SharpPulsar.Akka.Sql
 {
     public sealed class SqlData
     {
-        public SqlData(bool hasRow, int row, Dictionary<string, object> data, Dictionary<string, object> metadata, bool hasError = false, Exception exception = null)
+        public SqlData(IQueryResponse response)
         {
-            HasRow = hasRow;
-            Row = row;
-            Data = data;
-            Metadata = metadata;
-            HasError = hasError;
-            Exception = exception;
+            Response = response;
         }
-        public bool HasError { get; }
-        public Exception Exception { get; }
-        public bool HasRow { get; }
-        public int Row { get; }
-        public Dictionary<string, object> Data { get; }
-        public Dictionary<string, object> Metadata { get; }
+        public IQueryResponse Response { get; }
     }
 }

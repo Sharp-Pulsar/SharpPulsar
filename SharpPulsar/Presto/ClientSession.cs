@@ -22,7 +22,7 @@ namespace SharpPulsar.Presto
 {
 	public class ClientSession
 	{
-		public string Server { get; }
+		public Uri Server { get; }
 		public string User { get; }
 		public string Source { get; }
 		private readonly string _traceToken;
@@ -35,7 +35,7 @@ namespace SharpPulsar.Presto
 		private readonly IDictionary<string, string> _resourceEstimates;
 		private readonly IDictionary<string, string> _properties;
 		public string TransactionId { get; }
-		public long ClientRequestTimeout { get; }
+		public TimeSpan ClientRequestTimeout { get; }
 
 		public static Builder NewBuilder(ClientSession clientSession)
 		{
@@ -47,7 +47,7 @@ namespace SharpPulsar.Presto
 			return NewBuilder(session).WithoutTransactionId().Build();
 		}
 
-		public ClientSession(string server, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, long clientRequestTimeout)
+		public ClientSession(Uri server, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, TimeSpan clientRequestTimeout)
 		{
 			Server = Condition.RequireNonNull(server, "Server", "server is null");
 			User = user;
@@ -142,7 +142,7 @@ namespace SharpPulsar.Presto
 
 		public sealed class Builder
 		{
-			internal string Server;
+			internal Uri Server;
 			internal string User;
 			internal string Source;
 			internal string TraceToken;
@@ -158,7 +158,7 @@ namespace SharpPulsar.Presto
 			internal IDictionary<string, SelectedRole> Roles;
 			internal IDictionary<string, string> Credentials;
 			internal string TransactionId;
-			internal long ClientRequestTimeout;
+			internal TimeSpan ClientRequestTimeout;
 
 			public Builder(ClientSession clientSession)
 			{

@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Threading;
-using Akka.Util.Internal;
-using Avro.Generic;
-using DotNetty.Common.Utilities;
-using Google.Protobuf.Collections;
-using IdentityModel;
-using Org.BouncyCastle.Utilities;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using Akka.Actor;
+using Akka.Event;
+using SharpPulsar.Akka.Sql.Message;
+using SharpPulsar.Precondition;
 using SharpPulsar.Presto;
 using SharpPulsar.Presto.Facebook.Type;
 
@@ -30,390 +26,142 @@ namespace SharpPulsar.Akka.Sql.Client
 
 	public class Query
 	{
-        private readonly IStatementClient client;
-		private readonly bool debug;
+        private readonly IStatementClient _client;
+        private readonly ILoggingAdapter _log;
+        private readonly IActorRef _outPut;
 
-		public Query(IStatementClient client, bool debug)
+		public Query(IStatementClient client, IActorRef output, ILoggingAdapter log)
 		{
-			this.client = requireNonNull(client, "client is null");
-			this.debug = debug;
-		}
+			_client = Condition.RequireNonNull(client, "client is null");
+            _log = log;
+            _outPut = output;
+        }
 
-		public virtual Optional<string> SetCatalog
+		public string SetCatalog => _client.SetCatalog;
+
+        public string SetSchema => _client.SetSchema;
+
+        public virtual IDictionary<string, string> SetSessionProperties => _client.SetSessionProperties;
+
+        public virtual ISet<string> ResetSessionProperties => _client.ResetSessionProperties;
+
+        public virtual IDictionary<string, SelectedRole> SetRoles => _client.SetRoles;
+
+        public virtual IDictionary<string, string> AddedPreparedStatements => _client.AddedPreparedStatements;
+
+        public virtual ISet<string> DeallocatedPreparedStatements => _client.DeallocatedPreparedStatements;
+
+        public virtual string StartedTransactionId => _client.StartedTransactionId;
+
+        public virtual bool ClearTransactionId => _client.ClearTransactionId;
+
+        public bool RenderQueryOutput()
 		{
-			get
-			{
-				return client.SetCatalog;
-			}
-		}
-
-		public virtual Optional<string> SetSchema
-		{
-			get
-			{
-				return client.SetSchema;
-			}
-		}
-
-		public virtual IDictionary<string, string> SetSessionProperties
-		{
-			get
-			{
-				return client.SetSessionProperties;
-			}
-		}
-
-		public virtual ISet<string> ResetSessionProperties
-		{
-			get
-			{
-				return client.ResetSessionProperties;
-			}
-		}
-
-		public virtual IDictionary<string, SelectedRole> SetRoles
-		{
-			get
-			{
-				return client.SetRoles;
-			}
-		}
-
-		public virtual IDictionary<string, string> AddedPreparedStatements
-		{
-			get
-			{
-				return client.AddedPreparedStatements;
-			}
-		}
-
-		public virtual ISet<string> DeallocatedPreparedStatements
-		{
-			get
-			{
-				return client.DeallocatedPreparedStatements;
-			}
-		}
-
-		public virtual string StartedTransactionId
-		{
-			get
-			{
-				return client.StartedTransactionId;
-			}
-		}
-
-		public virtual bool ClearTransactionId
-		{
-			get
-			{
-				return client.ClearTransactionId;
-			}
-		}
-
-		public virtual bool renderOutput(PrintStream @out, CryptoRandom.OutputFormat outputFormat, bool interactive)
-		{
-			Thread clientThread = Thread.CurrentThread;
-			SignalHandler oldHandler = Signal.handle(SIGINT, signal =>
-			{
-			if (ignoreUserInterrupt.get() || client.ClientAborted)
-			{
-				return;
-			}
-			client.close();
-			clientThread.Interrupt();
-			});
-			try
-			{
-				return renderQueryOutput(@out, outputFormat, interactive);
-			}
-			finally
-			{
-				Signal.handle(SIGINT, oldHandler);
-				Thread.interrupted(); // clear interrupt status
-			}
-		}
-
-		private bool renderQueryOutput(PrintStream @out, CryptoRandom.OutputFormat outputFormat, bool interactive)
-		{
-			StatusPrinter statusPrinter = null;
-			PrintStream errorChannel = interactive ? @out : System.err;
-			WarningsPrinter warningsPrinter = new PrintStreamWarningsPrinter(System.err);
-
-			if (interactive)
-			{
-				statusPrinter = new StatusPrinter(client, @out, debug);
-				statusPrinter.printInitialStatusUpdates();
-			}
-			else
-			{
-				processInitialStatusUpdates(warningsPrinter);
-			}
+            ProcessInitialStatusUpdates();
 
 			// if running or finished
-			if (client.Running || (client.Finished && client.finalStatusInfo().Error == null))
+			if (_client.Running || (_client.Finished && _client.FinalStatusInfo().Error == null))
 			{
-				QueryStatusInfo results = client.Running ? client.currentStatusInfo() : client.finalStatusInfo();
+				QueryStatusInfo results = _client.Running ? _client.CurrentStatusInfo() : _client.FinalStatusInfo();
 				if (results.UpdateType != null)
 				{
-					renderUpdate(errorChannel, results);
+					RenderUpdate(results);
 				}
 				else if (results.Columns == null)
 				{
-					errorChannel.printf("Query %s has no columns\n", results.Id);
+					_log.Error($"Query {results.Id} has no columns\n");
 					return false;
 				}
 				else
 				{
-					renderResults(@out, outputFormat, interactive, results.Columns);
+					RenderResults(results.Columns.ToList());
 				}
 			}
+			_outPut.Tell(new StatsResponse(_client.Stats));
+			Condition.CheckArgument(!_client.Running);
 
-			checkState(!client.Running);
+            // Print all warnings at the end of the query
+            _log.Debug(JsonSerializer.Serialize(_client.FinalStatusInfo().Warnings, new JsonSerializerOptions{WriteIndented = true}));
 
-			if (statusPrinter != null)
+			if (_client.ClientAborted)
 			{
-				// Print all warnings at the end of the query
-				(new PrintStreamWarningsPrinter(System.err)).print(client.finalStatusInfo().Warnings, true, true);
-				statusPrinter.printFinalInfo();
-			}
-			else
-			{
-				// Print remaining warnings separated
-				warningsPrinter.print(client.finalStatusInfo().Warnings, true, true);
-			}
-
-			if (client.ClientAborted)
-			{
-				errorChannel.println("Query aborted by user");
+				_log.Debug("Query aborted by user");
 				return false;
 			}
-			if (client.ClientError)
+			if (_client.ClientError)
 			{
-				errorChannel.println("Query is gone (server restarted?)");
+				_log.Debug("Query is gone (server restarted?)");
 				return false;
 			}
 
-			verify(client.Finished);
-			if (client.finalStatusInfo().Error != null)
-			{
-				renderFailure(errorChannel);
-				return false;
+			if (_client.FinalStatusInfo().Error != null || _client.FinalStatusInfo().Warnings != null)
+            {
+                var error = _client.FinalStatusInfo().Error;
+                var warning = _client.FinalStatusInfo().Warnings;
+				_log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions{WriteIndented = true}));
+				
+                _outPut.Tell(new ErrorResponse(error, warning.ToList()));
+                return false;
 			}
 
 			return true;
 		}
 
-		private void processInitialStatusUpdates(WarningsPrinter warningsPrinter)
+        private void RenderResults(List<Column> columns)
+        {
+            while (_client.Running)
+            {
+                var currentData = _client.CurrentData().Data.ToList();
+                var data = new Dictionary<string, object>();
+                var metadata = new Dictionary<string, object>();
+                for (var i = 0; i < currentData.Count; i++)
+                {
+                    var col = columns[i].Name;
+                    var value = currentData[i];
+                    if (col.StartsWith("__") && col.EndsWith("__"))
+                    {
+                        metadata[col.Trim('_')] = value;
+                    }
+                    else
+                    {
+                        data[col] = value;
+                    }
+				}
+                _outPut.Tell(new DataResponse(data, metadata));
+				_client.Advance();
+            }
+        }
+		private void ProcessInitialStatusUpdates()
 		{
-			while (client.Running && (client.currentData().Data == null))
+			while (_client.Running && (_client.CurrentData().Data == null))
 			{
-				warningsPrinter.print(client.currentStatusInfo().Warnings, true, false);
-				client.advance();
+				_log.Debug(JsonSerializer.Serialize(_client.CurrentStatusInfo().Warnings, new JsonSerializerOptions{WriteIndented = true}));
+				_client.Advance();
 			}
 			IList<PrestoWarning> warnings;
-			if (client.Running)
+			if (_client.Running)
 			{
-				warnings = client.currentStatusInfo().Warnings;
+				warnings = _client.CurrentStatusInfo().Warnings;
 			}
 			else
 			{
-				warnings = client.finalStatusInfo().Warnings;
+				warnings = _client.FinalStatusInfo().Warnings;
 			}
-			warningsPrinter.print(warnings, false, true);
+			_log.Debug(JsonSerializer.Serialize(warnings, new JsonSerializerOptions{WriteIndented = true}));
 		}
 
-		private void renderUpdate(PrintStream @out, QueryStatusInfo results)
+		private void RenderUpdate(QueryStatusInfo results)
 		{
 			string status = results.UpdateType;
 			if (results.UpdateCount != null)
 			{
-				long count = results.UpdateCount;
-				status += format(": %s row%s", count, (count != 1) ? "s" : "");
+				long count = results.UpdateCount.Value;
+				var row = count != 1? "s" : string.Empty;
+				status += $": {count} row{row}";
 			}
-			@out.println(status);
-			discardResults();
+			_log.Info(status);
 		}
-
-		private void discardResults()
-		{
-			try
-			{
-					using (OutputHandler handler = new OutputHandler(new NullPrinter()))
-					{
-					handler.processRows(client);
-					}
-			}
-			catch (IOException e)
-			{
-				throw new UncheckedIOException(e);
-			}
-		}
-
-		private void renderResults(PrintStream @out, CryptoRandom.OutputFormat outputFormat, bool interactive, IList<Column> columns)
-		{
-			try
-			{
-				doRenderResults(@out, outputFormat, interactive, columns);
-			}
-			catch (QueryAbortedException)
-			{
-				System.Console.WriteLine("(query aborted by user)");
-				client.close();
-			}
-			catch (IOException e)
-			{
-				throw new UncheckedIOException(e);
-			}
-		}
-        private void doRenderResults(PrintStream @out, CryptoRandom.OutputFormat format, bool interactive, IList<Column> columns)
-		{
-			IList<string> fieldNames = Lists.transform(columns, Column.getName);
-			if (interactive)
-			{
-				pageOutput(format, fieldNames);
-			}
-			else
-			{
-				sendOutput(@out, format, fieldNames);
-			}
-		}
-
-        private void pageOutput(CryptoRandom.OutputFormat format, IList<string> fieldNames)
-		{
-			try
-			{
-					using (Pager pager = Pager.create(), ThreadInterruptor clientThread = new ThreadInterruptor(), Writer<> writer = createWriter(pager), OutputHandler handler = createOutputHandler(format, writer, fieldNames))
-					{
-					if (!pager.NullPager)
-					{
-						// ignore the user pressing ctrl-C while in the pager
-						ignoreUserInterrupt.set(true);
-						pager.FinishFuture.thenRun(() =>
-						{
-						ignoreUserInterrupt.set(false);
-						client.close();
-						clientThread.interrupt();
-						});
-					}
-					handler.processRows(client);
-					}
-			}
-			catch (Exception e) when (e is Exception || e is IOException)
-			{
-				if (client.ClientAborted && !(e is QueryAbortedException))
-				{
-					throw new QueryAbortedException(e);
-				}
-				throw e;
-			}
-		}
-        private void sendOutput(PrintStream @out, CryptoRandom.OutputFormat format, IList<string> fieldNames)
-		{
-			using (OutputHandler handler = createOutputHandler(format, createWriter(@out), fieldNames))
-			{
-				handler.processRows(client);
-			}
-		}
-
-		private static OutputHandler createOutputHandler(CryptoRandom.OutputFormat format, Writer writer, IList<string> fieldNames)
-		{
-			return new OutputHandler(createOutputPrinter(format, writer, fieldNames));
-		}
-
-		private static OutputPrinter createOutputPrinter(CryptoRandom.OutputFormat format, Writer writer, IList<string> fieldNames)
-		{
-			switch (format)
-			{
-				case CryptoRandom.OutputFormat.ALIGNED:
-					return new AlignedTablePrinter(fieldNames, writer);
-				case CryptoRandom.OutputFormat.VERTICAL:
-					return new VerticalRecordPrinter(fieldNames, writer);
-				case CryptoRandom.OutputFormat.CSV:
-					return new CsvPrinter(fieldNames, writer, false);
-				case CryptoRandom.OutputFormat.CSV_HEADER:
-					return new CsvPrinter(fieldNames, writer, true);
-				case CryptoRandom.OutputFormat.TSV:
-					return new TsvPrinter(fieldNames, writer, false);
-				case CryptoRandom.OutputFormat.TSV_HEADER:
-					return new TsvPrinter(fieldNames, writer, true);
-				case CryptoRandom.OutputFormat.NULL:
-					return new NullPrinter();
-			}
-			throw new Exception(format + " not supported");
-		}
-
-		private static Writer createWriter(Stream @out)
-		{
-			return new StreamWriter(@out, UTF_8);
-		}
-
-		public virtual void Dispose()
-		{
-			client.close();
-		}
-
-		public virtual void renderFailure(PrintStream @out)
-		{
-			QueryStatusInfo results = client.finalStatusInfo();
-			QueryError error = results.Error;
-			checkState(error != null);
-
-			@out.printf("Query %s failed: %s%n", results.Id, error.Message);
-			if (debug && (error.FailureInfo != null))
-			{
-				error.FailureInfo.toException().printStackTrace(@out);
-			}
-			if (error.ErrorLocation != null)
-			{
-				renderErrorLocation(client.Query, error.ErrorLocation, @out);
-			}
-			@out.println();
-		}
-
-		private static void renderErrorLocation(string query, ErrorLocation location, PrintStream @out)
-		{
-			IList<string> lines = ImmutableList.copyOf(Splitter.on('\n').Split(query).GetEnumerator());
-
-			string errorLine = lines[location.LineNumber - 1];
-			string good = errorLine.Substring(0, location.ColumnNumber - 1);
-			string bad = errorLine.Substring(location.ColumnNumber - 1);
-
-			if ((location.LineNumber == lines.Count) && bad.Trim().Length == 0)
-			{
-				bad = " <EOF>";
-			}
-
-			if (REAL_TERMINAL)
-			{
-				Ansi ansi = Ansi.ansi();
-
-				ansi.fg(Ansi.Color.CYAN);
-				for (int i = 1; i < location.LineNumber; i++)
-				{
-					ansi.a(lines[i - 1]).newline();
-				}
-				ansi.a(good);
-
-				ansi.fg(Ansi.Color.RED);
-				ansi.a(bad).newline();
-				for (int i = location.LineNumber; i < lines.Count; i++)
-				{
-					ansi.a(lines[i]).newline();
-				}
-
-				ansi.reset();
-				@out.print(ansi);
-			}
-			else
-			{
-				string prefix = format("LINE %s: ", location.LineNumber);
-				string padding = Strings.repeat(" ", prefix.Length + (location.ColumnNumber - 1));
-				@out.println(prefix + errorLine);
-				@out.println(padding + "^");
-			}
-		}
-
+		
 	}
 
 }

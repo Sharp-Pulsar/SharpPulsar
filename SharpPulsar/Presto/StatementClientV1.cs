@@ -36,7 +36,7 @@ namespace SharpPulsar.Presto
 		private QueryResults _currentResults;
 
 		public TimeZoneKey TimeZone { get; }
-		private readonly long _requestTimeoutNanos;
+		private readonly TimeSpan _requestTimeoutNanos;
 		private readonly string _user;
 
 		private State _state = State.Running;
@@ -72,7 +72,7 @@ namespace SharpPulsar.Presto
 
 		private HttpRequestMessage BuildQueryRequest(ClientSession session, string query)
 		{
-			var url = new Uri($"{session.Server.TrimEnd('/')}/v1/statement");
+			var url = new Uri($"{session.Server.AbsoluteUri.TrimEnd('/')}/v1/statement");
 			if (url == null)
 			{
 				throw new ClientException("Invalid server URL: " + session.Server);
