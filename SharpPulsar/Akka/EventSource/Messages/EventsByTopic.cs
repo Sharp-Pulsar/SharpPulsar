@@ -1,4 +1,6 @@
 ﻿
+using SharpPulsar.Akka.InternalCommands.Consumer;
+
 namespace SharpPulsar.Akka.EventSource.Messages
 {
     /// <summary>
@@ -18,15 +20,16 @@ namespace SharpPulsar.Akka.EventSource.Messages
     /// stored events is provided by <see cref="CurrentEventsByTopic"/>.
     /// </para>
     /// </summary>
-    public sealed class EventsByTopic
+    public sealed class EventsByTopic : IEventSourceMessage
     {
-        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId)
+        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source)
         {
             Tenant = tenant;
             Namespace = ns;
             Topic = topic;
             FromSequenceId = fromSequenceId;
             ToSequenceId = toSequenceId;
+            Source = source;
         }
 
         public string Tenant { get; }
@@ -34,5 +37,6 @@ namespace SharpPulsar.Akka.EventSource.Messages
         public string Topic { get; }
         public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
+        public SourceType Source { get; }
     }
 }

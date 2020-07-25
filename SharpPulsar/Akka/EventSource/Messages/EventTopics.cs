@@ -1,5 +1,6 @@
 ﻿
 using System;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 
 namespace SharpPulsar.Akka.EventSource.Messages
 {
@@ -19,15 +20,17 @@ namespace SharpPulsar.Akka.EventSource.Messages
     /// </para>
     /// A dedicated Actor will be created for each <see cref="EventTopics"/> request
     /// </summary>
-    public sealed class EventTopics
+    public sealed class EventTopics : IEventSourceMessage
     {
-        public EventTopics(string tenant, string ns)
+        public EventTopics(string tenant, string ns, SourceType source)
         {
             Tenant = tenant;
             Namespace = ns;
+            Source = source;
         }
 
         public string Tenant { get; }
         public string Namespace { get; }
+        public SourceType Source { get; }
     }
 }

@@ -15,7 +15,7 @@ using SharpPulsar.Utility;
 
 namespace SharpPulsar.Akka.EventSource.Pulsar
 {
-    public class PulsarTopicReplayActor : ReceiveActor, IWithUnboundedStash
+    public class PulsarSourceActor : ReceiveActor, IWithUnboundedStash
     {
         private readonly StartReplayTopic _replayTopic;
         private readonly IActorRef _pulsarManager;
@@ -24,7 +24,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         private IActorRef _consumer;
         private readonly Tag _tag;
         private long _lastConsumedSequenceId;
-        public PulsarTopicReplayActor(StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
+        public PulsarSourceActor(StartReplayTopic replayTopic, IActorRef pulsarManager, IActorRef network)
         {
             _tag = replayTopic.Tag;
             _topicName = TopicName.Get(replayTopic.ReaderConfigurationData.TopicName);
@@ -152,7 +152,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
 
         public static Props Prop(StartReplayTopic startReplayTopic, IActorRef pulsarManager, IActorRef network)
         {
-            return Props.Create(()=> new PulsarTopicReplayActor(startReplayTopic, pulsarManager, network));
+            return Props.Create(()=> new PulsarSourceActor(startReplayTopic, pulsarManager, network));
         }
         public IStash Stash { get; set; }
     }

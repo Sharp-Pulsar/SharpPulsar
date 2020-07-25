@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.EventSource;
-using SharpPulsar.Akka.EventSource.Pulsar;
+using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -91,17 +90,9 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("ConsumerManager").Tell(cmd);
             });
-            Receive<GetNumberOfEntries>(cmd =>
+            Receive<IEventSourceMessage>(cmd =>
             {
-                Context.Child("ReplayManager").Tell(cmd);
-            });
-            Receive<StartReplayTopic>(cmd =>
-            {
-                Context.Child("ReplayManager").Tell(cmd);
-            });
-            Receive<NextPlay>(cmd =>
-            {
-                Context.Child("ReplayManager").Tell(cmd);
+                Context.Child("EventSourceManager").Tell(cmd);
             });
             Receive<LiveSql>(cmd =>
             {
@@ -159,7 +150,7 @@ namespace SharpPulsar.Akka
             Receive<ConnectedServerInfo>(s =>
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network, Self), "ConsumerManager");
-                Context.ActorOf(PulsarReplayCoordinator.Prop( _network, Self), "ReplayManager");
+                Context.ActorOf(EventSourceManager.Prop( _network, Self), "EventSourceManager");
                 Context.ActorOf(SqlManager.Prop(Self), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}, Self), "AdminManager");
