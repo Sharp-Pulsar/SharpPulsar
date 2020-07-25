@@ -38,7 +38,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         {
             var adminRestapi = new PulsarAdminRESTAPI(_replayTopic.AdminUrl, new HttpClient(), true);
             var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName);
-            var compute = new ComputeMessageId(data, _replayTopic.From, _replayTopic.To, _replayTopic.Max);
+            var compute = new MessageIdHelper(data, _replayTopic.From, _replayTopic.To, _replayTopic.Max);
             var (ledger, entry, max, _) = compute.GetFrom();
            
             var partition = _topicName.PartitionIndex;
@@ -143,7 +143,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             var adminRestapi = new PulsarAdminRESTAPI(_replayTopic.AdminUrl, new HttpClient(), true);
             var data = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant, _topicName.NamespaceObject.LocalName, _topicName.LocalName, false);
             if (data == null) return;
-            var compute = new ComputeMessageId(data, @from, play.To, play.Max);
+            var compute = new MessageIdHelper(data, @from, play.To, play.Max);
             var (_, _, max, _) = compute.GetFrom();
             if(max != null)
                 _consumer.Tell(new SendFlow(max));

@@ -1,7 +1,7 @@
-﻿
-using SharpPulsar.Akka.InternalCommands.Consumer;
+﻿using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Akka.Sql.Client;
 
-namespace SharpPulsar.Akka.EventSource.Messages
+namespace SharpPulsar.Akka.EventSource.Messages.Presto
 {
     /// <summary>
     /// <see cref="EventsByTag"/> is used for retrieving events that were marked with
@@ -13,9 +13,9 @@ namespace SharpPulsar.Akka.EventSource.Messages
     /// Corresponding query that is completed when it reaches the end of the currently
     /// stored events is provided by <see cref="CurrentEventsByTag"/>.
     /// </summary>
-    public sealed class EventsByTag : IEventSourceMessage
+    public sealed class EventsByTag : IPrestoEventSourceMessage
     {
-        public EventsByTag(string tenant, string ns, long fromSequenceId, long toSequenceId, Tag tag, SourceType source)
+        public EventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, SourceType source,  ClientOptions options)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -23,12 +23,16 @@ namespace SharpPulsar.Akka.EventSource.Messages
             ToSequenceId = toSequenceId;
             Tag = tag;
             Source = source;
+            Topic = topic;
+            Options = options;
         }
         public Tag Tag { get; }
         public string Tenant { get; }
         public string Namespace { get; }
+        public string Topic { get; }
         public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
+        public ClientOptions Options { get; }
     }
 }

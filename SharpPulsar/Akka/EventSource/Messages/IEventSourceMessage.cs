@@ -8,5 +8,7 @@ namespace SharpPulsar.Akka.EventSource.Messages
         public string Tenant { get; }
         public string Namespace { get; }
         public string Topic { get; }
+        public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
+        public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
     }
 }

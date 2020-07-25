@@ -5,8 +5,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Routing;
+using Nito.AsyncEx;
 using PulsarAdmin;
+using PulsarAdmin.Models;
 using SharpPulsar.Akka.EventSource.Messages;
+using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
@@ -29,7 +32,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
-            Context.ActorOf(PulsarTaggedAggregateRoot.Prop(network, pulsarManager), "PulsarTagged");
+            Context.ActorOf(PulsarTaggedAggregateRoot.Prop(network, pulsarManager), "Tagged");
             Receive<CurrentEventsByTopic>(c => { });
             Receive<EventsByTopic>(c => { });
             Receive<CurrentEventsByTag>(c => { });
@@ -122,12 +125,13 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             NewPartitionMetadataRequest(replayTopic.ReaderConfigurationData.TopicName);
         }
 
-        private void NewPartitionMetadataRequest(string topic)
+        private Partitions NewPartitionMetadataRequest(string topic)
         {
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewPartitionMetadataRequest(topic, requestId);
             var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
-            _network.Tell(pay);
+            var ask = _network.Ask<Partitions>(pay);
+            return SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
         
         public static Props Prop(IActorRef network, IActorRef pulsarManager)
@@ -137,4 +141,57 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         public IStash Stash { get; set; }
     }
 
+    public class CurrentEventsByTopicActor : ReceiveActor
+    {
+        private readonly IEventSourceMessage _message;
+        private readonly HttpClient _httpClient;
+        private readonly IActorRef _network;
+        private readonly IActorRef _pulsarManager;
+        private PersistentTopicInternalStats _persistentTopicInternalStats;
+        private EventMessageId _startMessageId;
+        private EventMessageId _endMessageId;
+        public CurrentEventsByTopicActor(IEventSourceMessage message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        {
+            _message = message;
+            _httpClient = httpClient;
+            _network = network;
+            _pulsarManager = pulsarManager;
+        }
+        private Partitions NewPartitionMetadataRequest(string topic)
+        {
+            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
+            var request = Commands.NewPartitionMetadataRequest(topic, requestId);
+            var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
+            var ask = _network.Ask<Partitions>(pay);
+            return SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
+        }
+        protected override void PreStart()
+        {
+            var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
+            _persistentTopicInternalStats = adminRestapi.GetInternalStats1(_message.Tenant,_message.Namespace, _message.Topic);
+            var start = MessageIdHelper.Calculate(_message.FromSequenceId, _persistentTopicInternalStats);
+            _startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
+            var end = MessageIdHelper.Calculate(_message.ToSequenceId, _persistentTopicInternalStats);
+            _endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
+        }
+
+        public static Props Prop()
+        {
+            return Props.Create(()=> new CurrentEventsByTopicActor());
+        }
+    }
+
+    public sealed class EventMessageId
+    {
+        public EventMessageId(long ledgerId, long entryId, long index)
+        {
+            LedgerId = ledgerId;
+            EntryId = entryId;
+            Index = index;
+        }
+
+        public long LedgerId { get; }
+        public long EntryId { get; }
+        public long Index { get; }
+    }
 }

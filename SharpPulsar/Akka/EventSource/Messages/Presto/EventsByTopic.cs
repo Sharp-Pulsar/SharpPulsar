@@ -1,7 +1,8 @@
 ﻿
 using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Akka.Sql.Client;
 
-namespace SharpPulsar.Akka.EventSource.Messages
+namespace SharpPulsar.Akka.EventSource.Messages.Presto
 {
     /// <summary>
     /// <see cref="EventsByTopic"/> is used for retrieving events for a specific topics 
@@ -20,9 +21,9 @@ namespace SharpPulsar.Akka.EventSource.Messages
     /// stored events is provided by <see cref="CurrentEventsByTopic"/>.
     /// </para>
     /// </summary>
-    public sealed class EventsByTopic : IEventSourceMessage
+    public sealed class EventsByTopic : IPrestoEventSourceMessage
     {
-        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source)
+        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, ClientOptions options)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -30,6 +31,7 @@ namespace SharpPulsar.Akka.EventSource.Messages
             FromSequenceId = fromSequenceId;
             ToSequenceId = toSequenceId;
             Source = source;
+            Options = options;
         }
 
         public string Tenant { get; }
@@ -38,5 +40,6 @@ namespace SharpPulsar.Akka.EventSource.Messages
         public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
+        public ClientOptions Options { get; }
     }
 }

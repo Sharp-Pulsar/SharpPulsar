@@ -56,7 +56,7 @@ namespace SharpPulsar.Test
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 1, 9, 9223372036854775807);
+                    var compute = new MessageIdHelper(data, 1, 9, 9223372036854775807);
                     var result = compute.GetFrom();
                    to = result.To.Value;
                     _output.WriteLine(result.To.Value.ToString());
@@ -82,7 +82,7 @@ namespace SharpPulsar.Test
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 1, 6, 6);
+                    var compute = new MessageIdHelper(data, 1, 6, 6);
                     var result = compute.GetFrom();
                    to = result.To.Value;
                     _output.WriteLine(result.To.Value.ToString());
@@ -107,7 +107,7 @@ namespace SharpPulsar.Test
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 1, 100, -2);
+                    var compute = new MessageIdHelper(data, 1, 100, -2);
                     var result = compute.GetFrom();
                     max = result.Max.Value;
                     _output.WriteLine(result.Entry.Value.ToString());
@@ -132,7 +132,7 @@ namespace SharpPulsar.Test
                 if (e != null)
                 {
                     var data = (PersistentTopicInternalStats)e;
-                    var compute = new ComputeMessageId(data, 1, 100, 150);
+                    var compute = new MessageIdHelper(data, 1, 100, 150);
                     var result = compute.GetFrom();
                     max = result.Max.Value;
                     _output.WriteLine(result.Entry.Value.ToString());

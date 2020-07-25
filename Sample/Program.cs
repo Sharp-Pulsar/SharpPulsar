@@ -1776,7 +1776,7 @@ namespace Samples
         private static void GetPersistentTopicStats(PulsarSystem system, string server, string tenant, string ns, string topic, long fro, long to, long max)
         {
             var data = system.PulsarAdmin<PersistentTopicInternalStats>(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { tenant, ns, topic, false }, null, e => Console.WriteLine(e.ToString()), server, l => Console.WriteLine(l)));
-            var compute = new ComputeMessageId(data, fro, to, max);
+            var compute = new MessageIdHelper(data, fro, to, max);
             var result = compute.GetFrom();
             Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Max}, HighestSequence:{result.To}");
         }
