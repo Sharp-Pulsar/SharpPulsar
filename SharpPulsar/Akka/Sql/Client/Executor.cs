@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Akka.Actor;
 using Akka.Event;
@@ -12,30 +11,25 @@ namespace SharpPulsar.Akka.Sql.Client
 {
     public class Executor
 	{
+        private readonly ClientSession _clientSession;
         private readonly ClientOptions _clientOptions;
-        private readonly IActorRef _manager;
+        private readonly IActorRef _handler;
         private readonly ILoggingAdapter _log;
 
-        public Executor(ClientOptions options, IActorRef pulsarManager, ILoggingAdapter log)
+        public Executor(ClientSession session, ClientOptions options, IActorRef handler, ILoggingAdapter log)
         {
+            _clientSession = session;
             _clientOptions = options;
-            _manager = pulsarManager;
+            _handler = handler;
             _log = log;
         }
 
 		public bool Run()
 		{
-			ClientSession session = _clientOptions.ToClientSession();
-			try
-            {
-                var queryRunner = new QueryRunner(session, _clientOptions.AccessToken, _clientOptions.User, _clientOptions.Password);
-                return ExecuteCommand(queryRunner, _clientOptions.Execute);
-			}
-			finally
-			{
-				
-			}
-		}
+			var session = _clientSession;
+            var queryRunner = new QueryRunner(session, _clientOptions.AccessToken, _clientOptions.User, _clientOptions.Password);
+            return ExecuteCommand(queryRunner, _clientOptions.Execute);
+        }
 
 		private bool ExecuteCommand(QueryRunner queryRunner, string query)
 		{
@@ -46,8 +40,8 @@ namespace SharpPulsar.Akka.Sql.Client
 		{
 			try
 			{
-				Query query = queryRunner.StartQuery(sql, _manager, _log);
-				bool success = query.RenderQueryOutput();
+				var query = queryRunner.StartQuery(sql, _handler, _log);
+				var success = query.MaterializeQueryOutput();
 
 				var session = queryRunner.Session;
 
@@ -64,9 +58,9 @@ namespace SharpPulsar.Akka.Sql.Client
 					session = ClientSession.StripTransactionId(session);
 				}
 
-				ClientSession.Builder builder = ClientSession.NewBuilder(session);
+				var builder = ClientSession.NewBuilder(session);
 
-				if (!string.ReferenceEquals(query.StartedTransactionId, null))
+				if (!string.IsNullOrWhiteSpace(query.StartedTransactionId))
 				{
 					builder = builder.WithTransactionId(query.StartedTransactionId);
 				}

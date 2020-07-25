@@ -159,7 +159,7 @@ namespace SharpPulsar.Akka
             Receive<ConnectedServerInfo>(s =>
             {
                 Context.ActorOf(ConsumerManager.Prop(_config, _network, Self), "ConsumerManager");
-                Context.ActorOf(ReplayCoordinator.Prop( _network, Self), "ReplayManager");
+                Context.ActorOf(PulsarReplayCoordinator.Prop( _network, Self), "ReplayManager");
                 Context.ActorOf(SqlManager.Prop(Self), "SqlManager");
                 var serverLists = _serviceNameResolver.AddressList().Select(x => $"{_config.WebServiceScheme}://{x.Host}:{_config.WebServicePort}").ToArray();
                 Context.ActorOf(AdminManager.Prop(new AdminConfiguration {BrokerWebServiceUrl = serverLists}, Self), "AdminManager");

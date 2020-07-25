@@ -261,7 +261,7 @@ namespace SharpPulsar.Akka
                 data.ClientOptions.Execute = File.ReadAllText(data.ClientOptions.File);
             }
 
-            _pulsarManager.Tell(data);
+            _pulsarManager.Tell(new SqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.ExceptionHandler, data.Log));
             while (true)
             {
                 if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, CancellationToken.None))
@@ -277,6 +277,7 @@ namespace SharpPulsar.Akka
         public IEnumerable<LiveSqlData> PulsarSql(LiveSql data)
         {
             bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+            
             if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
 
@@ -296,14 +297,15 @@ namespace SharpPulsar.Akka
                 {
                     throw new ArgumentException("add '__publish_time__ > {time}' to where clause");
                 }
-                throw new ArgumentException("add 'where __publish_time__ > {time}' to '"+data.ClientOptions.Execute + "'");
+                throw new ArgumentException("add 'where __publish_time__ > {time}' to '"+ data.ClientOptions.Execute + "'");
             }
             if(!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
 
-            _pulsarManager.Tell(new LiveSql(data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(),data.Log, data.ExceptionHandler));
-            
-            foreach (var liveData in _managerState.LiveDataQueue.GetConsumingEnumerable())
+            _pulsarManager.Tell(new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(),data.Log, data.ExceptionHandler));
+
+            var results = _managerState.LiveDataQueue.GetConsumingEnumerable();
+            foreach (var liveData in results)
             {
                 yield return liveData;
             }

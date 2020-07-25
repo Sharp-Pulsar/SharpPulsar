@@ -9,18 +9,18 @@ namespace SharpPulsar.Akka.Sql
     {
         public SqlManager(IActorRef pulsarManager)
         {
-            Receive((InternalCommands.Sql q) =>
+            Receive((SqlSession q) =>
             {
-                var srv = Regex.Replace(q.Server, @"[^\w\d]", "");
+                var srv = Regex.Replace(q.ClientSession.Server.Host, @"[^\w\d]", "");
                 var dest = Context.Child(srv);
                 if (dest.IsNobody())
-                    dest = Context.ActorOf(SqlWorker.Prop(q.Server, pulsarManager), srv);
+                    dest = Context.ActorOf(SqlWorker.Prop(pulsarManager), srv);
                 dest.Tell(q);
             });
 
-            Receive((LiveSql q) =>
+            Receive((LiveSqlSession q) =>
             {
-                var srv = Regex.Replace(q.Server, @"[^\w\d]", "");
+                var srv = Regex.Replace(q.ClientSession.Server.Host, @"[^\w\d]", "");
                 var dest = Context.Child(srv);
                 if (dest.IsNobody())
                     dest = Context.ActorOf(LiveQueryCoordinator.Prop(pulsarManager));

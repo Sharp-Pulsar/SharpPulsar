@@ -35,19 +35,19 @@ namespace SharpPulsar.Akka.Sql.Client
 			SetupTokenAuth(_httpClient, session, accessToken);
 		}
 
-		public virtual ClientSession Session
+		public ClientSession Session
 		{
 			get => _session;
             set => _session = Condition.RequireNonNull(value, "session is null");
         }
 
 		
-        public virtual Query StartQuery(string query, IActorRef output, ILoggingAdapter log)
+        public Query StartQuery(string query, IActorRef output, ILoggingAdapter log)
 		{
 			return new Query(StartInternalQuery(_session, query), output, log);
 		}
 
-		public virtual IStatementClient StartInternalQuery(string query)
+		public IStatementClient StartInternalQuery(string query)
 		{
 			return StartInternalQuery(ClientSession.StripTransactionId(_session), query);
 		}
@@ -57,7 +57,7 @@ namespace SharpPulsar.Akka.Sql.Client
             return StatementClientFactory.NewStatementClient(_httpClient, session, query);
 		}
 
-		public virtual void Dispose()
+		public void Dispose()
 		{
 			_httpClient.Dispose();
 		}

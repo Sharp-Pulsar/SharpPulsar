@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.Akka.EventSource.Presto
 {
-    public class EventSourceManager
+    class PrestoTopicReplayActor
     {
     }
 }

@@ -1,32 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
 using Akka.Actor;
-using PrestoSharp;
 using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Akka.Sql.Message;
 
 namespace SharpPulsar.Akka.Sql.Live
 {
     public class LiveQuery : ReceiveActor
     {
-        private readonly PrestoSqlDbConnection _connection;
-        private IActorRef _pulsarManager;
         private string _lastPublishTime;
-        private LiveSql _sql;
+        private readonly LiveSqlSession _sql;
+        private string _execute;
         private int _runCount;
-        public LiveQuery(IActorRef pulsar, LiveSql sql)
+        private readonly IActorContext _context;
+        private ICancelable _executeCancelable;
+        public LiveQuery(IActorRef pulsar, LiveSqlSession sql)
         {
-            _connection = new PrestoSqlDbConnection(sql.Server);
-            _connection.Open();//fake?
-            _pulsarManager = pulsar;
             _sql = sql;
+            _execute = sql.ClientOptions.Execute;
             var p = sql.StartAtPublishTime;
             _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
-            Context.System.Scheduler.ScheduleTellRepeatedly(TimeSpan.FromSeconds(0), TimeSpan.FromMilliseconds(_sql.Frequency), Self, new RunQuery(), Nobody.Instance );
-            Receive<RunQuery>(r => { Execute(); });
-            Receive<LiveSql>(l =>
+            _executeCancelable = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_sql.Frequency), Execute);
+            _context = Context;
+            Receive<IQueryResponse>(q => { pulsar.Tell(new LiveSqlData(q, _sql.Topic)); });
+            Receive<LiveSqlSession>(l =>
             {
-                _sql = l;
+                _execute = l.ClientOptions.Execute;
                 var pd = l.StartAtPublishTime;
                 _lastPublishTime = $"{pd.Year}-{pd.Month}-{pd.Day} {pd.Hour}:{pd.Minute}:{pd.Second}.{pd.Millisecond}";
             });
@@ -36,45 +35,24 @@ namespace SharpPulsar.Akka.Sql.Live
         {
             try
             {
-                var text = _sql.Command.Replace("{time}", $"timestamp '{_lastPublishTime}'");
+                var text = _execute.Replace("{time}", $"timestamp '{_lastPublishTime}'");
                 _sql.Log($"{_runCount} => Executing: {text}");
-                using var cmd = _connection.CreateCommand();
-                //check for __publish_time__ > {time} when submitting query
-                cmd.CommandText = text;
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    var data = new Dictionary<string, object>();
-                    var metadata = new Dictionary<string, object>();
-                    for (var i = 0; i < reader.FieldCount; i++)
-                    {
-                        var col = reader.GetName(i);
-                        var value = reader.GetValue(i);
-                        if (col.StartsWith("__") && col.EndsWith("__"))
-                        {
-                            metadata[col.Trim('_')] = value;
-                            if (col == "__publish_time__")
-                            {
-                                var pd = (DateTime)value;
-                                var current = DateTime.Parse(_lastPublishTime);
-                                if(pd > current)
-                                   _lastPublishTime = $"{pd.Year}-{pd.Month}-{pd.Day} {pd.Hour}:{pd.Minute}:{pd.Second}.{pd.Millisecond}";
-                            }
-                        }
-                        else
-                        {
-                            data[col] = value;
-                        }
-                    }
-                    _pulsarManager.Tell(new LiveSqlData(data, metadata, _sql.Topic));
-                }
-                
+                _sql.ClientOptions.Execute = text;
+                var q = _sql;
+                var executor = new Executor(q.ClientSession, q.ClientOptions, Self, Context.System.Log);
+                q.Log($"Executing: {q.ClientOptions.Execute}");
+                executor.Run();
+
             }
             catch (Exception ex)
             {
                 _sql.ExceptionHandler(ex);
             }
-
+            finally
+            {
+                _executeCancelable = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_sql.Frequency), Execute);
+                
+            }
             _runCount++;
         }
         protected override void Unhandled(object message)
@@ -84,10 +62,10 @@ namespace SharpPulsar.Akka.Sql.Live
 
         protected override void PostStop()
         {
-            _connection.Dispose();
+            _executeCancelable?.Cancel();
         }
 
-        public static Props Prop(IActorRef pulsar, LiveSql sql)
+        public static Props Prop(IActorRef pulsar, LiveSqlSession sql)
         {
             return Props.Create(() => new LiveQuery(pulsar, sql));
         }

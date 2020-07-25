@@ -10,7 +10,7 @@ namespace SharpPulsar.Akka.Sql.Live
         public LiveQueryCoordinator(IActorRef pulsar)
         {
             _pulsarManager = pulsar;
-            Receive<LiveSql>(l =>
+            Receive<LiveSqlSession>(l =>
             {
                 var topic = Regex.Replace(l.Topic, @"[^\w\d]", "");
                 var child = Context.Child(topic);

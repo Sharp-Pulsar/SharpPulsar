@@ -100,9 +100,9 @@ namespace SharpPulsar.Akka.Sql.Client
 		public static IDictionary<string, string> ToProperties(IList<ClientSessionProperty> sessionProperties)
 		{
 			var builder = new Dictionary<string, string>();
-			foreach (ClientSessionProperty sessionProperty in sessionProperties)
+			foreach (var sessionProperty in sessionProperties)
 			{
-				string name = sessionProperty.Name;
+				var name = sessionProperty.Name;
 				if (!string.IsNullOrWhiteSpace(sessionProperty.Catalog))
 				{
 					name = sessionProperty.Catalog + "." + name;
@@ -115,7 +115,7 @@ namespace SharpPulsar.Akka.Sql.Client
 		public static IDictionary<string, string> ToResourceEstimates(IList<ClientResourceEstimate> estimates)
 		{
 			var builder = new Dictionary<string, string>();
-			foreach (ClientResourceEstimate estimate in estimates)
+			foreach (var estimate in estimates)
 			{
 				builder.Add(estimate.Resource, estimate.Estimate);
 			}
@@ -125,7 +125,7 @@ namespace SharpPulsar.Akka.Sql.Client
 		public static IDictionary<string, string> ToExtraCredentials(IList<ClientExtraCredential> extraCredentials)
 		{
 			var builder = new Dictionary<string, string>();
-			foreach (ClientExtraCredential credential in extraCredentials)
+			foreach (var credential in extraCredentials)
 			{
 				builder.Add(credential.Name, credential.Value);
 			}
@@ -173,7 +173,7 @@ namespace SharpPulsar.Akka.Sql.Client
 				{
 					return false;
 				}
-				ClientResourceEstimate other = (ClientResourceEstimate) o;
+				var other = (ClientResourceEstimate) o;
 				return Equals(Resource, other.Resource) && Equals(Estimate, other.Estimate);
 			}
 
@@ -253,7 +253,7 @@ namespace SharpPulsar.Akka.Sql.Client
 				{
 					return false;
 				}
-				ClientSessionProperty other = (ClientSessionProperty) obj;
+				var other = (ClientSessionProperty) obj;
 				return Equals(Catalog, other.Catalog) && Equals(Name, other.Name) && Equals(Value, other.Value);
 			}
 		}
@@ -299,7 +299,7 @@ namespace SharpPulsar.Akka.Sql.Client
 				{
 					return false;
 				}
-				ClientExtraCredential other = (ClientExtraCredential) o;
+				var other = (ClientExtraCredential) o;
 				return Equals(Name, other.Name) && Equals(Value, other.Value);
 			}
 

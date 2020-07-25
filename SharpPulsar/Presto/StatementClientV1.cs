@@ -110,32 +110,32 @@ namespace SharpPulsar.Presto
 				builder.Headers.Add(PrestoHeaders.PrestoLanguage, session.Locale.Name);
 			}
 
-			IDictionary<string, string> property = session.Properties;
-			foreach (KeyValuePair<string, string> entry in property.SetOfKeyValuePairs())
+			var property = session.Properties;
+			foreach (var entry in property.SetOfKeyValuePairs())
 			{
 				builder.Headers.Add(PrestoHeaders.PrestoSession, entry.Key + "=" + entry.Value);
 			}
 
-			IDictionary<string, string> resourceEstimates = session.ResourceEstimates;
-			foreach (KeyValuePair<string, string> entry in resourceEstimates.SetOfKeyValuePairs())
+			var resourceEstimates = session.ResourceEstimates;
+			foreach (var entry in resourceEstimates.SetOfKeyValuePairs())
 			{
 				builder.Headers.Add(PrestoHeaders.PrestoResourceEstimate, entry.Key + "=" + entry.Value);
 			}
 
-			IDictionary<string, SelectedRole> roles = session.Roles;
-			foreach (KeyValuePair<string, SelectedRole> entry in roles.SetOfKeyValuePairs())
+			var roles = session.Roles;
+			foreach (var entry in roles.SetOfKeyValuePairs())
 			{
 				builder.Headers.Add(PrestoHeaders.PrestoRole, entry.Key + '=' + UrlEncode(entry.Value.ToString()));
 			}
 
-			IDictionary<string, string> extraCredentials = session.ExtraCredentials;
-			foreach (KeyValuePair<string, string> entry in extraCredentials.SetOfKeyValuePairs())
+			var extraCredentials = session.ExtraCredentials;
+			foreach (var entry in extraCredentials.SetOfKeyValuePairs())
 			{
 				builder.Headers.Add(PrestoHeaders.PrestoExtraCredential, entry.Key + "=" + entry.Value);
 			}
 
-			IDictionary<string, string> statements = session.PreparedStatements;
-			foreach (KeyValuePair<string, string> entry in statements.SetOfKeyValuePairs())
+			var statements = session.PreparedStatements;
+			foreach (var entry in statements.SetOfKeyValuePairs())
 			{
 				builder.Headers.Add(PrestoHeaders.PrestoPreparedStatement, UrlEncode(entry.Key) + "=" + UrlEncode(entry.Value));
 			}
@@ -254,7 +254,8 @@ namespace SharpPulsar.Presto
 						{
 							Thread.CurrentThread.Interrupt();
 						}
-						_state = State.ClientError;
+						if(_state == State.Running)
+						    _state = State.ClientError;
 						throw new Exception("StatementClient thread was interrupted");
 					}
 				}
@@ -292,7 +293,7 @@ namespace SharpPulsar.Presto
 			SetCatalog = headers.GetValues(PrestoHeaders.PrestoSetCatalog).First();
 			SetSchema = headers.GetValues(PrestoHeaders.PrestoSetSchema).First();
 			var sessions = headers.GetValues(PrestoHeaders.PrestoSetSession);
-			foreach (string setSession in sessions)
+			foreach (var setSession in sessions)
 			{
 				IList<string> keyValue = setSession.Split('=').Take(2).Select(x => x.Trim()).ToList();
 				if (keyValue.Count != 2)
@@ -303,7 +304,7 @@ namespace SharpPulsar.Presto
 			}
 			headers.GetValues(PrestoHeaders.PrestoClearSession).ToList().ForEach(x => ResetSessionProperties.Add(x));
 			var roles = headers.GetValues(PrestoHeaders.PrestoSetRole);
-			foreach (string setRole in roles)
+			foreach (var setRole in roles)
 			{
 				IList<string> keyValue = setRole.Split('=').Take(2).Select(x => x.Trim()).ToList();
 				if (keyValue.Count != 2)
@@ -313,7 +314,7 @@ namespace SharpPulsar.Presto
 				SetRoles[keyValue[0]] = SelectedRole.ValueOf(UrlDecode(keyValue[1]));
 			}
 			var prepares = headers.GetValues(PrestoHeaders.PrestoAddedPrepare);
-			foreach (string entry in prepares)
+			foreach (var entry in prepares)
 			{
 				IList<string> keyValue = entry.Split('=').Take(2).Select(x => x.Trim()).ToList();
 				if (keyValue.Count != 2)
@@ -323,17 +324,17 @@ namespace SharpPulsar.Presto
 				AddedPreparedStatements[UrlDecode(keyValue[0])] = UrlDecode(keyValue[1]);
 			}
 			var deAllocs = headers.GetValues(PrestoHeaders.PrestoDeallocatedPrepare);
-			foreach (string entry in deAllocs)
+			foreach (var entry in deAllocs)
 			{
 				DeallocatedPreparedStatements.Add(UrlDecode(entry));
 			}
 
-			string startedTransactionId = headers.GetValues(PrestoHeaders.PrestoStartedTransactionId).First();
+			var startedTransactionId = headers.GetValues(PrestoHeaders.PrestoStartedTransactionId).First();
 			if (!string.IsNullOrWhiteSpace(startedTransactionId))
 			{
 				StartedTransactionId = startedTransactionId;
 			}
-			string clearedTransactionId = headers.GetValues(PrestoHeaders.PrestoClearTransactionId).First();
+			var clearedTransactionId = headers.GetValues(PrestoHeaders.PrestoClearTransactionId).First();
 			if (clearedTransactionId != null)
 			{
 				ClearTransactionId = true;
@@ -379,6 +380,7 @@ namespace SharpPulsar.Presto
 
 				_state = State.ClientAborted;
 			}
+			GC.SuppressFinalize(this);
 		}
 
 		private void HttpDelete(Uri uri)
@@ -389,7 +391,6 @@ namespace SharpPulsar.Presto
 		private static string UrlEncode(string value)
 		{
 			return HttpUtility.UrlEncode(value, Encoding.UTF8);
-			;
 		}
 
 		private static string UrlDecode(string value)
@@ -399,7 +400,7 @@ namespace SharpPulsar.Presto
 
 		public void Close()
 		{
-			throw new NotImplementedException();
+			
 		}
 
 		public enum State

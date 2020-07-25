@@ -14,7 +14,7 @@ using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka.EventSource.Pulsar
 {
-    public class ReplayCoordinator: ReceiveActor, IWithUnboundedStash
+    public class PulsarReplayCoordinator: ReceiveActor, IWithUnboundedStash
     {
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
@@ -22,13 +22,13 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         private readonly HttpClient _httpClient;
 
 
-        public ReplayCoordinator(IActorRef network, IActorRef pulsarManager)
+        public PulsarReplayCoordinator(IActorRef network, IActorRef pulsarManager)
         {
             _httpClient = new HttpClient();
             _routees = new List<string>();
             _network = network;
             _pulsarManager = pulsarManager;
-            Context.ActorOf(TaggedCoordinator.Prop(network, pulsarManager), "Tagged");
+            Context.ActorOf(PulsarTaggedCoordinator.Prop(network, pulsarManager), "PulsarTagged");
            
             Become(Listening);
         }
@@ -39,7 +39,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             Receive<GetNumberOfEntries>(g =>
             {
                 if (g.Topic.EndsWith("*"))
-                    Context.Child("Tagged").Tell(g);
+                    Context.Child("PulsarTagged").Tell(g);
                 else
                 {
                     var topicName = TopicName.Get(g.Topic);
@@ -54,7 +54,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             {
                 if (n.Tagged)
                 {
-                    Context.Child("Tagged").Tell(n);
+                    Context.Child("PulsarTagged").Tell(n);
                 }
                 else
                 {
@@ -63,7 +63,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                     if (!child.IsNobody())
                         child.Tell(n);
                     else
-                        Console.WriteLine($"[NextPlay] '{n.Topic}' does not have a DJ - request for one first with 'StartReplayTopic' and a DJ will be yours! ;)");
+                        Context.System.Log.Warning($"[NextPlay] '{n.Topic}' does not have a DJ - request for one first with 'StartReplayTopic' and a DJ will be yours! ;)");
                 }
             });
 
@@ -98,7 +98,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                         var replay = replayTopic;
                         var partitionName = TopicName.Get(p.Topic).GetPartition(i).ToString();
                         replay.ReaderConfigurationData.TopicName = partitionName;
-                        var routee = Context.ActorOf(TopicReplayActor.Prop(replay, _pulsarManager, _network));
+                        var routee = Context.ActorOf(PulsarTopicReplayActor.Prop(replay, _pulsarManager, _network));
                         _routees.Add(routee.Path.ToString());
                     }
                 }
@@ -106,7 +106,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                 {
                     var replay = replayTopic;
                     replay.ReaderConfigurationData.TopicName = p.Topic;
-                    var routee = Context.ActorOf(TopicReplayActor.Prop(replay, _pulsarManager, _network));
+                    var routee = Context.ActorOf(PulsarTopicReplayActor.Prop(replay, _pulsarManager, _network));
                     _routees.Add(routee.Path.ToString());
                 }
                 Context.ActorOf(Props.Empty.WithRouter(new BroadcastGroup(_routees)), regexTopic);
@@ -127,7 +127,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         
         public static Props Prop(IActorRef network, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new ReplayCoordinator(network, pulsarManager));
+            return Props.Create(()=> new PulsarReplayCoordinator(network, pulsarManager));
         }
         public IStash Stash { get; set; }
     }

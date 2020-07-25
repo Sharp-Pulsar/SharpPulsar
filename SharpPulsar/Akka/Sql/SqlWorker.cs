@@ -1,21 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using Akka.Actor;
-using PrestoSharp;
+using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Akka.Sql.Message;
 
 namespace SharpPulsar.Akka.Sql
 {
     public class SqlWorker: ReceiveActor
     {
-        private readonly PrestoSqlDbConnection _connection;
-        private readonly IActorRef _pulsarManager;
-        public SqlWorker(string server, IActorRef pulsarManager)
+        public SqlWorker(IActorRef pulsarManager)
         {
-            _connection = new PrestoSqlDbConnection(server);
-            _pulsarManager = pulsarManager;
-            _connection.Open();//fake?
-
-            Receive((Action<InternalCommands.Sql>)Query);
+            Receive<SqlSession>(Query);
+            Receive<IQueryResponse>(q => { pulsarManager.Tell(new SqlData(q)); });
 
         }
 
@@ -24,48 +20,23 @@ namespace SharpPulsar.Akka.Sql
             
         }
 
-        private void Query(InternalCommands.Sql query)
+        private void Query(SqlSession query)
         {
             try
             {
                 var q = query;
-                q.Log($"Executing: {q.Query}");
-                using var cmd = _connection.CreateCommand();
-                cmd.CommandText = q.Query;
-                using var reader = cmd.ExecuteReader();
-                var rows = 0;
-                while (reader.Read())
-                {
-                    var data = new Dictionary<string, object>();
-                    var metadata = new Dictionary<string, object>();
-                    for (var i = 0; i < reader.FieldCount; i++)
-                    {
-                        var col = reader.GetName(i);
-                        var value = reader.GetValue(i);
-                        if (col.StartsWith("__") && col.EndsWith("__"))
-                        {
-                            metadata[col.Trim('_')] = value;
-                        }
-                        else
-                        {
-                            data[col] = value;
-                        }
-                    }
-
-                    rows++;
-                    _pulsarManager.Tell(new SqlData(true, rows, data, metadata));
-                }
-                _pulsarManager.Tell(new SqlData(false, -1, null, null));
+                var executor = new Executor(q.ClientSession, q.ClientOptions, Self, Context.System.Log);
+                q.Log($"Executing: {q.ClientOptions.Execute}");
+                executor.Run();
             }
             catch (Exception ex)
             {
-                _pulsarManager.Tell(new SqlData(false, -1, null, null, true, ex));
                 query.ExceptionHandler(ex);
             }
         }
-        public static Props Prop(string server, IActorRef pulsarManager)
+        public static Props Prop(IActorRef pulsarManager)
         {
-            return Props.Create(() => new SqlWorker(server, pulsarManager));
+            return Props.Create(() => new SqlWorker(pulsarManager));
         }
     }
 }

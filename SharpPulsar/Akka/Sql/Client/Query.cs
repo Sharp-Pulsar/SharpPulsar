@@ -28,13 +28,13 @@ namespace SharpPulsar.Akka.Sql.Client
 	{
         private readonly IStatementClient _client;
         private readonly ILoggingAdapter _log;
-        private readonly IActorRef _outPut;
+        private readonly IActorRef _handler;
 
-		public Query(IStatementClient client, IActorRef output, ILoggingAdapter log)
+		public Query(IStatementClient client, IActorRef handler, ILoggingAdapter log)
 		{
 			_client = Condition.RequireNonNull(client, "client is null");
             _log = log;
-            _outPut = output;
+            _handler = handler;
         }
 
 		public string SetCatalog => _client.SetCatalog;
@@ -55,7 +55,7 @@ namespace SharpPulsar.Akka.Sql.Client
 
         public virtual bool ClearTransactionId => _client.ClearTransactionId;
 
-        public bool RenderQueryOutput()
+        public bool MaterializeQueryOutput()
 		{
             ProcessInitialStatusUpdates();
 
@@ -77,7 +77,7 @@ namespace SharpPulsar.Akka.Sql.Client
 					RenderResults(results.Columns.ToList());
 				}
 			}
-			_outPut.Tell(new StatsResponse(_client.Stats));
+			_handler.Tell(new StatsResponse(_client.Stats));
 			Condition.CheckArgument(!_client.Running);
 
             // Print all warnings at the end of the query
@@ -100,7 +100,7 @@ namespace SharpPulsar.Akka.Sql.Client
                 var warning = _client.FinalStatusInfo().Warnings;
 				_log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions{WriteIndented = true}));
 				
-                _outPut.Tell(new ErrorResponse(error, warning.ToList()));
+                _handler.Tell(new ErrorResponse(error, warning.ToList()));
                 return false;
 			}
 
@@ -127,7 +127,7 @@ namespace SharpPulsar.Akka.Sql.Client
                         data[col] = value;
                     }
 				}
-                _outPut.Tell(new DataResponse(data, metadata));
+                _handler.Tell(new DataResponse(data, metadata));
 				_client.Advance();
             }
         }

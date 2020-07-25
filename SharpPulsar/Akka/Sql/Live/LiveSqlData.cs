@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using SharpPulsar.Akka.Sql.Message;
 
 namespace SharpPulsar.Akka.Sql.Live
 {
     public sealed class LiveSqlData
     {
-        public LiveSqlData(Dictionary<string, object> data, Dictionary<string, object> metadata, string topic)
+        public LiveSqlData(IQueryResponse response, string topic)
         {
-            Data = data;
-            Metadata = metadata;
+            Response = response;
             Topic = topic;
         }
         public string Topic { get; }
-        public Dictionary<string, object> Data { get; }
-        public Dictionary<string, object> Metadata { get; }
+        public IQueryResponse Response { get; }
     }
 }
