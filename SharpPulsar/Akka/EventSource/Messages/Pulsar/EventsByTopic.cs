@@ -23,14 +23,14 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
     /// </summary>
     public sealed class EventsByTopic : IPulsarEventSourceMessage
     {
-        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
+        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
             Topic = topic;
             FromSequenceId = fromSequenceId;
             ToSequenceId = toSequenceId;
-            Source = source;
+            Source = SourceType.Pulsar;
             AdminUrl = adminUrl;
             Configuration = configuration;
             ClientConfiguration = clientConfiguration;

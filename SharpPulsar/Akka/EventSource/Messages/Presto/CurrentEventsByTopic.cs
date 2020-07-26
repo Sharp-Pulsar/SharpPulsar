@@ -12,7 +12,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     /// </summary>
     public sealed class CurrentEventsByTopic : IPrestoEventSourceMessage
     {
-        public CurrentEventsByTopic(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, SourceType source, string adminUrl, ClientOptions options)
+        public CurrentEventsByTopic(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, string adminUrl, ClientOptions options)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -20,7 +20,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
             Columns = columns;
             FromSequenceId = fromSequenceId;
             ToSequenceId = toSequenceId;
-            Source = source;
+            Source = SourceType.Presto;
             AdminUrl = adminUrl;
             Options = options;
         }

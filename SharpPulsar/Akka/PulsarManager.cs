@@ -15,7 +15,6 @@ using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
-using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka
 {
@@ -48,13 +47,17 @@ namespace SharpPulsar.Akka
             {
                 _pulsarManagerState.MessageIdQueue.Enqueue(r);
             });
-            Receive<IEventMessage>(e =>
+            Receive<EventMessage>(e =>
             {
-                _pulsarManagerState.EventQueue.Enqueue(e);
+                _pulsarManagerState.PulsarEventQueue.Enqueue(e);
             });
-            Receive<TopicEntries>(e =>
+            Receive<ActiveTopics>(e =>
             {
-                _pulsarManagerState.MaxQueue.Enqueue(e);
+                _pulsarManagerState.ActiveTopicsQueue.Enqueue(e);
+            });
+            Receive<EventEnvelope>(e =>
+            {
+                _pulsarManagerState.PrestoEventQueue.Enqueue(e);
             });
             Receive<CreatedConsumer>(c =>
             {

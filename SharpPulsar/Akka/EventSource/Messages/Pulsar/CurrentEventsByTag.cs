@@ -11,14 +11,14 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
     /// </summary>
     public sealed class CurrentEventsByTag:IPulsarEventSourceMessage
     {
-        public CurrentEventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, SourceType source, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
+        public CurrentEventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
             FromSequenceId = fromSequenceId;
             ToSequenceId = toSequenceId;
             Tag = tag;
-            Source = source;
+            Source = SourceType.Pulsar;
             AdminUrl = adminUrl;
             Configuration = configuration;
             ClientConfiguration = clientConfiguration;

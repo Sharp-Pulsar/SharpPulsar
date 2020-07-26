@@ -29,7 +29,7 @@ namespace SharpPulsar.Akka.InternalCommands
         public string Topic { get; }
         public ClientOptions ClientOptions { get; }
     }
-    public class LiveSqlSession
+    internal class LiveSqlSession
     {
         public LiveSqlSession(ClientSession session, ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
         {

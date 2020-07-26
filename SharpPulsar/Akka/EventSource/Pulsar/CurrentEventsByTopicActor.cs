@@ -52,7 +52,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int) (msgId.End.Index - msgId.Start.Index)); 
-                    var child = Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager,_network, msgId.End, false, _httpClient, _message));
+                    var child = Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager,_network, msgId.End, false, _httpClient, _message, msgId.Start.Index));
                     Context.Watch(child);
                 }
             }
@@ -60,7 +60,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             {
                 var msgId = GetMessageIds(TopicName.Get(p.Topic));
                 var config = PrepareConsumerConfiguration(_message.Configuration, p.Topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
-                var child = Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, false, _httpClient, _message));
+                var child = Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, false, _httpClient, _message, msgId.Start.Index));
                 Context.Watch(child);
             }
         }

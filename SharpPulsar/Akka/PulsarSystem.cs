@@ -9,6 +9,9 @@ using System.Threading;
 using Akka.Actor;
 using Akka.Configuration;
 using SharpPulsar.Akka.Admin;
+using SharpPulsar.Akka.EventSource.Messages;
+using SharpPulsar.Akka.EventSource.Messages.Presto;
+using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -18,7 +21,6 @@ using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Proto;
-using TopicEntries = SharpPulsar.Akka.InternalCommands.Consumer.TopicEntries;
 
 namespace SharpPulsar.Akka
 {
@@ -76,11 +78,12 @@ namespace SharpPulsar.Akka
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue = new ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>>(),
-                EventQueue = new BlockingQueue<IEventMessage>(),
-                MaxQueue = new BlockingQueue<TopicEntries>(),
+                PrestoEventQueue = new BlockingQueue<EventEnvelope>(),
+                PulsarEventQueue = new BlockingQueue<EventMessage>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
                 FunctionQueue = new BlockingQueue<FunctionResponse>(),
-                SentReceiptQueue = new BlockingQueue<SentReceipt>()
+                SentReceiptQueue = new BlockingQueue<SentReceipt>(),
+                ActiveTopicsQueue = new BlockingQueue<ActiveTopics>()
             };
             _conf = conf;
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
@@ -99,11 +102,12 @@ namespace SharpPulsar.Akka
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>>(),
-                EventQueue = new BlockingQueue<IEventMessage>(),
-                MaxQueue = new BlockingQueue<TopicEntries>(),
+                PrestoEventQueue = new BlockingQueue<EventEnvelope>(),
+                PulsarEventQueue = new BlockingQueue<EventMessage>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
                 FunctionQueue = new BlockingQueue<FunctionResponse>(),
-                SentReceiptQueue = new BlockingQueue<SentReceipt>()
+                SentReceiptQueue = new BlockingQueue<SentReceipt>(),
+                ActiveTopicsQueue = new BlockingQueue<ActiveTopics>()
             };
             _conf = conf;
             var config = ConfigurationFactory.ParseString(@"
@@ -246,7 +250,7 @@ namespace SharpPulsar.Akka
             throw new TimeoutException($"Timeout waiting for reader creation!");
         }
 
-        public IEnumerable<SqlData> PulsarSql(InternalCommands.Sql data)
+        public void PulsarSql(InternalCommands.Sql data)
         {
             bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
             if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null)
@@ -262,6 +266,11 @@ namespace SharpPulsar.Akka
             }
 
             _pulsarManager.Tell(new SqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.ExceptionHandler, data.Log));
+            
+        }
+
+        public IEnumerable<SqlData> SqlData()
+        {
             while (true)
             {
                 if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, CancellationToken.None))
@@ -274,7 +283,15 @@ namespace SharpPulsar.Akka
                 }
             }
         }
-        public IEnumerable<LiveSqlData> PulsarSql(LiveSql data)
+        public IEnumerable<LiveSqlData> LiveSqlData()
+        {
+            var results = _managerState.LiveDataQueue.GetConsumingEnumerable();
+            foreach (var liveData in results)
+            {
+                yield return liveData;
+            }
+        }
+        public void PulsarSql(LiveSql data)
         {
             bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
             
@@ -304,11 +321,6 @@ namespace SharpPulsar.Akka
 
             _pulsarManager.Tell(new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(),data.Log, data.ExceptionHandler));
 
-            var results = _managerState.LiveDataQueue.GetConsumingEnumerable();
-            foreach (var liveData in results)
-            {
-                yield return liveData;
-            }
         }
         public void PulsarAdmin(InternalCommands.Admin data)
         {
@@ -623,154 +635,119 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("RedeliverMessages is null");
             consumer.Tell(messages);
         }
-        public TopicEntries EventSource(GetNumberOfEntries entries)
+        public void EventPulsarSource(IPulsarEventSourceMessage message)
         {
-            if(entries == null)
-                throw new ArgumentException($"GetNumberOfEntries is null");
-            if (!TopicName.IsValid(entries.Topic))
-                throw new ArgumentException($"Topic '{entries.Topic}' is invalid");
-            var topic = TopicName.Get(entries.Topic).ToString();
+            if (message == null)
+                throw new ArgumentException("message is null");
+            if(message.ClientConfiguration == null)
+                throw new ArgumentException("ClientConfiguration null");
+            if(message.Configuration == null)
+                throw new ArgumentException("Configuration null");
 
-            _pulsarManager.Tell(new GetNumberOfEntries(topic, entries.Server, entries.Source));
-            if (_managerState.MaxQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
+            if(string.IsNullOrWhiteSpace(message.AdminUrl))
+                throw new ArgumentException("AdminUrl is missing");
+
+            if(string.IsNullOrWhiteSpace(message.Topic))
+                throw new ArgumentException("Topic is missing");
+
+            if(string.IsNullOrWhiteSpace(message.Namespace))
+                throw new ArgumentException("Namespace is missing");
+
+            if(string.IsNullOrWhiteSpace(message.Tenant))
+                throw new ArgumentException("Tenant is missing");
+
+            if(message.FromSequenceId <= 0)
+                throw new ArgumentException("FromSequenceId need to be greater than zero");
+
+            if(message.ToSequenceId <= 0 || message.ToSequenceId <= message.FromSequenceId)
+                throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
+
+            _pulsarManager.Tell(message);
+        }
+        public void EventPrestSource(IPrestoEventSourceMessage message)
+        {
+            if (message == null)
+                throw new ArgumentException("message is null");
+            if (message.Columns == null || !message.Columns.Any())
+                throw new ArgumentException("Columns cannot be null or empty");
+
+            if (message.Columns.Contains("*"))
+                throw new ArgumentException("Column cannot be *");
+
+            if (message.Options == null)
+                throw new ArgumentException("Option is null");
+            
+            if (!string.IsNullOrWhiteSpace(message.Options.Execute))
+                throw new ArgumentException("Please leave the Execute empty");
+
+            if (string.IsNullOrWhiteSpace(message.AdminUrl))
+                throw new ArgumentException("AdminUrl is missing");
+
+            if (string.IsNullOrWhiteSpace(message.Topic))
+                throw new ArgumentException("Topic is missing");
+
+            if (string.IsNullOrWhiteSpace(message.Namespace))
+                throw new ArgumentException("Namespace is missing");
+
+            if (string.IsNullOrWhiteSpace(message.Tenant))
+                throw new ArgumentException("Tenant is missing");
+
+            if (message.FromSequenceId <= 0)
+                throw new ArgumentException("FromSequenceId need to be greater than zero");
+
+            if (message.ToSequenceId <= 0 || message.ToSequenceId <= message.FromSequenceId)
+                throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
+
+            _pulsarManager.Tell(message);
+        }
+
+        public void EventTopics(IEventTopics message)
+        {
+            if (message == null)
+                throw new ArgumentException("message is null");
+
+            if (string.IsNullOrWhiteSpace(message.Namespace))
+                throw new ArgumentException("Namespace is missing");
+
+            if (string.IsNullOrWhiteSpace(message.Tenant))
+                throw new ArgumentException("Tenant is missing");
+            _pulsarManager.Tell(message);
+        }
+
+        public ActiveTopics ActiveTopics(int timeoutMs = 5000)
+        {
+            if (_managerState.ActiveTopicsQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
             {
                 return msg;
             }
 
-            throw new TimeoutException("Timeout waiting for Entries");
+            return null;
         }
-        /// <summary>
-        /// if you are supplying custom handler, IEventMessage is either EventMessage - when a message has a given property or NotTagged - when a message does not have a given property.
-        /// You are responsible for determining the message type.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="replay"></param>
-        /// <param name="customHandler"></param>
-        /// <returns>T</returns>
-        public IEnumerable<T> EventSource<T>(NextPlay replay, Func<IEventMessage, T> customHandler = null)
+        public IEnumerable<EventEnvelope> PrestoEventSource(int timeoutMs = 5000)
         {
-            if(replay == null)
-                throw new ArgumentException($"ReplayTopic is null");
-            if (!TopicName.IsValid(replay.Topic))
-                throw new ArgumentException($"Topic '{replay.Topic}' is invalid");
-            var topic = TopicName.Get(replay.Topic).ToString();
-
-            var @from = replay.From > 0 ? replay.From : 1;
-            var max = Math.Min(replay.To, replay.Max);
-            var takeCount = max - replay.From;
-
-            _pulsarManager.Tell(new NextPlay(topic, max, @from, replay.To, replay.Source, replay.Tagged));
-            var count = 1;
-            if (customHandler == null)
+            while (true)
             {
-                while (takeCount >= count)
+                if (_managerState.PrestoEventQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
                 {
-                    count++;
-                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
-                    {
-                        if (msg is EventMessage evt)
-                        {
-                            yield return evt.Message.ToTypeOf<T>();
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    yield return msg;
                 }
-            }
-            else
-            {
-                while (takeCount >= count)
+                else
                 {
-                    count++;
-                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
-                    {
-                        //Client should be responsible for checking if message is EventMessage or NotTagged
-                        yield return customHandler(msg);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
         }
-        /// <summary>
-        /// if you are supplying custom handler, IEventMessage is either EventMessage - when a message has a given property or NotTagged - when a message does not have a given property.
-        /// You are responsible for determining the message type.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="replay"></param>
-        /// <param name="customHandler"></param>
-        /// <returns>T</returns>
-        public IEnumerable<T> EventSource<T>(ReplayTopic replay, Func<IEventMessage, T> customHandler = null)
+        public IEnumerable<EventMessage> PulsarEventSource(int timeoutMs = 5000)
         {
-            if(replay == null)
-                throw new ArgumentException($"ReplayTopic is null");
-            
-            if(replay.ReaderConfigurationData == null)
-                throw new ArgumentException($"ReaderConfigurationData is null");
-            
-            if(string.IsNullOrWhiteSpace(replay.AdminUrl))
-                throw new ArgumentException($"AdminUrl cannot be empty");
-
-            var topic = replay.ReaderConfigurationData.TopicName;
-
-            if (!TopicName.IsValid(replay.ReaderConfigurationData.TopicName))
-                throw new ArgumentException($"Topic '{topic}' is invalid");
-
-            replay.ReaderConfigurationData.TopicName = TopicName.Get(topic).ToString();
-
-            if(replay.Tagged && replay.Tag == null)
-                throw new ArgumentException($"Tag is null");
-
-            if(replay.Tagged && !replay.ReaderConfigurationData.TopicName.EndsWith("*"))
-                throw new ArgumentException($"Topic should end with *");
-
-            var @from = replay.From > 0 ? replay.From : 1;
-
-
-            var max = Math.Min(replay.To, replay.Max);
-            var takeCount = max - replay.From;
-
-            var start = new StartReplayTopic(_conf, replay.ReaderConfigurationData, replay.AdminUrl, @from, replay.To, max, replay.Tag, replay.Tagged, replay.Source);
-            
-            _pulsarManager.Tell(start);
-
-            var count = 1;
-            if (customHandler == null)
+            while (true)
             {
-
-                while (takeCount >= count)
+                if (_managerState.PulsarEventQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
                 {
-                    count++;
-                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
-                    {
-                        if (msg is EventMessage evt)
-                        {
-                            yield return evt.Message.ToTypeOf<T>();
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    yield return msg;
                 }
-            }
-            else
-            {
-                while (takeCount >= count)
+                else
                 {
-                    count++;
-                    if (_managerState.EventQueue.TryTake(out var msg, _conf.OperationTimeoutMs, CancellationToken.None))
-                    {
-                        yield return customHandler(msg);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
         }

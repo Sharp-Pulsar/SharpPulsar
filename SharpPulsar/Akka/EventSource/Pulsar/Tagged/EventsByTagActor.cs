@@ -42,7 +42,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int)(msgId.End.Index - msgId.Start.Index));
-                    Context.ActorOf(PulsarTaggedSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, _message.Tag));
+                    Context.ActorOf(PulsarTaggedSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index));
 
                 }
             }
@@ -50,7 +50,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
             {
                 var msgId = GetMessageIds(TopicName.Get(p.Topic));
                 var config = PrepareConsumerConfiguration(_message.Configuration, p.Topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
-                Context.ActorOf(PulsarTaggedSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, _message.Tag));
+                Context.ActorOf(PulsarTaggedSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index));
             }
         }
         private Partitions NewPartitionMetadataRequest(string topic)

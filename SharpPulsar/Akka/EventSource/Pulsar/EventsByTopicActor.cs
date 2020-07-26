@@ -43,7 +43,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int)(msgId.End.Index - msgId.Start.Index));
-                    Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message));
+                    Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, msgId.Start.Index));
                     
                 }
             }
@@ -51,7 +51,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             {
                 var msgId = GetMessageIds(TopicName.Get(p.Topic));
                 var config = PrepareConsumerConfiguration(_message.Configuration, p.Topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
-                Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message));
+                Context.ActorOf(PulsarSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, msgId.Start.Index));
             }
         }
         private Partitions NewPartitionMetadataRequest(string topic)

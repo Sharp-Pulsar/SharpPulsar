@@ -8,7 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Newtonsoft.Json;
@@ -17,25 +16,21 @@ using SharpPulsar.Akka;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Admin.Api.Models;
 using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.EventSource;
-using SharpPulsar.Akka.EventSource.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.Function.Api;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
+using SharpPulsar.Akka.Sql.Client;
 using SharpPulsar.Api;
-using SharpPulsar.Batch;
 using SharpPulsar.Handlers;
-using SharpPulsar.Impl;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;
-using MessageId = SharpPulsar.Impl.MessageId;
 
 namespace Samples
 {
@@ -246,56 +241,12 @@ namespace Samples
 
                     #region EventSource
                     case "72":
-                        Console.WriteLine("[GetNumberOfEntries] Enter server: ");
-                        var e1 = Console.ReadLine();
-                        Console.WriteLine("[GetNumberOfEntries] Enter Topic: ");
-                        var e2 = Console.ReadLine();
-                        GetNumberOfEntries(pulsarSystem, e1, e2);
                         break;
                     case "73":
-                        Console.WriteLine("[ReplayTopic] Enter server: ");
-                        var e3 = Console.ReadLine();
-                        Console.WriteLine("[ReplayTopic] Enter Topic: ");
-                        var e4 = Console.ReadLine();
-                        Console.WriteLine("[ReplayTopic] Enter From: ");
-                        var e5 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[ReplayTopic] Enter To: ");
-                        var e6 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[ReplayTopic] Enter Max: ");
-                        var e7 = long.Parse(Console.ReadLine());
-                        ReplayTopic(pulsarSystem, e3, e4, e5, e6, e7);
                         break;
                     case "74":
-                        Console.WriteLine("[ReplayTaggedTopic] Enter server: ");
-                        var e8 = Console.ReadLine();
-                        Console.WriteLine("[ReplayTaggedTopic] Enter Topic: ");
-                        var e9 = Console.ReadLine();
-                        Console.WriteLine("[ReplayTaggedTopic] Enter From: ");
-                        var e10 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[ReplayTaggedTopic] Enter To: ");
-                        var e11 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[ReplayTaggedTopic] Enter Max: ");
-                        var e12 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[ReplayTaggedTopic] Enter Tag key: ");
-                        var e13 = Console.ReadLine();
-                        Console.WriteLine("[ReplayTaggedTopic] Enter Tag value: ");
-                        var e14 = Console.ReadLine();
-                        ReplayTaggedTopic(pulsarSystem, e8, e9, e10, e11, e12, e13, e14);
                         break;
                     case "75":
-                        Console.WriteLine("[NextPlay] Enter server: ");
-                        var e23 = Console.ReadLine();
-                        Console.WriteLine("[NextPlay] Enter Topic: ");
-                        var e16 = Console.ReadLine();
-                        Console.WriteLine("[NextPlay] Enter From: ");
-                        var e17 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[NextPlay] Enter To: ");
-                        var e18 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[NextPlay] Enter Max: ");
-                        var e19 = long.Parse(Console.ReadLine());
-                        Console.WriteLine("[NextPlay] Is Tagged(y/n): ");
-                        var e199 = Console.ReadLine().ToLower() == "y";
-                        NextPlay(pulsarSystem, e23, e16, e17, e18, e19, e199);
                         break;
 
                     #endregion
@@ -1561,61 +1512,6 @@ namespace Samples
 
         #endregion
 
-        #region EventSource
-        private static void GetNumberOfEntries(PulsarSystem system, string server, string topic)
-        {
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            Console.WriteLine($"TopicEntries: {JsonSerializer.Serialize(numb, new JsonSerializerOptions{WriteIndented = true})}");
-        }
-        private static void NextPlay(PulsarSystem system, string server, string topic, long fro, long to, long max, bool istagged )
-        {
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            foreach (var msg in system.EventSource<Students>(new NextPlay(topic, numb.Max.Value, fro, to, istagged)))
-            {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions{WriteIndented = true}));
-            }
-        }
-        private static void ReplayTopic(PulsarSystem system, string server, string topic, long fro, long to, long max)
-        {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var readerListener = new DefaultMessageListener(null, null);
-            var jsonSchem = AvroSchema.Of(typeof(Students));
-            var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("event-reader")
-                .Schema(jsonSchem)
-                .EventListener(consumerListener)
-                .ReaderListener(readerListener)
-                .Topic(topic)
-                .StartMessageId(MessageIdFields.Latest)
-                .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
-            foreach (var msg in system.EventSource<Students>(replay))
-            {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
-            }
-        }
-        private static void ReplayTaggedTopic(PulsarSystem system, string server, string topic, long fro, long to, long max, string key, string value)
-        {
-            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
-            var readerListener = new DefaultMessageListener(null, null);
-            var jsonSchem = AvroSchema.Of(typeof(Students));
-            var readerConfig = new ReaderConfigBuilder()
-                .ReaderName("event-reader")
-                .Schema(jsonSchem)
-                .EventListener(consumerListener)
-                .ReaderListener(readerListener)
-                .Topic(topic)
-                .StartMessageId(MessageIdFields.Latest)
-                .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
-            foreach (var msg in system.EventSource<Students>(replay))
-            {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
-            }
-        }
-        #endregion
         private static void PlainAvroReader(PulsarSystem system,  string topic)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
@@ -1745,22 +1641,21 @@ namespace Samples
 
         private static void SqlQuery(PulsarSystem system, string query, string server)
         {
-            var data = system.PulsarSql(new Sql(query, e =>
-            {
-                Console.WriteLine(e.ToString());
-            }, server, Console.WriteLine));
-            foreach (var d in data)
+            var option = new ClientOptions {Server = server, Execute = query};
+            system.PulsarSql(new Sql(option, e =>{ Console.WriteLine(e.ToString()); }, Console.WriteLine));
+            foreach (var d in system.SqlData())
             {
                 Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
             }
         }
         private static void LiveSqlQuery(PulsarSystem system, string query, int frequency, DateTime startAt, string topic , string server)
         {
-            var data = system.PulsarSql(new LiveSql(query, frequency, startAt, topic, server, e =>
+            var option = new ClientOptions { Server = server, Execute = query };
+            system.PulsarSql(new LiveSql(option, frequency, startAt, topic, e =>
             {
                 Console.WriteLine(e.ToString());
             }, Console.WriteLine));
-            foreach (var d in data)
+            foreach (var d in system.LiveSqlData())
             {
                 Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
             }
@@ -1776,9 +1671,8 @@ namespace Samples
         private static void GetPersistentTopicStats(PulsarSystem system, string server, string tenant, string ns, string topic, long fro, long to, long max)
         {
             var data = system.PulsarAdmin<PersistentTopicInternalStats>(new Admin(AdminCommands.GetInternalStatsPersistent, new object[] { tenant, ns, topic, false }, null, e => Console.WriteLine(e.ToString()), server, l => Console.WriteLine(l)));
-            var compute = new MessageIdHelper(data, fro, to, max);
-            var result = compute.GetFrom();
-            Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Max}, HighestSequence:{result.To}");
+            var result = MessageIdHelper.Calculate(fro, data);
+            Console.WriteLine($"Ledger:{result.Ledger}, Entry:{result.Entry}, Max:{result.Index}");
         }
         private static void GetAllSchemas(PulsarSystem system, string server, string tenant, string ns, string topic)
         {
