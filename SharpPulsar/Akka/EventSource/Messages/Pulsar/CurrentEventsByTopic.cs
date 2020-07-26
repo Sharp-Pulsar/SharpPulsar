@@ -11,7 +11,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
     /// </summary>
     public sealed class CurrentEventsByTopic : IPulsarEventSourceMessage
     {
-        public CurrentEventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, string adminUrl, ReaderConfigurationData configuration)
+        public CurrentEventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -21,6 +21,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
             Source = source;
             AdminUrl = adminUrl;
             Configuration = configuration;
+            ClientConfiguration = clientConfiguration;
         }
 
         public string Tenant { get; }
@@ -31,5 +32,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ReaderConfigurationData Configuration { get; }
+        public ClientConfigurationData ClientConfiguration { get; }
     }
 }

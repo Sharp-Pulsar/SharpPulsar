@@ -6,5 +6,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
     {
         public string AdminUrl { get; }
         public ReaderConfigurationData Configuration { get; }
+        public ClientConfigurationData ClientConfiguration { get; }
     }
 }

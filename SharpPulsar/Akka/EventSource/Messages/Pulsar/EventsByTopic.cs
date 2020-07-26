@@ -23,7 +23,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
     /// </summary>
     public sealed class EventsByTopic : IPulsarEventSourceMessage
     {
-        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, string adminUrl, ReaderConfigurationData configuration)
+        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -33,6 +33,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
             Source = source;
             AdminUrl = adminUrl;
             Configuration = configuration;
+            ClientConfiguration = clientConfiguration;
         }
 
         public string Tenant { get; }
@@ -43,5 +44,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
         public SourceType Source { get; }
         public string AdminUrl { get; }
         public ReaderConfigurationData Configuration { get; }
+        public ClientConfigurationData ClientConfiguration { get; }
     }
 }

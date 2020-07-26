@@ -58,7 +58,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly ConcurrentQueue<ConsumedMessage> _incomingMessages;
         private readonly List<string> _pendingChunckedMessageUuidQueue;
         private readonly IActorRef _network;
-        private int _requestedFlowPermits = 2000;
+        private readonly int _requestedFlowPermits;
         private readonly IDictionary<MessageId, IList<Message>> _possibleSendToDeadLetterTopicMessages;
         private Seek _seek;
         private readonly bool _createTopicIfDoesNotExist;
@@ -134,7 +134,7 @@ namespace SharpPulsar.Akka.Consumer
             _subscriptionMode = mode;
             _partitionIndex = partitionIndex;
             _hasParentConsumer = hasParentConsumer;
-            //_requestedFlowPermits = 1500;//configuration.ReceiverQueueSize;
+            _requestedFlowPermits = configuration.ReceiverQueueSize;
             _conf = configuration;
             _interceptors = new ConsumerInterceptors(_system, configuration.Interceptors);
             _clientConfiguration = clientConfiguration;
