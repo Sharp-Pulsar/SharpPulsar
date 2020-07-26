@@ -22,8 +22,10 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         private readonly IPulsarEventSourceMessage _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
-        public PulsarSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message)
+        private long _sequenceId;
+        public PulsarSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, long fromSequenceId)
         {
+            _sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
             _httpClient = httpClient;
@@ -45,8 +47,9 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                 var messageId = (MessageId)c.Message.MessageId;
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
-                    var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
+                    var eventMessage = new EventMessage(c.Message, _sequenceId);
                     _pulsarManager.Tell(eventMessage);
+                    _sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
             });
@@ -58,9 +61,9 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
         {
             Receive<ConsumedMessage>(c =>
             {
-                var messageId = (MessageId)c.Message.MessageId;
-                var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
+                var eventMessage = new EventMessage(c.Message, _sequenceId);
                 _pulsarManager.Tell(eventMessage);
+                _sequenceId++;
             });
             _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);
         }
@@ -96,9 +99,9 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message)
+        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, long fromSequence)
         {
-            return Props.Create(()=> new PulsarSourceActor(client, configuration, pulsarManager, network, endId, isLive, httpClient, message));
+            return Props.Create(()=> new PulsarSourceActor(client, configuration, pulsarManager, network, endId, isLive, httpClient, message, fromSequence));
         }
         public IStash Stash { get; set; }
     }

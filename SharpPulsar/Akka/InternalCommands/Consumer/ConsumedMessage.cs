@@ -31,16 +31,12 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     }
     public class EventMessage:IEventMessage
     {
-        public EventMessage(IMessage message, long sequenceId, long ledgerId, long entry)
+        public EventMessage(IMessage message, long sequenceId)
         {
             Message = message;
             SequenceId = sequenceId;
-            LedgerId = ledgerId;
-            Entry = entry;
         }
         public long SequenceId { get; }
-        public long LedgerId { get; }
-        public long Entry { get; }
         public IMessage Message { get; }
     }
     /// <summary>

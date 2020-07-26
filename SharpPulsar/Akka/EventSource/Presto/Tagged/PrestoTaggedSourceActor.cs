@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Http;
-using System.Threading;
+using System.Text.Json;
 using Akka.Actor;
+using Akka.Event;
 using PulsarAdmin;
+using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.EventSource.Presto.Tagged
 {
@@ -16,46 +18,101 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
     {
         private readonly IActorRef _pulsarManager;
         private readonly EventMessageId _endId;
-        private readonly IActorRef _child;
         private EventMessageId _lastEventMessageId;
-        private ICancelable _flowSenderCancelable;
+        private ICancelable _queryCancelable;
         private readonly HttpClient _httpClient;
         private readonly IPrestoEventSourceMessage _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
-        private readonly Tag _tag;
-        public PrestoTaggedSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
+        private readonly ILoggingAdapter _log;
+        private readonly IActorRef _self;
+        private long _sequenceId;
+        private Tag _tag;
+        public PrestoTaggedSourceActor(IActorRef pulsarManager, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
+            _tag = tag;
+            _self = Self;
+            _log = Context.GetLogger();
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
             _httpClient = httpClient;
             _message = message;
-            _tag = tag;
             _endId = endId;
             _lastEventMessageId = endId;
-            var topicName = TopicName.Get(configuration.SingleTopic);
+            _sequenceId = startId.Index;
             _pulsarManager = pulsarManager;
-            _child = Context.ActorOf(Consumer.Consumer.Prop(client, topicName.ToString(), configuration, Interlocked.Increment(ref IdGenerators.ConsumerId), network, true, topicName.PartitionIndex, SubscriptionMode.NonDurable, null, _pulsarManager, true));
+            FirstQuery(startId, endId, isLive);
+        }
+        private void FirstQuery(EventMessageId start, EventMessageId end, bool isLive)
+        {
+            try
+            {
+                var max = end.Index - start.Index;
+                var query =
+                    $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from pulsar.\"{_message.Tenant}/{_message.Namespace}\".\"{_message.Topic}\" where json_array_contains(Tags, '{_tag.Value}') ORDER BY __message_id__.ledgerid ASC, __message_id__.entryid ASC LIMIT {max}";
+                var options = _message.Options;
+                options.Execute = query;
+                var session = options.ToClientSession();
+                var executor = new Executor(session, options, _self, _log);
+                _log.Info($"Executing: {options.Execute}");
+                executor.Run();
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.ToString());
+            }
             if (isLive)
                 LiveConsume();
             else Consume();
         }
-
+        private void Query()
+        {
+            try
+            {
+                var ids = GetMessageIds(_lastEventMessageId.Index);
+                _lastEventMessageId = ids.End;
+                var max = ids.End.Index - ids.Start.Index;
+                if (max > 0)
+                {
+                    var query =
+                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from pulsar.\"{_message.Tenant}/{_message.Namespace}\".\"{_message.Topic}\" where json_array_contains(Tags, '{_tag.Value}') ORDER BY __message_id__.ledgerid ASC, __message_id__.entryid ASC LIMIT {max}";
+                    var options = _message.Options;
+                    options.Execute = query;
+                    var session = options.ToClientSession();
+                    var executor = new Executor(session, options, _self, _log);
+                    _log.Info($"Executing: {options.Execute}");
+                    executor.Run();
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.ToString());
+            }
+            finally
+            {
+                _queryCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(10), Query);
+            }
+        }
+        private (EventMessageId Start, EventMessageId End) GetMessageIds(long fromSequence = 0)
+        {
+            var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
+            var stats = adminRestapi.GetInternalStats1(_message.Tenant, _message.Namespace, _message.Topic);
+            var start = MessageIdHelper.Calculate(fromSequence > 0 ? fromSequence : _message.FromSequenceId, stats);
+            var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
+            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats);
+            var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
+            return (startMessageId, endMessageId);
+        }
         private void Consume()
         {
-            Receive<ConsumedMessage>(c =>
+            Receive<DataResponse>(c =>
             {
-                var messageId = (MessageId)c.Message.MessageId;
+                var messageId = JsonSerializer.Deserialize<MessageId>(c.Metadata["message_id"].ToString());
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
-                    var props = c.Message.Properties;
-                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
-                                                && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
-                    if (tagged)
-                    {
-                        var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
-                        _pulsarManager.Tell(eventMessage);
-                    }
+                    var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
+                    _pulsarManager.Tell(eventMessage);
+                    _sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
             });
@@ -65,41 +122,15 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
         }
         private void LiveConsume()
         {
-            Receive<ConsumedMessage>(c =>
+            Receive<DataResponse>(c =>
             {
-                var messageId = (MessageId)c.Message.MessageId;
-                var props = c.Message.Properties;
-                var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
-                                            && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
-                if (tagged)
-                {
-                    var eventMessage = new EventMessage(c.Message, c.Message.SequenceId, messageId.LedgerId, messageId.EntryId);
-                    _pulsarManager.Tell(eventMessage);
-                }
+                var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
+                _pulsarManager.Tell(eventMessage); _pulsarManager.Tell(eventMessage);
+                _sequenceId++;
             });
-            _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);
+            _queryCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), Query);
         }
 
-        private void SendFlow()
-        {
-            try
-            {
-                var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-                var stats = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant,
-                    _topicName.NamespaceObject.LocalName, _topicName.LocalName);
-                var start = MessageIdHelper.Calculate(_lastEventMessageId.Index, stats);
-                if (start.Index > _lastEventMessageId.Index)
-                {
-                    var permits = start.Index - _lastEventMessageId.Index;
-                    _child.Tell(new SendFlow(permits));
-                    _lastEventMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-                }
-            }
-            finally
-            {
-                _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(5), SendFlow);
-            }
-        }
         protected override void Unhandled(object message)
         {
             //Since we have saved the last consumed sequence id before the timeout,
@@ -108,13 +139,14 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
 
         protected override void PostStop()
         {
-            _flowSenderCancelable?.Cancel();
+            _queryCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag)
+        public static Props Prop(IActorRef pulsarManager, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
-            return Props.Create(() => new PrestoTaggedSourceActor(client, configuration, pulsarManager, network, endId, isLive, httpClient, message, tag));
+            return Props.Create(() => new PrestoTaggedSourceActor(pulsarManager, start, endId, isLive, httpClient, message, tag));
         }
+
         public IStash Stash { get; set; }
     }
 
