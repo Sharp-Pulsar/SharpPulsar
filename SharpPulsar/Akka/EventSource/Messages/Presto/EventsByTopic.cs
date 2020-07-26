@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Immutable;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.Sql.Client;
 
@@ -23,7 +24,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     /// </summary>
     public sealed class EventsByTopic : IPrestoEventSourceMessage
     {
-        public EventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, SourceType source, ClientOptions options)
+        public EventsByTopic(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, SourceType source, ClientOptions options)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -32,6 +33,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
             ToSequenceId = toSequenceId;
             Source = source;
             Options = options;
+            Columns = columns;
         }
 
         public string Tenant { get; }
@@ -41,5 +43,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ClientOptions Options { get; }
+        public ImmutableHashSet<string> Columns { get; }
     }
 }

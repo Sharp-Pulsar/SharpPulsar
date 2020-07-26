@@ -26,14 +26,6 @@ namespace SharpPulsar.Akka.Sql.Client
 	public class ClientOptions
 	{
         public string Server = "localhost:8080";
-		
-        public string KeystorePath;
-
-        public string KeystorePassword;
-
-        public string TruststorePath;
-
-        public string TruststorePassword;
 
         public string AccessToken;
 
@@ -41,7 +33,7 @@ namespace SharpPulsar.Akka.Sql.Client
 
         public string Password;
 
-        public string Source = "presto-cli";
+        public string Source = "sharp-pulsar";
 
         public string ClientInfo;
 
@@ -52,10 +44,6 @@ namespace SharpPulsar.Akka.Sql.Client
         public string Schema;
 
         public string File;
-
-        public bool Debug;
-
-        public string LogLevelsFile;
 
         public string Execute;
 
@@ -70,8 +58,6 @@ namespace SharpPulsar.Akka.Sql.Client
         public Uri HttpProxy;
 
         public TimeSpan ClientRequestTimeout = TimeSpan.FromMinutes(2);
-
-        public bool IgnoreErrors;
 
 
 		public virtual ClientSession ToClientSession()

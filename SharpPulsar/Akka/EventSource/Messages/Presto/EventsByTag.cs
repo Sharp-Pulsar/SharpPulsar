@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Akka.InternalCommands.Consumer;
+﻿using System.Collections.Immutable;
+using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.Sql.Client;
 
 namespace SharpPulsar.Akka.EventSource.Messages.Presto
@@ -15,7 +16,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     /// </summary>
     public sealed class EventsByTag : IPrestoEventSourceMessage
     {
-        public EventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, SourceType source,  ClientOptions options)
+        public EventsByTag(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, SourceType source,  ClientOptions options)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -24,6 +25,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
             Tag = tag;
             Source = source;
             Topic = topic;
+            Columns = columns;
             Options = options;
         }
         public Tag Tag { get; }
@@ -34,5 +36,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ClientOptions Options { get; }
+        public ImmutableHashSet<string> Columns { get; }
     }
 }
