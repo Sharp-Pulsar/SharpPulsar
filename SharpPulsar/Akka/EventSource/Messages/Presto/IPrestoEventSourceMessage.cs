@@ -8,5 +8,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     {
         public ClientOptions Options { get; }
         public ImmutableHashSet<string> Columns { get; }
+        public string AdminUrl { get; }
     }
 }

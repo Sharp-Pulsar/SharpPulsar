@@ -1,7 +1,8 @@
 ﻿using System.Net.Http;
 using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
+using SharpPulsar.Akka.EventSource.Messages.Presto;
+using SharpPulsar.Akka.EventSource.Presto.Tagged;
 
 namespace SharpPulsar.Akka.EventSource.Presto
 {
@@ -17,7 +18,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
             _httpClient = new HttpClient();
             _network = network;
             _pulsarManager = pulsarManager;
-            Receive<IPulsarEventSourceMessage>(Handle);
+            Receive<IPrestoEventSourceMessage>(Handle);
             
         }
 
@@ -27,7 +28,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
         }
         public IStash Stash { get; set; }
 
-        private void Handle(IPulsarEventSourceMessage message)
+        private void Handle(IPrestoEventSourceMessage message)
         {
             var ns = Regex.Replace(message.Topic, @"[^\w\d]", "");
             var child = Context.Child(ns);

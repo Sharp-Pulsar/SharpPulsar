@@ -24,7 +24,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     /// </summary>
     public sealed class EventsByTopic : IPrestoEventSourceMessage
     {
-        public EventsByTopic(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, SourceType source, ClientOptions options)
+        public EventsByTopic(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, SourceType source, ClientOptions options, string adminUrl)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -33,6 +33,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
             ToSequenceId = toSequenceId;
             Source = source;
             Options = options;
+            AdminUrl = adminUrl;
             Columns = columns;
         }
 
@@ -44,5 +45,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
         public SourceType Source { get; }
         public ClientOptions Options { get; }
         public ImmutableHashSet<string> Columns { get; }
+        public string AdminUrl { get; }
     }
 }

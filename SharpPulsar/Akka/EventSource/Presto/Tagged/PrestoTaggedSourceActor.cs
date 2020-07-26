@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
 using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
+using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
@@ -20,11 +20,11 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
         private EventMessageId _lastEventMessageId;
         private ICancelable _flowSenderCancelable;
         private readonly HttpClient _httpClient;
-        private readonly IPulsarEventSourceMessage _message;
+        private readonly IPrestoEventSourceMessage _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
-        public PrestoTaggedSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag)
+        public PrestoTaggedSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);

@@ -16,7 +16,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     /// </summary>
     public sealed class EventsByTag : IPrestoEventSourceMessage
     {
-        public EventsByTag(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, SourceType source,  ClientOptions options)
+        public EventsByTag(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, SourceType source,  ClientOptions options, string adminUrl)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -27,6 +27,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
             Topic = topic;
             Columns = columns;
             Options = options;
+            AdminUrl = adminUrl;
         }
         public Tag Tag { get; }
         public string Tenant { get; }
@@ -37,5 +38,6 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
         public SourceType Source { get; }
         public ClientOptions Options { get; }
         public ImmutableHashSet<string> Columns { get; }
+        public string AdminUrl { get; }
     }
 }
