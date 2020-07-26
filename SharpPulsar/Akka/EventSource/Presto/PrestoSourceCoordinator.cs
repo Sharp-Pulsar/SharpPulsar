@@ -2,9 +2,8 @@
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
-using SharpPulsar.Akka.EventSource.Pulsar.Tagged;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar
+namespace SharpPulsar.Akka.EventSource.Presto
 {
     public class PrestoSourceCoordinator: ReceiveActor, IWithUnboundedStash
     {

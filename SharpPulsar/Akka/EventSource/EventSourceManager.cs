@@ -24,7 +24,7 @@ namespace SharpPulsar.Akka.EventSource
         {
             _network = network;
             _pulsarManager = pulsarManager;
-            Context.ActorOf(PulsarSourceCoordinator.Prop(network, pulsarManager), "PulsarSource");
+            Context.ActorOf(PrestoSourceCoordinator.Prop(network, pulsarManager), "PulsarSource");
             Receive<IEventSourceMessage>(HandleMessage);
             Receive<IEventTopics>(HandleMessage);
         }
@@ -61,13 +61,13 @@ namespace SharpPulsar.Akka.EventSource
                     if (message.Source == SourceType.Pulsar)
                     {
                         if (child.IsNobody())
-                            child = Context.ActorOf(PulsarSourceCoordinator.Prop(_network, _pulsarManager), ns);
+                            child = Context.ActorOf(PrestoSourceCoordinator.Prop(_network, _pulsarManager), ns);
                         child.Forward(message);
                     }
                     else
                     {
                         if (child.IsNobody())
-                            child = Context.ActorOf(PulsarSourceCoordinator.Prop(_network, _pulsarManager), ns);
+                            child = Context.ActorOf(PrestoSourceCoordinator.Prop(_network, _pulsarManager), ns);
                         child.Forward(message);
                         Context.Child("PrestoSource").Forward(message);
                     }
