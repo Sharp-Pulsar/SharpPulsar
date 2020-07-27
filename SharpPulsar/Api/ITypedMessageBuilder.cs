@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -33,62 +32,6 @@ namespace SharpPulsar.Api
 	/// </summary>
 	public interface ITypedMessageBuilder
 	{
-
-		/// <summary>
-		/// Send a message synchronously.
-		/// 
-		/// <para>This method will block until the message is successfully published and returns the
-		/// <seealso cref="IMessageId"/> assigned by the broker to the published message.
-		/// 
-		/// </para>
-		/// <para>Example:
-		/// 
-		/// <pre>{@code
-		/// MessageId msgId = producer.newMessage()
-		///                  .key(myKey)
-		///                  .value(myValue)
-		///                  .send();
-		/// System.out.println("Published message: " + msgId);
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> the <seealso cref="IMessageId"/> assigned by the broker to the published message. </returns>
-		//IMessageId Send();
-
-		/// <summary>
-		/// Send a message asynchronously
-		/// 
-		/// <para>This method returns a future that can be used to track the completion of the send operation and yields the
-		/// <seealso cref="IMessageId"/> assigned by the broker to the published message.
-		/// 
-		/// </para>
-		/// <para>Example:
-		/// 
-		/// <pre>
-		/// <code>producer.newMessage()
-		///                  .value(myValue)
-		///                  .sendAsync().thenAccept(messageId -> {
-		///    System.out.println("Published message: " + messageId);
-		/// }).exceptionally(e -> {
-		///    System.out.println("Failed to publish " + e);
-		///    return null;
-		/// });</code>
-		/// </pre>
-		/// 
-		/// </para>
-		/// <para>When the producer queue is full, by default this method will complete the future with an exception
-		/// <seealso cref="PulsarClientException.ProducerQueueIsFullError"/>
-		/// 
-		/// </para>
-		/// <para>See <seealso cref="IProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue Size and
-		/// <seealso cref="IProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		//ValueTask<IMessageId> SendAsync();
-
 		/// <summary>
 		/// Sets the key of the message for routing policy.
 		/// </summary>
@@ -211,7 +154,7 @@ namespace SharpPulsar.Api
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder DeliverAfter(long delay, TimeUnit unit);
+		ITypedMessageBuilder DeliverAfter(long delay);
 
 		/// <summary>
 		/// Configure the <seealso cref="TypedMessageBuilder"/> from a config map, as an alternative compared

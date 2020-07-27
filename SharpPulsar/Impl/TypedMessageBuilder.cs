@@ -174,9 +174,9 @@ namespace SharpPulsar.Impl
 			return this;
 		}
 
-		public ITypedMessageBuilder DeliverAfter(long delay, BAMCIS.Util.Concurrent.TimeUnit unit)
+		public ITypedMessageBuilder DeliverAfter(long delay)
 		{
-			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMillis(delay));
+			return DeliverAt((long)(DateTimeHelper.CurrentUnixTimeMillis() + TimeSpan.FromSeconds(delay).TotalMilliseconds));
 		}
 
 		public ITypedMessageBuilder DeliverAt(long timestamp)
@@ -219,7 +219,7 @@ namespace SharpPulsar.Impl
 			}
 			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds, StringComparison.OrdinalIgnoreCase))
 			{
-				DeliverAfter((long)d.Value, BAMCIS.Util.Concurrent.TimeUnit.SECONDS);
+				DeliverAfter((long)d.Value);
 			}
 			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAt, StringComparison.OrdinalIgnoreCase))
 			{

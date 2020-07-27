@@ -182,7 +182,7 @@ namespace SharpPulsar.Impl
 
 		public bool IsExpired(int messageTtlInSeconds)
 		{
-			return messageTtlInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + BAMCIS.Util.Concurrent.TimeUnit.SECONDS.ToMillis(messageTtlInSeconds));
+			return messageTtlInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + TimeSpan.FromSeconds(messageTtlInSeconds).TotalMilliseconds);
 		}
 
 		public sbyte[] Data => (sbyte[])(object)Payload;

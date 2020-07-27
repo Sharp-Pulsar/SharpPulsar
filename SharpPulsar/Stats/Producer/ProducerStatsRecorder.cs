@@ -142,7 +142,7 @@ namespace SharpPulsar.Stats.Producer
             lock (Latency)
             {
                 var current = Latency.Length + 1;
-                Latency[current] = (BAMCIS.Util.Concurrent.TimeUnit.NANOSECONDS.ToMillis(latencyNs));
+                Latency[current] = (TimeSpan.FromTicks(latencyNs).TotalMilliseconds);
             }
         }
 
