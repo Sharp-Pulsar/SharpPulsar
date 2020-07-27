@@ -17,6 +17,7 @@ using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Admin.Api.Models;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.EventSource;
+using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.Function.Api;
 using SharpPulsar.Akka.InternalCommands;
@@ -1893,6 +1894,93 @@ namespace Samples
             var data = JsonConvert.SerializeObject(e, Formatting.Indented);
             Console.WriteLine(data);
         }
+
+        #region EventSource
+
+        private static void PulsarSourceEventsByTopic(PulsarSystem system, string server, string topic, long fro, long to, long max)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var EventsByTopic = new EventsByTopic();
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
+            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
+            foreach (var msg in system.EventSource<Students>(replay))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void PulsarSourceCurrentEventsByTopic(PulsarSystem system, string server, string topic, long fro, long to, long max, string key, string value)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
+            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
+            foreach (var msg in system.EventSource<Students>(replay))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void PulsarSourceEventsByTag(PulsarSystem system, string server, string topic, long fro, long to, long max)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
+            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
+            foreach (var msg in system.EventSource<Students>(replay))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void PulsarSourceEventsByTag(PulsarSystem system, string server, string topic, long fro, long to, long max, string key, string value)
+        {
+            var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
+            var readerListener = new DefaultMessageListener(null, null);
+            var jsonSchem = AvroSchema.Of(typeof(Students));
+            var readerConfig = new ReaderConfigBuilder()
+                .ReaderName("event-reader")
+                .Schema(jsonSchem)
+                .EventListener(consumerListener)
+                .ReaderListener(readerListener)
+                .Topic(topic)
+                .StartMessageId(MessageIdFields.Latest)
+                .ReaderConfigurationData;
+            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
+            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
+            foreach (var msg in system.EventSource<Students>(replay))
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+
+        #endregion
+
         //cmd 56
         private static void SetSchemaCompatibilityStrategy(PulsarSystem system, string server, string tenant, string ns)
         {

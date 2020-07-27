@@ -4,11 +4,7 @@ using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
 {
-    /// <summary>
-    /// Same type of query as <see cref="EventsByTag"/> but the event stream
-    /// is completed immediately when it reaches the end of the "result set". Events that are
-    /// stored after the query is completed are not included in the event stream.
-    /// </summary>
+    
     public sealed class CurrentEventsByTag:IPulsarEventSourceMessage
     {
         public CurrentEventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)

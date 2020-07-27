@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Common.Naming;
+﻿using System;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.InternalCommands.Consumer
@@ -99,6 +100,12 @@ namespace SharpPulsar.Akka.InternalCommands.Consumer
     {
         public Tag(string key, string value)
         {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentException("Tag key cannot be null/empty");
+            
+            if(string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Tag value cannot be null/empty");
+
             Key = key;
             Value = value;
         }
