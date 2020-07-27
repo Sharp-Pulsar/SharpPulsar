@@ -252,7 +252,7 @@ namespace SharpPulsar.Akka
 
         public void PulsarSql(InternalCommands.Sql data)
         {
-            bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+            var hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
             if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null)
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
             if (hasQuery)
@@ -293,7 +293,7 @@ namespace SharpPulsar.Akka
         }
         public void PulsarSql(LiveSql data)
         {
-            bool hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+            var hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
             
             if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
                 throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");

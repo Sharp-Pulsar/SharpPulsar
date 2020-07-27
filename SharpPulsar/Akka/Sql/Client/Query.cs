@@ -62,7 +62,7 @@ namespace SharpPulsar.Akka.Sql.Client
 			// if running or finished
 			if (_client.Running || (_client.Finished && _client.FinalStatusInfo().Error == null))
 			{
-				QueryStatusInfo results = _client.Running ? _client.CurrentStatusInfo() : _client.FinalStatusInfo();
+				IQueryStatusInfo results = _client.Running ? _client.CurrentStatusInfo() : _client.FinalStatusInfo();
 				if (results.UpdateType != null)
 				{
 					RenderUpdate(results);
@@ -150,7 +150,7 @@ namespace SharpPulsar.Akka.Sql.Client
 			_log.Debug(JsonSerializer.Serialize(warnings, new JsonSerializerOptions{WriteIndented = true}));
 		}
 
-		private void RenderUpdate(QueryStatusInfo results)
+		private void RenderUpdate(IQueryStatusInfo results)
 		{
 			string status = results.UpdateType;
 			if (results.UpdateCount != null)

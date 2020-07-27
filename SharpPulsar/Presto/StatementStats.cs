@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+using System.Text.Json.Serialization;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
@@ -19,22 +20,39 @@ namespace SharpPulsar.Presto
 {
 	public class StatementStats
 	{
+		[JsonPropertyName("state")]
 		public string State {get; set; }
+        [JsonPropertyName("queued")]
 		public bool Queued { get; set; }
+        [JsonPropertyName("scheduled")]
 		public bool Scheduled { get; set; }
+        [JsonPropertyName("nodes")]
 		public int Nodes { get; set; }
+        [JsonPropertyName("totalSplits")]
 		public int TotalSplits { get; set; }
+        [JsonPropertyName("queuedSplits")]
 		public int QueuedSplits { get; set; }
+        [JsonPropertyName("runningSplits")]
 		public int RunningSplits { get; set; }
+        [JsonPropertyName("completedSplits")]
 		public int CompletedSplits { get; set; }
+        [JsonPropertyName("cpuTimeMillis")]
 		public long CpuTimeMillis { get; set; }
+		[JsonPropertyName("wallTimeMillis")]
 		public long WallTimeMillis { get; set; }
+		[JsonPropertyName("queuedTimeMillis")]
 		public long QueuedTimeMillis { get; set; }
+		[JsonPropertyName("elapsedTimeMillis")]
 		public long ElapsedTimeMillis { get; set; }
+		[JsonPropertyName("processedRows")]
 		public long ProcessedRows { get; set; }
+		[JsonPropertyName("processedBytes")]
 		public long ProcessedBytes { get; set; }
+		[JsonPropertyName("peakMemoryBytes")]
 		public long PeakMemoryBytes { get; set; }
+		[JsonPropertyName("spilledBytes")]
 		public long SpilledBytes { get; set; }
+		[JsonPropertyName("rootStage")]
 		public StageStats RootStage { get; set; }
 
 		public override string ToString()

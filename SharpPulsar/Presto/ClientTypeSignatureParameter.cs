@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Presto.Facebook.Type;
+﻿using System.Text.Json.Serialization;
+using SharpPulsar.Presto.Facebook.Type;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +18,10 @@ namespace SharpPulsar.Presto
 {
 	public class ClientTypeSignatureParameter
 	{
-		public  ParameterKind Kind {get; set; }
-		public object Value {get; set; }
+        [JsonPropertyName("kind")]
+        public  ParameterKind Kind {get; set; }
+        [JsonPropertyName("value")]
+        public object Value {get; set; }
 	}
 
 }

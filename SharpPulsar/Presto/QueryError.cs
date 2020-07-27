@@ -12,18 +12,26 @@
  * limitations under the License.
  */
 
+using System.Text.Json.Serialization;
 using SharpPulsar.Presto.Facebook.Type;
 
 namespace SharpPulsar.Presto
 {
 	public class QueryError
 	{
+        [JsonPropertyName("message")]
         public string Message { get; set; }
+        [JsonPropertyName("sqlState")]
         public string SqlState { get; set;}
+        [JsonPropertyName("errorCode")]
         public int ErrorCode { get; set; }
+        [JsonPropertyName("errorName")]
         public string ErrorName { get; set; }
+        [JsonPropertyName("errorType")]
         public string ErrorType { get; set; }
+        [JsonPropertyName("errorLocation")]
         public ErrorLocation ErrorLocation { get; set; }
+        [JsonPropertyName("failureInfo")]
         public FailureInfo FailureInfo { get; set; }
         
 		public override string ToString()

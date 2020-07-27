@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using SharpPulsar.Presto.Facebook.Type;
 
 /*
@@ -18,18 +19,31 @@ namespace SharpPulsar.Presto
 {
 	public class StageStats
 	{
+        [JsonPropertyName("stageId")]
 		public string StageId {get; set; }
+		[JsonPropertyName("state")]
 		public string State { get; set; }
+		[JsonPropertyName("done")]
 		public bool Done {get; set; }
+		[JsonPropertyName("nodes")]
 		public int Nodes {get; set; }
+		[JsonPropertyName("totalSplits")]
 		public int TotalSplits {get; set; }
+		[JsonPropertyName("queuedSplits")]
 		public int QueuedSplits {get; set; }
+		[JsonPropertyName("runningSplits")]
 		public int RunningSplits {get; set; }
+		[JsonPropertyName("completedSplits")]
 		public int CompletedSplits {get; set; }
+		[JsonPropertyName("cpuTimeMillis")]
 		public long CpuTimeMillis {get; set; }
+		[JsonPropertyName("wallTimeMillis")]
 		public long WallTimeMillis {get; set; }
+		[JsonPropertyName("processedRows")]
 		public long ProcessedRows {get; set; }
+		[JsonPropertyName("processedBytes")]
 		public long ProcessedBytes {get; set; }
+		[JsonPropertyName("subStages")]
 		public IList<StageStats> SubStages { get; set; }
 
 		public override string ToString()

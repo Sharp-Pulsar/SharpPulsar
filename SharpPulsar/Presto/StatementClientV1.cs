@@ -157,7 +157,7 @@ namespace SharpPulsar.Presto
 
 		public StatementStats Stats => _currentResults.Stats;
 
-		public QueryStatusInfo CurrentStatusInfo()
+		public IQueryStatusInfo CurrentStatusInfo()
 		{
 			Condition.CheckArgument(Running, "current position is not valid (cursor past end)");
 			return _currentResults;
@@ -169,7 +169,7 @@ namespace SharpPulsar.Presto
 			return _currentResults;
 		}
 
-		public QueryStatusInfo FinalStatusInfo()
+		public IQueryStatusInfo FinalStatusInfo()
 		{
 			Condition.CheckArgument(!Running, "current position is still valid");
 			return _currentResults;

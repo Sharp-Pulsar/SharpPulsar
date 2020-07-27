@@ -16,7 +16,7 @@ using System.Collections.Generic;
  */
 namespace SharpPulsar.Presto
 {
-	public interface QueryStatusInfo
+	public interface IQueryStatusInfo
 	{
 		string Id {get;}
 

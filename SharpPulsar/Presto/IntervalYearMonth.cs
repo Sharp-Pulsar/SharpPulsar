@@ -53,7 +53,7 @@ namespace SharpPulsar.Presto
 				months = -months;
 			}
 
-			return string.Format("%s%d-%d", sign, months / 12, months % 12);
+			return $"{sign}{months / 12}-{months % 12}";
 		}
 
 		public static int ParseMonths(string value)

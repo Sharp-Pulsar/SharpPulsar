@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 using SharpPulsar.Presto.Facebook.Type;
 
 /*
@@ -19,28 +21,39 @@ using SharpPulsar.Presto.Facebook.Type;
 namespace SharpPulsar.Presto
 {
 
-	public class QueryResults : QueryStatusInfo, IQueryData
+	public class QueryResults : IQueryStatusInfo, IQueryData
     {
+        [JsonPropertyName("columns")]
 		public IList<Column> Columns { get; set; }
 
+        [JsonPropertyName("data")]
         public IEnumerable<IList<object>> Data { get; set; }
 
+        [JsonPropertyName("warnings")]
         public IList<PrestoWarning> Warnings { get; set; }
 
+        [JsonPropertyName("updateCount")]
         public long? UpdateCount { get; set; }
 
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
+        [JsonPropertyName("infoUri")]
         public Uri InfoUri { get; set; }
 
+        [JsonPropertyName("partialCancelUri")]
         public Uri PartialCancelUri { get; set; }
 
+        [JsonPropertyName("nextUri")]
         public Uri NextUri { get; set; }
 
+        [JsonPropertyName("stats")]
         public StatementStats Stats { get; set; }
 
+        [JsonPropertyName("error")]
         public QueryError Error { get; set; }
 
+        [JsonPropertyName("updateType")]
         public string UpdateType { get; set; }
 
         public override string ToString()

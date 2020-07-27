@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,9 @@ namespace SharpPulsar.Presto
 
 	public class ClientTypeSignature
 	{
-		public string RawType {get; set; }
+        [JsonPropertyName("rawType")]
+        public string RawType {get; set; }
+        [JsonPropertyName("arguments")]
         public IList<ClientTypeSignatureParameter> Arguments { get; set; }
 
     }

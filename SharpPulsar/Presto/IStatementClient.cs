@@ -33,11 +33,11 @@ namespace SharpPulsar.Presto
 
 		StatementStats Stats {get;}
 
-		QueryStatusInfo CurrentStatusInfo();
+		IQueryStatusInfo CurrentStatusInfo();
 
 		IQueryData CurrentData();
 
-		QueryStatusInfo FinalStatusInfo();
+		IQueryStatusInfo FinalStatusInfo();
 
 		string SetCatalog {get;}
         

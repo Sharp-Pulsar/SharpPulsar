@@ -11,13 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+using System.Text.Json.Serialization;
+
 namespace SharpPulsar.Presto
 {
     public class Column
 	{
-		public string Name {get; set; }
-		public string Type {get; set; }
-		public ClientTypeSignature TypeSignature {get; set; }
+        [JsonPropertyName("name")]
+        public string Name {get; set; }
+        [JsonPropertyName("type")]
+        public string Type {get; set; }
+        [JsonPropertyName("typeSignature")]
+        public ClientTypeSignature TypeSignature {get; set; }
     }
 
 }

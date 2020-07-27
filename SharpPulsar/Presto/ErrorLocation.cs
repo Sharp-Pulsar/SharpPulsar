@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+using System.Text.Json.Serialization;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
@@ -19,19 +20,11 @@ namespace SharpPulsar.Presto
 {
 	public class ErrorLocation
 	{
-		public int LineNumber {get;}
-		public int ColumnNumber {get;}
-
-		public ErrorLocation(int lineNumber, int columnNumber)
-		{
-			Condition.CheckArgument(lineNumber >= 1, "lineNumber must be at least one");
-            Condition.CheckArgument(columnNumber >= 1, "columnNumber must be at least one");
-
-			LineNumber = lineNumber;
-			ColumnNumber = columnNumber;
-		}
-
-
+        [JsonPropertyName("lineNumber")]
+		public int LineNumber {get; set; }
+        [JsonPropertyName("columnNumber")]
+		public int ColumnNumber {get; set; }
+        
 		public override string ToString()
         {
             return StringHelper.Build(this).Add("lineNumber", LineNumber).Add("columnNumber", ColumnNumber).ToString();

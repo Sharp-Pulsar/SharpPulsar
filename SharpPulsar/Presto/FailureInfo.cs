@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using SharpPulsar.Precondition;
+using System.Text.Json.Serialization;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,29 +18,19 @@ namespace SharpPulsar.Presto
 {
 	public class FailureInfo
 	{
-		private static readonly Regex StackTracePattern = new Regex(@"(.*)\.(.*)\(([^:]*)(?::(.*))?\)");
+        [JsonPropertyName("type")]
+        public string Type {get; set; }
+        [JsonPropertyName("message")]
+		public string Message {get; set; }
+        [JsonPropertyName("cause")]
+		public FailureInfo Cause {get; set; }
+        [JsonPropertyName("errorLocation")]
+        public ErrorLocation ErrorLocation { get; set; }
 
-		public string Type {get;}
-		public string Message {get;}
-		public FailureInfo Cause {get;}
-        private ErrorLocation _errorLocation;
-		public FailureInfo(string type, string message, FailureInfo cause, IList<FailureInfo> suppressed, IList<string> stack, ErrorLocation errorLocation)
-		{
-			Condition.RequireNonNull(type, "type", "type is null");
-            Condition.RequireNonNull(suppressed, "suppressed", "suppressed is null");
-            Condition.RequireNonNull(stack, "stack", "stack is null");
-
-			Type = type;
-			Message = message;
-			Cause = cause;
-			Suppressed = new List<FailureInfo>(suppressed);
-			Stack = new List<string>(stack);
-			_errorLocation = errorLocation;
-		}
-
-		public virtual IList<FailureInfo> Suppressed { get; }
-
-		public virtual IList<string> Stack { get; }
+        [JsonPropertyName("suppressed")]
+		public IList<FailureInfo> Suppressed { get; set; }
+        [JsonPropertyName("stack")]
+		public IList<string> Stack { get; set; }
 
 		
 	}
