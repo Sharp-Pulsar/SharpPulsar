@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Linq;
+using System.Text.Json;
 using SharpPulsar.Presto;
 using Xunit;
 using Xunit.Abstractions;
@@ -51,7 +52,15 @@ namespace SharpPulsar.Test.Presto
                                  "}";
 
             var results = JsonSerializer.Deserialize<QueryResults>(goldenValue);
-
+            var dats = results.Data.ToList();
+            for (var i = 0; i < dats.Count; i++)
+            {
+                var data = dats[i];
+                foreach (var d in data)
+                {
+                    _output.WriteLine(d.ToString());
+                }
+            }
             Assert.Equal("20160128_214710_00012_rk68b", results.Id);
         }
 
