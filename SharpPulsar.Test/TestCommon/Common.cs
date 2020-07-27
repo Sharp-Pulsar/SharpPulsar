@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.TestCommon
 
             var clientConfig = builder.ClientConfigurationData;
 
-            PulsarSystem = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            PulsarSystem = PulsarSystem.GetInstance(clientConfig);
         }
 
         public CreateProducer CreateProducer(ISchema schema, string topic, string producername, int compression = 0, long batchMessageDelayMs = 0, int batchingMaxMessages = 5, IBatcherBuilder batcherBuilder = null, int maxMessageSize = 0, bool enableChunking = false, bool enableBatching = false)

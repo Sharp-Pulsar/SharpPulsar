@@ -71,7 +71,7 @@ namespace SharpPulsar.Test.Api
 
             var clientConfig = builder.ClientConfigurationData;
 
-            var system = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            var system = PulsarSystem.GetInstance(clientConfig);
             var conf = new ProducerConfigurationData {TopicName = topicName};
             // should be able to create producer successfully
             var p = system.PulsarProducer(new CreateProducer(BytesSchema.Of(), conf));
@@ -103,7 +103,7 @@ namespace SharpPulsar.Test.Api
 
             var clientConfig = builder.ClientConfigurationData;
 
-            var system = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            var system = PulsarSystem.GetInstance(clientConfig);
             var conf = new ProducerConfigurationData
             {
                 TopicName = topicName,
@@ -139,7 +139,7 @@ namespace SharpPulsar.Test.Api
 
             var clientConfig = builder.ClientConfigurationData;
 
-            var system = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            var system = PulsarSystem.GetInstance(clientConfig);
             var conf = new ProducerConfigurationData
             {
                 TopicName = topicName,

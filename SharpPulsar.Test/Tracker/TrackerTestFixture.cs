@@ -20,7 +20,6 @@ namespace SharpPulsar.Test.Tracker
     public class TrackerTestFixture : IDisposable
     {
         internal readonly PulsarSystem PulsarSystem;
-        internal  TestObject TestObject;
         private ITestOutputHelper _output;
 
 
@@ -34,7 +33,7 @@ namespace SharpPulsar.Test.Tracker
                 .Authentication(new AuthenticationDisabled())
                 //.Authentication(AuthenticationFactory.Token("eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJzaGFycHB1bHNhci1jbGllbnQtNWU3NzY5OWM2M2Y5MCJ9.lbwoSdOdBoUn3yPz16j3V7zvkUx-Xbiq0_vlSvklj45Bo7zgpLOXgLDYvY34h4MX8yHB4ynBAZEKG1ySIv76DPjn6MIH2FTP_bpI4lSvJxF5KsuPlFHsj8HWTmk57TeUgZ1IOgQn0muGLK1LhrRzKOkdOU6VBV_Hu0Sas0z9jTZL7Xnj1pTmGAn1hueC-6NgkxaZ-7dKqF4BQrr7zNt63_rPZi0ev47vcTV3ga68NUYLH5PfS8XIqJ_OV7ylouw1qDrE9SVN8a5KRrz8V3AokjThcsJvsMQ8C1MhbEm88QICdNKF5nu7kPYR6SsOfJJ1HYY-QBX3wf6YO3VAF_fPpQ"))
                 .ClientConfigurationData;
-            PulsarSystem = PulsarSystem.GetInstance(clientConfig, SystemMode.Test);
+            PulsarSystem = PulsarSystem.GetInstance(clientConfig);
         }
         public void Dispose()
         {

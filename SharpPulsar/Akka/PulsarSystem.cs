@@ -10,8 +10,6 @@ using Akka.Actor;
 using Akka.Configuration;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.EventSource.Messages;
-using SharpPulsar.Akka.EventSource.Messages.Presto;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -29,14 +27,12 @@ namespace SharpPulsar.Akka
     {
         private static PulsarSystem _instance;
         private static readonly object Lock = new object();
-        private readonly SystemMode _systemMode;
-        private readonly TestObject _testObject;
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _pulsarManager;
         private readonly ClientConfigurationData _conf;
         private readonly PulsarManagerState _managerState;
         private readonly Dictionary<string, CommandSubscribe.SubType> _topicSubTypes;
-        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf, SystemMode mode = SystemMode.Normal)
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             if (_instance == null)
             {
@@ -44,13 +40,13 @@ namespace SharpPulsar.Akka
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(actorSystem, conf, mode);
+                        _instance = new PulsarSystem(actorSystem, conf);
                     }
                 }
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(ClientConfigurationData conf, SystemMode mode = SystemMode.Normal)
+        public static PulsarSystem GetInstance(ClientConfigurationData conf)
         {
             if (_instance == null)
             {
@@ -58,17 +54,15 @@ namespace SharpPulsar.Akka
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf, mode);
+                        _instance = new PulsarSystem(conf);
                     }
                 }
             }
             return _instance;
         }
-        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf, SystemMode mode)
+        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             _topicSubTypes = new Dictionary<string, CommandSubscribe.SubType>();
-            _testObject = new TestObject {ActorSystem = actorSystem};
-            _systemMode = mode;
             _actorSystem = actorSystem;
             _managerState = new PulsarManagerState
             {
@@ -89,10 +83,8 @@ namespace SharpPulsar.Akka
             _conf = conf;
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
         }
-        private PulsarSystem(ClientConfigurationData conf, SystemMode mode)
+        private PulsarSystem(ClientConfigurationData conf)
         {
-            _testObject = new TestObject();
-            _systemMode = mode;
             _topicSubTypes = new Dictionary<string, CommandSubscribe.SubType>();
             _managerState = new PulsarManagerState
             {
@@ -137,11 +129,9 @@ namespace SharpPulsar.Akka
             _actorSystem = ActorSystem.Create("Pulsar", config);
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
 
-            if(mode == SystemMode.Test)
-                _testObject.ActorSystem = _pulsarManager.Ask<ActorSystem>("ActorSystem").GetAwaiter().GetResult();
         }
 
-        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer)
+        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer, CancellationToken token = default)
         {
             if (producer == null)
                 throw new ArgumentNullException(nameof(producer), "null");
@@ -159,17 +149,15 @@ namespace SharpPulsar.Akka
             conf.TopicName = topic.ToString();
             var p = new NewProducer(producer.Schema, _conf, conf);
             _pulsarManager.Tell(p);
-            if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, token))
             {
-                if (_systemMode == SystemMode.Test)
-                    _testObject.Producer = createdProducer.Producer;
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
             Stop();
             throw new TimeoutException($"Timeout waiting for producer creation!");
         }
         
-        public (byte[] SchemaVersion, string ErrorCode, string ErrorMessage) PulsarProducer(RegisterSchema schema, IActorRef producer)
+        public (byte[] SchemaVersion, string ErrorCode, string ErrorMessage) PulsarProducer(RegisterSchema schema, IActorRef producer, CancellationToken token = default)
         {
             if (schema == null)
                 throw new ArgumentNullException(nameof(schema), "null");
@@ -182,13 +170,13 @@ namespace SharpPulsar.Akka
 
             var topic = TopicName.Get(schema.Topic);
             producer.Tell(new RegisterSchema(schema.Schema, topic.ToString()));
-            if (_managerState.SchemaQueue.TryTake(out var register, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.SchemaQueue.TryTake(out var register, _conf.OperationTimeoutMs, token))
             {
                 return (register.SchemaVersion, register.ErrorCode.ToString(), register.ErrorMessage);
             }
             throw new TimeoutException($"Timeout waiting for schema registration!");
         }
-        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducerBroadcastGroup producer)
+        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducerBroadcastGroup producer, CancellationToken token = default)
         {
             if (producer == null)
                 throw new ArgumentNullException(nameof(producer), "null");
@@ -204,14 +192,14 @@ namespace SharpPulsar.Akka
             }
             var group = new NewProducerBroadcastGroup(producer.Schema, _conf, producer.ProducerConfigurations.ToImmutableHashSet(), producer.Title);
             _pulsarManager.Tell(group);
-            if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, token))
             {
                 return (createdProducer.Producer, createdProducer.Topic, createdProducer.Name);
             }
             Stop();
             throw new TimeoutException($"Timeout waiting for producer creation!");
         }
-        public (IActorRef Reader, string Topic) PulsarReader(CreateReader reader)
+        public (IActorRef Reader, string Topic) PulsarReader(CreateReader reader, CancellationToken token = default)
         {
             var originalName = reader.ReaderConfiguration.ReaderName;
 
@@ -241,10 +229,8 @@ namespace SharpPulsar.Akka
             }
             var p = new NewReader(reader.Schema, _conf, reader.ReaderConfiguration, reader.Seek);
             _pulsarManager.Tell(p);
-            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, token))
             {
-                if (_systemMode == SystemMode.Test)
-                    _testObject.Consumer = createdConsumer.Consumer;
                 return (createdConsumer.Consumer, createdConsumer.Topic);
             }
             Stop();
@@ -269,11 +255,11 @@ namespace SharpPulsar.Akka
             
         }
 
-        public IEnumerable<SqlData> SqlData()
+        public IEnumerable<SqlData> SqlData(CancellationToken token = default)
         {
             while (true)
             {
-                if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, CancellationToken.None))
+                if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, token))
                 {
                     yield return sqlData;
                 }
@@ -283,9 +269,9 @@ namespace SharpPulsar.Akka
                 }
             }
         }
-        public IEnumerable<LiveSqlData> LiveSqlData()
+        public IEnumerable<LiveSqlData> LiveSqlData(CancellationToken token = default)
         {
-            var results = _managerState.LiveDataQueue.GetConsumingEnumerable();
+            var results = _managerState.LiveDataQueue.GetConsumingEnumerable(token);
             foreach (var liveData in results)
             {
                 yield return liveData;
@@ -334,12 +320,12 @@ namespace SharpPulsar.Akka
         /// <typeparam name="T"></typeparam>
         /// <param name="data"></param>
         /// <returns></returns>
-        public T PulsarAdmin<T>(InternalCommands.Admin data)
+        public T PulsarAdmin<T>(InternalCommands.Admin data, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null  || data.Log == null)
                 throw new ArgumentException("'Admin' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
-            if (!_managerState.AdminQueue.TryTake(out var response, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (!_managerState.AdminQueue.TryTake(out var response, _conf.OperationTimeoutMs, token))
                 return default(T);
             //check for exception and null
             if (!(response.Response is Exception) || response.Response != null)
@@ -358,14 +344,14 @@ namespace SharpPulsar.Akka
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public IEnumerable<T> Messages<T>(string consumerName, bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<ConsumedMessage, T> customHander = null)
+        public IEnumerable<T> Messages<T>(string consumerName, bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<ConsumedMessage, T> customHander = null, CancellationToken token = default)
         {
             //no end
             if (takeCount == -1)
             {
                 for (var i = 0; i > takeCount; i++)
                 {
-                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, token))
                     {
                         yield return ProcessMessage<T>(m, autoAck, customHander);
                     }
@@ -375,7 +361,7 @@ namespace SharpPulsar.Akka
             {
                 for (var i = 0; i < takeCount; i++)
                 {
-                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, token))
                     {
                         yield return ProcessMessage<T>(m, autoAck, customHander);
                     }
@@ -391,7 +377,7 @@ namespace SharpPulsar.Akka
                 //drain the current messages
                 while (true)
                 {
-                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+                    if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, token))
                     {
                         yield return ProcessMessage<T>(m, autoAck, customHander);
                     }
@@ -413,9 +399,9 @@ namespace SharpPulsar.Akka
 
             return received;
         }
-        public ConsumedMessage Receive(string consumerName, int receiveTimeout = 3000)
+        public ConsumedMessage Receive(string consumerName, int receiveTimeout = 3000, CancellationToken token = default)
         {
-            if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+            if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, token))
             {
                 return m;
             }
@@ -435,12 +421,12 @@ namespace SharpPulsar.Akka
         /// <param name="batchSize"></param>
         /// <param name="receiveTimeout"></param> 
         /// <returns></returns>
-        public ConsumedMessages BatchReceive(string consumerName, int batchSize, int receiveTimeout = 3000)
+        public ConsumedMessages BatchReceive(string consumerName, int batchSize, int receiveTimeout = 3000, CancellationToken token = default)
         {
             var messages = new ConsumedMessages();
             for (var i = 0; i < batchSize; i++)
             {
-                if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, CancellationToken.None))
+                if (_managerState.MessageQueue[consumerName].TryTake(out var m, receiveTimeout, token))
                 {
                     messages.Messages.Add(m);
                 }
@@ -479,12 +465,12 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("'Function' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
         }
-        public T PulsarFunction<T>(InternalCommands.Function data)
+        public T PulsarFunction<T>(InternalCommands.Function data, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(data.BrokerDestinationUrl) || data.Exception == null || data.Handler == null  || data.Log == null)
                 throw new ArgumentException("'Function' is in an invalid state: null field not allowed");
             _pulsarManager.Tell(data);
-            if (!_managerState.FunctionQueue.TryTake(out var response, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (!_managerState.FunctionQueue.TryTake(out var response, _conf.OperationTimeoutMs, token))
                 return default(T);
             //check for exception and null
             if (!(response.Response is Exception) || response.Response != null)
@@ -497,7 +483,7 @@ namespace SharpPulsar.Akka
         {
             
         }
-        public (IActorRef Consumer, string Topic) PulsarConsumer(CreateConsumer consumer)
+        public (IActorRef Consumer, string Topic) PulsarConsumer(CreateConsumer consumer, CancellationToken token = default)
         {
             if (consumer == null)
                 throw new ArgumentNullException(nameof(consumer), "null");
@@ -508,14 +494,6 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException($"Topic '{topic}' is invalid");
 
             topic = TopicName.Get(topic).ToString();
-            /*if (_topicSubTypes.ContainsKey(topic))
-            {
-                var sub = _topicSubTypes[topic];
-                if(sub == CommandSubscribe.SubType.Exclusive)
-                    throw new ArgumentException($"{topic} has an exclusive subscriber");
-
-            }*/
-            var subType = consumer.ConsumerConfiguration.SubscriptionType;
 
             consumer.ConsumerConfiguration.SingleTopic = topic;
 
@@ -549,11 +527,8 @@ namespace SharpPulsar.Akka
             }
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, ConsumerType.Single, consumer.Seek);
             _pulsarManager.Tell(c);
-            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, token))
             {
-                if (_systemMode == SystemMode.Test)
-                    _testObject.Consumer = createdConsumer.Consumer;
-
                 _managerState.MessageQueue.TryAdd(createdConsumer.ConsumerName, new BlockingCollection<ConsumedMessage>());
                 //_topicSubTypes.Add(createdConsumer.Topic, subType);
                 return (createdConsumer.Consumer, createdConsumer.Topic);
@@ -562,7 +537,7 @@ namespace SharpPulsar.Akka
             throw new TimeoutException($"Timeout waiting for consumer creation!");
         }
 
-        public IEnumerable<(IActorRef Consumer, string Topic)> PulsarConsumer(CreateMultiConsumer consumer)
+        public IEnumerable<(IActorRef Consumer, string Topic)> PulsarConsumer(CreateMultiConsumer consumer, CancellationToken token = default)
         {
             if (consumer == null)
                 throw new ArgumentNullException(nameof(consumer), "null");
@@ -610,11 +585,8 @@ namespace SharpPulsar.Akka
             var c = new NewConsumer(consumer.Schema, _conf, consumer.ConsumerConfiguration, type, consumer.Seek);
             _pulsarManager.Tell(c);
             var gotten = false;
-            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.ConsumerQueue.TryTake(out var createdConsumer, _conf.OperationTimeoutMs, token))
             {
-                if (_systemMode == SystemMode.Test)
-                    _testObject.Consumer = createdConsumer.Consumer;
-
                 _managerState.MessageQueue.TryAdd(createdConsumer.ConsumerName, new BlockingCollection<ConsumedMessage>());
 
                 yield return (createdConsumer.Consumer, createdConsumer.Topic);
@@ -934,9 +906,9 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(message);
         }
 
-        public ActiveTopics ActiveTopics(int timeoutMs = 5000)
+        public ActiveTopics ActiveTopics(int timeoutMs = 5000, CancellationToken token = default)
         {
-            if (_managerState.ActiveTopicsQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
+            if (_managerState.ActiveTopicsQueue.TryTake(out var msg, timeoutMs, token))
             {
                 return msg;
             }
@@ -948,11 +920,11 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventEnvelope></returns>
-        public IEnumerable<EventEnvelope> SourceEventsFromPresto(CancellationTokenSource token, int timeoutMs = 5000)
+        public IEnumerable<EventEnvelope> SourceEventsFromPresto(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {
-                if (_managerState.PrestoEventQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
+                if (_managerState.PrestoEventQueue.TryTake(out var msg, timeoutMs, token))
                 {
                     yield return msg;
                 }
@@ -964,11 +936,11 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventEnvelope></returns>
-        public IEnumerable<EventEnvelope> SourceCurrentEventsFromPresto(CancellationTokenSource token, int timeoutMs = 5000)
+        public IEnumerable<EventEnvelope> SourceCurrentEventsFromPresto(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {
-                if (_managerState.PrestoEventQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
+                if (_managerState.PrestoEventQueue.TryTake(out var msg, timeoutMs, token))
                 {
                     yield return msg;
                 }
@@ -984,11 +956,11 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventMessage></returns>
-        public IEnumerable<EventMessage> SourceEventsFromReader(CancellationTokenSource token, int timeoutMs = 5000)
+        public IEnumerable<EventMessage> SourceEventsFromReader(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (token.IsCancellationRequested)
             {
-                if (_managerState.PulsarEventQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
+                if (_managerState.PulsarEventQueue.TryTake(out var msg, timeoutMs, token))
                 {
                     yield return msg;
                 }
@@ -1000,11 +972,11 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventMessage></returns>
-        public IEnumerable<EventMessage> SourceCurrentEventsFromReader(CancellationTokenSource token, int timeoutMs = 5000)
+        public IEnumerable<EventMessage> SourceCurrentEventsFromReader(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {
-                if (_managerState.PulsarEventQueue.TryTake(out var msg, timeoutMs, CancellationToken.None))
+                if (_managerState.PulsarEventQueue.TryTake(out var msg, timeoutMs, token))
                 {
                     yield return msg;
                 }
@@ -1014,12 +986,12 @@ namespace SharpPulsar.Akka
                 }
             }
         }
-        public (string Topic, long LedgerId, long EntryId, int Partition, int BatchIndex) PulsarConsumer(LastMessageId last, IActorRef consumer)
+        public (string Topic, long LedgerId, long EntryId, int Partition, int BatchIndex) PulsarConsumer(LastMessageId last, IActorRef consumer, CancellationToken token = default)
         {
             if (consumer == null)
                 throw new ArgumentNullException(nameof(consumer), "null");
             consumer.Tell(last);
-            if (_managerState.MessageIdQueue.TryTake(out var messageId, _conf.OperationTimeoutMs, CancellationToken.None))
+            if (_managerState.MessageIdQueue.TryTake(out var messageId, _conf.OperationTimeoutMs, token))
             {
                 return (messageId.Topic, messageId.Response.LedgerId, messageId.Response.EntryId, messageId.Response.Partition, messageId.Response.BatchIndex);
             }
@@ -1049,10 +1021,10 @@ namespace SharpPulsar.Akka
                 throw new ArgumentException("Seek is null");
             reader.Tell(seek);
         }
-        public SentReceipt Send(Send send, IActorRef producer, int sendTimeout = 5000/*5 seconds*/)
+        public SentReceipt Send(Send send, IActorRef producer, int sendTimeout = 5000, CancellationToken token = default)
         {
            producer.Tell(send);
-           if (_managerState.SentReceiptQueue.TryTake(out var receipt, sendTimeout, CancellationToken.None))
+           if (_managerState.SentReceiptQueue.TryTake(out var receipt, sendTimeout, token))
            {
                return  receipt;
            }
@@ -1060,13 +1032,13 @@ namespace SharpPulsar.Akka
            return null;//maybe the message is being batched.
         }
        
-        public IEnumerable<SentReceipt> BulkSend(BulkSend send, IActorRef producer, int sendTimeout = 5000/*5 seconds*/)
+        public IEnumerable<SentReceipt> BulkSend(BulkSend send, IActorRef producer, int sendTimeout = 5000, CancellationToken token = default)
         {
             var count = send.Messages.Count;
             producer.Tell(send);
             for (var i = 0; i < count; i++)
             {
-                if (_managerState.SentReceiptQueue.TryTake(out var receipt, sendTimeout, CancellationToken.None))
+                if (_managerState.SentReceiptQueue.TryTake(out var receipt, sendTimeout, token))
                 {
                     yield return receipt;
                 }
@@ -1109,34 +1081,9 @@ namespace SharpPulsar.Akka
 
         }
 
-        public TestObject GeTestObject()
-        {
-            if (_testObject.Producer == null || _testObject.Consumer == null)
-                throw new Exception("System not ready yet or not in Test mode");
-            _testObject.ProducerBroker =
-                _testObject.Producer.Ask<IActorRef>(new INeedBroker()).GetAwaiter().GetResult();
-            _testObject.ConsumerBroker =
-                _testObject.Consumer.Ask<IActorRef>(new INeedBroker()).GetAwaiter().GetResult();
-            return _testObject;
-        }
-
         public ActorSystem GetActorSystem()
         {
             return _actorSystem;
         }
-    }
-    //I need this for AcknowledgementsGroupingTrackerTest etc
-    public sealed class TestObject
-    {
-        public ActorSystem ActorSystem { get; set; }
-        public IActorRef Consumer { get; set; }
-        public IActorRef Producer { get; set; }
-        public IActorRef ConsumerBroker { get; set; }// Ask for it with INeedBroker
-        public IActorRef ProducerBroker { get; set; }// Ask for it with INeedBroker
-    }
-    public enum SystemMode
-    {
-        Normal,
-        Test // for unit testing
     }
 }
