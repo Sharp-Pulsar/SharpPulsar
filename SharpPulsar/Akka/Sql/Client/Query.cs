@@ -100,7 +100,7 @@ namespace SharpPulsar.Akka.Sql.Client
                 var warning = _client.FinalStatusInfo().Warnings;
 				_log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions{WriteIndented = true}));
 				
-                _handler.Tell(new ErrorResponse(error, warning.ToList()));
+                _handler.Tell(new ErrorResponse(error, warning?.ToList()));
                 return false;
 			}
 

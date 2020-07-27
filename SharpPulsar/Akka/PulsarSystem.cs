@@ -258,7 +258,6 @@ namespace SharpPulsar.Akka
             if (hasQuery)
             {
                 data.ClientOptions.Execute.TrimEnd(';');
-                data.ClientOptions.Execute += ";";
             }
             else
             {

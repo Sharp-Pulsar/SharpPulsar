@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using NodaTime;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto;
 using SharpPulsar.Presto.Facebook.Type;
@@ -61,8 +62,9 @@ namespace SharpPulsar.Akka.Sql.Client
 
 
 		public virtual ClientSession ToClientSession()
-		{
-			return new ClientSession(ParseServer(Server), User, Source, null, ParseClientTags(ClientTags), ClientInfo, Catalog, Schema, TimeZoneInfo.Local.Id, CultureInfo.CurrentCulture, ToResourceEstimates(ResourceEstimates), ToProperties(SessionProperties), new Dictionary<string, string>(), new Dictionary<string, SelectedRole>(), ToExtraCredentials(ExtraCredentials), null, ClientRequestTimeout);
+        {
+            var timeZoneId = DateTimeZoneProviders.Tzdb.GetSystemDefault().ToString();
+			return new ClientSession(ParseServer(Server), User, Source, null, ParseClientTags(ClientTags), ClientInfo, Catalog, Schema, timeZoneId, CultureInfo.CurrentCulture, ToResourceEstimates(ResourceEstimates), ToProperties(SessionProperties), new Dictionary<string, string>(), new Dictionary<string, SelectedRole>(), ToExtraCredentials(ExtraCredentials), null, ClientRequestTimeout);
 		}
 
 		public static Uri ParseServer(string server)

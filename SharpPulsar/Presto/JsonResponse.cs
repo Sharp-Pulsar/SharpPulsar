@@ -35,7 +35,7 @@ namespace SharpPulsar.Presto
 		{
 			Headers = Condition.RequireNonNull(responseMessage?.Headers, "headers is null");
 			ResponseBody = Condition.RequireNonNull(responseBody, "responseBody is null");
-
+            ResponseMessage = responseMessage;
 			_hasValue = false;
 			_value = default(T);
 			Exception = null;
@@ -45,7 +45,7 @@ namespace SharpPulsar.Presto
 		{
 			Headers = Condition.RequireNonNull(responseMessage?.Headers, "headers is null");
 			ResponseBody = Condition.RequireNonNull(responseBody, "responseBody is null");
-
+            ResponseMessage = responseMessage;
 			T value = default(T);
 			ArgumentException exception = null;
 			try

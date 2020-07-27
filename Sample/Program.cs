@@ -24,6 +24,7 @@ using SharpPulsar.Akka.InternalCommands.Consumer;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Api;
 using SharpPulsar.Handlers;
 using SharpPulsar.Impl.Auth;
@@ -1645,7 +1646,19 @@ namespace Samples
             system.PulsarSql(new Sql(option, e =>{ Console.WriteLine(e.ToString()); }, Console.WriteLine));
             foreach (var d in system.SqlData())
             {
-                Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
+                var data = d.Response;
+                switch (data)
+                {
+                    case DataResponse dr:
+                        Console.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case StatsResponse sr:
+                        Console.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case ErrorResponse er:
+                        Console.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
             }
         }
         private static void LiveSqlQuery(PulsarSystem system, string query, int frequency, DateTime startAt, string topic , string server)
@@ -1657,7 +1670,19 @@ namespace Samples
             }, Console.WriteLine));
             foreach (var d in system.LiveSqlData())
             {
-                Console.WriteLine(JsonSerializer.Serialize(d, new JsonSerializerOptions{WriteIndented = true}));
+                var data = d.Response;
+                switch (data)
+                {
+                    case DataResponse dr:
+                        Console.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case StatsResponse sr:
+                        Console.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case ErrorResponse er:
+                        Console.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
             }
         }
         private static void GetManagedLedgerInfoPersistent(PulsarSystem system, string server, string tenant, string ns, string topic)

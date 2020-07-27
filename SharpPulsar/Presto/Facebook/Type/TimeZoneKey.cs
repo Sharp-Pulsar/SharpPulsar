@@ -42,20 +42,25 @@ namespace SharpPulsar.Presto.Facebook.Type
 		{
 			try
 			{
-                IDictionary<string, TimeZoneKey> zoneIdToKey = new SortedDictionary<string, TimeZoneKey>();
-                ZoneIdToKey[UtcKey.Id.ToLower(CultureInfo.GetCultureInfo("en-US"))] = UtcKey;
-                short maxZoneKey = 0;
-				var lines = File.ReadLines("zone-index.properties");
+				IDictionary<string, TimeZoneKey> zoneIdToKey = new SortedDictionary<string, TimeZoneKey>
+				{
+					[UtcKey.Id.ToLower(CultureInfo.GetCultureInfo("en-US"))] = UtcKey
+				};
+				short maxZoneKey = 0;
+				var lines = File.ReadAllLines("Presto\\Facebook\\Type\\zone-index.properties");
                 foreach (var line in lines)
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
                     var l = line.Trim();
                     var sl = l.Split(' ');
-                    var key = Convert.ToInt16(sl[0].Trim());
-					if(key == 0) continue;
-                    maxZoneKey = Math.Max(maxZoneKey, key);
-					var tzk = new TimeZoneKey(sl[1].Trim(), Convert.ToInt16(sl[0].Trim()));
-                    zoneIdToKey[sl[0].ToLower(CultureInfo.GetCultureInfo("en-US"))] = tzk;
+                    if (short.TryParse(sl[0].Trim(), out var zoneKey))
+                    {
+                        if (zoneKey == 0) continue;
+                        var zoneId = sl[1].Trim();
+                        maxZoneKey = Math.Max(maxZoneKey, zoneKey);
+                        zoneIdToKey[zoneId.ToLower(CultureInfo.GetCultureInfo("en-US"))] = new TimeZoneKey(zoneId, zoneKey);
+					}
+					
                 }
 				
                 MaxTimeZoneKey = maxZoneKey;

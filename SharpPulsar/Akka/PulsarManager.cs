@@ -97,11 +97,11 @@ namespace SharpPulsar.Akka
             {
                 Context.Child("EventSourceManager").Tell(cmd);
             });
-            Receive<LiveSql>(cmd =>
+            Receive<LiveSqlSession>(cmd =>
             {
                 Context.Child("SqlManager").Tell(cmd);
             });
-            Receive((InternalCommands.Sql cmd) =>
+            Receive((SqlSession cmd) =>
             {
                 Context.Child("SqlManager").Tell(cmd);
             });

@@ -45,7 +45,7 @@ namespace SharpPulsar.Presto
 		{
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
             var fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
-            _userAgentValue = typeof(StatementClientV1).Name + "/" + fvi;
+            _userAgentValue = typeof(StatementClientV1).Name + "/" + fvi.FileVersion;
 			Condition.RequireNonNull(httpClient, "httpClient is null");
 			Condition.RequireNonNull(session, "session is null");
 			Condition.RequireNonNull(query, "query is null");
@@ -60,7 +60,7 @@ namespace SharpPulsar.Presto
 
 			var responseTask = JsonResponse<QueryResults>.Execute(httpClient, request);
 			var response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
-			if ((response.ResponseMessage.StatusCode != HttpStatusCode.Accepted) || !response.HasValue())
+			if ((response.ResponseMessage.StatusCode != HttpStatusCode.OK) || !response.HasValue())
 			{
 				if (_state == State.Running)
 					_state = State.ClientError;
@@ -273,7 +273,7 @@ namespace SharpPulsar.Presto
 					continue;
 				}
 
-				if ((response.ResponseMessage.StatusCode == HttpStatusCode.Accepted) && response.HasValue())
+				if (response.ResponseMessage.StatusCode == HttpStatusCode.OK && response.HasValue())
 				{
 					ProcessResponse(response.Headers, response.Value);
 					return true;
@@ -290,57 +290,86 @@ namespace SharpPulsar.Presto
 
 		private void ProcessResponse(HttpResponseHeaders headers, QueryResults results)
 		{
-			SetCatalog = headers.GetValues(PrestoHeaders.PrestoSetCatalog).First();
-			SetSchema = headers.GetValues(PrestoHeaders.PrestoSetSchema).First();
-			var sessions = headers.GetValues(PrestoHeaders.PrestoSetSession);
-			foreach (var setSession in sessions)
-			{
-				IList<string> keyValue = setSession.Split('=').Take(2).Select(x => x.Trim()).ToList();
-				if (keyValue.Count != 2)
-				{
-					continue;
-				}
-				SetSessionProperties[keyValue[0]] = keyValue[1];
-			}
-			headers.GetValues(PrestoHeaders.PrestoClearSession).ToList().ForEach(x => ResetSessionProperties.Add(x));
-			var roles = headers.GetValues(PrestoHeaders.PrestoSetRole);
-			foreach (var setRole in roles)
-			{
-				IList<string> keyValue = setRole.Split('=').Take(2).Select(x => x.Trim()).ToList();
-				if (keyValue.Count != 2)
-				{
-					continue;
-				}
-				SetRoles[keyValue[0]] = SelectedRole.ValueOf(UrlDecode(keyValue[1]));
-			}
-			var prepares = headers.GetValues(PrestoHeaders.PrestoAddedPrepare);
-			foreach (var entry in prepares)
-			{
-				IList<string> keyValue = entry.Split('=').Take(2).Select(x => x.Trim()).ToList();
-				if (keyValue.Count != 2)
-				{
-					continue;
-				}
-				AddedPreparedStatements[UrlDecode(keyValue[0])] = UrlDecode(keyValue[1]);
-			}
-			var deAllocs = headers.GetValues(PrestoHeaders.PrestoDeallocatedPrepare);
-			foreach (var entry in deAllocs)
-			{
-				DeallocatedPreparedStatements.Add(UrlDecode(entry));
+            if (headers.TryGetValues(PrestoHeaders.PrestoSetCatalog, out var setCat))
+            {
+                SetCatalog = setCat.FirstOrDefault();
 			}
 
-			var startedTransactionId = headers.GetValues(PrestoHeaders.PrestoStartedTransactionId).First();
-			if (!string.IsNullOrWhiteSpace(startedTransactionId))
-			{
-				StartedTransactionId = startedTransactionId;
+            if (headers.TryGetValues(PrestoHeaders.PrestoSetSchema, out var setSch))
+            {
+                SetSchema = setSch.FirstOrDefault();
 			}
-			var clearedTransactionId = headers.GetValues(PrestoHeaders.PrestoClearTransactionId).First();
-			if (clearedTransactionId != null)
-			{
-				ClearTransactionId = true;
+            if (headers.TryGetValues(PrestoHeaders.PrestoSetSession, out var sessions))
+            {
+				foreach (var setSession in sessions)
+                {
+                    IList<string> keyValue = setSession.Split('=').Take(2).Select(x => x.Trim()).ToList();
+                    if (keyValue.Count != 2)
+                    {
+                        continue;
+                    }
+                    SetSessionProperties[keyValue[0]] = keyValue[1];
+                }
+			}
+            if (headers.TryGetValues(PrestoHeaders.PrestoClearSession, out var csessions))
+            {
+                csessions.ToList().ForEach(x => ResetSessionProperties.Add(x));
 			}
 
-			_currentResults = results;
+            if (headers.TryGetValues(PrestoHeaders.PrestoSetRole, out var roles))
+            {
+
+                foreach (var setRole in roles)
+                {
+                    IList<string> keyValue = setRole.Split('=').Take(2).Select(x => x.Trim()).ToList();
+                    if (keyValue.Count != 2)
+                    {
+                        continue;
+                    }
+                    SetRoles[keyValue[0]] = SelectedRole.ValueOf(UrlDecode(keyValue[1]));
+                }
+			}
+
+            if (headers.TryGetValues(PrestoHeaders.PrestoAddedPrepare, out var prepares))
+            {
+                foreach (var entry in prepares)
+                {
+                    IList<string> keyValue = entry.Split('=').Take(2).Select(x => x.Trim()).ToList();
+                    if (keyValue.Count != 2)
+                    {
+                        continue;
+                    }
+                    AddedPreparedStatements[UrlDecode(keyValue[0])] = UrlDecode(keyValue[1]);
+                }
+			}
+
+            if (headers.TryGetValues(PrestoHeaders.PrestoDeallocatedPrepare, out var deAllocs))
+            {
+                foreach (var entry in deAllocs)
+                {
+                    DeallocatedPreparedStatements.Add(UrlDecode(entry));
+                }
+			}
+
+            if (headers.TryGetValues(PrestoHeaders.PrestoStartedTransactionId, out var trans))
+            {
+                var startedTransactionId = trans.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(startedTransactionId))
+                {
+                    StartedTransactionId = startedTransactionId;
+                }
+			}
+
+            if (headers.TryGetValues(PrestoHeaders.PrestoClearTransactionId, out var clr))
+            {
+                var clearedTransactionId = clr.FirstOrDefault();
+                if (clearedTransactionId != null)
+                {
+                    ClearTransactionId = true;
+                }
+			}
+
+            _currentResults = results;
 		}
 
 		private Exception RequestFailedException(string task, HttpRequestMessage request, JsonResponse<QueryResults> response)

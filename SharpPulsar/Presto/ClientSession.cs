@@ -52,51 +52,60 @@ namespace SharpPulsar.Presto
 			Server = Condition.RequireNonNull(server, "Server", "server is null");
 			User = user;
 			Source = source;
-			_traceToken = Condition.RequireNonNull(traceToken, "TraceToken", "traceToken is null");
-			_clientTags = new HashSet<string>(Condition.RequireNonNull(clientTags, "ClientTags", "clientTags is null"));
+            _traceToken = traceToken;
+			_clientTags = clientTags;
 			ClientInfo = clientInfo;
 			Catalog = catalog;
 			Schema = schema;
 			Locale = locale;
 			TimeZone = TimeZoneKey.GetTimeZoneKey(timeZoneId);
 			TransactionId = transactionId;
-			_resourceEstimates = new Dictionary<string, string>(Condition.RequireNonNull(resourceEstimates, "ResourceEstimates", "resourceEstimates is null"));
-			_properties = new Dictionary<string, string>(Condition.RequireNonNull(properties, "properties is null"));
-			PreparedStatements = new Dictionary<string, string>(Condition.RequireNonNull(preparedStatements, "preparedStatements is null"));
-			Roles = new Dictionary<string, SelectedRole>(Condition.RequireNonNull(roles, "roles is null"));
-			ExtraCredentials = new Dictionary<string, string>(Condition.RequireNonNull(extraCredentials, "extraCredentials is null"));
+			_resourceEstimates = resourceEstimates;
+			_properties = properties;
+			PreparedStatements = preparedStatements;
+			Roles = roles;
+			ExtraCredentials = extraCredentials;
 			ClientRequestTimeout = clientRequestTimeout;
 
-			foreach (string clientTag in clientTags)
+			foreach (var clientTag in clientTags)
 			{
 				Condition.CheckArgument(!clientTag.Contains(","), "client tag cannot contain ','");
 			}
 
-			// verify that resource estimates are valid
-			var charsetEncoder = new ASCIIEncoding();
-			foreach (KeyValuePair<string, string> entry in resourceEstimates.SetOfKeyValuePairs())
-			{
-				Condition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Resource name is empty");
-				Condition.CheckArgument(entry.Key.IndexOf('=') < 0, "Resource name must not contain '=': %s", entry.Key);
-				//Condition.CheckArgument(charsetEncoder.canEncode(entry.Key), "Resource name is not US_ASCII: %s", entry.Key);
+            if (resourceEstimates != null)
+            {
+                // verify that resource estimates are valid
+                var charsetEncoder = new ASCIIEncoding();
+                foreach (KeyValuePair<string, string> entry in resourceEstimates.SetOfKeyValuePairs())
+                {
+                    Condition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Resource name is empty");
+                    Condition.CheckArgument(entry.Key.IndexOf('=') < 0, "Resource name must not contain '=': %s", entry.Key);
+                    //Condition.CheckArgument(charsetEncoder.canEncode(entry.Key), "Resource name is not US_ASCII: %s", entry.Key);
+                }
 			}
 
-			// verify the properties are valid
-			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
-			{
-				Condition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Session property name is empty");
-				Condition.CheckArgument(entry.Key.IndexOf('=') < 0, "Session property name must not contain '=': %s", entry.Key);
-				Condition.CheckArgument(Condition.CanEncode(entry.Key), "Session property name is not US_ASCII: %s", entry.Key);
-				Condition.CheckArgument(Condition.CanEncode(entry.Value), "Session property value is not US_ASCII: %s", entry.Value);
+            if (properties != null)
+            {
+                // verify the properties are valid
+                foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
+                {
+                    Condition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Session property name is empty");
+                    Condition.CheckArgument(entry.Key.IndexOf('=') < 0, "Session property name must not contain '=': %s", entry.Key);
+                    Condition.CheckArgument(Condition.CanEncode(entry.Key), "Session property name is not US_ASCII: %s", entry.Key);
+                    Condition.CheckArgument(Condition.CanEncode(entry.Value), "Session property value is not US_ASCII: %s", entry.Value);
+                }
 			}
 
-			// verify the extra credentials are valid
-			foreach (KeyValuePair<string, string> entry in extraCredentials.SetOfKeyValuePairs())
+            if (extraCredentials != null)
 			{
-				Condition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Credential name is empty");
-				Condition.CheckArgument(entry.Key.IndexOf('=') < 0, "Credential name must not contain '=': %s", entry.Key);
-				Condition.CheckArgument(Condition.CanEncode(entry.Key), "Credential name is not US_ASCII: %s", entry.Key);
-				Condition.CheckArgument(Condition.CanEncode(entry.Value), "Credential value is not US_ASCII: %s", entry.Value);
+				// verify the extra credentials are valid
+                foreach (KeyValuePair<string, string> entry in extraCredentials.SetOfKeyValuePairs())
+                {
+                    Condition.CheckArgument(!string.IsNullOrWhiteSpace(entry.Key), "Credential name is empty");
+                    Condition.CheckArgument(entry.Key.IndexOf('=') < 0, "Credential name must not contain '=': %s", entry.Key);
+                    Condition.CheckArgument(Condition.CanEncode(entry.Key), "Credential name is not US_ASCII: %s", entry.Key);
+                    Condition.CheckArgument(Condition.CanEncode(entry.Value), "Credential value is not US_ASCII: %s", entry.Value);
+                }
 			}
 		}
 
