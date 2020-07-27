@@ -120,6 +120,8 @@ namespace SharpPulsar.Akka.Sql.Client
                     var value = currentData[i];
                     if (col.StartsWith("__") && col.EndsWith("__"))
                     {
+                        if (col.Equals("__i_d__") || col.Equals("__pro_ps__")) 
+                            continue;
                         metadata[col.Trim('_')] = value;
                     }
                     else
