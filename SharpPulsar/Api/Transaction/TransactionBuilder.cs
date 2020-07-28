@@ -39,7 +39,7 @@ namespace SharpPulsar.Api.Transaction
 		/// <param name="timeout"> the transaction timeout value </param>
 		/// <param name="timeoutUnit"> the transaction timeout unit </param>
 		/// <returns> the transaction builder itself </returns>
-		TransactionBuilder WithTransactionTimeout(long timeout, BAMCIS.Util.Concurrent.TimeUnit timeoutUnit);
+		TransactionBuilder WithTransactionTimeout(long timeout);
 
 		/// <summary>
 		/// Build the transaction with the configured settings.

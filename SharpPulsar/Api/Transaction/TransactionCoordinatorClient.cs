@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Transaction;
 
 /// <summary>
@@ -87,7 +86,7 @@ namespace SharpPulsar.Api.Transaction
 		/// </param>
 		/// <returns> <seealso cref="TxnID"/> as the identifier for identifying the transaction. </returns>
 
-        TxnID NewTransaction(long timeout, TimeUnit unit);
+        TxnID NewTransaction(long timeout);
 
 		/// <summary>
 		/// Create a new transaction asynchronously.
@@ -98,7 +97,7 @@ namespace SharpPulsar.Api.Transaction
 		/// <returns> a future represents the result of creating a new transaction.
 		///         it returns <seealso cref="TxnID"/> as the identifier for identifying the
 		///         transaction. </returns>
-		ValueTask<TxnID> NewTransactionAsync(long timeout, TimeUnit unit);
+		ValueTask<TxnID> NewTransactionAsync(long timeout);
 
 		/// <summary>
 		/// Add publish partition to txn.
