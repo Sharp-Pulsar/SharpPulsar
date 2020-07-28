@@ -906,7 +906,7 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(message);
         }
 
-        public ActiveTopics ActiveTopics(int timeoutMs = 5000, CancellationToken token = default)
+        public ActiveTopics CurrentActiveTopics(int timeoutMs = 5000, CancellationToken token = default)
         {
             if (_managerState.ActiveTopicsQueue.TryTake(out var msg, timeoutMs, token))
             {
@@ -914,6 +914,17 @@ namespace SharpPulsar.Akka
             }
 
             return null;
+        }
+        public IEnumerable<ActiveTopics> ActiveTopics(int timeoutMs = 5000, CancellationToken token = default)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (_managerState.ActiveTopicsQueue.TryTake(out var msg, timeoutMs, token))
+                {
+                   yield return msg;
+                }
+
+            }
         }
         /// <summary>
         /// Reads existing events and future events from Presto

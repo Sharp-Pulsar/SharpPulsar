@@ -17,6 +17,7 @@ using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.Admin.Api.Models;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.EventSource;
+using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Akka.Function;
 using SharpPulsar.Akka.Function.Api;
@@ -58,6 +59,20 @@ namespace Samples
         
         static void Main(string[] args)
         {
+            #region common variables
+            var tenant = string.Empty;
+            var ns = string.Empty;
+            var server = string.Empty;
+            var fro = 0L;
+            var to = 0L;
+            var key = string.Empty;
+            var value = string.Empty;
+            var columns = string.Empty;
+            var adminUrl = string.Empty;
+            var topic = string.Empty;
+            
+
+            #endregion
             Console.WriteLine("Welcome. Enter Pulsar server endpoint");
             var endPoint = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(endPoint))
@@ -90,71 +105,71 @@ namespace Samples
                     #region producers
                     case "0":
                         Console.WriteLine("[PlainAvroBulkSendProducer] Enter topic: ");
-                        var t = Console.ReadLine();
-                        PlainAvroBulkSendProducer(pulsarSystem, t);
+                        topic = Console.ReadLine();
+                        PlainAvroBulkSendProducer(pulsarSystem, topic);
                         break;
                     case "67":
                         Console.WriteLine("[RegisterSchema] Enter topic: ");
-                        var schemaTopic = Console.ReadLine();
-                        RegisterSchema(pulsarSystem, schemaTopic);
+                        topic = Console.ReadLine();
+                        RegisterSchema(pulsarSystem, topic);
                         break;
                     case "63":
                         Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter topic: ");
-                        var t63 = Console.ReadLine();
+                        topic = Console.ReadLine();
                         Console.WriteLine("[PlainAvroBulkSendCompressionProducer] Enter Compression Type number ");
                         Console.WriteLine("None:0, Lz4:1, Zlib:2, Zstd:3, Snappy:4");
                         var ct = Convert.ToInt32(Console.ReadLine());
-                        PlainAvroBulkSendCompressionProducer(pulsarSystem, t63, ct);
+                        PlainAvroBulkSendCompressionProducer(pulsarSystem, topic, ct);
                         break;
                     case "65":
                         Console.WriteLine("[PlainAvroBulkSendBroadcastProducer] Enter topic: ");
-                        var t65 = Console.ReadLine();
-                        PlainAvroBulkSendBroadcastProducer(pulsarSystem, t65);
+                        topic = Console.ReadLine();
+                        PlainAvroBulkSendBroadcastProducer(pulsarSystem, topic);
                         break;
                     case "1":
                         Console.WriteLine("[PlainAvroProducer] Enter topic: ");
-                        var t1 = Console.ReadLine();
-                        PlainAvroProducer(pulsarSystem, t1);
+                        topic = Console.ReadLine();
+                        PlainAvroProducer(pulsarSystem, topic);
                         break;
                     case "77":
                         Console.WriteLine("[LargeAvroProducer] Enter topic: ");
-                        var t77 = Console.ReadLine();
-                        LargeAvroProducer(pulsarSystem, t77);
+                        topic = Console.ReadLine();
+                        LargeAvroProducer(pulsarSystem, topic);
                         break;
                     case "51":
                         Console.WriteLine("[PlainAvroCovidProducer] Enter topic: ");
-                        var t51 = Console.ReadLine();
-                        PlainAvroCovidProducer(pulsarSystem, t51);
+                        topic = Console.ReadLine();
+                        PlainAvroCovidProducer(pulsarSystem, topic);
                         break;
                     case "2":
                         Console.WriteLine("[PlainByteBulkSendProducer] Enter topic: ");
-                        var t2 = Console.ReadLine();
-                        PlainByteBulkSendProducer(pulsarSystem, t2);
+                        topic = Console.ReadLine();
+                        PlainByteBulkSendProducer(pulsarSystem, topic);
                         break;
                     case "3":
                         Console.WriteLine("[PlainByteProducer] Enter topic: ");
-                        var t3 = Console.ReadLine();
-                        PlainByteProducer(pulsarSystem, t3);
+                        topic = Console.ReadLine();
+                        PlainByteProducer(pulsarSystem, topic);
                         break;
                     case "4":
                         Console.WriteLine("[EncryptedAvroBulkSendProducer] Enter topic: ");
-                        var t4 = Console.ReadLine();
-                        EncryptedAvroBulkSendProducer(pulsarSystem, t4);
+                        topic = Console.ReadLine();
+                        EncryptedAvroBulkSendProducer(pulsarSystem, topic);
                         break;
                     case "5":
                         Console.WriteLine("[EncryptedAvroProducer] Enter topic: ");
-                        var t5 = Console.ReadLine();
-                        EncryptedAvroProducer(pulsarSystem, t5);
+                        topic = Console.ReadLine();
+                        EncryptedAvroProducer(pulsarSystem, topic);
                         break;
                     case "6":
                         Console.WriteLine("[EncryptedByteBulkSendProducer] Enter topic: ");
-                        var t6 = Console.ReadLine();
-                        EncryptedByteBulkSendProducer(pulsarSystem, t6);
+                        topic = Console.ReadLine();
+                        EncryptedByteBulkSendProducer(pulsarSystem, topic);
                         break;
                     case "7":
                         Console.WriteLine("[EncryptedByteProducer] Enter topic: ");
-                        var t7 = Console.ReadLine();
-                        EncryptedByteProducer(pulsarSystem, t7);
+                        topic = Console.ReadLine();
+                        EncryptedByteProducer(pulsarSystem, topic);
                         break;
 
                     #endregion
@@ -243,8 +258,18 @@ namespace Samples
 
                     #region EventSource
                     case "72":
+                        Console.WriteLine("[ActiveTopics] Enter Tenant: ");
+                        tenant = Console.ReadLine();
+                        Console.WriteLine("[ActiveTopics] Enter Namespace: ");
+                        ns = Console.ReadLine();
+                        ActiveTopics( pulsarSystem, tenant, ns);
                         break;
                     case "73":
+                        Console.WriteLine("[ActiveTopics] Enter Tenant: ");
+                        tenant = Console.ReadLine();
+                        Console.WriteLine("[ActiveTopics] Enter Namespace: ");
+                        ns = Console.ReadLine();
+                        CurrentActiveTopics(pulsarSystem, tenant, ns);
                         break;
                     case "74":
                         break;
@@ -290,7 +315,7 @@ namespace Samples
 
                     case "20":
                         Console.WriteLine("[SqlQuery] Enter destination server: ");
-                        var server = Console.ReadLine();
+                        server = Console.ReadLine();
                         Console.WriteLine("[SqlQuery] Enter query statement: ");
                         var query = Console.ReadLine();
                         SqlQuery(pulsarSystem, query, server);
@@ -433,10 +458,10 @@ namespace Samples
                         Console.WriteLine("[CreateNonPartitionedPersistentTopic] Tenant: ");
                         var tn = Console.ReadLine();
                         Console.WriteLine("[CreateNonPartitionedPersistentTopic] Namespace: ");
-                        var ns = Console.ReadLine();
+                        ns = Console.ReadLine();
                         Console.WriteLine("[CreateNonPartitionedPersistentTopic] Topic: ");
-                        var to = Console.ReadLine();
-                        CreateNonPartitionedPersistentTopic(pulsarSystem, ds, tn, ns, to);
+                        topic = Console.ReadLine();
+                        CreateNonPartitionedPersistentTopic(pulsarSystem, ds, tn, ns, topic);
                         break;
                     case "56":
                         Console.WriteLine("[SetSchemaCompatibilityStrategy] Enter destination server: ");
@@ -1897,7 +1922,61 @@ namespace Samples
 
         #region EventSource
 
-        private static void PulsarSourceEventsByTopic(PulsarSystem system, string server, string topic, long fro, long to, long max)
+        private static void ActiveTopics(PulsarSystem system, string tenant, string ns)
+        {
+            system.EventTopics(new EventTopics(tenant, ns));
+            foreach (var msg in system.ActiveTopics())
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void CurrentActiveTopics(PulsarSystem system, string tenant, string ns)
+        {
+            system.EventTopics(new CurrentEventTopics(tenant, ns));
+            var topic = system.CurrentActiveTopics();
+            Console.WriteLine(JsonSerializer.Serialize(topic, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        private static void EventsByTopicPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns)
+        {
+            var cols = columns.Split(',');
+            var option = new ClientOptions {Server = server};
+            system.EventsByTopicPresto(tenant, ns, topic, cols.ToImmutableHashSet(), fro, to, option, adminUrl);
+            foreach (var msg in system.SourceEventsFromPresto())
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void CurrentEventsByTopicPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns)
+        {
+            var cols = columns.Split(',');
+            var option = new ClientOptions {Server = server};
+            system.CurrentEventsByTopicPresto(tenant, ns, topic, cols.ToImmutableHashSet(), fro, to, option, adminUrl);
+            foreach (var msg in system.SourceCurrentEventsFromPresto())
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void EventsByTagPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns, string tagKey, string tagValue)
+        {
+            var cols = columns.Split(',');
+            var option = new ClientOptions {Server = server};
+            system.EventsByTagPresto(tenant, ns, topic, new Tag(tagKey, tagValue), cols.ToImmutableHashSet(), fro, to, option, adminUrl);
+            foreach (var msg in system.SourceEventsFromPresto())
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void CurrentEventsByTagPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns, string tagKey, string tagValue)
+        {
+            var cols = columns.Split(',');
+            var option = new ClientOptions {Server = server};
+            system.CurrentEventsByTagPresto(tenant, ns, topic, new Tag(tagKey, tagValue), cols.ToImmutableHashSet(), fro, to, option, adminUrl);
+            foreach (var msg in system.SourceCurrentEventsFromPresto())
+            {
+                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
+        private static void EventsByTopicReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
@@ -1910,15 +1989,13 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var EventsByTopic = new EventsByTopic();
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
-            foreach (var msg in system.EventSource<Students>(replay))
+            system.EventsByTopicReader(tenant, ns, topic, fro, to, adminUrl, readerConfig);
+            foreach (var msg in system.SourceEventsFromReader())
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
-        private static void PulsarSourceCurrentEventsByTopic(PulsarSystem system, string server, string topic, long fro, long to, long max, string key, string value)
+        private static void CurrentEventsByTopicReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
@@ -1931,14 +2008,14 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
-            foreach (var msg in system.EventSource<Students>(replay))
+            system.CurrentEventsByTopicReader(tenant, ns, topic, fro, to, adminUrl, readerConfig);
+            foreach (var msg in system.SourceCurrentEventsFromReader())
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
-        private static void PulsarSourceEventsByTag(PulsarSystem system, string server, string topic, long fro, long to, long max)
+        
+        private static void EventsByTagReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string tagKey, string tagValue)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
@@ -1951,14 +2028,13 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, null, false);
-            foreach (var msg in system.EventSource<Students>(replay))
+            system.EventsByTagReader(tenant, ns, topic, new Tag(tagKey, tagValue), fro, to, adminUrl, readerConfig);
+            foreach (var msg in system.SourceEventsFromReader())
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
-        private static void PulsarSourceEventsByTag(PulsarSystem system, string server, string topic, long fro, long to, long max, string key, string value)
+        private static void CurrentEventsByTagReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string tagKey, string tagValue)
         {
             var consumerListener = new DefaultConsumerEventListener(Console.WriteLine);
             var readerListener = new DefaultMessageListener(null, null);
@@ -1971,14 +2047,13 @@ namespace Samples
                 .Topic(topic)
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
-            var numb = system.EventSource(new GetNumberOfEntries(topic, server));
-            var replay = new ReplayTopic(readerConfig, server, fro, to, numb.Max.Value, new Tag(key, value), true);
-            foreach (var msg in system.EventSource<Students>(replay))
+            system.CurrentEventsByTagReader(tenant, ns, topic, new Tag(tagKey, tagValue), fro, to, adminUrl, readerConfig);
+            foreach (var msg in system.SourceEventsFromReader())
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
-
+        
         #endregion
 
         //cmd 56
