@@ -262,14 +262,18 @@ namespace Samples
                         tenant = Console.ReadLine();
                         Console.WriteLine("[ActiveTopics] Enter Namespace: ");
                         ns = Console.ReadLine();
-                        ActiveTopics( pulsarSystem, tenant, ns);
+                        Console.WriteLine("[ActiveTopics] Enter Admin Uri: ");
+                        adminUrl = Console.ReadLine();
+                        ActiveTopics( pulsarSystem, tenant, ns, adminUrl);
                         break;
                     case "73":
-                        Console.WriteLine("[ActiveTopics] Enter Tenant: ");
+                        Console.WriteLine("[CurrentActiveTopics] Enter Tenant: ");
                         tenant = Console.ReadLine();
-                        Console.WriteLine("[ActiveTopics] Enter Namespace: ");
+                        Console.WriteLine("[CurrentActiveTopics] Enter Namespace: ");
                         ns = Console.ReadLine();
-                        CurrentActiveTopics(pulsarSystem, tenant, ns);
+                        Console.WriteLine("[CurrentActiveTopics] Enter Admin Uri: ");
+                        adminUrl = Console.ReadLine();
+                        CurrentActiveTopics(pulsarSystem, tenant, ns, adminUrl);
                         break;
                     case "74":
                         Console.WriteLine("[EventsByTopicReader] Enter Tenant: ");
@@ -2070,17 +2074,17 @@ namespace Samples
 
         #region EventSource
 
-        private static void ActiveTopics(PulsarSystem system, string tenant, string ns)
+        private static void ActiveTopics(PulsarSystem system, string tenant, string ns, string adminUri)
         {
-            system.EventTopics(new EventTopics(tenant, ns));
+            system.EventTopics(new EventTopics(tenant, ns, adminUri));
             foreach (var msg in system.ActiveTopics())
             {
                 Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
-        private static void CurrentActiveTopics(PulsarSystem system, string tenant, string ns)
+        private static void CurrentActiveTopics(PulsarSystem system, string tenant, string ns, string adminUri)
         {
-            system.EventTopics(new CurrentEventTopics(tenant, ns));
+            system.EventTopics(new CurrentEventTopics(tenant, ns, adminUri));
             var topic = system.CurrentActiveTopics();
             Console.WriteLine(JsonSerializer.Serialize(topic, new JsonSerializerOptions { WriteIndented = true }));
         }

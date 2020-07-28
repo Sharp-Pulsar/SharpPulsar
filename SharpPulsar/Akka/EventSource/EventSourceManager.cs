@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using SharpPulsar.Akka.Consumer;
+using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Akka.EventSource.Pulsar;
-using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -20,8 +16,10 @@ namespace SharpPulsar.Akka.EventSource
     {
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
+        private readonly HttpClient _httpClient;
         public EventSourceManager(IActorRef network, IActorRef pulsarManager)
         {
+            _httpClient = new HttpClient();
             _network = network;
             _pulsarManager = pulsarManager;
             Context.ActorOf(PrestoSourceCoordinator.Prop(network, pulsarManager), "PulsarSource");
@@ -39,7 +37,7 @@ namespace SharpPulsar.Akka.EventSource
                         Context.ActorOf(TopicUpdater.Prop(_network, message, _pulsarManager), ns);
                     break;
                 case CurrentEventTopics _:
-                    var topics = TopicsHelper.Topics(message, _network);
+                    var topics = TopicsHelper.Topics(message, new PulsarAdminRESTAPI(message.AdminUri, _httpClient, true));
                     _pulsarManager.Tell(new ActiveTopics(message.Namespace, topics.ToImmutableList()));
                     break;
                 default:
@@ -86,14 +84,14 @@ namespace SharpPulsar.Akka.EventSource
 
     public class TopicUpdater : ReceiveActor
     {
-        private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
         private readonly IEventTopics _message;
         private ICancelable _updaterCancelable;
         private readonly IAdvancedScheduler _scheduler;
+        private readonly PulsarAdminRESTAPI _adminRestapi;
         public TopicUpdater(IActorRef network, IEventTopics message, IActorRef pulsarManager)
         {
-            _network = network;
+            _adminRestapi = new PulsarAdminRESTAPI(message.AdminUri, new HttpClient(), true);
             _message = message;
             _pulsarManager = pulsarManager;
             _scheduler = Context.System.Scheduler.Advanced;
@@ -104,7 +102,7 @@ namespace SharpPulsar.Akka.EventSource
         {
             try
             {
-                var topics = TopicsHelper.Topics(_message, _network);
+                var topics = TopicsHelper.Topics(_message, _adminRestapi);
                 _pulsarManager.Tell(new ActiveTopics(_message.Namespace, topics.ToImmutableList()));
             }
             finally
@@ -126,16 +124,12 @@ namespace SharpPulsar.Akka.EventSource
 
     public static class TopicsHelper
     {
-        public static IList<string> Topics(IEventTopics message, IActorRef network)
+        public static IList<string> Topics(IEventTopics message, PulsarAdminRESTAPI adminRestapi)
         {
-            var nameSpace = message.Namespace;
-            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewGetTopicsOfNamespaceRequest(nameSpace, requestId, CommandGetTopicsOfNamespace.Mode.Persistent);
-            var payload = new Payload(request, requestId, "GetTopicsOfNamespace");
-            var ask = network.Ask<NamespaceTopics>(payload);
-            var t = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
-            return t.Topics;
-
+            var response = adminRestapi.GetTopics(message.Tenant, message.Namespace, "ALL");
+            if(response == null)
+                return new List<string>();
+            return response;
         }
         
     }

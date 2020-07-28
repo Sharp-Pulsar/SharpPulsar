@@ -19,30 +19,35 @@ namespace SharpPulsar.Akka.EventSource.Messages
     /// </summary>
     public sealed class EventTopics:IEventTopics
     {
-        public EventTopics(string tenant, string ns)
+        public EventTopics(string tenant, string ns, string adminUri)
         {
             Tenant = tenant;
             Namespace = ns;
+            AdminUri = adminUri;
         }
 
         public string Tenant { get; }
         public string Namespace { get; }
+        public string AdminUri { get; }
     }
     public sealed class CurrentEventTopics:IEventTopics
     {
-        public CurrentEventTopics(string tenant, string ns)
+        public CurrentEventTopics(string tenant, string ns, string adminUri)
         {
             Tenant = tenant;
             Namespace = ns;
+            AdminUri = adminUri;
         }
 
         public string Tenant { get; }
         public string Namespace { get; }
+        public string AdminUri { get; }
     }
 
     public interface IEventTopics
     {
         public string Tenant { get; }
         public string Namespace { get; }
+        public string AdminUri { get; }
     }
 }
