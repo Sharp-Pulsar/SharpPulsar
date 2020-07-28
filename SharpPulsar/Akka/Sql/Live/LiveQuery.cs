@@ -14,8 +14,10 @@ namespace SharpPulsar.Akka.Sql.Live
         private int _runCount;
         private readonly IActorContext _context;
         private ICancelable _executeCancelable;
+        private readonly IActorRef _self;
         public LiveQuery(IActorRef pulsar, LiveSqlSession sql)
         {
+            _self = Self;
             _sql = sql;
             _execute = sql.ClientOptions.Execute;
             var p = sql.StartAtPublishTime;
@@ -39,7 +41,7 @@ namespace SharpPulsar.Akka.Sql.Live
                 _sql.Log($"{_runCount} => Executing: {text}");
                 _sql.ClientOptions.Execute = text;
                 var q = _sql;
-                var executor = new Executor(q.ClientSession, q.ClientOptions, Self, Context.System.Log);
+                var executor = new Executor(q.ClientSession, q.ClientOptions, _self, _context.System.Log);
                 q.Log($"Executing: {q.ClientOptions.Execute}");
                 executor.Run();
 
@@ -68,10 +70,6 @@ namespace SharpPulsar.Akka.Sql.Live
         public static Props Prop(IActorRef pulsar, LiveSqlSession sql)
         {
             return Props.Create(() => new LiveQuery(pulsar, sql));
-        }
-        internal class RunQuery
-        {
-            
         }
     }
 }

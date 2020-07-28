@@ -255,11 +255,11 @@ namespace SharpPulsar.Akka
             
         }
 
-        public IEnumerable<SqlData> SqlData(CancellationToken token = default)
+        public IEnumerable<SqlData> SqlData(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (true)
             {
-                if (_managerState.DataQueue.TryTake(out var sqlData, _conf.OperationTimeoutMs, token))
+                if (_managerState.DataQueue.TryTake(out var sqlData, timeoutMs, token))
                 {
                     yield return sqlData;
                 }
@@ -287,7 +287,6 @@ namespace SharpPulsar.Akka
             if (hasQuery)
             {
                 data.ClientOptions.Execute.TrimEnd(';');
-                data.ClientOptions.Execute += ";";
             }
             else
             {

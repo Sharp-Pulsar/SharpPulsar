@@ -116,18 +116,21 @@ namespace SharpPulsar.Akka.Sql.Client
                 var metadata = new Dictionary<string, object>();
                 for (var i = 0; i < currentData.Count; i++)
                 {
-                    var col = columns[i].Name;
                     var value = currentData[i];
-                    if (col.StartsWith("__") && col.EndsWith("__"))
-                    {
-                        if (col.Equals("__i_d__") || col.Equals("__pro_ps__")) 
-                            continue;
-                        metadata[col.Trim('_')] = value;
-                    }
-                    else
-                    {
-                        data[col] = value;
-                    }
+                    for (var y = 0; y < value.Count; y++)
+					{
+						var col = columns[y].Name;
+						if (col.StartsWith("__") && col.EndsWith("__"))
+                        {
+                            if (col.Equals("__i_d__") || col.Equals("__pro_ps__"))
+                                continue;
+                            metadata[col.Trim('_')] = value[y];
+                        }
+                        else
+                        {
+                            data[col] = value[y];
+                        }
+					}
 				}
                 _handler.Tell(new DataResponse(data, metadata));
 				_client.Advance();
