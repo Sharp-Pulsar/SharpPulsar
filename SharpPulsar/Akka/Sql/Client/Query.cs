@@ -111,30 +111,34 @@ namespace SharpPulsar.Akka.Sql.Client
         {
             while (_client.Running)
             {
-                var currentData = _client.CurrentData().Data.ToList();
-                var data = new Dictionary<string, object>();
-                var metadata = new Dictionary<string, object>();
-                for (var i = 0; i < currentData.Count; i++)
+                var cData = _client.CurrentData().Data;
+                if (cData != null)
                 {
-                    var value = currentData[i];
-                    for (var y = 0; y < value.Count; y++)
+                    var currentData = cData.ToList();
+                    for (var i = 0; i < currentData.Count; i++)
 					{
-						var col = columns[y].Name;
-						if (col.StartsWith("__") && col.EndsWith("__"))
+						var data = new Dictionary<string, object>();
+                        var metadata = new Dictionary<string, object>();
+						var value = currentData[i];
+                        for (var y = 0; y < value.Count; y++)
                         {
-                            if (col.Equals("__i_d__") || col.Equals("__pro_ps__"))
-                                continue;
-                            metadata[col.Trim('_')] = value[y];
-                        }
-                        else
-                        {
-                            data[col] = value[y];
-                        }
+                            var col = columns[y].Name;
+                            if (col.StartsWith("__") && col.EndsWith("__"))
+                            {
+                                if (col.Equals("__i_d__") || col.Equals("__pro_ps__"))
+                                    continue;
+                                metadata[col.Trim('_')] = value[y];
+                            }
+                            else
+                            {
+                                data[col] = value[y];
+                            }
+						}
+						_handler.Tell(new DataResponse(data, metadata));
 					}
 				}
-                _handler.Tell(new DataResponse(data, metadata));
-				_client.Advance();
-            }
+                _client.Advance();
+			}
         }
 		private void ProcessInitialStatusUpdates()
 		{

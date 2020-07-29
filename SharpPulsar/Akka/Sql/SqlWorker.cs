@@ -11,7 +11,10 @@ namespace SharpPulsar.Akka.Sql
         public SqlWorker(IActorRef pulsarManager)
         {
             Receive<SqlSession>(Query);
-            Receive<IQueryResponse>(q => { pulsarManager.Tell(new SqlData(q)); });
+            Receive<IQueryResponse>(q =>
+            {
+                pulsarManager.Tell(new SqlData(q));
+            });
 
         }
 
