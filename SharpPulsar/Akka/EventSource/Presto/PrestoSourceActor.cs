@@ -45,7 +45,8 @@ namespace SharpPulsar.Akka.EventSource.Presto
             try
             {
                 var max = end.Index - start.Index;
-                var query = $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__, cast(json_parse(__message_id__) as map(varchar, bigint)) AS __i_d__ from pulsar.\"{_message.Tenant}/{_message.Namespace}\".\"{_message.Topic}\" where __i_d__.ledgerid BETWEEN bigint {start.LedgerId} AND bigint {end.LedgerId} AND __i_d__.entryid BETWEEN bigint {start.EntryId} AND bigint {end.EntryId} ORDER BY __i_d__.ledgerid ASC, __i_d__.entryid ASC LIMIT {max}";
+                var query =
+                    $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__, split(replace(replace(__message_id__, '('), ')'), ',') AS __i_d__ from pulsar.\"{_message.Tenant}/{_message.Namespace}\".\"{_message.Topic}\" where element_at(__i_d__, 0) BETWEEN bigint '{start.LedgerId}' AND bigint '{end.LedgerId}' AND element_at(__i_d__, 1) BETWEEN bigint '{start.EntryId}' AND bigint '{end.EntryId}' ORDER BY __publish_time__ ASC LIMIT {max}";
                 var options = _message.Options;
                 options.Execute = query;
                 var session = options.ToClientSession();
@@ -71,7 +72,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
                 if (max > 0)
                 {
                     var query =
-                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__, cast(json_parse(__message_id__) as map(varchar, bigint)) AS __i_d__ from pulsar.\"{_message.Tenant}/{_message.Namespace}\".\"{_message.Topic}\" where __i_d__.ledgerid BETWEEN bigint {ids.Start.LedgerId} AND bigint {ids.End.LedgerId} AND __i_d__.entryid BETWEEN bigint {ids.Start.EntryId} AND bigint {ids.End.EntryId} ORDER BY __i_d__.ledgerid ASC, __i_d__.entryid ASC LIMIT {max}";
+                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__, split(replace(replace(__message_id__, '('), ')'), ',') AS __i_d__ from pulsar.\"{_message.Tenant}/{_message.Namespace}\".\"{_message.Topic}\" where element_at(__i_d__, 0) BETWEEN bigint '{ids.Start.LedgerId}' AND bigint '{ids.End.LedgerId}' AND element_at(__i_d__, 1) BETWEEN bigint '{ids.Start.EntryId}' AND bigint '{ids.End.EntryId}' ORDER BY __publish_time__ ASC LIMIT {max}";
                     var options = _message.Options;
                     options.Execute = query;
                     var session = options.ToClientSession();
