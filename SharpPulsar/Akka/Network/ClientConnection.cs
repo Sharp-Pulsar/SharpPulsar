@@ -44,11 +44,14 @@ namespace SharpPulsar.Akka.Network
         private readonly ILoggingAdapter _log;
         private readonly ClientConfigurationData _conf;
         private readonly IActorRef _manager;
+
+        private readonly CancellationTokenSource _cancellationToken;
         // Added for mutual authentication.
         private IAuthenticationDataProvider _authenticationDataProvider;
 
         public ClientConnection(Uri endPoint, ClientConfigurationData conf, IActorRef manager, string targetBroker = "")
         {
+            _cancellationToken = new CancellationTokenSource();
             _pendingPayloads = new Queue<Payload>();
             _context = Context;
             _proxyToTargetBrokerAddress = targetBroker;
@@ -112,6 +115,7 @@ namespace SharpPulsar.Akka.Network
         {
             try
             {
+                _cancellationToken.Cancel();
                 _stream.DisposeAsync().ConfigureAwait(false);
             }
             catch(Exception ex)
@@ -176,8 +180,8 @@ namespace SharpPulsar.Akka.Network
             await Task.Yield();
             try
             {
-
-                await foreach (var frame in _stream.Frames())
+                
+                await foreach (var frame in _stream.Frames(_cancellationToken.Token))
                 {
                     try
                     {

@@ -828,7 +828,8 @@ namespace Samples
                     ["Properties"] = new Dictionary<string, string>
                     {
                         { "Tick", DateTime.Now.Ticks.ToString() },
-                        {"Week-Day", "Saturday" }
+                        {"Week-Day", "Saturday" },
+                        {"song", "pop" }
                     }
                 };
                 //var s = JsonSerializer.Serialize(student);
@@ -2173,7 +2174,7 @@ namespace Samples
                 .StartMessageId(MessageIdFields.Latest)
                 .ReaderConfigurationData;
             system.CurrentEventsByTopicReader(tenant, ns, topic, fro, to, adminUrl, readerConfig);
-            foreach (var msg in system.SourceCurrentEventsFromReader())
+            foreach (var msg in system.SourceCurrentEventsFromReader(60000))
             {
                 var m = msg.Message.ToTypeOf<Students>();
                 Console.WriteLine(msg.SequenceId);
@@ -2197,7 +2198,9 @@ namespace Samples
             system.EventsByTagReader(tenant, ns, topic, new Tag(tagKey, tagValue), fro, to, adminUrl, readerConfig);
             foreach (var msg in system.SourceEventsFromReader())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                var m = msg.Message.ToTypeOf<Students>();
+                Console.WriteLine(msg.SequenceId);
+                Console.WriteLine(JsonSerializer.Serialize(m, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
         private static void CurrentEventsByTagReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string tagKey, string tagValue)
@@ -2216,7 +2219,9 @@ namespace Samples
             system.CurrentEventsByTagReader(tenant, ns, topic, new Tag(tagKey, tagValue), fro, to, adminUrl, readerConfig);
             foreach (var msg in system.SourceEventsFromReader())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                var m = msg.Message.ToTypeOf<Students>();
+                Console.WriteLine(msg.SequenceId);
+                Console.WriteLine(JsonSerializer.Serialize(m, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
         

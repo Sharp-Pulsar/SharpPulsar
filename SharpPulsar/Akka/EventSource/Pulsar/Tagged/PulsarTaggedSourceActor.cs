@@ -51,14 +51,12 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
                     var props = c.Message.Properties;
-                    var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
-                                                && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
-                    if (tagged)
+                    var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrWhiteSpace(tagged.Value))
                     {
                         var eventMessage = new EventMessage(c.Message, _sequenceId);
                         _pulsarManager.Tell(eventMessage);
                     }
-
                     _sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
@@ -71,11 +69,9 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
         {
             Receive<ConsumedMessage>(c =>
             {
-                var messageId = (MessageId)c.Message.MessageId;
                 var props = c.Message.Properties;
-                var tagged = props.Any(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase)
-                                            && x.Value.Contains(_tag.Value, StringComparison.OrdinalIgnoreCase));
-                if (tagged)
+                var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(tagged.Value))
                 {
                     var eventMessage = new EventMessage(c.Message, _sequenceId);
                     _pulsarManager.Tell(eventMessage);

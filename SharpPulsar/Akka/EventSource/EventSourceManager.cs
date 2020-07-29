@@ -10,11 +10,6 @@ using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Akka.EventSource.Presto;
 using SharpPulsar.Akka.EventSource.Pulsar;
-using SharpPulsar.Akka.InternalCommands.Consumer;
-using CurrentEventsByTag = SharpPulsar.Akka.EventSource.Messages.Presto.CurrentEventsByTag;
-using CurrentEventsByTopic = SharpPulsar.Akka.EventSource.Messages.Presto.CurrentEventsByTopic;
-using EventsByTag = SharpPulsar.Akka.EventSource.Messages.Presto.EventsByTag;
-using EventsByTopic = SharpPulsar.Akka.EventSource.Messages.Presto.EventsByTopic;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -28,7 +23,6 @@ namespace SharpPulsar.Akka.EventSource
             _httpClient = new HttpClient();
             _network = network;
             _pulsarManager = pulsarManager;
-            Context.ActorOf(PulsarSourceCoordinator.Prop(network, pulsarManager), "PulsarSource");
             Receive<IEventSourceMessage>(HandleMessage);
             Receive<IEventTopics>(HandleMessage);
         }
