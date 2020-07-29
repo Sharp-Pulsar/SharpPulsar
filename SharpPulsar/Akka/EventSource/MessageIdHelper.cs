@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using PulsarAdmin.Models;
 
 namespace SharpPulsar.Akka.EventSource
@@ -16,9 +17,9 @@ namespace SharpPulsar.Akka.EventSource
                 entries += ledger.Entries;
                 if (start > entries)
                     continue;
-                var diff = entries - start;
-                entries += diff;
-                var entry = (ledger.Entries - diff) - 1;
+                var diff = Math.Max(0L, entries.Value - start);
+                entries -= diff;
+                var entry = Math.Max(0L, (ledger.Entries.Value - diff) - 1);
                 ledgerId = ledger.LedgerId;
                 entryId = entry;
                 break;
@@ -29,9 +30,9 @@ namespace SharpPulsar.Akka.EventSource
                 if (stats.CurrentLedgerEntries > 0)
                 {
                     entries += stats.CurrentLedgerEntries;
-                    var diff = entries - start;
-                    entries += diff;
-                    var entry = diff < 0 ? (stats.CurrentLedgerEntries + diff) - 1 : (stats.CurrentLedgerEntries - diff) - 1;
+                    var diff = Math.Max(0L, entries.Value - start);
+                    entries -= diff;
+                    var entry = Math.Max(0L, (stats.CurrentLedgerEntries - diff).Value - 1);
                     ledgerId = long.Parse(stats.LastConfirmedEntry.Split(":")[0]);
                     entryId = entry;
 
@@ -40,15 +41,20 @@ namespace SharpPulsar.Akka.EventSource
                 {
                     var lac = stats.LastConfirmedEntry.Split(":");
                     entries += long.Parse(lac[1] + 1);
-                    var diff = entries - start;
-                    entries += diff;
-                    var entry = diff < 0? (stats.CurrentLedgerEntries + diff) - 1 : (stats.CurrentLedgerEntries - diff) - 1;
+                    var diff = Math.Max(0L, entries.Value - start);
+                    entries -= diff;
+                    var entry = Math.Max(0L, (stats.CurrentLedgerEntries - diff).Value - 1);
                     ledgerId = long.Parse(lac[0]);
                     entryId = entry;
                 }
             }
 
-            return (ledgerId.Value, entryId.Value, entries.Value);
+            return (ledgerId.Value, entryId.Value, Math.Max(0, entries.Value));
+        }
+        public static (long Ledger, long Entry, long Index) NextFlow(PersistentTopicInternalStats stats)
+        {
+            var ids = stats.LastConfirmedEntry.Split(":");
+            return (long.Parse(ids[0]), long.Parse(ids[1]), stats.NumberOfEntries.Value);
         }
     }
 }

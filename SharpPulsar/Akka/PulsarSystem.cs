@@ -640,10 +640,10 @@ namespace SharpPulsar.Akka
             if(string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if(fromSequenceId <= 0)
+            if(fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if(toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if(toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Pulsar.EventsByTopic(tenant, ns, topic, fromSequenceId, toSequenceId, adminUrl, configuration, _conf));
@@ -670,10 +670,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Pulsar.CurrentEventsByTopic(tenant, ns, topic, fromSequenceId, toSequenceId, adminUrl, configuration, _conf));
@@ -708,10 +708,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Pulsar.EventsByTag(tenant, ns, topic, fromSequenceId, toSequenceId, tag, adminUrl, configuration, _conf));
@@ -740,10 +740,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Pulsar.CurrentEventsByTag(tenant, ns, topic, fromSequenceId, toSequenceId, tag, adminUrl, configuration, _conf));
@@ -775,10 +775,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Presto.EventsByTopic(tenant, ns, topic, columns, fromSequenceId, toSequenceId, options, adminUrl));
@@ -810,10 +810,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Presto.CurrentEventsByTopic(tenant, ns, topic, columns, fromSequenceId, toSequenceId, adminUrl, options));
@@ -847,10 +847,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Presto.EventsByTag(tenant, ns, topic, columns, fromSequenceId, toSequenceId, tag, options, adminUrl));
@@ -884,10 +884,10 @@ namespace SharpPulsar.Akka
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId <= 0)
+            if (fromSequenceId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= 0 || toSequenceId <= fromSequenceId)
+            if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _pulsarManager.Tell(new EventSource.Messages.Presto.CurrentEventsByTag(tenant, ns, topic, columns, fromSequenceId, toSequenceId, tag, options, adminUrl));
@@ -968,7 +968,7 @@ namespace SharpPulsar.Akka
         /// <returns>IEnumerable<EventMessage></returns>
         public IEnumerable<EventMessage> SourceEventsFromReader(int timeoutMs = 5000, CancellationToken token = default)
         {
-            while (token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
                 if (_managerState.PulsarEventQueue.TryTake(out var msg, timeoutMs, token))
                 {

@@ -70,6 +70,8 @@ namespace Samples
             var columns = string.Empty;
             var adminUrl = string.Empty;
             var topic = string.Empty;
+            var catalog = string.Empty;
+            var schema = string.Empty;
             
 
             #endregion
@@ -470,7 +472,11 @@ namespace Samples
                         server = Console.ReadLine();
                         Console.WriteLine("[SqlQuery] Enter query statement: ");
                         var query = Console.ReadLine();
-                        SqlQuery(pulsarSystem, query, server);
+                        Console.WriteLine("[SqlQuery] Enter query Catalog: ");
+                        catalog = Console.ReadLine();
+                        Console.WriteLine("[SqlQuery] Enter query schema: ");
+                        schema = Console.ReadLine();
+                        SqlQuery(pulsarSystem, query, server, catalog, schema);
                         break;
                     case "21":
                         Console.WriteLine("[LiveSqlQuery] Enter destination server: ");
@@ -483,7 +489,11 @@ namespace Samples
                         var lepoch = string.IsNullOrWhiteSpace(Console.ReadLine())? DateTime.Now.AddHours(-24) :DateTime.Parse(Console.ReadLine());
                         Console.WriteLine("[LiveSqlQuery] Enter topic: ");
                         var ltopic = Console.ReadLine();
-                        LiveSqlQuery(pulsarSystem, lquery, lfreq, lepoch, ltopic, lserver);
+                        Console.WriteLine("[LiveSqlQuery] Enter query Catalog: ");
+                        catalog = Console.ReadLine();
+                        Console.WriteLine("[LiveSqlQuery] Enter query schema: ");
+                        schema = Console.ReadLine();
+                        LiveSqlQuery(pulsarSystem, lquery, lfreq, lepoch, ltopic, lserver, catalog, schema);
                         break;
                     #endregion
                     #region Admin
@@ -774,7 +784,7 @@ namespace Samples
                 Receipts.Add(s);
             });
             var producerConfig = new ProducerConfigBuilder()
-                .ProducerName($"Test-{topic}")
+                .ProducerName($"Test-{topic}-{Guid.NewGuid()}")
                 .Topic(topic)
                 .Schema(jsonSchem)
                 .EnableChunking(true)
@@ -1818,9 +1828,9 @@ namespace Samples
             system.PulsarReader(new CreateReader(byteSchem, readerConfig));
         }
 
-        private static void SqlQuery(PulsarSystem system, string query, string server)
+        private static void SqlQuery(PulsarSystem system, string query, string server, string catalog, string schema)
         {
-            var option = new ClientOptions {Server = server, Execute = query};
+            var option = new ClientOptions {Server = server, Execute = query, Catalog = catalog, Schema = schema };
             system.PulsarSql(new Sql(option, e =>{ Console.WriteLine(e.ToString()); }, Console.WriteLine));
             foreach (var d in system.SqlData())
             {
@@ -1839,9 +1849,9 @@ namespace Samples
                 }
             }
         }
-        private static void LiveSqlQuery(PulsarSystem system, string query, int frequency, DateTime startAt, string topic , string server)
+        private static void LiveSqlQuery(PulsarSystem system, string query, int frequency, DateTime startAt, string topic , string server, string catalog, string schema)
         {
-            var option = new ClientOptions { Server = server, Execute = query };
+            var option = new ClientOptions { Server = server, Execute = query, Catalog = catalog, Schema = schema};
             system.PulsarSql(new LiveSql(option, frequency, startAt, topic, e =>
             {
                 Console.WriteLine(e.ToString());
@@ -1933,7 +1943,7 @@ namespace Samples
         }
         private static void CreateNamespace(PulsarSystem system, string server, string tenant, string @namespace)
         {
-            system.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] {tenant,@namespace }, e =>
+            system.PulsarAdmin(new Admin(AdminCommands.CreateNamespace, new object[] {tenant, @namespace, new Policies() }, e =>
             {
                 var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
                 Console.WriteLine(data);
@@ -2144,7 +2154,9 @@ namespace Samples
             system.EventsByTopicReader(tenant, ns, topic, fro, to, adminUrl, readerConfig);
             foreach (var msg in system.SourceEventsFromReader())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                var m = msg.Message.ToTypeOf<Students>();
+                Console.WriteLine(msg.SequenceId);
+                Console.WriteLine(JsonSerializer.Serialize(m, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
         private static void CurrentEventsByTopicReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl)
@@ -2163,7 +2175,9 @@ namespace Samples
             system.CurrentEventsByTopicReader(tenant, ns, topic, fro, to, adminUrl, readerConfig);
             foreach (var msg in system.SourceCurrentEventsFromReader())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                var m = msg.Message.ToTypeOf<Students>();
+                Console.WriteLine(msg.SequenceId);
+                Console.WriteLine(JsonSerializer.Serialize(m, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
         

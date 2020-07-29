@@ -75,7 +75,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
                 var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
                 var stats = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant,
                     _topicName.NamespaceObject.LocalName, _topicName.LocalName);
-                var start = MessageIdHelper.Calculate(_lastEventMessageId.Index, stats);
+                var start = MessageIdHelper.NextFlow(stats);
                 if (start.Index > _lastEventMessageId.Index)
                 {
                     var permits = start.Index - _lastEventMessageId.Index;

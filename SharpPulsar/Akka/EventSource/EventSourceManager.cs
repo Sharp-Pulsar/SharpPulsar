@@ -7,8 +7,14 @@ using Akka.Actor;
 using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
+using SharpPulsar.Akka.EventSource.Messages.Pulsar;
+using SharpPulsar.Akka.EventSource.Presto;
 using SharpPulsar.Akka.EventSource.Pulsar;
 using SharpPulsar.Akka.InternalCommands.Consumer;
+using CurrentEventsByTag = SharpPulsar.Akka.EventSource.Messages.Presto.CurrentEventsByTag;
+using CurrentEventsByTopic = SharpPulsar.Akka.EventSource.Messages.Presto.CurrentEventsByTopic;
+using EventsByTag = SharpPulsar.Akka.EventSource.Messages.Presto.EventsByTag;
+using EventsByTopic = SharpPulsar.Akka.EventSource.Messages.Presto.EventsByTopic;
 
 namespace SharpPulsar.Akka.EventSource
 {
@@ -22,7 +28,7 @@ namespace SharpPulsar.Akka.EventSource
             _httpClient = new HttpClient();
             _network = network;
             _pulsarManager = pulsarManager;
-            Context.ActorOf(PrestoSourceCoordinator.Prop(network, pulsarManager), "PulsarSource");
+            Context.ActorOf(PulsarSourceCoordinator.Prop(network, pulsarManager), "PulsarSource");
             Receive<IEventSourceMessage>(HandleMessage);
             Receive<IEventTopics>(HandleMessage);
         }
@@ -52,24 +58,15 @@ namespace SharpPulsar.Akka.EventSource
             var child = Context.Child(ns);
             switch (message)
             {
-                case CurrentEventsByTopic _:
-                case EventsByTopic _:
-                case CurrentEventsByTag _:
-                case EventsByTag _:
-                    if (message.Source == SourceType.Pulsar)
-                    {
-                        if (child.IsNobody())
-                            child = Context.ActorOf(PrestoSourceCoordinator.Prop(_network, _pulsarManager), ns);
-                        child.Forward(message);
-                    }
-                    else
-                    {
-                        if (child.IsNobody())
-                            child = Context.ActorOf(PrestoSourceCoordinator.Prop(_network, _pulsarManager), ns);
-                        child.Forward(message);
-                        Context.Child("PrestoSource").Forward(message);
-                    }
-                        
+                case IPrestoEventSourceMessage pm:
+                    if (child.IsNobody())
+                        child = Context.ActorOf(PrestoSourceCoordinator.Prop(_network, _pulsarManager), ns);
+                    child.Forward(pm);
+                    break;
+                case IPulsarEventSourceMessage ipm:
+                    if (child.IsNobody())
+                        child = Context.ActorOf(PulsarSourceCoordinator.Prop(_network, _pulsarManager), ns);
+                    child.Forward(ipm);
                     break;
                 default:
                     Context.System.Log.Info($"{message.GetType().FullName} not supported");

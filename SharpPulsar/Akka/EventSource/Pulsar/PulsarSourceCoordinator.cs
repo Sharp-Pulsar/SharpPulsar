@@ -6,14 +6,14 @@ using SharpPulsar.Akka.EventSource.Pulsar.Tagged;
 
 namespace SharpPulsar.Akka.EventSource.Pulsar
 {
-    public class PrestoSourceCoordinator: ReceiveActor, IWithUnboundedStash
+    public class PulsarSourceCoordinator: ReceiveActor, IWithUnboundedStash
     {
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
         private readonly HttpClient _httpClient;
 
 
-        public PrestoSourceCoordinator(IActorRef network, IActorRef pulsarManager)
+        public PulsarSourceCoordinator(IActorRef network, IActorRef pulsarManager)
         {
             _httpClient = new HttpClient();
             _network = network;
@@ -24,7 +24,7 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
 
         public static Props Prop(IActorRef network, IActorRef pulsarManager)
         {
-            return Props.Create(()=> new PrestoSourceCoordinator(network, pulsarManager));
+            return Props.Create(()=> new PulsarSourceCoordinator(network, pulsarManager));
         }
         public IStash Stash { get; set; }
 
