@@ -56,7 +56,8 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
         private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
         {
             var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-            var stats = adminRestapi.GetInternalStats1(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
+            var statsTask = adminRestapi.GetInternalStats1Async(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
+            var stats = SynchronizationContextSwitcher.NoContext(async () => await statsTask).Result;
             var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
             var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats);

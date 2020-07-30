@@ -1,8 +1,13 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Akka.Sql.Message;
 
 namespace SharpPulsar.Akka.EventSource.Messages
 {
-    public class EventEnvelope
+    public interface IEventEnvelope
+    {
+
+    }
+    public class EventEnvelope:IEventEnvelope
     {
         public EventEnvelope(Dictionary<string, object> @event, Dictionary<string, object> metadata, long sequenceId, string topic)
         {
@@ -17,4 +22,23 @@ namespace SharpPulsar.Akka.EventSource.Messages
         public long SequenceId { get; }
     }
 
+    public class EventStats : IEventEnvelope
+    {
+        public EventStats(StatsResponse stats)
+        {
+            Stats = stats;
+        }
+
+        public StatsResponse Stats { get; }
+    }
+
+    public class EventError: IEventEnvelope
+    {
+        public EventError(ErrorResponse error)
+        {
+            Error = error;
+        }
+
+        public ErrorResponse Error { get; }
+    }
 }

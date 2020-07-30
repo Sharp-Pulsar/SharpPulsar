@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
+using Nito.AsyncEx;
 using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -73,8 +74,9 @@ namespace SharpPulsar.Akka.EventSource.Pulsar
             try
             {
                 var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-                var stats = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant,
+                var statsTask = adminRestapi.GetInternalStats1Async(_topicName.NamespaceObject.Tenant,
                     _topicName.NamespaceObject.LocalName, _topicName.LocalName);
+                var stats = SynchronizationContextSwitcher.NoContext(async () => await statsTask).Result;
                 var start = MessageIdHelper.NextFlow(stats);
                 if (start.Index > _lastEventMessageId.Index)
                 {
