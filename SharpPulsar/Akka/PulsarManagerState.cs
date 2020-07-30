@@ -14,7 +14,7 @@ namespace SharpPulsar.Akka
     {
 
         public BlockingQueue<CreatedConsumer> ConsumerQueue { get; set; }
-        public BlockingQueue<EventEnvelope> PrestoEventQueue { get; set; }
+        public BlockingQueue<IEventEnvelope> PrestoEventQueue { get; set; }
         public BlockingQueue<EventMessage> PulsarEventQueue { get; set; }
         public BlockingQueue<ActiveTopics> ActiveTopicsQueue { get; set; }
         public BlockingQueue<CreatedProducer> ProducerQueue { get; set; }

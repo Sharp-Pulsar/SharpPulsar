@@ -2106,7 +2106,18 @@ namespace Samples
             system.EventsByTopicPresto(tenant, ns, topic, cols.ToImmutableHashSet(), fro, to, option, adminUrl);
             foreach (var msg in system.SourceEventsFromPresto())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                switch (msg)
+                {
+                    case EventEnvelope evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventStats evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventError evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
             }
         }
         private static void CurrentEventsByTopicPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns)
@@ -2116,7 +2127,18 @@ namespace Samples
             system.CurrentEventsByTopicPresto(tenant, ns, topic, cols.ToImmutableHashSet(), fro, to, option, adminUrl);
             foreach (var msg in system.SourceCurrentEventsFromPresto())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                switch (msg)
+                {
+                    case EventEnvelope evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventStats evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventError evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
             }
         }
         private static void EventsByTagPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns, string tagKey, string tagValue)
@@ -2126,7 +2148,18 @@ namespace Samples
             system.EventsByTagPresto(tenant, ns, topic, new Tag(tagKey, tagValue), cols.ToImmutableHashSet(), fro, to, option, adminUrl);
             foreach (var msg in system.SourceEventsFromPresto())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                switch (msg)
+                {
+                    case EventEnvelope evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventStats evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventError evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
             }
         }
         private static void CurrentEventsByTagPresto(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl, string server, string columns, string tagKey, string tagValue)
@@ -2136,7 +2169,18 @@ namespace Samples
             system.CurrentEventsByTagPresto(tenant, ns, topic, new Tag(tagKey, tagValue), cols.ToImmutableHashSet(), fro, to, option, adminUrl);
             foreach (var msg in system.SourceCurrentEventsFromPresto())
             {
-                Console.WriteLine(JsonSerializer.Serialize(msg, new JsonSerializerOptions { WriteIndented = true }));
+                switch (msg)
+                {
+                    case EventEnvelope evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventStats evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case EventError evt:
+                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
             }
         }
         private static void EventsByTopicReader(PulsarSystem system, string tenant, string ns, string topic, long fro, long to, string adminUrl)

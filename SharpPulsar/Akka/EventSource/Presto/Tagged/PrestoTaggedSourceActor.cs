@@ -50,10 +50,10 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             {
                 var max = end.Index - start.Index;
                 var query =
-                    $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__, split(replace(replace(__message_id__, '('), ')'), ',') AS __i_d__, cast(json_parse(__properties__) as map(varchar, varchar)) AS __pro_ps__ from \"{_message.Topic}\" where element_at(__i_d__, 0) BETWEEN bigint {start.LedgerId} AND bigint {end.LedgerId} AND element_at(__i_d__, 1) BETWEEN bigint {start.EntryId} AND bigint {end.EntryId}) AND element_at(__pro_ps__, '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
+                    $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint {start.LedgerId} AND bigint {end.LedgerId} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint {start.EntryId} AND bigint {end.EntryId}) AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
                 var options = _message.Options;
                 options.Catalog = "pulsar";
-                options.Schema = $"\"{_message.Tenant}/{_message.Namespace}\"";
+                options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
                 options.Execute = query;
                 var session = options.ToClientSession();
                 var executor = new Executor(session, options, _self, _log);
@@ -73,20 +73,20 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             try
             {
                 var ids = GetMessageIds(_lastEventMessageId.Index);
-                _lastEventMessageId = ids.End;
-                var max = ids.End.Index - ids.Start.Index;
+                var max = ids.End.Index - _lastEventMessageId.Index;
                 if (max > 0)
                 {
                     var query =
-                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__, split(replace(replace(__message_id__, '('), ')'), ',') AS __i_d__, cast(json_parse(__properties__) as map(varchar, varchar)) AS __pro_ps__ from \"{_message.Topic}\" where element_at(__i_d__, 0) BETWEEN bigint {ids.Start.LedgerId} AND bigint {ids.End.LedgerId} AND element_at(__i_d__, 1) BETWEEN bigint {ids.Start.EntryId} AND bigint {ids.End.EntryId}) AND element_at(__pro_ps__, '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
-                    var options = _message.Options;
+                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint {ids.Start.LedgerId} AND bigint {ids.End.LedgerId} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint {ids.Start.EntryId} AND bigint {ids.End.EntryId}) AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
+                    var options = _message.Options; 
                     options.Catalog = "pulsar";
-                    options.Schema = $"\"{_message.Tenant}/{_message.Namespace}\"";
+                    options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
                     options.Execute = query;
                     var session = options.ToClientSession();
                     var executor = new Executor(session, options, _self, _log);
                     _log.Info($"Executing: {options.Execute}");
                     executor.Run();
+                    _lastEventMessageId = ids.End;
                 }
             }
             catch (Exception ex)

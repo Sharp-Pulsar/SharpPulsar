@@ -55,7 +55,7 @@ namespace SharpPulsar.Akka
             {
                 _pulsarManagerState.ActiveTopicsQueue.Enqueue(e);
             });
-            Receive<EventEnvelope>(e =>
+            Receive<IEventEnvelope>(e =>
             {
                 _pulsarManagerState.PrestoEventQueue.Enqueue(e);
             });

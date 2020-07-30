@@ -70,8 +70,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
             try
             {
                 var ids = GetMessageIds(_lastEventMessageId.Index);
-                _lastEventMessageId = ids.End;
-                var max = ids.End.Index - ids.Start.Index;
+                var max = ids.End.Index - _lastEventMessageId.Index;
                 if (max > 0)
                 {
                     var query =
@@ -84,6 +83,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
                     var executor = new Executor(session, options, _self, _log);
                     _log.Info($"Executing: {options.Execute}");
                     executor.Run();
+                    _lastEventMessageId = ids.End;
                 }
             }
             catch (Exception ex)

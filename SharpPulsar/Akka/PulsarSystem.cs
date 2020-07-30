@@ -73,7 +73,7 @@ namespace SharpPulsar.Akka
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue = new ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>>(),
-                PrestoEventQueue = new BlockingQueue<EventEnvelope>(),
+                PrestoEventQueue = new BlockingQueue<IEventEnvelope>(),
                 PulsarEventQueue = new BlockingQueue<EventMessage>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
                 FunctionQueue = new BlockingQueue<FunctionResponse>(),
@@ -95,7 +95,7 @@ namespace SharpPulsar.Akka
                 MessageIdQueue =  new BlockingQueue<LastMessageIdReceived>(),
                 LiveDataQueue = new BlockingCollection<LiveSqlData>(),
                 MessageQueue =  new ConcurrentDictionary<string, BlockingCollection<ConsumedMessage>>(),
-                PrestoEventQueue = new BlockingQueue<EventEnvelope>(),
+                PrestoEventQueue = new BlockingQueue<IEventEnvelope>(),
                 PulsarEventQueue = new BlockingQueue<EventMessage>(),
                 AdminQueue = new BlockingQueue<AdminResponse>(),
                 FunctionQueue = new BlockingQueue<FunctionResponse>(),
@@ -930,7 +930,7 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventEnvelope></returns>
-        public IEnumerable<EventEnvelope> SourceEventsFromPresto(int timeoutMs = 5000, CancellationToken token = default)
+        public IEnumerable<IEventEnvelope> SourceEventsFromPresto(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {
@@ -946,7 +946,7 @@ namespace SharpPulsar.Akka
         /// </summary>
         /// <param name="timeoutMs"></param>
         /// <returns>IEnumerable<EventEnvelope></returns>
-        public IEnumerable<EventEnvelope> SourceCurrentEventsFromPresto(int timeoutMs = 5000, CancellationToken token = default)
+        public IEnumerable<IEventEnvelope> SourceCurrentEventsFromPresto(int timeoutMs = 5000, CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {
