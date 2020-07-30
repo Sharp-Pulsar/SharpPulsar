@@ -59,7 +59,7 @@ namespace SharpPulsar.Common.Naming
 		{
 			public TopicName Load(string name)
 			{
-				return new TopicName(name);
+				return new TopicName(name.ToLower());
 			}
 		}
 
@@ -67,20 +67,20 @@ namespace SharpPulsar.Common.Naming
 
 		public static TopicName Get(string domain, NamespaceName namespaceName, string topic)
 		{
-			string name = domain + "://" + namespaceName.ToString() + '/' + topic;
-			return Get(name);
+			var name = domain + "://" + namespaceName.ToString() + '/' + topic;
+			return Get(name.ToLower());
 		}
 
 		public static TopicName Get(string domain, string tenant, string @namespace, string topic)
 		{
 			string name = domain + "://" + tenant + '/' + @namespace + '/' + topic;
-			return Get(name);
+			return Get(name.ToLower());
 		}
 
 		public static TopicName Get(string domain, string tenant, string cluster, string @namespace, string topic)
 		{
 			string name = domain + "://" + tenant + '/' + cluster + '/' + @namespace + '/' + topic;
-			return Get(name);
+			return Get(name.ToLower());
 		}
 
 		public static TopicName Get(string topic)

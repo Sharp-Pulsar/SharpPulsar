@@ -86,7 +86,7 @@ namespace SharpPulsar.Akka.Producer
                 Version = Array.Empty<byte>()
             };
             _pulsarManager = pulsarManager;
-            _topic = topic;
+            _topic = topic.ToLower();
             _listener = configuration.ProducerEventListener;
             _isPartitioned = isPartitioned;
             _isGroup = isgroup;

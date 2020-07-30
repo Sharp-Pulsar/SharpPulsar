@@ -48,11 +48,11 @@ namespace SharpPulsar.Common.Naming
 		private readonly int _ordinalValue;
 		private static int _nextOrdinal = 0;
 
-		private string _valueConflict;
+		private readonly string _value;
 
 		private TopicDomain(string name, InnerEnum innerEnum, string value)
 		{
-			this._valueConflict = value;
+			_value = value;
 
 			_nameValue = name;
 			_ordinalValue = _nextOrdinal++;
@@ -61,14 +61,14 @@ namespace SharpPulsar.Common.Naming
 
 		public string Value()
 		{
-			return this._valueConflict;
+			return _value;
 		}
 
 		public static TopicDomain GetEnum(string value)
 		{
 			foreach (TopicDomain e in Values())
 			{
-				if (e._valueConflict.Equals(value, StringComparison.OrdinalIgnoreCase))
+				if (e._value.Equals(value, StringComparison.OrdinalIgnoreCase))
 				{
 					return e;
 				}
@@ -78,7 +78,7 @@ namespace SharpPulsar.Common.Naming
 
 		public override string ToString()
 		{
-			return this._valueConflict;
+			return _value.ToLower();
 		}
 
 		public static IList<TopicDomain> Values()
@@ -93,7 +93,7 @@ namespace SharpPulsar.Common.Naming
 
 		public static TopicDomain ValueOf(string name)
 		{
-			foreach (TopicDomain enumInstance in TopicDomain.ValueList)
+			foreach (TopicDomain enumInstance in ValueList)
 			{
 				if (enumInstance._nameValue == name)
 				{

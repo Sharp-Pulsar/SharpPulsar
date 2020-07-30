@@ -660,17 +660,17 @@ namespace SharpPulsar.Akka.Admin
                         response = _adminRestapi.GetListFromBundle(tenant61, nspace61, bndle7);
                         break;
                     case AdminCommands.CreateNonPartitionedTopic:
-                        var tenant62 = admin.Arguments[0].ToString();
-                        var nspace62 = admin.Arguments[1].ToString();
-                        var topic = admin.Arguments[2].ToString();
+                        var tenant62 = admin.Arguments[0].ToString().ToLower();
+                        var nspace62 = admin.Arguments[1].ToString().ToLower();
+                        var topic = admin.Arguments[2].ToString().ToLower();
                         var auth11 = (bool)admin.Arguments[3];
                         _adminRestapi.CreateNonPartitionedTopic(tenant62, nspace62, topic, auth11);
                         admin.Handler("CreateNonPartitionedTopic");
                         break;
                     case AdminCommands.CreateNonPartitionedPersistentTopic:
-                        var tenant62p = admin.Arguments[0].ToString();
-                        var nspace62p = admin.Arguments[1].ToString();
-                        var topicp = admin.Arguments[2].ToString();
+                        var tenant62p = admin.Arguments[0].ToString().ToLower();
+                        var nspace62p = admin.Arguments[1].ToString().ToLower();
+                        var topicp = admin.Arguments[2].ToString().ToLower();
                         var auth11p = (bool)admin.Arguments[3];
                         _adminRestapi.CreateNonPartitionedTopic1(tenant62p, nspace62p, topicp, auth11p);
                         admin.Handler("CreateNonPartitionedPersistentTopic");
@@ -880,9 +880,9 @@ namespace SharpPulsar.Akka.Admin
                         admin.Handler("UpdatePartitionedPersistentTopic");
                         break;
                     case AdminCommands.CreatePartitionedTopic:
-                        var tenant76 = admin.Arguments[0].ToString();
-                        var nspace76 = admin.Arguments[1].ToString();
-                        var topic14 = admin.Arguments[2].ToString();
+                        var tenant76 = admin.Arguments[0].ToString().ToLower();
+                        var nspace76 = admin.Arguments[1].ToString().ToLower();
+                        var topic14 = admin.Arguments[2].ToString().ToLower();
                         var body2 = (int)admin.Arguments[3];
                         _adminRestapi.CreatePartitionedTopic(tenant76, nspace76, topic14, body2);
                         admin.Handler("CreatePartitionedTopic");
