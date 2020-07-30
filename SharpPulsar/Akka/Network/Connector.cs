@@ -42,8 +42,8 @@ namespace SharpPulsar.Akka.Network
 
         public Connector(ClientConfigurationData conf)
         {
-            if (conf.TlsTrustCerts != null)
-                _clientCertificates = conf.TlsTrustCerts;
+            if (conf.ClientCertificates != null)
+                _clientCertificates = conf.ClientCertificates;
             if (conf.TrustedCertificateAuthority != null)
                 _trustedCertificateAuthority = conf.TrustedCertificateAuthority;
             _encrypt = conf.UseTls;
@@ -162,7 +162,7 @@ namespace SharpPulsar.Akka.Network
 
         private bool SniProxy => _clientConfiguration.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfiguration.ProxyServiceUrl);
 
-        private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        /*private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             if (sslPolicyErrors == SslPolicyErrors.None)
             {
@@ -223,9 +223,7 @@ namespace SharpPulsar.Akka.Network
                 return false;
             }
             return true;
-        }
-        /*
-         *
+        }*/
          private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             bool result;
@@ -251,7 +249,7 @@ namespace SharpPulsar.Akka.Network
                     var cert = new X509Certificate2(certificate);
                     var cn = cert.GetNameInfo(X509NameType.SimpleName, false);
                     var cleanName = cn?.Substring(cn.LastIndexOf('*') + 1);
-                    string[] addresses = { _serviceUrl, _serviceSniName };
+                    string[] addresses = { _serviceUrl, _targetServerName };
 
                     // if the ending of the sni and servername do match the common name of the cert, fail
                     result = addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
@@ -264,6 +262,6 @@ namespace SharpPulsar.Akka.Network
 
             return result;
         }
-         */
+         
     }
 }

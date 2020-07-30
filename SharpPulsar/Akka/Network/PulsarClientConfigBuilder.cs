@@ -38,7 +38,7 @@ namespace SharpPulsar.Akka.Network
 
         public PulsarClientConfigBuilder AddTlsCerts(X509Certificate2Collection certs)
         {
-            _conf.TlsTrustCerts = certs;
+            _conf.ClientCertificates = certs;
             return this;
         }
 

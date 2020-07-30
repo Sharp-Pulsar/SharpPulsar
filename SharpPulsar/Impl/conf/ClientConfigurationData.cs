@@ -96,7 +96,7 @@ namespace SharpPulsar.Impl.Conf
         }
 
         public int ProtocolVersion { get; set; } = 15;
-		public X509Certificate2Collection TlsTrustCerts { get; set; }
+		public X509Certificate2Collection ClientCertificates { get; set; }
 
 		public DateTime Clock { get; set; } = DateTime.Now;
         
