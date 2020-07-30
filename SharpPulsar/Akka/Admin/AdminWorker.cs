@@ -1323,8 +1323,15 @@ namespace SharpPulsar.Akka.Admin
             }
             catch (Exception e)
             {
-                admin.Exception(e);
-                _pulsarManager.Tell(new AdminResponse(e));
+                if (e.Message.Equals("Operation returned an invalid status code 'NoContent'"))
+                {
+                    admin.Handler(admin.Command.ToString());
+                }
+                else
+                {
+                    admin.Exception(e);
+                    _pulsarManager.Tell(new AdminResponse(e));
+                }
             }
         }
 

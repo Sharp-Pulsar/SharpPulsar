@@ -81,6 +81,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
                     options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
                     options.Execute = query;
                     var session = options.ToClientSession();
+
                     var executor = new Executor(session, options, _self, _log);
                     _log.Info($"Executing: {options.Execute}");
                     executor.Run();

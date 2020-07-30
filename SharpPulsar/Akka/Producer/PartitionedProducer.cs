@@ -15,7 +15,7 @@ namespace SharpPulsar.Akka.Producer
     {
         private int _partitions;
         private readonly bool _hasParent;
-        private IActorRef _pulsarManager;
+        private readonly IActorRef _pulsarManager;
         public PartitionedProducer(ClientConfigurationData clientConfiguration, ProducerConfigurationData configuration, IActorRef network, IActorRef pulsarManager, bool hasParent)
         {
             _pulsarManager = pulsarManager;

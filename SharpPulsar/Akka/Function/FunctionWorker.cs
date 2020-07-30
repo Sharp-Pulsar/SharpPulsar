@@ -163,8 +163,16 @@ namespace SharpPulsar.Akka.Function
             }
             catch (Exception e)
             {
-                function.Exception(e);
-                _pulsarManager.Tell(new FunctionResponse(e));
+                if (e.Message.Equals("Operation returned an invalid status code 'NoContent'"))
+                {
+                    function.Handler(function.Command.ToString());
+                }
+                else
+                {
+                    function.Exception(e);
+                    _pulsarManager.Tell(new FunctionResponse(e));
+                }
+               
             }
         }
         public static Props Prop(string server, IActorRef pulsarManager)

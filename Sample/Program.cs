@@ -656,31 +656,51 @@ namespace Samples
                         break;
                     case "29":
                         Console.WriteLine("[CreatePartitionedTopic] Enter destination server: ");
-                        var pServer = Console.ReadLine();
+                        server = Console.ReadLine();
                         Console.WriteLine("[CreatePartitionedTopic] Enter tenant: ");
-                        var pTenant = Console.ReadLine();
+                        tenant = Console.ReadLine();
                         Console.WriteLine("[CreatePartitionedTopic] Enter namespace: ");
-                        var pNamespace = Console.ReadLine();
+                        ns = Console.ReadLine();
                         Console.WriteLine("[CreatePartitionedTopic] Enter topic: ");
-                        var pTopic = Console.ReadLine();
+                        topic = Console.ReadLine();
                         Console.WriteLine("[CreatePartitionedTopic] Enter partitions: ");
                         var pPart = Convert.ToInt32(Console.ReadLine());
-                        CreatePartitionedTopic(pulsarSystem, pServer, pTenant, pNamespace, pTopic, pPart);
+                        CreatePartitionedTopic(pulsarSystem, server, tenant, ns, topic, pPart);
+                        break;
+                    case "85":
+                        Console.WriteLine("[CreatePartitionedTopic] Enter destination server: ");
+                        server = Console.ReadLine();
+                        Console.WriteLine("[CreatePartitionedTopic] Enter tenant: ");
+                        tenant = Console.ReadLine();
+                        Console.WriteLine("[CreatePartitionedTopic] Enter namespace: ");
+                        ns = Console.ReadLine();
+                        Console.WriteLine("[CreatePartitionedTopic] Enter topic: ");
+                        topic = Console.ReadLine();
+                        Console.WriteLine("[CreatePartitionedTopic] Enter partitions: ");
+                        var pP = Convert.ToInt32(Console.ReadLine());
+                        CreatePersistentPartitionedTopic(pulsarSystem, server, tenant, ns, topic, pP);
                         break;
                     case "42":
                         Console.WriteLine("[GetPartitionedTopicMetadata] Enter destination server: ");
-                        GetPartitionedTopicMetadata(pulsarSystem, Console.ReadLine());
+                        server = Console.ReadLine();
+                        Console.WriteLine("[GetPartitionedTopicMetadata] Enter tenant: ");
+                        tenant = Console.ReadLine();
+                        Console.WriteLine("[GetPartitionedTopicMetadata] Enter namespace: ");
+                        ns = Console.ReadLine();
+                        Console.WriteLine("[GetPartitionedTopicMetadata] Enter topic: ");
+                        topic = Console.ReadLine();
+                        GetPartitionedTopicMetadata(pulsarSystem, server, tenant, ns, topic);
                         break;
                     case "44":
                         Console.WriteLine("[GetPartitionedPersistentTopicMetadata] Enter destination server: ");
-                        var mServer = Console.ReadLine();
+                        server = Console.ReadLine();
                         Console.WriteLine("[GetPartitionedPersistentTopicMetadata] Enter tenant: ");
-                        var mTenant = Console.ReadLine();
+                        tenant = Console.ReadLine();
                         Console.WriteLine("[GetPartitionedPersistentTopicMetadata] Enter namespace: ");
-                        var mNamespace = Console.ReadLine();
+                        ns = Console.ReadLine();
                         Console.WriteLine("[GetPartitionedPersistentTopicMetadata] Enter topic: ");
-                        var mTopic = Console.ReadLine();
-                        GetPartitionedPersistentTopicMetadata(pulsarSystem, mServer, mTenant, mNamespace, mTopic);
+                        topic = Console.ReadLine();
+                        GetPartitionedPersistentTopicMetadata(pulsarSystem, server, tenant, ns, topic);
                         break;
                     case "30":
                         Console.WriteLine("[GetTopics] Enter destination server: ");
@@ -969,9 +989,11 @@ namespace Samples
                 sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, result.Producer);
-            Task.Delay(10000).Wait();
-            File.AppendAllLines("receipts-broadcast.txt", Receipts);
+            var receipts = system.BulkSend(bulk, result.Producer);
+            foreach (var receipt in receipts)
+            {
+                Console.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions{WriteIndented = true}));
+            }
             Receipts.Clear();
         }
         private static void PlainAvroProducer(PulsarSystem system, string topic)
@@ -1988,6 +2010,14 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
+        private static void CreatePersistentPartitionedTopic(PulsarSystem system, string server, string tenant, string @namespace, string topic, int partitions)
+        {
+            system.PulsarAdmin(new Admin(AdminCommands.CreatePartitionedPersistentTopic, new object[] { tenant, @namespace, topic, partitions }, e =>
+            {
+                var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(data);
+            }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+        }
         private static void CreatePartitionedTopic(PulsarSystem system, string server, string tenant, string @namespace, string topic, int partitions)
         {
             system.PulsarAdmin(new Admin(AdminCommands.CreatePartitionedTopic, new object[] { tenant, @namespace, topic, partitions }, e =>
@@ -1996,15 +2026,15 @@ namespace Samples
                 Console.WriteLine(data);
             }, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
         }
-        private static void GetPartitionedTopicMetadata(PulsarSystem system, string server)
+        private static void GetPartitionedTopicMetadata(PulsarSystem system, string server, string tenant, string @namespace, string topic)
         {
-            var e = system.PulsarAdmin<PartitionedTopicMetadata>(new Admin(AdminCommands.GetPartitionedMetadata, new object[] { "whitepurple", "akka", "iots", false,false }, null, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+            var e = system.PulsarAdmin<PartitionedTopicMetadata>(new Admin(AdminCommands.GetPartitionedMetadata, new object[] { tenant, @namespace, topic, false,false }, null, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
             var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
             Console.WriteLine(data);
         }
         private static void GetPartitionedPersistentTopicMetadata(PulsarSystem system, string server, string tenant, string @namespace, string topic)
         {
-            var e = system.PulsarAdmin<PartitionedTopicMetadata>(new Admin(AdminCommands.GetPartitionedMetadataPersistence, new object[] { "whitepurple", "akka", "iots", false, false }, null, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
+            var e = system.PulsarAdmin<PartitionedTopicMetadata>(new Admin(AdminCommands.GetPartitionedMetadataPersistence, new object[] { tenant, @namespace, topic, false, false }, null, e => Console.WriteLine(e.ToString()), server, Console.WriteLine));
             var data = JsonSerializer.Serialize(e, new JsonSerializerOptions { WriteIndented = true });
             Console.WriteLine(data);
         }
