@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using Akka.Actor;
@@ -50,7 +51,7 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             {
                 var max = end.Index - start.Index;
                 var query =
-                    $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint {start.LedgerId} AND bigint {end.LedgerId} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint {start.EntryId} AND bigint {end.EntryId}) AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
+                    $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint '{start.LedgerId}' AND bigint '{end.LedgerId}' AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint '{start.EntryId}' AND bigint '{end.EntryId}' AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
                 var options = _message.Options;
                 options.Catalog = "pulsar";
                 options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
@@ -72,12 +73,12 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
         {
             try
             {
-                var ids = GetMessageIds(_lastEventMessageId.Index);
-                var max = ids.End.Index - _lastEventMessageId.Index;
+                var ids = NextFlow();
+                var max = ids.Index - _lastEventMessageId.Index;
                 if (max > 0)
                 {
                     var query =
-                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint {ids.Start.LedgerId} AND bigint {ids.End.LedgerId} AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint {ids.Start.EntryId} AND bigint {ids.End.EntryId}) AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
+                        $"select {string.Join(", ", _message.Columns)}, __message_id__, __publish_time__, __properties__, __key__, __producer_name__, __sequence_id__, __partition__ from \"{_message.Topic}\" where CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 1) AS BIGINT) BETWEEN bigint '{_lastEventMessageId.LedgerId}' AND bigint '{ids.LedgerId}' AND CAST(split_part(replace(replace(__message_id__, '('), ')'), ',', 2) AS BIGINT) BETWEEN bigint '{_lastEventMessageId.EntryId + 1}' AND bigint '{ids.EntryId}' AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{_tag.Key}') = '{_tag.Value}' ORDER BY __publish_time__ ASC LIMIT {max}";
                     var options = _message.Options; 
                     options.Catalog = "pulsar";
                     options.Schema = "" + _message.Tenant + "/" + _message.Namespace + "";
@@ -86,7 +87,7 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                     var executor = new Executor(session, options, _self, _log);
                     _log.Info($"Executing: {options.Execute}");
                     executor.Run();
-                    _lastEventMessageId = ids.End;
+                    _lastEventMessageId = ids;
                 }
             }
             catch (Exception ex)
@@ -98,22 +99,21 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                 _queryCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(10), Query);
             }
         }
-        private (EventMessageId Start, EventMessageId End) GetMessageIds(long fromSequence = 0)
+        private EventMessageId NextFlow()
         {
             var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
             var statsTask = adminRestapi.GetInternalStats1Async(_message.Tenant, _message.Namespace, _message.Topic);
             var stats = SynchronizationContextSwitcher.NoContext(async () => await statsTask).Result;
-            var start = MessageIdHelper.Calculate(fromSequence > 0 ? fromSequence : _message.FromSequenceId, stats);
+            var start = MessageIdHelper.NextFlow(stats);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats);
-            var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
-            return (startMessageId, endMessageId);
+            return startMessageId;
         }
         private void Consume()
         {
             Receive<DataResponse>(c =>
             {
-                var messageId = JsonSerializer.Deserialize<MessageId>(c.Metadata["message_id"].ToString());
+                var msg = c.Metadata["message_id"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
+                var messageId = new MessageId(msg[0], msg[1], msg[2]);
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
                     var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
@@ -121,6 +121,16 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                     _sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
+            });
+            Receive<StatsResponse>(s =>
+            {
+                var stats = new EventStats(s);
+                _pulsarManager.Tell(stats);
+            });
+            Receive<ErrorResponse>(s =>
+            {
+                var error = new EventError(s);
+                _pulsarManager.Tell(error);
             });
             Receive<ReceiveTimeout>(t => { Self.GracefulStop(TimeSpan.FromSeconds(5)); });
             //to track last sequence id for lagging player
@@ -131,8 +141,18 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             Receive<DataResponse>(c =>
             {
                 var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
-                _pulsarManager.Tell(eventMessage); _pulsarManager.Tell(eventMessage);
+                _pulsarManager.Tell(eventMessage); 
                 _sequenceId++;
+            });
+            Receive<StatsResponse>(s =>
+            {
+                var stats = new EventStats(s);
+                _pulsarManager.Tell(stats);
+            });
+            Receive<ErrorResponse>(s =>
+            {
+                var error = new EventError(s);
+                _pulsarManager.Tell(error);
             });
             _queryCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), Query);
         }

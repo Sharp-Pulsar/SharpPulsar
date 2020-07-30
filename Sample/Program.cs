@@ -72,6 +72,8 @@ namespace Samples
             var topic = string.Empty;
             var catalog = string.Empty;
             var schema = string.Empty;
+            var tagKey = string.Empty;
+            var tagValue = string.Empty;
             
 
             #endregion
@@ -108,7 +110,16 @@ namespace Samples
                     case "0":
                         Console.WriteLine("[PlainAvroBulkSendProducer] Enter topic: ");
                         topic = Console.ReadLine();
-                        PlainAvroBulkSendProducer(pulsarSystem, topic);
+                        Console.WriteLine("[PlainAvroBulkSendProducer] Tag Message(y/n): ");
+                        var tag =Console.ReadLine().ToLower() == "y";
+                        if (tag)
+                        {
+                            Console.WriteLine("[PlainAvroBulkSendProducer] Enter Tag Key: ");
+                            tagKey = Console.ReadLine();
+                            Console.WriteLine("[PlainAvroBulkSendProducer] Enter Tag Value: ");
+                            tagValue = Console.ReadLine();
+                        }
+                        PlainAvroBulkSendProducer(pulsarSystem, topic, tagKey, tagValue, tag);
                         break;
                     case "67":
                         Console.WriteLine("[RegisterSchema] Enter topic: ");
@@ -773,7 +784,7 @@ namespace Samples
         }
 
         #region Producers
-        private static void PlainAvroBulkSendProducer(PulsarSystem system, string topic)
+        private static void PlainAvroBulkSendProducer(PulsarSystem system, string topic, string key, string value, bool tag)
         {
             var jsonSchem = AvroSchema.Of(typeof(Students));
             var producerListener = new DefaultProducerListener((o) =>
@@ -794,7 +805,7 @@ namespace Samples
             var t = system.PulsarProducer(new CreateProducer(jsonSchem, producerConfig));
             
             Console.WriteLine($"Acquired producer for topic: {t.Topic}");
-            SendMessages(system, topic, t.Producer);
+            SendMessages(system, topic, t.Producer, key, value, tag);
             var nextRun = "";
             while (!nextRun.ToLower().Trim().Equals("n"))
             {
@@ -802,15 +813,13 @@ namespace Samples
                 nextRun = Console.ReadLine();
                 if (nextRun.ToLower().Trim().Equals("y"))
                 {
-                    SendMessages(system, topic, t.Producer);
+                    SendMessages(system, topic, t.Producer, key, value, tag);
                 }
             }
 
-            Task.Delay(5000).Wait();
-            File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
 
-        private static void SendMessages(PulsarSystem system, string topic, IActorRef producer)
+        private static void SendMessages(PulsarSystem system, string topic, IActorRef producer, string key, string value, bool tag)
         {
             var sends = new List<Send>();
             for (var i = 1L; i <= 5; i++)
@@ -827,11 +836,16 @@ namespace Samples
                     ["Key"] = 2019 + (int)i,
                     ["Properties"] = new Dictionary<string, string>
                     {
-                        { "Tick", DateTime.Now.Ticks.ToString() },
-                        {"Week-Day", "Saturday" },
-                        {"song", "pop" }
+                        { "Tick", DateTime.Now.Ticks.ToString() }
                     }
                 };
+                if (tag)
+                {
+                    var pro = (Dictionary<string, string>)metadata["Properties"];
+                    pro[key] = value;
+                    metadata["Properties"] = pro;
+                }
+                    
                 //var s = JsonSerializer.Serialize(student);
                 sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
@@ -2112,7 +2126,7 @@ namespace Samples
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventStats evt:
-                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        //Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventError evt:
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
@@ -2133,7 +2147,7 @@ namespace Samples
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventStats evt:
-                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        //Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventError evt:
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
@@ -2154,7 +2168,7 @@ namespace Samples
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventStats evt:
-                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        //Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventError evt:
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
@@ -2175,7 +2189,7 @@ namespace Samples
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventStats evt:
-                        Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
+                        //Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                     case EventError evt:
                         Console.WriteLine(JsonSerializer.Serialize(evt, new JsonSerializerOptions { WriteIndented = true }));
