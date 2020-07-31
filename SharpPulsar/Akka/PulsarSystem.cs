@@ -749,13 +749,17 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(new EventSource.Messages.Pulsar.CurrentEventsByTag(tenant, ns, topic, fromSequenceId, toSequenceId, tag, adminUrl, configuration, _conf));
         }
 
-        public void EventsByTopicPresto(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
+        public void EventsByTopicPresto(string tenant, string ns, string topic, ImmutableHashSet<string> cols, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
         {
-            if (columns == null || !columns.Any())
-                throw new ArgumentException("Columns cannot be null or empty");
 
-            if (columns.Contains("*"))
-                throw new ArgumentException("Column cannot be *");
+            if (cols == null)
+                throw new ArgumentException("Columns cannot be null");
+
+            var columns = cols.Where(x => !x.StartsWith("__") || !x.EndsWith("__") || !x.Equals("*")).ToImmutableHashSet();
+
+            if (!columns.Any())
+                throw new ArgumentException("Columns cannot be null or empty; column cannot start or end with '__'; '*' not allowed!");
+
 
             if (options == null)
                 throw new ArgumentException("Option is null");
@@ -784,13 +788,17 @@ namespace SharpPulsar.Akka
             _pulsarManager.Tell(new EventSource.Messages.Presto.EventsByTopic(tenant, ns, topic, columns, fromSequenceId, toSequenceId, options, adminUrl));
         }
 
-        public void CurrentEventsByTopicPresto(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
+        public void CurrentEventsByTopicPresto(string tenant, string ns, string topic, ImmutableHashSet<string> cols, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
         {
-            if (columns == null || !columns.Any())
-                throw new ArgumentException("Columns cannot be null or empty");
 
-            if (columns.Contains("*"))
-                throw new ArgumentException("Column cannot be *");
+            if (cols == null)
+                throw new ArgumentException("Columns cannot be null");
+
+            var columns = cols.Where(x => !x.StartsWith("__") || !x.EndsWith("__") || !x.Equals("*")).ToImmutableHashSet();
+
+            if (!columns.Any())
+                throw new ArgumentException("Columns cannot be null or empty; column cannot start or end with '__'; '*' not allowed!");
+
 
             if (options == null)
                 throw new ArgumentException("Option is null");
@@ -818,16 +826,18 @@ namespace SharpPulsar.Akka
 
             _pulsarManager.Tell(new EventSource.Messages.Presto.CurrentEventsByTopic(tenant, ns, topic, columns, fromSequenceId, toSequenceId, adminUrl, options));
         }
-        public void EventsByTagPresto(string tenant, string ns, string topic, Tag tag, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
+        public void EventsByTagPresto(string tenant, string ns, string topic, Tag tag, ImmutableHashSet<string> cols, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
         {
             if (tag == null)
                 throw new ArgumentException("Tag is null");
 
-            if (columns == null || !columns.Any())
-                throw new ArgumentException("Columns cannot be null or empty");
+            if (cols == null)
+                throw new ArgumentException("Columns cannot be null");
+            
+            var columns = cols.Where(x => !x.StartsWith("__") || !x.EndsWith("__") || !x.Equals("*")).ToImmutableHashSet();
 
-            if (columns.Contains("*"))
-                throw new ArgumentException("Column cannot be *");
+            if (!columns.Any())
+                throw new ArgumentException("Columns cannot be null or empty; column cannot start or end with '__'; '*' not allowed!");
 
             if (options == null)
                 throw new ArgumentException("Option is null");
@@ -855,16 +865,18 @@ namespace SharpPulsar.Akka
 
             _pulsarManager.Tell(new EventSource.Messages.Presto.EventsByTag(tenant, ns, topic, columns, fromSequenceId, toSequenceId, tag, options, adminUrl));
         }
-        public void CurrentEventsByTagPresto(string tenant, string ns, string topic, Tag tag, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
+        public void CurrentEventsByTagPresto(string tenant, string ns, string topic, Tag tag, ImmutableHashSet<string> cols, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
         {
             if (tag == null)
                 throw new ArgumentException("Tag is null");
 
-            if (columns == null || !columns.Any())
-                throw new ArgumentException("Columns cannot be null or empty");
+            if (cols == null)
+                throw new ArgumentException("Columns cannot be null");
 
-            if (columns.Contains("*"))
-                throw new ArgumentException("Column cannot be *");
+            var columns = cols.Where(x => !x.StartsWith("__") || !x.EndsWith("__") || !x.Equals("*")).ToImmutableHashSet();
+
+            if (!columns.Any())
+                throw new ArgumentException("Columns cannot be null or empty; column cannot start or end with '__'; '*' not allowed!");
 
             if (options == null)
                 throw new ArgumentException("Option is null");
