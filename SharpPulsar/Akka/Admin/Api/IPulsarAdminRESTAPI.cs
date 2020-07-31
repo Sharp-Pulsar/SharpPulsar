@@ -3924,7 +3924,18 @@ namespace PulsarAdmin
         /// <param name='cancellationToken'>
         /// The cancellation token.
         /// </param>
+        
         Task<HttpOperationResponse> SetOffloadPoliciesWithHttpMessagesAsync(string tenant, string namespaceParameter, OffloadPolicies offloadPolicies, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        
+        //@Get
+        // @Path("/{tenant}/{namespace}/{topic}/backlogQuotaMap")
+        //Task<HttpOperationResponse<IDictionary<BacklogQuota.BacklogQuotaType, BacklogQuota>>> GetBacklogQuotaMap(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        //@Post
+        //@Path("/{tenant}/{namespace}/{topic}/backlogQuota")
+        //Task<HttpOperationResponse> SetBacklogQuota(string tenant, string namespaceParameter, string topic, BacklogQuota.BacklogQuotaType backlogQuotaType, BacklogQuota backlogQuota, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        //@DELETE
+        //@Path("/{tenant}/{namespace}/{topic}/backlogQuota")
+        //Task<HttpOperationResponse> RemoveBacklogQuota(string tenant, string namespaceParameter, string topic, BacklogQuota.BacklogQuotaType backlogQuotaType, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
     }
 }

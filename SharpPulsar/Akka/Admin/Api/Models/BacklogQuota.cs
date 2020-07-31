@@ -25,7 +25,7 @@ namespace PulsarAdmin.Models
         /// <param name="policy">Possible values include:
         /// 'producer_request_hold', 'producer_exception',
         /// 'consumer_backlog_eviction'</param>
-        public BacklogQuota(long? limit = default(long?), string policy = default(string))
+        public BacklogQuota(long limit = default(long), RetentionPolicy policy = default(RetentionPolicy))
         {
             Limit = limit;
             Policy = policy;
@@ -40,14 +40,39 @@ namespace PulsarAdmin.Models
         /// <summary>
         /// </summary>
         [JsonProperty(PropertyName = "limit")]
-        public long? Limit { get; set; }
+        public long Limit { get; set; }
 
         /// <summary>
         /// Gets or sets possible values include: 'producer_request_hold',
         /// 'producer_exception', 'consumer_backlog_eviction'
         /// </summary>
         [JsonProperty(PropertyName = "policy")]
-        public string Policy { get; set; }
+        public RetentionPolicy Policy { get; set; }
 
+        /// <summary>
+        /// Identifier to a backlog quota configuration (an instance of <seealso cref="BacklogQuota"/>).
+        /// </summary>
+        public enum BacklogQuotaType
+        {
+            destination_storage
+        }
+        /// <summary>
+        /// Enumeration type determines how to retain backlog against the resource shortages.
+        /// </summary>
+        public enum RetentionPolicy
+        {
+            /// <summary>
+            /// Policy which holds producer's send request until the resource becomes available (or holding times out). </summary>
+            producer_request_hold,
+
+            /// <summary>
+            /// Policy which throws javax.jms.ResourceAllocationException to the producer. </summary>
+            producer_exception,
+
+            /// <summary>
+            /// Policy which evicts the oldest message from the slowest consumer's backlog. </summary>
+            consumer_backlog_eviction,
+        }
     }
+
 }

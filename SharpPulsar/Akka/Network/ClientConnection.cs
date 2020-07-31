@@ -26,6 +26,7 @@ namespace SharpPulsar.Akka.Network
     //https://dev.to/mimetis/using-dns01-challenge-and-let-s-encrypt-to-secure-your-aks-kubernetes-cluster-5g42s
     //http://www.wahidsaleemi.com/2020/01/get-a-free-domain-for-you-azure-labs/
     //https://github.com/kubernetes-sigs/external-dns/blob/7505f29e4cec80ca20468b38c03b660a8481277d/docs/tutorials/azure.md
+    //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
     public class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
         private readonly IAuthentication _authentication;
