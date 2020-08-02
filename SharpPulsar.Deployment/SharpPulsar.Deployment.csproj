@@ -8,4 +8,8 @@
     <PackageReference Include="kubernetesclient" Version="2.0.26" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Kubernetes\Zoo\" />
+  </ItemGroup>
+
 </Project>
