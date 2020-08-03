@@ -26,7 +26,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                         {
                             {"gen-zk-conf.sh",zk} 
                 });
-            return _config.Run(Values.Namespace);
+            return _config.Run(_config.Builder(), Values.Namespace);
         }
         public V1ConfigMap Run()
         {
@@ -55,7 +55,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                             {"PULSAR_MEM", "-Xms64m -Xmx128m"},
                             {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
                         });
-            return _config.Run(Values.Namespace);
+            return _config.Run(_config.Builder(), Values.Namespace);
         }
     }
 }

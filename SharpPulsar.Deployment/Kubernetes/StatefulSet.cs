@@ -7,17 +7,19 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
     public class StatefulSet
     {
         private readonly IKubernetes _client;
+        private readonly StatefulSetBuilder _builder;
         public StatefulSet(IKubernetes client)
         {
-            _client = client; 
+            _client = client;
+            _builder = new StatefulSetBuilder();
         }
         public StatefulSetBuilder Builder()
         {
-            return new StatefulSetBuilder();
+            return _builder;
         }
-        public V1StatefulSet Run(string ns, string dryRun = default)
+        public V1StatefulSet Run(StatefulSetBuilder builder, string ns, string dryRun = default)
         {
-            return _client.CreateNamespacedStatefulSet(Builder().Build(), ns, dryRun);
+            return _client.CreateNamespacedStatefulSet(builder.Build(), ns, dryRun);
         }
     }
 }

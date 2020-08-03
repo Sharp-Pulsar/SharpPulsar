@@ -1,5 +1,4 @@
-﻿using k8s;
-using k8s.Models;
+﻿using k8s.Models;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
@@ -23,7 +22,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                             })
                 .Parameters(ZooTemp.StorageParameters)
                 .Provisioner(ZooTemp.StorageProvisioner);
-            return _str.Run(Values.Namespace);
+            return _str.Run(_str.Builder(), Values.Namespace);
         }
     }
     public class ZooKeeperDataLogStorageClass
@@ -45,7 +44,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                             })
                 .Parameters(ZooTemp.DatalogParameters)
                 .Provisioner(ZooTemp.DatalogProvisioner);
-            return _str.Run(Values.Namespace);
+            return _str.Run(_str.Builder(), Values.Namespace);
         }
     }
 }

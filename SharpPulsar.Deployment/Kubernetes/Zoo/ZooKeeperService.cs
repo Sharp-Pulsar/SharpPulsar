@@ -41,7 +41,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                                 {"release", Values.ReleaseName },
                                 {"component","zookeeper" }
                             });
-            return _service.Run(Values.Namespace);
+            return _service.Run(_service.Builder(), Values.Namespace);
         }
     }
 }

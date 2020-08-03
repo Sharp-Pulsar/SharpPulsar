@@ -156,7 +156,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                 })
                 ;
             
-            return _set.Run(Values.Namespace);
+            return _set.Run(_set.Builder(), Values.Namespace);
         }
     }
 }

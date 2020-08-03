@@ -28,7 +28,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                                 {"component","zookeeper" }
                             })
                 .MaxUnavailable(new IntstrIntOrString { Value = "1" })                ;
-            return _pdb.Run(Values.Namespace);
+            return _pdb.Run(_pdb.Builder(), Values.Namespace);
         }
     }
 }

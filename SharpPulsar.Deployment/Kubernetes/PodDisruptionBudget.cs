@@ -8,17 +8,19 @@ namespace SharpPulsar.Deployment.Kubernetes
     public class PodDisruptionBudget
     {
         private readonly IKubernetes _client;
+        private readonly PodDisruptionBudgetBuilder _builder;
         public PodDisruptionBudget(IKubernetes client)
         {
             _client = client;
+            _builder = new PodDisruptionBudgetBuilder();
         }
         public PodDisruptionBudgetBuilder Builder()
         {
-            return new PodDisruptionBudgetBuilder();
+            return _builder;
         }
-        public V1beta1PodDisruptionBudget Run(string ns, string dryRun = default)
+        public V1beta1PodDisruptionBudget Run(PodDisruptionBudgetBuilder builder, string ns, string dryRun = default)
         {
-            return _client.CreateNamespacedPodDisruptionBudget(Builder().Build(), ns, dryRun);
+            return _client.CreateNamespacedPodDisruptionBudget(builder.Build(), ns, dryRun);
         }
     }
 }
