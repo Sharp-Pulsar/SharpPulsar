@@ -34,7 +34,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _binding.RoleRef.Name = name;
             return this;
         }
-        public ClusterRoleBindingBuilder Subject(string @namespace, string kind, string name)
+        public ClusterRoleBindingBuilder AddSubject(string @namespace, string kind, string name)
         {
             _binding.Subjects.Add(new V1Subject
             {

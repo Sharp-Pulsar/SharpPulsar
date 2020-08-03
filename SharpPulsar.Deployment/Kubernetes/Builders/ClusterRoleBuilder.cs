@@ -12,7 +12,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         {
             _cluster = new V1ClusterRole
             {
-                Rules = new List<V1PolicyRule>()
+                Rules = new List<V1PolicyRule>(),
+                Metadata = new V1ObjectMeta()
             };
         }
         public ClusterRoleBuilder Name(string name)
@@ -25,7 +26,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _cluster.Metadata.Labels = labels;
             return this;
         }
-        public ClusterRoleBuilder Rule(string[] apiGroups, string[] resources, string[] verbs)
+        public ClusterRoleBuilder AddRule(string[] apiGroups, string[] resources, string[] verbs)
         {
             _cluster.Rules.Add(new V1PolicyRule 
             { 
