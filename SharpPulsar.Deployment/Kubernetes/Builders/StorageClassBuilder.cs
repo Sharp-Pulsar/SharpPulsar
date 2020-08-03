@@ -1,7 +1,7 @@
 ﻿using k8s.Models;
 using System.Collections.Generic;
 
-namespace SharpPulsar.Deployment.Kubernetes.Zoo
+namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     public class StorageClassBuilder
     {
@@ -30,7 +30,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
             _zooStorage.Parameters = parameters;
             return this;
         }
-        public V1StorageClass ToStorageClass()
+        public V1StorageClass Build()
         {
             return _zooStorage;
         }

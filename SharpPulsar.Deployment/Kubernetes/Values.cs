@@ -4,20 +4,22 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public sealed class Values
+    public static class Values
     {
         // Flag to control whether to run initialize job
-        public bool Initialize { get; set; } = true;
+        public static  bool Initialize { get; set; } = true;
         //Namespace to deploy pulsar
-        public string Namespace { get; set; } = "pulsar";
-        public bool NamespaceCreate { get; set; } = false;
+        public static string Namespace { get; set; } = "pulsar";
+        public static string Cluster { get; set; } = "pulsar";
+        public static string ReleaseName { get; set; } = "pulsar";
+        public static bool NamespaceCreate { get; set; } = false;
         //// Pulsar Metadata Prefix
         ////
         //// By default, pulsar stores all the metadata at root path.
         //// You can configure to have a prefix (e.g. "/my-pulsar-cluster").
         //// If you do so, all the pulsar and bookkeeper metadata will
         //// be stored under the provided path
-        public string MetadataPrefix { get; set; } = "";
+        public static string MetadataPrefix { get; set; } = "";
         //// Persistence
         ////
         //// If persistence is enabled, components that have state will
@@ -28,93 +30,41 @@ namespace SharpPulsar.Deployment.Kubernetes
         //// If you need to disable persistence for a component,
         //// you can set the `volume.persistence` setting to `false` for
         //// that component.
-        public Volume Volumes { get; set; }
+        public static Volume Volumes { get; set; } = new Volume();
         //// AntiAffinity
         ////
         //// Flag to enable and disable `AntiAffinity` for all components.
         //// This is a global setting that is applied to all components.
         //// If you need to disable AntiAffinity for a component, you can set
         //// the `affinity.anti_affinity` settings to `false` for that component.
-        public bool AntiAffinity { get; set; } = true;
+        public static bool AntiAffinity { get; set; } = true;
         //// Components
         ////
         //// Control what components of Apache Pulsar to deploy for the cluster
-        public Components Components { get; set; } = new Components();
+        public static Components Components { get; set; } = new Components();
         //// Monitoring Components
         ////
         //// Control what components of the monitoring stack to deploy for the cluster
-        public Monitoring Monitoring { get; set; } = new Monitoring();
+        public static Monitoring Monitoring { get; set; } = new Monitoring();
         //// Images
         ////
         //// Control what images to use for each component
-        public Images Images { get; set; } = new Images();
+        public static Images Images { get; set; } = new Images();
         //// TLS
         //// templates/tls-certs.yaml
         ////
         //// The chart is using cert-manager for provisioning TLS certs for
         //// brokers and proxies.
-        public IDictionary<string, object> ZooKeeper { get; set; } = new Dictionary<string, object>
-        {
-            {"Component", "zookeeper" },
-            {"ReplicaCount", 3 },
-            {"Ports", new Dictionary<string, int>
-                {
-                    { "Metrics", 800},
-                    { "Client", 2181},
-                    { "ClientTls", 2281},
-                    { "Follower", 2888},
-                    { "LeaderElection", 3888},
-                }
-            },
-            {"NodeSelector", "" },
-            {"Probe", new Dictionary<string, Dictionary<string, object>>
-                {
-                    {"Liveness", new Dictionary<string, object>
-                        {
-                            { "Enabled", true },
-                            { "FailureThreshold", 10 },
-                            { "InitialDelaySeconds", 10 },
-                            { "PeriodSeconds", 30 }
-                        }
-                    },
-                    {"Readiness", new Dictionary<string, object>
-                        {
-                            { "Enabled", true },
-                            { "FailureThreshold", 10 },
-                            { "InitialDelaySeconds", 10 },
-                            { "PeriodSeconds", 30 }
-                        }
-                    },
-                    {"Startup", new Dictionary<string, object>
-                        {
-                            { "Enabled", false },
-                            { "FailureThreshold", 30 },
-                            { "InitialDelaySeconds", 10 },
-                            { "PeriodSeconds", 30 }
-                        }
-                    }
-                }
-            },
-            {"AntiAffinity", true },
-            { "Annotations", new Dictionary<string, string>
-                {
-                    { "prometheus.io/scrape", "true" },
-                    { "prometheus.io/port", "8000" }
-                }
-            },
-            {"SecurityContext", new Dictionary<string, object>{ } },
-            {"Tolerations", new List<string>()},
-            {"GracePeriod", 30},
-        };
+        
     }
-    public sealed class Volume
+    public  sealed class Volume
     {
         public bool Persistence { get; set; } = true;
         // configure the components to use local persistent volume
         // the local provisioner should be installed prior to enable local persistent volume
-        public bool LocalStorage { get; set; } = false;
+        public  bool LocalStorage { get; set; } = false;
     }
-    public sealed class Components
+    public  sealed class Components
     {
         // zookeeper
         public bool Zookeeper { get; set; } = true;
@@ -123,7 +73,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         // bookkeeper - autorecovery
         public bool Autorecovery { get; set; } = true;
         // broker
-        public bool Broker { get; set; } = true;
+        public  bool Broker { get; set; } = true;
         // functions
         public bool Functions { get; set; } = true;
         // proxy
@@ -139,7 +89,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         // pulsar detector
         public bool PulsarDetector { get; set; } = false;
     }
-    public sealed class Monitoring
+    public  sealed class Monitoring
     {
         // monitoring - prometheus
         public bool Prometheus { get; set; } = false;
@@ -154,7 +104,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         // monitoring - datadog
         public bool Datadog { get; set; } = false;
     }
-    public sealed class Images 
+    public  sealed class Images 
     {
         public Image ZooKeeper { get; set; } = new Image();
         public Image Bookie { get; set; } = new Image();
@@ -195,7 +145,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Tag = "0.26.2"
         };
     }
-    public sealed class Image
+    public  sealed class Image
     {
         public string Repository { get; set; } = "apachepulsar/pulsar-all";
         public string Tag { get; set; } = "2.6.0";
