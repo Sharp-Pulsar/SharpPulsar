@@ -7,7 +7,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     public class ConfigMap
     {
         private readonly IKubernetes _client;
-        private readonly ConfigMapBuilder _builder;
+        private ConfigMapBuilder _builder;
         public ConfigMap(IKubernetes client)
         {
             _client = client;
@@ -19,7 +19,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         }
         public V1ConfigMap Run(ConfigMapBuilder builder, string ns, string dryRun = default)
         {
-            return _client.CreateNamespacedConfigMap(builder.Build(), ns, dryRun);
+            var build = builder;
+            _builder = new ConfigMapBuilder();
+            return _client.CreateNamespacedConfigMap(build.Build(), ns, dryRun);
         }
     }
 }

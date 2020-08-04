@@ -4,10 +4,10 @@ using SharpPulsar.Deployment.Kubernetes.Builders;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class BookieKeeperConfigMap
+    public class BookieConfigMap
     {
         private readonly IKubernetes _client;
-        public BookieKeeperConfigMap(IKubernetes client)
+        public BookieConfigMap(IKubernetes client)
         {
             _client = client;
         }

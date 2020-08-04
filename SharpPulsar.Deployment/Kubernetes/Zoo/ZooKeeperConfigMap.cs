@@ -11,14 +11,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         {
             _config = config;
         } 
-        public V1ConfigMap GenZkConf()
+        public V1ConfigMap GenZkConf(string dryRun = default)
         {
             var zk = File.ReadAllText(@"\Kubernetes\Zoo\gen-zk-conf.txt");
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-zookeeper", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
-                                {"app", Values.ReleaseName },
+                                {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName }
                             })
@@ -26,15 +26,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                         {
                             {"gen-zk-conf.sh",zk} 
                 });
-            return _config.Run(_config.Builder(), Values.Namespace);
+            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
-        public V1ConfigMap Run()
+        public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-zookeeper", Values.Namespace)                
                 .Labels(new Dictionary<string, string>
                             {
-                                {"app", Values.ReleaseName },
+                                {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
                                 {"component","zookeeper" },
@@ -55,7 +55,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                             {"PULSAR_MEM", "-Xms64m -Xmx128m"},
                             {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
                         });
-            return _config.Run(_config.Builder(), Values.Namespace);
+            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }
 }

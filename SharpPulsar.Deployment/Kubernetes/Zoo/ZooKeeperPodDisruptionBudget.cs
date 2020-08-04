@@ -10,25 +10,25 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         {
             _pdb = pdb;
         }
-        public V1beta1PodDisruptionBudget Run()
+        public V1beta1PodDisruptionBudget Run(string dryRun = default)
         {
             _pdb.Builder()
                 .Metadata($"{Values.ReleaseName}-zookeeper", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
-                                {"app", Values.ReleaseName },
+                                {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
                                 {"component","zookeeper" }
                             })
                 .MatchLabels(new Dictionary<string, string>
                             {
-                                {"app", Values.ReleaseName },
+                                {"app", Values.App },
                                 {"release", Values.ReleaseName },
                                 {"component","zookeeper" }
                             })
-                .MaxUnavailable(new IntstrIntOrString { Value = "1" })                ;
-            return _pdb.Run(_pdb.Builder(), Values.Namespace);
+                .MaxUnavailable(new IntstrIntOrString { Value = "1" });
+            return _pdb.Run(_pdb.Builder(), Values.Namespace, dryRun);
         }
     }
 }

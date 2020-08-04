@@ -5,10 +5,10 @@ using SharpPulsar.Deployment.Kubernetes.Builders;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class BookieKeeperPodDisruptionBudget
+    public class BookiePodDisruptionBudget
     {
         private readonly IKubernetes _client;
-        public BookieKeeperPodDisruptionBudget(IKubernetes client)
+        public BookiePodDisruptionBudget(IKubernetes client)
         {
             _client = client;
         }

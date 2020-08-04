@@ -12,6 +12,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public static string Namespace { get; set; } = "pulsar";
         public static string Cluster { get; set; } = "pulsar";
         public static string ReleaseName { get; set; } = "pulsar";
+        public static string App { get; set; } = "pulsar";
         public static bool NamespaceCreate { get; set; } = false;
         //// Pulsar Metadata Prefix
         ////

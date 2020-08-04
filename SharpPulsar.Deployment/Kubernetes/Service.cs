@@ -2,12 +2,12 @@
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
 
-namespace SharpPulsar.Deployment.Kubernetes.Zoo
+namespace SharpPulsar.Deployment.Kubernetes
 {
     public class Service
     {
         private readonly IKubernetes _client;
-        private readonly ServiceBuilder _builder;
+        private ServiceBuilder _builder;
         public Service(IKubernetes client)
         {
             _client = client;
@@ -19,7 +19,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         }
         public V1Service Run(ServiceBuilder builder, string ns, string dryRun = default)
         {
-            return _client.CreateNamespacedService(builder.Build(), ns, dryRun);
+            var build = builder;
+            _builder = new ServiceBuilder();
+            return _client.CreateNamespacedService(build.Build(), ns, dryRun);
         }
     }
 }

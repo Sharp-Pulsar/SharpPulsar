@@ -4,10 +4,10 @@ using SharpPulsar.Deployment.Kubernetes.Builders;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class BookieKeeperStorageClass
+    public class BookieStorageClass
     {
         private readonly IKubernetes _client;
-        public BookieKeeperStorageClass(IKubernetes client)
+        public BookieStorageClass(IKubernetes client)
         {
             _client = client;
         }

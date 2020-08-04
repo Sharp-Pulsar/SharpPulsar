@@ -7,19 +7,21 @@ namespace SharpPulsar.Deployment.Kubernetes
     public class StorageClass
     {
         private readonly IKubernetes _client;
-        private readonly StorageClassBuilder __builder;
+        private StorageClassBuilder _builder;
         public StorageClass(IKubernetes client)
         {
             _client = client;
-            __builder = new StorageClassBuilder();
+            _builder = new StorageClassBuilder();
         }
         public StorageClassBuilder Builder()
         {
-            return __builder;
+            return _builder;
         }
         public V1StorageClass Run(StorageClassBuilder builder, string dryRun = default)
         {
-            return _client.CreateStorageClass(builder.Build(), dryRun);
+            var build = builder;
+            _builder = new StorageClassBuilder();
+            return _client.CreateStorageClass(build.Build(), dryRun);
         }
     }
     public class ZooKeeperDataLogStorageClass
