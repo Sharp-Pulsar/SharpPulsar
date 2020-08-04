@@ -23,10 +23,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
                                 {"release", Values.ReleaseName },
                                 {"component",Values.AutoRecovery.ComponentName },
                             })
-                .Data(new Dictionary<string, string>
-                        {
-                            {"BOOKIE_MEM", "-Xms64m -Xmx64m"}
-                        });
+                .Data(Values.AutoRecovery.ConfigData);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }

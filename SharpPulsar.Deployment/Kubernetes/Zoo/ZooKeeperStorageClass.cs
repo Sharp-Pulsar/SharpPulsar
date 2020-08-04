@@ -13,12 +13,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         public V1StorageClass Run(string dryRun = default)
         {
             _str.Builder().
-                Metadata($"{Values.ReleaseName}-zookeeper-data", Values.Namespace, new Dictionary<string, string>
+                Metadata($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data", Values.Namespace, new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component","zookeeper" }
+                                {"component", Values.ZooKeeper.ComponentName }
                             })
                 .Parameters(ZooTemp.StorageParameters)
                 .Provisioner(ZooTemp.StorageProvisioner);
@@ -35,12 +35,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         public V1StorageClass Run(string dryRun = default)
         {
             _str.Builder().
-                Metadata($"{Values.ReleaseName}-zookeeper-data-log", Values.Namespace, new Dictionary<string, string>
+                Metadata($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data-log", Values.Namespace, new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component","zookeeper" }
+                                {"component",Values.ZooKeeper.ComponentName }
                             })
                 .Parameters(ZooTemp.DatalogParameters)
                 .Provisioner(ZooTemp.DatalogProvisioner);

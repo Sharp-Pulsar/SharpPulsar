@@ -22,28 +22,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         //// If you do so, all the pulsar and bookkeeper metadata will
         //// be stored under the provided path
         public static string MetadataPrefix { get; set; } = "";
-        //// Persistence
-        ////
-        //// If persistence is enabled, components that have state will
-        //// be deployed with PersistentVolumeClaims, otherwise, for test
-        //// purposes, they will be deployed with emptyDir
-        ////
-        //// This is a global setting that is applied to all components.
-        //// If you need to disable persistence for a component,
-        //// you can set the `volume.persistence` setting to `false` for
-        //// that component.
-        public static Volume Volumes { get; set; } = new Volume();
-        //// AntiAffinity
-        ////
-        //// Flag to enable and disable `AntiAffinity` for all components.
-        //// This is a global setting that is applied to all components.
-        //// If you need to disable AntiAffinity for a component, you can set
-        //// the `affinity.anti_affinity` settings to `false` for that component.
-        public static bool AntiAffinity { get; set; } = true;
-        //// Components
-        ////
-        //// Control what components of Apache Pulsar to deploy for the cluster
-        public static Components Components { get; set; } = new Components();
         //// Monitoring Components
         ////
         //// Control what components of the monitoring stack to deploy for the cluster
@@ -58,7 +36,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         //// The chart is using cert-manager for provisioning TLS certs for
         //// brokers and proxies.
         ///
-        public static Common Common { get; set; } = new Common();
 
         public static Component AutoRecovery { get; set; } = new Component
         {
@@ -169,7 +146,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                 /*new V1Volume {Name = "zookeeper-certs", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-{{ .Values.tls.zookeeper.cert_name }}", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } }},
                 new V1Volume {Name = "ca", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-ca-tls", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "ca.crt", Path = "ca.crt" } } }},
                 new V1Volume{Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource{Name = "{{ template pulsar.fullname . }}-keytool-configmap", DefaultMode = 0755}}*/
-            }
+            },
+            ConfigData = new Dictionary<string, string>
+                        {
+                            {"BOOKIE_MEM", "-Xms64m -Xmx64m"}
+                        }
         };
         public static Component ZooKeeper { get; set; } = new Component
         {
@@ -282,7 +263,23 @@ namespace SharpPulsar.Deployment.Kubernetes
                 /*new V1Volume {Name = "zookeeper-certs", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-{{ .Values.tls.zookeeper.cert_name }}", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } }},
                     new V1Volume {Name = "ca", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-ca-tls", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "ca.crt", Path = "ca.crt" } } }},
                     new V1Volume{Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource{Name = "{{ template pulsar.fullname . }}-keytool-configmap", DefaultMode = 0755}}*/
-            }
+            },
+            ConfigData = new Dictionary<string, string>
+                        {
+                            {"dataDir", "/pulsar/data/zookeeper" },
+                            //{"PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog" },
+                            {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
+                            {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
+                            //if tls enabled
+                            //{"secureClientPort", "Values.zookeeper.ports.clientTls"},
+                            //{"PULSAR_PREFIX_secureClientPort", "Values.zookeeper.ports.clientTls"},
+                            //if reconfig enabled }}
+                            //{"PULSAR_PREFIX_reconfigEnabled", "true"},
+                            //{"PULSAR_PREFIX_quorumListenOnAllIPs", "true"},
+                            {"PULSAR_PREFIX_peerType", "participant" },
+                            {"PULSAR_MEM", "-Xms64m -Xmx128m"},
+                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
+                        }
         };
 
     }
@@ -400,5 +397,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         public List<V1Volume> Volumes { get; set; } = new List<V1Volume>();
         public List<V1Container> Containers { get; set; } = new List<V1Container>();
         public List<V1Toleration> Tolerations { get; set; } = new List<V1Toleration>();
+        public IDictionary<string, string> ConfigData { get; set; } = new Dictionary<string, string>();
     }
 }

@@ -15,7 +15,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         {
             var zk = File.ReadAllText(@"\Kubernetes\Zoo\gen-zk-conf.txt");
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-zookeeper", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
@@ -31,30 +31,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-zookeeper", Values.Namespace)                
+                .Metadata($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}", Values.Namespace)                
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component","zookeeper" },
+                                {"component", Values.ZooKeeper.ComponentName },
                             })
-                .Data(new Dictionary<string, string>
-                        {
-                            {"dataDir", "/pulsar/data/zookeeper" },
-                            //{"PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog" },
-                            {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
-                            {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
-                            //if tls enabled
-                            //{"secureClientPort", "Values.zookeeper.ports.clientTls"},
-                            //{"PULSAR_PREFIX_secureClientPort", "Values.zookeeper.ports.clientTls"},
-                            //if reconfig enabled }}
-                            //{"PULSAR_PREFIX_reconfigEnabled", "true"},
-                            //{"PULSAR_PREFIX_quorumListenOnAllIPs", "true"},
-                            {"PULSAR_PREFIX_peerType", "participant" },
-                            {"PULSAR_MEM", "-Xms64m -Xmx128m"},
-                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
-                        });
+                .Data(Values.ZooKeeper.ConfigData);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }
