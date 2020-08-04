@@ -2,23 +2,36 @@
 using k8s;
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
+using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
     public class BookiePodDisruptionBudget
     {
-        private readonly IKubernetes _client;
-        public BookiePodDisruptionBudget(IKubernetes client)
+        private readonly PodDisruptionBudget _pdb;
+        public BookiePodDisruptionBudget(PodDisruptionBudget pdb)
         {
-            _client = client;
+            _pdb = pdb;
         }
-        public static PodDisruptionBudgetBuilder Builder()
+        public V1beta1PodDisruptionBudget Run(string dryRun = default)
         {
-            return new PodDisruptionBudgetBuilder();
-        }
-        public V1beta1PodDisruptionBudget Run(string ns, string dryRun = default)
-        {
-            return _client.CreateNamespacedPodDisruptionBudget(Builder().Build(), ns, dryRun);
+            _pdb.Builder()
+                .Metadata($"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}", Values.Namespace)
+                .Labels(new Dictionary<string, string>
+                            {
+                                {"app", Values.App },
+                                {"cluster", Values.Cluster },
+                                {"release", Values.ReleaseName },
+                                {"component",Values.BookKeeper.ComponentName }
+                            })
+                .MatchLabels(new Dictionary<string, string>
+                            {
+                                {"app", Values.App },
+                                {"release", Values.ReleaseName },
+                                {"component", Values.BookKeeper.ComponentName }
+                            })
+                .MaxUnavailable(new IntstrIntOrString { Value = "1" });
+            return _pdb.Run(_pdb.Builder(), Values.Namespace, dryRun);
         }
     }
 }

@@ -519,19 +519,29 @@ namespace SharpPulsar.Deployment.Kubernetes
             },
             ConfigData = new Dictionary<string, string>
                         {
-                            {"dataDir", "/pulsar/data/zookeeper" },
-                            //{"PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog" },
-                            {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
-                            {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
-                            //if tls enabled
-                            //{"secureClientPort", "Values.zookeeper.ports.clientTls"},
-                            //{"PULSAR_PREFIX_secureClientPort", "Values.zookeeper.ports.clientTls"},
-                            //if reconfig enabled }}
-                            //{"PULSAR_PREFIX_reconfigEnabled", "true"},
-                            //{"PULSAR_PREFIX_quorumListenOnAllIPs", "true"},
-                            {"PULSAR_PREFIX_peerType", "participant" },
-                            {"PULSAR_MEM", "-Xms64m -Xmx128m"},
-                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
+                            {"zkServers", $"{ZooKeeper.ServiceName}:2181" },
+                            //{"zkServers", $"{ZooKeeper.ServiceName}:2281" },
+                            {"zkLedgersRootPath", $"{MetadataPrefix}/ledgers" },
+                            {"httpServerEnabled", "true" },
+                            {"httpServerPort", "8000" },
+                            {"statsProviderClass", "org.apache.bookkeeper.stats.prometheus.PrometheusMetricsProvider" },
+                            {"useHostNameAsBookieID", "true" },
+                            //disable auto recovery on bookies since we will start AutoRecovery in separated pods
+                            //{"autoRecoveryDaemonEnabled", "false" },
+                            //Do not retain journal files as it increase the disk utilization
+                            {"journalMaxBackups", "0"},
+                            {"journalDirectories", "/pulsar/data/bookkeeper/journal"},
+                            {"PULSAR_PREFIX_journalDirectories", "/pulsar/data/bookkeeper/journal"},
+                            {"ledgerDirectories", "/pulsar/data/bookkeeper/ledgers"},
+                            /*{"PULSAR_PREFIX_tlsProviderFactoryClass", "org.apache.bookkeeper.tls.TLSContextFactory"},
+                            {"PULSAR_PREFIX_tlsCertificatePath", "/pulsar/certs/bookie/tls.crt"},
+                            {"PULSAR_PREFIX_tlsKeyStoreType", "PEM"},
+                            {"PULSAR_PREFIX_tlsKeyStore", "/pulsar/certs/bookie/tls.key"},
+                            {"PULSAR_PREFIX_tlsTrustStoreType", "PEM"},
+                            {"PULSAR_PREFIX_tlsTrustStore", "/pulsar/certs/ca/ca.crt"}*/
+                            {"BOOKIE_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
+                            {"PULSAR_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
+                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintHeapAtGC -verbosegc -Xloggc:/var/log/bookie-gc.log -XX:G1LogLevel=finest" }
                         },
             ExtraConfig = new ExtraConfig
             {
@@ -683,6 +693,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public string ServiceName { get; set; }
         public string PodManagementPolicy { get; set; }
         public string UpdateStrategy { get; set; }
+        public string StorageProvisioner { get; set; }
         public int GracePeriodSeconds { get; set; }
         public int Replicas { get; set; }
         public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();

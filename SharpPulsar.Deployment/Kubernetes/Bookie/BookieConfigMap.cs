@@ -1,23 +1,30 @@
 ﻿using k8s;
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
+using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
     public class BookieConfigMap
     {
-        private readonly IKubernetes _client;
-        public BookieConfigMap(IKubernetes client)
+        private readonly ConfigMap _config;
+        public BookieConfigMap(ConfigMap config)
         {
-            _client = client;
+            _config = config;
         }
-        public static ConfigMapBuilder Builder()
+        public V1ConfigMap Run(string dryRun = default)
         {
-            return new ConfigMapBuilder();
-        }
-        public V1ConfigMap Run(string ns, string dryRun = default)
-        {
-            return _client.CreateNamespacedConfigMap(Builder().Build(), ns, dryRun);
+            _config.Builder()
+                .Metadata($"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}", Values.Namespace)
+                .Labels(new Dictionary<string, string>
+                            {
+                                {"app", Values.App },
+                                {"cluster", Values.Cluster },
+                                {"release", Values.ReleaseName },
+                                {"component", Values.BookKeeper.ComponentName },
+                            })
+                .Data(Values.BookKeeper.ConfigData);
+            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }
 }
