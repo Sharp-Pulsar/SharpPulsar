@@ -15,13 +15,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-recovery", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.AutoRecovery.ComponentName }", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component","recovery" },
+                                {"component",Values.AutoRecovery.ComponentName },
                             })
                 .Data(new Dictionary<string, string>
                         {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using k8s.Models;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -56,7 +57,234 @@ namespace SharpPulsar.Deployment.Kubernetes
         ////
         //// The chart is using cert-manager for provisioning TLS certs for
         //// brokers and proxies.
-        
+        ///
+        public static Common Common { get; set; } = new Common();
+
+        public static Component AutoRecovery { get; set; } = new Component
+        {
+            ComponentName = "recovery",
+            Replicas = 1,
+            ServiceName = $"{ReleaseName}-{AutoRecovery.ComponentName }",
+            Enabled = true,
+            UpdateStrategy = "RollingUpdate",
+            PodManagementPolicy = "Parallel",
+            ExtraInitContainers = new List<V1Container>
+            {
+                new V1Container
+                    {
+                        Name = "pulsar-bookkeeper-verify-clusterid",
+                        Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
+                        ImagePullPolicy = Images.Autorecovery.PullPolicy,
+                        Command = new []
+                        { 
+                            "sh", 
+                            "-c" 
+                        },
+                        Args = new List<string>
+                        {
+                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
+                            "until bin/bookkeeper shell whatisinstanceid; do  sleep 3; done; "
+                        },
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-recovery"
+                                }
+                            }
+                        },
+                        VolumeMounts = new List<V1VolumeMount>
+                        {
+                            //{{- if and .Values.tls.enabled .Values.tls.zookeeper.enabled }}
+                            // new V1VolumeMount{ Name = "autorecovery-certs", MountPath = "/pulsar/certs/autorecovery", ReadOnlyProperty = true},
+                            // new V1VolumeMount{ Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true},
+                            //{{- if .Values.tls.zookeeper.enabled }}
+                            // new V1VolumeMount{ Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh"}
+                        }
+                    }
+            },
+            Containers = new List<V1Container>
+            {
+                new V1Container
+                    {
+                        Name = $"{ReleaseName}-{AutoRecovery.ComponentName}",
+                        Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
+                        ImagePullPolicy = Images.Autorecovery.PullPolicy,
+                        Resources = new V1ResourceRequirements
+                        { 
+                            Requests = new Dictionary<string, ResourceQuantity>
+                            { 
+                                { 
+                                    "memory", new ResourceQuantity("64Mi") 
+                                }, 
+                                {
+                                    "cpu", new ResourceQuantity("0.05")
+                                } 
+                            } 
+                        },
+                        Command = new []
+                        { 
+                            "sh",
+                            "-c" 
+                        },
+                        Args = new List<string>
+                        {
+                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
+                            //"/pulsar/keytool/keytool.sh autorecovery {{ template pulsar.autorecovery.hostname . }} true;",
+                            "bin/bookkeeper autorecovery"
+                        },
+                        Ports = new List<V1ContainerPort>
+                        {
+                            new V1ContainerPort
+                            {
+                                Name = "http", 
+                                ContainerPort = 8000 
+                            }
+                        },
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                { 
+                                    Name = $"{ReleaseName}-{AutoRecovery.ComponentName}"
+                                }
+                            }
+                        },
+                        VolumeMounts = new List<V1VolumeMount>
+                        {
+                            new V1VolumeMount{Name = "pulsar-zookeeper-data", MountPath = "/pulsar/data"},
+                            new V1VolumeMount{Name = "pulsar-zookeeper-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh"},
+                            new V1VolumeMount{Name = "pulsar-zookeeper-log4j2", MountPath = "/pulsar/conf/log4j2.yaml", SubPath = "og4j2.yaml"},
+                            /*new V1VolumeMount{Name = "zookeeper-certs", MountPath = "/pulsar/certs/zookeeper", ReadOnlyProperty = true},
+                            new V1VolumeMount{Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true},
+                            new V1VolumeMount{Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath= "keytool.sh"}*/
+                        }
+                    }
+            },
+            Volumes = new List<V1Volume>
+            {
+                /*new V1Volume {Name = "zookeeper-certs", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-{{ .Values.tls.zookeeper.cert_name }}", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } }},
+                new V1Volume {Name = "ca", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-ca-tls", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "ca.crt", Path = "ca.crt" } } }},
+                new V1Volume{Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource{Name = "{{ template pulsar.fullname . }}-keytool-configmap", DefaultMode = 0755}}*/
+            }
+        };
+        public static Component ZooKeeper { get; set; } = new Component
+        {
+            Enabled = true,
+            Replicas = 3,
+            ComponentName = "zookeeper",
+            ServiceName = $"{ReleaseName}-{ZooKeeper.ComponentName }",
+            UpdateStrategy = "RollingUpdate",
+            PodManagementPolicy = "OrderedReady",
+            Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{ZooKeeper.ComponentName }",
+                        Image = $"{Images.ZooKeeper.Repository}:{Images.ZooKeeper.Tag}",
+                        ImagePullPolicy = Images.ZooKeeper.PullPolicy,
+                        Resources = new V1ResourceRequirements
+                        { 
+                            Requests = new Dictionary<string, ResourceQuantity>
+                            { 
+                                { 
+                                    "memory", new ResourceQuantity("256Mi") 
+                                }, 
+                                { 
+                                    "cpu", new ResourceQuantity("0.1") 
+                                } 
+                            } 
+                        },
+                        Command = new []
+                        { 
+                            "sh", 
+                            "-c" 
+                        },
+                        Args = new List<string>
+                        {
+                            "bin/apply-config-from-env.py conf/zookeeper.conf;",
+                            "bin/gen-zk-conf.sh conf/zookeeper.conf 0 participant;",
+                            "cat conf/zookeeper.conf;",
+                            "bin/pulsar zookeeper;"
+                        },
+                        Ports = new List<V1ContainerPort>
+                        {
+                            new V1ContainerPort{Name = "metrics", ContainerPort = 8000 },
+                            new V1ContainerPort{Name = "client", ContainerPort = 2181 },
+                            //new V1ContainerPort{Name = "client-tls", ContainerPort = 2281 },
+                            new V1ContainerPort{Name = "follower", ContainerPort = 2888 },
+                            new V1ContainerPort{Name = "leader-election", ContainerPort = 3888 }
+                        },
+                        Env = new List<V1EnvVar>
+                        {
+                            new V1EnvVar
+                            { 
+                                Name = "ZOOKEEPER_SERVERS", 
+                                Value ="pulsar-zookeeper-0,pulsar-zookeeper-1,pulsar-zookeeper-2"
+                            }
+                        },
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                { 
+                                    Name = $"{ReleaseName}-{ZooKeeper.ComponentName }"
+                                }
+                            }
+                        },
+                        ReadinessProbe = new V1Probe
+                        {
+                            Exec = new V1ExecAction
+                            {
+                                Command = new List<string>{ "bin/pulsar-zookeeper-ruok.sh" }
+                            },
+                            InitialDelaySeconds = 10,
+                            FailureThreshold = 10,
+                            PeriodSeconds = 30
+                        },
+                        LivenessProbe = new V1Probe
+                        {
+                            Exec = new V1ExecAction
+                            {
+                                Command = new List<string>{ "bin/pulsar-zookeeper-ruok.sh" }
+                            },
+                            InitialDelaySeconds = 10,
+                            FailureThreshold = 10,
+                            PeriodSeconds = 30
+                        }/*,
+                        StartupProbe = new V1Probe
+                        {
+                            Exec = new V1ExecAction
+                            {
+                                Command = new List<string>{ "bin/pulsar-zookeeper-ruok.sh" }
+                            },
+                            InitialDelaySeconds = 10,
+                            FailureThreshold = 30,
+                            PeriodSeconds = 30
+                        }*/,
+                        VolumeMounts = new List<V1VolumeMount>
+                        {
+                            new V1VolumeMount{Name = "pulsar-zookeeper-data", MountPath = "/pulsar/data"},
+                            new V1VolumeMount{Name = "pulsar-zookeeper-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh"},
+                            new V1VolumeMount{Name = "pulsar-zookeeper-log4j2", MountPath = "/pulsar/conf/log4j2.yaml", SubPath = "og4j2.yaml"},
+                            /*new V1VolumeMount{Name = "zookeeper-certs", MountPath = "/pulsar/certs/zookeeper", ReadOnlyProperty = true},
+                            new V1VolumeMount{Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true},
+                            new V1VolumeMount{Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath= "keytool.sh"}*/
+                        }
+                    }
+                },
+            Volumes = new List<V1Volume>
+            {
+                /*new V1Volume {Name = "zookeeper-certs", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-{{ .Values.tls.zookeeper.cert_name }}", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } }},
+                    new V1Volume {Name = "ca", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-ca-tls", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "ca.crt", Path = "ca.crt" } } }},
+                    new V1Volume{Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource{Name = "{{ template pulsar.fullname . }}-keytool-configmap", DefaultMode = 0755}}*/
+            }
+        };
+
     }
     public  sealed class Volume
     {
@@ -78,9 +306,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         // functions
         public bool Functions { get; set; } = true;
         // proxy
-        public bool proxy { get; set; } = true;
+        public bool Proxy { get; set; } = true;
         // toolset
-        public bool toolset { get; set; } = false;
+        public bool Toolset { get; set; } = false;
         // pulsar manager
         public bool PulsarManager { get; set; } = false;
         // pulsar sql
@@ -148,9 +376,29 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public  sealed class Image
     {
+        public string ContainerName { get; set; }
         public string Repository { get; set; } = "apachepulsar/pulsar-all";
         public string Tag { get; set; } = "2.6.0";
         public string PullPolicy { get; set; } = "IfNotPresent";
         public bool HasCommand { get; set; } = false;
+    }
+    public class Common
+    {
+        public List<V1Container> ExtraInitContainers { get; set; }
+    }
+    public class Component
+    {
+        public bool Enabled { get; set; } = false;
+        public string ComponentName { get; set; }
+        public string ServiceName { get; set; }
+        public string PodManagementPolicy { get; set; }
+        public string UpdateStrategy { get; set; }
+        public int GracePeriodSeconds { get; set; }
+        public int Replicas { get; set; }
+        public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();
+        public List<V1PersistentVolumeClaim> PVC { get; set; } = new List<V1PersistentVolumeClaim>();
+        public List<V1Volume> Volumes { get; set; } = new List<V1Volume>();
+        public List<V1Container> Containers { get; set; } = new List<V1Container>();
+        public List<V1Toleration> Tolerations { get; set; } = new List<V1Toleration>();
     }
 }
