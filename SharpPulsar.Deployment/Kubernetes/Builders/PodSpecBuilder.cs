@@ -23,6 +23,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _spec.SecurityContext = context;
             return this;
         }
+        public PodSpecBuilder ServiceAccountName(string serviceAccountName)
+        {
+            _spec.ServiceAccountName = serviceAccountName;
+            return this;
+        }
         public PodSpecBuilder NodeSelector(IDictionary<string,string> selector)
         {
             _spec.NodeSelector = selector;

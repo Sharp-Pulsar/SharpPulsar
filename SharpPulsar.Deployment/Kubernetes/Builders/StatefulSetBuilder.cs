@@ -32,6 +32,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _statefulSet.Metadata.Labels = labels;
             return this;
         }
+        public StatefulSetBuilder Annotations(IDictionary<string, string> annotations)
+        {
+            _statefulSet.Metadata.Annotations = annotations;
+            return this;
+        }
         public StatefulSetSpecBuilder SpecBuilder()
         {
             return _statefulSetSpecBuilder; ;

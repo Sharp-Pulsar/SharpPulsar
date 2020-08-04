@@ -51,6 +51,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                  )
                 .SpecBuilder()
                 .Tolerations(Values.ZooKeeper.Tolerations)
+                .NodeSelector(Values.BookKeeper.NodeSelector)
                 .PodAntiAffinity(new List<V1PodAffinityTerm> 
                 { 
                     new V1PodAffinityTerm
