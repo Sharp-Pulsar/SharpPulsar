@@ -9,6 +9,8 @@ namespace SharpPulsar.Deployment.Kubernetes
     {
         // Flag to control whether to run initialize job
         public static  bool Initialize { get; set; } = true;
+        public static string ConfigurationStore { get; set; }
+        public static string ConfigurationStoreMetadataPrefix { get; set; }
         //Namespace to deploy pulsar
         public static string Namespace { get; set; } = "pulsar";
         public static string Cluster { get; set; } = "pulsar";
@@ -160,6 +162,10 @@ namespace SharpPulsar.Deployment.Kubernetes
             ServiceName = $"{ReleaseName}-{ZooKeeper.ComponentName }",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "OrderedReady",
+            ZooConnect = $"{ZooKeeper.ServiceName}:2181",
+            HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
+            //HTTPS
+            //ZooConnect = $"{ZooKeeper.ServiceName}:2281",
             Containers = new List<V1Container>
                 {
                     new V1Container
@@ -288,6 +294,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ComponentName = "bookie",
             ServiceName = $"{ReleaseName}-{BookKeeper.ComponentName }",
             UpdateStrategy = "RollingUpdate",
+            HostName = "${HOSTNAME}." + $"{BookKeeper.ServiceName}.{Namespace}.svc.cluster.local",
             PodManagementPolicy = "Parallel",
             ExtraInitContainers = new List<V1Container>
             {
@@ -622,63 +629,55 @@ namespace SharpPulsar.Deployment.Kubernetes
             Replicas = 3,
             ComponentName = "broker",
             ServiceName = $"{ReleaseName}-{Broker.ComponentName }",
+            HostName = "${HOSTNAME}." + $"{Broker.ServiceName}.{Namespace}.svc.cluster.local",
+            ZNode = $"{MetadataPrefix}/loadbalance/brokers/{Broker.HostName}:2181",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "Parallel",
             ExtraInitContainers = new List<V1Container>
             {
+                // This init container will wait for zookeeper to be ready before
+                // deploying the bookies
                 new V1Container
                 {
-                    Name = "pulsar-bookkeeper-verify-clusterid",
-                    Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                    ImagePullPolicy = Images.Bookie.PullPolicy,
-                    Command = new[]
+                    Name = "wait-zookeeper-ready",
+                    Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                    ImagePullPolicy = Images.Broker.PullPolicy,
+                    Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
+                    Args = new List<string>
                     {
-                         "sh",
-                         "-c"
+                        $"/pulsar/keytool/keytool.sh broker {Broker.HostName} true;",
+                        //$@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {ConfigurationStore} get {ConfigurationStoreMetadataPrefix}/admin/clusters/""{Cluster}""; do",
+                        $"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {ZooKeeper.ZooConnect} get {MetadataPrefix}/admin/clusters/{Cluster}; do",
+                        $"echo 'pulsar cluster {ReleaseName} isn't initialized yet ... check in 3 seconds ...' && sleep 3; done"
                     },
+                    VolumeMounts = new List<V1VolumeMount>{}
+                },
+                //# This init container will wait for bookkeeper to be ready before
+                //# deploying the broker
+                new V1Container
+                {
+                    Name = "wait-bookkeeper-ready",
+                    Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                    ImagePullPolicy = Images.Broker.PullPolicy,
+                    Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
                     Args = new List<string>
                     {
                         "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                        //{{- include "pulsar.bookkeeper.zookeeper.tls.settings" . -}}
-                        "until bin/bookkeeper shell whatisinstanceid; do sleep 3; done;",
-                        "bin/bookkeeper shell bookieformat -nonInteractive -force -deleteCookie || true",
-                        //{{- if and .Values.volumes.persistence .Values.bookkeeper.volumes.persistence }}
-                        "set -e",
-                        "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                        "until bin/bookkeeper shell whatisinstanceid; do sleep 3; done;"
-                    },
-                    EnvFrom = new List<V1EnvFromSource>
-                    {
-                        new V1EnvFromSource
-                        {
-                            ConfigMapRef = new V1ConfigMapEnvSource
-                            {
-                                Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
-                            }
-                        }
-                    },
-                    VolumeMounts = new List<V1VolumeMount>
-                    {
-                        /*//{{- if and .Values.tls.enabled (or .Values.tls.bookie.enabled .Values.tls.zookeeper.enabled) }}
-                        new V1VolumeMount
-                        {
-                            Name = "bookie-certs",
-                            MountPath = "/pulsar/certs/bookie",
-                            ReadOnlyProperty = true
-                        },
-                        new V1VolumeMount
-                        {
-                            Name = "ca",
-                            MountPath = "/pulsar/certs/ca",
-                            ReadOnlyProperty = true
-                        },
-                        //{{- if .Values.tls.zookeeper.enabled }}
-                        new V1VolumeMount
-                        {
-                            Name = "keytool",
-                            MountPath = "/pulsar/keytool/keytool.sh",
-                            SubPath = "keytool.sh"
-                        }*/
+                        $@"until bin/bookkeeper shell whatisinstanceid; do echo ""bookkeeper cluster is not initialized yet. backoff for 3 seconds ...""; sleep 3; done;",
+                        "echo 'bookkeeper cluster is already initialized';",
+                        $@"bookieServiceNumber=""$(nslookup -timeout=10 {ReleaseName}-{BookKeeper.ComponentName} | grep Name | wc -l)"";",
+                        "until [ ${bookieServiceNumber} -ge"+ $" {Broker.ConfigData["managedLedgerDefaultEnsembleSize"]} ]; do"
+                        + $@"echo ""bookkeeper cluster {ReleaseName} isn't ready yet ... check in 10 seconds ...""; sleep 10; done",
+                        $@"bookieServiceNumber=""$(nslookup -timeout=10 {ReleaseName}-{Broker.ComponentName} | grep Name | wc -l)""; done",
+                        @"echo ""bookkeeper cluster is ready"";"
                     }
                 }
             },
@@ -686,9 +685,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                 {
                     new V1Container
                     {
-                        Name = $"{ReleaseName}-{BookKeeper.ComponentName }",
-                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy,
+                        Name = $"{ReleaseName}-{Broker.ComponentName }",
+                        Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                        ImagePullPolicy = Images.Broker.PullPolicy,
                         Resources = new V1ResourceRequirements
                         { 
                             Requests = new Dictionary<string, ResourceQuantity>
@@ -703,58 +702,41 @@ namespace SharpPulsar.Deployment.Kubernetes
                         },
                         Command = new []
                         {
-                            "bash", 
+                            "sh", 
                             "-c" 
                         },
                         Args = new List<string>
                         {
-                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                            //"/pulsar/keytool/keytool.sh bookie {{ template "pulsar.bookkeeper.hostname" . }} true;",
-                            "bin/pulsar bookie;"
+                            "bin/apply-config-from-env.py conf/broker.conf;",
+                            "bin/gen-yml-from-env.py conf/functions_worker.yml;",
+                            @"echo ""OK"" > status;",
+                            $"bin/pulsar zookeeper-shell -server {ZooKeeper.ZooConnect} get {Broker.ZNode};",
+                            "while [ $? -eq 0 ]; do"
+                            +$@"echo ""broker {Broker.HostName} znode still exists ... check in 10 seconds ..."";"
+                              +"sleep 10;"
+                            +$"bin/pulsar zookeeper-shell -server {ZooKeeper.ZooConnect} get {Broker.ZNode};"
+                             +"done;"
+                             +"bin/pulsar broker;"
                         },
                         Ports = new List<V1ContainerPort>
                         {
-                            new V1ContainerPort{Name = "bookie", ContainerPort = 3181 },
-                            new V1ContainerPort{Name = "http", ContainerPort = 8000 }
+                            new V1ContainerPort{Name = "http", ContainerPort = 8080 },
+                            new V1ContainerPort{Name = "https", ContainerPort = 8443 },
+                            new V1ContainerPort{Name = "pulsar", ContainerPort = 6650 },
+                            //new V1ContainerPort{Name = "pulsarssl", ContainerPort = 6651 },
                         },
                         Env = new List<V1EnvVar>
                         {
-                            new V1EnvVar
-                            { 
-                                Name = "POD_NAME",
+                            /*new V1EnvVar
+                            { //if .Values.broker.advertisedPodIP
+                                Name = "advertisedAddress",
                                 ValueFrom = new V1EnvVarSource
                                 {
                                     FieldRef = new V1ObjectFieldSelector
                                     {
-                                        FieldPath = "metadata.name"
+                                        FieldPath = "status.podIP"
                                     }
                                 }
-                            },
-                            new V1EnvVar
-                            { 
-                                Name = "POD_NAMESPACE",
-                                ValueFrom = new V1EnvVarSource
-                                {
-                                    FieldRef = new V1ObjectFieldSelector
-                                    {
-                                        FieldPath = "metadata.namespace"
-                                    }
-                                }
-                            },
-                            new V1EnvVar
-                            { 
-                                Name = "VOLUME_NAME",
-                                Value = $"{ReleaseName}-{BookKeeper.ComponentName}-journal"
-                            },
-                            new V1EnvVar
-                            { 
-                                Name = "BOOKIE_PORT",
-                                Value = "3181"
-                            }/*,
-                            new V1EnvVar
-                            { 
-                                Name = "BOOKIE_RACK_AWARE_ENABLED",
-                                Value = "true"
                             }*/
                         },
                         EnvFrom = new List<V1EnvFromSource>
@@ -763,7 +745,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 { 
-                                    Name = $"{ReleaseName}-{BookKeeper.ComponentName }"
+                                    Name = $"{ReleaseName}-{Broker.ComponentName }"
                                 }
                             }
                         },
@@ -771,39 +753,42 @@ namespace SharpPulsar.Deployment.Kubernetes
                         {
                             HttpGet = new V1HTTPGetAction
                             {
-                                Path = "/api/v1/bookie/is_ready",
-                                Port = "8000"
+                                Path = "/status.html",
+                                Port = "8080"
                             },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 60,
-                            PeriodSeconds = 30
+                            InitialDelaySeconds = 30,
+                            FailureThreshold = 10,
+                            PeriodSeconds = 10
                         },
                         LivenessProbe = new V1Probe
                         {
                             HttpGet = new V1HTTPGetAction
                             {
-                                Path = "/api/v1/bookie/state",
-                                Port = "8000"
+                                Path = "/status.html",
+                                Port = "8080"
                             },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 60,
-                            PeriodSeconds = 30
+                            InitialDelaySeconds = 30,
+                            FailureThreshold = 10,
+                            PeriodSeconds = 10
                         },
                         StartupProbe = new V1Probe
                         {
                             HttpGet = new V1HTTPGetAction
                             {
-                                Path = "/api/v1/bookie/is_ready",
-                                Port = "8000"
+                                Path = "/status.html",
+                                Port = "8080"
                             },
                             InitialDelaySeconds = 30,
                             FailureThreshold = 60,
-                            PeriodSeconds = 30
+                            PeriodSeconds = 10
                         },
-                        VolumeMounts = new List<V1VolumeMount>
+                        VolumeMounts = new List<V1VolumeMount>//HERE
                         {
-                            new V1VolumeMount{Name = $"{ReleaseName}-{BookKeeper.ComponentName}-journal", MountPath = "/pulsar/data/bookkeeper/journal"},
-                            new V1VolumeMount{Name = $"{ReleaseName}-{BookKeeper.ComponentName}-ledger", MountPath = "/pulsar/data/bookkeeper/ledgers"},
+                            //{{- if .Values.auth.authentication.enabled }}
+                            //{{- if eq .Values.auth.authentication.provider "jwt" }}
+                            //{{- if not .Values.auth.vault.enabled }}
+                            new V1VolumeMount{Name = "token-keys", MountPath = "/pulsar/keys", ReadOnlyProperty = true},
+                            new V1VolumeMount{Name = "broker-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true},
                             /*//{{- if and .Values.tls.enabled (or .Values.tls.bookie.enabled .Values.tls.zookeeper.enabled) }}
                             new V1VolumeMount
                             {
@@ -1026,9 +1011,12 @@ namespace SharpPulsar.Deployment.Kubernetes
         public bool Enabled { get; set; } = false;
         public string ComponentName { get; set; }
         public string ServiceName { get; set; }
+        public string HostName { get; set; }
+        public string ZNode { get; set; }
         public string PodManagementPolicy { get; set; }
         public string UpdateStrategy { get; set; }
         public string StorageProvisioner { get; set; }
+        public string ZooConnect { get; set; }
         public int GracePeriodSeconds { get; set; }
         public int Replicas { get; set; }
         public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();

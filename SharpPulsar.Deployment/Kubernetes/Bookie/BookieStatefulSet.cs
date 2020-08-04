@@ -23,12 +23,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                                 {"release", Values.ReleaseName },
                                 {"component",Values.BookKeeper.ComponentName }
                             })
-                .Annotations(new Dictionary<string, string>
-                            {
-                                {"prometheus.io/scrape:", "true" },
-                                {"prometheus.io/port", "8000" },
-                                {"checksum/config", @"{{ include (print $.Template.BasePath ""/bookkeeper/bookkeeper-configmap.yaml"") . | sha256sum }}" }
-                            })
                 .SpecBuilder()
                 .ServiceName(Values.BookKeeper.ServiceName)
                 .Replication(Values.BookKeeper.Replicas)
@@ -50,8 +44,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                                 {"component",Values.BookKeeper.ComponentName }
                             }, new Dictionary<string, string>
                             {
-                                {"prometheus.io/scrape", "true" },
-                                {"prometheus.io/port", "8000" }
+                                {"prometheus.io/scrape:", "true" },
+                                {"prometheus.io/port", "8000" },
+                                {"checksum/config", @"{{ include (print $.Template.BasePath ""/bookkeeper/bookkeeper-configmap.yaml"") . | sha256sum }}" }
                             }
                  )
                 .SpecBuilder()
