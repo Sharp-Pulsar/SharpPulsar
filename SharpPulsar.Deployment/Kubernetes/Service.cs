@@ -1,6 +1,7 @@
 ﻿using k8s;
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
@@ -22,6 +23,12 @@ namespace SharpPulsar.Deployment.Kubernetes
             var build = builder;
             _builder = new ServiceBuilder();
             return _client.CreateNamespacedService(build.Build(), ns, dryRun);
+        }
+        public async Task<V1Service> RunAsync(ServiceBuilder builder, string ns, string dryRun = default)
+        {
+            var build = builder;
+            _builder = new ServiceBuilder();
+            return await _client.CreateNamespacedServiceAsync(build.Build(), ns, dryRun);
         }
     }
 }

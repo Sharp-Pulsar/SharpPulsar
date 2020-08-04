@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
 {
-    class ClusterRoleBinding
+    public class ClusterRoleBinding
     {
     }
 }

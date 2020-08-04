@@ -2,6 +2,7 @@
 using k8s;
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
@@ -23,6 +24,12 @@ namespace SharpPulsar.Deployment.Kubernetes
             var build = builder;
             _builder = new PodDisruptionBudgetBuilder();
             return _client.CreateNamespacedPodDisruptionBudget(build.Build(), ns, dryRun);
+        }
+        public async Task<V1beta1PodDisruptionBudget> RunAsync(PodDisruptionBudgetBuilder builder, string ns, string dryRun = default)
+        {
+            var build = builder;
+            _builder = new PodDisruptionBudgetBuilder();
+            return await _client.CreateNamespacedPodDisruptionBudgetAsync(build.Build(), ns, dryRun);
         }
     }
 }
