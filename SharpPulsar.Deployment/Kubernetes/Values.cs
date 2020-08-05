@@ -7,6 +7,7 @@ namespace SharpPulsar.Deployment.Kubernetes
 {
     public static class Values
     {
+        public static bool Persistence { get; set; } = true;
         public static bool AntiAffinity { get; set; } = false;
         // Flag to control whether to run initialize job
         public static  bool Initialize { get; set; } = true;
@@ -133,7 +134,17 @@ namespace SharpPulsar.Deployment.Kubernetes
             PodManagementPolicy = "OrderedReady",
             ZooConnect = Tls.ZooKeeper.Enabled ? $"{ZooKeeper.ServiceName}:2281" : $"{ZooKeeper.ServiceName}:2181",
             HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
-            
+            ExtraConfig = new ExtraConfig
+            {
+                Holder = new Dictionary<string, object>
+                {
+                    { "ZkServer", new List<string>{ } },
+                    {"PeerType", "participant" },
+                    {"InitialMyId", 0 },
+                    {"UseSeparateDiskForTxlog", true },
+                    {"Reconfig", true }
+                }
+            },
             Containers = new List<V1Container>
                 {
                     new V1Container
@@ -158,29 +169,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh", 
                             "-c" 
                         },
-                        Args = new List<string>
-                        {
-                            "bin/apply-config-from-env.py conf/zookeeper.conf;",
-                            "bin/gen-zk-conf.sh conf/zookeeper.conf 0 participant;",
-                            "cat conf/zookeeper.conf;",
-                            "bin/pulsar zookeeper;"
-                        },
-                        Ports = new List<V1ContainerPort>
-                        {
-                            new V1ContainerPort{Name = "metrics", ContainerPort = 8000 },
-                            new V1ContainerPort{Name = "client", ContainerPort = 2181 },
-                            //new V1ContainerPort{Name = "client-tls", ContainerPort = 2281 },
-                            new V1ContainerPort{Name = "follower", ContainerPort = 2888 },
-                            new V1ContainerPort{Name = "leader-election", ContainerPort = 3888 }
-                        },
-                        Env = new List<V1EnvVar>
-                        {
-                            new V1EnvVar
-                            { 
-                                Name = "ZOOKEEPER_SERVERS", 
-                                Value ="pulsar-zookeeper-0,pulsar-zookeeper-1,pulsar-zookeeper-2"
-                            }
-                        },
+                        Args = Args.ZooKeeper(),
+                        Ports = Helpers.Ports.ZooKeeper(),
+                        Env = EnvVar.ZooKeeper(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -194,39 +185,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                         ReadinessProbe = Helpers.Probe.ExecActionReadiness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
                         LivenessProbe = Helpers.Probe.ExecActionLiviness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
                         StartupProbe = Helpers.Probe.ExecActionStartup(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
-                        VolumeMounts = new List<V1VolumeMount>
-                        {
-                            new V1VolumeMount{Name = "pulsar-zookeeper-data", MountPath = "/pulsar/data"},
-                            new V1VolumeMount{Name = "pulsar-zookeeper-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh"},
-                            new V1VolumeMount{Name = "pulsar-zookeeper-log4j2", MountPath = "/pulsar/conf/log4j2.yaml", SubPath = "og4j2.yaml"},
-                            /*new V1VolumeMount{Name = "zookeeper-certs", MountPath = "/pulsar/certs/zookeeper", ReadOnlyProperty = true},
-                            new V1VolumeMount{Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true},
-                            new V1VolumeMount{Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath= "keytool.sh"}*/
-                        }
+                        VolumeMounts = VolumeMounts.ZooKeeper()
                     }
                 },
-            Volumes = new List<V1Volume>
-            {
-                /*new V1Volume {Name = "zookeeper-certs", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-{{ .Values.tls.zookeeper.cert_name }}", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } }},
-                    new V1Volume {Name = "ca", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-ca-tls", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "ca.crt", Path = "ca.crt" } } }},
-                    new V1Volume{Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource{Name = "{{ template pulsar.fullname . }}-keytool-configmap", DefaultMode = 0755}}*/
-            },
-            ConfigData = new Dictionary<string, string>
-                        {
-                            {"dataDir", "/pulsar/data/zookeeper" },
-                            //{"PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog" },
-                            {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
-                            {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
-                            //if tls enabled
-                            //{"secureClientPort", "Values.zookeeper.ports.clientTls"},
-                            //{"PULSAR_PREFIX_secureClientPort", "Values.zookeeper.ports.clientTls"},
-                            //if reconfig enabled }}
-                            //{"PULSAR_PREFIX_reconfigEnabled", "true"},
-                            //{"PULSAR_PREFIX_quorumListenOnAllIPs", "true"},
-                            {"PULSAR_PREFIX_peerType", "participant" },
-                            {"PULSAR_MEM", "-Xms64m -Xmx128m"},
-                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
-                        }
+            Volumes = Volumes.ZooKeeper(),
+            ConfigData = Config.ZooKeeper()
         };
         public static Component BookKeeper { get; set; } = new Component
         {
@@ -1036,6 +999,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
+        public bool Persistence { get; set; } = true;
         public bool AntiAffinity { get; set; } = false;
         public bool Enabled { get; set; } = false;
         public string ComponentName { get; set; }
@@ -1063,6 +1027,6 @@ namespace SharpPulsar.Deployment.Kubernetes
     {
         public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();
         public List<V1Container> Containers { get; set; } = new List<V1Container>();
-        public IDictionary<string, string> Holder { get; set; } = new Dictionary<string, string>();
+        public IDictionary<string, object> Holder { get; set; } = new Dictionary<string, object>();
     }
 }

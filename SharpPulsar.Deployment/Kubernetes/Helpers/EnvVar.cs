@@ -27,5 +27,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             return new List<V1EnvVar>();
         }
+        public static List<V1EnvVar> ZooKeeper()
+        {
+            var zkServers = new List<string>();
+            for (var i = 0; i < Values.ZooKeeper.Replicas; i++)
+                zkServers.Add($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-{i}");
+
+            return new List<V1EnvVar>
+                {
+                    new V1EnvVar
+                    {
+                        Name = "ZOOKEEPER_SERVERS",
+                        Value = string.Join(",", zkServers)
+                    }
+                };
+        }
     }
 }

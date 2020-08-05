@@ -28,5 +28,22 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     new V1ContainerPort{Name = "http", ContainerPort = Values.Ports.AutoRecovery["http"]}
                 };
         }
+        public static List<V1ContainerPort> ZooKeeper()
+        {
+            var ports = new List<V1ContainerPort>();
+            foreach(var p in Values.Ports.ZooKeeper)
+            {
+                if (p.Key.Equals("clientTls", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+                        ports.Add(new V1ContainerPort { Name = p.Key, ContainerPort = p.Value});
+                }
+                else
+                {
+                    ports.Add(new V1ContainerPort { Name = p.Key, ContainerPort = p.Value });
+                }
+            }
+            return ports;
+        }
     }
 }

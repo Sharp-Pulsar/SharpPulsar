@@ -28,10 +28,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             return new List<V1VolumeMount>();
         }
-        public static List<V1VolumeMount> Zoo()
-        {
-            return new List<V1VolumeMount>();
-        }
         public static List<V1VolumeMount> Proxy()
         {
             return new List<V1VolumeMount>();
@@ -66,6 +62,29 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if (Values.Tls.ZooKeeper.Enabled)
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
             
+            return vols;
+        }
+
+        public static List<V1VolumeMount> ZooKeeper()
+        {
+            var vols = new List<V1VolumeMount>();
+            var useSeparateDiskForTxlog = (bool)Values.ZooKeeper.ExtraConfig.Holder["UseSeparateDiskForTxlog"];
+            if (useSeparateDiskForTxlog)
+            {
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data", MountPath = "/pulsar/data/zookeeper"});
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-dataLog", MountPath = "/pulsar/data/zookeeper-datalog" });                
+            }
+            else
+            {
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data", MountPath = "/pulsar/data" });
+            }
+            if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "zookeeper-certs", MountPath = "/pulsar/certs/zookeeper", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+            }
+            vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh" });
             return vols;
         }
     }
