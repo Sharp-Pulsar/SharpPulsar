@@ -24,10 +24,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
             return vols;
         }
-        public static List<V1VolumeMount> Bookie()
-        {
-            return new List<V1VolumeMount>();
-        }
         public static List<V1VolumeMount> Proxy()
         {
             return new List<V1VolumeMount>();
@@ -48,6 +44,38 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if (Values.Tls.ZooKeeper.Enabled)
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
             
+            return vols;
+        }
+        public static List<V1VolumeMount> BookieIntContainer()
+        {
+            var vols = new List<V1VolumeMount>();
+            if(Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "bookie-certs", MountPath = "/pulsar/certs/bookie", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+                
+            }
+            if (Values.Tls.ZooKeeper.Enabled)
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+            
+            return vols;
+        }
+        public static List<V1VolumeMount> BookieContainer()
+        {
+            var vols = new List<V1VolumeMount>
+            {
+                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-journal", MountPath = "/pulsar/data/bookkeeper/journal" },
+                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-ledger", MountPath = "/pulsar/data/bookkeeper/ledgers" }
+            };
+            if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "bookie-certs", MountPath = "/pulsar/certs/bookie", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+
+            }
+            if (Values.Tls.ZooKeeper.Enabled)
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+
             return vols;
         }
         public static List<V1VolumeMount> RecoveryContainer()

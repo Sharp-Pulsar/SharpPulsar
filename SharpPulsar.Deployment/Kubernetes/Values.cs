@@ -7,6 +7,7 @@ namespace SharpPulsar.Deployment.Kubernetes
 {
     public static class Values
     {
+        public static List<string> UserProvidedZookeepers { get; set; }
         public static bool Persistence { get; set; } = true;
         public static bool LocalStorage { get; set; } = false;
         public static bool AntiAffinity { get; set; } = false;
@@ -133,6 +134,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ServiceName = $"{ReleaseName}-{ZooKeeper.ComponentName }",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "OrderedReady",
+            ResourcesRequest = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" },
             StorageClassName = $"{ReleaseName}-{ZooKeeper.ComponentName}-data",
             ZooConnect = Tls.ZooKeeper.Enabled ? $"{ZooKeeper.ServiceName}:2281" : $"{ZooKeeper.ServiceName}:2181",
             HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
@@ -159,10 +161,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                             Requests = new Dictionary<string, ResourceQuantity>
                             { 
                                 { 
-                                    "memory", new ResourceQuantity("256Mi") 
+                                    "memory", new ResourceQuantity(ZooKeeper.ResourcesRequest.Memory) 
                                 }, 
                                 { 
-                                    "cpu", new ResourceQuantity("0.1") 
+                                    "cpu", new ResourceQuantity(ZooKeeper.ResourcesRequest.Cpu) 
                                 } 
                             } 
                         },
@@ -203,236 +205,25 @@ namespace SharpPulsar.Deployment.Kubernetes
             UpdateStrategy = "RollingUpdate",
             HostName = "${HOSTNAME}." + $"{BookKeeper.ServiceName}.{Namespace}.svc.cluster.local",
             PodManagementPolicy = "Parallel",
-            ExtraInitContainers = new List<V1Container>
+            LedgerStorageSize = "50Gi",
+            JournalStorageSize = "10Gi",
+            ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
+            ExtraConfig = new ExtraConfig
             {
-                new V1Container
-                {
-                    Name = "pulsar-bookkeeper-verify-clusterid",
-                    Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                    ImagePullPolicy = Images.Bookie.PullPolicy,
-                    Command = new[]
-                    {
-                         "sh",
-                         "-c"
-                    },
-                    Args = new List<string>
-                    {
-                        "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                        //{{- include "pulsar.bookkeeper.zookeeper.tls.settings" . -}}
-                        "until bin/bookkeeper shell whatisinstanceid; do sleep 3; done;",
-                        "bin/bookkeeper shell bookieformat -nonInteractive -force -deleteCookie || true",
-                        //{{- if and .Values.volumes.persistence .Values.bookkeeper.volumes.persistence }}
-                        "set -e",
-                        "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                        "until bin/bookkeeper shell whatisinstanceid; do sleep 3; done;"
-                    },
-                    EnvFrom = new List<V1EnvFromSource>
-                    {
-                        new V1EnvFromSource
-                        {
-                            ConfigMapRef = new V1ConfigMapEnvSource
-                            {
-                                Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
-                            }
-                        }
-                    },
-                    VolumeMounts = new List<V1VolumeMount>
-                    {
-                        /*//{{- if and .Values.tls.enabled (or .Values.tls.bookie.enabled .Values.tls.zookeeper.enabled) }}
-                        new V1VolumeMount
-                        {
-                            Name = "bookie-certs",
-                            MountPath = "/pulsar/certs/bookie",
-                            ReadOnlyProperty = true
-                        },
-                        new V1VolumeMount
-                        {
-                            Name = "ca",
-                            MountPath = "/pulsar/certs/ca",
-                            ReadOnlyProperty = true
-                        },
-                        //{{- if .Values.tls.zookeeper.enabled }}
-                        new V1VolumeMount
-                        {
-                            Name = "keytool",
-                            MountPath = "/pulsar/keytool/keytool.sh",
-                            SubPath = "keytool.sh"
-                        }*/
-                    }
-                }
-            },
-            Containers = new List<V1Container>
+                ExtraInitContainers = new List<V1Container>
                 {
                     new V1Container
                     {
-                        Name = $"{ReleaseName}-{BookKeeper.ComponentName }",
+                        Name = "wait-zookeeper-ready",
                         Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy,
-                        Resources = new V1ResourceRequirements
-                        { 
-                            Requests = new Dictionary<string, ResourceQuantity>
-                            { 
-                                { 
-                                    "memory", new ResourceQuantity("512Mi") 
-                                }, 
-                                { 
-                                    "cpu", new ResourceQuantity("0.2") 
-                                } 
-                            } 
-                        },
+                        ImagePullPolicy = Images.Bookie.PullPolicy ,
                         Command = new []
                         {
-                            "bash", 
-                            "-c" 
+                            "sh",
+                            "-c"
                         },
-                        Args = new List<string>
-                        {
-                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                            //"/pulsar/keytool/keytool.sh bookie {{ template "pulsar.bookkeeper.hostname" . }} true;",
-                            "bin/pulsar bookie;"
-                        },
-                        Ports = new List<V1ContainerPort>
-                        {
-                            new V1ContainerPort{Name = "bookie", ContainerPort = 3181 },
-                            new V1ContainerPort{Name = "http", ContainerPort = 8000 }
-                        },
-                        Env = new List<V1EnvVar>
-                        {
-                            new V1EnvVar
-                            { 
-                                Name = "POD_NAME",
-                                ValueFrom = new V1EnvVarSource
-                                {
-                                    FieldRef = new V1ObjectFieldSelector
-                                    {
-                                        FieldPath = "metadata.name"
-                                    }
-                                }
-                            },
-                            new V1EnvVar
-                            { 
-                                Name = "POD_NAMESPACE",
-                                ValueFrom = new V1EnvVarSource
-                                {
-                                    FieldRef = new V1ObjectFieldSelector
-                                    {
-                                        FieldPath = "metadata.namespace"
-                                    }
-                                }
-                            },
-                            new V1EnvVar
-                            { 
-                                Name = "VOLUME_NAME",
-                                Value = $"{ReleaseName}-{BookKeeper.ComponentName}-journal"
-                            },
-                            new V1EnvVar
-                            { 
-                                Name = "BOOKIE_PORT",
-                                Value = "3181"
-                            }/*,
-                            new V1EnvVar
-                            { 
-                                Name = "BOOKIE_RACK_AWARE_ENABLED",
-                                Value = "true"
-                            }*/
-                        },
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
-                            {
-                                ConfigMapRef = new V1ConfigMapEnvSource
-                                { 
-                                    Name = $"{ReleaseName}-{BookKeeper.ComponentName }"
-                                }
-                            }
-                        },
-                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/api/v1/bookie/is_ready", 8000),
-                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/api/v1/bookie/state", 8000),
-                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/api/v1/bookie/is_ready", 8000),
-                        VolumeMounts = new List<V1VolumeMount>
-                        {
-                            new V1VolumeMount{Name = $"{ReleaseName}-{BookKeeper.ComponentName}-journal", MountPath = "/pulsar/data/bookkeeper/journal"},
-                            new V1VolumeMount{Name = $"{ReleaseName}-{BookKeeper.ComponentName}-ledger", MountPath = "/pulsar/data/bookkeeper/ledgers"},
-                            /*//{{- if and .Values.tls.enabled (or .Values.tls.bookie.enabled .Values.tls.zookeeper.enabled) }}
-                            new V1VolumeMount
-                            {
-                                Name = "bookie-certs",
-                                MountPath = "/pulsar/certs/bookie",
-                                ReadOnlyProperty = true
-                            },
-                            new V1VolumeMount
-                            {
-                                Name = "ca",
-                                MountPath = "/pulsar/certs/ca",
-                                ReadOnlyProperty = true
-                            },
-                            //{{- if .Values.tls.zookeeper.enabled }}
-                            new V1VolumeMount
-                            {
-                                Name = "keytool",
-                                MountPath = "/pulsar/keytool/keytool.sh",
-                                SubPath = "keytool.sh"
-                            }*/
-                        }
+                        Args = Args.WaitZooKeeperContainer()
                     }
-                },
-            Volumes = new List<V1Volume>
-            {
-                //new V1Volume{ Name = $"{ReleaseName}-{BookKeeper.ComponentName}-journal", EmptyDir = new V1EmptyDirVolumeSource{ } },
-                //new V1Volume{ Name = $"{ReleaseName}-{BookKeeper.ComponentName}-ledger", EmptyDir = new V1EmptyDirVolumeSource{ } },
-                /*//{{- if and .Values.tls.enabled (or .Values.tls.bookie.enabled .Values.tls.zookeeper.enabled) }}
-                            new V1VolumeMount
-                            {
-                                Name = "bookie-certs",
-                                MountPath = "/pulsar/certs/bookie",
-                                ReadOnlyProperty = true
-                            },
-                            new V1VolumeMount
-                            {
-                                Name = "ca",
-                                MountPath = "/pulsar/certs/ca",
-                                ReadOnlyProperty = true
-                            },
-                            //{{- if .Values.tls.zookeeper.enabled }}
-                            new V1VolumeMount
-                            {
-                                Name = "keytool",
-                                MountPath = "/pulsar/keytool/keytool.sh",
-                                SubPath = "keytool.sh"
-                            }*/
-            },
-            ConfigData = new Dictionary<string, string>
-                        {
-                            {"zkServers", $"{ZooKeeper.ServiceName}:2181" },
-                            //{"zkServers", $"{ZooKeeper.ServiceName}:2281" },
-                            {"zkLedgersRootPath", $"{MetadataPrefix}/ledgers" },
-                            {"httpServerEnabled", "true" },
-                            {"httpServerPort", "8000" },
-                            {"statsProviderClass", "org.apache.bookkeeper.stats.prometheus.PrometheusMetricsProvider" },
-                            {"useHostNameAsBookieID", "true" },
-                            //disable auto recovery on bookies since we will start AutoRecovery in separated pods
-                            //{"autoRecoveryDaemonEnabled", "false" },
-                            //Do not retain journal files as it increase the disk utilization
-                            {"journalMaxBackups", "0"},
-                            {"journalDirectories", "/pulsar/data/bookkeeper/journal"},
-                            {"PULSAR_PREFIX_journalDirectories", "/pulsar/data/bookkeeper/journal"},
-                            {"ledgerDirectories", "/pulsar/data/bookkeeper/ledgers"},
-                            /*{"PULSAR_PREFIX_tlsProviderFactoryClass", "org.apache.bookkeeper.tls.TLSContextFactory"},
-                            {"PULSAR_PREFIX_tlsCertificatePath", "/pulsar/certs/bookie/tls.crt"},
-                            {"PULSAR_PREFIX_tlsKeyStoreType", "PEM"},
-                            {"PULSAR_PREFIX_tlsKeyStore", "/pulsar/certs/bookie/tls.key"},
-                            {"PULSAR_PREFIX_tlsTrustStoreType", "PEM"},
-                            {"PULSAR_PREFIX_tlsTrustStore", "/pulsar/certs/ca/ca.crt"}*/
-                            {"BOOKIE_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
-                            {"PULSAR_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
-                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintHeapAtGC -verbosegc -Xloggc:/var/log/bookie-gc.log -XX:G1LogLevel=finest" }
-                        },
-            ExtraConfig = new ExtraConfig
-            {
-
-                //probably replace this with watch
-                ExtraInitContainers = new List<V1Container>
-                {
                 },
                 Containers = new List<V1Container>
                 {
@@ -458,47 +249,96 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                        Args = new List<string>
+                        Args = Args.BookieExtraInitContainer(),
+                        EnvFrom = new List<V1EnvFromSource>
                         {
-                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                            //"/pulsar/keytool/keytool.sh toolset {{ template pulsar.toolset.hostname . }} true;",
-                            //"if bin/bookkeeper shell whatisinstanceid; then echo ""bookkeeper cluster already initialized"";  else {{- if not (eq .Values.metadataPrefix "") }}  bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {{ pulsar.fullname . }} -{{ .Values.zookeeper.component } } create {{ .Values.metadataPrefix }    } 'created for pulsar cluster "{{ template "pulsar.fullname" . }}"' || yes &&   {{- end   }}bin/bookkeeper shell initnewcluster;        fi"";
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
+                                }
+                            }
                         }
                     }
+                },
+                Holder = new Dictionary<string, object>
+                {
+                    {"RackAware", true }
                 }
             },
-            PVC = new List<V1PersistentVolumeClaim>
+            ExtraInitContainers = new List<V1Container>
             {
-                new V1PersistentVolumeClaim
+                new V1Container
                 {
-                    Metadata = new V1ObjectMeta{Name = $"{ReleaseName}-{BookKeeper.ComponentName}-journal"},
-                    Spec = new V1PersistentVolumeClaimSpec
-                    { 
-                        AccessModes = new []{"ReadWriteOnce"},
-                        Resources = new V1ResourceRequirements
+                    Name = "pulsar-bookkeeper-verify-clusterid",
+                    Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                    ImagePullPolicy = Images.Bookie.PullPolicy,
+                    Command = new[]
+                    {
+                         "sh",
+                         "-c"
+                    },
+                    Args = Args.BookieIntContainer(),
+                    EnvFrom = new List<V1EnvFromSource>
+                    {
+                        new V1EnvFromSource
                         {
-                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity("10Gi") } }
+                            ConfigMapRef = new V1ConfigMapEnvSource
+                            {
+                                Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
+                            }
+                        }
+                    },
+                    VolumeMounts = VolumeMounts.BookieIntContainer()
+                }
+            },
+            Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{BookKeeper.ComponentName }",
+                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                        ImagePullPolicy = Images.Bookie.PullPolicy,
+                        Resources = new V1ResourceRequirements
+                        { 
+                            Requests = new Dictionary<string, ResourceQuantity>
+                            { 
+                                { 
+                                    "memory", new ResourceQuantity(BookKeeper.ResourcesRequest.Memory) 
+                                }, 
+                                { 
+                                    "cpu", new ResourceQuantity(BookKeeper.ResourcesRequest.Cpu) 
+                                } 
+                            } 
                         },
-                        StorageClassName = $"{ReleaseName}-{BookKeeper.ComponentName}-journal"
-                        //StorageClassName = "local-storage"
+                        Command = new []
+                        {
+                            "bash", 
+                            "-c" 
+                        },
+                        Args = Args.BookieContainer(),
+                        Ports = Helpers.Ports.BookKeeper(),
+                        Env = EnvVar.BookKeeper(),
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                { 
+                                    Name = $"{ReleaseName}-{BookKeeper.ComponentName }"
+                                }
+                            }
+                        },
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/api/v1/bookie/is_ready", Ports.Bookie["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/api/v1/bookie/state", Ports.Bookie["http"]),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/api/v1/bookie/is_ready", Ports.Bookie["http"]),
+                        VolumeMounts = VolumeMounts.BookieContainer()
                     }
                 },
-                new V1PersistentVolumeClaim
-                {
-                    Metadata = new V1ObjectMeta{Name =  $"{ReleaseName}-{BookKeeper.ComponentName}-ledger"},
-                    Spec = new V1PersistentVolumeClaimSpec
-                    { 
-                        AccessModes = new []{"ReadWriteOnce"},
-                        Resources = new V1ResourceRequirements
-                        {
-                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity("50Gi") } }
-                        },
-                        StorageClassName = $"{ReleaseName}-{BookKeeper.ComponentName}-ledger"
-                        //StorageClassName = "local-storage"
-                    }
-                }
-                
-            }
+            Volumes = Volumes.Bookie(),
+            ConfigData = Config.BookKeeper(),
+            PVC = VolumeClaim.BookKeeper()
         };
         public static Component Broker { get; set; } = new Component
         {
@@ -1002,7 +842,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
-
+        public ResourcesRequest ResourcesRequest { get; set; }
         public string StorageClassName { get; set; }
         public bool Persistence { get; set; } = true;
         public bool LocalStorage { get; set; } = false;
@@ -1031,6 +871,12 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, string> NodeSelector { get; set; } = new Dictionary<string, string>();
         public Tls Tls { get; set; } = new Tls();
         public string HostName { get; set; }
+    }
+    public sealed class ResourcesRequest
+    {
+        public string Memory { get; set; }
+        public string Cpu { get; set; }
+
     }
     public class ExtraConfig
     {

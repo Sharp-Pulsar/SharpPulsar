@@ -45,5 +45,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return ports;
         }
+        public static List<V1ContainerPort> BookKeeper()
+        {
+            var ports = new List<V1ContainerPort>();
+            foreach (var p in Values.Ports.Bookie)
+            {
+                ports.Add(new V1ContainerPort { Name = p.Key, ContainerPort = p.Value });
+            }
+            return ports;
+        }
     }
 }

@@ -42,5 +42,54 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     }
                 };
         }
+
+        public static List<V1EnvVar> BookKeeper(string port = "bookie")
+        {
+            var bks = new List<V1EnvVar>
+            {
+
+                            new V1EnvVar
+                            {
+                                Name = "POD_NAME",
+                                ValueFrom = new V1EnvVarSource
+                                {
+                                    FieldRef = new V1ObjectFieldSelector
+                                    {
+                                        FieldPath = "metadata.name"
+                                    }
+                                }
+                            },
+                            new V1EnvVar
+                            {
+                                Name = "POD_NAMESPACE",
+                                ValueFrom = new V1EnvVarSource
+                                {
+                                    FieldRef = new V1ObjectFieldSelector
+                                    {
+                                        FieldPath = "metadata.namespace"
+                                    }
+                                }
+                            },
+                            new V1EnvVar
+                            {
+                                Name = "VOLUME_NAME",
+                                Value = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-journal"
+                            },
+                            new V1EnvVar
+                            {
+                                Name = "BOOKIE_PORT",
+                                Value = Values.Ports.Bookie[port].ToString()
+                            }
+            };
+            if ((bool)Values.BookKeeper.ExtraConfig.Holder["RackAware"])
+            {
+                bks.Add(new V1EnvVar
+                {
+                    Name = "BOOKIE_RACK_AWARE_ENABLED",
+                    Value = "true"
+                });
+            }
+            return bks;
+        }
     }
 }
