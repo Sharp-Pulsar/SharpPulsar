@@ -1,14 +1,13 @@
 ﻿using k8s.Models;
-using SharpPulsar.Deployment.Kubernetes.Extensions;
 using SharpPulsar.Deployment.Kubernetes.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
     public static class Values
     {
+        public static bool AntiAffinity { get; set; } = false;
         // Flag to control whether to run initialize job
         public static  bool Initialize { get; set; } = true;
         public static string ConfigurationStore { get; set; }
@@ -26,6 +25,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         //// If you do so, all the pulsar and bookkeeper metadata will
         //// be stored under the provided path
         public static string MetadataPrefix { get; set; } = "";
+
+        public static Tls Tls { get; set; } = new Tls();
         //// Monitoring Components
         ////
         //// Control what components of the monitoring stack to deploy for the cluster
@@ -40,7 +41,11 @@ namespace SharpPulsar.Deployment.Kubernetes
         //// The chart is using cert-manager for provisioning TLS certs for
         //// brokers and proxies.
         ///
+        public static Authentication Authentication { get; set; } = new Authentication();
 
+        public static Probes Probe { get; set; } = new Probes();
+
+        public static Ports Ports { get; set; } = new Ports();
         public static Component AutoRecovery { get; set; } = new Component
         {
             ComponentName = "recovery",
@@ -164,10 +169,9 @@ namespace SharpPulsar.Deployment.Kubernetes
             ServiceName = $"{ReleaseName}-{ZooKeeper.ComponentName }",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "OrderedReady",
-            ZooConnect = $"{ZooKeeper.ServiceName}:2181",
+            ZooConnect = Tls.ZooKeeper.Enabled ? $"{ZooKeeper.ServiceName}:2281" : $"{ZooKeeper.ServiceName}:2181",
             HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
-            //HTTPS
-            //ZooConnect = $"{ZooKeeper.ServiceName}:2281",
+            
             Containers = new List<V1Container>
                 {
                     new V1Container
@@ -225,36 +229,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        ReadinessProbe = new V1Probe
-                        {
-                            Exec = new V1ExecAction
-                            {
-                                Command = new List<string>{ "bin/pulsar-zookeeper-ruok.sh" }
-                            },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 10,
-                            PeriodSeconds = 30
-                        },
-                        LivenessProbe = new V1Probe
-                        {
-                            Exec = new V1ExecAction
-                            {
-                                Command = new List<string>{ "bin/pulsar-zookeeper-ruok.sh" }
-                            },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 10,
-                            PeriodSeconds = 30
-                        }/*,
-                        StartupProbe = new V1Probe
-                        {
-                            Exec = new V1ExecAction
-                            {
-                                Command = new List<string>{ "bin/pulsar-zookeeper-ruok.sh" }
-                            },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 30,
-                            PeriodSeconds = 30
-                        }*/,
+                        ReadinessProbe = Helpers.Probe.ExecActionReadiness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
+                        LivenessProbe = Helpers.Probe.ExecActionLiviness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
+                        StartupProbe = Helpers.Probe.ExecActionStartup(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
                         VolumeMounts = new List<V1VolumeMount>
                         {
                             new V1VolumeMount{Name = "pulsar-zookeeper-data", MountPath = "/pulsar/data"},
@@ -441,39 +418,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        ReadinessProbe = new V1Probe
-                        {
-                            HttpGet = new V1HTTPGetAction
-                            {
-                                Path = "/api/v1/bookie/is_ready",
-                                Port = "8000"
-                            },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 60,
-                            PeriodSeconds = 30
-                        },
-                        LivenessProbe = new V1Probe
-                        {
-                            HttpGet = new V1HTTPGetAction
-                            {
-                                Path = "/api/v1/bookie/state",
-                                Port = "8000"
-                            },
-                            InitialDelaySeconds = 10,
-                            FailureThreshold = 60,
-                            PeriodSeconds = 30
-                        },
-                        StartupProbe = new V1Probe
-                        {
-                            HttpGet = new V1HTTPGetAction
-                            {
-                                Path = "/api/v1/bookie/is_ready",
-                                Port = "8000"
-                            },
-                            InitialDelaySeconds = 30,
-                            FailureThreshold = 60,
-                            PeriodSeconds = 30
-                        },
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/api/v1/bookie/is_ready", 8000),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/api/v1/bookie/state", 8000),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/api/v1/bookie/is_ready", 8000),
                         VolumeMounts = new List<V1VolumeMount>
                         {
                             new V1VolumeMount{Name = $"{ReleaseName}-{BookKeeper.ComponentName}-journal", MountPath = "/pulsar/data/bookkeeper/journal"},
@@ -720,7 +667,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                              +"done;"
                              +"bin/pulsar broker;"
                         },
-                        Ports = new List<V1ContainerPort>().ContainerPorts(Broker.Tls.Enabled),
+                        Ports = Helpers.Ports.BrokerPorts(),
                         Env = EnvVar.Broker(advertisedPodIP:false),
                         EnvFrom = new List<V1EnvFromSource>
                         {
@@ -732,9 +679,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        ReadinessProbe = Probe.HttpAction(enabled:true, "/status.html", 8080, 30, 10, 10),
-                        LivenessProbe = Probe.HttpAction(enabled:true, "/status.html", 8080, 30, 10, 10),
-                        StartupProbe = Probe.HttpAction(enabled:true, "/status.html", 8080, 30, 10, 60),
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Broker, "/status.html", 8080),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Broker, "/status.html", 8080),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Broker, "/status.html", 8080),
                         VolumeMounts = VolumeMounts.Broker(enableAuth: false, authProvider:"jwt", authVault: false, tls: false, tlsZoo:false)
                     }
                 },
@@ -862,11 +809,30 @@ namespace SharpPulsar.Deployment.Kubernetes
                 
             }
         };
-        public List<V1EnvVar> GetZookEnvVar()
+        
+    }
+    public sealed class Ports
+    {
+        public IDictionary<string, int> Broker { get; set; } = new Dictionary<string, int>
         {
-
-        }
-
+            {"http", 8080},
+            {"https", 8443},
+            {"pulsar", 6650},
+            {"pulsarssl", 6651}
+        };
+        public IDictionary<string, int> Bookie { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 8000},
+            {"bookie", 3181}
+        };
+        public IDictionary<string, int> ZooKeeper { get; set; } = new Dictionary<string, int>
+        {
+            {"metrics", 8000},
+            {"client", 2181},
+            {"clientTls", 2281},
+            {"follower", 2888},
+            {"leaderElection", 3888}
+        };
     }
     public  sealed class Monitoring
     {
@@ -923,19 +889,157 @@ namespace SharpPulsar.Deployment.Kubernetes
             Repository = "quay.io/kubernetes-ingress-controller/nginx-ingress-controller",
             Tag = "0.26.2"
         };
-    }
-    public  sealed class Image
-    {
-        public string ContainerName { get; set; }
-        public string Repository { get; set; } = "apachepulsar/pulsar-all";
-        public string Tag { get; set; } = "2.6.0";
-        public string PullPolicy { get; set; } = "IfNotPresent";
-        public bool HasCommand { get; set; } = false;
-    }
-    public class Tls
+        public sealed class Image
+        {
+            public string ContainerName { get; set; }
+            public string Repository { get; set; } = "apachepulsar/pulsar-all";
+            public string Tag { get; set; } = "2.6.0";
+            public string PullPolicy { get; set; } = "IfNotPresent";
+            public bool HasCommand { get; set; } = false;
+        }
+    }   
+    public sealed class Tls
     {
         public bool Enabled { get; set; } = false;
-        public string CertName { get; set; }
+        //90 days
+        public string Duration { get; set; } = "2160h";
+        //15 days
+        public string RenewBefore { get; set; } = "360h";
+        public string Organization { get; set; } = "pulsar";
+        public int KeySize { get; set; } = 4096;
+        public string KeyAlgorithm { get; set; } = "rsa";
+        public string KeyEncoding { get; set; } = "pkcs8";
+        public ComponentTls ZooKeeper { get; set; } = new ComponentTls();
+        public ComponentTls Proxy { get; set; } = new ComponentTls();
+        public ComponentTls Broker { get; set; } = new ComponentTls();
+        public ComponentTls Bookie { get; set; } = new ComponentTls();
+        public ComponentTls PulsarManager { get; set; } = new ComponentTls();
+        public ComponentTls Presto { get; set; } = new ComponentTls();
+        public ComponentTls PulsarDetector { get; set; } = new ComponentTls();
+        public ComponentTls AutoRecovery { get; set; } = new ComponentTls 
+        { 
+            Enabled = true
+        };
+        public ComponentTls ToolSet { get; set; } = new ComponentTls 
+        { 
+            Enabled = true
+        };
+        public class ComponentTls 
+        {
+            public bool Enabled { get; set; } = false;
+            public string CertName { get; set; }
+        }
+    }
+
+    public sealed class Authentication
+    {
+        public bool Enabled { get; set; } = false;
+        public string Provider { get; set; } = "jwt";
+        // Enable JWT authentication
+        // If the token is generated by a secret key, set the usingSecretKey as true.
+        // If the token is generated by a private key, set the usingSecretKey as false.
+        public bool UsingJwtSecretKey { get; set; } = false;
+        public bool Authorization { get; set; } = false;
+        public bool Vault { get; set; } = false;
+        public sealed class SuperUsers
+        {
+            // broker to broker communication
+            public string Broker { get; set; } = "broker-admin";
+            // proxy to broker communication
+            public string Proxy { get; set; } = "proxy-admin";
+            // pulsar-admin client to broker/proxy communication
+            public string Client { get; set; } = "admin";
+            //pulsar-manager to broker/proxy communication
+            public string PulsarManager { get; set; } = "pulsar-manager-admin";
+        }
+    }
+    public sealed class Probes
+    {
+        public ComponentProbe Broker { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 30,
+                PeriodSeconds = 10
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 30,
+                PeriodSeconds = 10
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 60,
+                PeriodSeconds = 10
+            }
+        };
+        public ComponentProbe ZooKeeper { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            }
+        };
+        public ComponentProbe Bookie { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 60,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 60,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 60,
+                PeriodSeconds = 30
+            }
+        };
+        public sealed class ComponentProbe
+        {
+            public ProbeOptions Liveness { get; set; }
+            public ProbeOptions Readiness { get; set; }
+            public ProbeOptions Startup { get; set; }
+        }
+        public sealed class ProbeOptions
+        {
+            public bool Enabled { get; set; } = false;
+            public int FailureThreshold { get; set; }
+            public int InitialDelaySeconds { get; set; }
+            public int PeriodSeconds { get; set; }
+        }
     }
     public class Common
     {
@@ -943,10 +1047,10 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
+        public bool AntiAffinity { get; set; } = false;
         public bool Enabled { get; set; } = false;
         public string ComponentName { get; set; }
         public string ServiceName { get; set; }
-        public string HostName { get; set; }
         public string ZNode { get; set; }
         public string PodManagementPolicy { get; set; }
         public string UpdateStrategy { get; set; }
@@ -964,6 +1068,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public V1PodSecurityContext SecurityContext { get; set; } = new V1PodSecurityContext { };
         public IDictionary<string, string> NodeSelector { get; set; } = new Dictionary<string, string>();
         public Tls Tls { get; set; } = new Tls();
+        public string HostName { get; set; }
     }
     public class ExtraConfig
     {

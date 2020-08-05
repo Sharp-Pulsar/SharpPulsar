@@ -52,26 +52,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                 .SpecBuilder()
                 .Tolerations(Values.ZooKeeper.Tolerations)
                 .NodeSelector(Values.BookKeeper.NodeSelector)
-                .PodAntiAffinity(new List<V1PodAffinityTerm> 
-                { 
-                    new V1PodAffinityTerm
-                    { 
-                        LabelSelector = new V1LabelSelector
-                        { 
-                            MatchExpressions = new List<V1LabelSelectorRequirement>
-                            {
-                                new V1LabelSelectorRequirement{ Key = "app", OperatorProperty = "In", Values = new List<string>{$"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}" } },
-                                new V1LabelSelectorRequirement{ Key = "release", OperatorProperty = "In", Values = new List<string>{$"{Values.ReleaseName}" } },
-                                new V1LabelSelectorRequirement{ Key = "component", OperatorProperty = "In", Values = new List<string>{ Values.ZooKeeper.ComponentName }}
-                            }
-                        },
-                        TopologyKey = "kubernetes.io/hostname"
-                    }
-                })
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.ZooKeeper))
                 .TerminationGracePeriodSeconds(Values.ZooKeeper.GracePeriodSeconds)
                 .InitContainers(Values.ZooKeeper.ExtraInitContainers)
                 .Containers(Values.ZooKeeper.Containers)
-                .Volumes(Values.ZooKeeper.Volumes)                ;
+                .Volumes(Values.ZooKeeper.Volumes);
             
             return _set.Run(_set.Builder(), Values.Namespace, dryRun);
         }
