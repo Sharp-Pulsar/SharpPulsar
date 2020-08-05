@@ -40,9 +40,33 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             return new List<V1VolumeMount>();
         }
-        public static List<V1VolumeMount> Recovery()
+        public static List<V1VolumeMount> RecoveryIntContainer()
         {
-            return new List<V1VolumeMount>();
+            var vols = new List<V1VolumeMount>();
+            if(Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "autorecovery-certs", MountPath = "/pulsar/certs/autorecovery", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+                
+            }
+            if (Values.Tls.ZooKeeper.Enabled)
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+            
+            return vols;
+        }
+        public static List<V1VolumeMount> RecoveryContainer()
+        {
+            var vols = new List<V1VolumeMount>();
+            if(Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "autorecovery-certs", MountPath = "/pulsar/certs/autorecovery", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+                
+            }
+            if (Values.Tls.ZooKeeper.Enabled)
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+            
+            return vols;
         }
     }
 }

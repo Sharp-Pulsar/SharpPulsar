@@ -21,5 +21,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     new V1ContainerPort{Name = "pulsar", ContainerPort = Values.Ports.Broker["pulsar"] }
                 };
         }
+        public static List<V1ContainerPort> AutoRecovery()
+        {
+            return new List<V1ContainerPort>
+                {
+                    new V1ContainerPort{Name = "http", ContainerPort = Values.Ports.AutoRecovery["http"]}
+                };
+        }
     }
 }

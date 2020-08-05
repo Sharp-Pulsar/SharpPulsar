@@ -55,22 +55,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                 .SecurityContext(Values.Broker.SecurityContext)
                 .ServiceAccountName($"{Values.ReleaseName}-{Values.Broker.ComponentName}-acct")
                 .NodeSelector(Values.Broker.NodeSelector)
-                .PodAntiAffinity(new List<V1PodAffinityTerm>
-                {
-                    new V1PodAffinityTerm
-                    {
-                        LabelSelector = new V1LabelSelector
-                        {
-                            MatchExpressions = new List<V1LabelSelectorRequirement>
-                            {
-                                new V1LabelSelectorRequirement{ Key = "app", OperatorProperty = "In", Values = new List<string>{$"{Values.ReleaseName}-{Values.Broker.ComponentName}" } },
-                                new V1LabelSelectorRequirement{ Key = "release", OperatorProperty = "In", Values = new List<string>{$"{Values.ReleaseName}" } },
-                                new V1LabelSelectorRequirement{ Key = "component", OperatorProperty = "In", Values = new List<string>{ Values.Broker.ComponentName }}
-                            }
-                        },
-                        TopologyKey = "kubernetes.io/hostname"
-                    }
-                })
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Broker))
                 .TerminationGracePeriodSeconds(Values.Broker.GracePeriodSeconds)
                 .InitContainers(Values.Broker.ExtraInitContainers)
                 .Containers(Values.Broker.Containers)

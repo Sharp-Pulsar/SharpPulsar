@@ -54,6 +54,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Enabled = true,
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "Parallel",
+            HostName = "${HOSTNAME}." + $"{AutoRecovery.ServiceName}.{Namespace}.svc.cluster.local",
             ExtraInitContainers = new List<V1Container>
             {
                 new V1Container
@@ -66,11 +67,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh", 
                             "-c" 
                         },
-                        Args = new List<string>
-                        {
-                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                            "until bin/bookkeeper shell whatisinstanceid; do  sleep 3; done; "
-                        },
+                        Args = Args.AutoRecoveryIntContainer(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -81,14 +78,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        VolumeMounts = new List<V1VolumeMount>
-                        {
-                            //{{- if and .Values.tls.enabled .Values.tls.zookeeper.enabled }}
-                            // new V1VolumeMount{ Name = "autorecovery-certs", MountPath = "/pulsar/certs/autorecovery", ReadOnlyProperty = true},
-                            // new V1VolumeMount{ Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true},
-                            //{{- if .Values.tls.zookeeper.enabled }}
-                            // new V1VolumeMount{ Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh"}
-                        }
+                        VolumeMounts = VolumeMounts.RecoveryIntContainer()
                     }
             },
             Containers = new List<V1Container>
@@ -115,20 +105,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c" 
                         },
-                        Args = new List<string>
-                        {
-                            "bin/apply-config-from-env.py conf/bookkeeper.conf;",
-                            //"/pulsar/keytool/keytool.sh autorecovery {{ template pulsar.autorecovery.hostname . }} true;",
-                            "bin/bookkeeper autorecovery"
-                        },
-                        Ports = new List<V1ContainerPort>
-                        {
-                            new V1ContainerPort
-                            {
-                                Name = "http", 
-                                ContainerPort = 8000 
-                            }
-                        },
+                        Args = Args.AutoRecoveryContainer(),
+                        Ports = Helpers.Ports.AutoRecovery(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -139,27 +117,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        VolumeMounts = new List<V1VolumeMount>
-                        {
-                            new V1VolumeMount{Name = "pulsar-zookeeper-data", MountPath = "/pulsar/data"},
-                            new V1VolumeMount{Name = "pulsar-zookeeper-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh"},
-                            new V1VolumeMount{Name = "pulsar-zookeeper-log4j2", MountPath = "/pulsar/conf/log4j2.yaml", SubPath = "og4j2.yaml"},
-                            /*new V1VolumeMount{Name = "zookeeper-certs", MountPath = "/pulsar/certs/zookeeper", ReadOnlyProperty = true},
-                            new V1VolumeMount{Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true},
-                            new V1VolumeMount{Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath= "keytool.sh"}*/
-                        }
+                        VolumeMounts = VolumeMounts.RecoveryContainer()
                     }
             },
-            Volumes = new List<V1Volume>
-            {
-                /*new V1Volume {Name = "zookeeper-certs", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-{{ .Values.tls.zookeeper.cert_name }}", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } }},
-                new V1Volume {Name = "ca", Secret = new V1SecretVolumeSource{SecretName ="{{ .Release.Name }}-ca-tls", Items = new List<V1KeyToPath>{ new V1KeyToPath {Key = "ca.crt", Path = "ca.crt" } } }},
-                new V1Volume{Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource{Name = "{{ template pulsar.fullname . }}-keytool-configmap", DefaultMode = 0755}}*/
-            },
-            ConfigData = new Dictionary<string, string>
-                        {
-                            {"BOOKIE_MEM", "-Xms64m -Xmx64m"}
-                        }
+            Volumes = Volumes.Recovery(),
+            ConfigData = new Dictionary<string, string>{{"BOOKIE_MEM", "-Xms64m -Xmx64m"}}
         };
         public static Component ZooKeeper { get; set; } = new Component
         {
@@ -825,6 +787,10 @@ namespace SharpPulsar.Deployment.Kubernetes
             {"http", 8000},
             {"bookie", 3181}
         };
+        public IDictionary<string, int> AutoRecovery { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 8000}
+        };
         public IDictionary<string, int> ZooKeeper { get; set; } = new Dictionary<string, int>
         {
             {"metrics", 8000},
@@ -909,20 +875,43 @@ namespace SharpPulsar.Deployment.Kubernetes
         public int KeySize { get; set; } = 4096;
         public string KeyAlgorithm { get; set; } = "rsa";
         public string KeyEncoding { get; set; } = "pkcs8";
-        public ComponentTls ZooKeeper { get; set; } = new ComponentTls();
-        public ComponentTls Proxy { get; set; } = new ComponentTls();
-        public ComponentTls Broker { get; set; } = new ComponentTls();
-        public ComponentTls Bookie { get; set; } = new ComponentTls();
-        public ComponentTls PulsarManager { get; set; } = new ComponentTls();
-        public ComponentTls Presto { get; set; } = new ComponentTls();
-        public ComponentTls PulsarDetector { get; set; } = new ComponentTls();
+        public ComponentTls ZooKeeper { get; set; } = new ComponentTls
+        {
+            CertName = "tls-zookeeper"
+        };
+        public ComponentTls Proxy { get; set; } = new ComponentTls
+        {
+            CertName = "tls-proxy"
+        };
+        public ComponentTls Broker { get; set; } = new ComponentTls 
+        { 
+            CertName = "tls-broker"
+        };
+        public ComponentTls Bookie { get; set; } = new ComponentTls 
+        { 
+            CertName = "tls-bookie"
+        };
+        public ComponentTls PulsarManager { get; set; } = new ComponentTls 
+        { 
+            CertName = "tls-pulsar-manager"
+        };
+        public ComponentTls Presto { get; set; } = new ComponentTls 
+        { 
+            CertName = "tls-presto"
+        };
+        public ComponentTls PulsarDetector { get; set; } = new ComponentTls 
+        { 
+            CertName = "tls-pulsar-detector"
+        };
         public ComponentTls AutoRecovery { get; set; } = new ComponentTls 
         { 
-            Enabled = true
+            Enabled = true,
+            CertName = "tls-recovery"
         };
         public ComponentTls ToolSet { get; set; } = new ComponentTls 
         { 
-            Enabled = true
+            Enabled = true, 
+            CertName = "tls-toolset"
         };
         public class ComponentTls 
         {
@@ -1074,5 +1063,6 @@ namespace SharpPulsar.Deployment.Kubernetes
     {
         public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();
         public List<V1Container> Containers { get; set; } = new List<V1Container>();
+        public IDictionary<string, string> Holder { get; set; } = new Dictionary<string, string>();
     }
 }

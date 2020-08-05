@@ -45,8 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape:", "true" },
-                                {"prometheus.io/port", "8000" },
-                                {"checksum/config", @"{{ include (print $.Template.BasePath ""/bookkeeper/bookkeeper-configmap.yaml"") . | sha256sum }}" }
+                                {"prometheus.io/port", "8000" }
                             }
                  )
                 .SpecBuilder()
@@ -54,22 +53,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 .SecurityContext(Values.BookKeeper.SecurityContext)
                 .ServiceAccountName($"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-acct")
                 .NodeSelector(Values.BookKeeper.NodeSelector)
-                .PodAntiAffinity(new List<V1PodAffinityTerm>
-                {
-                    new V1PodAffinityTerm
-                    {
-                        LabelSelector = new V1LabelSelector
-                        {
-                            MatchExpressions = new List<V1LabelSelectorRequirement>
-                            {
-                                new V1LabelSelectorRequirement{ Key = "app", OperatorProperty = "In", Values = new List<string>{$"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}" } },
-                                new V1LabelSelectorRequirement{ Key = "release", OperatorProperty = "In", Values = new List<string>{$"{Values.ReleaseName}" } },
-                                new V1LabelSelectorRequirement{ Key = "component", OperatorProperty = "In", Values = new List<string>{ Values.BookKeeper.ComponentName }}
-                            }
-                        },
-                        TopologyKey = "kubernetes.io/hostname"
-                    }
-                })
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.BookKeeper))
                 .TerminationGracePeriodSeconds(Values.BookKeeper.GracePeriodSeconds)
                 .InitContainers(Values.BookKeeper.ExtraInitContainers)
                 .Containers(Values.BookKeeper.Containers)
