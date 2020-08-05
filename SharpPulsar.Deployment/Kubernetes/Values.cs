@@ -1,4 +1,6 @@
 ﻿using k8s.Models;
+using SharpPulsar.Deployment.Kubernetes.Extensions;
+using SharpPulsar.Deployment.Kubernetes.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -718,27 +720,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                              +"done;"
                              +"bin/pulsar broker;"
                         },
-                        Ports = new List<V1ContainerPort>
-                        {
-                            new V1ContainerPort{Name = "http", ContainerPort = 8080 },
-                            new V1ContainerPort{Name = "https", ContainerPort = 8443 },
-                            new V1ContainerPort{Name = "pulsar", ContainerPort = 6650 },
-                            //new V1ContainerPort{Name = "pulsarssl", ContainerPort = 6651 },
-                        },
-                        Env = new List<V1EnvVar>
-                        {
-                            /*new V1EnvVar
-                            { //if .Values.broker.advertisedPodIP
-                                Name = "advertisedAddress",
-                                ValueFrom = new V1EnvVarSource
-                                {
-                                    FieldRef = new V1ObjectFieldSelector
-                                    {
-                                        FieldPath = "status.podIP"
-                                    }
-                                }
-                            }*/
-                        },
+                        Ports = new List<V1ContainerPort>().ContainerPorts(Broker.Tls.Enabled),
+                        Env = EnvVar.Broker(advertisedPodIP:false),
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -749,67 +732,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        ReadinessProbe = new V1Probe
-                        {
-                            HttpGet = new V1HTTPGetAction
-                            {
-                                Path = "/status.html",
-                                Port = "8080"
-                            },
-                            InitialDelaySeconds = 30,
-                            FailureThreshold = 10,
-                            PeriodSeconds = 10
-                        },
-                        LivenessProbe = new V1Probe
-                        {
-                            HttpGet = new V1HTTPGetAction
-                            {
-                                Path = "/status.html",
-                                Port = "8080"
-                            },
-                            InitialDelaySeconds = 30,
-                            FailureThreshold = 10,
-                            PeriodSeconds = 10
-                        },
-                        StartupProbe = new V1Probe
-                        {
-                            HttpGet = new V1HTTPGetAction
-                            {
-                                Path = "/status.html",
-                                Port = "8080"
-                            },
-                            InitialDelaySeconds = 30,
-                            FailureThreshold = 60,
-                            PeriodSeconds = 10
-                        },
-                        VolumeMounts = new List<V1VolumeMount>//HERE
-                        {
-                            //{{- if .Values.auth.authentication.enabled }}
-                            //{{- if eq .Values.auth.authentication.provider "jwt" }}
-                            //{{- if not .Values.auth.vault.enabled }}
-                            new V1VolumeMount{Name = "token-keys", MountPath = "/pulsar/keys", ReadOnlyProperty = true},
-                            new V1VolumeMount{Name = "broker-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true},
-                            /*//{{- if and .Values.tls.enabled (or .Values.tls.bookie.enabled .Values.tls.zookeeper.enabled) }}
-                            new V1VolumeMount
-                            {
-                                Name = "bookie-certs",
-                                MountPath = "/pulsar/certs/bookie",
-                                ReadOnlyProperty = true
-                            },
-                            new V1VolumeMount
-                            {
-                                Name = "ca",
-                                MountPath = "/pulsar/certs/ca",
-                                ReadOnlyProperty = true
-                            },
-                            //{{- if .Values.tls.zookeeper.enabled }}
-                            new V1VolumeMount
-                            {
-                                Name = "keytool",
-                                MountPath = "/pulsar/keytool/keytool.sh",
-                                SubPath = "keytool.sh"
-                            }*/
-                        }
+                        ReadinessProbe = Probe.HttpAction(enabled:true, "/status.html", 8080, 30, 10, 10),
+                        LivenessProbe = Probe.HttpAction(enabled:true, "/status.html", 8080, 30, 10, 10),
+                        StartupProbe = Probe.HttpAction(enabled:true, "/status.html", 8080, 30, 10, 60),
+                        VolumeMounts = VolumeMounts.Broker(enableAuth: false, authProvider:"jwt", authVault: false, tls: false, tlsZoo:false)
                     }
                 },
             Volumes = new List<V1Volume>
@@ -936,6 +862,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                 
             }
         };
+        public List<V1EnvVar> GetZookEnvVar()
+        {
+
+        }
 
     }
     public  sealed class Monitoring
@@ -1002,6 +932,11 @@ namespace SharpPulsar.Deployment.Kubernetes
         public string PullPolicy { get; set; } = "IfNotPresent";
         public bool HasCommand { get; set; } = false;
     }
+    public class Tls
+    {
+        public bool Enabled { get; set; } = false;
+        public string CertName { get; set; }
+    }
     public class Common
     {
         public List<V1Container> ExtraInitContainers { get; set; }
@@ -1028,6 +963,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ExtraConfig ExtraConfig { get; set; } = new ExtraConfig();
         public V1PodSecurityContext SecurityContext { get; set; } = new V1PodSecurityContext { };
         public IDictionary<string, string> NodeSelector { get; set; } = new Dictionary<string, string>();
+        public Tls Tls { get; set; } = new Tls();
     }
     public class ExtraConfig
     {
