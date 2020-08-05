@@ -8,6 +8,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     public static class Values
     {
         public static bool Persistence { get; set; } = true;
+        public static bool LocalStorage { get; set; } = false;
         public static bool AntiAffinity { get; set; } = false;
         // Flag to control whether to run initialize job
         public static  bool Initialize { get; set; } = true;
@@ -132,6 +133,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ServiceName = $"{ReleaseName}-{ZooKeeper.ComponentName }",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "OrderedReady",
+            StorageClassName = $"{ReleaseName}-{ZooKeeper.ComponentName}-data",
             ZooConnect = Tls.ZooKeeper.Enabled ? $"{ZooKeeper.ServiceName}:2281" : $"{ZooKeeper.ServiceName}:2181",
             HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
             ExtraConfig = new ExtraConfig
@@ -189,7 +191,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                     }
                 },
             Volumes = Volumes.ZooKeeper(),
-            ConfigData = Config.ZooKeeper()
+            ConfigData = Config.ZooKeeper(),
+            PVC = VolumeClaim.ZooKeeper()
         };
         public static Component BookKeeper { get; set; } = new Component
         {
@@ -999,7 +1002,13 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
+
+        public string StorageClassName { get; set; }
         public bool Persistence { get; set; } = true;
+        public bool LocalStorage { get; set; } = false;
+        public string StorageSize { get; set; }
+        public string JournalStorageSize { get; set; }
+        public string LedgerStorageSize { get; set; }
         public bool AntiAffinity { get; set; } = false;
         public bool Enabled { get; set; } = false;
         public string ComponentName { get; set; }
