@@ -1,13 +1,13 @@
 ﻿using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Helpers;
 using System.Collections.Generic;
-using YamlDotNet.Core.Tokens;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
     public static class Values
     {
         public static List<string> UserProvidedZookeepers { get; set; }
+        public static Ingress Ingress { get; set; } = new Ingress();
         public static bool Persistence { get; set; } = true;
         public static bool LocalStorage { get; set; } = false;
         public static bool AntiAffinity { get; set; } = false;
@@ -350,6 +350,9 @@ namespace SharpPulsar.Deployment.Kubernetes
             HostName = "${HOSTNAME}." + $"{Broker.ServiceName}.{Namespace}.svc.cluster.local",
             ZNode = $"{MetadataPrefix}/loadbalance/brokers/{Broker.HostName}:2181",
             UpdateStrategy = "RollingUpdate",
+            EnableFunctionCustomizerRuntime = false,
+            PulsarFunctionsExtraClasspath =  "extraLibs",
+            RuntimeCustomizerClassName = "org.apache.pulsar.functions.runtime.kubernetes.BasicKubernetesManifestCustomizer",
             ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
             PodManagementPolicy = "Parallel",
             ExtraInitContainers = new List<V1Container>
@@ -448,7 +451,14 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
             }
         };
-        public static Component Functions { get; set; } = new Component();
+        public static Component Proxy { get; set; } = new Component 
+        { 
+        
+        };
+        public static Component Functions { get; set; } = new Component 
+        { 
+            ComponentName = "functions-worker"
+        };
         public static Component Kop { get; set; } = new Component
         {
             Enabled = false
@@ -457,6 +467,13 @@ namespace SharpPulsar.Deployment.Kubernetes
     public sealed class Ports
     {
         public IDictionary<string, int> Broker { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 8080},
+            {"https", 8443},
+            {"pulsar", 6650},
+            {"pulsarssl", 6651}
+        };
+        public IDictionary<string, int> Proxy { get; set; } = new Dictionary<string, int>
         {
             {"http", 8080},
             {"https", 8443},
@@ -545,7 +562,23 @@ namespace SharpPulsar.Deployment.Kubernetes
             public string PullPolicy { get; set; } = "IfNotPresent";
             public bool HasCommand { get; set; } = false;
         }
-    }   
+    }
+    public sealed class Ingress 
+    { 
+        public bool Enabled { get; set; }
+        public IngressSetting Proxy { get; set; }
+        public IngressSetting Broker { get; set; }
+        public string DomainSuffix { get; set; }
+        public sealed class IngressSetting
+        {
+            public bool Enabled { get; set; }
+            public bool Tls { get; set; }
+            public string Type { get; set; }
+            public IDictionary<string,string> Annotations { get; set; }
+            public IDictionary<string,string> ExtraSpec { get; set; }
+        }
+    
+    }
     public sealed class Tls
     {
         public bool Enabled { get; set; } = false;
