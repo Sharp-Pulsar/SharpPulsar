@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class BookiePodDisruptionBudget
+    internal class BookiePodDisruptionBudget
     {
         private readonly PodDisruptionBudget _pdb;
         public BookiePodDisruptionBudget(PodDisruptionBudget pdb)

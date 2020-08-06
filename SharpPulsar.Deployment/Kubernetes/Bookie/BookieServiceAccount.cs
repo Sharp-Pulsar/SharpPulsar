@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class BookieServiceAccount
+    internal class BookieServiceAccount
     {
         private readonly ServiceAccount _serviceAccount;
 

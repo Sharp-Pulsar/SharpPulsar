@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
 {
-    public class AutoRecoveryStatefulSet
+    internal class AutoRecoveryStatefulSet
     {
         private readonly StatefulSet _set;
         public AutoRecoveryStatefulSet(StatefulSet set)

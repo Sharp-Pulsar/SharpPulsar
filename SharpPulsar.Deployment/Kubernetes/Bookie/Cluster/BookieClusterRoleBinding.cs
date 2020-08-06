@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
 {
-    public class BookieClusterRoleBinding
+    internal class BookieClusterRoleBinding
     {
         private readonly ClusterRoleBinding _config;
         public BookieClusterRoleBinding(ClusterRoleBinding config)

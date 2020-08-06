@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
-    public class BrokerService
+    internal class BrokerService
     {
         private readonly Service _service;
         public BrokerService(Service service)

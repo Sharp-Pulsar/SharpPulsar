@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
 {
-    public class BookieClusterRole
+    internal class BookieClusterRole
     {
         private readonly ClusterRole _config;
         public BookieClusterRole(ClusterRole config)

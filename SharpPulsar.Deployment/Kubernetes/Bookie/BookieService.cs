@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class BookieService
+    internal class BookieService
     {
         private readonly Service _service;
         public BookieService(Service service)

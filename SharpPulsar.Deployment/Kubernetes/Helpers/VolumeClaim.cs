@@ -9,7 +9,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
     {
         public static List<V1PersistentVolumeClaim> ZooKeeper()
         {
-            if(Values.Persistence && Values.ZooKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.ZooKeeper.StorageClassName))
+            if(Values.Persistence && Values.ZooKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.ZooKeeper.Storage.ClassName))
             {
                 var temp = new V1PersistentVolumeClaim
                 {
@@ -24,10 +24,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         {
                             Requests = new Dictionary<string, ResourceQuantity>
                             {
-                                {"storage", new ResourceQuantity(Values.ZooKeeper.StorageSize) }
+                                {"storage", new ResourceQuantity(Values.ZooKeeper.Storage.Size) }
                             }
                         },
-                        StorageClassName = Values.ZooKeeper.StorageClassName
+                        StorageClassName = Values.ZooKeeper.Storage.ClassName
                     }
                 };
                 return new List<V1PersistentVolumeClaim>() { temp };
@@ -36,7 +36,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         }
         public static List<V1PersistentVolumeClaim> BookKeeper()
         {
-            if(Values.Persistence && Values.BookKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.BookKeeper.StorageClassName))
+            if(Values.Persistence && Values.BookKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.BookKeeper.Storage.ClassName))
             {
                 return new List<V1PersistentVolumeClaim>() 
                 {
@@ -48,9 +48,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         AccessModes = new []{"ReadWriteOnce"},
                         Resources = new V1ResourceRequirements
                         {
-                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.BookKeeper.JournalStorageSize) } }
+                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.BookKeeper.Storage.JournalSize) } }
                         },
-                        StorageClassName = $"{Values.BookKeeper.StorageClassName}-journal"
+                        StorageClassName = $"{Values.BookKeeper.Storage.ClassName}-journal"
                     }
                 },
                 new V1PersistentVolumeClaim
@@ -61,9 +61,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         AccessModes = new []{"ReadWriteOnce"},
                         Resources = new V1ResourceRequirements
                         {
-                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.BookKeeper.LedgerStorageSize) } }
+                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.BookKeeper.Storage.LedgerSize) } }
                         },
-                        StorageClassName = $"{Values.BookKeeper.StorageClassName}-ledger"
+                        StorageClassName = $"{Values.BookKeeper.Storage.ClassName}-ledger"
                     }
                 }
                 };

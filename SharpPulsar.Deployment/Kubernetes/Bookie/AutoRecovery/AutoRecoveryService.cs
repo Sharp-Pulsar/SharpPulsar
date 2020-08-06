@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
 {
-    public class AutoRecoveryService
+    internal class AutoRecoveryService
     {
         private readonly Service _service;
         public AutoRecoveryService(Service service)

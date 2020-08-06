@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
-    public class BrokerPodDisruptionBudget
+    internal class BrokerPodDisruptionBudget
     {
         private readonly PodDisruptionBudget _pdb;
         public BrokerPodDisruptionBudget(PodDisruptionBudget pdb)

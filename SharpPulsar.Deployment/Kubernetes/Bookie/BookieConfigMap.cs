@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class BookieConfigMap
+    internal class BookieConfigMap
     {
         private readonly ConfigMap _config;
         public BookieConfigMap(ConfigMap config)

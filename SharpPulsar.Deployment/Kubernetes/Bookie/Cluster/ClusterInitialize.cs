@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
 {
-    public class ClusterInitialize
+    internal class ClusterInitialize
     {
         private readonly Job _job;
         public ClusterInitialize(Job job)

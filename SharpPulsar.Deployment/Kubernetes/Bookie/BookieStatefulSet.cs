@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class BookieStatefulSet
+    internal class BookieStatefulSet
     {
         private readonly StatefulSet _set;
         public BookieStatefulSet(StatefulSet set)

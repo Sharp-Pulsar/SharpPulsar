@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
-    public class BrokerClusterRole
+    internal class BrokerClusterRole
     {
         private readonly ClusterRole _config;
         public BrokerClusterRole(ClusterRole config)

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
-    public class FunctionWorkerConfigMap
+    internal class FunctionWorkerConfigMap
     {
         private readonly ConfigMap _config;
         public FunctionWorkerConfigMap(ConfigMap config)

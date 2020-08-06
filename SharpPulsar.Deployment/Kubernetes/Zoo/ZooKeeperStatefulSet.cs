@@ -4,10 +4,10 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class ZooKeeperStatefulSet
+    internal class ZooKeeperStatefulSet
     {
         private readonly StatefulSet _set;
-        public ZooKeeperStatefulSet(StatefulSet set)
+        internal ZooKeeperStatefulSet(StatefulSet set)
         {
             _set = set;
         }

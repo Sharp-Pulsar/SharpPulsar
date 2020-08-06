@@ -136,7 +136,10 @@ namespace SharpPulsar.Deployment.Kubernetes
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "OrderedReady",
             ResourcesRequest = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" },
-            StorageClassName = $"{ReleaseName}-{ZooKeeper.ComponentName}-data",
+            Storage = new Storage
+            {
+                ClassName = $"{ReleaseName}-{ZooKeeper.ComponentName}-data",
+            },
             ZooConnect = Tls.ZooKeeper.Enabled ? $"{ZooKeeper.ServiceName}:2281" : $"{ZooKeeper.ServiceName}:2181",
             HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
             ExtraConfig = new ExtraConfig
@@ -206,8 +209,13 @@ namespace SharpPulsar.Deployment.Kubernetes
             UpdateStrategy = "RollingUpdate",
             HostName = "${HOSTNAME}." + $"{BookKeeper.ServiceName}.{Namespace}.svc.cluster.local",
             PodManagementPolicy = "Parallel",
-            LedgerStorageSize = "50Gi",
-            JournalStorageSize = "10Gi",
+            Storage = new Storage
+            {
+                ClassName = $"{ReleaseName}-{BookKeeper.ComponentName}",
+                LedgerSize = "50Gi",
+                JournalSize = "10Gi",
+            },
+            
             ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
             ExtraConfig = new ExtraConfig
             {
@@ -752,18 +760,15 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
+        public Storage Storage { get; set; } = new Storage();
         public bool UsePolicyPodDisruptionBudget { get; set; }
         public Offload Offload { get; set; } = new Offload();
         public bool EnableFunctionCustomizerRuntime { get; set; } = false;
         public string PulsarFunctionsExtraClasspath { get; set; }
         public string RuntimeCustomizerClassName { get; set; }
         public ResourcesRequest ResourcesRequest { get; set; }
-        public string StorageClassName { get; set; }
         public bool Persistence { get; set; } = true;
         public bool LocalStorage { get; set; } = false;
-        public string StorageSize { get; set; }
-        public string JournalStorageSize { get; set; }
-        public string LedgerStorageSize { get; set; }
         public bool AntiAffinity { get; set; } = false;
         public bool Enabled { get; set; } = false;
         public string ComponentName { get; set; }
@@ -771,7 +776,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         public string ZNode { get; set; }
         public string PodManagementPolicy { get; set; }
         public string UpdateStrategy { get; set; }
-        public string StorageProvisioner { get; set; }
         public string ZooConnect { get; set; }
         public int GracePeriodSeconds { get; set; }
         public int Replicas { get; set; }
@@ -807,6 +811,15 @@ namespace SharpPulsar.Deployment.Kubernetes
             public long MaxBlockSizeInBytes { get; set; }
             public long ReadBufferSizeInBytes { get; set; }
         }
+    }
+    public sealed class Storage
+    {
+        public string ClassName { get; set; }
+        public string Provisioner { get; set; }
+        public IDictionary<string, string> Parameters { get; set; }
+        public string Size { get; set; }
+        public string JournalSize { get; set; }
+        public string LedgerSize { get; set; }
     }
     public class ExtraConfig
     {

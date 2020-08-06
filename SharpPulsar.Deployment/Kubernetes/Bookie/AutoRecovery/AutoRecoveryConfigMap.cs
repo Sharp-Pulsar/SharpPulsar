@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
 {
-    public class AutoRecoveryConfigMap
+    internal class AutoRecoveryConfigMap
     {
         private readonly ConfigMap _config;
         public AutoRecoveryConfigMap(ConfigMap config)

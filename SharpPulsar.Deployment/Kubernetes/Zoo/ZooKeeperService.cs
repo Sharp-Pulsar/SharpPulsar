@@ -4,10 +4,10 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class ZooKeeperService
+    internal class ZooKeeperService
     {
         private readonly Service _service;
-        public ZooKeeperService(Service service)
+        internal ZooKeeperService(Service service)
         {
             _service = service;
         }

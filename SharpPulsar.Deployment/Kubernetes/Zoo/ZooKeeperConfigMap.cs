@@ -4,10 +4,10 @@ using System.IO;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
-    public class ZooKeeperConfigMap
+    internal class ZooKeeperConfigMap
     {
         private readonly ConfigMap _config;
-        public ZooKeeperConfigMap(ConfigMap config)
+        internal ZooKeeperConfigMap(ConfigMap config)
         {
             _config = config;
         } 

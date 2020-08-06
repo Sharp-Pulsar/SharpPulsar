@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class ZooKeeperPodDisruptionBudget
+    internal class ZooKeeperPodDisruptionBudget
     {
         private readonly PodDisruptionBudget _pdb;
-        public ZooKeeperPodDisruptionBudget(PodDisruptionBudget pdb)
+        internal ZooKeeperPodDisruptionBudget(PodDisruptionBudget pdb)
         {
             _pdb = pdb;
         }

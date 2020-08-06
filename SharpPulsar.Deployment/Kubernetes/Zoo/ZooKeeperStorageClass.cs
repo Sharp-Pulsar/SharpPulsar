@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class ZooKeeperStorageClass
+    internal class ZooKeeperStorageClass
     {
         private readonly StorageClass _str;
-        public ZooKeeperStorageClass(StorageClass cls)
+        internal ZooKeeperStorageClass(StorageClass cls)
         {
             _str = cls;
         }
@@ -20,15 +20,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                                 {"release", Values.ReleaseName },
                                 {"component", Values.ZooKeeper.ComponentName }
                             })
-                .Parameters(ZooTemp.StorageParameters)
-                .Provisioner(ZooTemp.StorageProvisioner);
+                .Parameters(Values.ZooKeeper.Storage.Parameters)
+                .Provisioner(Values.ZooKeeper.Storage.Provisioner);
             return _str.Run(_str.Builder(), dryRun);
         }
     }
-    public class ZooKeeperDataLogStorageClass
+    internal class ZooKeeperDataLogStorageClass
     {
         private readonly StorageClass _str;
-        public ZooKeeperDataLogStorageClass(StorageClass cls)
+        internal ZooKeeperDataLogStorageClass(StorageClass cls)
         {
             _str = cls;
         }
@@ -42,8 +42,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                                 {"release", Values.ReleaseName },
                                 {"component",Values.ZooKeeper.ComponentName }
                             })
-                .Parameters(ZooTemp.DatalogParameters)
-                .Provisioner(ZooTemp.DatalogProvisioner);
+                .Parameters(Values.ZooKeeper.Storage.Parameters)
+                .Provisioner(Values.ZooKeeper.Storage.Provisioner);
             return _str.Run(_str.Builder(), dryRun);
         }
     }

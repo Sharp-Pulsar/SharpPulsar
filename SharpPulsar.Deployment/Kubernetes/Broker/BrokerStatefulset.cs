@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
-    public class BrokerStatefulset
+    internal class BrokerStatefulset
     {
         private readonly StatefulSet _set;
         public BrokerStatefulset(StatefulSet set)
