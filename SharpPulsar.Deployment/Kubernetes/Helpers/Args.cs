@@ -20,6 +20,65 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             + "done; ");
             return args;
         }
+        public static IList<string> BrokerZooIntContainer()
+        {
+            var args = new List<string>();
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Broker.HostName} true;");
+
+            if (!string.IsNullOrWhiteSpace(Values.ConfigurationStore))
+                args.Add($@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {Values.ConfigurationStore} get {Values.ConfigurationStoreMetadataPrefix}/admin/clusters/""{ Values.Namespace }""; do");
+            else
+                args.Add($@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {Values.ZooKeeper.ZooConnect} get {Values.MetadataPrefix}/admin/clusters/{Values.Namespace}; do");
+            
+            args.Add($@"echo ""pulsar cluster { Values.ReleaseName } isn't initialized yet ... check in 3 seconds ..."" && sleep 3;
+                        done; ");
+            return args;
+        }
+        public static IList<string> BrokerBookieIntContainer()
+        {
+            var args = new List<string>();
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Broker.HostName} true;");
+
+            args.Add("bin/apply-config-from-env.py conf/bookkeeper.conf;");
+            args.Add($@"until bin/bookkeeper shell whatisinstanceid; do
+                          echo ""bookkeeper cluster is not initialized yet.backoff for 3 seconds..."";
+                         sleep 3;
+                       done; ");
+            args.Add(@"echo ""bookkeeper cluster is already initialized"";");
+            args.Add($@"bookieServiceNumber=""$(nslookup - timeout = 10 { Values.ReleaseName }-{ Values.BookKeeper.ComponentName } | grep Name | wc - l)"";");
+            args.Add($@"until ["+"${bookieServiceNumber}"+$@" -ge {Values.Broker.ConfigData["managedLedgerDefaultEnsembleSize"]} ]; do
+                      echo ""bookkeeper cluster { Values.ReleaseName }  isn't ready yet ... check in 10 seconds ..."";
+                      sleep 10;
+                    bookieServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.BookKeeper.ComponentName} | grep Name | wc -l)"";
+                    done; ");
+
+            args.Add(@"echo ""bookkeeper cluster is ready"";");
+            return args;
+        }
+        public static IList<string> BrokerContainer()
+        {
+            var args = new List<string>();
+
+            args.Add("bin/apply-config-from-env.py conf/broker.conf;");
+            args.Add("bin/gen-yml-from-env.py conf/functions_worker.yml;");
+            args.Add(@"echo ""OK"" > status;");
+
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Broker.HostName} true;");
+            
+            args.Add($"bin/pulsar zookeeper-shell -server {Values.ZooKeeper.ZooConnect} get {Values.Broker.ZNode};");
+            
+            args.Add($@"while [ $? -eq 0 ]; do
+                            echo ""broker { Values.Broker.HostName } znode still exists... check in 10 seconds..."";
+                        sleep 10;
+                        bin/pulsar zookeeper - shell - server { Values.ZooKeeper.ZooConnect }  get { Values.Broker.ZNode };
+                        done; ");
+
+            args.Add(@"bin/pulsar broker;");
+            return args;
+        }
         public static IList<string> AutoRecoveryContainer()
         {
             var args = new List<string>

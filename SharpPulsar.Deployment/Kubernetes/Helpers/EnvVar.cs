@@ -7,9 +7,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
     public class EnvVar
     {
-        public static List<V1EnvVar> Broker(bool advertisedPodIP)
+        public static List<V1EnvVar> Broker()
         {
-            if (advertisedPodIP)
+            if ((bool)Values.Broker.ExtraConfig.Holder["AdvertisedPodIP"])
                 return new List<V1EnvVar>
                 {
                     new V1EnvVar

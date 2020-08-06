@@ -7,21 +7,27 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
     public class VolumeMounts
     {
-        public static List<V1VolumeMount> Broker(bool enableAuth, string authProvider, bool authVault, bool tls, bool tlsZoo)
+        public static List<V1VolumeMount> Broker()
         {
             var vols = new List<V1VolumeMount>();
-            if (enableAuth && authProvider.Equals("jwt", StringComparison.OrdinalIgnoreCase) && !authVault)
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase) && !Values.Authentication.Vault)
             {
                 vols.Add(new V1VolumeMount { Name = "token-keys", MountPath = "/pulsar/keys", ReadOnlyProperty = true });
                 vols.Add(new V1VolumeMount { Name = "broker-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
             }
-            if (tls)
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
             {
-                vols.Add(new V1VolumeMount { Name = "bookie-certs", MountPath = "/pulsar/certs/bookie", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "broker-certs", MountPath = "/pulsar/certs/broker", ReadOnlyProperty = true });
                 vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
             }
-            if (tlsZoo)
+            if (Values.Tls.ZooKeeper.Enabled)
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+
+            if (Values.Broker.EnableFunctionCustomizerRuntime)
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Broker.ComponentName}-runtime", MountPath = $"/pulsar/{Values.Broker.PulsarFunctionsExtraClasspath}" });
+            
+            if (Values.Broker.Offload.Gcs.Enabled)
+                vols.Add(new V1VolumeMount { Name = "gcs-offloader-service-acccount", MountPath = "/pulsar/srvaccts", ReadOnlyProperty = true });
             return vols;
         }
         public static List<V1VolumeMount> Proxy()
@@ -74,6 +80,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             }
             if (Values.Tls.ZooKeeper.Enabled)
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+
+            return vols;
+        }
+        public static List<V1VolumeMount> BrokerContainer()
+        {
+            var vols = new List<V1VolumeMount>();
+            if (Values.Tls.Enabled || (Values.Tls.Broker.Enabled || (Values.Tls.Bookie.Enabled || Values.Tls.Bookie.Enabled)))
+            {
+                vols.Add(new V1VolumeMount { Name = "broker-certs", MountPath = "/pulsar/certs/broker", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+
+            }
+            if (Values.Tls.ZooKeeper.Enabled /* || Values.components.kop*/)
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
 
             return vols;
