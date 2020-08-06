@@ -752,6 +752,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
+        public bool UsePolicyPodDisruptionBudget { get; set; }
         public Offload Offload { get; set; } = new Offload();
         public bool EnableFunctionCustomizerRuntime { get; set; } = false;
         public string PulsarFunctionsExtraClasspath { get; set; }
