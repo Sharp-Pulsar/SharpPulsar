@@ -1,6 +1,5 @@
 ﻿using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Helpers;
-using System;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes
@@ -49,6 +48,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public static Probes Probe { get; set; } = new Probes();
 
         public static Ports Ports { get; set; } = new Ports();
+        public static Component Toolset { get; set; } = new Component();
         public static Component AutoRecovery { get; set; } = new Component
         {
             ComponentName = "recovery",
@@ -628,6 +628,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public Image Presto { get; set; } = new Image();
         public Image Autorecovery { get; set; } = new Image();
         public Image Broker { get; set; } = new Image();
+        public Image PulsarMetadata { get; set; } = new Image();
         public Image Proxy { get; set; } = new Image();
         public Image PulsarDetector { get; set; } = new Image();
         public Image Functions { get; set; } = new Image();
@@ -869,7 +870,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ExtraConfig ExtraConfig { get; set; } = new ExtraConfig();
         public V1PodSecurityContext SecurityContext { get; set; } = new V1PodSecurityContext { };
         public IDictionary<string, string> NodeSelector { get; set; } = new Dictionary<string, string>();
-        public Tls Tls { get; set; } = new Tls();
         public string HostName { get; set; }
     }
     public sealed class ResourcesRequest

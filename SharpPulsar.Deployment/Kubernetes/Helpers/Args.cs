@@ -127,5 +127,43 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             return args;
         }
+        public static IList<string> MetadataBookieContainer()
+        {
+            var args = new List<string>
+            {
+                "bin/apply-config-from-env.py conf/bookkeeper.conf;"
+            }; 
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Toolset.HostName} true;");
+
+            args.Add(@"until bin/bookkeeper shell whatisinstanceid; do
+                        sleep 3;
+                      done;");
+
+            return args;
+        }
+        public static IList<string> PulsarMetadataContainer()
+        {
+            var arg = $@"bin/pulsar initialize-cluster-metadata \
+                            --cluster {Values.Cluster} \
+                            --zookeeper {Values.ZooKeeper.ZooConnect}{Values.MetadataPrefix} \
+                            ";
+            if (!string.IsNullOrWhiteSpace(Values.ConfigurationStore))
+                arg += $@"--configuration-store {Values.ConfigurationStore}{Values.ConfigurationStoreMetadataPrefix} \";
+            else
+                arg += $@"--configuration-store {Values.ZooKeeper.ZooConnect}{Values.MetadataPrefix} \";
+            arg += $@"--web-service-url http://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:8080/ \";
+            arg += $@"--web-service-url-tls https://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:8443/ \";
+            arg += $@"--broker-service-url pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:6650/ \";
+            arg += $@"--broker-service-url-tls pulsar+ssl://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:6651/ \";
+
+            var args = new List<string>(); 
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Toolset.HostName} true;");
+
+            args.Add(arg);
+
+            return args;
+        }
     }
 }

@@ -78,6 +78,23 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             return vols;
         }
+        public static List<V1VolumeMount> ToolsetVolumMount()
+        {
+            var vols = new List<V1VolumeMount>();
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || Values.Tls.Broker.Enabled))
+            {
+                vols.Add(new V1VolumeMount { Name = "toolset-certs", MountPath = "/pulsar/certs/toolset", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+
+            }
+            if (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&&.Values.components.kop*/))
+                vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+            
+            if (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled && Values.Tls.Proxy.Enabled))
+                vols.Add(new V1VolumeMount { Name = "proxy-ca", MountPath = "/pulsar/certs/proxy-ca", ReadOnlyProperty = true });
+
+            return vols;
+        }
         public static List<V1VolumeMount> RecoveryContainer()
         {
             var vols = new List<V1VolumeMount>();

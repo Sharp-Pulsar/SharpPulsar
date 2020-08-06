@@ -54,5 +54,19 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return vols;
         }
+        public static List<V1Volume> Toolset()
+        {
+            var vols = new List<V1Volume>();
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || Values.Tls.Broker.Enabled))
+            {
+                vols.Add(new V1Volume { Name = "toolset-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.ToolSet.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
+                vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });                
+            }
+            if (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.components.kop*/))
+            {
+                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 } });
+            }
+            return vols;
+        }
     }
 }
