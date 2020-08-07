@@ -87,7 +87,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1VolumeMount> BrokerContainer()
         {
             var vols = new List<V1VolumeMount>();
-            if (Values.Tls.Enabled || (Values.Tls.Broker.Enabled || (Values.Tls.Bookie.Enabled || Values.Tls.Bookie.Enabled)))
+            if (Values.Tls.Enabled || (Values.Tls.Broker.Enabled || Values.Tls.Bookie.Enabled))
             {
                 vols.Add(new V1VolumeMount { Name = "broker-certs", MountPath = "/pulsar/certs/broker", ReadOnlyProperty = true });
                 vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
@@ -96,6 +96,28 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if (Values.Tls.ZooKeeper.Enabled /* || Values.components.kop*/)
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
 
+            return vols;
+        }
+        public static List<V1VolumeMount> ProxyContainer()
+        {
+            var vols = new List<V1VolumeMount>();
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase) && !Values.Authentication.Vault)
+            {
+                vols.Add(new V1VolumeMount { Name = "token-keys", MountPath = "/pulsar/keys", ReadOnlyProperty = true });
+                vols.Add(new V1VolumeMount { Name = "proxy-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
+            }
+            if (Values.Tls.Enabled || (Values.Tls.Proxy.Enabled || Values.Tls.Broker.Enabled ))
+            {
+                if(Values.Tls.Proxy.Enabled)
+                {
+                    vols.Add(new V1VolumeMount { Name = "proxy-certs", MountPath = "/pulsar/certs/proxy", ReadOnlyProperty = true });
+                    vols.Add(new V1VolumeMount { Name = "proxy-ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+                }
+                if (Values.Tls.Broker.Enabled)
+                {
+                    vols.Add(new V1VolumeMount { Name = "broker-ca", MountPath = "/pulsar/certs/broker", ReadOnlyProperty = true });
+                }
+            }
             return vols;
         }
         public static List<V1VolumeMount> ToolsetVolumMount()

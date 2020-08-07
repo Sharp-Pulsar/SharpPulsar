@@ -55,5 +55,22 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return ports;
         }
+        public static List<V1ContainerPort> Proxy()
+        {
+            var ports = new List<V1ContainerPort>
+            {
+                new V1ContainerPort { Name = "http", ContainerPort = Values.Ports.Proxy["http"] }
+            };
+            if (!Values.Tls.Enabled || !Values.Tls.Proxy.Enabled)
+            {
+                ports.Add(new V1ContainerPort { Name = "pulsar", ContainerPort = Values.Ports.Proxy["pulsar"] });
+            }
+            else
+            {
+                ports.Add(new V1ContainerPort { Name = "pulsarssl", ContainerPort = Values.Ports.Proxy["pulsarssl"] });
+                ports.Add(new V1ContainerPort { Name = "https", ContainerPort = Values.Ports.Proxy["https"] });
+            }
+            return ports;
+        }
     }
 }

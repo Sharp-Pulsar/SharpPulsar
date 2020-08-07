@@ -123,6 +123,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             done;");
             return args;
         }
+        public static IList<string> WaitBrokerContainer()
+        {
+            var args = new List<string> 
+            {
+                "set -e;",
+                $@"brokerServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Broker.ComponentName} | grep Name | wc - l)"";",
+                $@"until [ "+"${brokerServiceNumber} -ge 1 ]; do"
+                    +$@"echo ""pulsar cluster {Values.ReleaseName} isn't initialized yet ... check in 10 seconds ..."";
+                        sleep 10;
+                     brokerServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Broker.ComponentName} | grep Name | wc -l)"";
+                    done;"
+            };
+            return args;
+        }
         public static IList<string> ZooKeeper()
         {
             var args = new List<string>
@@ -178,6 +192,24 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             var args = new List<string>
             {
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
+            }; 
+            if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+                args.Add($"/pulsar/keytool/keytool.sh bookie {Values.BookKeeper.HostName} true;");
+
+            args.Add("bin/pulsar bookie;");
+
+            return args;
+        }
+        public static IList<string> ProxyContainer()
+        {
+            var args = new List<string>
+            {
+                "pwd;",
+                "ls .;",
+                "ls conf;",
+                "bin/apply-config-from-env.py conf/proxy.conf;",
+                @"echo ""OK"" > status;",
+                "bin/pulsar proxy;"
             }; 
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
                 args.Add($"/pulsar/keytool/keytool.sh bookie {Values.BookKeeper.HostName} true;");

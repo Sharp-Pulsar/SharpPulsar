@@ -89,6 +89,35 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             return vols;
         }
+        public static List<V1Volume> Proxy()
+        {
+            var vols = new List<V1Volume>();
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase) && !Values.Authentication.Vault)
+            {
+                var v = new V1Volume { Name = "token-keys" };
+                if (Values.Authentication.UsingJwtSecretKey)
+                    v.Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName }-token-symmetric-key" };
+                else
+                    v.Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName }-token-asymmetric-key" };
+                if (Values.Authentication.UsingJwtSecretKey)
+                    v.Secret.Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "SECRETKEY", Path = "token/secret.key" } };
+                else
+                    v.Secret.Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "PUBLICKEY", Path = "token/public.key" }, new V1KeyToPath { Key = "PRIVATEKEY", Path = "token/private.key" } };
+
+                vols.Add(new V1Volume { Name = "proxy-token", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-token-{Values.Authentication.Users.Proxy}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "TOKEN", Path = "proxy/token" } } } });
+            }              
+           
+            if (Values.Tls.Enabled && Values.Tls.Proxy.Enabled)
+            {
+                vols.Add(new V1Volume { Name = "proxy-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.Proxy.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
+                vols.Add(new V1Volume { Name = "proxy-ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
+            }
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                vols.Add(new V1Volume { Name = "broker-ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
+            }
+            return vols;
+        }
         public static List<V1Volume> Toolset()
         {
             var vols = new List<V1Volume>();

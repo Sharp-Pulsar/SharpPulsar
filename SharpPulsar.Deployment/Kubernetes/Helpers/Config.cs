@@ -217,5 +217,97 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             conf.Add("subscriptionKeySharedUseConsistentHashing", "true");
             return conf;
         }
+        public static IDictionary<string, string> Proxy()
+        {
+            var conf = new Dictionary<string, string>
+                        {
+                            {"clusterName", $"{Values.Cluster}"},
+                            {"httpNumThreads", "8"},
+                            {"statusFilePath", "/pulsar/status"}
+                            
+                        };
+            conf.Add("webServicePort", $"{ Values.Ports.Proxy["http"] }");
+            if(!Values.Tls.Enabled || !Values.Tls.Proxy.Enabled)
+            {
+                conf.Add("servicePort", $"{ Values.Ports.Proxy["pulsar"]  }");
+                if(!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl))
+                    conf.Add("brokerServiceURL", Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl);
+                else
+                    conf.Add("brokerServiceURL", $"pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsar"]}");
+                
+                if(!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerHttpUrl))
+                    conf.Add("brokerWebServiceURL", Values.Proxy.ProxyServiceUrl.BrokerHttpUrl);
+                else
+                    conf.Add("brokerWebServiceURL", $"http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}");
+
+            }
+            if (Values.Tls.Enabled || Values.Tls.Proxy.Enabled)
+            {
+                conf.Add("tlsEnabledInProxy", "true");
+                conf.Add("servicePortTls", $"{ Values.Ports.Proxy["pulsarssl"]  }");
+                conf.Add("webServicePortTls", $"{ Values.Ports.Proxy["https"]  }");
+                conf.Add("tlsCertificateFilePath", "/pulsar/certs/proxy/tls.crt");
+                conf.Add("tlsKeyFilePath", "/pulsar/certs/proxy/tls.key");
+                conf.Add("tlsTrustCertsFilePath", "/pulsar/certs/ca/ca.crt");
+            }
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+
+                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerPulsarSslUrl))
+                    conf.Add("brokerServiceURLTLS", Values.Proxy.ProxyServiceUrl.BrokerPulsarSslUrl);
+                else
+                    conf.Add("brokerServiceURLTLS", $"pulsar+ssl://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsarssl"]}");
+
+                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerHttpsUrl))
+                    conf.Add("brokerWebServiceURLTLS", Values.Proxy.ProxyServiceUrl.BrokerHttpsUrl);
+                else
+                    conf.Add("brokerWebServiceURLTLS", $"https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}");
+
+                conf.Add("tlsEnabledWithBroker", "true");
+                conf.Add("tlsCertRefreshCheckDurationSec", "300");
+                conf.Add("brokerClientTrustCertsFilePath", "/pulsar/certs/ca/ca.crt");
+            }
+            if (!Values.Tls.Enabled && !Values.Tls.Broker.Enabled)
+            {
+
+                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl))
+                    conf["brokerServiceURL"] =  Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl;
+                else
+                    conf["brokerServiceURL"] = $"pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsar"]}";
+
+                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerHttpUrl))
+                    conf["brokerWebServiceURL"] =  Values.Proxy.ProxyServiceUrl.BrokerHttpUrl;
+                else
+                    conf["brokerWebServiceURL"] = $"http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}";
+
+            }
+            if (Values.Authentication.Enabled)
+            {
+                conf.Add("authenticationEnabled", "true");
+                conf.Add("forwardAuthorizationCredentials", "true");
+                if (Values.Authentication.Authorization)
+                {
+                    conf["authorizationEnabled"] = "false";
+                    conf["forwardAuthorizationCredentials"] =  "true";
+                    conf.Add("superUserRoles", $"{Values.Authentication.Users.Broker},{Values.Authentication.Users.Proxy},{Values.Authentication.Users.Client},{Values.Authentication.Users.PulsarManager}");
+                    conf.Add("proxyRoles", Values.Authentication.Users.Proxy);
+                }
+                if(Values.Authentication.Provider.Equals("jwt", System.StringComparison.OrdinalIgnoreCase) && !Values.Authentication.Vault)
+                {
+                    //token authentication configuration
+                    conf.Add("authenticationProviders", "org.apache.pulsar.broker.authentication.AuthenticationProviderToken");
+                    conf.Add("brokerClientAuthenticationParameters", "file:///pulsar/tokens/proxy/token");
+                    conf.Add("brokerClientAuthenticationPlugin", "org.apache.pulsar.client.impl.auth.AuthenticationToken");
+                }
+                if (Values.Authentication.UsingJwtSecretKey)
+                    conf.Add("tokenSecretKey", "file:///pulsar/keys/token/secret.key");
+                else
+                    conf.Add("tokenPublicKey", "file:///pulsar/keys/token/public.key");
+            }
+
+            conf.Add("PULSAR_MEM", "-Xms64m -Xmx64m -XX:MaxDirectMemorySize=64m");
+            conf.Add("PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dio.netty.leakDetectionLevel=disabled -Dio.netty.recycler.linkCapacity=1024 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem");
+            return conf;
+        }
     }
 }

@@ -460,8 +460,74 @@ namespace SharpPulsar.Deployment.Kubernetes
             }
         };
         public static Component Proxy { get; set; } = new Component 
-        { 
-        
+        {
+
+            Enabled = true,
+            Replicas = 3,
+            ComponentName = "proxy",
+            ServiceName = $"{ReleaseName}-{Proxy.ComponentName }",
+            UpdateStrategy = "RollingUpdate",
+            HostName = "${HOSTNAME}." + $"{Proxy.ServiceName}.{Namespace}.svc.cluster.local",
+            PodManagementPolicy = "Parallel",
+            ExtraInitContainers = new List<V1Container>
+            {
+                new V1Container
+                    {
+                        Name = "wait-zookeeper-ready",
+                        Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
+                        ImagePullPolicy = Images.Proxy.PullPolicy ,
+                        Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
+                        Args = Args.WaitZooKeeperContainer()
+                    },
+                    new V1Container
+                    {
+                        Name = "wait-broker-ready",
+                        Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
+                        ImagePullPolicy = Images.Proxy.PullPolicy ,
+                        Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
+                        Args = Args.WaitBrokerContainer()
+                    }
+            },
+            Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{Proxy.ComponentName }",
+                        Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
+                        ImagePullPolicy = Images.Proxy.PullPolicy,
+                        Command = new []
+                        {
+                            "bash",
+                            "-c"
+                        },
+                        Args = Args.ProxyContainer(),
+                        Ports = Helpers.Ports.Proxy(),
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{Proxy.ComponentName }"
+                                }
+                            }
+                        },
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/status.html", Ports.Proxy["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/status.html", Ports.Proxy["http"]),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/status.html", Ports.Proxy["http"]),
+                        VolumeMounts = VolumeMounts.ProxyContainer()
+                    }
+                },
+            Volumes = Volumes.Proxy(),
+            ConfigData = Config.Proxy()
         };
         public static Component Functions { get; set; } = new Component 
         { 
@@ -471,6 +537,13 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             Enabled = false
         };
+    }
+    public sealed class ProxyServiceUrl
+    {
+        public string BrokerHttpUrl { get; set; }
+        public string BrokerHttpsUrl { get; set; }
+        public string BrokerPulsarUrl { get; set; }
+        public string BrokerPulsarSslUrl { get; set; }
     }
     public sealed class Ports
     {
@@ -760,6 +833,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
+        public ProxyServiceUrl ProxyServiceUrl { get; set; } = new ProxyServiceUrl();
         public Storage Storage { get; set; } = new Storage();
         public bool UsePolicyPodDisruptionBudget { get; set; }
         public Offload Offload { get; set; } = new Offload();
@@ -769,7 +843,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ResourcesRequest ResourcesRequest { get; set; }
         public bool Persistence { get; set; } = true;
         public bool LocalStorage { get; set; } = false;
-        public bool AntiAffinity { get; set; } = false;
+        public bool AntiAffinity { get; set; } = true;
         public bool Enabled { get; set; } = false;
         public string ComponentName { get; set; }
         public string ServiceName { get; set; }
