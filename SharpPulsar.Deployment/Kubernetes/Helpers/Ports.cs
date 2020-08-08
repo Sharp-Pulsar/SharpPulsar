@@ -72,5 +72,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return ports;
         }
+
+        public static List<V1ContainerPort> PrestoCoord()
+        {
+            var ports = new List<V1ContainerPort>
+            {
+                new V1ContainerPort { Name = "http-coord", ContainerPort = Values.Ports.PrestoCoordinator["http"], Protocol = "TCP" }
+            };
+            return ports;
+        }
     }
 }

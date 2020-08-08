@@ -218,6 +218,16 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             return args;
         }
+        public static IList<string> PrestoCoordContainer()
+        {
+            var args = new List<string>
+            {
+                @"bin/pulsar sql-worker run \
+                --etc-dir=/pulsar/conf/presto \
+                --data-dir=/pulsar/data; "
+            }; 
+            return args;
+        }
         public static IList<string> MetadataBookieContainer()
         {
             var args = new List<string>

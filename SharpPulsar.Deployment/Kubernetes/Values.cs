@@ -12,7 +12,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public static bool LocalStorage { get; set; } = false;
         public static bool AntiAffinity { get; set; } = false;
         // Flag to control whether to run initialize job
-        public static  bool Initialize { get; set; } = true;
+        public static bool Initialize { get; set; } = true;
         public static string ConfigurationStore { get; set; }
         public static string ConfigurationStoreMetadataPrefix { get; set; }
         //Namespace to deploy pulsar
@@ -67,9 +67,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
                         ImagePullPolicy = Images.Autorecovery.PullPolicy,
                         Command = new []
-                        { 
-                            "sh", 
-                            "-c" 
+                        {
+                            "sh",
+                            "-c"
                         },
                         Args = Args.AutoRecoveryIntContainer(),
                         EnvFrom = new List<V1EnvFromSource>
@@ -93,21 +93,21 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
                         ImagePullPolicy = Images.Autorecovery.PullPolicy,
                         Resources = new V1ResourceRequirements
-                        { 
+                        {
                             Requests = new Dictionary<string, ResourceQuantity>
-                            { 
-                                { 
-                                    "memory", new ResourceQuantity("64Mi") 
-                                }, 
+                            {
+                                {
+                                    "memory", new ResourceQuantity("64Mi")
+                                },
                                 {
                                     "cpu", new ResourceQuantity("0.05")
-                                } 
-                            } 
+                                }
+                            }
                         },
                         Command = new []
-                        { 
+                        {
                             "sh",
-                            "-c" 
+                            "-c"
                         },
                         Args = Args.AutoRecoveryContainer(),
                         Ports = Helpers.Ports.AutoRecovery(),
@@ -116,7 +116,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             new V1EnvFromSource
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
-                                { 
+                                {
                                     Name = $"{ReleaseName}-{AutoRecovery.ComponentName}"
                                 }
                             }
@@ -125,7 +125,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                     }
             },
             Volumes = Volumes.Recovery(),
-            ConfigData = new Dictionary<string, string>{{"BOOKIE_MEM", "-Xms64m -Xmx64m"}}
+            ConfigData = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } }
         };
         public static Component ZooKeeper { get; set; } = new Component
         {
@@ -161,21 +161,21 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Image = $"{Images.ZooKeeper.Repository}:{Images.ZooKeeper.Tag}",
                         ImagePullPolicy = Images.ZooKeeper.PullPolicy,
                         Resources = new V1ResourceRequirements
-                        { 
+                        {
                             Requests = new Dictionary<string, ResourceQuantity>
-                            { 
-                                { 
-                                    "memory", new ResourceQuantity(ZooKeeper.ResourcesRequest.Memory) 
-                                }, 
-                                { 
-                                    "cpu", new ResourceQuantity(ZooKeeper.ResourcesRequest.Cpu) 
-                                } 
-                            } 
+                            {
+                                {
+                                    "memory", new ResourceQuantity(ZooKeeper.ResourcesRequest.Memory)
+                                },
+                                {
+                                    "cpu", new ResourceQuantity(ZooKeeper.ResourcesRequest.Cpu)
+                                }
+                            }
                         },
                         Command = new []
-                        { 
-                            "sh", 
-                            "-c" 
+                        {
+                            "sh",
+                            "-c"
                         },
                         Args = Args.ZooKeeper(),
                         Ports = Helpers.Ports.ZooKeeper(),
@@ -185,7 +185,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             new V1EnvFromSource
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
-                                { 
+                                {
                                     Name = $"{ReleaseName}-{ZooKeeper.ComponentName }"
                                 }
                             }
@@ -215,7 +215,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 LedgerSize = "50Gi",
                 JournalSize = "10Gi",
             },
-            
+
             ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
             ExtraConfig = new ExtraConfig
             {
@@ -310,21 +310,21 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
                         ImagePullPolicy = Images.Bookie.PullPolicy,
                         Resources = new V1ResourceRequirements
-                        { 
+                        {
                             Requests = new Dictionary<string, ResourceQuantity>
-                            { 
-                                { 
-                                    "memory", new ResourceQuantity(BookKeeper.ResourcesRequest.Memory) 
-                                }, 
-                                { 
-                                    "cpu", new ResourceQuantity(BookKeeper.ResourcesRequest.Cpu) 
-                                } 
-                            } 
+                            {
+                                {
+                                    "memory", new ResourceQuantity(BookKeeper.ResourcesRequest.Memory)
+                                },
+                                {
+                                    "cpu", new ResourceQuantity(BookKeeper.ResourcesRequest.Cpu)
+                                }
+                            }
                         },
                         Command = new []
                         {
-                            "bash", 
-                            "-c" 
+                            "bash",
+                            "-c"
                         },
                         Args = Args.BookieContainer(),
                         Ports = Helpers.Ports.BookKeeper(),
@@ -334,7 +334,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             new V1EnvFromSource
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
-                                { 
+                                {
                                     Name = $"{ReleaseName}-{BookKeeper.ComponentName }"
                                 }
                             }
@@ -359,7 +359,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ZNode = $"{MetadataPrefix}/loadbalance/brokers/{Broker.HostName}:2181",
             UpdateStrategy = "RollingUpdate",
             EnableFunctionCustomizerRuntime = false,
-            PulsarFunctionsExtraClasspath =  "extraLibs",
+            PulsarFunctionsExtraClasspath = "extraLibs",
             RuntimeCustomizerClassName = "org.apache.pulsar.functions.runtime.kubernetes.BasicKubernetesManifestCustomizer",
             ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
             PodManagementPolicy = "Parallel",
@@ -414,21 +414,21 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
                         ImagePullPolicy = Images.Broker.PullPolicy,
                         Resources = new V1ResourceRequirements
-                        { 
+                        {
                             Requests = new Dictionary<string, ResourceQuantity>
-                            { 
-                                { 
-                                    "memory", new ResourceQuantity(Broker.ResourcesRequest.Memory) 
-                                }, 
-                                { 
-                                    "cpu", new ResourceQuantity(Broker.ResourcesRequest.Cpu) 
-                                } 
-                            } 
+                            {
+                                {
+                                    "memory", new ResourceQuantity(Broker.ResourcesRequest.Memory)
+                                },
+                                {
+                                    "cpu", new ResourceQuantity(Broker.ResourcesRequest.Cpu)
+                                }
+                            }
                         },
                         Command = new []
                         {
-                            "sh", 
-                            "-c" 
+                            "sh",
+                            "-c"
                         },
                         Args = Args.BrokerContainer(),
                         Ports = Helpers.Ports.BrokerPorts(),
@@ -438,7 +438,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             new V1EnvFromSource
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
-                                { 
+                                {
                                     Name = $"{ReleaseName}-{Broker.ComponentName }"
                                 }
                             }
@@ -459,7 +459,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
             }
         };
-        public static Component Proxy { get; set; } = new Component 
+        public static Component Proxy { get; set; } = new Component
         {
 
             Enabled = true,
@@ -520,9 +520,92 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/status.html", Ports.Proxy["http"]),
-                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/status.html", Ports.Proxy["http"]),
-                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/status.html", Ports.Proxy["http"]),
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Proxy, "/status.html", Ports.Proxy["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Proxy, "/status.html", Ports.Proxy["http"]),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Proxy, "/status.html", Ports.Proxy["http"]),
+                        VolumeMounts = VolumeMounts.ProxyContainer()
+                    }
+                },
+            Volumes = Volumes.Proxy(),
+            ConfigData = Config.Proxy()
+        };
+
+        public static Component PrestoCoordinator { get; set; } = new Component
+        {
+            Enabled = false,
+            Replicas = 1,
+            ComponentName = "coordinator",
+            ServiceName = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
+            UpdateStrategy = "RollingUpdate",
+            PodManagementPolicy = "Parallel",
+            Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
+                        Image = $"{Images.Presto.Repository}:{Images.Presto.Tag}",
+                        ImagePullPolicy = Images.Presto.PullPolicy,
+                        Command = new []
+                        {
+                            "bash",
+                            "-c"
+                        },
+                        Args = Args.PrestoCoordContainer(),
+                        Ports = Helpers.Ports.PrestoCoord(),
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{PrestoCoordinator.ComponentName }"
+                                }
+                            }
+                        },
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
+                        VolumeMounts = VolumeMounts.ProxyContainer()//here
+                    }
+                },
+            Volumes = Volumes.Proxy(),
+            ConfigData = Config.Proxy()
+        };
+        public static Component PrestoWorker { get; set; } = new Component
+        {
+            Enabled = PrestoCoordinator.Enabled,
+            Replicas = 2,
+            ComponentName = "presto-worker",
+            ServiceName = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
+            UpdateStrategy = "RollingUpdate",
+            PodManagementPolicy = "Parallel",
+            Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{PrestoWorker.ComponentName }",
+                        Image = $"{Images.Presto.Repository}:{Images.Presto.Tag}",
+                        ImagePullPolicy = Images.Presto.PullPolicy,
+                        Command = new []
+                        {
+                            "bash",
+                            "-c"
+                        },
+                        Args = Args.ProxyContainer(),
+                        Ports = Helpers.Ports.Proxy(),
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{PrestoWorker.ComponentName }"
+                                }
+                            }
+                        },
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Presto, "/v1/cluster", Ports.PrestoWorker["http"]),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
                         VolumeMounts = VolumeMounts.ProxyContainer()
                     }
                 },
@@ -560,6 +643,16 @@ namespace SharpPulsar.Deployment.Kubernetes
             {"https", 8443},
             {"pulsar", 6650},
             {"pulsarssl", 6651}
+        };
+        public IDictionary<string, int> PrestoCoordinator { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 8081},
+            {"https", 4431}
+        };
+        public IDictionary<string, int> PrestoWorker { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 8081},
+            {"https", 4431}
         };
         public IDictionary<string, int> Bookie { get; set; } = new Dictionary<string, int>
         {
@@ -766,6 +859,55 @@ namespace SharpPulsar.Deployment.Kubernetes
             }
         };
         public ComponentProbe ZooKeeper { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            }
+        };
+
+        public ComponentProbe Presto { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            }
+        };
+        public ComponentProbe Proxy { get; set; } = new ComponentProbe
         {
             Liveness = new ProbeOptions
             {

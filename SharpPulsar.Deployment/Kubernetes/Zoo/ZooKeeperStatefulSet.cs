@@ -51,7 +51,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                  )
                 .SpecBuilder()
                 .Tolerations(Values.ZooKeeper.Tolerations)
-                .NodeSelector(Values.BookKeeper.NodeSelector)
+                .NodeSelector(Values.ZooKeeper.NodeSelector)
                 .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.ZooKeeper))
                 .TerminationGracePeriodSeconds(Values.ZooKeeper.GracePeriodSeconds)
                 .InitContainers(Values.ZooKeeper.ExtraInitContainers)
