@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using YamlDotNet.Core.Tokens;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
@@ -307,6 +308,261 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             conf.Add("PULSAR_MEM", "-Xms64m -Xmx64m -XX:MaxDirectMemorySize=64m");
             conf.Add("PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dio.netty.leakDetectionLevel=disabled -Dio.netty.recycler.linkCapacity=1024 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem");
+            return conf;
+        }
+        public static IDictionary<string, string> PrestoCoord(string schedule)
+        {
+            var conf = new Dictionary<string, string> 
+            {
+                {
+                    "node.properties",
+                    @"node.environment=production 
+                    node.data-dir=/pulsar/data"
+                },
+                {
+                    "jvm.config",
+                    $@"-server 
+                    -Xmx{Values.PrestoCoordinator.ExtraConfig.Holder["memory"]} 
+                    -XX:+UseG1GC 
+                    -XX:+UnlockExperimentalVMOptions 
+                    -XX:+AggressiveOpts 
+                    -XX:+DoEscapeAnalysis 
+                    -XX:ParallelGCThreads=4 
+                    -XX:ConcGCThreads=4 
+                    -XX:G1NewSizePercent=50 
+                    -XX:+DisableExplicitGC 
+                    -XX:-ResizePLAB 
+                    -XX:+ExitOnOutOfMemoryError 
+                    -XX:+PerfDisableSharedMem" 
+                },
+                {
+                    "config.properties",
+                    $@"coordinator=true 
+                        http-server.http.port={Values.Ports.PrestoCoordinator["http"]} 
+                        discovery-server.enabled=true 
+                        discovery.uri=http://{Values.PrestoCoordinator.ServiceName}:{Values.Ports.PrestoCoordinator["http"]} 
+                        query.max-memory={Values.PrestoCoordinator.ExtraConfig.Holder["maxMemory"]} 
+                        query.max-memory-per-node={ Values.PrestoCoordinator.ExtraConfig.Holder["maxMemoryPerNode"] } 
+                        distributed-joins-enabled=true 
+                        node-scheduler.include-coordinator={schedule} "
+                },
+                {
+                    "log.properties",
+                    $@"com.facebook.presto={Values.PrestoCoordinator.ExtraConfig.Holder["Log"]} 
+                        com.sun.jersey.guice.spi.container.GuiceComponentProviderFactory=WARN 
+                        com.ning.http.client=WARN 
+                        com.facebook.presto.server.PluginManager={Values.PrestoCoordinator.ExtraConfig.Holder["Log"]}"
+                },
+                {
+                    "pulsar.properties",
+                    $@"// name of the connector to be displayed in the catalog
+                        connector.name=pulsar "
+                }
+            };
+            // the url of Pulsar broker service
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled) 
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}/";
+            else
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}/";
+
+            // URI of Zookeeper cluster
+            conf["pulsar.properties"] += $@" pulsar.zookeeper-uri={Values.ZooKeeper.ZooConnect}";
+            // minimum number of entries to read at a single time
+            conf["pulsar.properties"] += $@" pulsar.max-entry-read-batch-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxEntryReadBatchSize"]}";
+            // default number of splits to use per query
+            conf["pulsar.properties"] +=  $" pulsar.target-num-splits={Values.PrestoCoordinator.ExtraConfig.Holder["targetNumSplits"] }";
+            // max message queue size
+            conf["pulsar.properties"] += $" pulsar.max-split-message-queue-size={ Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitMessageQueueSize"] }";
+            // max entry queue size
+            conf["pulsar.properties"] += $" pulsar.max-split-entry-queue-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitEntryQueueSize"] } ";
+            // Rewrite namespace delimiter
+            // Warn: avoid using symbols allowed by Namespace (a-zA-Z_0-9 -=:%)
+            // to prevent erroneous rewriting
+            conf["pulsar.properties"] += $" pulsar.namespace-delimiter-rewrite-enable={Values.PrestoCoordinator.ExtraConfig.Holder["namespaceDelimiterRewriteEnable"] }";
+            conf["pulsar.properties"] += $" pulsar.rewrite-namespace-delimiter={Values.PrestoCoordinator.ExtraConfig.Holder["rewriteNamespaceDelimiter"]}";
+            ///////////// TIERED STORAGE OFFLOADER CONFIGS //////////////
+
+            //// Driver to use to offload old data to long term storage
+            //conf["pulsar.properties"] += $@" pulsar.managed-ledger-offload-driver=""aws-s3""";
+
+            //// The directory to locate offloaders
+            //conf["pulsar.properties"] += $@" pulsar.offloaders-directory="/pulsar/offloaders";
+
+            //// Maximum number of thread pool threads for ledger offloading
+            //conf["pulsar.properties"] += $@" pulsar.managed-ledger-offload-max-threads="2";
+
+            //// Properties and configurations related to specific offloader implementation
+            //conf["pulsar.properties"] += $@" pulsar.offloader-properties="{"s3ManagedLedgerOffloadBucket": "offload-bucket", "s3ManagedLedgerOffloadRegion": "us-west-2", "s3ManagedLedgerOffloadServiceEndpoint": "http://s3.amazonaws.com"}";
+            ////////////// AUTHENTICATION CONFIGS //////////////
+
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                //// the authentication plugin to be used to authenticate to Pulsar cluster
+                conf["pulsar.properties"] += $@" pulsar.auth-plugin=org.apache.pulsar.client.impl.auth.AuthenticationToken";
+                conf["pulsar.properties"] += $@" pulsar.auth-params=file:///pulsar/tokens/client/token";
+            }
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                //// Accept untrusted TLS certificate
+                conf["pulsar.properties"] += $@" pulsar.tls-allow-insecure-connection=false";
+                //// Whether to enable hostname verification on TLS connections
+                conf["pulsar.properties"] += $@" pulsar.tls-hostname-verification-enable=false";
+                //// Path for the trusted TLS certificate file
+                conf["pulsar.properties"] += $@" pulsar.tls-trust-cert-file-path=/pulsar/certs/ca/ca.crt";
+            }
+            ////////////// BOOKKEEPER CONFIGS //////////////
+
+            // Entries read count throttling-limit per seconds, 0 is represents disable the throttle, default is 0.
+            conf["pulsar.properties"] += $@" pulsar.bookkeeper-throttle-value={ Values.PrestoCoordinator.ExtraConfig.Holder["bookkeeperThrottleValue"] }";
+
+            // The number of threads used by Netty to handle TCP connections,
+            // default is 2 * Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.bookkeeper-num-io-threads =";
+
+            // The number of worker threads used by bookkeeper client to submit operations,
+            // default is Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.bookkeeper-num-worker-threads =";
+
+            ////////////// MANAGED LEDGER CONFIGS //////////////
+
+            // Amount of memory to use for caching data payload in managed ledger. This memory
+            // is allocated from JVM direct memory and it's shared across all the managed ledgers
+            // running in same sql worker. 0 is represents disable the cache, default is 0.
+            conf["pulsar.properties"] += $@"npulsar.managed-ledger-cache-size-MB={Values.PrestoCoordinator.ExtraConfig.Holder["managedLedgerCacheSizeMB"]}";
+            // Number of threads to be used for managed ledger tasks dispatching,
+            // default is Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-worker-threads =";
+
+            // Number of threads to be used for managed ledger scheduled tasks,
+            // default is Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-scheduler-threads =";
+            return conf;
+        }
+        public static IDictionary<string, string> PrestoWorker()
+        {
+            var conf = new Dictionary<string, string> 
+            {
+                {
+                    "node.properties",
+                    @"node.environment=production 
+                     node.data-dir=/pulsar/data"
+                },
+                {
+                    "jvm.config",
+                    $@"-server 
+                    -Xmx{Values.PrestoWorker.ExtraConfig.Holder["memory"]} 
+                    -XX:+UseG1GC 
+                    -XX:+UnlockExperimentalVMOptions 
+                    -XX:+AggressiveOpts 
+                    -XX:+DoEscapeAnalysis 
+                    -XX:ParallelGCThreads=4 
+                    -XX:ConcGCThreads=4 
+                    -XX:G1NewSizePercent=50 
+                    -XX:+DisableExplicitGC 
+                    -XX:-ResizePLAB 
+                    -XX:+ExitOnOutOfMemoryError 
+                    -XX:+PerfDisableSharedMem"
+                },
+                {
+                    "config.properties",
+                    $@"coordinator=false 
+                        http-server.http.port={Values.Ports.PrestoCoordinator["http"]} 
+                         discovery.uri=http://{Values.PrestoCoordinator.ServiceName}:{Values.Ports.PrestoCoordinator["http"]}
+                         query.max-memory={Values.PrestoWorker.ExtraConfig.Holder["maxMemory"]}
+                         query.max-memory-per-node={ Values.PrestoWorker.ExtraConfig.Holder["maxMemoryPerNode"] }"                        
+                },
+                {
+                    "log.properties",
+                    $@"com.facebook.presto={Values.PrestoWorker.ExtraConfig.Holder["Log"]} 
+                         com.sun.jersey.guice.spi.container.GuiceComponentProviderFactory=WARN 
+                         com.ning.http.client=WARN 
+                         com.facebook.presto.server.PluginManager={Values.PrestoWorker.ExtraConfig.Holder["Log"]}"
+                },
+                {
+                    "pulsar.properties",
+                    $@"// name of the connector to be displayed in the catalog
+                        connector.name=pulsar "
+                }
+            };
+            // the url of Pulsar broker service
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled) 
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}/";
+            else
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}/";
+
+            // URI of Zookeeper cluster
+            conf["pulsar.properties"] += $@" pulsar.zookeeper-uri={Values.ZooKeeper.ZooConnect}";
+            // minimum number of entries to read at a single time
+            conf["pulsar.properties"] += $@" pulsar.max-entry-read-batch-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxEntryReadBatchSize"]}";
+            // default number of splits to use per query
+            conf["pulsar.properties"] +=  $" pulsar.target-num-splits={Values.PrestoCoordinator.ExtraConfig.Holder["targetNumSplits"] }";
+            // max message queue size
+            conf["pulsar.properties"] += $" pulsar.max-split-message-queue-size={ Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitMessageQueueSize"] }";
+            // max entry queue size
+            conf["pulsar.properties"] += $" pulsar.max-split-entry-queue-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitEntryQueueSize"] } ";
+            // Rewrite namespace delimiter
+            // Warn: avoid using symbols allowed by Namespace (a-zA-Z_0-9 -=:%)
+            // to prevent erroneous rewriting
+            conf["pulsar.properties"] += $" pulsar.namespace-delimiter-rewrite-enable={Values.PrestoCoordinator.ExtraConfig.Holder["namespaceDelimiterRewriteEnable"] }";
+            conf["pulsar.properties"] += $" pulsar.rewrite-namespace-delimiter={Values.PrestoCoordinator.ExtraConfig.Holder["rewriteNamespaceDelimiter"]}";
+            ///////////// TIERED STORAGE OFFLOADER CONFIGS //////////////
+
+            //// Driver to use to offload old data to long term storage
+            //conf["pulsar.properties"] += $@" pulsar.managed-ledger-offload-driver=""aws-s3""";
+
+            //// The directory to locate offloaders
+            //conf["pulsar.properties"] += $@" pulsar.offloaders-directory="/pulsar/offloaders";
+
+            //// Maximum number of thread pool threads for ledger offloading
+            //conf["pulsar.properties"] += $@" pulsar.managed-ledger-offload-max-threads="2";
+
+            //// Properties and configurations related to specific offloader implementation
+            //conf["pulsar.properties"] += $@" pulsar.offloader-properties="{"s3ManagedLedgerOffloadBucket": "offload-bucket", "s3ManagedLedgerOffloadRegion": "us-west-2", "s3ManagedLedgerOffloadServiceEndpoint": "http://s3.amazonaws.com"}";
+            ////////////// AUTHENTICATION CONFIGS //////////////
+
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                //// the authentication plugin to be used to authenticate to Pulsar cluster
+                conf["pulsar.properties"] += $@" pulsar.auth-plugin=org.apache.pulsar.client.impl.auth.AuthenticationToken";
+                conf["pulsar.properties"] += $@" pulsar.auth-params=file:///pulsar/tokens/client/token";
+            }
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                //// Accept untrusted TLS certificate
+                conf["pulsar.properties"] += $@" pulsar.tls-allow-insecure-connection=false";
+                //// Whether to enable hostname verification on TLS connections
+                conf["pulsar.properties"] += $@" pulsar.tls-hostname-verification-enable=false";
+                //// Path for the trusted TLS certificate file
+                conf["pulsar.properties"] += $@" pulsar.tls-trust-cert-file-path=/pulsar/certs/ca/ca.crt";
+            }
+            ////////////// BOOKKEEPER CONFIGS //////////////
+
+            // Entries read count throttling-limit per seconds, 0 is represents disable the throttle, default is 0.
+            conf["pulsar.properties"] += $@" pulsar.bookkeeper-throttle-value={ Values.PrestoCoordinator.ExtraConfig.Holder["bookkeeperThrottleValue"] }";
+
+            // The number of threads used by Netty to handle TCP connections,
+            // default is 2 * Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.bookkeeper-num-io-threads =";
+
+            // The number of worker threads used by bookkeeper client to submit operations,
+            // default is Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.bookkeeper-num-worker-threads =";
+
+            ////////////// MANAGED LEDGER CONFIGS //////////////
+
+            // Amount of memory to use for caching data payload in managed ledger. This memory
+            // is allocated from JVM direct memory and it's shared across all the managed ledgers
+            // running in same sql worker. 0 is represents disable the cache, default is 0.
+            conf["pulsar.properties"] += $@"npulsar.managed-ledger-cache-size-MB={Values.PrestoCoordinator.ExtraConfig.Holder["managedLedgerCacheSizeMB"]}";
+            // Number of threads to be used for managed ledger tasks dispatching,
+            // default is Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-worker-threads =";
+
+            // Number of threads to be used for managed ledger scheduled tasks,
+            // default is Runtime.getRuntime().availableProcessors().
+            // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-scheduler-threads =";
+            conf.Add("health_check.sh",
+                $@"#!/bin/bash curl --silent {Values.PrestoCoordinator.ServiceName}:{Values.Ports.PrestoCoordinator["http"]}/v1/node | tr "", "" ""\n"" | grep --silent $(hostname -i)");
             return conf;
         }
     }

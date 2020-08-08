@@ -538,6 +538,17 @@ namespace SharpPulsar.Deployment.Kubernetes
             ServiceName = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "Parallel",
+            ExtraConfig = new ExtraConfig
+            {
+                Holder = new Dictionary<string, object>
+                {
+                    { "memory", "2G"},{"maxMemory","1GB" },{"maxMemoryPerNode", "128MB"},
+                    {"Log", "DEBUG" }, {"maxEntryReadBatchSize", "100"},{ "targetNumSplits", "16"},
+                    {"maxSplitMessageQueueSize", "10000"}, {"maxSplitEntryQueueSize", "1000"},
+                    {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
+                    {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
+                }
+            },
             Containers = new List<V1Container>
                 {
                     new V1Container
@@ -565,11 +576,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                         ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
                         LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
                         StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
-                        VolumeMounts = VolumeMounts.ProxyContainer()//here
+                        VolumeMounts = VolumeMounts.PrestoCoordContainer()//here
                     }
                 },
-            Volumes = Volumes.Proxy(),
-            ConfigData = Config.Proxy()
+            Volumes = Volumes.PrestoCoord(),
+            ConfigData = Config.PrestoCoord(PrestoCoordinator.Replicas <= 0? "false": "true")
         };
         public static Component PrestoWorker { get; set; } = new Component
         {
@@ -579,6 +590,17 @@ namespace SharpPulsar.Deployment.Kubernetes
             ServiceName = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
             UpdateStrategy = "RollingUpdate",
             PodManagementPolicy = "Parallel",
+            ExtraConfig = new ExtraConfig
+            {
+                Holder = new Dictionary<string, object>
+                {
+                    { "memory", "2G"},{"maxMemory","1GB" },{"maxMemoryPerNode", "128MB"},
+                    {"Log", "DEBUG" }, {"maxEntryReadBatchSize", "100"},{ "targetNumSplits", "16"},
+                    {"maxSplitMessageQueueSize", "10000"}, {"maxSplitEntryQueueSize", "1000"},
+                    {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
+                    {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
+                }
+            },
             Containers = new List<V1Container>
                 {
                     new V1Container
@@ -591,8 +613,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "bash",
                             "-c"
                         },
-                        Args = Args.ProxyContainer(),
-                        Ports = Helpers.Ports.Proxy(),
+                        Args = Args.PrestoWorker(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -603,14 +624,13 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 }
                             }
                         },
-                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
-                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Presto, "/v1/cluster", Ports.PrestoWorker["http"]),
-                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Presto, "/v1/cluster", Ports.PrestoCoordinator["http"]),
-                        VolumeMounts = VolumeMounts.ProxyContainer()
+                        ReadinessProbe = Helpers.Probe.ExecActionReadiness(Probe.PrestoWorker, "/bin/bash", "/presto/health_check.sh"),
+                        LivenessProbe = Helpers.Probe.ExecActionLiviness(Probe.PrestoWorker, "/bin/bash", "/presto/health_check.sh"),
+                        VolumeMounts = VolumeMounts.PrestoWorkerContainer()
                     }
                 },
-            Volumes = Volumes.Proxy(),
-            ConfigData = Config.Proxy()
+            Volumes = Volumes.PrestoWorker(),
+            ConfigData = Config.PrestoWorker()
         };
         public static Component Functions { get; set; } = new Component 
         { 
@@ -884,6 +904,30 @@ namespace SharpPulsar.Deployment.Kubernetes
         };
 
         public ComponentProbe Presto { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            }
+        };
+        public ComponentProbe PrestoWorker { get; set; } = new ComponentProbe
         {
             Liveness = new ProbeOptions
             {

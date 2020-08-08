@@ -200,6 +200,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             return args;
         }
+        public static IList<string> PrestoWorker()
+        {
+            var args = new List<string>
+            {
+                "bin/pulsar sql-worker run --etc-dir=/pulsar/conf/presto --data-dir=/pulsar/data; "
+            }; 
+            return args;
+        }
+        
         public static IList<string> ProxyContainer()
         {
             var args = new List<string>

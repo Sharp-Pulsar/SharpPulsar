@@ -30,14 +30,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 vols.Add(new V1VolumeMount { Name = "gcs-offloader-service-acccount", MountPath = "/pulsar/srvaccts", ReadOnlyProperty = true });
             return vols;
         }
-        public static List<V1VolumeMount> Proxy()
-        {
-            return new List<V1VolumeMount>();
-        }
-        public static List<V1VolumeMount> Presto()
-        {
-            return new List<V1VolumeMount>();
-        }
         public static List<V1VolumeMount> RecoveryIntContainer()
         {
             var vols = new List<V1VolumeMount>();
@@ -117,6 +109,48 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {
                     vols.Add(new V1VolumeMount { Name = "broker-ca", MountPath = "/pulsar/certs/broker", ReadOnlyProperty = true });
                 }
+            }
+            return vols;
+        }
+
+        public static List<V1VolumeMount> PrestoCoordContainer()
+        {
+            var vols = new List<V1VolumeMount> 
+            { 
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/node.properties", SubPath = "node.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/log.properties", SubPath = "log.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/jvm.config", SubPath = "jvm.config"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/config.properties", SubPath = "config.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/catalog/pulsar.properties", SubPath = "pulsar.properties"},
+            };
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                vols.Add(new V1VolumeMount { Name = "client-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
+            }
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+            }
+            return vols;
+        }
+        public static List<V1VolumeMount> PrestoWorkerContainer()
+        {
+            var vols = new List<V1VolumeMount> 
+            { 
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/node.properties", SubPath = "node.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/log.properties", SubPath = "log.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/jvm.config", SubPath = "jvm.config"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/config.properties", SubPath = "config.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/pulsar/conf/presto/catalog/pulsar.properties", SubPath = "pulsar.properties"},
+                new V1VolumeMount{Name = "config-volume", MountPath ="/presto/health_check.sh", SubPath = "health_check.sh"},
+            };
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                vols.Add(new V1VolumeMount { Name = "client-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
+            }
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
             }
             return vols;
         }

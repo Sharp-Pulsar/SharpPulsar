@@ -118,6 +118,36 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return vols;
         }
+        public static List<V1Volume> PrestoCoord()
+        {
+            var vols = new List<V1Volume>();
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                vols.Add(new V1Volume { Name = "client-token", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName }-token-{Values.Authentication.Users.Client}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "TOKEN", Path = "client/token" } } } });
+            }              
+           
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
+            }
+            vols.Add(new V1Volume { Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.PrestoCoordinator.ComponentName}" } });
+            return vols;
+        }
+        public static List<V1Volume> PrestoWorker()
+        {
+            var vols = new List<V1Volume>();
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
+            {
+                vols.Add(new V1Volume { Name = "client-token", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName }-token-{Values.Authentication.Users.Client}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "TOKEN", Path = "client/token" } } } });
+            }              
+           
+            if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+            {
+                vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
+            }
+            vols.Add(new V1Volume { Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.PrestoWorker.ComponentName}" } });
+            return vols;
+        }
         public static List<V1Volume> Toolset()
         {
             var vols = new List<V1Volume>();
