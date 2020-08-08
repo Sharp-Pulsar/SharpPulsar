@@ -1,16 +1,17 @@
 ﻿using k8s;
 using k8s.Models;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-
-//https://cert-manager.io/docs/concepts/certificate/
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    [KubernetesEntity(Group = "cert-manager.io", Kind = "Certificate", ApiVersion = "v1alpha2", PluralName = "certificates")]
-    public class V1alpha2Certificate: IKubernetesObject<V1ObjectMeta>, ISpec<V1alpha2CertificateSpec>
+    [KubernetesEntity(Group = "cert-manager.io", Kind = "ClusterIssuer", ApiVersion = "v1alpha2", PluralName = "clusterissuers")]
+    public class V1alpha2ClusterIssuer : IKubernetesObject<V1ObjectMeta>, ISpec<SpecAcme>
     {
         public const string KubeApiVersion = "v1alpha2";
-        public const string KubeKind = "Certificate";
+        public const string KubeKind = "ClusterIssuer";
         public const string KubeGroup = "cert-manager.io";
 
         [JsonProperty(PropertyName = "apiVersion")]
@@ -23,7 +24,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
         public V1ObjectMeta Metadata { get; set; }
 
         [JsonProperty(PropertyName = "spec")]
-        public V1alpha2CertificateSpec Spec { get; set; }
+        public SpecAcme Spec { get; set; }
     }
 }
-
