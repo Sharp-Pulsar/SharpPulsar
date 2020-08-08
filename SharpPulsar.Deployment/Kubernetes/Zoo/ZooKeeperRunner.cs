@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class ZooKeeperRunner
+    internal class ZooKeeperRunner
     {
         private ClusterInitializer _clusterInit;
         private ZooKeeperConfigMap _config;
@@ -49,10 +49,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
             {
                 _results = new Dictionary<string, object>();
                 var conf = _config.Run(dryRun);
-                _results.Add("ConfIgMap", conf);
+                _results.Add("ConfigMap", conf);
 
                 var confG = _config.GenZkConf(dryRun);
-                _results.Add("ConfIgMapGen", confG);
+                _results.Add("ConfigMapGen", confG);
 
                 if (Values.ZooKeeper.UsePolicyPodDisruptionBudget)
                 {
