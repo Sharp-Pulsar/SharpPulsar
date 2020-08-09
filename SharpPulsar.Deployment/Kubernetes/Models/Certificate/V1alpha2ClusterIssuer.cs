@@ -8,7 +8,7 @@ using System.Text;
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
     [KubernetesEntity(Group = "cert-manager.io", Kind = "ClusterIssuer", ApiVersion = "v1alpha2", PluralName = "clusterissuers")]
-    public class V1alpha2ClusterIssuer : IKubernetesObject<V1ObjectMeta>, ISpec<SpecAcme>
+    public class V1alpha2ClusterIssuer : IKubernetesObject<V1ObjectMeta>, ISpec<V1alpha2ClusterIssuerSpec>
     {
         public const string KubeApiVersion = "v1alpha2";
         public const string KubeKind = "ClusterIssuer";
@@ -24,6 +24,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
         public V1ObjectMeta Metadata { get; set; }
 
         [JsonProperty(PropertyName = "spec")]
-        public SpecAcme Spec { get; set; }
+        public V1alpha2ClusterIssuerSpec Spec { get; set; }
+    }
+    public class V1alpha2ClusterIssuerSpec
+    {
+        [JsonProperty(PropertyName = "acme")]
+        public SpecAcme Acme { get; set; }
     }
 }

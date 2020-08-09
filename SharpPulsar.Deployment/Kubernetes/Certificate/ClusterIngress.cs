@@ -18,7 +18,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             {
                 Metadata = new V1ObjectMeta
                 {
-
+                    Annotations = new Dictionary<string, string>
+                    {
+                        {"kubernetes.io/ingress.class","nginx" },
+                        {"ingress.kubernetes.io/ssl-redirect", "true" },
+                        {"cert-manager.io/cluster-issuer","letsencrypt" },
+                        {"kubernetes.io/tls-acme", "true"}
+                    }
                 },
                 Spec =  new Networkingv1beta1IngressSpec
                 {
@@ -30,11 +36,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
         public ClusterIngress Name(string name)
         {
             _ingress.Metadata.Name = name;
-            return this;
-        }
-        public ClusterIngress Annotation(IDictionary<string, string> anno)
-        {
-            _ingress.Metadata.Annotations = anno;
             return this;
         }
         public ClusterIngress AddTls(IList<string> hosts, string secretName)

@@ -18,15 +18,18 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
                 {
                     Name = "letsencrypt"
                 },
-                Spec = new SpecAcme 
-                { 
-                    Solvers = new Solver
+                Spec = new V1alpha2ClusterIssuerSpec
+                {
+                    Acme = new SpecAcme
                     {
-                        Dns01 = new Dns01Solver
+                        Solvers = new Solver
                         {
-                            AzureDns = new AzureDns
+                            Dns01 = new Dns01Solver
                             {
+                                AzureDns = new AzureDns
+                                {
 
+                                }
                             }
                         }
                     }
@@ -35,47 +38,47 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
         }
         public AzureClusterIssuer Server(string server)
         {
-            _issuer.Spec.Server = server;
+            _issuer.Spec.Acme.Server = server;
             return this;
         }
         public AzureClusterIssuer Email(string email)
         {
-            _issuer.Spec.Email = email;
+            _issuer.Spec.Acme.Email = email;
             return this;
         }
         public AzureClusterIssuer DnsEmail(string email)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.Email = email;
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.Email = email;
             return this;
         }
         public AzureClusterIssuer ClientId(string clientid)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.ClientID = clientid;
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientID = clientid;
             return this;
         }
         public AzureClusterIssuer HostedZoneName(string hostedZoneName)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.HostedZoneName = hostedZoneName;
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.HostedZoneName = hostedZoneName;
             return this;
         }
         public AzureClusterIssuer ResourceGroupName(string resourceGroupName)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.ResourceGroupName = resourceGroupName;
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.ResourceGroupName = resourceGroupName;
             return this;
         }
         public AzureClusterIssuer SubscriptionId(string subscriptionId)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.SubscriptionID = subscriptionId;
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.SubscriptionID = subscriptionId;
             return this;
         }
         public AzureClusterIssuer TenantId(string tenantId)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.TenantID = tenantId;
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.TenantID = tenantId;
             return this;
         }
         public AzureClusterIssuer ClientSecretSecretRef(string key, string name)
         {
-            _issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef = new ClientSecretSecretRef 
+            _issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef = new ClientSecretSecretRef 
             { 
                 Key = key,
                 Name = name
@@ -84,7 +87,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
         }
         public AzureClusterIssuer PrivateKey(string keyName)
         {
-            _issuer.Spec.PrivateKeySecretRef = new PrivateKeySecretRef
+            _issuer.Spec.Acme.PrivateKeySecretRef = new PrivateKeySecretRef
             {
                 Name = keyName
             };
@@ -92,34 +95,34 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
         }
         public V1alpha2ClusterIssuer Run()
         {
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Email))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Email))
                 throw new ArgumentException("Email is missing"); 
             
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Server))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Server))
                 throw new ArgumentException("Server is missing");            
             
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.Email))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.Email))
                 throw new ArgumentException("DnsEmail is missing");
             
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ClientID))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientID))
                 throw new ArgumentException("ClientId is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.HostedZoneName))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.HostedZoneName))
                 throw new ArgumentException("HostedZoneName is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ResourceGroupName))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ResourceGroupName))
                 throw new ArgumentException("ResourceGroupName is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.SubscriptionID))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.SubscriptionID))
                 throw new ArgumentException("SubscriptionId is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.TenantID))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.TenantID))
                 throw new ArgumentException("TenantId is missing");
             
-            if (_issuer.Spec.PrivateKeySecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.PrivateKeySecretRef.Name))
+            if (_issuer.Spec.Acme.PrivateKeySecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.PrivateKeySecretRef.Name))
                 throw new ArgumentException("PrivateKeySecretRef not set");
             
-            if (_issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Key) || string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Name))
+            if (_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Key) || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Name))
                 throw new ArgumentException("ClientSecretSecretRef not set");
 
             return (V1alpha2ClusterIssuer)_client.CreateClusterCustomObject(_issuer, "cert-manager.io", "v1alpha2", "clusterissuers", "true");
@@ -127,34 +130,34 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
 
         public async Task<V1alpha2ClusterIssuer> RunAsync()
         {
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Email))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Email))
                 throw new ArgumentException("Email is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Server))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Server))
                 throw new ArgumentException("Server is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.Email))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.Email))
                 throw new ArgumentException("DnsEmail is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ClientID))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientID))
                 throw new ArgumentException("ClientId is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.HostedZoneName))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.HostedZoneName))
                 throw new ArgumentException("HostedZoneName is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ResourceGroupName))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ResourceGroupName))
                 throw new ArgumentException("ResourceGroupName is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.SubscriptionID))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.SubscriptionID))
                 throw new ArgumentException("SubscriptionId is missing");
 
-            if (string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.TenantID))
+            if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.TenantID))
                 throw new ArgumentException("TenantId is missing");
 
-            if (_issuer.Spec.PrivateKeySecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.PrivateKeySecretRef.Name))
+            if (_issuer.Spec.Acme.PrivateKeySecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.PrivateKeySecretRef.Name))
                 throw new ArgumentException("PrivateKeySecretRef not set");
 
-            if (_issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Key) || string.IsNullOrWhiteSpace(_issuer.Spec.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Name))
+            if (_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Key) || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Name))
                 throw new ArgumentException("ClientSecretSecretRef not set");
 
             var result = await _client.CreateClusterCustomObjectAsync(_issuer, "cert-manager.io", "v1alpha2", "clusterissuers", "true");
