@@ -21,7 +21,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
                                 {"release", Values.ReleaseName }
                             })
                 .AddRule(new[] {""}, new[] { "pods" }, new[] {"list", "get" });
-            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
+            return _config.Run(_config.Builder(), dryRun);
         }
     }
 }

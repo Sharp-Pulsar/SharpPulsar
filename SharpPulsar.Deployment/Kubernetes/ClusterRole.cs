@@ -18,17 +18,18 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1ClusterRole Run(ClusterRoleBuilder builder, string ns, string dryRun = default)
+        public V1ClusterRole Run(ClusterRoleBuilder builder, string dryRun = default)
         {
             var build = builder;
             _builder = new ClusterRoleBuilder();
-            return _client.CreateClusterRole(build.Build(), ns, dryRun);
+            return _client.CreateClusterRole(build.Build(), dryRun);
         }
-        public async Task<V1ClusterRole> RunAsync(ClusterRoleBuilder builder, string ns, string dryRun = default)
+        public async Task<V1ClusterRole> RunAsync(ClusterRoleBuilder builder, string dryRun = default)
         {
             var build = builder;
             _builder = new ClusterRoleBuilder();
-            return await _client.CreateClusterRoleAsync(build.Build(), ns, dryRun);
+            return await _client.CreateClusterRoleAsync(build.Build(), dryRun);
         }
+    
     }
 }

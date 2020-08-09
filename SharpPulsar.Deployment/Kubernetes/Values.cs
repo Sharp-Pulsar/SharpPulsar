@@ -731,7 +731,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Repository = "prom/node-exporter",
             Tag = "0.16.0"
         };
-        public Image NginxIngressController { get; set; } = new Image
+        public Image Ingress { get; set; } = new Image
         {
             Repository = "quay.io/kubernetes-ingress-controller/nginx-ingress-controller",
             Tag = "0.26.2"
@@ -747,7 +747,11 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public sealed class Ingress 
     { 
+        public bool Rbac { get; set; }
         public bool Enabled { get; set; }
+        public int Replicas { get; set; } = 1;
+        public int GracePeriodSeconds { get; set; } = 30;
+
         public IngressSetting Proxy { get; set; } = new IngressSetting
         {
             Enabled = Values.Proxy.Enabled

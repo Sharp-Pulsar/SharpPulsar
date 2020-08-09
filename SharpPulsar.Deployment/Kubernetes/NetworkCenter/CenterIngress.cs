@@ -1,15 +1,17 @@
 ﻿using k8s;
 using k8s.Models;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace SharpPulsar.Deployment.Kubernetes.Certificate
+namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 {
-    internal class ClusterIngress
+    internal class CenterIngress
     {
         private IKubernetes _client;
         private Networkingv1beta1Ingress _ingress;
 
-        public ClusterIngress(IKubernetes client)
+        public CenterIngress(IKubernetes client)
         {
             _client = client;
             _ingress = new Networkingv1beta1Ingress
@@ -24,7 +26,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
                         {"kubernetes.io/tls-acme", "true"}
                     }
                 },
-                Spec =  new Networkingv1beta1IngressSpec
+                Spec = new Networkingv1beta1IngressSpec
                 {
                     Tls = new List<Networkingv1beta1IngressTLS>(),
                     Rules = new List<Networkingv1beta1IngressRule>()
@@ -33,12 +35,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             if (Values.Tls.Enabled)
                 _ingress.Metadata.Annotations.Add("nginx.ingress.kubernetes.io/backend-protocol", "HTTPS");
         }
-        public ClusterIngress Name(string name)
+        public CenterIngress Name(string name)
         {
             _ingress.Metadata.Name = name;
             return this;
         }
-        public ClusterIngress AddTls(IList<string> hosts, string secretName)
+        public CenterIngress AddTls(IList<string> hosts, string secretName)
         {
             _ingress.Spec.Tls.Add(new Networkingv1beta1IngressTLS
             {
@@ -47,7 +49,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             });
             return this;
         }
-        public ClusterIngress AddRule(string host, string path, string service, int port)
+        public CenterIngress CreateHostRule(string host, string path, string service, int port)
         {
             _ingress.Spec.Rules.Add(new Networkingv1beta1IngressRule
             {
@@ -70,6 +72,24 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             });
             return this;
         }
+        public CenterIngress AddRule(string host, string path, string service, int port)
+        {
+            _ingress.Spec.Rules.First(x => x.Host.Equals(host, StringComparison.OrdinalIgnoreCase))
+                .Http.Paths.Add(new Networkingv1beta1HTTPIngressPath
+                {
+                    Path = path,
+                    Backend = new Networkingv1beta1IngressBackend
+                    {
+                        ServiceName = service,
+                        ServicePort = port
+                    }
+                });
+            return this;
+        }
 
+        public Networkingv1beta1Ingress Run(string dryRun = default)
+        {
+            return _client.CreateNamespacedIngress1(_ingress, Values.Namespace, dryRun);
+        }
     }
 }

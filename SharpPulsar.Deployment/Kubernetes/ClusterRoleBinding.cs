@@ -18,17 +18,17 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1ClusterRoleBinding Run(ClusterRoleBindingBuilder builder, string ns, string dryRun = default)
+        public V1ClusterRoleBinding Run(ClusterRoleBindingBuilder builder, string dryRun = default)
         {
             var build = builder;
             _builder = new ClusterRoleBindingBuilder();
-            return _client.CreateClusterRoleBinding(build.Build(), ns, dryRun);
+            return _client.CreateClusterRoleBinding(build.Build(), dryRun);
         }
-        public async Task<V1ClusterRoleBinding> RunAsync(ClusterRoleBindingBuilder builder, string ns, string dryRun = default)
+        public async Task<V1ClusterRoleBinding> RunAsync(ClusterRoleBindingBuilder builder, string dryRun = default)
         {
             var build = builder;
             _builder = new ClusterRoleBindingBuilder();
-            return await _client.CreateClusterRoleBindingAsync(build.Build(), ns, dryRun);
+            return await _client.CreateClusterRoleBindingAsync(build.Build(), dryRun);
         }
     }
 }
