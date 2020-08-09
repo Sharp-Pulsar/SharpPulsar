@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class ConfigMapBuilder
+    internal class ConfigMapBuilder
     {
         private readonly V1ConfigMap _configMap;
         public ConfigMapBuilder()

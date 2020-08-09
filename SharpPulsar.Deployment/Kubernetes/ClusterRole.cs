@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public class ClusterRole
+    internal class ClusterRole
     {
         private readonly IKubernetes _client;
         private ClusterRoleBuilder _builder;

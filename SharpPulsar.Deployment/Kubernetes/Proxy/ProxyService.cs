@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Proxy
 {
-    public class ProxyService
+    internal class ProxyService
     {
         private readonly Service _service;
         public ProxyService(Service service)

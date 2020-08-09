@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class PodSpecBuilder
+    internal class PodSpecBuilder
     {
         private V1PodSpec _spec;
         public PodSpecBuilder()

@@ -1,14 +1,11 @@
 ﻿using k8s;
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public class ClusterRoleBinding
+    internal class ClusterRoleBinding
     {
         private readonly IKubernetes _client;
         private ClusterRoleBindingBuilder _builder;

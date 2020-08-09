@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public class Service
+    internal class Service
     {
         private readonly IKubernetes _client;
         private ServiceBuilder _builder;

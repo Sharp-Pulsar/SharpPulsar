@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public class StatefulSet
+    internal class StatefulSet
     {
         private readonly IKubernetes _client;
         private StatefulSetBuilder _builder;

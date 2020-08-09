@@ -1,11 +1,10 @@
 ﻿using k8s.Models;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class VolumeMounts
+    internal class VolumeMounts
     {
         public static List<V1VolumeMount> Broker()
         {

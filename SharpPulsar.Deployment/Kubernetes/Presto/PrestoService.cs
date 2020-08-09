@@ -1,14 +1,10 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Presto
 {
     //https://medium.com/walmartglobaltech/presto-on-azure-c9bb8357a50a
-    public class PrestoService
+    internal class PrestoService
     {
         private readonly Service _service;
         internal PrestoService(Service service)

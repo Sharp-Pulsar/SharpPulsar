@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using YamlDotNet.Core.Tokens;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class Config
+    internal class Config
     {
         public static IDictionary<string, string> ZooKeeper()
         {

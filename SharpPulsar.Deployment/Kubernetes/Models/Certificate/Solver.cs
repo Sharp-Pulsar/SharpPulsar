@@ -4,7 +4,7 @@
 //https://cert-manager.io/docs/concepts/certificate/
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    public class Solver
+    internal class Solver
     {
         [JsonProperty(PropertyName = "http01")]
         public Http01Solver Http01 { get; set; }

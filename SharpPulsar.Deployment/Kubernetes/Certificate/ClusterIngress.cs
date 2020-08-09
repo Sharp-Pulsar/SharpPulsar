@@ -1,12 +1,10 @@
 ﻿using k8s;
 using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Certificate
 {
-    public class ClusterIngress
+    internal class ClusterIngress
     {
         private IKubernetes _client;
         private Networkingv1beta1Ingress _ingress;
@@ -32,6 +30,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
                     Rules = new List<Networkingv1beta1IngressRule>()
                 }
             };
+            if (Values.Tls.Enabled)
+                _ingress.Metadata.Annotations.Add("nginx.ingress.kubernetes.io/backend-protocol", "HTTPS");
         }
         public ClusterIngress Name(string name)
         {

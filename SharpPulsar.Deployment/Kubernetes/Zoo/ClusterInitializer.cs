@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
-    public class ClusterInitializer
+    internal class ClusterInitializer
     {
         private readonly Job _job;
         public ClusterInitializer(Job job)

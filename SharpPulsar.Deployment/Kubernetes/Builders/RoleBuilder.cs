@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class RoleBuilder
+    internal class RoleBuilder
     {
         private V1Role _role;
         public RoleBuilder()

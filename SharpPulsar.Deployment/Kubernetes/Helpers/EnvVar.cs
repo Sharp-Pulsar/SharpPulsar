@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class EnvVar
+    internal class EnvVar
     {
         public static List<V1EnvVar> Broker()
         {

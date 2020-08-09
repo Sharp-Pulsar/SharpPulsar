@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Proxy
 {
-    public class ProxyPodDisruptionBudget
+    internal class ProxyPodDisruptionBudget
     {
         private readonly PodDisruptionBudget _pdb;
         public ProxyPodDisruptionBudget(PodDisruptionBudget pdb)

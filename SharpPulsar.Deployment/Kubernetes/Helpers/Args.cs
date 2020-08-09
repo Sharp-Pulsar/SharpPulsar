@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class Args
+    internal class Args
     {
         public static IList<string> AutoRecoveryIntContainer()
         {

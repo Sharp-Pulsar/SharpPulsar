@@ -5,7 +5,7 @@ using System.Collections.Generic;
 //https://cert-manager.io/docs/concepts/certificate/
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    public class V1alpha2CertificateSpec
+    internal class V1alpha2CertificateSpec
     {
         [JsonProperty(PropertyName = "secretName")]
         public string SecretName { get; set; }

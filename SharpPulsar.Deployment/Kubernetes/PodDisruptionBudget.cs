@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public class PodDisruptionBudget
+    internal class PodDisruptionBudget
     {
         private readonly IKubernetes _client;
         private PodDisruptionBudgetBuilder _builder;

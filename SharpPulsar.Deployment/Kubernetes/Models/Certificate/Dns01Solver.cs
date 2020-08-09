@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    public class Dns01Solver
+    internal class Dns01Solver
     {
         [JsonProperty(PropertyName = "cnameStrategy")]
         public string CnameStrategy { get; set; } = "Follow";

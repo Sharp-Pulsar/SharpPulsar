@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class VolumeClaim
+    internal class VolumeClaim
     {
         public static List<V1PersistentVolumeClaim> ZooKeeper()
         {

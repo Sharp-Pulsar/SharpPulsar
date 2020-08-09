@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class ServiceBuilder
+    internal class ServiceBuilder
     {
         private V1Service _service;
         public ServiceBuilder()

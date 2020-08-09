@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class StorageClassBuilder
+    internal class StorageClassBuilder
     {
         private V1StorageClass _zooStorage;
         public StorageClassBuilder()
@@ -35,7 +35,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             return _zooStorage;
         }
     }
-    public class DataLogStorageClass
+    internal class DataLogStorageClass
     {
         private V1StorageClass _zooStorage;
         public DataLogStorageClass()

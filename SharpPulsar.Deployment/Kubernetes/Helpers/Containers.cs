@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class Containers
+    internal class Containers
     {
         public static V1Container WaitCsReady()
         {

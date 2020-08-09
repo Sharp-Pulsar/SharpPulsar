@@ -7,7 +7,6 @@ namespace SharpPulsar.Deployment.Kubernetes
     public static class Values
     {
         public static List<string> UserProvidedZookeepers { get; set; }
-        public static Ingress Ingress { get; set; } = new Ingress();
         public static bool Persistence { get; set; } = true;
         public static bool LocalStorage { get; set; } = false;
         public static bool AntiAffinity { get; set; } = false;
@@ -640,6 +639,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             Enabled = false
         };
+        public static Ingress Ingress { get; set; } = new Ingress();
     }
     public sealed class ProxyServiceUrl
     {
@@ -760,8 +760,18 @@ namespace SharpPulsar.Deployment.Kubernetes
     public sealed class Ingress 
     { 
         public bool Enabled { get; set; }
-        public IngressSetting Proxy { get; set; }
-        public IngressSetting Broker { get; set; }
+        public IngressSetting Proxy { get; set; } = new IngressSetting
+        {
+            Enabled = Values.Proxy.Enabled
+        };
+        public IngressSetting Presto { get; set; } = new IngressSetting
+        {
+            Enabled = Values.PrestoCoordinator.Enabled
+        };
+        public IngressSetting Broker { get; set; } = new IngressSetting
+        {
+            Enabled = !Values.Proxy.Enabled && Values.Broker.Enabled
+        };
         public string DomainSuffix { get; set; }
         public sealed class IngressSetting
         {

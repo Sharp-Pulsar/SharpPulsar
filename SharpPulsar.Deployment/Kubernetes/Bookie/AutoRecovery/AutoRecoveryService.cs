@@ -1,8 +1,5 @@
 ﻿using k8s.Models;
-using SharpPulsar.Deployment.Kubernetes.Zoo;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
 {

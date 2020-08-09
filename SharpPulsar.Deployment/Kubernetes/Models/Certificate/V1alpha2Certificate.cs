@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
     [KubernetesEntity(Group = "cert-manager.io", Kind = "Certificate", ApiVersion = "v1alpha2", PluralName = "certificates")]
-    public class V1alpha2Certificate: IKubernetesObject<V1ObjectMeta>, ISpec<V1alpha2CertificateSpec>
+    internal class V1alpha2Certificate: IKubernetesObject<V1ObjectMeta>, ISpec<V1alpha2CertificateSpec>
     {
         public const string KubeApiVersion = "v1alpha2";
         public const string KubeKind = "Certificate";

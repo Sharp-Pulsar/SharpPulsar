@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class ServiceAccountBuilder
+    internal class ServiceAccountBuilder
     {
         private V1ServiceAccount _serviceAccount;
         public ServiceAccountBuilder()

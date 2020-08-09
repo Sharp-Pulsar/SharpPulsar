@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class PodDisruptionBudgetBuilder
+    internal class PodDisruptionBudgetBuilder
     {
         private readonly V1beta1PodDisruptionBudget _pdb;
         public PodDisruptionBudgetBuilder()

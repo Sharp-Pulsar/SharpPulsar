@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Proxy
 {
@@ -69,5 +68,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
             results = _results;
             return false;
         }
-        }
+        
+    }
 }

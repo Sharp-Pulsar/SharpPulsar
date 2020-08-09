@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public class ConfigMap
+    internal class ConfigMap
     {
         private readonly IKubernetes _client;
         private ConfigMapBuilder _builder;

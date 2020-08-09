@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class JobBuilder
+    internal class JobBuilder
     {
         private V1Job _job;
         private PodTemplateSpecBuilder _tempBuilder;

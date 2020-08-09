@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class PodTemplateSpecBuilder
+    internal class PodTemplateSpecBuilder
     {
         private readonly V1PodTemplateSpec _spec;
         private readonly PodSpecBuilder _podSpecBuilder;

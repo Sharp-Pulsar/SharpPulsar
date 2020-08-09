@@ -1,12 +1,10 @@
 ﻿using k8s.Models;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using YamlDotNet.Core.Tokens;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class Volumes
+    internal class Volumes
     {
         public static List<V1Volume> Recovery()
         {

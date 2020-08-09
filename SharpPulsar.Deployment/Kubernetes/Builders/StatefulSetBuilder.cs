@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
-    public class StatefulSetBuilder
+    internal class StatefulSetBuilder
     {
         private readonly V1StatefulSet _statefulSet;
         private readonly StatefulSetSpecBuilder _statefulSetSpecBuilder;
@@ -47,7 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _statefulSet.Spec = _statefulSetSpecBuilder.Build();
             return _statefulSet;
         }
-        public class StatefulSetSpecBuilder
+        internal class StatefulSetSpecBuilder
         {
             private  V1StatefulSetSpec _spec;
             private PodTemplateSpecBuilder _tempBulder;

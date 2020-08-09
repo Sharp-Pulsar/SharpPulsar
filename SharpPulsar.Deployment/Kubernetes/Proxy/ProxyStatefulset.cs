@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Proxy
 {
-    public class ProxyStatefulset
+    internal class ProxyStatefulset
     {
         private readonly StatefulSet _set;
         public ProxyStatefulset(StatefulSet set)

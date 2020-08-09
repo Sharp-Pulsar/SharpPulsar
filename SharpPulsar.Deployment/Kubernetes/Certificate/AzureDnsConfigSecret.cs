@@ -1,13 +1,11 @@
 ﻿using k8s;
 using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes.Certificate
 {
-    public class AzureDnsConfigSecret
+    internal class AzureDnsConfigSecret
     {
         private V1Secret _secret;
         private IKubernetes _client;

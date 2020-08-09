@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    public class ClientSecretSecretRef
+    internal class ClientSecretSecretRef
     {
         [JsonProperty(PropertyName = "key")]
         public string Key { get; set; }

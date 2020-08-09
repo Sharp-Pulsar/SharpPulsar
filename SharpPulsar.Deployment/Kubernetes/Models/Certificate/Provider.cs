@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    public class Provider
+    internal class Provider
     {
         [JsonProperty(PropertyName = "name")]
         public string Name { get; set; } = "azure-dns";

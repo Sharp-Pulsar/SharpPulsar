@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Presto.Worker
 {
-    public class PrestoWorkerConfigMap
+    internal class PrestoWorkerConfigMap
     {
         private readonly ConfigMap _config;
         public PrestoWorkerConfigMap(ConfigMap config)

@@ -1,11 +1,9 @@
 ﻿using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    public class AntiAffinity
+    internal class AntiAffinity
     {
         public static List<V1PodAffinityTerm> AffinityTerms(Component component)
         {

@@ -1,11 +1,10 @@
 ﻿using Newtonsoft.Json;
-using System.Collections.Generic;
 
 
 //https://cert-manager.io/docs/concepts/certificate/
 namespace SharpPulsar.Deployment.Kubernetes.Models.Certificate
 {
-    public class SpecAcme
+    internal class SpecAcme
     {
         [JsonProperty(PropertyName = "server")]
         public string Server { get; set; }
