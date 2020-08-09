@@ -8,13 +8,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
         private ProxyConfigMap _config;
         private ProxyPodDisruptionBudget _pdb;
         private ProxyService _service;
-        private ProxyServiceIngress _serviceIngress;
-        private ProxyServiceAccount _serviceAcct;
         private ProxyStatefulset _stateful;
         private Dictionary<string, object> _results;
         public ProxyRunner(ConfigMap configMap, PodDisruptionBudget pdb, Service service, StatefulSet statefulSet)
         {
-
+            _results = new Dictionary<string, object>();
             if (configMap == null)
                 throw new ArgumentNullException("ConfigMap is null");
 
@@ -49,16 +47,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
 
                 var srv = _service.Run(dryRun);
                 _results.Add("Service", srv);
-
-
-                if (Values.Ingress.Proxy.Enabled)
-                {
-                    var ingress = _serviceIngress.Run(dryRun);
-                    _results.Add("ServiceIngress", ingress);
-                }
-
-                var srvAcct = _serviceAcct.Run(dryRun);
-                _results.Add("ServiceAccount", srvAcct);
 
                 var state = _stateful.Run(dryRun);
                 _results.Add("StatefulSet", state);

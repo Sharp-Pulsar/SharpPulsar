@@ -75,16 +75,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                     //_results.Add("Log", log);
 
                 }
-                if (Values.Initialize && Values.Broker.Enabled)
-                {
-                    var init = _clusterInit.Run(dryRun);
-                    _results.Add("ClusterInitializer", init);
-                }
-                results = _results;
-                return true;
+            }
+            if (Values.Initialize && Values.Broker.Enabled)
+            {
+                var init = _clusterInit.Run(dryRun);
+                _results.Add("ClusterInitializer", init);
             }
             results = _results;
-            return false;
+            return true;
         }
     }
 }

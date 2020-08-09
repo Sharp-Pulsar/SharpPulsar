@@ -1,7 +1,7 @@
 ﻿using k8s.Models;
 using System.Collections.Generic;
 
-namespace SharpPulsar.Deployment.Kubernetes.Zoo
+namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
     internal class BookieConfigMap
     {

@@ -240,18 +240,6 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Name = $"{ReleaseName}-{BookKeeper.ComponentName}-init",
                         Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
                         ImagePullPolicy = Images.Bookie.PullPolicy,
-                        Resources = new V1ResourceRequirements
-                        {
-                            /*Requests = new Dictionary<string, ResourceQuantity>
-                            {
-                                {
-                                    "memory", new ResourceQuantity("4Gi")
-                                },
-                                {
-                                    "cpu", new ResourceQuantity("2")
-                                }
-                            }*/
-                        },
                         Command = new []
                         {
                             "sh",
