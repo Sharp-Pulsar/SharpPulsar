@@ -6,11 +6,15 @@ using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 {
+    //https://kubernetes.github.io/ingress-nginx/user-guide/exposing-tcp-udp-services/
     internal class CenterIngress
     {
         private IKubernetes _client;
         private Networkingv1beta1Ingress _ingress;
-
+        /// <summary>
+        /// Ingress for grafana, pulsar manager and prometheus
+        /// </summary>
+        /// <param name="client"></param>
         public CenterIngress(IKubernetes client)
         {
             _client = client;
@@ -18,6 +22,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             {
                 Metadata = new V1ObjectMeta
                 {
+                    Name = $"{Values.ReleaseName}-{Values.Namespace}-ingress",
                     Annotations = new Dictionary<string, string>
                     {
                         {"kubernetes.io/ingress.class","nginx" },
@@ -32,20 +37,13 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     Rules = new List<Networkingv1beta1IngressRule>()
                 }
             };
-            if (Values.Tls.Enabled)
-                _ingress.Metadata.Annotations.Add("nginx.ingress.kubernetes.io/backend-protocol", "HTTPS");
         }
-        public CenterIngress Name(string name)
-        {
-            _ingress.Metadata.Name = name;
-            return this;
-        }
-        public CenterIngress AddTls(IList<string> hosts, string secretName)
+        public CenterIngress AddTls(params string[] hosts)
         {
             _ingress.Spec.Tls.Add(new Networkingv1beta1IngressTLS
             {
                 Hosts = new List<string>(hosts),
-                SecretName = secretName
+                SecretName = $"{Values.ReleaseName}-ingress-secret"
             });
             return this;
         }

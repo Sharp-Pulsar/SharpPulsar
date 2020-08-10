@@ -70,6 +70,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                                     Args = new List<string>
                                     {
                                         $@"/nginx-ingress-controller 
+                                            --election-id=ingress-controller-leader
                                             --configmap={Values.Namespace}/{Values.ReleaseName}-nginx-configuration
                                             --tcp-services-configmap={Values.Namespace}/{Values.ReleaseName}-tcp-services
                                             --udp-services-configmap={Values.Namespace}/{Values.ReleaseName}-udp-services

@@ -20,8 +20,11 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         private CenterIngress _centerIngress;
         private CenterService _centerService;
         private Deployment _deployment;
+
+        private CenterSecret _secret;
+        private TcpIngressService _tcpIngressService;
         private Dictionary<string, object> _results;
-        public NetworkCenterRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding)
+        public NetworkCenterRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
         {
             _results = new Dictionary<string, object>();
             _deployment = new Deployment(k8s);
@@ -39,6 +42,9 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 
             _centerServiceAccount = new CenterServiceAccount(serviceAccount);
             _centerService = new CenterService(service);
+
+            _secret = new CenterSecret(secret);
+            _tcpIngressService = new TcpIngressService(service);
 
         }
 
