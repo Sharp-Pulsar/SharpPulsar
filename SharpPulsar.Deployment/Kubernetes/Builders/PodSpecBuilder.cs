@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class PodSpecBuilder
     {
-        private V1PodSpec _spec;
+        private readonly V1PodSpec _spec;
         public PodSpecBuilder()
         {
             _spec = new V1PodSpec

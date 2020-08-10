@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class RoleBuilder
     {
-        private V1Role _role;
+        private readonly V1Role _role;
         public RoleBuilder()
         {
             _role = new V1Role

@@ -18,7 +18,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         {
             _service = service;
         }
-        public TcpIngressService ConfigurePorts(ComponentTls tls, IDictionary<string, string> ports)
+        public TcpIngressService ConfigurePorts(ComponentTls tls, IDictionary<string, int> ports)
         {
             _service.Builder()
                 .Ports(new List<V1ServicePort>
@@ -52,17 +52,13 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                 .Metadata($"{Values.ReleaseName}-{Values.Namespace}-tcp-ingress", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
-                                {"app", Values.App },
-                                {"release", Values.ReleaseName },
                                 {"app.kubernetes.io/name", "ingress-nginx"},
-                                {"app.kubernetes.io/part-of", "ingress-nginx" }
+                                {"app.kubernetes.io/part-of", "ingress-nginx"}
                             })
                 .Selector(new Dictionary<string, string>()
                             {
-                                {"app", Values.App },
-                                {"release", Values.ReleaseName },
                                 {"app.kubernetes.io/name", "ingress-nginx"},
-                                {"app.kubernetes.io/part-of", "ingress-nginx" }
+                                {"app.kubernetes.io/part-of", "ingress-nginx"}
                             })
                 .Type("LoadBalancer");
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);

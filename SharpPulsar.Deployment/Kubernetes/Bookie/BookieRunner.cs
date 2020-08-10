@@ -8,23 +8,23 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
 {
     internal class BookieRunner
     {
-        private AutoRecoveryConfigMap _autoRecoveryConfigMap;
-        private AutoRecoveryService _autoRecoveryService;
-        private AutoRecoveryStatefulSet _autoRecoveryStatefulSet;
+        private readonly AutoRecoveryConfigMap _autoRecoveryConfigMap;
+        private readonly AutoRecoveryService _autoRecoveryService;
+        private readonly AutoRecoveryStatefulSet _autoRecoveryStatefulSet;
 
-        private BookieClusterRole _bookieClusterRole;
-        private BookieClusterRoleBinding _bookieClusterRoleBinding;
-        private ClusterInitialize _clusterInitialize;
+        private readonly BookieClusterRole _bookieClusterRole;
+        private readonly BookieClusterRoleBinding _bookieClusterRoleBinding;
+        private readonly ClusterInitialize _clusterInitialize;
 
-        private Journal _journal;
-        private Ledger _ledger;
+        private readonly Journal _journal;
+        private readonly Ledger _ledger;
 
-        private BookieConfigMap _bookieConfigMap;
-        private BookiePodDisruptionBudget _bookiePodDisruptionBudget;
-        private BookieService _bookieService;
-        private BookieServiceAccount _bookieServiceAccount;
-        private BookieStatefulSet _bookieStatefulSet;
-        private Dictionary<string, object> _results;
+        private readonly BookieConfigMap _bookieConfigMap;
+        private readonly BookiePodDisruptionBudget _bookiePodDisruptionBudget;
+        private readonly BookieService _bookieService;
+        private readonly BookieServiceAccount _bookieServiceAccount;
+        private readonly BookieStatefulSet _bookieStatefulSet;
+        private readonly Dictionary<string, object> _results;
         public BookieRunner(Job job, ConfigMap configMap, PodDisruptionBudget pdb, Service service, ServiceAccount serviceAccount, StatefulSet statefulSet, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, StorageClass storageClass)
         {
             _results = new Dictionary<string, object>();

@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class ServiceBuilder
     {
-        private V1Service _service;
+        private readonly V1Service _service;
         public ServiceBuilder()
         {
             _service = new V1Service

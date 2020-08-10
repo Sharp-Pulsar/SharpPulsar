@@ -7,11 +7,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
 {
     internal class PrestoRunner
     {
-        private PrestoCoordinatorConfigMap _prestoCoordinatorConfigMap;
-        private PrestoCoordinatorStatefulSet _prestoCoordinatorStatefulSet;
-        private PrestoWorkerConfigMap _prestoWorkerConfigMap;
-        private PrestoWorkerStatefulSet _prestoWorkerStatefulSet;
-        private PrestoService _prestoService;
+        private readonly PrestoCoordinatorConfigMap _prestoCoordinatorConfigMap;
+        private readonly PrestoCoordinatorStatefulSet _prestoCoordinatorStatefulSet;
+        private readonly PrestoWorkerConfigMap _prestoWorkerConfigMap;
+        private readonly PrestoWorkerStatefulSet _prestoWorkerStatefulSet;
+        private readonly PrestoService _prestoService;
         private Dictionary<string, object> _results;
         public PrestoRunner(ConfigMap configMap, StatefulSet stateful, Service service)
         {

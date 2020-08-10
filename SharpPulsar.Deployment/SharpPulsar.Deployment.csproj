@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <Folder Include="Kubernetes\Manager\" />
-    <Folder Include="Kubernetes\CertManager\" />
   </ItemGroup>
 
 </Project>

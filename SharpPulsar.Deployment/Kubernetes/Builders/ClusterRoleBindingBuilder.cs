@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class ClusterRoleBindingBuilder
     {
-        private V1ClusterRoleBinding _binding;
+        private readonly V1ClusterRoleBinding _binding;
         public ClusterRoleBindingBuilder()
         {
             _binding = new V1ClusterRoleBinding

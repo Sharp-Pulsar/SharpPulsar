@@ -5,8 +5,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class JobBuilder
     {
-        private V1Job _job;
-        private PodTemplateSpecBuilder _tempBuilder;
+        private readonly V1Job _job;
+        private readonly PodTemplateSpecBuilder _tempBuilder;
         public JobBuilder()
         {
             _job = new V1Job

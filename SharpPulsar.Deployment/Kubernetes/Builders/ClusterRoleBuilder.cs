@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class ClusterRoleBuilder
     {
-        private V1ClusterRole _cluster;
+        private readonly V1ClusterRole _cluster;
         public ClusterRoleBuilder()
         {
             _cluster = new V1ClusterRole

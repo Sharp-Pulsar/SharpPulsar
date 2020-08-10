@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class StorageClassBuilder
     {
-        private V1StorageClass _zooStorage;
+        private readonly V1StorageClass _zooStorage;
         public StorageClassBuilder()
         {
             _zooStorage = new V1StorageClass();
@@ -37,7 +37,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
     }
     internal class DataLogStorageClass
     {
-        private V1StorageClass _zooStorage;
+        private readonly V1StorageClass _zooStorage;
         public DataLogStorageClass()
         {
             _zooStorage = new V1StorageClass();

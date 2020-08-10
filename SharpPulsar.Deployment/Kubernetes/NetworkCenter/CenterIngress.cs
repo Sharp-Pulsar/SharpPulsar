@@ -9,8 +9,8 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
     //https://kubernetes.github.io/ingress-nginx/user-guide/exposing-tcp-udp-services/
     internal class CenterIngress
     {
-        private IKubernetes _client;
-        private Networkingv1beta1Ingress _ingress;
+        private readonly IKubernetes _client;
+        private readonly Networkingv1beta1Ingress _ingress;
         /// <summary>
         /// Ingress for grafana, pulsar manager and prometheus
         /// </summary>
@@ -47,7 +47,15 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             });
             return this;
         }
-        public CenterIngress CreateHostRule(string host, string path, string service, int port)
+        public CenterIngress Rule(string host, string path, string service, int port)
+        {
+            var hosts =_ingress.Spec.Rules.Where(x => x.Host.Equals(host, StringComparison.OrdinalIgnoreCase));
+            if (hosts.Count() > 0)
+                return CreateHostRule(host, path, service, port);
+
+            return AddRule(host, path, service, port); 
+        }
+        private CenterIngress CreateHostRule(string host, string path, string service, int port)
         {
             _ingress.Spec.Rules.Add(new Networkingv1beta1IngressRule
             {
@@ -70,7 +78,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             });
             return this;
         }
-        public CenterIngress AddRule(string host, string path, string service, int port)
+        private CenterIngress AddRule(string host, string path, string service, int port)
         {
             _ingress.Spec.Rules.First(x => x.Host.Equals(host, StringComparison.OrdinalIgnoreCase))
                 .Http.Paths.Add(new Networkingv1beta1HTTPIngressPath

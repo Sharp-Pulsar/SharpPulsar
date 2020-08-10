@@ -5,10 +5,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
 {
     internal class ProxyRunner
     {
-        private ProxyConfigMap _config;
-        private ProxyPodDisruptionBudget _pdb;
-        private ProxyService _service;
-        private ProxyStatefulset _stateful;
+        private readonly ProxyConfigMap _config;
+        private readonly ProxyPodDisruptionBudget _pdb;
+        private readonly ProxyService _service;
+        private readonly ProxyStatefulset _stateful;
         private Dictionary<string, object> _results;
         public ProxyRunner(ConfigMap configMap, PodDisruptionBudget pdb, Service service, StatefulSet statefulSet)
         {

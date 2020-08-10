@@ -3,11 +3,11 @@ using SharpPulsar.Deployment.Kubernetes.Models.Certificate;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes.Certificate
-{
+{//https://cert-manager.io/docs/installation/kubernetes/
     internal class WildcardCertificate
     {
-        private V1alpha2Certificate _cert;
-        private IKubernetes _client;
+        private readonly V1alpha2Certificate _cert;
+        private readonly IKubernetes _client;
 
         public WildcardCertificate(IKubernetes client)
         {
@@ -20,7 +20,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
                 },
                 Spec = new V1alpha2CertificateSpec
                 {
-                    SecretName = "pulsar-wildcard",
+                    SecretName = $"{Values.ReleaseName}-azure-dns-secret",
                     CommonName = $"*.{Values.Ingress.DomainSuffix}",
                     DnsNames = new[] {Values.Ingress.DomainSuffix},
                     IssuerRef = new IssuerRef

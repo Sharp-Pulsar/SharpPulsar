@@ -5,7 +5,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class ServiceAccountBuilder
     {
-        private V1ServiceAccount _serviceAccount;
+        private readonly V1ServiceAccount _serviceAccount;
         public ServiceAccountBuilder()
         {
             _serviceAccount = new V1ServiceAccount

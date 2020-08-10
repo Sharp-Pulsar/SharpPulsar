@@ -5,14 +5,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
     internal class BrokerRunner
     {
-        private BrokerClusterRole _brokerClusterRole;
-        private BrokerClusterRoleBinding _brokerClusterRoleBinding;
-        private BrokerConfigMap _brokerConfigMap;
-        private BrokerPodDisruptionBudget _brokerPodDisruptionBudget;
-        private BrokerService _brokerService;
-        private BrokerServiceAccount _brokerServiceAccount;
-        private BrokerStatefulset _brokerStatefulset;
-        private FunctionWorkerConfigMap _function;
+        private readonly BrokerClusterRole _brokerClusterRole;
+        private readonly BrokerClusterRoleBinding _brokerClusterRoleBinding;
+        private readonly BrokerConfigMap _brokerConfigMap;
+        private readonly BrokerPodDisruptionBudget _brokerPodDisruptionBudget;
+        private readonly BrokerService _brokerService;
+        private readonly BrokerServiceAccount _brokerServiceAccount;
+        private readonly BrokerStatefulset _brokerStatefulset;
+        private readonly FunctionWorkerConfigMap _function;
         private Dictionary<string, object> _results;
         public BrokerRunner(ConfigMap configMap, PodDisruptionBudget pdb, Service service, ServiceAccount serviceAccount, StatefulSet statefulSet, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding)
         {

@@ -7,7 +7,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
 {
     internal class SecretBuilder
     {
-        private V1Secret _secret;
+        private readonly V1Secret _secret;
         public SecretBuilder()
         {
             _secret = new V1Secret

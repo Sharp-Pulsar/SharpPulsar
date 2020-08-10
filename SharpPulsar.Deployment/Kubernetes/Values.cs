@@ -1,5 +1,6 @@
 ﻿using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Helpers;
+using System;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes
@@ -686,14 +687,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         public bool Prometheus { get; set; } = false;
         // monitoring - grafana
         public bool Grafana { get; set; } = false;
-        // monitoring - node_exporter
-        public bool NodeExporter { get; set; } = false;
         // alerting - alert-manager
         public bool AlertManager { get; set; } = false;
-        // monitoring - loki
-        public bool Loki { get; set; } = false;
-        // monitoring - datadog
-        public bool Datadog { get; set; } = false;
     }
     public  sealed class Images 
     {
@@ -733,8 +728,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         };
         public Image Ingress { get; set; } = new Image
         {
-            Repository = "quay.io/kubernetes-ingress-controller/nginx-ingress-controller",
-            Tag = "0.26.2"
+            Repository = "us.gcr.io/k8s-artifacts-prod/ingress-nginx/controller",
+            Tag = "v0.34.1"
         };
         public sealed class Image
         {
@@ -752,6 +747,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         public int Replicas { get; set; } = 1;
         public int GracePeriodSeconds { get; set; } = 30;
 
+        public bool DeployNginxController { get; set; } = true;
+
         public IngressSetting Proxy { get; set; } = new IngressSetting
         {
             Enabled = Values.Proxy.Enabled
@@ -765,6 +762,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Enabled = !Values.Proxy.Enabled && Values.Broker.Enabled
         };
         public string DomainSuffix { get; set; }
+        public List<HttpRule> HttpRules { get; set; } = new List<HttpRule>();
         public sealed class IngressSetting
         {
             public bool Enabled { get; set; }
@@ -773,10 +771,33 @@ namespace SharpPulsar.Deployment.Kubernetes
             public IDictionary<string,string> Annotations { get; set; }
             public IDictionary<string,string> ExtraSpec { get; set; }
         }
-    
+        public sealed class HttpRule
+        {
+            public bool Tls { get; set; }
+            public string Host {
+                get
+                {
+                    return Host;
+                } 
+                set
+                {
+                    if (!string.IsNullOrWhiteSpace(Values.Ingress.DomainSuffix) && value.EndsWith($".{Values.Ingress.DomainSuffix}"))
+                        Host = value.Trim();
+                    else
+                        throw new ArgumentException($"{Host} does not end with .{Values.Ingress.DomainSuffix} or 'DomainSuffix' is empty");
+
+
+                }
+            } 
+            public int Port { get; set; }
+            public string Path { get; set; }
+            public string ServiceName { get; set; }
+        }
     }
     public sealed class Tls
     {
+        //echo <service principal password> | openssl base64
+        public string SecretPassword { get; set; }
         public bool Enabled { get; set; } = false;
         //90 days
         public string Duration { get; set; } = "2160h";

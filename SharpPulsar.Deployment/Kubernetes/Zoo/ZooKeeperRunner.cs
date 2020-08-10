@@ -6,13 +6,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
 {
     internal class ZooKeeperRunner
     {
-        private ClusterInitializer _clusterInit;
-        private ZooKeeperConfigMap _config;
-        private ZooKeeperPodDisruptionBudget _pdb;
-        private ZooKeeperService _service;
-        private ZooKeeperStatefulSet _statefulSet;
-        private ZooKeeperStorageClass _storage;
-        private ZooKeeperStorageClass _datalog;
+        private readonly ClusterInitializer _clusterInit;
+        private readonly ZooKeeperConfigMap _config;
+        private readonly ZooKeeperPodDisruptionBudget _pdb;
+        private readonly ZooKeeperService _service;
+        private readonly ZooKeeperStatefulSet _statefulSet;
+        private readonly ZooKeeperStorageClass _storage;
+        private readonly ZooKeeperStorageClass _datalog;
         private Dictionary<string, object> _results;
         public ZooKeeperRunner(Job job, ConfigMap configMap, PodDisruptionBudget pdb, Service service, StatefulSet statefulSet, StorageClass storageClass)
         {

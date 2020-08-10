@@ -4,11 +4,11 @@ using System;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes.Certificate
-{
+{//https://cert-manager.io/docs/installation/kubernetes/
     internal class AzureClusterIssuer
     {
-        private IKubernetes _client;
-        private V1alpha2ClusterIssuer _issuer;
+        private readonly IKubernetes _client;
+        private readonly V1alpha2ClusterIssuer _issuer;
         public AzureClusterIssuer(IKubernetes client)
         {
             _client = client;

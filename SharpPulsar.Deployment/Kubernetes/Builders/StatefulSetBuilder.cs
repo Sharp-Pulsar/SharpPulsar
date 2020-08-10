@@ -47,8 +47,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         }
         internal class StatefulSetSpecBuilder
         {
-            private  V1StatefulSetSpec _spec;
-            private PodTemplateSpecBuilder _tempBulder;
+            private readonly V1StatefulSetSpec _spec;
+            private readonly PodTemplateSpecBuilder _tempBulder;
             public StatefulSetSpecBuilder()
             {
                 _tempBulder = new PodTemplateSpecBuilder();

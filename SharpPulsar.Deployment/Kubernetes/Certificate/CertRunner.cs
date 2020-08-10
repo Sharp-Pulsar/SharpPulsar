@@ -1,71 +1,44 @@
 ﻿using k8s;
+using System;
+using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Certificate
 {
     internal class CertRunner
     {
-        private IKubernetes _client;
-
-        public CertRunner(IKubernetes client)
+        private readonly AzureClusterIssuer _azureClusterIssuer;
+        private readonly AzureDnsConfigSecret _secret;
+        private readonly WildcardCertificate _wild;
+        private Dictionary<string, object> _results;
+        public CertRunner(IKubernetes client, Secret secret)
         {
-            _client = client;
+            _results = new Dictionary<string, object>();
+            _azureClusterIssuer = new AzureClusterIssuer(client);
+            _secret = new AzureDnsConfigSecret(secret);
+            _wild = new WildcardCertificate(client);
         }
 
-        public void CreateClusterIssuer()
+        public bool Run(out Dictionary<string, object> results, string dryRun = default)
         {
+
             if (Values.Tls.Enabled)
             {
-                if (Values.Tls.Proxy.Enabled)
-                {
+                _results = new Dictionary<string, object>();
 
-                }
-                if (Values.Tls.Broker.Enabled)
-                {
+                var azc =_azureClusterIssuer.Run();
+                _results.Add("AzureClusterIssuer", azc);
 
-                }
-                if (Values.Tls.Presto.Enabled)
-                {
+                if (string.IsNullOrWhiteSpace(Values.Tls.SecretPassword))
+                    throw new ArgumentException("SecretPassword is required");
 
-                }
+                var secret = _secret.Run(Values.Tls.SecretPassword, dryRun);
+                _results.Add("Secret", secret);
+
+                var cert = _wild.Run();
+                _results.Add("WildcardCertificate", cert);
             }
-        }
-        public void CreateIngress()
-        {
-            var ingress = new ClusterIngress(_client);
-            if (Values.Ingress.Enabled)
-            {
-                if (Values.Ingress.Proxy.Enabled)
-                {
-                    if(Values.Tls.Proxy.Enabled)
-                    {
-                        ingress.AddTls(new[] { $"pulsar-data.{Values.Ingress.DomainSuffix}", $"pulsar-admin.{Values.Ingress.DomainSuffix}" }, Values.Tls.Proxy.CertName);
-                    }
-                    ingress.AddRule($"pulsar-data.{Values.Ingress.DomainSuffix}", "/", Values.Proxy.ServiceName, 6650);
-                    ingress.AddRule($"pulsar-admin.{Values.Ingress.DomainSuffix}", "/", Values.Proxy.ServiceName, 8080);
-                }
-                if (Values.Ingress.Broker.Enabled)
-                {
-                    if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
-                    {
-
-                    }
-                    else
-                    {
-
-                    }
-                }
-                if (Values.Ingress.Presto.Enabled)
-                {
-                    if (Values.Tls.Enabled && Values.Tls.Presto.Enabled)
-                    {
-
-                    }
-                    else
-                    {
-
-                    }
-                }
-            }
+            results = _results;
+            return true;
         }
     }
 }
