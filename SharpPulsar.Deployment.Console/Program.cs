@@ -16,7 +16,7 @@ namespace SharpPulsar.Deployment.Console
             var values = new Values();
             System.Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true}));
             var deploy = new DeploymentExecutor();
-            foreach(var dp in deploy.Run("ALL"))
+            foreach(var dp in deploy.Run(/*"All"*/))
             {
                 try
                 {

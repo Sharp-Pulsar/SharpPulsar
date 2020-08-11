@@ -20,15 +20,37 @@ namespace SharpPulsar.Deployment.Kubernetes
         }
         public V1Job Run(JobBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new JobBuilder();
-            return _client.CreateNamespacedJob(build.Build(), ns, dryRun);
+            try
+            {
+                var build = builder;
+                _builder = new JobBuilder();
+                return _client.CreateNamespacedJob(build.Build(), ns, dryRun);
+            }
+            catch(Microsoft.Rest.ValidationException vEx)
+            {
+                throw new System.Exception(vEx.Details.ToString());
+            }
+            catch (Microsoft.Rest.HttpOperationException ex)
+            {
+                throw new System.Exception(ex.Response.Content);
+            }
         }
         public async Task<V1Job> RunAsync(JobBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new JobBuilder();
-            return await _client.CreateNamespacedJobAsync(build.Build(), ns, dryRun);
+            try
+            {
+                var build = builder;
+                _builder = new JobBuilder();
+                return await _client.CreateNamespacedJobAsync(build.Build(), ns, dryRun);
+            }
+            catch (Microsoft.Rest.ValidationException vEx)
+            {
+                throw new System.Exception(vEx.Details.ToString());
+            }
+            catch (Microsoft.Rest.HttpOperationException ex)
+            {
+                throw new System.Exception(ex.Response.Content);
+            }
         }
     }
 }

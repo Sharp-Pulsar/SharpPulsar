@@ -20,15 +20,29 @@ namespace SharpPulsar.Deployment.Kubernetes
         }
         public V1ConfigMap Run(ConfigMapBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new ConfigMapBuilder();
-            return _client.CreateNamespacedConfigMap(build.Build(), ns, dryRun);
+            try
+            {
+                var build = builder;
+                _builder = new ConfigMapBuilder();
+                return _client.CreateNamespacedConfigMap(build.Build(), ns, dryRun);
+            }
+            catch(Microsoft.Rest.HttpOperationException ex)
+            {
+                throw new System.Exception(ex.Response.Content);
+            }
         }
         public async Task<V1ConfigMap> RunAsync(ConfigMapBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new ConfigMapBuilder();
-            return await _client.CreateNamespacedConfigMapAsync(build.Build(), ns, dryRun);
+            try
+            {
+                var build = builder;
+                _builder = new ConfigMapBuilder();
+                return await _client.CreateNamespacedConfigMapAsync(build.Build(), ns, dryRun);
+            }
+            catch (Microsoft.Rest.HttpOperationException ex)
+            {
+                throw new System.Exception(ex.Response.Content);
+            }
         }
     }
 }

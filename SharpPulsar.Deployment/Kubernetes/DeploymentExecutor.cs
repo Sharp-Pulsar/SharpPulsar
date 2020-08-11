@@ -25,6 +25,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             var config = conf ?? KubernetesClientConfiguration.BuildDefaultConfig();
             _client = new k8s.Kubernetes(config);
+            
             var configMap = new ConfigMap(_client);
             var clusterRole = new ClusterRole(_client);
             var clusterRoleBinding = new ClusterRoleBinding(_client);
@@ -50,14 +51,25 @@ namespace SharpPulsar.Deployment.Kubernetes
             var output = new Dictionary<string, object>();
             if (Values.NamespaceCreate)
             {
-                var ns =_client.CreateNamespace(new k8s.Models.V1Namespace
+                try
                 {
-                    Metadata = new k8s.Models.V1ObjectMeta
+                    var nsp = new k8s.Models.V1Namespace
                     {
-                        Name = Values.Namespace
-                    }
-                }, dryRun);
-                output["Namespace"] = ns;
+                        ApiVersion = "v1",
+                        Kind = "Namespace",
+                        Metadata = new k8s.Models.V1ObjectMeta
+                        {
+                            Name = Values.Namespace
+                        }
+                    };
+                    var ns = _client.CreateNamespace(nsp, dryRun);
+                    output["Namespace"] = ns;
+                }
+                catch(Microsoft.Rest.HttpOperationException ex)
+                {
+                    throw new System.Exception(ex.Response.Content);
+
+                }
                 yield return output;
                 output.Clear();
             }
