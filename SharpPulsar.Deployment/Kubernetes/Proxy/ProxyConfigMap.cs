@@ -14,15 +14,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.Proxy.ComponentName}", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.Proxy.Name}", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.Proxy.ComponentName },
+                                {"component", Values.Settings.Proxy.Name },
                             })
-                .Data(Values.Proxy.ConfigData);
+                .Data(Values.ConfigMaps.Proxy);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }

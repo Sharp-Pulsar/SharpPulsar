@@ -13,7 +13,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
         public V1ClusterRole Run(string dryRun = default)
         {
             _config.Builder()
-                .Name($"{Values.ReleaseName}-{Values.BookKeeper.ComponentName }-clusterrole")
+                .Name($"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name }-clusterrole")
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },

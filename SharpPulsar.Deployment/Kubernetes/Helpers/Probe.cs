@@ -4,7 +4,7 @@ using static SharpPulsar.Deployment.Kubernetes.Probes;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class Probe
+    public class Probe
     {
         public static V1Probe HttpActionLiviness(ComponentProbe probes, string path, int port)
         {

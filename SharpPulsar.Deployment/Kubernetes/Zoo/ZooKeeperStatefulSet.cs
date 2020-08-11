@@ -14,26 +14,26 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         public V1StatefulSet Run(string dryRun = default)
         {
             _set.Builder()
-                .Name($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}")
+                .Name($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}")
                 .Namespace(Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.ZooKeeper.ComponentName }
+                                {"component",Values.Settings.ZooKeeper.Name }
                             })
                 .SpecBuilder()
-                .ServiceName(Values.ZooKeeper.ServiceName)
-                .Replication(Values.ZooKeeper.Replicas)
+                .ServiceName(Values.Settings.ZooKeeper.Service)
+                .Replication(Values.Settings.ZooKeeper.Replicas)
                 .Selector(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.ZooKeeper.ComponentName }
+                                {"component",Values.Settings.ZooKeeper.Name }
                             })
-                .UpdateStrategy(Values.ZooKeeper.UpdateStrategy)
-                .PodManagementPolicy(Values.ZooKeeper.PodManagementPolicy)
+                .UpdateStrategy(Values.Settings.ZooKeeper.UpdateStrategy)
+                .PodManagementPolicy(Values.Settings.ZooKeeper.PodManagementPolicy)
                 .VolumeClaimTemplates(Values.ZooKeeper.PVC)
                 .TemplateBuilder()
                 .Metadata(new Dictionary<string, string>
@@ -41,7 +41,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.ZooKeeper.ComponentName }
+                                {"component",Values.Settings.ZooKeeper.Name }
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "true" },
@@ -51,8 +51,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                 .SpecBuilder()
                 .Tolerations(Values.ZooKeeper.Tolerations)
                 .NodeSelector(Values.ZooKeeper.NodeSelector)
-                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.ZooKeeper))
-                .TerminationGracePeriodSeconds(Values.ZooKeeper.GracePeriodSeconds)
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Settings.ZooKeeper))
+                .TerminationGracePeriodSeconds(Values.Settings.ZooKeeper.GracePeriodSeconds)
                 .InitContainers(Values.ZooKeeper.ExtraInitContainers)
                 .Containers(Values.ZooKeeper.Containers)
                 .Volumes(Values.ZooKeeper.Volumes);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class Volumes
+    public class Volumes
     {
         public static List<V1Volume> Recovery()
         {
@@ -23,10 +23,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1Volume> ZooKeeper()
         {
             var vols = new List<V1Volume>();
-            if(!Values.Persistence || !Values.ZooKeeper.Persistence)
-                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data", EmptyDir = new V1EmptyDirVolumeSource() });
-            else if((bool)Values.ZooKeeper.ExtraConfig.Holder["UseSeparateDiskForTxlog"])
-                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-dataLog", EmptyDir = new V1EmptyDirVolumeSource() });
+            if(!Values.Persistence || !Values.Settings.ZooKeeper.Persistence)
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data", EmptyDir = new V1EmptyDirVolumeSource() });
+            else if((bool)Values.ExtraConfigs.ZooKeeper.Holder["UseSeparateDiskForTxlog"])
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-dataLog", EmptyDir = new V1EmptyDirVolumeSource() });
             
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
             {
@@ -39,10 +39,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1Volume> Bookie()
         {
             var vols = new List<V1Volume>();
-            if(!Values.Persistence || !Values.BookKeeper.Persistence)
+            if(!Values.Persistence || !Values.Settings.BookKeeper.Persistence)
             {
-                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-journal", EmptyDir = new V1EmptyDirVolumeSource() });
-                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-ledger", EmptyDir = new V1EmptyDirVolumeSource() });
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-journal", EmptyDir = new V1EmptyDirVolumeSource() });
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-ledger", EmptyDir = new V1EmptyDirVolumeSource() });
             }                
            
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
@@ -79,10 +79,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if(Values.Tls.ZooKeeper.Enabled /*|| .Values.components.kop*/)
                 vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 } });
             
-            if(Values.Broker.EnableFunctionCustomizerRuntime)
-                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Broker.ComponentName}-runtime", HostPath = new V1HostPathVolumeSource { Path = "/proc" } });
+            if(Values.Settings.Broker.EnableFunctionCustomizerRuntime)
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.Broker.Name}-runtime", HostPath = new V1HostPathVolumeSource { Path = "/proc" } });
             
-            if(Values.Broker.Offload.Gcs.Enabled)
+            if(Values.Settings.Broker.Offload.Gcs.Enabled)
                 vols.Add(new V1Volume { Name = "gcs-offloader-service-acccount", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-gcs-offloader-service-account", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "gcs.json", Path = "gcs.json" } } } });
 
             return vols;
@@ -128,7 +128,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
             }
-            vols.Add(new V1Volume { Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.PrestoCoordinator.ComponentName}" } });
+            vols.Add(new V1Volume { Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.Settings.PrestoCoord.Name}" } });
             return vols;
         }
         public static List<V1Volume> PrestoWorker()
@@ -143,7 +143,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
             }
-            vols.Add(new V1Volume { Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.PrestoWorker.ComponentName}" } });
+            vols.Add(new V1Volume { Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.Settings.PrestoWorker.Name}" } });
             return vols;
         }
         public static List<V1Volume> Toolset()

@@ -14,13 +14,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         public V1Service Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata(Values.ZooKeeper.ServiceName, Values.Namespace)
+                .Metadata(Values.Settings.ZooKeeper.Service, Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.ZooKeeper.ComponentName }
+                                {"component", Values.Settings.ZooKeeper.Name }
                             })
                 .Annotations(new Dictionary<string, string>
                             {
@@ -38,7 +38,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.ZooKeeper.ComponentName }
+                                {"component",Values.Settings.ZooKeeper.Name }
                             });
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }

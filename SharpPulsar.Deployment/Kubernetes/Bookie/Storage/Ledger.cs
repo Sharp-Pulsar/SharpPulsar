@@ -13,15 +13,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.Storage
         public V1StorageClass Run(string dryRun = default)
         {
             _str.Builder().
-                Metadata($"{Values.BookKeeper.Storage.ClassName}-ledger", Values.Namespace, new Dictionary<string, string>
+                Metadata($"{Values.Settings.BookKeeper.Storage.ClassName}-ledger", Values.Namespace, new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.BookKeeper.ComponentName }
+                                {"component", Values.Settings.BookKeeper.Name }
                             })
-                .Parameters(Values.BookKeeper.Storage.Parameters)
-                .Provisioner(Values.BookKeeper.Storage.Provisioner);
+                .Parameters(Values.Settings.BookKeeper.Storage.Parameters)
+                .Provisioner(Values.Settings.BookKeeper.Storage.Provisioner);
             return _str.Run(_str.Builder(), dryRun);
         }
     }

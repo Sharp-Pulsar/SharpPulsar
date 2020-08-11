@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class VolumeClaim
+    public class VolumeClaim
     {
         public static List<V1PersistentVolumeClaim> ZooKeeper()
         {
-            if(Values.Persistence && Values.ZooKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.ZooKeeper.Storage.ClassName))
+            if(Values.Persistence && Values.Settings.ZooKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.Settings.ZooKeeper.Storage.ClassName))
             {
                 var temp = new V1PersistentVolumeClaim
                 {
                     Metadata = new V1ObjectMeta
                     {
-                        Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data"
+                        Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data"
                     },
                     Spec = new V1PersistentVolumeClaimSpec
                     {
@@ -22,10 +22,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         {
                             Requests = new Dictionary<string, ResourceQuantity>
                             {
-                                {"storage", new ResourceQuantity(Values.ZooKeeper.Storage.Size) }
+                                {"storage", new ResourceQuantity(Values.Settings.ZooKeeper.Storage.Size) }
                             }
                         },
-                        StorageClassName = Values.ZooKeeper.Storage.ClassName
+                        StorageClassName = Values.Settings.ZooKeeper.Storage.ClassName
                     }
                 };
                 return new List<V1PersistentVolumeClaim>() { temp };
@@ -34,34 +34,34 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         }
         public static List<V1PersistentVolumeClaim> BookKeeper()
         {
-            if(Values.Persistence && Values.BookKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.BookKeeper.Storage.ClassName))
+            if(Values.Persistence && Values.Settings.BookKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.Settings.BookKeeper.Storage.ClassName))
             {
                 return new List<V1PersistentVolumeClaim>() 
                 {
                     new V1PersistentVolumeClaim
                 {
-                    Metadata = new V1ObjectMeta{Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-journal"},
+                    Metadata = new V1ObjectMeta{Name = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-journal"},
                     Spec = new V1PersistentVolumeClaimSpec
                     {
                         AccessModes = new []{"ReadWriteOnce"},
                         Resources = new V1ResourceRequirements
                         {
-                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.BookKeeper.Storage.JournalSize) } }
+                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.Settings.BookKeeper.Storage.JournalSize) } }
                         },
-                        StorageClassName = $"{Values.BookKeeper.Storage.ClassName}-journal"
+                        StorageClassName = $"{Values.Settings.BookKeeper.Storage.ClassName}-journal"
                     }
                 },
                 new V1PersistentVolumeClaim
                 {
-                    Metadata = new V1ObjectMeta{Name =  $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-ledger"},
+                    Metadata = new V1ObjectMeta{Name =  $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-ledger"},
                     Spec = new V1PersistentVolumeClaimSpec
                     {
                         AccessModes = new []{"ReadWriteOnce"},
                         Resources = new V1ResourceRequirements
                         {
-                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.BookKeeper.Storage.LedgerSize) } }
+                            Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.Settings.BookKeeper.Storage.LedgerSize) } }
                         },
-                        StorageClassName = $"{Values.BookKeeper.Storage.ClassName}-ledger"
+                        StorageClassName = $"{Values.Settings.BookKeeper.Storage.ClassName}-ledger"
                     }
                 }
                 };

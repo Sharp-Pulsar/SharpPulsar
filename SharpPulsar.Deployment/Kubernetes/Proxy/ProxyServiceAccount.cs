@@ -14,13 +14,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
         public V1ServiceAccount Run(string dryRun = default)
         {
             _serviceAccount.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.Proxy.ComponentName}-acct", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.Proxy.Name}-acct", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.Proxy.ComponentName }
+                                {"component",Values.Settings.Proxy.Name }
                             });
             return _serviceAccount.Run(_serviceAccount.Builder(), Values.Namespace, dryRun);
         }

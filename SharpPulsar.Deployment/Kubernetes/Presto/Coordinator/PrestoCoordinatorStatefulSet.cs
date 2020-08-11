@@ -14,33 +14,33 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Coordinator
         public V1StatefulSet Run(string dryRun = default)
         {
             _set.Builder()
-                .Name($"{Values.ReleaseName}-{Values.PrestoCoordinator.ComponentName}")
+                .Name($"{Values.ReleaseName}-{Values.Settings.PrestoCoord.Name}")
                 .Namespace(Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoCoordinator.ComponentName }
+                                {"component",Values.Settings.PrestoCoord.Name }
                             })
                 .SpecBuilder()
-                .ServiceName(Values.PrestoCoordinator.ServiceName)
-                .Replication(Values.PrestoCoordinator.Replicas)
+                .ServiceName(Values.Settings.PrestoCoord.Service)
+                .Replication(Values.Settings.PrestoCoord.Replicas)
                 .Selector(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoCoordinator.ComponentName }
+                                {"component",Values.Settings.PrestoCoord.Name }
                             })
-                .UpdateStrategy(Values.PrestoCoordinator.UpdateStrategy)
-                .PodManagementPolicy(Values.PrestoCoordinator.PodManagementPolicy)
+                .UpdateStrategy(Values.Settings.PrestoCoord.UpdateStrategy)
+                .PodManagementPolicy(Values.Settings.PrestoCoord.PodManagementPolicy)
                 .TemplateBuilder()
                 .Metadata(new Dictionary<string, string>
                 {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoCoordinator.ComponentName }
+                                {"component",Values.Settings.PrestoCoord.Name }
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "false" },
@@ -50,8 +50,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Coordinator
                 .SpecBuilder()
                 .Tolerations(Values.PrestoCoordinator.Tolerations)
                 .NodeSelector(Values.PrestoCoordinator.NodeSelector)
-                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.PrestoCoordinator))
-                .TerminationGracePeriodSeconds(Values.PrestoCoordinator.GracePeriodSeconds)
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Settings.PrestoCoord))
+                .TerminationGracePeriodSeconds(Values.Settings.PrestoCoord.GracePeriodSeconds)
                 .InitContainers(Values.PrestoCoordinator.ExtraInitContainers)
                 .Containers(Values.PrestoCoordinator.Containers)
                 .Volumes(Values.PrestoCoordinator.Volumes);

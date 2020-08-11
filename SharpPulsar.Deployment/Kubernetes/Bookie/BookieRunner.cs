@@ -71,7 +71,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         }
         public bool Run(out Dictionary<string, object> results, string dryRun = default)
         {
-            if (Values.AutoRecovery.Enabled)
+            if (Values.Settings.Autorecovery.Enabled)
             {
                 var autoConf = _autoRecoveryConfigMap.Run(dryRun);
                 _results.Add("RecoveryConfigMap", autoConf);
@@ -82,7 +82,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 var reState = _autoRecoveryStatefulSet.Run(dryRun);
                 _results.Add("RecoveryStatefulSet", reState);
             }
-            if (Values.BookKeeper.Enabled)
+            if (Values.Settings.BookKeeper.Enabled)
             {
                 if (Values.Initialize)
                 {
@@ -99,7 +99,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 var conf = _bookieConfigMap.Run(dryRun);
                 _results.Add("ConfigMap", conf);
 
-                if (Values.BookKeeper.UsePolicyPodDisruptionBudget)
+                if (Values.Settings.BookKeeper.UsePolicyPodDisruptionBudget)
                 {
                     var pdb = _bookiePodDisruptionBudget.Run(dryRun);
                     _results.Add("Pdb", pdb);
@@ -113,7 +113,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 var state = _bookieStatefulSet.Run(dryRun);
                 _results.Add("Statefulset", state);
 
-                if (Values.Persistence && Values.BookKeeper.Persistence && !Values.LocalStorage)
+                if (Values.Persistence && Values.Settings.BookKeeper.Persistence && !Values.LocalStorage)
                 {
                     var journal = _journal.Run(dryRun);
                     _results.Add("JournalStorage", journal);

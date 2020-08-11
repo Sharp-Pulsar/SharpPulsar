@@ -15,7 +15,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         {
             var zk = File.ReadAllText(@"\Kubernetes\Zoo\gen-zk-conf.txt");
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
@@ -31,15 +31,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}", Values.Namespace)                
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}", Values.Namespace)                
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.ZooKeeper.ComponentName },
+                                {"component", Values.Settings.ZooKeeper.Name },
                             })
-                .Data(Values.ZooKeeper.ConfigData);
+                .Data(Values.ConfigMaps.ZooKeeper);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }

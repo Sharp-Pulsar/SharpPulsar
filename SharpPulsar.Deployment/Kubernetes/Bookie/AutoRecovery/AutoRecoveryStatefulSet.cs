@@ -14,26 +14,26 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
         public V1StatefulSet Run(string dryRun = default)
         {
             _set.Builder()
-                .Name($"{Values.ReleaseName}-{Values.AutoRecovery.ComponentName}")
+                .Name($"{Values.ReleaseName}-{Values.Settings.Autorecovery.Name}")
                 .Namespace(Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.AutoRecovery.ComponentName }
+                                {"component",Values.Settings.Autorecovery.Name }
                             })
                 .SpecBuilder()
-                .ServiceName(Values.AutoRecovery.ServiceName)
-                .Replication(Values.AutoRecovery.Replicas)
+                .ServiceName(Values.Settings.Autorecovery.Service)
+                .Replication(Values.Settings.Autorecovery.Replicas)
                 .Selector(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.AutoRecovery.ComponentName }
+                                {"component", Values.Settings.Autorecovery.Name }
                             })
-                .UpdateStrategy(Values.AutoRecovery.UpdateStrategy)
-                .PodManagementPolicy(Values.AutoRecovery.PodManagementPolicy)
+                .UpdateStrategy(Values.Settings.Autorecovery.UpdateStrategy)
+                .PodManagementPolicy(Values.Settings.Autorecovery.PodManagementPolicy)
                 .VolumeClaimTemplates(Values.AutoRecovery.PVC)
                 .TemplateBuilder()
                 .Metadata(new Dictionary<string, string>
@@ -41,7 +41,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.AutoRecovery.ComponentName }
+                                {"component",Values.Settings.Autorecovery.Name }
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "true" },
@@ -67,7 +67,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
                         TopologyKey = "kubernetes.io/hostname"
                     }
                 })
-                .TerminationGracePeriodSeconds(Values.AutoRecovery.GracePeriodSeconds)
+                .TerminationGracePeriodSeconds(Values.Settings.Autorecovery.GracePeriodSeconds)
                 .InitContainers(Values.AutoRecovery.ExtraInitContainers)
                 .Containers(Values.AutoRecovery.Containers)
                 .Volumes(Values.AutoRecovery.Volumes);

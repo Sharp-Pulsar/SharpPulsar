@@ -15,7 +15,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
         public V1Service Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata(Values.PrestoCoordinator.ServiceName, Values.Namespace)
+                .Metadata(Values.Settings.PrestoCoord.Service, Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
@@ -31,7 +31,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoCoordinator.ComponentName }
+                                {"component",Values.Settings.PrestoCoord.Name }
                             });
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }

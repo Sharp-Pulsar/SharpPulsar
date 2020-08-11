@@ -14,13 +14,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         public V1Service Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata(Values.BookKeeper.ServiceName, Values.Namespace)
+                .Metadata(Values.Settings.BookKeeper.Service, Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.BookKeeper.ComponentName }
+                                {"component", Values.Settings.BookKeeper.Name }
                             })
                 .Annotations(new Dictionary<string, string>
                             {
@@ -36,7 +36,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.BookKeeper.ComponentName }
+                                {"component",Values.Settings.BookKeeper.Name }
                             })
                 .PublishNotReadyAddresses(true);
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);

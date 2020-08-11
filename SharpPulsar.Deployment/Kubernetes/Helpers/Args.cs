@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class Args
+    public class Args
     {
         public static IList<string> AutoRecoveryIntContainer()
         {
@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             };
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.AutoRecovery.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.Settings.Autorecovery.Host} true;");
 
             args.Add("until bin/bookkeeper shell whatisinstanceid; do"
                             + "  sleep 3;"
@@ -22,12 +22,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             var args = new List<string>();
             if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Broker.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
 
             if (!string.IsNullOrWhiteSpace(Values.ConfigurationStore))
                 args.Add($@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {Values.ConfigurationStore} get {Values.ConfigurationStoreMetadataPrefix}/admin/clusters/""{ Values.Namespace }""; do");
             else
-                args.Add($@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {Values.ZooKeeper.ZooConnect} get {Values.MetadataPrefix}/admin/clusters/{Values.Namespace}; do");
+                args.Add($@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {Values.Settings.ZooKeeper.ZooConnect} get {Values.MetadataPrefix}/admin/clusters/{Values.Namespace}; do");
             
             args.Add($@"echo ""pulsar cluster { Values.ReleaseName } isn't initialized yet ... check in 3 seconds ..."" && sleep 3;
                         done; ");
@@ -37,7 +37,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             var args = new List<string>();
             if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Broker.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
 
             args.Add("bin/apply-config-from-env.py conf/bookkeeper.conf;");
             args.Add($@"until bin/bookkeeper shell whatisinstanceid; do
@@ -45,11 +45,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                          sleep 3;
                        done; ");
             args.Add(@"echo ""bookkeeper cluster is already initialized"";");
-            args.Add($@"bookieServiceNumber=""$(nslookup - timeout = 10 { Values.ReleaseName }-{ Values.BookKeeper.ComponentName } | grep Name | wc - l)"";");
-            args.Add($@"until ["+"${bookieServiceNumber}"+$@" -ge {Values.Broker.ConfigData["managedLedgerDefaultEnsembleSize"]} ]; do
+            args.Add($@"bookieServiceNumber=""$(nslookup - timeout = 10 { Values.ReleaseName }-{ Values.Settings.BookKeeper.Name } | grep Name | wc - l)"";");
+            args.Add($@"until ["+"${bookieServiceNumber}"+$@" -ge {Values.ConfigMaps.Broker["managedLedgerDefaultEnsembleSize"]} ]; do
                       echo ""bookkeeper cluster { Values.ReleaseName }  isn't ready yet ... check in 10 seconds ..."";
                       sleep 10;
-                    bookieServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.BookKeeper.ComponentName} | grep Name | wc -l)"";
+                    bookieServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.BookKeeper.Name} | grep Name | wc -l)"";
                     done; ");
 
             args.Add(@"echo ""bookkeeper cluster is ready"";");
@@ -64,14 +64,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             args.Add(@"echo ""OK"" > status;");
 
             if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Broker.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
             
-            args.Add($"bin/pulsar zookeeper-shell -server {Values.ZooKeeper.ZooConnect} get {Values.Broker.ZNode};");
+            args.Add($"bin/pulsar zookeeper-shell -server {Values.Settings.ZooKeeper.ZooConnect} get {Values.Settings.Broker.ZNode};");
             
             args.Add($@"while [ $? -eq 0 ]; do
-                            echo ""broker { Values.Broker.HostName } znode still exists... check in 10 seconds..."";
+                            echo ""broker { Values.Settings.Broker.Host } znode still exists... check in 10 seconds..."";
                         sleep 10;
-                        bin/pulsar zookeeper - shell - server { Values.ZooKeeper.ZooConnect }  get { Values.Broker.ZNode };
+                        bin/pulsar zookeeper - shell - server { Values.Settings.ZooKeeper.ZooConnect }  get { Values.Settings.Broker.ZNode };
                         done; ");
 
             args.Add(@"bin/pulsar broker;");
@@ -84,7 +84,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             };
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.AutoRecovery.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.Settings.Autorecovery.Host} true;");
 
             args.Add("bin/bookkeeper autorecovery");
             return args;
@@ -100,7 +100,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             };
             if (!string.IsNullOrWhiteSpace(Values.MetadataPrefix))
             {
-                arg += $@"bin/bookkeeper org.apache.zookeeper.ZooKeeperMain - server { Values.ReleaseName }-{ Values.ZooKeeper.ComponentName } create { Values.MetadataPrefix } 'created for pulsar cluster ""{Values.ReleaseName}""' || yes && ";
+                arg += $@"bin/bookkeeper org.apache.zookeeper.ZooKeeperMain - server { Values.ReleaseName }-{ Values.Settings.ZooKeeper.Name } create { Values.MetadataPrefix } 'created for pulsar cluster ""{Values.ReleaseName}""' || yes && ";
             }
             arg += @"bin/bookkeeper shell initnewcluster;
                     fi";
@@ -116,7 +116,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         echo ""user provided zookeepers {Values.UserProvidedZookeepers} are unreachable... check in 3 seconds ..."" && sleep 3;
                         done; ");
             else
-            args.Add($@"until nslookup {Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-{Values.ZooKeeper.Replicas - 1}.{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}.{Values.Namespace}; do
+            args.Add($@"until nslookup {Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-{Values.Settings.ZooKeeper.Replicas - 1}.{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}.{Values.Namespace}; do
               sleep 3;
             done;");
             return args;
@@ -126,11 +126,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             var args = new List<string> 
             {
                 "set -e;",
-                $@"brokerServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Broker.ComponentName} | grep Name | wc - l)"";",
+                $@"brokerServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.Broker.Name} | grep Name | wc - l)"";",
                 $@"until [ "+"${brokerServiceNumber} -ge 1 ]; do"
                     +$@"echo ""pulsar cluster {Values.ReleaseName} isn't initialized yet ... check in 10 seconds ..."";
                         sleep 10;
-                     brokerServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Broker.ComponentName} | grep Name | wc -l)"";
+                     brokerServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.Broker.Name} | grep Name | wc -l)"";
                     done;"
             };
             return args;
@@ -142,9 +142,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 "bin/apply-config-from-env.py conf/zookeeper.conf"
             };
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                args.Add($"/pulsar/keytool/keytool.sh zookeeper {Values.ZooKeeper.HostName} false;");
+                args.Add($"/pulsar/keytool/keytool.sh zookeeper {Values.Settings.ZooKeeper.Host} false;");
 
-            if(Values.ZooKeeper.ExtraConfig.Holder.TryGetValue("ZkServer", out var zk))
+            if(Values.ExtraConfigs.ZooKeeper.Holder.TryGetValue("ZkServer", out var zk))
             {
                 var zks = (List<string>)zk;
                 foreach(var z in zks)
@@ -152,7 +152,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     args.Add($@"echo ""{z}"" >> conf/zookeeper.conf;");
                 }
             }
-            args.Add($"bin/gen-zk-conf.sh conf/zookeeper.conf {Values.ZooKeeper.ExtraConfig.Holder["InitialMyId"]} {Values.ZooKeeper.ExtraConfig.Holder["PeerType"]};");
+            args.Add($"bin/gen-zk-conf.sh conf/zookeeper.conf {Values.ExtraConfigs.ZooKeeper.Holder["InitialMyId"]} {Values.ExtraConfigs.ZooKeeper.Holder["PeerType"]};");
             args.Add("cat conf/zookeeper.conf;");
             args.Add("bin/pulsar zookeeper;");
             return args;
@@ -161,23 +161,23 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static IList<string> BookieIntContainer()
         {
             var args = new List<string>();
-            if(!Values.Persistence || !Values.BookKeeper.Persistence)
+            if(!Values.Persistence || !Values.Settings.BookKeeper.Persistence)
             {
                 args.Add("bin/apply-config-from-env.py conf/bookkeeper.conf;");
                 if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                    args.Add($"/pulsar/keytool/keytool.sh bookie {Values.BookKeeper.HostName} true;");
+                    args.Add($"/pulsar/keytool/keytool.sh bookie {Values.Settings.BookKeeper.Host} true;");
 
                 args.Add("until bin/bookkeeper shell whatisinstanceid; do"
                                 + "  sleep 3;"
                                 + "done; ");
                 args.Add("bin/bookkeeper shell bookieformat -nonInteractive -force -deleteCookie || true");
             }
-            else if(Values.Persistence && Values.BookKeeper.Persistence)
+            else if(Values.Persistence && Values.Settings.BookKeeper.Persistence)
             {
                 args.Add("set -e;");
                 args.Add("bin/apply-config-from-env.py conf/bookkeeper.conf;");
                 if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                    args.Add($"/pulsar/keytool/keytool.sh bookie {Values.BookKeeper.HostName} true;");
+                    args.Add($"/pulsar/keytool/keytool.sh bookie {Values.Settings.BookKeeper.Host} true;");
 
                 args.Add("until bin/bookkeeper shell whatisinstanceid; do"
                                 + "  sleep 3;"
@@ -192,7 +192,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             }; 
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                args.Add($"/pulsar/keytool/keytool.sh bookie {Values.BookKeeper.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh bookie {Values.Settings.BookKeeper.Host} true;");
 
             args.Add("bin/pulsar bookie;");
 
@@ -219,7 +219,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 "bin/pulsar proxy;"
             }; 
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                args.Add($"/pulsar/keytool/keytool.sh bookie {Values.BookKeeper.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh bookie {Values.Settings.BookKeeper.Host} true;");
 
             args.Add("bin/pulsar bookie;");
 
@@ -242,7 +242,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             }; 
             if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Toolset.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
 
             args.Add(@"until bin/bookkeeper shell whatisinstanceid; do
                         sleep 3;
@@ -254,20 +254,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             var arg = $@"bin/pulsar initialize-cluster-metadata \
                             --cluster {Values.Cluster} \
-                            --zookeeper {Values.ZooKeeper.ZooConnect}{Values.MetadataPrefix} \
+                            --zookeeper {Values.Settings.ZooKeeper.ZooConnect}{Values.MetadataPrefix} \
                             ";
             if (!string.IsNullOrWhiteSpace(Values.ConfigurationStore))
                 arg += $@"--configuration-store {Values.ConfigurationStore}{Values.ConfigurationStoreMetadataPrefix} \";
             else
-                arg += $@"--configuration-store {Values.ZooKeeper.ZooConnect}{Values.MetadataPrefix} \";
-            arg += $@"--web-service-url http://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:8080/ \";
-            arg += $@"--web-service-url-tls https://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:8443/ \";
-            arg += $@"--broker-service-url pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:6650/ \";
-            arg += $@"--broker-service-url-tls pulsar+ssl://{Values.ReleaseName}-{Values.Broker.ComponentName}.{Values.Namespace}.svc.cluster.local:6651/ \";
+                arg += $@"--configuration-store {Values.Settings.ZooKeeper.ZooConnect}{Values.MetadataPrefix} \";
+            arg += $@"--web-service-url http://{Values.ReleaseName}-{Values.Settings.Broker.Name}.{Values.Namespace}.svc.cluster.local:8080/ \";
+            arg += $@"--web-service-url-tls https://{Values.ReleaseName}-{Values.Settings.Broker.Name}.{Values.Namespace}.svc.cluster.local:8443/ \";
+            arg += $@"--broker-service-url pulsar://{Values.ReleaseName}-{Values.Settings.Broker.Name}.{Values.Namespace}.svc.cluster.local:6650/ \";
+            arg += $@"--broker-service-url-tls pulsar+ssl://{Values.ReleaseName}-{Values.Settings.Broker.Name}.{Values.Namespace}.svc.cluster.local:6651/ \";
 
             var args = new List<string>(); 
             if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Toolset.HostName} true;");
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
 
             args.Add(arg);
 

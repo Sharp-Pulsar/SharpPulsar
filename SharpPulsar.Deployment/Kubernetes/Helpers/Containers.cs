@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class Containers
+    public class Containers
     {
         public static V1Container WaitCsReady()
         {

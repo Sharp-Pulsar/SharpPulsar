@@ -13,19 +13,19 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         public V1beta1PodDisruptionBudget Run(string dryRun = default)
         {
             _pdb.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.BookKeeper.ComponentName }
+                                {"component",Values.Settings.BookKeeper.Name }
                             })
                 .MatchLabels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.BookKeeper.ComponentName }
+                                {"component", Values.Settings.BookKeeper.Name }
                             })
                 .MaxUnavailable(new IntstrIntOrString { Value = "1" });
             return _pdb.Run(_pdb.Builder(), Values.Namespace, dryRun);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class VolumeMounts
+    public class VolumeMounts
     {
         public static List<V1VolumeMount> Broker()
         {
@@ -22,10 +22,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if (Values.Tls.ZooKeeper.Enabled)
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
 
-            if (Values.Broker.EnableFunctionCustomizerRuntime)
-                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Broker.ComponentName}-runtime", MountPath = $"/pulsar/{Values.Broker.PulsarFunctionsExtraClasspath}" });
+            if (Values.Settings.Broker.EnableFunctionCustomizerRuntime)
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.Broker.Name}-runtime", MountPath = $"/pulsar/{Values.Settings.Broker.PulsarFunctionsExtraClasspath}" });
             
-            if (Values.Broker.Offload.Gcs.Enabled)
+            if (Values.Settings.Broker.Offload.Gcs.Enabled)
                 vols.Add(new V1VolumeMount { Name = "gcs-offloader-service-acccount", MountPath = "/pulsar/srvaccts", ReadOnlyProperty = true });
             return vols;
         }
@@ -61,8 +61,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             var vols = new List<V1VolumeMount>
             {
-                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-journal", MountPath = "/pulsar/data/bookkeeper/journal" },
-                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-ledger", MountPath = "/pulsar/data/bookkeeper/ledgers" }
+                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-journal", MountPath = "/pulsar/data/bookkeeper/journal" },
+                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-ledger", MountPath = "/pulsar/data/bookkeeper/ledgers" }
             };
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
             {
@@ -188,15 +188,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1VolumeMount> ZooKeeper()
         {
             var vols = new List<V1VolumeMount>();
-            var useSeparateDiskForTxlog = (bool)Values.ZooKeeper.ExtraConfig.Holder["UseSeparateDiskForTxlog"];
+            var useSeparateDiskForTxlog = (bool)Values.ExtraConfigs.ZooKeeper.Holder["UseSeparateDiskForTxlog"];
             if (useSeparateDiskForTxlog)
             {
-                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data", MountPath = "/pulsar/data/zookeeper"});
-                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-dataLog", MountPath = "/pulsar/data/zookeeper-datalog" });                
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data", MountPath = "/pulsar/data/zookeeper"});
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-dataLog", MountPath = "/pulsar/data/zookeeper-datalog" });                
             }
             else
             {
-                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-data", MountPath = "/pulsar/data" });
+                vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data", MountPath = "/pulsar/data" });
             }
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
             {
@@ -204,7 +204,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
                 vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
             }
-            vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh" });
+            vols.Add(new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-genzkconf", MountPath = "/pulsar/bin/gen-zk-conf.sh", SubPath = "gen-zk-conf.sh" });
             return vols;
         }
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class Config
+    public class Config
     {
         public static IDictionary<string, string> ZooKeeper()
         {
@@ -16,14 +16,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {"PULSAR_MEM", "-Xms64m -Xmx128m"},
                 {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
             };
-            if ((bool)Values.ZooKeeper.ExtraConfig.Holder["UseSeparateDiskForTxlog"])
+            if ((bool)Values.ExtraConfigs.ZooKeeper.Holder["UseSeparateDiskForTxlog"])
                 zk.Add("PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog");
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
             {
                 zk.Add("secureClientPort", Values.Ports.ZooKeeper["clientTls"].ToString());
                 zk.Add("PULSAR_PREFIX_secureClientPort", Values.Ports.ZooKeeper["clientTls"].ToString());
             }
-            if ((bool)Values.ZooKeeper.ExtraConfig.Holder["Reconfig"])
+            if ((bool)Values.ExtraConfigs.ZooKeeper.Holder["Reconfig"])
             {
                 zk.Add("PULSAR_PREFIX_reconfigEnabled", "true");
                 zk.Add("PULSAR_PREFIX_quorumListenOnAllIPs", "true");
@@ -50,11 +50,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintHeapAtGC -verbosegc -Xloggc:/var/log/bookie-gc.log -XX:G1LogLevel=finest" }
                         };
             //disable auto recovery on bookies since we will start AutoRecovery in separated pods
-            if (Values.AutoRecovery.Enabled)
+            if (Values.Settings.Autorecovery.Enabled)
                 conf.Add("autoRecoveryDaemonEnabled", "false");
             if(Values.Tls.Enabled && Values.Tls.Bookie.Enabled)
             {
-                conf.Add("zkServers", $"{Values.ZooKeeper.ServiceName}:{Values.Ports.ZooKeeper["clientTls"]}");
+                conf.Add("zkServers", $"{Values.Settings.ZooKeeper.Service}:{Values.Ports.ZooKeeper["clientTls"]}");
                 conf.Add("PULSAR_PREFIX_tlsProviderFactoryClass", "org.apache.bookkeeper.tls.TLSContextFactory");
                 conf.Add("PULSAR_PREFIX_tlsCertificatePath", @"/pulsar/certs/bookie/tls.crt");
                 conf.Add("PULSAR_PREFIX_tlsKeyStoreType", "PEM");
@@ -63,14 +63,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 conf.Add("PULSAR_PREFIX_tlsTrustStore", "/pulsar/certs/ca/ca.crt");
             }
             else
-                conf.Add("zkServers", $"{Values.ZooKeeper.ServiceName}:{Values.Ports.ZooKeeper["client"]}");
+                conf.Add("zkServers", $"{Values.Settings.ZooKeeper.Service}:{Values.Ports.ZooKeeper["client"]}");
             return conf;
         }
         public static IDictionary<string, string> Broker()
         {
             var conf = new Dictionary<string, string>
                         {
-                            {"zookeeperServers", $"{Values.ZooKeeper.ZooConnect}{Values.MetadataPrefix}"},
+                            {"zookeeperServers", $"{Values.Settings.ZooKeeper.ZooConnect}{Values.MetadataPrefix}"},
                             {"clusterName", $"{Values.Cluster}"},
                             {"exposeTopicLevelMetricsInPrometheus", "true"},
                             {"numHttpServerThreads", "8"},
@@ -78,42 +78,50 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             {"statusFilePath", "/pulsar/status"}
                             
                         };
-            if (Values.Broker.Offload.Enabled)
+            conf.Add("PULSAR_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m");
+            conf.Add("PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dio.netty.leakDetectionLevel=disabled -Dio.netty.recycler.linkCapacity=1024 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem");
+            conf.Add("AWS_ACCESS_KEY_ID", "[YOUR AWS ACCESS KEY ID]");
+            conf.Add("AWS_SECRET_ACCESS_KEY", "[YOUR SECRET]");
+            conf.Add("managedLedgerDefaultEnsembleSize", "3");
+            conf.Add("managedLedgerDefaultWriteQuorum", "3");
+            conf.Add("managedLedgerDefaultAckQuorum", "2");
+            conf.Add("subscriptionKeySharedUseConsistentHashing", "true");
+            if (Values.Settings.Broker.Offload.Enabled)
             {
                 conf.Add("offloadersDirectory", "/pulsar/offloaders");
-                conf.Add("managedLedgerOffloadDriver", $"{ Values.Broker.Offload.ManagedLedgerOffloadDriver }");
-                if (Values.Broker.Offload.Gcs.Enabled)
+                conf.Add("managedLedgerOffloadDriver", $"{ Values.Settings.Broker.Offload.ManagedLedgerOffloadDriver }");
+                if (Values.Settings.Broker.Offload.Gcs.Enabled)
                 {
-                    conf.Add("gcsManagedLedgerOffloadRegion", $"{ Values.Broker.Offload.Gcs.Region} ");
-                    conf.Add("gcsManagedLedgerOffloadBucket", $"{Values.Broker.Offload.Gcs.Bucket }");
-                    conf.Add("gcsManagedLedgerOffloadMaxBlockSizeInBytes", $"{ Values.Broker.Offload.Gcs.MaxBlockSizeInBytes}");
-                    conf.Add("gcsManagedLedgerOffloadReadBufferSizeInBytes", $"{ Values.Broker.Offload.Gcs.ReadBufferSizeInBytes}");
+                    conf.Add("gcsManagedLedgerOffloadRegion", $"{ Values.Settings.Broker.Offload.Gcs.Region} ");
+                    conf.Add("gcsManagedLedgerOffloadBucket", $"{Values.Settings.Broker.Offload.Gcs.Bucket }");
+                    conf.Add("gcsManagedLedgerOffloadMaxBlockSizeInBytes", $"{ Values.Settings.Broker.Offload.Gcs.MaxBlockSizeInBytes}");
+                    conf.Add("gcsManagedLedgerOffloadReadBufferSizeInBytes", $"{ Values.Settings.Broker.Offload.Gcs.ReadBufferSizeInBytes}");
                     // Authentication with GCS
                     conf.Add("gcsManagedLedgerOffloadServiceAccountKeyFile", $"/pulsar/srvaccts/gcs.json");
                                 
                 }
-                if (Values.Broker.Offload.S3.Enabled)
+                if (Values.Settings.Broker.Offload.S3.Enabled)
                 {
-                     conf.Add("s3ManagedLedgerOffloadRegion", $"{Values.Broker.Offload.S3.Region}");
-                     conf.Add("s3ManagedLedgerOffloadBucket", $"{Values.Broker.Offload.S3.Bucket}");
-                     conf.Add("s3ManagedLedgerOffloadMaxBlockSizeInBytes", $"{Values.Broker.Offload.S3.MaxBlockSizeInBytes}");
-                     conf.Add("s3ManagedLedgerOffloadReadBufferSizeInBytes", $"{Values.Broker.Offload.S3.ReadBufferSizeInBytes}");                     
+                     conf.Add("s3ManagedLedgerOffloadRegion", $"{Values.Settings.Broker.Offload.S3.Region}");
+                     conf.Add("s3ManagedLedgerOffloadBucket", $"{Values.Settings.Broker.Offload.S3.Bucket}");
+                     conf.Add("s3ManagedLedgerOffloadMaxBlockSizeInBytes", $"{Values.Settings.Broker.Offload.S3.MaxBlockSizeInBytes}");
+                     conf.Add("s3ManagedLedgerOffloadReadBufferSizeInBytes", $"{Values.Settings.Broker.Offload.S3.ReadBufferSizeInBytes}");                     
                 }
             }
 
-            if (Values.Functions.Enabled)
+            if (Values.Settings.Function.Enabled)
             {
                 conf.Add("functionsWorkerEnabled", "true");
                 conf.Add("PF_functionRuntimeFactoryClassName", "org.apache.pulsar.functions.runtime.kubernetes.KubernetesRuntimeFactory");
                 conf.Add("PF_pulsarFunctionsCluster", $"{Values.ReleaseName}");
                 conf.Add("PF_connectorsDirectory", "./connectors");
                 conf.Add("PF_containerFactory", "k8s");
-                conf.Add("PF_numFunctionPackageReplicas", $"{Values.Broker.ConfigData["managedLedgerDefaultEnsembleSize"]}");
+                conf.Add("PF_numFunctionPackageReplicas", $"{conf["managedLedgerDefaultEnsembleSize"]}");
 
-                if (Values.Broker.EnableFunctionCustomizerRuntime)
+                if (Values.Settings.Broker.EnableFunctionCustomizerRuntime)
                 {
-                    conf.Add("PF_runtimeCustomizerClassName", $"{ Values.Broker.RuntimeCustomizerClassName}");
-                    conf.Add("PULSAR_EXTRA_CLASSPATH", $"/pulsar/{Values.Broker.PulsarFunctionsExtraClasspath}");
+                    conf.Add("PF_runtimeCustomizerClassName", $"{ Values.Settings.Broker.RuntimeCustomizerClassName}");
+                    conf.Add("PULSAR_EXTRA_CLASSPATH", $"/pulsar/{Values.Settings.Broker.PulsarFunctionsExtraClasspath}");
                 }
                 //support version >= 2.5.0
                 conf.Add("PF_functionRuntimeFactoryConfigs_pulsarRootDir", "/pulsar");
@@ -125,15 +133,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 conf.Add("PF_functionRuntimeFactoryConfigs_expectedMetricsCollectionInterval", "30");
                 if (!Values.Tls.Enabled && !Values.Tls.Broker.Enabled)
                 {
-                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarAdminUrl", $"http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}/");
-                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarServiceUrl", $"pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsar"]}/");
+                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarAdminUrl", $"http://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["http"]}/");
+                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarServiceUrl", $"pulsar://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsar"]}/");
                 }
                 if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
                 {
-                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarAdminUrl", $"https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}/");
-                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarServiceUrl", $"pulsar+ssl://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsarssl"]}/");
+                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarAdminUrl", $"https://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["https"]}/");
+                    conf.Add("PF_functionRuntimeFactoryConfigs_pulsarServiceUrl", $"pulsar+ssl://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsarssl"]}/");
                 }
-                conf.Add("PF_functionRuntimeFactoryConfigs_changeConfigMap", $"{Values.ReleaseName}-{Values.Functions.ComponentName}-config");
+                conf.Add("PF_functionRuntimeFactoryConfigs_changeConfigMap", $"{Values.ReleaseName}-{Values.Settings.Function.Name}-config");
                 conf.Add("PF_functionRuntimeFactoryConfigs_changeConfigMapNamespace", $"{Values.Namespace}");
 
             }
@@ -192,12 +200,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 //https://github.com/apache/bookkeeper/pull/2300
                 conf.Add("bookkeeperUseV2WireProtocol", "false");
             }
-            if (Values.Kop.Enabled)
+            if (Values.Settings.Kop.Enabled)
             {
                 conf.Add("messagingProtocols", "kafka");
                 if (Values.Authentication.Enabled)
                 {
-                    if(Values.Authentication.Provider.Equals("jwt", System.StringComparison.OrdinalIgnoreCase))
+                    if(Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
                         conf.Add("PULSAR_PREFIX_saslAllowedMechanisms", "PLAIN");
 
                 }
@@ -207,14 +215,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     conf.Add("PULSAR_PREFIX_kopSslTruststoreLocation", "/pulsar/broker.truststore.jks");
                 }
             }
-            conf.Add("PULSAR_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m");
-            conf.Add("PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dio.netty.leakDetectionLevel=disabled -Dio.netty.recycler.linkCapacity=1024 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem");
-            conf.Add("AWS_ACCESS_KEY_ID", "[YOUR AWS ACCESS KEY ID]");
-            conf.Add("AWS_SECRET_ACCESS_KEY", "[YOUR SECRET]");
-            conf.Add("managedLedgerDefaultEnsembleSize", "3");
-            conf.Add("managedLedgerDefaultWriteQuorum", "3");
-            conf.Add("managedLedgerDefaultAckQuorum", "2");
-            conf.Add("subscriptionKeySharedUseConsistentHashing", "true");
+            
             return conf;
         }
         public static IDictionary<string, string> Proxy()
@@ -230,15 +231,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if(!Values.Tls.Enabled || !Values.Tls.Proxy.Enabled)
             {
                 conf.Add("servicePort", $"{ Values.Ports.Proxy["pulsar"]  }");
-                if(!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl))
-                    conf.Add("brokerServiceURL", Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl);
+                if(!string.IsNullOrWhiteSpace(Values.Settings.Proxy.ProxyServiceUrl.BrokerPulsarUrl))
+                    conf.Add("brokerServiceURL", Values.Settings.Proxy.ProxyServiceUrl.BrokerPulsarUrl);
                 else
-                    conf.Add("brokerServiceURL", $"pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsar"]}");
+                    conf.Add("brokerServiceURL", $"pulsar://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsar"]}");
                 
-                if(!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerHttpUrl))
-                    conf.Add("brokerWebServiceURL", Values.Proxy.ProxyServiceUrl.BrokerHttpUrl);
+                if(!string.IsNullOrWhiteSpace(Values.Settings.Proxy.ProxyServiceUrl.BrokerHttpUrl))
+                    conf.Add("brokerWebServiceURL", Values.Settings.Proxy.ProxyServiceUrl.BrokerHttpUrl);
                 else
-                    conf.Add("brokerWebServiceURL", $"http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}");
+                    conf.Add("brokerWebServiceURL", $"http://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["http"]}");
 
             }
             if (Values.Tls.Enabled || Values.Tls.Proxy.Enabled)
@@ -253,15 +254,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
             {
 
-                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerPulsarSslUrl))
-                    conf.Add("brokerServiceURLTLS", Values.Proxy.ProxyServiceUrl.BrokerPulsarSslUrl);
+                if (!string.IsNullOrWhiteSpace(Values.Settings.Proxy.ProxyServiceUrl.BrokerPulsarSslUrl))
+                    conf.Add("brokerServiceURLTLS", Values.Settings.Proxy.ProxyServiceUrl.BrokerPulsarSslUrl);
                 else
-                    conf.Add("brokerServiceURLTLS", $"pulsar+ssl://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsarssl"]}");
+                    conf.Add("brokerServiceURLTLS", $"pulsar+ssl://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsarssl"]}");
 
-                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerHttpsUrl))
-                    conf.Add("brokerWebServiceURLTLS", Values.Proxy.ProxyServiceUrl.BrokerHttpsUrl);
+                if (!string.IsNullOrWhiteSpace(Values.Settings.Proxy.ProxyServiceUrl.BrokerHttpsUrl))
+                    conf.Add("brokerWebServiceURLTLS", Values.Settings.Proxy.ProxyServiceUrl.BrokerHttpsUrl);
                 else
-                    conf.Add("brokerWebServiceURLTLS", $"https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}");
+                    conf.Add("brokerWebServiceURLTLS", $"https://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["https"]}");
 
                 conf.Add("tlsEnabledWithBroker", "true");
                 conf.Add("tlsCertRefreshCheckDurationSec", "300");
@@ -270,15 +271,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             if (!Values.Tls.Enabled && !Values.Tls.Broker.Enabled)
             {
 
-                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl))
-                    conf["brokerServiceURL"] =  Values.Proxy.ProxyServiceUrl.BrokerPulsarUrl;
+                if (!string.IsNullOrWhiteSpace(Values.Settings.Proxy.ProxyServiceUrl.BrokerPulsarUrl))
+                    conf["brokerServiceURL"] =  Values.Settings.Proxy.ProxyServiceUrl.BrokerPulsarUrl;
                 else
-                    conf["brokerServiceURL"] = $"pulsar://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["pulsar"]}";
+                    conf["brokerServiceURL"] = $"pulsar://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsar"]}";
 
-                if (!string.IsNullOrWhiteSpace(Values.Proxy.ProxyServiceUrl.BrokerHttpUrl))
-                    conf["brokerWebServiceURL"] =  Values.Proxy.ProxyServiceUrl.BrokerHttpUrl;
+                if (!string.IsNullOrWhiteSpace(Values.Settings.Proxy.ProxyServiceUrl.BrokerHttpUrl))
+                    conf["brokerWebServiceURL"] =  Values.Settings.Proxy.ProxyServiceUrl.BrokerHttpUrl;
                 else
-                    conf["brokerWebServiceURL"] = $"http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}";
+                    conf["brokerWebServiceURL"] = $"http://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["http"]}";
 
             }
             if (Values.Authentication.Enabled)
@@ -321,7 +322,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {
                     "jvm.config",
                     $@"-server 
-                    -Xmx{Values.PrestoCoordinator.ExtraConfig.Holder["memory"]} 
+                    -Xmx{Values.ExtraConfigs.PrestoCoordinator.Holder["memory"]} 
                     -XX:+UseG1GC 
                     -XX:+UnlockExperimentalVMOptions 
                     -XX:+AggressiveOpts 
@@ -339,18 +340,18 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     $@"coordinator=true 
                         http-server.http.port={Values.Ports.PrestoCoordinator["http"]} 
                         discovery-server.enabled=true 
-                        discovery.uri=http://{Values.PrestoCoordinator.ServiceName}:{Values.Ports.PrestoCoordinator["http"]} 
-                        query.max-memory={Values.PrestoCoordinator.ExtraConfig.Holder["maxMemory"]} 
-                        query.max-memory-per-node={ Values.PrestoCoordinator.ExtraConfig.Holder["maxMemoryPerNode"] } 
+                        discovery.uri=http://{Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordinator["http"]} 
+                        query.max-memory={Values.ExtraConfigs.PrestoCoordinator.Holder["maxMemory"]} 
+                        query.max-memory-per-node={ Values.ExtraConfigs.PrestoCoordinator.Holder["maxMemoryPerNode"] } 
                         distributed-joins-enabled=true 
                         node-scheduler.include-coordinator={schedule} "
                 },
                 {
                     "log.properties",
-                    $@"com.facebook.presto={Values.PrestoCoordinator.ExtraConfig.Holder["Log"]} 
+                    $@"com.facebook.presto={Values.ExtraConfigs.PrestoCoordinator.Holder["Log"]} 
                         com.sun.jersey.guice.spi.container.GuiceComponentProviderFactory=WARN 
                         com.ning.http.client=WARN 
-                        com.facebook.presto.server.PluginManager={Values.PrestoCoordinator.ExtraConfig.Holder["Log"]}"
+                        com.facebook.presto.server.PluginManager={Values.ExtraConfigs.PrestoCoordinator.Holder["Log"]}"
                 },
                 {
                     "pulsar.properties",
@@ -360,25 +361,25 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             };
             // the url of Pulsar broker service
             if (Values.Tls.Enabled && Values.Tls.Broker.Enabled) 
-                conf["pulsar.properties"] += $@" pulsar.broker-service-url=https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}/";
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=https://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["https"]}/";
             else
-                conf["pulsar.properties"] += $@" pulsar.broker-service-url=http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}/";
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=http://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["http"]}/";
 
             // URI of Zookeeper cluster
-            conf["pulsar.properties"] += $@" pulsar.zookeeper-uri={Values.ZooKeeper.ZooConnect}";
+            conf["pulsar.properties"] += $@" pulsar.zookeeper-uri={Values.Settings.ZooKeeper.ZooConnect}";
             // minimum number of entries to read at a single time
-            conf["pulsar.properties"] += $@" pulsar.max-entry-read-batch-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxEntryReadBatchSize"]}";
+            conf["pulsar.properties"] += $@" pulsar.max-entry-read-batch-size={Values.ExtraConfigs.PrestoCoordinator.Holder["maxEntryReadBatchSize"]}";
             // default number of splits to use per query
-            conf["pulsar.properties"] +=  $" pulsar.target-num-splits={Values.PrestoCoordinator.ExtraConfig.Holder["targetNumSplits"] }";
+            conf["pulsar.properties"] +=  $" pulsar.target-num-splits={Values.ExtraConfigs.PrestoCoordinator.Holder["targetNumSplits"] }";
             // max message queue size
-            conf["pulsar.properties"] += $" pulsar.max-split-message-queue-size={ Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitMessageQueueSize"] }";
+            conf["pulsar.properties"] += $" pulsar.max-split-message-queue-size={ Values.ExtraConfigs.PrestoCoordinator.Holder["maxSplitMessageQueueSize"] }";
             // max entry queue size
-            conf["pulsar.properties"] += $" pulsar.max-split-entry-queue-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitEntryQueueSize"] } ";
+            conf["pulsar.properties"] += $" pulsar.max-split-entry-queue-size={Values.ExtraConfigs.PrestoCoordinator.Holder["maxSplitEntryQueueSize"] } ";
             // Rewrite namespace delimiter
             // Warn: avoid using symbols allowed by Namespace (a-zA-Z_0-9 -=:%)
             // to prevent erroneous rewriting
-            conf["pulsar.properties"] += $" pulsar.namespace-delimiter-rewrite-enable={Values.PrestoCoordinator.ExtraConfig.Holder["namespaceDelimiterRewriteEnable"] }";
-            conf["pulsar.properties"] += $" pulsar.rewrite-namespace-delimiter={Values.PrestoCoordinator.ExtraConfig.Holder["rewriteNamespaceDelimiter"]}";
+            conf["pulsar.properties"] += $" pulsar.namespace-delimiter-rewrite-enable={Values.ExtraConfigs.PrestoCoordinator.Holder["namespaceDelimiterRewriteEnable"] }";
+            conf["pulsar.properties"] += $" pulsar.rewrite-namespace-delimiter={Values.ExtraConfigs.PrestoCoordinator.Holder["rewriteNamespaceDelimiter"]}";
             ///////////// TIERED STORAGE OFFLOADER CONFIGS //////////////
 
             //// Driver to use to offload old data to long term storage
@@ -412,7 +413,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             ////////////// BOOKKEEPER CONFIGS //////////////
 
             // Entries read count throttling-limit per seconds, 0 is represents disable the throttle, default is 0.
-            conf["pulsar.properties"] += $@" pulsar.bookkeeper-throttle-value={ Values.PrestoCoordinator.ExtraConfig.Holder["bookkeeperThrottleValue"] }";
+            conf["pulsar.properties"] += $@" pulsar.bookkeeper-throttle-value={ Values.ExtraConfigs.PrestoCoordinator.Holder["bookkeeperThrottleValue"] }";
 
             // The number of threads used by Netty to handle TCP connections,
             // default is 2 * Runtime.getRuntime().availableProcessors().
@@ -427,7 +428,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             // Amount of memory to use for caching data payload in managed ledger. This memory
             // is allocated from JVM direct memory and it's shared across all the managed ledgers
             // running in same sql worker. 0 is represents disable the cache, default is 0.
-            conf["pulsar.properties"] += $@"npulsar.managed-ledger-cache-size-MB={Values.PrestoCoordinator.ExtraConfig.Holder["managedLedgerCacheSizeMB"]}";
+            conf["pulsar.properties"] += $@"npulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holder["managedLedgerCacheSizeMB"]}";
             // Number of threads to be used for managed ledger tasks dispatching,
             // default is Runtime.getRuntime().availableProcessors().
             // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-worker-threads =";
@@ -449,7 +450,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {
                     "jvm.config",
                     $@"-server 
-                    -Xmx{Values.PrestoWorker.ExtraConfig.Holder["memory"]} 
+                    -Xmx{Values.ExtraConfigs.PrestoWorker.Holder["memory"]} 
                     -XX:+UseG1GC 
                     -XX:+UnlockExperimentalVMOptions 
                     -XX:+AggressiveOpts 
@@ -466,16 +467,16 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     "config.properties",
                     $@"coordinator=false 
                         http-server.http.port={Values.Ports.PrestoCoordinator["http"]} 
-                         discovery.uri=http://{Values.PrestoCoordinator.ServiceName}:{Values.Ports.PrestoCoordinator["http"]}
-                         query.max-memory={Values.PrestoWorker.ExtraConfig.Holder["maxMemory"]}
-                         query.max-memory-per-node={ Values.PrestoWorker.ExtraConfig.Holder["maxMemoryPerNode"] }"                        
+                         discovery.uri=http://{Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordinator["http"]}
+                         query.max-memory={Values.ExtraConfigs.PrestoWorker.Holder["maxMemory"]}
+                         query.max-memory-per-node={ Values.ExtraConfigs.PrestoWorker.Holder["maxMemoryPerNode"] }"                        
                 },
                 {
                     "log.properties",
-                    $@"com.facebook.presto={Values.PrestoWorker.ExtraConfig.Holder["Log"]} 
+                    $@"com.facebook.presto={Values.ExtraConfigs.PrestoWorker.Holder["Log"]} 
                          com.sun.jersey.guice.spi.container.GuiceComponentProviderFactory=WARN 
                          com.ning.http.client=WARN 
-                         com.facebook.presto.server.PluginManager={Values.PrestoWorker.ExtraConfig.Holder["Log"]}"
+                         com.facebook.presto.server.PluginManager={Values.ExtraConfigs.PrestoWorker.Holder["Log"]}"
                 },
                 {
                     "pulsar.properties",
@@ -485,25 +486,25 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             };
             // the url of Pulsar broker service
             if (Values.Tls.Enabled && Values.Tls.Broker.Enabled) 
-                conf["pulsar.properties"] += $@" pulsar.broker-service-url=https://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["https"]}/";
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=https://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["https"]}/";
             else
-                conf["pulsar.properties"] += $@" pulsar.broker-service-url=http://{Values.ReleaseName}-{Values.Broker.ComponentName}:{Values.Ports.Broker["http"]}/";
+                conf["pulsar.properties"] += $@" pulsar.broker-service-url=http://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["http"]}/";
 
             // URI of Zookeeper cluster
-            conf["pulsar.properties"] += $@" pulsar.zookeeper-uri={Values.ZooKeeper.ZooConnect}";
+            conf["pulsar.properties"] += $@" pulsar.zookeeper-uri={Values.Settings.ZooKeeper.ZooConnect}";
             // minimum number of entries to read at a single time
-            conf["pulsar.properties"] += $@" pulsar.max-entry-read-batch-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxEntryReadBatchSize"]}";
+            conf["pulsar.properties"] += $@" pulsar.max-entry-read-batch-size={Values.ExtraConfigs.PrestoCoordinator.Holder["maxEntryReadBatchSize"]}";
             // default number of splits to use per query
-            conf["pulsar.properties"] +=  $" pulsar.target-num-splits={Values.PrestoCoordinator.ExtraConfig.Holder["targetNumSplits"] }";
+            conf["pulsar.properties"] +=  $" pulsar.target-num-splits={Values.ExtraConfigs.PrestoCoordinator.Holder["targetNumSplits"] }";
             // max message queue size
-            conf["pulsar.properties"] += $" pulsar.max-split-message-queue-size={ Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitMessageQueueSize"] }";
+            conf["pulsar.properties"] += $" pulsar.max-split-message-queue-size={ Values.ExtraConfigs.PrestoCoordinator.Holder["maxSplitMessageQueueSize"] }";
             // max entry queue size
-            conf["pulsar.properties"] += $" pulsar.max-split-entry-queue-size={Values.PrestoCoordinator.ExtraConfig.Holder["maxSplitEntryQueueSize"] } ";
+            conf["pulsar.properties"] += $" pulsar.max-split-entry-queue-size={Values.ExtraConfigs.PrestoCoordinator.Holder["maxSplitEntryQueueSize"] } ";
             // Rewrite namespace delimiter
             // Warn: avoid using symbols allowed by Namespace (a-zA-Z_0-9 -=:%)
             // to prevent erroneous rewriting
-            conf["pulsar.properties"] += $" pulsar.namespace-delimiter-rewrite-enable={Values.PrestoCoordinator.ExtraConfig.Holder["namespaceDelimiterRewriteEnable"] }";
-            conf["pulsar.properties"] += $" pulsar.rewrite-namespace-delimiter={Values.PrestoCoordinator.ExtraConfig.Holder["rewriteNamespaceDelimiter"]}";
+            conf["pulsar.properties"] += $" pulsar.namespace-delimiter-rewrite-enable={Values.ExtraConfigs.PrestoCoordinator.Holder["namespaceDelimiterRewriteEnable"] }";
+            conf["pulsar.properties"] += $" pulsar.rewrite-namespace-delimiter={Values.ExtraConfigs.PrestoCoordinator.Holder["rewriteNamespaceDelimiter"]}";
             ///////////// TIERED STORAGE OFFLOADER CONFIGS //////////////
 
             //// Driver to use to offload old data to long term storage
@@ -537,7 +538,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             ////////////// BOOKKEEPER CONFIGS //////////////
 
             // Entries read count throttling-limit per seconds, 0 is represents disable the throttle, default is 0.
-            conf["pulsar.properties"] += $@" pulsar.bookkeeper-throttle-value={ Values.PrestoCoordinator.ExtraConfig.Holder["bookkeeperThrottleValue"] }";
+            conf["pulsar.properties"] += $@" pulsar.bookkeeper-throttle-value={ Values.ExtraConfigs.PrestoCoordinator.Holder["bookkeeperThrottleValue"] }";
 
             // The number of threads used by Netty to handle TCP connections,
             // default is 2 * Runtime.getRuntime().availableProcessors().
@@ -552,7 +553,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             // Amount of memory to use for caching data payload in managed ledger. This memory
             // is allocated from JVM direct memory and it's shared across all the managed ledgers
             // running in same sql worker. 0 is represents disable the cache, default is 0.
-            conf["pulsar.properties"] += $@"npulsar.managed-ledger-cache-size-MB={Values.PrestoCoordinator.ExtraConfig.Holder["managedLedgerCacheSizeMB"]}";
+            conf["pulsar.properties"] += $@"npulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holder["managedLedgerCacheSizeMB"]}";
             // Number of threads to be used for managed ledger tasks dispatching,
             // default is Runtime.getRuntime().availableProcessors().
             // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-worker-threads =";
@@ -561,7 +562,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             // default is Runtime.getRuntime().availableProcessors().
             // conf["pulsar.properties"] += $@" pulsar.managed-ledger-num-scheduler-threads =";
             conf.Add("health_check.sh",
-                $@"#!/bin/bash curl --silent {Values.PrestoCoordinator.ServiceName}:{Values.Ports.PrestoCoordinator["http"]}/v1/node | tr "", "" ""\n"" | grep --silent $(hostname -i)");
+                $@"#!/bin/bash curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordinator["http"]}/v1/node | tr "", "" ""\n"" | grep --silent $(hostname -i)");
             return conf;
         }
     }

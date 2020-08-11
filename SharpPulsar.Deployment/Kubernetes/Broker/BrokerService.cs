@@ -14,13 +14,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         public V1Service Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata(Values.Broker.ServiceName, Values.Namespace)
+                .Metadata(Values.Settings.Broker.Service, Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.Broker.ComponentName }
+                                {"component", Values.Settings.Broker.Name }
                             })
                 .Annotations(new Dictionary<string, string>
                             {
@@ -38,7 +38,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.Broker.ComponentName }
+                                {"component",Values.Settings.Broker.Name }
                             })
                 .PublishNotReadyAddresses(true);
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);

@@ -49,7 +49,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         }
         public bool Run(out Dictionary<string, object> results, string dryRun = default)
         {
-            if (Values.Broker.Enabled)
+            if (Values.Settings.Broker.Enabled)
             {
                 _results = new Dictionary<string, object>();
                 var crb = _brokerClusterRoleBinding.Run(dryRun);
@@ -61,7 +61,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                 var conf = _brokerConfigMap.Run(dryRun);
                 _results.Add("ConfigMap", conf);
 
-                if (Values.Broker.UsePolicyPodDisruptionBudget)
+                if (Values.Settings.Broker.UsePolicyPodDisruptionBudget)
                 {
                     var pdb = _brokerPodDisruptionBudget.Run(dryRun);
                     _results.Add("Pdb", pdb);
@@ -75,7 +75,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                 var state = _brokerStatefulset.Run(dryRun);
                 _results.Add("Statefulset", state);
 
-                if (Values.Functions.Enabled)
+                if (Values.Settings.Function.Enabled)
                 {
                     var function = _function.Run(dryRun);
                     _results.Add("FunctionConfigMap", function);

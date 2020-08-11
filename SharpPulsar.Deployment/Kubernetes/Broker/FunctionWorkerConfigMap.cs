@@ -13,13 +13,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.Functions.ComponentName}-config", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.Function.Name}-config", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.Functions.ComponentName },
+                                {"component", Values.Settings.Function.Name },
                             })
                 .Data(new Dictionary<string, string> 
                 {

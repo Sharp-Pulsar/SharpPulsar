@@ -45,7 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
 
         public bool Run(out Dictionary<string, object> results, string dryRun = default)
         {
-            if(Values.ZooKeeper.Enabled)
+            if(Values.Settings.ZooKeeper.Enabled)
             {
                 _results = new Dictionary<string, object>();
                 var conf = _config.Run(dryRun);
@@ -54,7 +54,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                 var confG = _config.GenZkConf(dryRun);
                 _results.Add("ConfigMapGen", confG);
 
-                if (Values.ZooKeeper.UsePolicyPodDisruptionBudget)
+                if (Values.Settings.ZooKeeper.UsePolicyPodDisruptionBudget)
                 {
                     var pdb = _pdb.Run(dryRun);
                     _results.Add("Pdb", pdb);
@@ -66,7 +66,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                 var state = _statefulSet.Run(dryRun);
                 _results.Add("StatefulSet", state);
                 
-                if(Values.Persistence && Values.ZooKeeper.Persistence && !Values.LocalStorage)
+                if(Values.Persistence && Values.Settings.ZooKeeper.Persistence && !Values.LocalStorage)
                 {
                     var store = _storage.Run(dryRun);
                     _results.Add("Storage", store);
@@ -76,7 +76,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
 
                 }
             }
-            if (Values.Initialize && Values.Broker.Enabled)
+            if (Values.Initialize && Values.Settings.Broker.Enabled)
             {
                 var init = _clusterInit.Run(dryRun);
                 _results.Add("ClusterInitializer", init);

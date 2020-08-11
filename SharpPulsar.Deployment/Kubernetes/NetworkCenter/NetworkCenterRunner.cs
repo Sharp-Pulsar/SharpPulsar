@@ -94,20 +94,20 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     var httpPort = Values.Ports.Proxy["http"].ToString();
                     var ports = new Dictionary<string, string>
                     {
-                        [httpPort] = $"{Values.Namespace}/{Values.Proxy.ComponentName}:{httpPort}"
+                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{httpPort}"
                     };
                     if(Values.Tls.Enabled && Values.Tls.Proxy.Enabled)
                     {
                         var httpsPort = Values.Ports.Proxy["https"].ToString();
-                        ports[httpsPort] = $"{Values.Namespace}/{Values.Proxy.ComponentName}:{httpsPort}";
+                        ports[httpsPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{httpsPort}";
 
                         var pulsarsslPort = Values.Ports.Proxy["pulsarssl"].ToString();
-                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Proxy.ComponentName}:{pulsarsslPort}";
+                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{pulsarsslPort}";
                     }
                     else
                     {
                         var pulsarPort = Values.Ports.Proxy["pulsar"].ToString();
-                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Proxy.ComponentName}:{pulsarPort}";
+                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{pulsarPort}";
                     }
                     var tcpConf = _tcpServices.Run(ports, dryRun);
                     _results.Add("TcpServicesConfiguration", tcpConf);
@@ -121,20 +121,20 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     var httpPort = Values.Ports.Broker["http"].ToString();
                     var ports = new Dictionary<string, string>
                     {
-                        [httpPort] = $"{Values.Namespace}/{Values.Broker.ComponentName}:{httpPort}"
+                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{httpPort}"
                     };
                     if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
                     {
                         var httpsPort = Values.Ports.Broker["https"].ToString();
-                        ports[httpsPort] = $"{Values.Namespace}/{Values.Broker.ComponentName}:{httpsPort}";
+                        ports[httpsPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{httpsPort}";
 
                         var pulsarsslPort = Values.Ports.Broker["pulsarssl"].ToString();
-                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Broker.ComponentName}:{pulsarsslPort}";
+                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{pulsarsslPort}";
                     }
                     else
                     {
                         var pulsarPort = Values.Ports.Broker["pulsar"].ToString();
-                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Broker.ComponentName}:{pulsarPort}";
+                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{pulsarPort}";
                     }
                     var tcpConf = _tcpServices.Run(ports, dryRun);
                     _results.Add("TcpServicesConfiguration", tcpConf);

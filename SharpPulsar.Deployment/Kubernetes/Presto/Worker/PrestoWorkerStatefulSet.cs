@@ -14,33 +14,33 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Worker
         public V1StatefulSet Run(string dryRun = default)
         {
             _set.Builder()
-                .Name($"{Values.ReleaseName}-{Values.PrestoWorker.ComponentName}")
+                .Name($"{Values.ReleaseName}-{Values.Settings.PrestoWorker.Name}")
                 .Namespace(Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoWorker.ComponentName }
+                                {"component",Values.Settings.PrestoWorker.Name }
                             })
                 .SpecBuilder()
-                .ServiceName(Values.PrestoWorker.ServiceName)
-                .Replication(Values.PrestoWorker.Replicas)
+                .ServiceName(Values.Settings.PrestoWorker.Service)
+                .Replication(Values.Settings.PrestoWorker.Replicas)
                 .Selector(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoWorker.ComponentName }
+                                {"component",Values.Settings.PrestoWorker.Name }
                             })
-                .UpdateStrategy(Values.PrestoWorker.UpdateStrategy)
-                .PodManagementPolicy(Values.PrestoWorker.PodManagementPolicy)
+                .UpdateStrategy(Values.Settings.PrestoWorker.UpdateStrategy)
+                .PodManagementPolicy(Values.Settings.PrestoWorker.PodManagementPolicy)
                 .TemplateBuilder()
                 .Metadata(new Dictionary<string, string>
                 {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.PrestoWorker.ComponentName }
+                                {"component",Values.Settings.PrestoWorker.Name }
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "false" },
@@ -50,8 +50,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Worker
                 .SpecBuilder()
                 .Tolerations(Values.PrestoWorker.Tolerations)
                 .NodeSelector(Values.PrestoWorker.NodeSelector)
-                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.PrestoWorker))
-                .TerminationGracePeriodSeconds(Values.PrestoWorker.GracePeriodSeconds)
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Settings.PrestoWorker))
+                .TerminationGracePeriodSeconds(Values.Settings.PrestoWorker.GracePeriodSeconds)
                 .InitContainers(Values.PrestoWorker.ExtraInitContainers)
                 .Containers(Values.PrestoWorker.Containers)
                 .Volumes(Values.PrestoWorker.Volumes);

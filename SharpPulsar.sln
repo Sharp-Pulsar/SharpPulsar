@@ -16,7 +16,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Samples", "Sample\Samples.c
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{EC656F51-19D1-4949-AD76-EA97483AC6C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Deployment", "SharpPulsar.Deployment\SharpPulsar.Deployment.csproj", "{25BD8F28-6A4C-4F74-9555-DD00B78E3DAE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Deployment", "SharpPulsar.Deployment\SharpPulsar.Deployment.csproj", "{25BD8F28-6A4C-4F74-9555-DD00B78E3DAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Deployment.Console", "SharpPulsar.Deployment.Console\SharpPulsar.Deployment.Console.csproj", "{4231FBDD-7382-4FAF-BF15-05FF94615CAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{25BD8F28-6A4C-4F74-9555-DD00B78E3DAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25BD8F28-6A4C-4F74-9555-DD00B78E3DAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{25BD8F28-6A4C-4F74-9555-DD00B78E3DAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4231FBDD-7382-4FAF-BF15-05FF94615CAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4231FBDD-7382-4FAF-BF15-05FF94615CAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4231FBDD-7382-4FAF-BF15-05FF94615CAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4231FBDD-7382-4FAF-BF15-05FF94615CAD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

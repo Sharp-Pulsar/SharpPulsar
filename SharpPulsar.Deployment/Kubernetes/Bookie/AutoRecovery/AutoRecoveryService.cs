@@ -14,13 +14,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
         public V1Service Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata(Values.AutoRecovery.ServiceName, Values.Namespace)
+                .Metadata(Values.Settings.Autorecovery.Service, Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.AutoRecovery.ComponentName  }
+                                {"component", Values.Settings.Autorecovery.Name  }
                             })
                 .Ports(new List<V1ServicePort>
                 {
@@ -31,7 +31,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.AutoRecovery
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.AutoRecovery.ComponentName  }
+                                {"component",Values.Settings.Autorecovery.Name  }
                             });
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }

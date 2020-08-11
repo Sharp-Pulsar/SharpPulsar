@@ -13,15 +13,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Coordinator
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.PrestoCoordinator.ComponentName}", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.PrestoCoord.Name}", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.PrestoCoordinator.ComponentName },
+                                {"component", Values.Settings.PrestoCoord.Name },
                             })
-                .Data(Values.PrestoCoordinator.ConfigData);
+                .Data(Values.ConfigMaps.PrestoCoordinator);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }

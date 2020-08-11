@@ -5,61 +5,321 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes
 {
-    public static class Values
+    public class Values
     {
+        public Values()
+        {
+            ResourcesRequests = new ResourcesRequests
+            {
+                ZooKeeper = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" },
+                Broker = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
+                BookKeeper = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
+                AutoRecovery = new ResourcesRequest { Memory = "64Mi", Cpu= "0.05"}
+            };
+            Authentication = new Authentication
+            {
+                Enabled = false
+            };
+            Tls = new Tls
+            {
+                Enabled = false
+            };
+            Namespace = "pulsar";
+            Cluster = "pulsar";
+            ReleaseName = "pulsar";
+            App = "pulsar";
+            UserProvidedZookeepers = new List<string>();
+            Persistence = false;
+            LocalStorage = false;
+            AntiAffinity = false;
+            Initialize = true;
+            ConfigurationStore = "";
+            ConfigurationStoreMetadataPrefix = "";
+            Namespace = "pulsar";
+            NamespaceCreate = true;
+            MetadataPrefix = "";
+            Monitoring = new Monitoring();
+            Images = new Images();
+            Probe = new Probes();
+            Ports = new Ports();
+            Settings = new ComponentSettings
+            {
+                Autorecovery = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 1,
+                    Name = "recovery",
+                    Service = $"{ReleaseName}-recovery",
+                    Host = "${HOSTNAME}." + $"{ReleaseName}-recovery.{Namespace}.svc.cluster.local",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel"
+                },
+                ZooKeeper = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 3,
+                    Name = "zookeeper",
+                    Service = $"{ReleaseName}-zookeeper",
+                    Host = "${HOSTNAME}." + $"{ReleaseName}-zookeeper.{Namespace}.svc.cluster.local",
+                    Storage = new Storage
+                    {
+                        ClassName = $"{ReleaseName}-zookeeper-data"
+                    },
+                    ZooConnect = Tls.ZooKeeper.Enabled ? $"{ReleaseName}-zookeeper:2281" : $"{ReleaseName}-zookeeper:2181",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "OrderedReady",
+                },
+                Broker = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 3,
+                    Name = "broker",
+                    Service = $"{ReleaseName}-broker",
+                    Host = "${HOSTNAME}." + $"{ReleaseName}-broker.{Namespace}.svc.cluster.local",
+                    ZNode = $"{MetadataPrefix}/loadbalance/brokers/"+ "${HOSTNAME}." + $"{ReleaseName}-broker.{Namespace}.svc.cluster.local:2181",
+                    UpdateStrategy = "RollingUpdate",
+                    EnableFunctionCustomizerRuntime = false,
+                    PulsarFunctionsExtraClasspath = "extraLibs",
+                    RuntimeCustomizerClassName = "org.apache.pulsar.functions.runtime.kubernetes.BasicKubernetesManifestCustomizer",
+
+                    PodManagementPolicy = "Parallel",
+                },
+                BookKeeper = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 3,
+                    Name = "bookie",
+                    Service = $"{ReleaseName}-bookie",
+                    Host = "${HOSTNAME}." + $"{ReleaseName}-bookie.{Namespace}.svc.cluster.local",
+                    Storage = new Storage
+                    {
+                        ClassName = $"{ReleaseName}-bookie",
+                        LedgerSize = "50Gi",
+                        JournalSize = "10Gi",
+                    },
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel"
+                },
+                Proxy = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 3,
+                    Name = "proxy",
+                    Service = $"{ReleaseName}-proxy",
+                    Host = "${HOSTNAME}." + $"{ReleaseName}-proxy.{Namespace}.svc.cluster.local",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel",
+                },
+                PrestoCoord = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 1,
+                    Name = "presto-coordinator",
+                    Service = $"{ReleaseName}-presto-coordinator",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel",
+                },
+                PrestoWorker = new ComponentSetting
+                {
+                    Enabled = true,
+                    Replicas = 2,
+                    Name = "presto-work",
+                    Service = $"{ReleaseName}-presto-worker",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel"
+                },
+                Kop = new ComponentSetting
+                {
+                    Enabled = false
+                },
+                Function = new ComponentSetting
+                {
+                    Enabled = true,
+                    Name = "functions-worker"
+                }
+            };
+            ExtraConfigs = new ExtraConfigs
+            {
+                ZooKeeper = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        { "ZkServer", new List<string> { } },
+                        { "PeerType", "participant" },
+                        { "InitialMyId", 0 },
+                        { "UseSeparateDiskForTxlog", true },
+                        { "Reconfig", true }
+                    }
+                },
+                Broker = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        {"AdvertisedPodIP", false }
+                    }
+                },
+                Bookie  = new ExtraConfig
+                {
+                    ExtraInitContainers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = "wait-zookeeper-ready",
+                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                        ImagePullPolicy = Images.Bookie.PullPolicy ,
+                        Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
+                        Args = Args.WaitZooKeeperContainer()
+                    }
+                },
+                    Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{Settings.BookKeeper.Name}-init",
+                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                        ImagePullPolicy = Images.Bookie.PullPolicy,
+                        Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
+                        Args = Args.BookieExtraInitContainer(),
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                }
+                            }
+                        }
+                    }
+                },
+                    Holder = new Dictionary<string, object>
+                {
+                    {"RackAware", true }
+                }
+                },
+                PrestoCoordinator = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        { "memory", "2G"},{"maxMemory","1GB" },{"maxMemoryPerNode", "128MB"},
+                        {"Log", "DEBUG" }, {"maxEntryReadBatchSize", "100"},{ "targetNumSplits", "16"},
+                        {"maxSplitMessageQueueSize", "10000"}, {"maxSplitEntryQueueSize", "1000"},
+                        {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
+                        {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
+                    }
+                },
+                PrestoWorker = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        { "memory", "2G"},{"maxMemory","1GB" },{"maxMemoryPerNode", "128MB"},
+                        {"Log", "DEBUG" }, {"maxEntryReadBatchSize", "100"},{ "targetNumSplits", "16"},
+                        {"maxSplitMessageQueueSize", "10000"}, {"maxSplitEntryQueueSize", "1000"},
+                        {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
+                        {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
+                    }
+                }
+            };
+            ConfigMaps = new ConfigMaps
+            {
+                AutoRecovery = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } },
+                ZooKeeper = Config.ZooKeeper(),
+                Broker = Config.Broker(),
+                BookKeeper = Config.BookKeeper(),
+                Proxy = Config.Proxy(),
+                PrestoCoordinator = Config.PrestoCoord(Settings.PrestoCoord.Replicas <= 0 ? "false" : "true"),
+                PrestoWorker = Config.PrestoWorker()
+
+            };
+            //Dependencies order
+            ZooKeeper = ZooKeeperComponent();
+            BookKeeper = BookKeeperComponent();
+            AutoRecovery = AutoRecoveryComponent();
+            Broker = BrokerComponent();
+            Proxy = ProxyComponent();
+            PrestoCoordinator = PrestoCoordinatorComponent();
+            PrestoWorker = PrestoWorkComponent();
+            Toolset = new Component();
+            Kop = new Component();
+            Functions = new Component();
+            AutoRecovery = AutoRecoveryComponent();
+            Ingress = new Ingress { Enabled = false };
+
+        }
         public static List<string> UserProvidedZookeepers { get; set; }
-        public static bool Persistence { get; set; } = true;
-        public static bool LocalStorage { get; set; } = false;
-        public static bool AntiAffinity { get; set; } = false;
+        public static bool Persistence { get; set; }
+        public static bool LocalStorage { get; set; }
+        public static bool AntiAffinity { get; set; }
         // Flag to control whether to run initialize job
-        public static bool Initialize { get; set; } = true;
+        public static bool Initialize { get; set; }
         public static string ConfigurationStore { get; set; }
         public static string ConfigurationStoreMetadataPrefix { get; set; }
         //Namespace to deploy pulsar
-        public static string Namespace { get; set; } = "pulsar";
-        public static string Cluster { get; set; } = "pulsar";
-        public static string ReleaseName { get; set; } = "pulsar";
-        public static string App { get; set; } = "pulsar";
-        public static bool NamespaceCreate { get; set; } = false;
+        public static string Namespace { get; set; }
+        public static string Cluster { get; set; }
+        public static string ReleaseName { get; set; }
+        public static string App { get; set; }
+        public static bool NamespaceCreate { get; set; }
         //// Pulsar Metadata Prefix
         ////
         //// By default, pulsar stores all the metadata at root path.
         //// You can configure to have a prefix (e.g. "/my-pulsar-cluster").
         //// If you do so, all the pulsar and bookkeeper metadata will
         //// be stored under the provided path
-        public static string MetadataPrefix { get; set; } = "";
+        public static string MetadataPrefix { get; set; }
 
-        public static Tls Tls { get; set; } = new Tls();
+        public static Tls Tls { get; set; }
         //// Monitoring Components
         ////
         //// Control what components of the monitoring stack to deploy for the cluster
-        public static Monitoring Monitoring { get; set; } = new Monitoring();
+        public static Monitoring Monitoring { get; set; }
         //// Images
         ////
         //// Control what images to use for each component
-        public static Images Images { get; set; } = new Images();
+        public static Images Images { get; set; }
         //// TLS
         //// templates/tls-certs.yaml
         ////
         //// The chart is using cert-manager for provisioning TLS certs for
         //// brokers and proxies.
         ///
-        public static Authentication Authentication { get; set; } = new Authentication();
+        public static ResourcesRequests ResourcesRequests {get;set;}
+        public static Authentication Authentication { get; set; }
 
-        public static Probes Probe { get; set; } = new Probes();
+        public static ExtraConfigs ExtraConfigs { get; set; }
 
-        public static Ports Ports { get; set; } = new Ports();
-        public static Component Toolset { get; set; } = new Component();
-        public static Component AutoRecovery { get; set; } = new Component
+        public static ConfigMaps ConfigMaps { get; set; }
+
+        public static Probes Probe { get; set; }
+        public static ComponentSettings Settings { get; set; }
+        public static Ports Ports { get; set; }
+        public static Component Toolset { get; set; }
+        public static Component AutoRecovery { get; set; } 
+        public static Component ZooKeeper { get; set; }
+        public static Component BookKeeper { get; set; } 
+        public static Component Broker { get; set; }
+        public static Component Proxy { get; set; } 
+
+        public static Component PrestoCoordinator { get; set; }
+        public static Component PrestoWorker { get; set; } 
+        public static Component Functions { get; set; }
+        public static Component Kop { get; set; }
+        public static Ingress Ingress { get; set; }
+
+        private Component AutoRecoveryComponent()
         {
-            ComponentName = "recovery",
-            Replicas = 1,
-            ServiceName = $"{ReleaseName}-{AutoRecovery.ComponentName }",
-            Enabled = true,
-            UpdateStrategy = "RollingUpdate",
-            PodManagementPolicy = "Parallel",
-            HostName = "${HOSTNAME}." + $"{AutoRecovery.ServiceName}.{Namespace}.svc.cluster.local",
-            ExtraInitContainers = new List<V1Container>
+            return new Component
+            {
+                
+                ExtraInitContainers = new List<V1Container>
             {
                 new V1Container
                     {
@@ -85,11 +345,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                         VolumeMounts = VolumeMounts.RecoveryIntContainer()
                     }
             },
-            Containers = new List<V1Container>
+                Containers = new List<V1Container>
             {
                 new V1Container
                     {
-                        Name = $"{ReleaseName}-{AutoRecovery.ComponentName}",
+                        Name = $"{ReleaseName}-{Settings.Autorecovery.Name}",
                         Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
                         ImagePullPolicy = Images.Autorecovery.PullPolicy,
                         Resources = new V1ResourceRequirements
@@ -97,10 +357,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                             Requests = new Dictionary<string, ResourceQuantity>
                             {
                                 {
-                                    "memory", new ResourceQuantity("64Mi")
+                                    "memory", new ResourceQuantity(ResourcesRequests.AutoRecovery.Memory)
                                 },
                                 {
-                                    "cpu", new ResourceQuantity("0.05")
+                                    "cpu", new ResourceQuantity(ResourcesRequests.AutoRecovery.Cpu)
                                 }
                             }
                         },
@@ -117,241 +377,73 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 {
-                                    Name = $"{ReleaseName}-{AutoRecovery.ComponentName}"
+                                    Name = $"{ReleaseName}-{Settings.Autorecovery.Name}"
                                 }
                             }
                         },
                         VolumeMounts = VolumeMounts.RecoveryContainer()
                     }
             },
-            Volumes = Volumes.Recovery(),
-            ConfigData = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } }
-        };
-        public static Component ZooKeeper { get; set; } = new Component
+                Volumes = Volumes.Recovery()
+            };
+        }
+        private Component ZooKeeperComponent()
         {
-            Enabled = true,
-            Replicas = 3,
-            ComponentName = "zookeeper",
-            ServiceName = $"{ReleaseName}-{ZooKeeper.ComponentName }",
-            UpdateStrategy = "RollingUpdate",
-            PodManagementPolicy = "OrderedReady",
-            ResourcesRequest = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" },
-            Storage = new Storage
+            return new Component
             {
-                ClassName = $"{ReleaseName}-{ZooKeeper.ComponentName}-data",
-            },
-            ZooConnect = Tls.ZooKeeper.Enabled ? $"{ZooKeeper.ServiceName}:2281" : $"{ZooKeeper.ServiceName}:2181",
-            HostName = "${HOSTNAME}." + $"{ZooKeeper.ServiceName}.{Namespace}.svc.cluster.local",
-            ExtraConfig = new ExtraConfig
-            {
-                Holder = new Dictionary<string, object>
-                {
-                    { "ZkServer", new List<string>{ } },
-                    {"PeerType", "participant" },
-                    {"InitialMyId", 0 },
-                    {"UseSeparateDiskForTxlog", true },
-                    {"Reconfig", true }
-                }
-            },
-            Containers = new List<V1Container>
-                {
-                    new V1Container
-                    {
-                        Name = $"{ReleaseName}-{ZooKeeper.ComponentName }",
-                        Image = $"{Images.ZooKeeper.Repository}:{Images.ZooKeeper.Tag}",
-                        ImagePullPolicy = Images.ZooKeeper.PullPolicy,
-                        Resources = new V1ResourceRequirements
-                        {
-                            Requests = new Dictionary<string, ResourceQuantity>
-                            {
-                                {
-                                    "memory", new ResourceQuantity(ZooKeeper.ResourcesRequest.Memory)
-                                },
-                                {
-                                    "cpu", new ResourceQuantity(ZooKeeper.ResourcesRequest.Cpu)
-                                }
-                            }
-                        },
-                        Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                        Args = Args.ZooKeeper(),
-                        Ports = Helpers.Ports.ZooKeeper(),
-                        Env = EnvVar.ZooKeeper(),
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
-                            {
-                                ConfigMapRef = new V1ConfigMapEnvSource
-                                {
-                                    Name = $"{ReleaseName}-{ZooKeeper.ComponentName }"
-                                }
-                            }
-                        },
-                        ReadinessProbe = Helpers.Probe.ExecActionReadiness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
-                        LivenessProbe = Helpers.Probe.ExecActionLiviness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
-                        StartupProbe = Helpers.Probe.ExecActionStartup(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
-                        VolumeMounts = VolumeMounts.ZooKeeper()
-                    }
-                },
-            Volumes = Volumes.ZooKeeper(),
-            ConfigData = Config.ZooKeeper(),
-            PVC = VolumeClaim.ZooKeeper()
-        };
-        public static Component BookKeeper { get; set; } = new Component
-        {
-            Enabled = true,
-            Replicas = 3,
-            ComponentName = "bookie",
-            ServiceName = $"{ReleaseName}-{BookKeeper.ComponentName }",
-            UpdateStrategy = "RollingUpdate",
-            HostName = "${HOSTNAME}." + $"{BookKeeper.ServiceName}.{Namespace}.svc.cluster.local",
-            PodManagementPolicy = "Parallel",
-            Storage = new Storage
-            {
-                ClassName = $"{ReleaseName}-{BookKeeper.ComponentName}",
-                LedgerSize = "50Gi",
-                JournalSize = "10Gi",
-            },
-
-            ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
-            ExtraConfig = new ExtraConfig
-            {
-                ExtraInitContainers = new List<V1Container>
-                {
-                    new V1Container
-                    {
-                        Name = "wait-zookeeper-ready",
-                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy ,
-                        Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                        Args = Args.WaitZooKeeperContainer()
-                    }
-                },
                 Containers = new List<V1Container>
-                {
-                    new V1Container
                     {
-                        Name = $"{ReleaseName}-{BookKeeper.ComponentName}-init",
-                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy,
-                        Command = new []
+                        new V1Container
                         {
-                            "sh",
-                            "-c"
-                        },
-                        Args = Args.BookieExtraInitContainer(),
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
+                            Name = $"{ReleaseName}-{Settings.ZooKeeper.Name}",
+                            Image = $"{Images.ZooKeeper.Repository}:{Images.ZooKeeper.Tag}",
+                            ImagePullPolicy = Images.ZooKeeper.PullPolicy,
+                            Resources = new V1ResourceRequirements
                             {
-                                ConfigMapRef = new V1ConfigMapEnvSource
+                                Requests = new Dictionary<string, ResourceQuantity>
                                 {
-                                    Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
+                                    {
+                                        "memory", new ResourceQuantity(ResourcesRequests.ZooKeeper.Memory)
+                                    },
+                                    {
+                                        "cpu", new ResourceQuantity(ResourcesRequests.ZooKeeper.Cpu)
+                                    }
                                 }
-                            }
-                        }
-                    }
-                },
-                Holder = new Dictionary<string, object>
-                {
-                    {"RackAware", true }
-                }
-            },
-            ExtraInitContainers = new List<V1Container>
-            {
-                new V1Container
-                {
-                    Name = "pulsar-bookkeeper-verify-clusterid",
-                    Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                    ImagePullPolicy = Images.Bookie.PullPolicy,
-                    Command = new[]
-                    {
-                         "sh",
-                         "-c"
-                    },
-                    Args = Args.BookieIntContainer(),
-                    EnvFrom = new List<V1EnvFromSource>
-                    {
-                        new V1EnvFromSource
-                        {
-                            ConfigMapRef = new V1ConfigMapEnvSource
+                            },
+                            Command = new []
                             {
-                                Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
-                            }
+                                "sh",
+                                "-c"
+                            },
+                            Args = Args.ZooKeeper(),
+                            Ports = Helpers.Ports.ZooKeeper(),
+                            Env = EnvVar.ZooKeeper(),
+                            EnvFrom = new List<V1EnvFromSource>
+                            {
+                                new V1EnvFromSource
+                                {
+                                    ConfigMapRef = new V1ConfigMapEnvSource
+                                    {
+                                        Name = $"{ReleaseName}-zookeeper"
+                                    }
+                                }
+                            },
+                            ReadinessProbe = Helpers.Probe.ExecActionReadiness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
+                            LivenessProbe = Helpers.Probe.ExecActionLiviness(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
+                            StartupProbe = Helpers.Probe.ExecActionStartup(Probe.ZooKeeper, "bin/pulsar-zookeeper-ruok.sh"),
+                            VolumeMounts = VolumeMounts.ZooKeeper()
                         }
                     },
-                    VolumeMounts = VolumeMounts.BookieIntContainer()
-                }
-            },
-            Containers = new List<V1Container>
-                {
-                    new V1Container
-                    {
-                        Name = $"{ReleaseName}-{BookKeeper.ComponentName }",
-                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy,
-                        Resources = new V1ResourceRequirements
-                        {
-                            Requests = new Dictionary<string, ResourceQuantity>
-                            {
-                                {
-                                    "memory", new ResourceQuantity(BookKeeper.ResourcesRequest.Memory)
-                                },
-                                {
-                                    "cpu", new ResourceQuantity(BookKeeper.ResourcesRequest.Cpu)
-                                }
-                            }
-                        },
-                        Command = new []
-                        {
-                            "bash",
-                            "-c"
-                        },
-                        Args = Args.BookieContainer(),
-                        Ports = Helpers.Ports.BookKeeper(),
-                        Env = EnvVar.BookKeeper(),
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
-                            {
-                                ConfigMapRef = new V1ConfigMapEnvSource
-                                {
-                                    Name = $"{ReleaseName}-{BookKeeper.ComponentName }"
-                                }
-                            }
-                        },
-                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/api/v1/bookie/is_ready", Ports.Bookie["http"]),
-                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/api/v1/bookie/state", Ports.Bookie["http"]),
-                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/api/v1/bookie/is_ready", Ports.Bookie["http"]),
-                        VolumeMounts = VolumeMounts.BookieContainer()
-                    }
-                },
-            Volumes = Volumes.Bookie(),
-            ConfigData = Config.BookKeeper(),
-            PVC = VolumeClaim.BookKeeper()
-        };
-        public static Component Broker { get; set; } = new Component
+                Volumes = Volumes.ZooKeeper(),
+                PVC = VolumeClaim.ZooKeeper()
+            };
+        }
+        private Component BrokerComponent()
         {
-            Enabled = true,
-            Replicas = 3,
-            ComponentName = "broker",
-            ServiceName = $"{ReleaseName}-{Broker.ComponentName }",
-            HostName = "${HOSTNAME}." + $"{Broker.ServiceName}.{Namespace}.svc.cluster.local",
-            ZNode = $"{MetadataPrefix}/loadbalance/brokers/{Broker.HostName}:2181",
-            UpdateStrategy = "RollingUpdate",
-            EnableFunctionCustomizerRuntime = false,
-            PulsarFunctionsExtraClasspath = "extraLibs",
-            RuntimeCustomizerClassName = "org.apache.pulsar.functions.runtime.kubernetes.BasicKubernetesManifestCustomizer",
-            ResourcesRequest = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
-            PodManagementPolicy = "Parallel",
-            ExtraInitContainers = new List<V1Container>
+            return new Component
+            {                
+                
+                ExtraInitContainers = new List<V1Container>
             {
                 // This init container will wait for zookeeper to be ready before
                 // deploying the bookies
@@ -387,18 +479,18 @@ namespace SharpPulsar.Deployment.Kubernetes
                         {
                             ConfigMapRef = new V1ConfigMapEnvSource
                             {
-                                Name = $"{ReleaseName}-{BookKeeper.ComponentName}"
+                                Name = $"{ReleaseName}-{Settings.Broker.Name}"
                             }
                         }
                     },
                     VolumeMounts = VolumeMounts.BrokerContainer()
                 }
             },
-            Containers = new List<V1Container>
+                Containers = new List<V1Container>
                 {
                     new V1Container
                     {
-                        Name = $"{ReleaseName}-{Broker.ComponentName }",
+                        Name = $"{ReleaseName}-{Settings.Broker.Name }",
                         Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
                         ImagePullPolicy = Images.Broker.PullPolicy,
                         Resources = new V1ResourceRequirements
@@ -406,10 +498,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                             Requests = new Dictionary<string, ResourceQuantity>
                             {
                                 {
-                                    "memory", new ResourceQuantity(Broker.ResourcesRequest.Memory)
+                                    "memory", new ResourceQuantity(ResourcesRequests.Broker.Memory)
                                 },
                                 {
-                                    "cpu", new ResourceQuantity(Broker.ResourcesRequest.Cpu)
+                                    "cpu", new ResourceQuantity(ResourcesRequests.Broker.Cpu)
                                 }
                             }
                         },
@@ -427,7 +519,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 {
-                                    Name = $"{ReleaseName}-{Broker.ComponentName }"
+                                    Name = $"{ReleaseName}-{Settings.Broker.Name}"
                                 }
                             }
                         },
@@ -437,27 +529,91 @@ namespace SharpPulsar.Deployment.Kubernetes
                         VolumeMounts = VolumeMounts.Broker()
                     }
                 },
-            Volumes = Volumes.Broker(),
-            ConfigData = Config.Broker(),
-            ExtraConfig = new ExtraConfig
-            {
-                Holder = new Dictionary<string, object>
-                {
-                    {"AdvertisedPodIP", false }
-                }
-            }
-        };
-        public static Component Proxy { get; set; } = new Component
+                Volumes = Volumes.Broker()
+            };
+        }
+        private Component BookKeeperComponent()
         {
-
-            Enabled = true,
-            Replicas = 3,
-            ComponentName = "proxy",
-            ServiceName = $"{ReleaseName}-{Proxy.ComponentName }",
-            UpdateStrategy = "RollingUpdate",
-            HostName = "${HOSTNAME}." + $"{Proxy.ServiceName}.{Namespace}.svc.cluster.local",
-            PodManagementPolicy = "Parallel",
-            ExtraInitContainers = new List<V1Container>
+            return new Component
+            {
+                ExtraInitContainers = new List<V1Container>
+                {
+                new V1Container
+                {
+                    Name = "pulsar-bookkeeper-verify-clusterid",
+                    Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                    ImagePullPolicy = Images.Bookie.PullPolicy,
+                    Command = new[]
+                    {
+                         "sh",
+                         "-c"
+                    },
+                    Args = Args.BookieIntContainer(),
+                    EnvFrom = new List<V1EnvFromSource>
+                    {
+                        new V1EnvFromSource
+                        {
+                            ConfigMapRef = new V1ConfigMapEnvSource
+                            {
+                                Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                            }
+                        }
+                    },
+                    VolumeMounts = VolumeMounts.BookieIntContainer()
+                }
+            },
+                Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{Settings.BookKeeper.Name }",
+                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                        ImagePullPolicy = Images.Bookie.PullPolicy,
+                        Resources = new V1ResourceRequirements
+                        {
+                            Requests = new Dictionary<string, ResourceQuantity>
+                            {
+                                {
+                                    "memory", new ResourceQuantity(ResourcesRequests.BookKeeper.Memory)
+                                },
+                                {
+                                    "cpu", new ResourceQuantity(ResourcesRequests.BookKeeper.Cpu)
+                                }
+                            }
+                        },
+                        Command = new []
+                        {
+                            "bash",
+                            "-c"
+                        },
+                        Args = Args.BookieContainer(),
+                        Ports = Helpers.Ports.BookKeeper(),
+                        Env = EnvVar.BookKeeper(),
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{Settings.BookKeeper.Name }"
+                                }
+                            }
+                        },
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Bookie, "/api/v1/bookie/is_ready", Ports.Bookie["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Bookie, "/api/v1/bookie/state", Ports.Bookie["http"]),
+                        StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Bookie, "/api/v1/bookie/is_ready", Ports.Bookie["http"]),
+                        VolumeMounts = VolumeMounts.BookieContainer()
+                    }
+                },
+                Volumes = Volumes.Bookie(),
+                PVC = VolumeClaim.BookKeeper()
+            };
+        }
+        private Component ProxyComponent()
+        {
+            return new Component
+            {
+                ExtraInitContainers = new List<V1Container>
             {
                 new V1Container
                     {
@@ -484,11 +640,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                         Args = Args.WaitBrokerContainer()
                     }
             },
-            Containers = new List<V1Container>
+                Containers = new List<V1Container>
                 {
                     new V1Container
                     {
-                        Name = $"{ReleaseName}-{Proxy.ComponentName }",
+                        Name = $"{ReleaseName}-{Settings.Proxy.Name }",
                         Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
                         ImagePullPolicy = Images.Proxy.PullPolicy,
                         Command = new []
@@ -504,7 +660,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 {
-                                    Name = $"{ReleaseName}-{Proxy.ComponentName }"
+                                    Name = $"{ReleaseName}-{Settings.Proxy.Name }"
                                 }
                             }
                         },
@@ -514,34 +670,18 @@ namespace SharpPulsar.Deployment.Kubernetes
                         VolumeMounts = VolumeMounts.ProxyContainer()
                     }
                 },
-            Volumes = Volumes.Proxy(),
-            ConfigData = Config.Proxy()
-        };
-
-        public static Component PrestoCoordinator { get; set; } = new Component
+                Volumes = Volumes.Proxy()
+            };
+        }
+        private Component PrestoCoordinatorComponent()
         {
-            Enabled = false,
-            Replicas = 1,
-            ComponentName = "coordinator",
-            ServiceName = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
-            UpdateStrategy = "RollingUpdate",
-            PodManagementPolicy = "Parallel",
-            ExtraConfig = new ExtraConfig
+            return new Component
             {
-                Holder = new Dictionary<string, object>
-                {
-                    { "memory", "2G"},{"maxMemory","1GB" },{"maxMemoryPerNode", "128MB"},
-                    {"Log", "DEBUG" }, {"maxEntryReadBatchSize", "100"},{ "targetNumSplits", "16"},
-                    {"maxSplitMessageQueueSize", "10000"}, {"maxSplitEntryQueueSize", "1000"},
-                    {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
-                    {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
-                }
-            },
-            Containers = new List<V1Container>
+                Containers = new List<V1Container>
                 {
                     new V1Container
                     {
-                        Name = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
+                        Name = $"{ReleaseName}-{Settings.PrestoCoord.Name }",
                         Image = $"{Images.Presto.Repository}:{Images.Presto.Tag}",
                         ImagePullPolicy = Images.Presto.PullPolicy,
                         Command = new []
@@ -557,7 +697,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 {
-                                    Name = $"{ReleaseName}-{PrestoCoordinator.ComponentName }"
+                                    Name = $"{ReleaseName}-{Settings.PrestoCoord.Name }"
                                 }
                             }
                         },
@@ -567,33 +707,18 @@ namespace SharpPulsar.Deployment.Kubernetes
                         VolumeMounts = VolumeMounts.PrestoCoordContainer()//here
                     }
                 },
-            Volumes = Volumes.PrestoCoord(),
-            ConfigData = Config.PrestoCoord(PrestoCoordinator.Replicas <= 0? "false": "true")
-        };
-        public static Component PrestoWorker { get; set; } = new Component
+                Volumes = Volumes.PrestoCoord()
+            };
+        }
+        private Component PrestoWorkComponent()
         {
-            Enabled = PrestoCoordinator.Enabled,
-            Replicas = 2,
-            ComponentName = "presto-worker",
-            ServiceName = $"{ReleaseName}-{PrestoCoordinator.ComponentName }",
-            UpdateStrategy = "RollingUpdate",
-            PodManagementPolicy = "Parallel",
-            ExtraConfig = new ExtraConfig
+            return new Component
             {
-                Holder = new Dictionary<string, object>
-                {
-                    { "memory", "2G"},{"maxMemory","1GB" },{"maxMemoryPerNode", "128MB"},
-                    {"Log", "DEBUG" }, {"maxEntryReadBatchSize", "100"},{ "targetNumSplits", "16"},
-                    {"maxSplitMessageQueueSize", "10000"}, {"maxSplitEntryQueueSize", "1000"},
-                    {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
-                    {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
-                }
-            },
-            Containers = new List<V1Container>
+                Containers = new List<V1Container>
                 {
                     new V1Container
                     {
-                        Name = $"{ReleaseName}-{PrestoWorker.ComponentName }",
+                        Name = $"{ReleaseName}-{Settings.PrestoWorker.Name }",
                         Image = $"{Images.Presto.Repository}:{Images.Presto.Tag}",
                         ImagePullPolicy = Images.Presto.PullPolicy,
                         Command = new []
@@ -608,7 +733,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 {
-                                    Name = $"{ReleaseName}-{PrestoWorker.ComponentName }"
+                                    Name = $"{ReleaseName}-{Settings.PrestoWorker.Name }"
                                 }
                             }
                         },
@@ -617,18 +742,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                         VolumeMounts = VolumeMounts.PrestoWorkerContainer()
                     }
                 },
-            Volumes = Volumes.PrestoWorker(),
-            ConfigData = Config.PrestoWorker()
-        };
-        public static Component Functions { get; set; } = new Component 
-        { 
-            ComponentName = "functions-worker"
-        };
-        public static Component Kop { get; set; } = new Component
-        {
-            Enabled = false
-        };
-        public static Ingress Ingress { get; set; } = new Ingress();
+                Volumes = Volumes.PrestoWorker()
+            };
+        }
     }
     public sealed class ProxyServiceUrl
     {
@@ -740,6 +856,44 @@ namespace SharpPulsar.Deployment.Kubernetes
             public bool HasCommand { get; set; } = false;
         }
     }
+    
+    public sealed class ComponentSettings
+    {
+        public ComponentSetting Broker { get; set; }
+        public ComponentSetting ZooKeeper { get; set; }
+        public ComponentSetting BookKeeper { get; set; }
+        public ComponentSetting Autorecovery { get; set; }
+        public ComponentSetting Proxy { get; set; }
+        public ComponentSetting PrestoCoord { get; set; }
+        public ComponentSetting PrestoWorker { get; set; }
+        public ComponentSetting Function { get; set; }
+        public ComponentSetting Toolset { get; set; }
+        public ComponentSetting Kop { get; set; }
+    }
+    public sealed class ComponentSetting
+    {
+        public bool Enabled { get; set; }
+        public bool AntiAffinity { get; set; } = true;
+        public int Replicas { get; set; }
+        public string Name { get; set; }
+        public string Service { get; set; }
+        public string Host { get; set; }
+        public Offload Offload { get; set; } = new Offload();
+
+        public ProxyServiceUrl ProxyServiceUrl { get; set; } = new ProxyServiceUrl();
+        public bool UsePolicyPodDisruptionBudget { get; set; }
+        public bool EnableFunctionCustomizerRuntime { get; set; } = false;
+        public string PulsarFunctionsExtraClasspath { get; set; }
+        public string RuntimeCustomizerClassName { get; set; }
+        public string PodManagementPolicy { get; set; }
+        public string UpdateStrategy { get; set; }
+        public int GracePeriodSeconds { get; set; }
+        public bool Persistence { get; set; } = true;
+        public bool LocalStorage { get; set; } = false;
+        public string ZooConnect { get; set; }
+        public string ZNode { get; set; }
+        public Storage Storage { get; set; }
+    }
     public sealed class Ingress 
     { 
         public bool Rbac { get; set; }
@@ -749,18 +903,9 @@ namespace SharpPulsar.Deployment.Kubernetes
 
         public bool DeployNginxController { get; set; } = true;
 
-        public IngressSetting Proxy { get; set; } = new IngressSetting
-        {
-            Enabled = Values.Proxy.Enabled
-        };
-        public IngressSetting Presto { get; set; } = new IngressSetting
-        {
-            Enabled = Values.PrestoCoordinator.Enabled
-        };
-        public IngressSetting Broker { get; set; } = new IngressSetting
-        {
-            Enabled = !Values.Proxy.Enabled && Values.Broker.Enabled
-        };
+        public IngressSetting Proxy { get; set; }
+        public IngressSetting Presto { get; set; } 
+        public IngressSetting Broker { get; set; }
         public string DomainSuffix { get; set; }
         public List<HttpRule> HttpRules { get; set; } = new List<HttpRule>();
         public sealed class IngressSetting
@@ -875,6 +1020,16 @@ namespace SharpPulsar.Deployment.Kubernetes
             public string PulsarManager { get; set; } = "pulsar-manager-admin";
         }
     }
+    public sealed class ExtraConfigs
+    {
+        public ExtraConfig ZooKeeper { get; set; }
+        public ExtraConfig Proxy { get; set; }
+        public ExtraConfig Broker { get; set; }
+        public ExtraConfig Bookie { get; set; }
+        public ExtraConfig PrestoCoordinator { get; set; }
+        public ExtraConfig PrestoWorker { get; set; }
+        public ExtraConfig AutoRecovery { get; set; }
+    }
     public sealed class Probes
     {
         public ComponentProbe Broker { get; set; } = new ComponentProbe
@@ -901,6 +1056,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 PeriodSeconds = 10
             }
         };
+        
         public ComponentProbe ZooKeeper { get; set; } = new ComponentProbe
         {
             Liveness = new ProbeOptions
@@ -1042,37 +1198,26 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public class Component
     {
-        public ProxyServiceUrl ProxyServiceUrl { get; set; } = new ProxyServiceUrl();
-        public Storage Storage { get; set; } = new Storage();
-        public bool UsePolicyPodDisruptionBudget { get; set; }
-        public Offload Offload { get; set; } = new Offload();
-        public bool EnableFunctionCustomizerRuntime { get; set; } = false;
-        public string PulsarFunctionsExtraClasspath { get; set; }
-        public string RuntimeCustomizerClassName { get; set; }
-        public ResourcesRequest ResourcesRequest { get; set; }
-        public bool Persistence { get; set; } = true;
-        public bool LocalStorage { get; set; } = false;
-        public bool AntiAffinity { get; set; } = true;
-        public bool Enabled { get; set; } = false;
-        public string ComponentName { get; set; }
-        public string ServiceName { get; set; }
-        public string ZNode { get; set; }
-        public string PodManagementPolicy { get; set; }
-        public string UpdateStrategy { get; set; }
-        public string ZooConnect { get; set; }
-        public int GracePeriodSeconds { get; set; }
-        public int Replicas { get; set; }
         public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();
         public List<V1PersistentVolumeClaim> PVC { get; set; } = new List<V1PersistentVolumeClaim>();
         public List<V1Volume> Volumes { get; set; } = new List<V1Volume>();
         public List<V1Container> Containers { get; set; } = new List<V1Container>();
         public List<V1Toleration> Tolerations { get; set; } = new List<V1Toleration>();
-        public IDictionary<string, string> ConfigData { get; set; } = new Dictionary<string, string>();
-        public ExtraConfig ExtraConfig { get; set; } = new ExtraConfig();
         public V1PodSecurityContext SecurityContext { get; set; } = new V1PodSecurityContext { };
         public IDictionary<string, string> NodeSelector { get; set; } = new Dictionary<string, string>();
-        public string HostName { get; set; }
     }
+    public sealed class ResourcesRequests
+    {
+        public ResourcesRequest AutoRecovery { get; set; }
+        public ResourcesRequest ZooKeeper { get; set; }
+        public ResourcesRequest BookKeeper { get; set; }
+        public ResourcesRequest Broker { get; set; }
+        public ResourcesRequest Proxy { get; set; }
+        public ResourcesRequest PrestoCoordinator { get; set; }
+        public ResourcesRequest PrestoWorker { get; set; }
+
+    }
+
     public sealed class ResourcesRequest
     {
         public string Memory { get; set; }
@@ -1083,9 +1228,9 @@ namespace SharpPulsar.Deployment.Kubernetes
     {
         public bool Enabled { get; set; }
         public string ManagedLedgerOffloadDriver { get; set; }
-        public OffloadSetting Gcs { get; set; }
-        public OffloadSetting Azure { get; set; }
-        public OffloadSetting S3 { get; set; }
+        public OffloadSetting Gcs { get; set; } = new OffloadSetting();
+        public OffloadSetting Azure { get; set; } = new OffloadSetting();
+        public OffloadSetting S3 { get; set; } = new OffloadSetting();
         public sealed class OffloadSetting
         {
             public bool Enabled { get; set; }
@@ -1109,5 +1254,17 @@ namespace SharpPulsar.Deployment.Kubernetes
         public List<V1Container> ExtraInitContainers { get; set; } = new List<V1Container>();
         public List<V1Container> Containers { get; set; } = new List<V1Container>();
         public IDictionary<string, object> Holder { get; set; } = new Dictionary<string, object>();
+    }
+    public sealed class ConfigMaps
+    {
+        public IDictionary<string, string> ZooKeeper { get; set; }
+        public IDictionary<string, string> BookKeeper { get; set; }
+        public IDictionary<string, string> Broker { get; set; }
+        public IDictionary<string, string> PrestoCoordinator { get; set; }
+        public IDictionary<string, string> PrestoWorker { get; set; }
+        public IDictionary<string, string> Proxy { get; set; }
+        public IDictionary<string, string> AutoRecovery { get; set; }
+        public IDictionary<string, string> Functions { get; set; }
+        public IDictionary<string, string> Toolset { get; set; }
     }
 }

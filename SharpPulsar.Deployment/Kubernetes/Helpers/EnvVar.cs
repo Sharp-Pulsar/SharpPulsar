@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
-    internal class EnvVar
+    public class EnvVar
     {
         public static List<V1EnvVar> Broker()
         {
-            if ((bool)Values.Broker.ExtraConfig.Holder["AdvertisedPodIP"])
+            if ((bool)Values.ExtraConfigs.Broker.Holder["AdvertisedPodIP"])
                 return new List<V1EnvVar>
                 {
                     new V1EnvVar
@@ -28,8 +28,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1EnvVar> ZooKeeper()
         {
             var zkServers = new List<string>();
-            for (var i = 0; i < Values.ZooKeeper.Replicas; i++)
-                zkServers.Add($"{Values.ReleaseName}-{Values.ZooKeeper.ComponentName}-{i}");
+            for (var i = 0; i < Values.Settings.ZooKeeper.Replicas; i++)
+                zkServers.Add($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-{i}");
 
             return new List<V1EnvVar>
                 {
@@ -71,7 +71,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             new V1EnvVar
                             {
                                 Name = "VOLUME_NAME",
-                                Value = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}-journal"
+                                Value = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-journal"
                             },
                             new V1EnvVar
                             {
@@ -79,7 +79,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                                 Value = Values.Ports.Bookie[port].ToString()
                             }
             };
-            if ((bool)Values.BookKeeper.ExtraConfig.Holder["RackAware"])
+            if ((bool)Values.ExtraConfigs.Bookie.Holder["RackAware"])
             {
                 bks.Add(new V1EnvVar
                 {

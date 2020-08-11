@@ -14,13 +14,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         public V1ServiceAccount Run(string dryRun = default)
         {
             _serviceAccount.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.Broker.ComponentName}-acct", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.Broker.Name}-acct", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.Broker.ComponentName }
+                                {"component",Values.Settings.Broker.Name }
                             });
             return _serviceAccount.Run(_serviceAccount.Builder(), Values.Namespace, dryRun);
         }

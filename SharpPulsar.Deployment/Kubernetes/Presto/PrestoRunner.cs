@@ -32,7 +32,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
         }
         public bool Run(out Dictionary<string, object> results, string dryRun = default)
         {
-            if (Values.PrestoCoordinator.Enabled)
+            if (Values.Settings.PrestoCoord.Enabled)
             {
                 _results = new Dictionary<string, object>();
 
@@ -46,7 +46,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
                 var state = _prestoCoordinatorStatefulSet.Run(dryRun);
                 _results.Add("StatefulSet", state);
 
-                if (Values.PrestoWorker.Replicas > 0)
+                if (Values.Settings.PrestoWorker.Replicas > 0)
                 {
                     var confw = _prestoWorkerConfigMap.Run(dryRun);
                     _results.Add("ConfigMapWorker", confw);

@@ -32,14 +32,14 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
         }
         public bool Run(out Dictionary<string, object> results, string dryRun = default)
         {
-            if(Values.Proxy.Enabled)
+            if(Values.Settings.Proxy.Enabled)
             {
                 _results = new Dictionary<string, object>();
 
                 var conf = _config.Run(dryRun);
                 _results.Add("ConfigMap", conf);
 
-                if (Values.Proxy.UsePolicyPodDisruptionBudget)
+                if (Values.Settings.Proxy.UsePolicyPodDisruptionBudget)
                 {
                     var pdb = _pdb.Run(dryRun);
                     _results.Add("Pdb", pdb);

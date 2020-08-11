@@ -5,17 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="kubernetesclient" Version="2.0.26" />
+    <Compile Remove="Kubernetes\Manager\**" />
+    <EmbeddedResource Remove="Kubernetes\Manager\**" />
+    <None Remove="Kubernetes\Manager\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="kubernetesclient" Version="2.0.29" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="Kubernetes\Zoo\gen-zk-conf.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Kubernetes\Manager\" />
   </ItemGroup>
 
 </Project>

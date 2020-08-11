@@ -14,26 +14,26 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         public V1StatefulSet Run(string dryRun = default)
         {
             _set.Builder()
-                .Name($"{Values.ReleaseName}-{Values.Broker.ComponentName}")
+                .Name($"{Values.ReleaseName}-{Values.Settings.Broker.Name}")
                 .Namespace(Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.Broker.ComponentName }
+                                {"component",Values.Settings.Broker.Name }
                             })
                 .SpecBuilder()
-                .ServiceName(Values.Broker.ServiceName)
-                .Replication(Values.Broker.Replicas)
+                .ServiceName(Values.Settings.Broker.Service)
+                .Replication(Values.Settings.Broker.Replicas)
                 .Selector(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.Broker.ComponentName }
+                                {"component",Values.Settings.Broker.Name }
                             })
-                .UpdateStrategy(Values.Broker.UpdateStrategy)
-                .PodManagementPolicy(Values.Broker.PodManagementPolicy)
+                .UpdateStrategy(Values.Settings.Broker.UpdateStrategy)
+                .PodManagementPolicy(Values.Settings.Broker.PodManagementPolicy)
                 .VolumeClaimTemplates(Values.Broker.PVC)
                 .TemplateBuilder()
                 .Metadata(new Dictionary<string, string>
@@ -41,7 +41,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component",Values.Broker.ComponentName }
+                                {"component",Values.Settings.Broker.Name }
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "true" },
@@ -51,10 +51,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                 .SpecBuilder()
                 .Tolerations(Values.Broker.Tolerations)
                 .SecurityContext(Values.Broker.SecurityContext)
-                .ServiceAccountName($"{Values.ReleaseName}-{Values.Broker.ComponentName}-acct")
+                .ServiceAccountName($"{Values.ReleaseName}-{Values.Settings.Broker.Name}-acct")
                 .NodeSelector(Values.Broker.NodeSelector)
-                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Broker))
-                .TerminationGracePeriodSeconds(Values.Broker.GracePeriodSeconds)
+                .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Settings.Broker))
+                .TerminationGracePeriodSeconds(Values.Settings.Broker.GracePeriodSeconds)
                 .InitContainers(Values.Broker.ExtraInitContainers)
                 .Containers(Values.Broker.Containers)
                 .Volumes(Values.Broker.Volumes);

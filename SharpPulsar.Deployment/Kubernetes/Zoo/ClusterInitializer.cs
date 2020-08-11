@@ -56,7 +56,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                             {
                                 ConfigMapRef = new V1ConfigMapEnvSource
                                 {
-                                    Name = $"{Values.ReleaseName}-{Values.BookKeeper.ComponentName}"
+                                    Name = $"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}"
                                 }
                             }
                         },

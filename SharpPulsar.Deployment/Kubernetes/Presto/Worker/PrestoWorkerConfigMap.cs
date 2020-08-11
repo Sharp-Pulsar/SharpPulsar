@@ -13,15 +13,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Worker
         public V1ConfigMap Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.PrestoWorker.ComponentName}", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.PrestoWorker.Name}", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.PrestoWorker.ComponentName },
+                                {"component", Values.Settings.PrestoWorker.Name },
                             })
-                .Data(Values.PrestoWorker.ConfigData);
+                .Data(Values.ConfigMaps.PrestoWorker);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }
