@@ -93,9 +93,23 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             return this;
         }
 
-        public Networkingv1beta1Ingress Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
-            return _client.CreateNamespacedIngress1(_ingress, Values.Namespace, dryRun);
+            var result = new RunResult();
+            try
+            {
+                result.Response = _client.CreateNamespacedIngress1(_ingress, Values.Namespace, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

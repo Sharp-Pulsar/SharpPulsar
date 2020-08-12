@@ -28,9 +28,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
             _service = new ProxyService(service);
             _stateful = new ProxyStatefulset(statefulSet);
         }
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
-            object result;
+            RunResult result;
             if(Values.Settings.Proxy.Enabled)
             {
 

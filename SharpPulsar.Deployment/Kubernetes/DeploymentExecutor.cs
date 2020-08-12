@@ -47,7 +47,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _networkCenterRunner = new NetworkCenterRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
             _certRunner = new CertRunner(_client, secret);
         }
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
             if (Values.NamespaceCreate)
             {

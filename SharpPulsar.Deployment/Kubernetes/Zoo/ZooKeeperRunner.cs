@@ -42,9 +42,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
             _datalog = new ZooKeeperStorageClass(storageClass);
         }
 
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
-            object result;
+            RunResult result;
             if(Values.Settings.ZooKeeper.Enabled)
             {
                 result = _config.Run(dryRun);

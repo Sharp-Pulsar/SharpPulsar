@@ -47,9 +47,9 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 
         }
 
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
-            object result;
+            RunResult result;
             if (Values.Ingress.Enabled)
             {
                 result = _nginxConfiguration.Run(dryRun);

@@ -182,9 +182,23 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             };
         }
 
-        public V1Deployment Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
-            return _client.CreateNamespacedDeployment(_deployment, Values.Namespace, dryRun);
+            var result = new RunResult();
+            try
+            {
+                result.Response = _client.CreateNamespacedDeployment(_deployment, Values.Namespace, dryRun); 
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

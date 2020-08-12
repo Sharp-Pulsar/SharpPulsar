@@ -32,15 +32,41 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             };
         }
         
-        public V1alpha2Certificate Run()
+        public RunResult Run()
         {
-            var result = _client.CreateClusterCustomObject(_cert, "cert-manager.io", "v1alpha2", "certificates", "true");
-            return (V1alpha2Certificate)result;
+            var result = new RunResult();
+            try
+            {
+                result.Response = _client.CreateClusterCustomObject(_cert, "cert-manager.io", "v1alpha2", "certificates", "true");
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1alpha2Certificate> RunAsync()
+        public async Task<RunResult> RunAsync()
         {
-            var result = await _client.CreateClusterCustomObjectAsync(_cert, "cert-manager.io", "v1alpha2", "certificates", "true");
-            return (V1alpha2Certificate)result;
+            var result = new RunResult();
+            try
+            {
+                result.Response = await _client.CreateClusterCustomObjectAsync(_cert, "cert-manager.io", "v1alpha2", "certificates", "true");
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

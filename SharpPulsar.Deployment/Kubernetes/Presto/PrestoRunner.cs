@@ -29,9 +29,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
             _prestoWorkerStatefulSet = new PrestoWorkerStatefulSet(stateful);
             _prestoService = new PrestoService(service);
         }
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
-            object result;
+            RunResult result;
             if (Values.Settings.PrestoCoord.Enabled)
             {
                 result = _prestoCoordinatorConfigMap.Run(dryRun);

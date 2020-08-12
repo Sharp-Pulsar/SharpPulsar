@@ -45,9 +45,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
             _brokerStatefulset = new BrokerStatefulset(statefulSet);
             _function = new FunctionWorkerConfigMap(configMap);
         }
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
-            object result;
+            RunResult result;
             if (Values.Settings.Broker.Enabled)
             {
                 result = _brokerClusterRoleBinding.Run(dryRun);

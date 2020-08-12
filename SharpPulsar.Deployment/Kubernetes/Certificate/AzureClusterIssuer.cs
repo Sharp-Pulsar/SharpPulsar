@@ -93,8 +93,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             };
             return this;
         }
-        public V1alpha2ClusterIssuer Run()
+        public RunResult Run()
         {
+            var result = new RunResult();
             if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Email))
                 throw new ArgumentException("Email is missing"); 
             
@@ -125,11 +126,25 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             if (_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Key) || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Name))
                 throw new ArgumentException("ClientSecretSecretRef not set");
 
-            return (V1alpha2ClusterIssuer)_client.CreateClusterCustomObject(_issuer, "cert-manager.io", "v1alpha2", "clusterissuers", "true");
+            try
+            {
+                result.Response = _client.CreateClusterCustomObject(_issuer, "cert-manager.io", "v1alpha2", "clusterissuers", "true");
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
 
-        public async Task<V1alpha2ClusterIssuer> RunAsync()
+        public async Task<RunResult> RunAsync()
         {
+            var result = new RunResult();
             if (string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Email))
                 throw new ArgumentException("Email is missing");
 
@@ -160,8 +175,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             if (_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef == null || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Key) || string.IsNullOrWhiteSpace(_issuer.Spec.Acme.Solvers.Dns01.AzureDns.ClientSecretSecretRef.Name))
                 throw new ArgumentException("ClientSecretSecretRef not set");
 
-            var result = await _client.CreateClusterCustomObjectAsync(_issuer, "cert-manager.io", "v1alpha2", "clusterissuers", "true");
-            return (V1alpha2ClusterIssuer)result;
+            try
+            {
+                result.Response = await _client.CreateClusterCustomObjectAsync(_issuer, "cert-manager.io", "v1alpha2", "clusterissuers", "true");
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

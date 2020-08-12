@@ -16,9 +16,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
             _wild = new WildcardCertificate(client);
         }
 
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
-            object result;
+            RunResult result;
             if (Values.Tls.Enabled)
             {
 

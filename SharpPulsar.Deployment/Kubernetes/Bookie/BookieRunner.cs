@@ -67,7 +67,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
             _journal = new Journal(storageClass);
             _ledger = new Ledger(storageClass);           
         }
-        public IEnumerable<object> Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
             if (Values.Settings.Autorecovery.Enabled)
             {
