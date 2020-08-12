@@ -19,17 +19,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1beta1PodDisruptionBudget Run(PodDisruptionBudgetBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(PodDisruptionBudgetBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new PodDisruptionBudgetBuilder();
-            return _client.CreateNamespacedPodDisruptionBudget(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new PodDisruptionBudgetBuilder();
+                result.Response = _client.CreateNamespacedPodDisruptionBudget(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1beta1PodDisruptionBudget> RunAsync(PodDisruptionBudgetBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(PodDisruptionBudgetBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new PodDisruptionBudgetBuilder();
-            return await _client.CreateNamespacedPodDisruptionBudgetAsync(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new PodDisruptionBudgetBuilder();
+                result.Response = await _client.CreateNamespacedPodDisruptionBudgetAsync(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

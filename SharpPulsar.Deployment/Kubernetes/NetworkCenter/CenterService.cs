@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             _service = service;
         }
 
-        public V1Service Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _service.Builder()
                 .Metadata($"{Values.ReleaseName}-nginx-ingress-controller", Values.Namespace)

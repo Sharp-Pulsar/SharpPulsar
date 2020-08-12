@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
             _job = job;
         }
 
-        public V1Job Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _job.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}-init", Values.Namespace)

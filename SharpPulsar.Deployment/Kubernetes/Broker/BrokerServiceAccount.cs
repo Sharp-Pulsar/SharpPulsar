@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         {
             _serviceAccount = serviceAccount;
         }
-        public V1ServiceAccount Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _serviceAccount.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.Broker.Name}-acct", Values.Namespace)

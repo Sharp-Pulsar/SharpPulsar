@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         {
             _str = cls;
         }
-        public V1StorageClass Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _str.Builder().
                 Metadata($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data", Values.Namespace, new Dictionary<string, string>
@@ -32,7 +32,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         {
             _str = cls;
         }
-        public V1StorageClass Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _str.Builder().
                 Metadata($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data-log", Values.Namespace, new Dictionary<string, string>

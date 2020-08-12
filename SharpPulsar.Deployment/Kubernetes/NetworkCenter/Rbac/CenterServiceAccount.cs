@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter.Rbac
         {
             _serviceAccount = serviceAccount;
         }
-        public V1ServiceAccount Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _serviceAccount.Builder()
                 .Metadata($"{Values.ReleaseName}-nginx-ingress-serviceaccount", Values.Namespace);

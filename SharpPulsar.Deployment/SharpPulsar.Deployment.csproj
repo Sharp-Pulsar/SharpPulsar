@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="kubernetesclient" Version="2.0.29" />
+    <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>
 
   <ItemGroup>

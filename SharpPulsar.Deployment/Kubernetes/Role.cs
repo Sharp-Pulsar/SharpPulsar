@@ -18,17 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1Role Run(RoleBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(RoleBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new RoleBuilder();
-            return _client.CreateNamespacedRole(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new RoleBuilder();
+                result.Response = _client.CreateNamespacedRole(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1Role> RunAsync(RoleBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(RoleBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new RoleBuilder();
-            return await _client.CreateNamespacedRoleAsync(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new RoleBuilder();
+                result.Response = await _client.CreateNamespacedRoleAsync(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
 
     }

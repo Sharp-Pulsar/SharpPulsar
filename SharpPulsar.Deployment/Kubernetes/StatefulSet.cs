@@ -18,17 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1StatefulSet Run(StatefulSetBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(StatefulSetBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new StatefulSetBuilder();
-            return _client.CreateNamespacedStatefulSet(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new StatefulSetBuilder();
+                result.Response = _client.CreateNamespacedStatefulSet(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1StatefulSet> RunAsync(StatefulSetBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(StatefulSetBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new StatefulSetBuilder();
-            return await _client.CreateNamespacedStatefulSetAsync(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new StatefulSetBuilder();
+                result.Response = await _client.CreateNamespacedStatefulSetAsync(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

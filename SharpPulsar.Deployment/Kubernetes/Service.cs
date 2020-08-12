@@ -18,18 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1Service Run(ServiceBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(ServiceBuilder builder, string ns, string dryRun = default)
         {
-            //Operation returned an invalid status code 'Conflict'
-            var build = builder;
-            _builder = new ServiceBuilder();
-            return _client.CreateNamespacedService(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new ServiceBuilder();
+                result.Response = _client.CreateNamespacedService(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1Service> RunAsync(ServiceBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(ServiceBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new ServiceBuilder();
-            return await _client.CreateNamespacedServiceAsync(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new ServiceBuilder();
+                result.Response = await _client.CreateNamespacedServiceAsync(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

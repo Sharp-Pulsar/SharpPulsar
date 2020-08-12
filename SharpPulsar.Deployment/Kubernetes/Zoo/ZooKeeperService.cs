@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
             _service = service;
         }
         
-        public V1Service Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _service.Builder()
                 .Metadata(Values.Settings.ZooKeeper.Service, Values.Namespace)

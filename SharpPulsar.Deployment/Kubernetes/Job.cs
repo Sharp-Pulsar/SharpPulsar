@@ -18,47 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1Job Run(JobBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(JobBuilder builder, string ns, string dryRun = default)
         {
+            var result = new RunResult();
             try
             {
                 var build = builder;
                 _builder = new JobBuilder();
-                var v1Job = build.Build();
-                v1Job.Validate();
-                return _client.CreateNamespacedJob(build.Build(), ns, dryRun);
+                result.Response = _client.CreateNamespacedJob(build.Build(), ns, dryRun);
+                result.Success = true;
             }
-            catch(Microsoft.Rest.ValidationException vEx)
+            catch (Microsoft.Rest.RestException ex)
             {
-                throw new System.Exception(vEx.Details.ToString());
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
             }
-            catch (Microsoft.Rest.HttpOperationException ex)
-            {
-                var content = ex.Response.Content;
-                var statusCode = ex.Response.StatusCode;
-                var reasonPhrase = ex.Response.ReasonPhrase;
-                throw new System.Exception(ex.Response.Content);
-            }
+            return result;
         }
-        public async Task<V1Job> RunAsync(JobBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(JobBuilder builder, string ns, string dryRun = default)
         {
+            var result = new RunResult();
             try
             {
                 var build = builder;
                 _builder = new JobBuilder();
-                return await _client.CreateNamespacedJobAsync(build.Build(), ns, dryRun);
+                result.Response = await _client.CreateNamespacedJobAsync(build.Build(), ns, dryRun);
+                result.Success = true;
             }
-            catch (Microsoft.Rest.ValidationException vEx)
+            catch (Microsoft.Rest.RestException ex)
             {
-                throw new System.Exception(vEx.Details.ToString());
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
             }
-            catch (Microsoft.Rest.HttpOperationException ex)
-            {
-                var content = ex.Response.Content;
-                var statusCode = ex.Response.StatusCode;
-                var reasonPhrase = ex.Response.ReasonPhrase;
-                throw new System.Exception(ex.Response.Content);
-            }
+            return result;
         }
     }
 }

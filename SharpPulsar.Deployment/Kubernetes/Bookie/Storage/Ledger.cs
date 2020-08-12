@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.Storage
         {
             _str = cls;
         }
-        public V1StorageClass Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _str.Builder().
                 Metadata($"{Values.Settings.BookKeeper.Storage.ClassName}-ledger", Values.Namespace, new Dictionary<string, string>

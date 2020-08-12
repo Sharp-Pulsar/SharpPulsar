@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         {
             _config = config;
         }
-        public V1ClusterRoleBinding Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _config.Builder()
                 .Name($"{Values.ReleaseName}-{Values.Settings.Broker.Name }-clusterrolebinding")

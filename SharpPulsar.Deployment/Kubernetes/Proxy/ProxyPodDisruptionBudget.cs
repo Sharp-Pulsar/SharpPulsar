@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
         {
             _pdb = pdb;
         }
-        public V1beta1PodDisruptionBudget Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _pdb.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.Proxy.Name}", Values.Namespace)

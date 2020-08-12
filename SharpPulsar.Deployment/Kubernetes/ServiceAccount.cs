@@ -18,17 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1ServiceAccount Run(ServiceAccountBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(ServiceAccountBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new ServiceAccountBuilder();
-            return _client.CreateNamespacedServiceAccount(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new ServiceAccountBuilder();
+                result.Response = _client.CreateNamespacedServiceAccount(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1ServiceAccount> RunAsync(ServiceAccountBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(ServiceAccountBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new ServiceAccountBuilder();
-            return await _client.CreateNamespacedServiceAccountAsync(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new ServiceAccountBuilder();
+                result.Response = await _client.CreateNamespacedServiceAccountAsync(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

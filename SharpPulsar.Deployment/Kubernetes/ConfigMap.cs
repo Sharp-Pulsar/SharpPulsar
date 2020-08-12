@@ -1,5 +1,4 @@
 ﻿using k8s;
-using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
 using System.Threading.Tasks;
 
@@ -18,31 +17,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1ConfigMap Run(ConfigMapBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(ConfigMapBuilder builder, string ns, string dryRun = default)
         {
+            var result = new RunResult();
             try
             {
                 var build = builder;
                 _builder = new ConfigMapBuilder();
-                return _client.CreateNamespacedConfigMap(build.Build(), ns, dryRun);
+                result.Response = _client.CreateNamespacedConfigMap(build.Build(), ns, dryRun);
+                result.Success = true;
             }
-            catch(Microsoft.Rest.HttpOperationException ex)
+            catch(Microsoft.Rest.RestException ex)
             {
-                throw new System.Exception(ex.Response.Content);
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
             }
+            return result;
         }
-        public async Task<V1ConfigMap> RunAsync(ConfigMapBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(ConfigMapBuilder builder, string ns, string dryRun = default)
         {
+            var result = new RunResult();
             try
             {
                 var build = builder;
                 _builder = new ConfigMapBuilder();
-                return await _client.CreateNamespacedConfigMapAsync(build.Build(), ns, dryRun);
+                result.Response = await _client.CreateNamespacedConfigMapAsync(build.Build(), ns, dryRun);
+                result.Success = true;
             }
-            catch (Microsoft.Rest.HttpOperationException ex)
+            catch (Microsoft.Rest.RestException ex)
             {
-                throw new System.Exception(ex.Response.Content);
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
             }
+            return result;
         }
     }
 }

@@ -46,7 +46,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             }
             return this;
         }
-        public V1Service Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _service.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Namespace}-tcp-ingress", Values.Namespace)

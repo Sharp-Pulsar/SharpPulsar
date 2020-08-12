@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter.ConfigMaps
         {
             _config = config;
         }
-        public V1ConfigMap Run(Dictionary<string, string> ports, string dryRun = default)
+        public RunResult Run(Dictionary<string, string> ports, string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-tcp-services", Values.Namespace)

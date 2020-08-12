@@ -12,7 +12,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
             _service = service;
         }
 
-        public V1Service Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _service.Builder()
                 .Metadata(Values.Settings.PrestoCoord.Service, Values.Namespace)

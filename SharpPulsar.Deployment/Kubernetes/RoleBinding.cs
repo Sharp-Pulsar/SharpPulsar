@@ -18,17 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1RoleBinding Run(RoleBindingBuilder builder, string ns, string dryRun = default)
+        public RunResult Run(RoleBindingBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new RoleBindingBuilder();
-            return _client.CreateNamespacedRoleBinding(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new RoleBindingBuilder();
+                result.Response = _client.CreateNamespacedRoleBinding(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1RoleBinding> RunAsync(RoleBindingBuilder builder, string ns, string dryRun = default)
+        public async Task<RunResult> RunAsync(RoleBindingBuilder builder, string ns, string dryRun = default)
         {
-            var build = builder;
-            _builder = new RoleBindingBuilder();
-            return await _client.CreateNamespacedRoleBindingAsync(build.Build(), ns, dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new RoleBindingBuilder();
+                result.Response = await _client.CreateNamespacedRoleBindingAsync(build.Build(), ns, dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter.Rbac
         {
             _config = config;
         }
-        public V1RoleBinding Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _config.Builder()
                 .Name($"{Values.ReleaseName}-nginx-ingress-role-nisa-binding")

@@ -18,17 +18,45 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return _builder;
         }
-        public V1StorageClass Run(StorageClassBuilder builder, string dryRun = default)
+        public RunResult Run(StorageClassBuilder builder, string dryRun = default)
         {
-            var build = builder;
-            _builder = new StorageClassBuilder();
-            return _client.CreateStorageClass(build.Build(), dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new StorageClassBuilder();
+                result.Response = _client.CreateStorageClass(build.Build(), dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
-        public async Task<V1StorageClass> RunAsync(StorageClassBuilder builder, string dryRun = default)
+        public async Task<RunResult> RunAsync(StorageClassBuilder builder, string dryRun = default)
         {
-            var build = builder;
-            _builder = new StorageClassBuilder();
-            return await _client.CreateStorageClassAsync(build.Build(), dryRun);
+            var result = new RunResult();
+            try
+            {
+                var build = builder;
+                _builder = new StorageClassBuilder();
+                result.Response = await _client.CreateStorageClassAsync(build.Build(), dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

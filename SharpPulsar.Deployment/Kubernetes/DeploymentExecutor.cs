@@ -1,4 +1,5 @@
 ﻿using k8s;
+using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Bookie;
 using SharpPulsar.Deployment.Kubernetes.Broker;
 using SharpPulsar.Deployment.Kubernetes.Certificate;
@@ -53,11 +54,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                 object ns;
                 try
                 {
-                    var nsp = new k8s.Models.V1Namespace
+                    var nsp = new V1Namespace
                     {
                         ApiVersion = "v1",
                         Kind = "Namespace",
-                        Metadata = new k8s.Models.V1ObjectMeta
+                        Metadata = new V1ObjectMeta
                         {
                             Name = Values.Namespace
                         }
@@ -66,10 +67,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
                 catch (Microsoft.Rest.HttpOperationException ex)
                 {
-                    var content = ex.Response.Content;
-                    var statusCode = ex.Response.StatusCode;
-                    var reasonPhrase = ex.Response.ReasonPhrase;
-                    throw new System.Exception(ex.Response.Content);
+                    ns = ex.Response.Content;
                 }
                 yield return ns;
             }

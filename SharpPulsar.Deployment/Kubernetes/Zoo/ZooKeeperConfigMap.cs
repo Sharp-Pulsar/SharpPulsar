@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         {
             _config = config;
         } 
-        public V1ConfigMap GenZkConf(string dryRun = default)
+        public RunResult GenZkConf(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-genzkconf-configmap", Values.Namespace)
@@ -98,7 +98,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 });
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
-        public V1ConfigMap Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}", Values.Namespace)                

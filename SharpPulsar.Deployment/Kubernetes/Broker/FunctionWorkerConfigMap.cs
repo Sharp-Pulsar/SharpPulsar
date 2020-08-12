@@ -1,5 +1,4 @@
-﻿using k8s.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Broker
 {
@@ -10,7 +9,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         {
             _config = config;
         }
-        public V1ConfigMap Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.Function.Name}-config", Values.Namespace)

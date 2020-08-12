@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
         {
             _config = config;
         }
-        public V1ConfigMap Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.Proxy.Name}", Values.Namespace)

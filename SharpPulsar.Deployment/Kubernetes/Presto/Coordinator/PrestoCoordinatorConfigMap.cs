@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Coordinator
         {
             _config = config;
         }
-        public V1ConfigMap Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Settings.PrestoCoord.Name}", Values.Namespace)

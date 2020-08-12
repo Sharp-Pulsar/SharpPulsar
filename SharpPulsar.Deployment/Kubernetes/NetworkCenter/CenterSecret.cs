@@ -13,7 +13,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             _secret = secret;
         }
 
-        public V1Secret Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _secret.Builder()
                 .Metadata($"{Values.ReleaseName}-ingress-secret", Values.Namespace)

@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
             _set = set;
         }
 
-        public V1StatefulSet Run(string dryRun = default)
+        public RunResult Run(string dryRun = default)
         {
             _set.Builder()
                 .Name($"{Values.ReleaseName}-{Values.Settings.BookKeeper.Name}")
