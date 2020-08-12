@@ -51,7 +51,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             if (Values.NamespaceCreate)
             {
-                object ns;
+                var result = new RunResult();
                 try
                 {
                     var nsp = new V1Namespace
@@ -63,13 +63,18 @@ namespace SharpPulsar.Deployment.Kubernetes
                             Name = Values.Namespace
                         }
                     };
-                    ns = _client.CreateNamespace(nsp, dryRun);
+                    result.Response = _client.CreateNamespace(nsp, dryRun);
+                    result.Success = true;
                 }
-                catch (Microsoft.Rest.HttpOperationException ex)
+                catch (Microsoft.Rest.RestException ex)
                 {
-                    ns = ex.Response.Content;
+                    if (ex is Microsoft.Rest.HttpOperationException e)
+                        result.HttpOperationException = e;
+                    else
+                        result.Exception = ex;
+                    result.Success = false;
                 }
-                yield return ns;
+                yield return result;
             }
 
             foreach(var cert in _certRunner.Run(dryRun))
@@ -93,6 +98,24 @@ namespace SharpPulsar.Deployment.Kubernetes
 
             foreach(var prest in _prestoRunner.Run(dryRun))
                 yield return prest;
+        }
+        public RunResult Delete(string dryRun = default)
+        {
+            var result = new RunResult();
+            try
+            {
+                result.Response = _client.DeleteNamespace(Values.Namespace, dryRun:dryRun);
+                result.Success = true;
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            return result;
         }
     }
 }

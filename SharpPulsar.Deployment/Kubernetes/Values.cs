@@ -903,9 +903,9 @@ namespace SharpPulsar.Deployment.Kubernetes
 
         public bool DeployNginxController { get; set; } = true;
 
-        public IngressSetting Proxy { get; set; }
-        public IngressSetting Presto { get; set; } 
-        public IngressSetting Broker { get; set; }
+        public IngressSetting Proxy { get; set; } = new IngressSetting();
+        public IngressSetting Presto { get; set; } = new IngressSetting();
+        public IngressSetting Broker { get; set; } = new IngressSetting();
         public string DomainSuffix { get; set; }
         public List<HttpRule> HttpRules { get; set; } = new List<HttpRule>();
         public sealed class IngressSetting
@@ -919,21 +919,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public sealed class HttpRule
         {
             public bool Tls { get; set; }
-            public string Host {
-                get
-                {
-                    return Host;
-                } 
-                set
-                {
-                    if (!string.IsNullOrWhiteSpace(Values.Ingress.DomainSuffix) && value.EndsWith($".{Values.Ingress.DomainSuffix}"))
-                        Host = value.Trim();
-                    else
-                        throw new ArgumentException($"{Host} does not end with .{Values.Ingress.DomainSuffix} or 'DomainSuffix' is empty");
-
-
-                }
-            } 
+            public string Host { get; set; }
             public int Port { get; set; }
             public string Path { get; set; }
             public string ServiceName { get; set; }

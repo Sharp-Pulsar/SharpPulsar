@@ -14,9 +14,10 @@ namespace SharpPulsar.Deployment.Console
         {
             System.Console.WriteLine("Hello World!");
             var values = new Values();
-            System.Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(values, new JsonSerializerOptions { WriteIndented = true}));
             var deploy = new DeploymentExecutor();
-            foreach(var dp in deploy.Run(/*"All"*/))
+            var delete = deploy.Delete();
+            System.Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(delete, new JsonSerializerOptions { WriteIndented = true }));
+            foreach (var dp in deploy.Run(/*"All"*/))
             {
                 try
                 {
