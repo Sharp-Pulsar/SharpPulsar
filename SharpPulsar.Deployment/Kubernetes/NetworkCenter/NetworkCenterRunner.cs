@@ -24,10 +24,8 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 
         private readonly CenterSecret _secret;
         private readonly TcpIngressService _tcpIngressService;
-        private Dictionary<string, object> _results;
         public NetworkCenterRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
         {
-            _results = new Dictionary<string, object>();
             _deployment = new Deployment(k8s);
             _centerIngress = new CenterIngress(k8s);
 
@@ -49,45 +47,44 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 
         }
 
-        public bool Run(out Dictionary<string, object> results, string dryRun = default)
+        public IEnumerable<object> Run(string dryRun = default)
         {
+            object result;
             if (Values.Ingress.Enabled)
             {
-                _results = new Dictionary<string, object>();
+                result = _nginxConfiguration.Run(dryRun);
+                yield return result;
 
-                var nginx = _nginxConfiguration.Run(dryRun);
-                _results.Add("NginxConfiguration", nginx);
+                result = _udpServices.Run(dryRun);
+                yield return result;
 
-                var udpConf = _udpServices.Run(dryRun);
-                _results.Add("UdpServicesConfiguration", udpConf);
+                result = _centerService.Run(dryRun);
+                yield return result;
 
-                var cenService = _centerService.Run(dryRun);
-                _results.Add("CenterService", cenService);
-
-                var cenSecret = _secret.Run(dryRun);
-                _results.Add("CenterSecret", cenSecret);
+                result = _secret.Run(dryRun);
+                yield return result;
 
                 if (Values.Ingress.DeployNginxController)
                 {
-                    var dep = _deployment.Run(dryRun);
-                    _results.Add("Deployment", dep);
+                    result = _deployment.Run(dryRun);
+                    yield return result;
                 }
                 if(Values.Ingress.Rbac)
                 {
-                    var cacct = _centerServiceAccount.Run(dryRun);
-                    _results.Add("ServiceAccount", cacct);
+                    result = _centerServiceAccount.Run(dryRun);
+                    yield return result;
 
-                    var cr = _centerClusterRole.Run(dryRun);
-                    _results.Add("ClusterRole", cr);
+                    result = _centerClusterRole.Run(dryRun);
+                    yield return result;
 
-                    var crb = _centerClusterRoleBinding.Run(dryRun);
-                    _results.Add("ClusterRoleBinding", crb);
+                    result = _centerClusterRoleBinding.Run(dryRun);
+                    yield return result;
 
-                    var r = _centerRole.Run(dryRun);
-                    _results.Add("Role", r);
+                    result = _centerRole.Run(dryRun);
+                    yield return result;
 
-                    var rb = _centerRoleBinding.Run(dryRun);
-                    _results.Add("RoleBinding", rb);
+                    result = _centerRoleBinding.Run(dryRun);
+                    yield return result;
                 }
                 if (Values.Ingress.Proxy.Enabled)
                 {
@@ -109,12 +106,12 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                         var pulsarPort = Values.Ports.Proxy["pulsar"].ToString();
                         ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{pulsarPort}";
                     }
-                    var tcpConf = _tcpServices.Run(ports, dryRun);
-                    _results.Add("TcpServicesConfiguration", tcpConf);
+                    result = _tcpServices.Run(ports, dryRun);
+                    yield return result;
 
                     _tcpIngressService.ConfigurePorts(Values.Tls.Proxy, Values.Ports.Proxy);
-                    var tcp = _tcpIngressService.Run(dryRun);
-                    _results.Add("TcpIngressService", tcp);
+                    result = _tcpIngressService.Run(dryRun);
+                    yield return result;
                 }
                 else if (Values.Ingress.Broker.Enabled)
                 {
@@ -136,12 +133,12 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                         var pulsarPort = Values.Ports.Broker["pulsar"].ToString();
                         ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{pulsarPort}";
                     }
-                    var tcpConf = _tcpServices.Run(ports, dryRun);
-                    _results.Add("TcpServicesConfiguration", tcpConf);
+                    result = _tcpServices.Run(ports, dryRun);
+                    yield return result;
 
                     _tcpIngressService.ConfigurePorts(Values.Tls.Broker, Values.Ports.Broker);
-                    var tcp = _tcpIngressService.Run(dryRun);
-                    _results.Add("TcpIngressService", tcp);
+                    result = _tcpIngressService.Run(dryRun);
+                    yield return result;
                 }
 
                 var tls = new HashSet<string>();
@@ -152,11 +149,9 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     _centerIngress.Rule(r.Host, r.Path, r.ServiceName, r.Port);
                 }
                 _centerIngress.AddTls(tls.ToArray());
-                var cing = _centerIngress.Run(dryRun);
-                _results.Add("Ingress", cing);
+                result = _centerIngress.Run(dryRun);
+                yield return result;
             }
-            results = _results;
-            return true;
         }
     }
 }

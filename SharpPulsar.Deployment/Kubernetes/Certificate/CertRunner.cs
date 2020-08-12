@@ -9,36 +9,31 @@ namespace SharpPulsar.Deployment.Kubernetes.Certificate
         private readonly AzureClusterIssuer _azureClusterIssuer;
         private readonly AzureDnsConfigSecret _secret;
         private readonly WildcardCertificate _wild;
-        private Dictionary<string, object> _results;
         public CertRunner(IKubernetes client, Secret secret)
         {
-            _results = new Dictionary<string, object>();
             _azureClusterIssuer = new AzureClusterIssuer(client);
             _secret = new AzureDnsConfigSecret(secret);
             _wild = new WildcardCertificate(client);
         }
 
-        public bool Run(out Dictionary<string, object> results, string dryRun = default)
+        public IEnumerable<object> Run(string dryRun = default)
         {
-
+            object result;
             if (Values.Tls.Enabled)
             {
-                _results = new Dictionary<string, object>();
 
-                var azc =_azureClusterIssuer.Run();
-                _results.Add("AzureClusterIssuer", azc);
+                result =_azureClusterIssuer.Run();
+                yield return result;
 
                 if (string.IsNullOrWhiteSpace(Values.Tls.SecretPassword))
                     throw new ArgumentException("SecretPassword is required");
 
-                var secret = _secret.Run(Values.Tls.SecretPassword, dryRun);
-                _results.Add("Secret", secret);
+                result = _secret.Run(Values.Tls.SecretPassword, dryRun);
+                yield return result;
 
-                var cert = _wild.Run();
-                _results.Add("WildcardCertificate", cert);
+                result = _wild.Run();
+                yield return result;
             }
-            results = _results;
-            return true;
         }
     }
 }

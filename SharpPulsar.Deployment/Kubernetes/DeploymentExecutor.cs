@@ -46,11 +46,11 @@ namespace SharpPulsar.Deployment.Kubernetes
             _networkCenterRunner = new NetworkCenterRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
             _certRunner = new CertRunner(_client, secret);
         }
-        public IEnumerable<Dictionary<string, object>> Run(string dryRun = default)
+        public IEnumerable<object> Run(string dryRun = default)
         {
-            var output = new Dictionary<string, object>();
             if (Values.NamespaceCreate)
             {
+                object ns;
                 try
                 {
                     var nsp = new k8s.Models.V1Namespace
@@ -62,45 +62,39 @@ namespace SharpPulsar.Deployment.Kubernetes
                             Name = Values.Namespace
                         }
                     };
-                    var ns = _client.CreateNamespace(nsp, dryRun);
-                    output["Namespace"] = ns;
+                    ns = _client.CreateNamespace(nsp, dryRun);
                 }
-                catch(Microsoft.Rest.HttpOperationException ex)
+                catch (Microsoft.Rest.HttpOperationException ex)
                 {
+                    var content = ex.Response.Content;
+                    var statusCode = ex.Response.StatusCode;
+                    var reasonPhrase = ex.Response.ReasonPhrase;
                     throw new System.Exception(ex.Response.Content);
-
                 }
-                yield return output;
-                output.Clear();
+                yield return ns;
             }
 
-            _certRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
+            foreach(var cert in _certRunner.Run(dryRun))
+                yield return cert;
 
-            _networkCenterRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
+            foreach(var net in _networkCenterRunner.Run(dryRun))
+                yield return net;
 
-            _zooKeeperRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
 
-            _bookieRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
+            foreach(var zoo in _zooKeeperRunner.Run(dryRun))
+                yield return zoo;
 
-            _brokerRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
+            foreach(var bookie in _bookieRunner.Run(dryRun))
+                yield return bookie;
 
-            _proxyRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
+            foreach(var brok in _brokerRunner.Run(dryRun))
+                yield return brok;
 
-            _prestoRunner.Run(out output, dryRun);
-            yield return output;
-            output.Clear();
+            foreach(var prox in _proxyRunner.Run(dryRun))
+                yield return prox;
+
+            foreach(var prest in _prestoRunner.Run(dryRun))
+                yield return prest;
         }
     }
 }

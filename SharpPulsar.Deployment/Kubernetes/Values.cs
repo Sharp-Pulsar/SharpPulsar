@@ -36,7 +36,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ConfigurationStore = "";
             ConfigurationStoreMetadataPrefix = "";
             Namespace = "pulsar";
-            NamespaceCreate = false;
+            NamespaceCreate = true;
             MetadataPrefix = "";
             Monitoring = new Monitoring();
             Images = new Images();

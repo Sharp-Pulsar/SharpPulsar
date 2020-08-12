@@ -24,10 +24,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
         private readonly BookieService _bookieService;
         private readonly BookieServiceAccount _bookieServiceAccount;
         private readonly BookieStatefulSet _bookieStatefulSet;
-        private readonly Dictionary<string, object> _results;
         public BookieRunner(Job job, ConfigMap configMap, PodDisruptionBudget pdb, Service service, ServiceAccount serviceAccount, StatefulSet statefulSet, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, StorageClass storageClass)
         {
-            _results = new Dictionary<string, object>();
             if (job == null)
                 throw new ArgumentNullException("Job is null");
 
@@ -69,62 +67,60 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
             _journal = new Journal(storageClass);
             _ledger = new Ledger(storageClass);           
         }
-        public bool Run(out Dictionary<string, object> results, string dryRun = default)
+        public IEnumerable<object> Run(string dryRun = default)
         {
             if (Values.Settings.Autorecovery.Enabled)
             {
                 var autoConf = _autoRecoveryConfigMap.Run(dryRun);
-                _results.Add("RecoveryConfigMap", autoConf);
+                yield return autoConf;
 
                 var reService = _autoRecoveryService.Run(dryRun);
-                _results.Add("RecoveryService", reService);
+                yield return reService;
 
                 var reState = _autoRecoveryStatefulSet.Run(dryRun);
-                _results.Add("RecoveryStatefulSet", reState);
+                yield return reState;
             }
             if (Values.Settings.BookKeeper.Enabled)
             {
                 if (Values.Initialize)
                 {
                     var cinit = _clusterInitialize.Run(dryRun);
-                    _results.Add("ClusterInitialize", cinit);
+                    yield return cinit;
                 }
 
                 var crb = _bookieClusterRoleBinding.Run(dryRun);
-                _results.Add("ClusterRoleBinding", crb);
+                yield return crb;
 
                 var cr = _bookieClusterRole.Run(dryRun);
-                _results.Add("ClusterRole", cr);
+                yield return cr;
 
                 var conf = _bookieConfigMap.Run(dryRun);
-                _results.Add("ConfigMap", conf);
+                yield return conf;
 
                 if (Values.Settings.BookKeeper.UsePolicyPodDisruptionBudget)
                 {
                     var pdb = _bookiePodDisruptionBudget.Run(dryRun);
-                    _results.Add("Pdb", pdb);
+                    yield return pdb;
                 }
                 var srv = _bookieService.Run(dryRun);
-                _results.Add("Service", srv);
+                yield return srv;
 
                 var srvAcct = _bookieServiceAccount.Run(dryRun);
-                _results.Add("ServiceAccount", srvAcct);
+                yield return srvAcct;
 
                 var state = _bookieStatefulSet.Run(dryRun);
-                _results.Add("Statefulset", state);
+                yield return state;
 
                 if (Values.Persistence && Values.Settings.BookKeeper.Persistence && !Values.LocalStorage)
                 {
                     var journal = _journal.Run(dryRun);
-                    _results.Add("JournalStorage", journal);
+                    yield return journal;
                     
                     var ledger = _ledger.Run(dryRun);
-                    _results.Add("LedgerStorage", ledger);
+                    yield return ledger;
 
                 }
             }
-            results = _results;
-            return true;
         }
     }
 }

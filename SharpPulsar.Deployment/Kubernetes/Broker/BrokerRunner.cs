@@ -13,10 +13,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
         private readonly BrokerServiceAccount _brokerServiceAccount;
         private readonly BrokerStatefulset _brokerStatefulset;
         private readonly FunctionWorkerConfigMap _function;
-        private Dictionary<string, object> _results;
         public BrokerRunner(ConfigMap configMap, PodDisruptionBudget pdb, Service service, ServiceAccount serviceAccount, StatefulSet statefulSet, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding)
         {
-            _results = new Dictionary<string, object>();
             if (clusterRole == null)
                 throw new ArgumentNullException("ClusterRole is null");
 
@@ -47,44 +45,40 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
             _brokerStatefulset = new BrokerStatefulset(statefulSet);
             _function = new FunctionWorkerConfigMap(configMap);
         }
-        public bool Run(out Dictionary<string, object> results, string dryRun = default)
+        public IEnumerable<object> Run(string dryRun = default)
         {
+            object result;
             if (Values.Settings.Broker.Enabled)
             {
-                _results = new Dictionary<string, object>();
-                var crb = _brokerClusterRoleBinding.Run(dryRun);
-                _results.Add("ClusterRoleBinding", crb);
+                result = _brokerClusterRoleBinding.Run(dryRun);
+                yield return result;
 
-                var cr = _brokerClusterRole.Run(dryRun);
-                _results.Add("ClusterRole", cr);
+                result = _brokerClusterRole.Run(dryRun);
+                yield return result;
 
-                var conf = _brokerConfigMap.Run(dryRun);
-                _results.Add("ConfigMap", conf);
+                result = _brokerConfigMap.Run(dryRun);
+                yield return result;
 
                 if (Values.Settings.Broker.UsePolicyPodDisruptionBudget)
                 {
-                    var pdb = _brokerPodDisruptionBudget.Run(dryRun);
-                    _results.Add("Pdb", pdb);
+                    result = _brokerPodDisruptionBudget.Run(dryRun);
+                    yield return result;
                 }
-                var srv = _brokerService.Run(dryRun);
-                _results.Add("Service", srv);
+                result = _brokerService.Run(dryRun);
+                yield return result;
 
-                var srvAcct = _brokerServiceAccount.Run(dryRun);
-                _results.Add("ServiceAccount", srvAcct);
+                result = _brokerServiceAccount.Run(dryRun);
+                yield return result;
 
-                var state = _brokerStatefulset.Run(dryRun);
-                _results.Add("Statefulset", state);
+                result = _brokerStatefulset.Run(dryRun);
+                yield return result;
 
                 if (Values.Settings.Function.Enabled)
                 {
-                    var function = _function.Run(dryRun);
-                    _results.Add("FunctionConfigMap", function);
+                    result = _function.Run(dryRun);
+                    yield return result;
                 }
-                results = _results;
-                return true;
             }
-            results = _results;
-            return false;
         }
     }
 }

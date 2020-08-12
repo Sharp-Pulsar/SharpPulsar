@@ -12,7 +12,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
         private readonly PrestoWorkerConfigMap _prestoWorkerConfigMap;
         private readonly PrestoWorkerStatefulSet _prestoWorkerStatefulSet;
         private readonly PrestoService _prestoService;
-        private Dictionary<string, object> _results;
         public PrestoRunner(ConfigMap configMap, StatefulSet stateful, Service service)
         {
             if (configMap == null)
@@ -30,36 +29,30 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
             _prestoWorkerStatefulSet = new PrestoWorkerStatefulSet(stateful);
             _prestoService = new PrestoService(service);
         }
-        public bool Run(out Dictionary<string, object> results, string dryRun = default)
+        public IEnumerable<object> Run(string dryRun = default)
         {
+            object result;
             if (Values.Settings.PrestoCoord.Enabled)
             {
-                _results = new Dictionary<string, object>();
+                result = _prestoCoordinatorConfigMap.Run(dryRun);
+                yield return result;
 
-                var conf = _prestoCoordinatorConfigMap.Run(dryRun);
-                _results.Add("ConfigMap", conf);
-
-                var srv = _prestoService.Run(dryRun);
-                _results.Add("Service", srv);
+                result = _prestoService.Run(dryRun);
+                yield return result;
 
 
-                var state = _prestoCoordinatorStatefulSet.Run(dryRun);
-                _results.Add("StatefulSet", state);
+                result = _prestoCoordinatorStatefulSet.Run(dryRun);
+                yield return result;
 
                 if (Values.Settings.PrestoWorker.Replicas > 0)
                 {
-                    var confw = _prestoWorkerConfigMap.Run(dryRun);
-                    _results.Add("ConfigMapWorker", confw);
+                    result = _prestoWorkerConfigMap.Run(dryRun);
+                    yield return result;
 
-                    var statew = _prestoWorkerStatefulSet.Run(dryRun);
-                    _results.Add("StatefulSetWorker", statew);
+                    result = _prestoWorkerStatefulSet.Run(dryRun);
+                    yield return result;
                 }
-
-                results = _results;
-                return true;
             }
-            results = _results;
-            return false;
         }
     }
 }

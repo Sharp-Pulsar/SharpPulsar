@@ -24,6 +24,8 @@ namespace SharpPulsar.Deployment.Kubernetes
             {
                 var build = builder;
                 _builder = new JobBuilder();
+                var v1Job = build.Build();
+                v1Job.Validate();
                 return _client.CreateNamespacedJob(build.Build(), ns, dryRun);
             }
             catch(Microsoft.Rest.ValidationException vEx)
@@ -32,6 +34,9 @@ namespace SharpPulsar.Deployment.Kubernetes
             }
             catch (Microsoft.Rest.HttpOperationException ex)
             {
+                var content = ex.Response.Content;
+                var statusCode = ex.Response.StatusCode;
+                var reasonPhrase = ex.Response.ReasonPhrase;
                 throw new System.Exception(ex.Response.Content);
             }
         }
@@ -49,6 +54,9 @@ namespace SharpPulsar.Deployment.Kubernetes
             }
             catch (Microsoft.Rest.HttpOperationException ex)
             {
+                var content = ex.Response.Content;
+                var statusCode = ex.Response.StatusCode;
+                var reasonPhrase = ex.Response.ReasonPhrase;
                 throw new System.Exception(ex.Response.Content);
             }
         }

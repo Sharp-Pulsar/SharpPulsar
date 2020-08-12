@@ -20,6 +20,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         }
         public V1Service Run(ServiceBuilder builder, string ns, string dryRun = default)
         {
+            //Operation returned an invalid status code 'Conflict'
             var build = builder;
             _builder = new ServiceBuilder();
             return _client.CreateNamespacedService(build.Build(), ns, dryRun);
