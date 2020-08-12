@@ -15,10 +15,4 @@
     <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="Kubernetes\Zoo\gen-zk-conf.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

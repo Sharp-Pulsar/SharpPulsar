@@ -43,8 +43,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Worker
                                 {"component",Values.Settings.PrestoWorker.Name }
                             }, new Dictionary<string, string>
                             {
-                                {"prometheus.io/scrape", "false" },
-                                {"prometheus.io/port", Values.Ports.PrestoWorker["http"].ToString() }
+                                {"\"prometheus.io/scrape\"", "false" },
+                                {"\"prometheus.io/port\"", Values.Ports.PrestoWorker["http"].ToString() }
                             }
                  )
                 .SpecBuilder()

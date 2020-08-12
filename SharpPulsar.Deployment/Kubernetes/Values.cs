@@ -31,7 +31,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             UserProvidedZookeepers = new List<string>();
             Persistence = false;
             LocalStorage = false;
-            AntiAffinity = false;
+            AntiAffinity = true;
             Initialize = true;
             ConfigurationStore = "";
             ConfigurationStoreMetadataPrefix = "";
@@ -46,7 +46,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             {
                 Autorecovery = new ComponentSetting
                 {
-                    Enabled = true,
+                    Enabled = false,
                     Replicas = 1,
                     Name = "recovery",
                     Service = $"{ReleaseName}-recovery",
@@ -71,7 +71,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 Broker = new ComponentSetting
                 {
-                    Enabled = true,
+                    Enabled = false,
                     Replicas = 3,
                     Name = "broker",
                     Service = $"{ReleaseName}-broker",
@@ -86,7 +86,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 BookKeeper = new ComponentSetting
                 {
-                    Enabled = true,
+                    Enabled = false,
                     Replicas = 3,
                     Name = "bookie",
                     Service = $"{ReleaseName}-bookie",
@@ -102,7 +102,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 Proxy = new ComponentSetting
                 {
-                    Enabled = true,
+                    Enabled = false,
                     Replicas = 3,
                     Name = "proxy",
                     Service = $"{ReleaseName}-proxy",
@@ -112,7 +112,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 PrestoCoord = new ComponentSetting
                 {
-                    Enabled = true,
+                    Enabled = false,
                     Replicas = 1,
                     Name = "presto-coordinator",
                     Service = $"{ReleaseName}-presto-coordinator",
@@ -121,7 +121,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 PrestoWorker = new ComponentSetting
                 {
-                    Enabled = true,
+                    Enabled = false,
                     Replicas = 2,
                     Name = "presto-work",
                     Service = $"{ReleaseName}-presto-worker",
@@ -147,7 +147,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                         { "ZkServer", new List<string> { } },
                         { "PeerType", "participant" },
                         { "InitialMyId", 0 },
-                        { "UseSeparateDiskForTxlog", true },
+                        { "UseSeparateDiskForTxlog", false },
                         { "Reconfig", true }
                     }
                 },
@@ -792,9 +792,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             {"metrics", 8000},
             {"client", 2181},
-            {"clientTls", 2281},
+            {"client-tls", 2281},
             {"follower", 2888},
-            {"leaderElection", 3888}
+            {"leader-election", 3888}
         };
     }
     public  sealed class Monitoring

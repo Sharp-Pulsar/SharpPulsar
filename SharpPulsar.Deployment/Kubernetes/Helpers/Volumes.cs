@@ -16,7 +16,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 
             }
             if (Values.Tls.ZooKeeper.Enabled)
-                vols.Add(new V1Volume{ Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 }});
+                vols.Add(new V1Volume{ Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
 
             return vols;
         }
@@ -32,8 +32,17 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 vols.Add(new V1Volume { Name = "zookeeper-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.ZooKeeper.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
                 vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
-                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 } });
+                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
             }
+            vols.Add(new V1Volume
+            {
+                Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-genzkconf",
+                ConfigMap = new V1ConfigMapVolumeSource
+                {
+                    Name = $"{Values.ReleaseName}-genzkconf-configmap",
+                    DefaultMode = Convert.ToInt32("0775", 8) //to octal
+                }
+            });
             return vols;
         }
         public static List<V1Volume> Bookie()
@@ -49,7 +58,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 vols.Add(new V1Volume { Name = "bookie-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.Bookie.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
                 vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
-                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 } });
+                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
             }
             return vols;
         }
@@ -77,7 +86,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
             }
             if(Values.Tls.ZooKeeper.Enabled /*|| .Values.components.kop*/)
-                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 } });
+                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
             
             if(Values.Settings.Broker.EnableFunctionCustomizerRuntime)
                 vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.Broker.Name}-runtime", HostPath = new V1HostPathVolumeSource { Path = "/proc" } });
@@ -156,7 +165,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             if (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.components.kop*/))
             {
-                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = 0755 } });
+                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
             }
             return vols;
         }

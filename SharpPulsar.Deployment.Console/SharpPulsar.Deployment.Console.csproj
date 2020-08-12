@@ -14,4 +14,10 @@
     <ProjectReference Include="..\SharpPulsar.Deployment\SharpPulsar.Deployment.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Results\TextFile1.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

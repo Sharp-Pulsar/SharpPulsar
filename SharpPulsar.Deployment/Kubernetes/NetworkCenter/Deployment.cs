@@ -50,8 +50,8 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                             },
                             Annotations = new Dictionary<string, string>
                             {
-                                { "prometheus.io/port", "10254"},
-                                { "prometheus.io/scrape", "true" }
+                                { "\"prometheus.io/port\"", "10254"},
+                                { "\"prometheus.io/scrape\"", "true" }
                             }
                         },
                         Spec = new V1PodSpec

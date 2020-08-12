@@ -34,7 +34,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             var ports = new List<V1ContainerPort>();
             foreach(var p in Values.Ports.ZooKeeper)
             {
-                if (p.Key.Equals("clientTls", System.StringComparison.OrdinalIgnoreCase))
+                if (p.Key.Equals("client-tls", System.StringComparison.OrdinalIgnoreCase))
                 {
                     if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
                         ports.Add(new V1ContainerPort { Name = p.Key, ContainerPort = p.Value});

@@ -44,8 +44,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                                 {"component",Values.Settings.BookKeeper.Name }
                             }, new Dictionary<string, string>
                             {
-                                {"prometheus.io/scrape:", "true" },
-                                {"prometheus.io/port", "8000" }
+                                {"\"prometheus.io/scrape:\"", "true" },
+                                {"\"prometheus.io/port\"", "8000" }
                             }
                  )
                 .SpecBuilder()

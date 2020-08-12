@@ -1,6 +1,9 @@
 ﻿using k8s;
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Builders;
+using System;
+using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.Deployment.Kubernetes
@@ -23,9 +26,10 @@ namespace SharpPulsar.Deployment.Kubernetes
             var result = new RunResult();
             try
             {
-                var build = builder;
+                var build = builder.Build();
+                File.AppendAllText($"{Guid.NewGuid()}.txt", JsonSerializer.Serialize(build, new JsonSerializerOptions { WriteIndented = true }));
                 _builder = new JobBuilder();
-                result.Response = _client.CreateNamespacedJob(build.Build(), ns, dryRun);
+                result.Response = _client.CreateNamespacedJob(build, ns, dryRun);
                 result.Success = true;
             }
             catch (Microsoft.Rest.RestException ex)
