@@ -13,15 +13,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
                 {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
                 {"PULSAR_PREFIX_peerType", "participant" },
-                {"PULSAR_MEM", "-Xms64m -Xmx128m"},
-                {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
+                {"PULSAR_MEM", " -Xms64m -Xmx128m"},
+                {"PULSAR_GC", " -XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
             };
             if ((bool)Values.ExtraConfigs.ZooKeeper.Holder["UseSeparateDiskForTxlog"])
                 zk.Add("PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog");
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
             {
-                zk.Add("secureClientPort", Values.Ports.ZooKeeper["clientTls"].ToString());
-                zk.Add("PULSAR_PREFIX_secureClientPort", Values.Ports.ZooKeeper["clientTls"].ToString());
+                zk.Add("secureClientPort", Values.Ports.ZooKeeper["client-tls"].ToString());
+                zk.Add("PULSAR_PREFIX_secureClientPort", Values.Ports.ZooKeeper["client-tls"].ToString());
             }
             if ((bool)Values.ExtraConfigs.ZooKeeper.Holder["Reconfig"])
             {
@@ -54,7 +54,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 conf.Add("autoRecoveryDaemonEnabled", "false");
             if(Values.Tls.Enabled && Values.Tls.Bookie.Enabled)
             {
-                conf.Add("zkServers", $"{Values.Settings.ZooKeeper.Service}:{Values.Ports.ZooKeeper["clientTls"]}");
+                conf.Add("zkServers", $"{Values.Settings.ZooKeeper.Service}:{Values.Ports.ZooKeeper["client-tls"]}");
                 conf.Add("PULSAR_PREFIX_tlsProviderFactoryClass", "org.apache.bookkeeper.tls.TLSContextFactory");
                 conf.Add("PULSAR_PREFIX_tlsCertificatePath", @"/pulsar/certs/bookie/tls.crt");
                 conf.Add("PULSAR_PREFIX_tlsKeyStoreType", "PEM");

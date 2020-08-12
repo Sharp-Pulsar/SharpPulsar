@@ -31,7 +31,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                     new V1ServicePort{Name = "follower", Port = 2888 },
                     new V1ServicePort{Name = "leader-election", Port = 3888 },
                     new V1ServicePort{Name = "client", Port = 2181 },
-                    //new V1ServicePort{Name = "clientTls", Port = 2281 }
+                    //new V1ServicePort{Name = "client-tls", Port = 2281 }
                 })
                 .ClusterIp("None")
                 .Selector(new Dictionary<string, string>

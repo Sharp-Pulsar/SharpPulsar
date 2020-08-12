@@ -148,7 +148,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                         { "PeerType", "participant" },
                         { "InitialMyId", 0 },
                         { "UseSeparateDiskForTxlog", false },
-                        { "Reconfig", true }
+                        { "Reconfig", false }
                     }
                 },
                 Broker = new ExtraConfig
