@@ -13,8 +13,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
                 {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
                 {"PULSAR_PREFIX_peerType", "participant" },
-                {"PULSAR_MEM", " -Xms64m -Xmx128m"},
-                {"PULSAR_GC", " -XX:+UseG1GC -XX:MaxGCPauseMillis=10 -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no" }
+                {"PULSAR_MEM", @"|
+                -Xms64m -Xmx128m"},
+                {"PULSAR_GC", @">
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=10
+-Dcom.sun.management.jmxremote
+-Djute.maxbuffer=10485760
+-XX:+ParallelRefProcEnabled
+-XX:+UnlockExperimentalVMOptions
+-XX:+AggressiveOpts
+-XX:+DoEscapeAnalysis
+-XX:+DisableExplicitGC
+-XX:+PerfDisableSharedMem
+-Dzookeeper.forceSync=no" }
             };
             if ((bool)Values.ExtraConfigs.ZooKeeper.Holder["UseSeparateDiskForTxlog"])
                 zk.Add("PULSAR_PREFIX_dataLogDir", "/pulsar/data/zookeeper-datalog");
@@ -45,9 +57,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             {"journalDirectories", "/pulsar/data/bookkeeper/journal"},
                             {"PULSAR_PREFIX_journalDirectories", "/pulsar/data/bookkeeper/journal"},
                             {"ledgerDirectories", "/pulsar/data/bookkeeper/ledgers"},
-                            {"BOOKIE_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
-                            {"PULSAR_MEM", "-Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
-                            {"PULSAR_GC", "-XX:+UseG1GC -XX:MaxGCPauseMillis=10 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintHeapAtGC -verbosegc -Xloggc:/var/log/bookie-gc.log -XX:G1LogLevel=finest" }
+                            {"BOOKIE_MEM", "| -Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
+                            {"PULSAR_MEM", "| -Xms128m -Xmx256m -XX:MaxDirectMemorySize=256m"},
+                            {"PULSAR_GC", "> -XX:+UseG1GC -XX:MaxGCPauseMillis=10 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=4 -XX:ConcGCThreads=4 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintHeapAtGC -verbosegc -Xloggc:/var/log/bookie-gc.log -XX:G1LogLevel=finest" }
                         };
             //disable auto recovery on bookies since we will start AutoRecovery in separated pods
             if (Values.Settings.Autorecovery.Enabled)
