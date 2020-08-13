@@ -18,9 +18,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     Command = new[] { "sh", "-c" },
                     Args = new List<string>
                     {
-                        $@"until nslookup {Values.ConfigurationStore}; do
-                            sleep 3;
-                        done;"
+                        $@"until nslookup {Values.ConfigurationStore}; do  sleep 3; done;"
                     }
                 });
             }
@@ -35,7 +33,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             "sh",
                             "-c"
                         },
-                Args = Args.WaitZooKeeperContainer()
+                Args = new List<string> { string.Join(" ", Args.WaitZooKeeperContainer()) }
             });
             extras.Add(new V1Container
             {
@@ -47,7 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                              "sh",
                              "-c"
                         },
-                Args = Args.MetadataBookieContainer(),
+                Args = new List<string> { string.Join(" ", Args.MetadataBookieContainer()) },
                 EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource

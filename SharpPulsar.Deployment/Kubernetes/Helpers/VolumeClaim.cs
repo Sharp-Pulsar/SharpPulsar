@@ -5,6 +5,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
     public class VolumeClaim
     {
+        //https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-storage
+        //https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-multi-region
         public static List<V1PersistentVolumeClaim> ZooKeeper()
         {
             if(Values.Persistence && Values.Settings.ZooKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.Settings.ZooKeeper.Storage.ClassName))
@@ -36,7 +38,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             if(Values.Persistence && Values.Settings.BookKeeper.Persistence && !string.IsNullOrWhiteSpace(Values.Settings.BookKeeper.Storage.ClassName))
             {
-                return new List<V1PersistentVolumeClaim>() 
+                return new List<V1PersistentVolumeClaim>()
                 {
                     new V1PersistentVolumeClaim
                 {
@@ -48,7 +50,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         {
                             Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.Settings.BookKeeper.Storage.JournalSize) } }
                         },
-                        StorageClassName = $"{Values.Settings.BookKeeper.Storage.ClassName}-journal"
+                        StorageClassName = $"{Values.Settings.BookKeeper.Storage.ClassName}"// -journal"
                     }
                 },
                 new V1PersistentVolumeClaim
@@ -61,7 +63,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         {
                             Requests = new Dictionary<string,ResourceQuantity >{ { "storage", new ResourceQuantity(Values.Settings.BookKeeper.Storage.LedgerSize) } }
                         },
-                        StorageClassName = $"{Values.Settings.BookKeeper.Storage.ClassName}-ledger"
+                        StorageClassName = $"{Values.Settings.BookKeeper.Storage.ClassName}"//-ledger"
                     }
                 }
                 };

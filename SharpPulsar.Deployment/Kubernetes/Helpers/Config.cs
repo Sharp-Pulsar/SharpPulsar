@@ -65,7 +65,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             {"PULSAR_GC", @"-XX:+UseG1GC
 -XX:MaxGCPauseMillis=10
 -XX:+ParallelRefProcEnabled
--XX:+UnlockExperimentalVMOption
+-XX:+UnlockExperimentalVMOptions
 -XX:+AggressiveOpts
 -XX:+DoEscapeAnalysis
 -XX:ParallelGCThreads=4
@@ -112,11 +112,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             {"statusFilePath", "/pulsar/status"}
                             
                         };
-            conf.Add("PULSAR_MEM", @">
+            conf.Add("PULSAR_MEM", @"
 -Xms128m
 -Xmx256m
 -XX:MaxDirectMemorySize=256m");
-            conf.Add("PULSAR_GC", @">
+            conf.Add("PULSAR_GC", @"
 -XX:+UseG1GC
 -XX:MaxGCPauseMillis=10
 -Dio.netty.leakDetectionLevel=disabled
@@ -358,11 +358,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     conf.Add("tokenPublicKey", "file:///pulsar/keys/token/public.key");
             }
 
-            conf.Add("PULSAR_MEM", @">
+            conf.Add("PULSAR_MEM", @"
 -Xms64m
 -Xmx64m
 -XX:MaxDirectMemorySize=64m");
-            conf.Add("PULSAR_GC", @">
+            conf.Add("PULSAR_GC", @"
 -XX:+UseG1GC
 -XX:MaxGCPauseMillis=10
 -Dio.netty.leakDetectionLevel=disabled
@@ -385,7 +385,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             var conf = new Dictionary<string, string> 
             {
                 {
-                    "node.properties",@"|
+                    "node.properties",@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -408,7 +408,7 @@ node.environment=production
 node.data-dir=/pulsar/data"
                 },
                 {
-                    "jvm.config",$@"|
+                    "jvm.config",$@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -442,7 +442,7 @@ node.data-dir=/pulsar/data"
 -XX:+PerfDisableSharedMem" 
                 },
                 {
-                    "config.properties", $@"|
+                    "config.properties", $@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -471,7 +471,7 @@ distributed-joins-enabled=true
 node-scheduler.include-coordinator={schedule}"
                 },
                 {
-                    "log.properties", $@"|
+                    "log.properties", $@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -496,7 +496,7 @@ com.ning.http.client=WARN
 com.facebook.presto.server.PluginManager={Values.ExtraConfigs.PrestoCoordinator.Holder["Log"]}"
                 },
                 {
-                    "pulsar.properties", $@"| 
+                    "pulsar.properties", $@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -615,7 +615,7 @@ pulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holde
             var conf = new Dictionary<string, string> 
             {
                 {
-                    "node.properties",@"|
+                    "node.properties",@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -638,7 +638,7 @@ node.environment=production
 node.data-dir=/pulsar/data"
                 },
                 {
-                    "jvm.config",$@"|
+                    "jvm.config",$@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -672,7 +672,7 @@ node.data-dir=/pulsar/data"
 -XX:+PerfDisableSharedMem"
                 },
                 {
-                    "config.properties",$@"|
+                    "config.properties",$@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -698,7 +698,7 @@ query.max-memory={Values.ExtraConfigs.PrestoWorker.Holder["maxMemory"]}
 query.max-memory-per-node={ Values.ExtraConfigs.PrestoWorker.Holder["maxMemoryPerNode"] }"                        
                 },
                 {
-                    "log.properties",$@"|
+                    "log.properties",$@"
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -723,7 +723,7 @@ com.ning.http.client=WARN
 com.facebook.presto.server.PluginManager={Values.ExtraConfigs.PrestoWorker.Holder["Log"]}"
                 },
                 {
-                    "pulsar.properties", $@"|
+                    "pulsar.properties", $@"
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one

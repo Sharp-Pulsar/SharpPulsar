@@ -111,7 +111,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 var state = _bookieStatefulSet.Run(dryRun);
                 yield return state;
 
-                if (Values.Persistence && Values.Settings.BookKeeper.Persistence && !Values.LocalStorage)
+                /*if (Values.Persistence && Values.Settings.BookKeeper.Persistence && !Values.LocalStorage)
                 {
                     var journal = _journal.Run(dryRun);
                     yield return journal;
@@ -119,7 +119,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                     var ledger = _ledger.Run(dryRun);
                     yield return ledger;
 
-                }
+                }*/
             }
         }
     }

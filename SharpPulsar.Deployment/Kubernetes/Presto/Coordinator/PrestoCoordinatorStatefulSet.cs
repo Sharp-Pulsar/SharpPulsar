@@ -43,8 +43,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto.Coordinator
                                 {"component",Values.Settings.PrestoCoord.Name }
                             }, new Dictionary<string, string>
                             {
-                                {"\"prometheus.io/scrape\"", "false" },
-                                {"\"prometheus.io/port\"", Values.Ports.PrestoCoordinator["http"].ToString() }
+                                {"prometheus.io/scrape", "false" },
+                                {"prometheus.io/port", Values.Ports.PrestoCoordinator["http"].ToString() }
                             }
                  )
                 .SpecBuilder()

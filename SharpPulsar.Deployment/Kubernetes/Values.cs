@@ -47,7 +47,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             {
                 Autorecovery = new ComponentSetting
                 {
-                    Enabled = false,
+                    Enabled = true,
                     Replicas = 1,
                     Name = "recovery",
                     Service = $"{ReleaseName}-recovery",
@@ -73,7 +73,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 Broker = new ComponentSetting
                 {
-                    Enabled = false,
+                    Enabled = true,
                     Replicas = 3,
                     Name = "broker",
                     Service = $"{ReleaseName}-broker",
@@ -88,14 +88,13 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 BookKeeper = new ComponentSetting
                 {
-                    Enabled = false,
+                    Enabled = true,
                     Replicas = 3,
                     Name = "bookie",
                     Service = $"{ReleaseName}-bookie",
                     Host = "${HOSTNAME}." + $"{ReleaseName}-bookie.{Namespace}.svc.cluster.local",
                     Storage = new Storage
                     {
-                        ClassName = $"{ReleaseName}-bookie",
                         LedgerSize = "50Gi",
                         JournalSize = "10Gi",
                     },
@@ -104,7 +103,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 Proxy = new ComponentSetting
                 {
-                    Enabled = false,
+                    Enabled = true,
                     Replicas = 3,
                     Name = "proxy",
                     Service = $"{ReleaseName}-proxy",
@@ -114,7 +113,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 PrestoCoord = new ComponentSetting
                 {
-                    Enabled = false,
+                    Enabled = true,
                     Replicas = 1,
                     Name = "presto-coordinator",
                     Service = $"{ReleaseName}-presto-coordinator",
@@ -123,7 +122,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 },
                 PrestoWorker = new ComponentSetting
                 {
-                    Enabled = false,
+                    Enabled = true,
                     Replicas = 2,
                     Name = "presto-work",
                     Service = $"{ReleaseName}-presto-worker",
@@ -163,49 +162,49 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Bookie  = new ExtraConfig
                 {
                     ExtraInitContainers = new List<V1Container>
-                {
-                    new V1Container
                     {
-                        Name = "wait-zookeeper-ready",
-                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy ,
-                        Command = new []
+                        new V1Container
                         {
-                            "sh",
-                            "-c"
-                        },
-                        Args = Args.WaitZooKeeperContainer()
-                    }
-                },
-                    Containers = new List<V1Container>
-                {
-                    new V1Container
-                    {
-                        Name = $"{ReleaseName}-{Settings.BookKeeper.Name}-init",
-                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                        ImagePullPolicy = Images.Bookie.PullPolicy,
-                        Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                        Args = Args.BookieExtraInitContainer(),
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
+                            Name = "wait-zookeeper-ready",
+                            Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                            ImagePullPolicy = Images.Bookie.PullPolicy ,
+                            Command = new []
                             {
-                                ConfigMapRef = new V1ConfigMapEnvSource
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string>{string.Join(" ", Args.WaitZooKeeperContainer()) }
+                        }
+                    },
+                    Containers = new List<V1Container>
+                    {
+                        new V1Container
+                        {
+                            Name = $"{ReleaseName}-{Settings.BookKeeper.Name}-init",
+                            Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                            ImagePullPolicy = Images.Bookie.PullPolicy,
+                            Command = new []
+                            {
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string>{string.Join(" ", Args.BookieExtraInitContainer()) },
+                            EnvFrom = new List<V1EnvFromSource>
+                            {
+                                new V1EnvFromSource
                                 {
-                                    Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                    ConfigMapRef = new V1ConfigMapEnvSource
+                                    {
+                                        Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                    }
                                 }
                             }
                         }
-                    }
-                },
+                    },
                     Holder = new Dictionary<string, object>
-                {
-                    {"RackAware", true }
-                }
+                    {
+                        {"RackAware", true }
+                    }
                 },
                 PrestoCoordinator = new ExtraConfig
                 {
@@ -333,7 +332,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                        Args = Args.AutoRecoveryIntContainer(),
+                        Args = new List<string>{ string.Join(" ", Args.AutoRecoveryIntContainer()) },
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -371,7 +370,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                        Args = Args.AutoRecoveryContainer(),
+                        Args = new List<string>{ string.Join(" ", Args.AutoRecoveryContainer()) },
                         Ports = Helpers.Ports.AutoRecovery(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
@@ -459,7 +458,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                    Args = Args.BrokerZooIntContainer(),
+                    Args = new List<string>{ string.Join(" ", Args.BrokerZooIntContainer()) },
                     VolumeMounts = VolumeMounts.BrokerContainer()
                 },
                 //# This init container will wait for bookkeeper to be ready before
@@ -474,7 +473,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                    Args = Args.BrokerBookieIntContainer(),
+                    Args = new List<string>{string.Join(" ", Args.BrokerBookieIntContainer()) },
                     EnvFrom = new List<V1EnvFromSource>
                     {
                         new V1EnvFromSource
@@ -512,7 +511,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                        Args = Args.BrokerContainer(),
+                        Args = new List<string>{string.Join(" ", Args.BrokerContainer()) },
                         Ports = Helpers.Ports.BrokerPorts(),
                         Env = EnvVar.Broker(),
                         EnvFrom = new List<V1EnvFromSource>
@@ -550,7 +549,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                          "sh",
                          "-c"
                     },
-                    Args = Args.BookieIntContainer(),
+                    Args = new List<string>{string.Join(" ", Args.BookieIntContainer()) },
                     EnvFrom = new List<V1EnvFromSource>
                     {
                         new V1EnvFromSource
@@ -588,7 +587,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "bash",
                             "-c"
                         },
-                        Args = Args.BookieContainer(),
+                        Args = new List<string>{ string.Join(" ", Args.BookieContainer()) },
                         Ports = Helpers.Ports.BookKeeper(),
                         Env = EnvVar.BookKeeper(),
                         EnvFrom = new List<V1EnvFromSource>
@@ -627,7 +626,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                        Args = Args.WaitZooKeeperContainer()
+                        Args = new List<string> { string.Join(" ", Args.WaitZooKeeperContainer()) }
                     },
                     new V1Container
                     {
@@ -639,7 +638,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "sh",
                             "-c"
                         },
-                        Args = Args.WaitBrokerContainer()
+                        Args = new List<string> { string.Join(" ", Args.WaitBrokerContainer()) } 
                     }
             },
                 Containers = new List<V1Container>
@@ -654,7 +653,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "bash",
                             "-c"
                         },
-                        Args = Args.ProxyContainer(),
+                        Args = new List<string>{ string.Join(" ", Args.ProxyContainer()) },
                         Ports = Helpers.Ports.Proxy(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
@@ -691,7 +690,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "bash",
                             "-c"
                         },
-                        Args = Args.PrestoCoordContainer(),
+                        Args = new List<string>{ string.Join(" ", Args.PrestoCoordContainer()) },
                         Ports = Helpers.Ports.PrestoCoord(),
                         EnvFrom = new List<V1EnvFromSource>
                         {
@@ -728,7 +727,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                             "bash",
                             "-c"
                         },
-                        Args = Args.PrestoWorker(),
+                        Args =  new List<string>{ string.Join(" ", Args.PrestoWorker()) },
                         EnvFrom = new List<V1EnvFromSource>
                         {
                             new V1EnvFromSource
@@ -1230,7 +1229,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public sealed class Storage
     {
-        public string ClassName { get; set; }
+        public string ClassName { get; set; } = "default";//Each AKS cluster includes four pre-created storage classes(default,azurefile,azurefile-premium,managed-premium)
         public string Provisioner { get; set; }
         public IDictionary<string, string> Parameters { get; set; }
         public string Size { get; set; }

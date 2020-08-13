@@ -37,14 +37,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                              "sh",
                              "-c"
                         },
-                        Resources = new V1ResourceRequirements
-                        {
-                            Requests = new Dictionary<string, ResourceQuantity>
-                            {
-
-                            }
-                        },
-                        Args = Args.PulsarMetadataContainer(),
+                        Args = new List<string>{ string.Join(" ", Args.PulsarMetadataContainer()) },
                         VolumeMounts = VolumeMounts.ToolsetVolumMount()
                     }
                 })

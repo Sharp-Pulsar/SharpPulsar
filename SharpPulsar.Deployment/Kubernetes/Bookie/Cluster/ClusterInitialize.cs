@@ -26,7 +26,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie.Cluster
                 .SpecBuilder()
                 .InitContainers(Values.ExtraConfigs.Bookie.ExtraInitContainers)
                 .Containers(Values.ExtraConfigs.Bookie.Containers)
-                .Volumes(new List<V1Volume>())
                 .RestartPolicy("Never");
             return _job.Run(_job.Builder(), Values.Namespace, dryRun);
         }
