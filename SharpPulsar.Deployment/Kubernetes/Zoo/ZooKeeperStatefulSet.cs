@@ -42,7 +42,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
                                 {"component",Values.Settings.ZooKeeper.Name }
-                            }, new Dictionary<string, string>
+                            }, 
+                            new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "true" },
                                 {"prometheus.io/port", "8000" }

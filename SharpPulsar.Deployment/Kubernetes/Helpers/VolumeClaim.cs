@@ -25,7 +25,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                                 {"storage", new ResourceQuantity(Values.Settings.ZooKeeper.Storage.Size) }
                             }
                         },
-                        StorageClassName = Values.Settings.ZooKeeper.Storage.ClassName
+                        StorageClassName = Values.Settings.ZooKeeper.Storage.ClassName,
                     }
                 };
                 return new List<V1PersistentVolumeClaim>() { temp };

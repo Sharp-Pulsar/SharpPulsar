@@ -47,17 +47,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
             RunResult result;
             if(Values.Settings.ZooKeeper.Enabled)
             {
-                result = _config.Run(dryRun);
-                yield return result;
-
-                result = _config.GenZkConf(dryRun);
-                yield return result;
-
                 if (Values.Settings.ZooKeeper.UsePolicyPodDisruptionBudget)
                 {
                     result = _pdb.Run(dryRun);
                     yield return result;
                 }
+                
+
+                result = _config.GenZkConf(dryRun);
+                yield return result;
+
+                result = _config.Run(dryRun);
+                yield return result;
+
+                
 
                 result =_service.Run(dryRun);
                 yield return result;
@@ -65,7 +68,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                 result = _statefulSet.Run(dryRun);
                 yield return result;
 
-                if (Values.Persistence && Values.Settings.ZooKeeper.Persistence && !Values.LocalStorage)
+                /*if (Values.Persistence && Values.Settings.ZooKeeper.Persistence && !Values.LocalStorage)
                 {
                     result = _storage.Run(dryRun);
                     yield return result;
@@ -73,7 +76,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
                     //result = _datalog.Run(dryRun);
                     //yield return result;
 
-                }
+                }*/
             }
             if (Values.Initialize && Values.Settings.Broker.Enabled)
             {

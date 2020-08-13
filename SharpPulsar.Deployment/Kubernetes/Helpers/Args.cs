@@ -139,7 +139,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         {
             var args = new List<string>
             {
-                "bin/apply-config-from-env.py conf/zookeeper.conf"
+                "bin/apply-config-from-env.py conf/zookeeper.conf;"
             };
             if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
                 args.Add($"/pulsar/keytool/keytool.sh zookeeper {Values.Settings.ZooKeeper.Host} false;");
@@ -152,7 +152,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     args.Add($@"echo ""{z}"" >> conf/zookeeper.conf;");
                 }
             }
-            args.Add($"bin/gen-zk-conf.sh conf/zookeeper.conf {Values.ExtraConfigs.ZooKeeper.Holder["InitialMyId"]} {Values.ExtraConfigs.ZooKeeper.Holder["PeerType"]};");
+            args.Add($"/pulsar/bin/gen-zk-conf.sh conf/zookeeper.conf {Values.ExtraConfigs.ZooKeeper.Holder["InitialMyId"]} {Values.ExtraConfigs.ZooKeeper.Holder["PeerType"]};");
             args.Add("cat conf/zookeeper.conf;");
             args.Add("bin/pulsar zookeeper;");
             return args;

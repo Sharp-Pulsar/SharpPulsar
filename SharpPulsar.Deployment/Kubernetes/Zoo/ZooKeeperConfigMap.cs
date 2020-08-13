@@ -1,4 +1,5 @@
 ﻿using k8s.Models;
+using SharpPulsar.Deployment.Kubernetes.Extensions;
 using System.Collections.Generic;
 using System.IO;
 
@@ -24,10 +25,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Bookie
                 .Data(new Dictionary<string, string>
                         {
                            
-                            { "gen-zk-conf.sh", @"|
-#!/bin/bash
+                            { "gen-zk-conf.sh", @"#!/bin/bash
 
-# Apply env variables to config file and start the regular command                                         
+# Apply env variables to config file and start the regular command  
+
+echo ""running gen-zk-conf.sh""
 
 CONF_FILE=$1
 IDX=$2
@@ -67,7 +69,7 @@ if [ ! -z ""$MY_ID"" ]; then
       echo $MY_ID > $DATA_DIR/myid
     fi
  fi"} 
-                });
+                }.RemoveRN());
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
         public RunResult Run(string dryRun = default)

@@ -1,4 +1,5 @@
 ﻿using k8s.Models;
+using SharpPulsar.Deployment.Kubernetes.Extensions;
 using SharpPulsar.Deployment.Kubernetes.Helpers;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ReleaseName = "pulsar";
             App = "pulsar";
             UserProvidedZookeepers = new List<string>();
-            Persistence = false;
+            Persistence = true;
             LocalStorage = false;
             AntiAffinity = true;
             Initialize = true;
@@ -63,7 +64,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                     Host = "${HOSTNAME}." + $"{ReleaseName}-zookeeper.{Namespace}.svc.cluster.local",
                     Storage = new Storage
                     {
-                        ClassName = $"{ReleaseName}-zookeeper-data"
+                        ClassName = "default",//Each AKS cluster includes four pre-created storage classes(default,azurefile,azurefile-premium,managed-premium)
+                        Size = "50Gi"
                     },
                     ZooConnect = Tls.ZooKeeper.Enabled ? $"{ReleaseName}-zookeeper:2281" : $"{ReleaseName}-zookeeper:2181",
                     UpdateStrategy = "RollingUpdate",
@@ -231,12 +233,12 @@ namespace SharpPulsar.Deployment.Kubernetes
             ConfigMaps = new ConfigMaps
             {
                 AutoRecovery = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } },
-                ZooKeeper = Config.ZooKeeper(),
-                Broker = Config.Broker(),
-                BookKeeper = Config.BookKeeper(),
-                Proxy = Config.Proxy(),
-                PrestoCoordinator = Config.PrestoCoord(Settings.PrestoCoord.Replicas <= 0 ? "false" : "true"),
-                PrestoWorker = Config.PrestoWorker()
+                ZooKeeper = Config.ZooKeeper().RemoveRN(),
+                Broker = Config.Broker().RemoveRN(),
+                BookKeeper = Config.BookKeeper().RemoveRN(),
+                Proxy = Config.Proxy().RemoveRN(),
+                PrestoCoordinator = Config.PrestoCoord(Settings.PrestoCoord.Replicas <= 0 ? "false" : "true").RemoveRN(),
+                PrestoWorker = Config.PrestoWorker().RemoveRN()
 
             };
             //Dependencies order
@@ -415,7 +417,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 "sh",
                                 "-c"
                             },
-                            Args = Args.ZooKeeper(),
+                            Args = new List<string>{ string.Join(" ", Args.ZooKeeper()) },
                             Ports = Helpers.Ports.ZooKeeper(),
                             Env = EnvVar.ZooKeeper(),
                             EnvFrom = new List<V1EnvFromSource>

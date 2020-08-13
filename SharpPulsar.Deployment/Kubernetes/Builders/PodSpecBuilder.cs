@@ -12,9 +12,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             {
                 Affinity = new V1Affinity
                 {
-                    PodAntiAffinity = new V1PodAntiAffinity(),
-                    PodAffinity = new V1PodAffinity(),
-                    NodeAffinity = new V1NodeAffinity()
+                    PodAntiAffinity = new V1PodAntiAffinity()
                 }
             };
         }
@@ -50,22 +48,25 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         }
         public PodSpecBuilder PodAffinity(IList<V1PodAffinityTerm> terms)
         {
-            _spec.Affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution = terms;
+            _spec.Affinity.PodAffinity = new V1PodAffinity 
+            {
+                RequiredDuringSchedulingIgnoredDuringExecution = terms
+            };
             return this;
         }
         public PodSpecBuilder PodAffinity(IList<V1WeightedPodAffinityTerm> weight)
         {
-            _spec.Affinity.PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution = weight;
+            //_spec.Affinity.PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution = weight;
             return this;
         }
         public PodSpecBuilder NodeAffinity(IList<V1PreferredSchedulingTerm> weight)
         {
-            _spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = weight;
+            //_spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = weight;
             return this;
         }
         public PodSpecBuilder NodeAffinity(V1NodeSelector selector)
         {
-            _spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = selector;
+            //_spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = selector;
             return this;
         }
         public PodSpecBuilder TerminationGracePeriodSeconds(long period)

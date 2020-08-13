@@ -13,10 +13,9 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 {"PULSAR_PREFIX_serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
                 {"serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory"},
                 {"PULSAR_PREFIX_peerType", "participant" },
-                {"PULSAR_MEM", @"|
-                -Xms64m -Xmx128m"},
-                {"PULSAR_GC", @">
--XX:+UseG1GC
+                {"PULSAR_MEM", @"-Xms64m
+-Xmx128m"},
+                {"PULSAR_GC", @"-XX:+UseG1GC
 -XX:MaxGCPauseMillis=10
 -Dcom.sun.management.jmxremote
 -Djute.maxbuffer=10485760
@@ -57,16 +56,13 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                             {"journalDirectories", "/pulsar/data/bookkeeper/journal"},
                             {"PULSAR_PREFIX_journalDirectories", "/pulsar/data/bookkeeper/journal"},
                             {"ledgerDirectories", "/pulsar/data/bookkeeper/ledgers"},
-                            {"BOOKIE_MEM", @"> 
--Xms128m
+                            {"BOOKIE_MEM", @"-Xms128m
 -Xmx256m
 -XX:MaxDirectMemorySize=256m"},
-                            {"PULSAR_MEM", @">
--Xms128m
+                            {"PULSAR_MEM", @"-Xms128m
 -Xmx256m
 -XX:MaxDirectMemorySize=256m"},
-                            {"PULSAR_GC", @">
--XX:+UseG1GC
+                            {"PULSAR_GC", @"-XX:+UseG1GC
 -XX:MaxGCPauseMillis=10
 -XX:+ParallelRefProcEnabled
 -XX:+UnlockExperimentalVMOption

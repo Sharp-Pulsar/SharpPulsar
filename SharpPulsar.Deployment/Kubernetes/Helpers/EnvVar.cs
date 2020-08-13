@@ -1,4 +1,5 @@
 ﻿using k8s.Models;
+using System;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
@@ -36,7 +37,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     new V1EnvVar
                     {
                         Name = "ZOOKEEPER_SERVERS",
-                        Value = string.Join(",", zkServers)
+                        Value = $@"
+{string.Join(",", zkServers)}".Replace(Environment.NewLine, "")
                     }
                 };
         }
