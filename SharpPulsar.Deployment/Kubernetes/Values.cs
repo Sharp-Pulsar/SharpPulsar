@@ -10,6 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes
     {
         public Values()
         {
+            InstallCertManager = false;
             ResourcesRequests = new ResourcesRequests
             {
                 ZooKeeper = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" },
@@ -262,6 +263,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             };
 
         }
+        public bool InstallCertManager { get; set; }
         public static List<string> UserProvidedZookeepers { get; set; }
         public static bool Persistence { get; set; }
         public static bool LocalStorage { get; set; }
