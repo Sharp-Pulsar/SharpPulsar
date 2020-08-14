@@ -39,8 +39,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             args.Add("bin/apply-config-from-env.py conf/bookkeeper.conf;");
             args.Add($@"until bin/bookkeeper shell whatisinstanceid; do echo ""bookkeeper cluster is not initialized yet. Backoff for 3 seconds...""; sleep 3; done; ");
             args.Add(@"echo ""bookkeeper cluster is already initialized"";");
-            args.Add($@"bookieServiceNumber=""$(nslookup - timeout = 10 { Values.ReleaseName }-{ Values.Settings.BookKeeper.Name } | grep Name | wc - l)"";");
-            args.Add($@"until ["+"${bookieServiceNumber}"+$@" -ge {Values.ConfigMaps.Broker["managedLedgerDefaultEnsembleSize"]} ]; do echo ""bookkeeper cluster { Values.ReleaseName }  isn't ready yet ... check in 10 seconds ...""; sleep 10; bookieServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.BookKeeper.Name} | grep Name | wc -l)""; done; ");
+            args.Add($@"bookieServiceNumber=""$(nslookup -timeout=10 { Values.ReleaseName }-{ Values.Settings.BookKeeper.Name } | grep Name | wc -l)"";");
+            args.Add($@"until [ "+"${bookieServiceNumber}"+$@" -ge {Values.ConfigMaps.Broker["managedLedgerDefaultEnsembleSize"]} ]; do echo ""bookkeeper cluster { Values.ReleaseName }  isn't ready yet ... check in 10 seconds ...""; sleep 10; bookieServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.BookKeeper.Name} | grep Name | wc -l)""; done; ");
 
             args.Add(@"echo ""bookkeeper cluster is ready"";");
             return args;

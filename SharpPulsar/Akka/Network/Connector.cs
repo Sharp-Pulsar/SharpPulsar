@@ -225,7 +225,7 @@ namespace SharpPulsar.Akka.Network
             return true;
         }*/
          private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        {
+         {
             bool result;
             switch (sslPolicyErrors)
             {

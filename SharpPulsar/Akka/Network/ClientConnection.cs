@@ -4,11 +4,18 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net;
+using System.Net.Security;
 using System.Reflection;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
+using BeetleX;
+using BeetleX.Buffers;
+using BeetleX.Clients;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -29,6 +36,8 @@ namespace SharpPulsar.Akka.Network
     //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
     public class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
+        private uint? _frameSize;
+        private AsyncTcpClient _client;
         private readonly IAuthentication _authentication;
         private PulsarStream _stream;
         private readonly IActorRef _self;
@@ -74,10 +83,10 @@ namespace SharpPulsar.Akka.Network
                _ = _requests.TryAdd(p.RequestId, new KeyValuePair<IActorRef, Payload>(Sender, p));
                Send(new ReadOnlySequence<byte>(p.Bytes));
            });
-           _ = ProcessIncommingFrames();
+           //_ = ProcessIncommingFrames();
         }
 
-        private void Connect()
+        /*private void Connect()
         {
             try
             {
@@ -94,13 +103,94 @@ namespace SharpPulsar.Akka.Network
                 Thread.Sleep(5000);
                 Connect();
             }
-        }
-        
-        private void Send(ReadOnlySequence<byte> cmd)
+        }*/
+
+        /*private void Send(ReadOnlySequence<byte> cmd)
         {
             try
             {
                 _ = _stream.Send(cmd);
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.ToString());
+            }
+        }*/
+        private void Connect()
+        {
+            try
+            {
+                var remoteAddress = RemoteAddress;
+                if (!string.IsNullOrWhiteSpace(_conf.ProxyServiceUrl))
+                {
+                    var proxy = new Uri(_conf.ProxyServiceUrl);
+                    var addresses = Dns.GetHostEntry(proxy.Host);
+                    remoteAddress = proxy;
+                }
+                _client.LittleEndian = false;
+                _client = SocketFactory.CreateClient<AsyncTcpClient>(remoteAddress.Host, remoteAddress.Port);
+
+                _client.DataReceive = (o, e) =>
+                {
+                    var pipestream = e.Stream.ToPipeStream();
+                    if (_frameSize == null)
+                        _frameSize = pipestream.ReadUInt32();
+                    else
+                    {
+                        if (pipestream.Length >= _frameSize.Value)
+                        {
+                            ProcessIncommingFrames(pipestream);
+                            _frameSize = null;
+                        }
+                    }
+                };
+                if (_conf.UseTls)
+                {
+                    _client.CertificateCollection.AddRange(_conf.ClientCertificates);
+                    _client.SSL = true;
+                    _client.SslProtocols = SslProtocols.Tls12;
+                    _client.CertificateValidationCallback = ValidateServerCertificate;
+                    _client.SslServiceName = RemoteHostName;
+                }
+
+                _log.Info($"Opening Connection to: {RemoteAddress}");
+                _client.Disconnected = Disconnected;
+                _client.Connect(out var connected);
+                if (connected)
+                    Connected(_client);
+                else
+                {
+                    Thread.Sleep(5000);
+                    Connect();
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.Message);
+                Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(5), Connect);
+            }
+        }
+        private void Disconnected(IClient client)
+        {
+            _log.Info($"Disconnected from the server. Reconnecting in 10 seconds");
+            Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromSeconds(10), Connect);
+        }
+        private void Connected(IClient client)
+        {
+            Send(new ReadOnlySequence<byte>(NewConnectCommand()));
+            Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromSeconds(10), () =>
+                {
+                    BytesHandler bytes = Commands.NewPing();
+                    _client.Send(bytes);
+                });
+        }
+        private void Send(ReadOnlySequence<byte> cmd)
+        {
+            try
+            {
+                BytesHandler bytes = cmd.ToArray();
+                _client.Send(bytes);
             }
             catch (Exception e)
             {
@@ -317,11 +407,181 @@ namespace SharpPulsar.Akka.Network
                 _log.Error(ex.ToString());
             }
         }
+        private void  ProcessIncommingFrames(PipeStream pipeStream)
+        {
+            try
+            {
+                var block = pipeStream.ReadBytes((int)_frameSize.Value);
+                var sequence = new ReadOnlySequence<byte>(block.Data);
+                var frame = sequence.Slice(4);
+                var commandSize = frame.ReadUInt32(0, true);
+                var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
+                var t = cmd.type;
+
+
+                switch (cmd.type)
+                {
+                    case BaseCommand.Type.AuthChallenge:
+                        var auth = cmd.authChallenge;
+                        var authen = HandleAuthChallenge(auth);
+                        Send(new ReadOnlySequence<byte>(authen));
+                        break;
+                    case BaseCommand.Type.GetLastMessageIdResponse:
+                        var mid = cmd.getLastMessageIdResponse.LastMessageId;
+                        var rquestid = (long)cmd.getLastMessageIdResponse.RequestId;
+                        _requests[rquestid].Key.Tell(new LastMessageIdResponse((long)mid.ledgerId,
+                            (long)mid.entryId, mid.Partition, mid.BatchIndex));
+                        _requests.TryRemove(rquestid, out var ut);
+                        break;
+                    case BaseCommand.Type.Connected:
+                        var c = cmd.Connected;
+                        _parent.Tell(
+                            new ConnectedServerInfo(c.MaxMessageSize, c.ProtocolVersion, c.ServerVersion,
+                                RemoteHostName), _self);
+                        _log.Info($"Now connected: Host = {RemoteHostName}, ProtocolVersion = {c.ProtocolVersion}");
+                        break;
+                    case BaseCommand.Type.GetTopicsOfNamespaceResponse:
+                        var ns = cmd.getTopicsOfNamespaceResponse;
+                        var requestid = (long)ns.RequestId;
+                        _requests[requestid].Key.Tell(new NamespaceTopics(requestid, ns.Topics.ToList()));
+                        _requests.TryRemove(requestid, out var u);
+                        break;
+                    case BaseCommand.Type.Message:
+                        var msg = cmd.Message;
+                        _manager.Tell(new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition, msg.MessageId.AckSets), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount));
+                        break;
+                    case BaseCommand.Type.Success:
+                        var s = cmd.Success;
+                        _requests[(long)s.RequestId].Key
+                            .Tell(new SubscribeSuccess(s?.Schema, (long)s.RequestId, s.Schema != null));
+                        _requests.TryRemove((long)s.RequestId, out var rt);
+                        break;
+                    case BaseCommand.Type.SendReceipt:
+                        try
+                        {
+                            var send = cmd.SendReceipt;
+                            _requests[(long)send.SequenceId].Key.Tell(new SentReceipt((long)send.ProducerId,
+                                (long)send.SequenceId, (long)send.HighestSequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
+                                send.MessageId.BatchIndex, send.MessageId.Partition));
+                            _requests.TryRemove((long)send.SequenceId, out var ou);
+                        }
+                        catch (Exception exception)
+                        {
+                            var send = cmd.SendReceipt;
+                            _parent.Tell(new SentReceipt((long)send.ProducerId,
+                                (long)send.SequenceId, (long)send.HighestSequenceId, (long)send.MessageId.entryId, (long)send.MessageId.ledgerId,
+                                send.MessageId.BatchIndex, send.MessageId.Partition));
+                            _log.Error(exception.ToString());
+                        }
+                        break;
+                    case BaseCommand.Type.GetOrCreateSchemaResponse:
+                        var res = cmd.getOrCreateSchemaResponse;
+                        _requests[(long)res.RequestId].Key
+                            .Tell(new GetOrCreateSchemaServerResponse((long)res.RequestId, res.ErrorMessage,
+                                res.ErrorCode, res.SchemaVersion));
+                        _requests.TryRemove((long)res.RequestId, out var g);
+                        break;
+                    case BaseCommand.Type.ProducerSuccess:
+                        var p = cmd.ProducerSuccess;
+                        _requests[(long)p.RequestId].Key.Tell(new ProducerCreated(p.ProducerName,
+                            (long)p.RequestId, p.LastSequenceId, p.SchemaVersion));
+                        _requests.TryRemove((long)p.RequestId, out var pr);
+                        break;
+                    case BaseCommand.Type.Error:
+                        var er = cmd.Error;
+                        _requests[(long)er.RequestId].Key.Tell(new PulsarError(er.Message, er.Error.ToString()));
+                        _requests.TryRemove((long)er.RequestId, out var err);
+                        break;
+                    case BaseCommand.Type.GetSchemaResponse:
+                        var schema = cmd.getSchemaResponse.Schema;
+                        var a = _requests[(long)cmd.getSchemaResponse.RequestId].Key;
+                        if (schema == null)
+                            a.Tell(new NullSchema());
+                        else
+                            a.Tell(new SchemaResponse(schema.SchemaData, schema.Name,
+                                schema.Properties.ToImmutableDictionary(x => x.Key, x => x.Value), schema.type,
+                                (long)cmd.getSchemaResponse.RequestId));
+                        _requests.TryRemove((long)cmd.getSchemaResponse.RequestId, out var sch);
+                        break;
+                    case BaseCommand.Type.LookupResponse:
+                        var m = cmd.lookupTopicResponse;
+                        _requests[(long)m.RequestId].Key.Tell(new BrokerLookUp(m.Message, m.Authoritative,
+                            m.Response, m.brokerServiceUrl, m.brokerServiceUrlTls, (long)m.RequestId, m.ProxyThroughServiceUrl));
+                        _requests.TryRemove((long)m.RequestId, out var lk);
+                        break;
+                    case BaseCommand.Type.PartitionedMetadataResponse:
+                        var part = cmd.partitionMetadataResponse;
+                        var rPay = _requests[(long)part.RequestId];
+                        rPay.Key.Tell(
+                            new Partitions((int)part.Partitions, (long)part.RequestId, rPay.Value.Topic));
+                        _requests.TryRemove((long)part.RequestId, out var pa);
+                        break;
+                    case BaseCommand.Type.SendError:
+                        var e = cmd.SendError;
+                        break;
+                    case BaseCommand.Type.Ping:
+                        HandlePing(cmd.Ping);
+                        break;
+                    case BaseCommand.Type.CloseProducer:
+                        _parent.Tell(new ProducerClosed((long)cmd.CloseProducer.ProducerId));
+                        break;
+                    case BaseCommand.Type.CloseConsumer:
+                        _parent.Tell(new ConsumerClosed((long)cmd.CloseConsumer.ConsumerId));
+                        break;
+                    default:
+                        _log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.ToString());
+            }
+        }
         public string RemoteHostName { get; set; }
 
 
         public IStash Stash { get; set; }
-        
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            bool result;
+            switch (sslPolicyErrors)
+            {
+                case SslPolicyErrors.None:
+                    result = true;
+                    break;
+                case SslPolicyErrors.RemoteCertificateChainErrors:
+
+                    if (_conf.TrustedCertificateAuthority is null)
+                        return false;
+
+                    chain.ChainPolicy.ExtraStore.Add(_conf.TrustedCertificateAuthority);
+                    _ = chain.Build((X509Certificate2)certificate);
+                    for (var i = 0; i < chain.ChainElements.Count; i++)
+                    {
+                        if (chain.ChainElements[i].Certificate.Thumbprint == _conf.TrustedCertificateAuthority.Thumbprint)
+                            return true;
+                    }
+                    return false;
+                case SslPolicyErrors.RemoteCertificateNameMismatch:
+                    var cert = new X509Certificate2(certificate);
+                    var cn = cert.GetNameInfo(X509NameType.SimpleName, false);
+                    var cleanName = cn?.Substring(cn.LastIndexOf('*') + 1);
+                    string[] addresses = { _conf.ServiceUrl, RemoteHostName };
+
+                    // if the ending of the sni and servername do match the common name of the cert, fail
+                    result = addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
+                    break;
+
+                default:
+                    result = false;
+                    break;
+            }
+
+            return result;
+        }
+
+
     }
 
 }
