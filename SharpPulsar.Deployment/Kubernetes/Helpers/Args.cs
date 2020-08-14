@@ -106,8 +106,17 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             var args = new List<string> 
             {
                 "set -e; ",
-                $@"brokerServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.Broker.Name} | grep Name | wc - l)"";",
-                $@"until [ "+"${brokerServiceNumber} -ge 1 ]; do"+ $@" echo ""pulsar cluster {Values.ReleaseName} isn't initialized yet ... check in 10 seconds ..."";  sleep 10; brokerServiceNumber = ""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.Broker.Name} | grep Name | wc -l)"";  done;"  };
+                $@"brokerServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.Broker.Name} | grep Name | wc -l)"";",
+                $@"until [ "+"${brokerServiceNumber} -ge 1 ]; do"+ $@" echo ""pulsar cluster {Values.ReleaseName} isn't initialized yet ... check in 10 seconds ..."";  sleep 10; brokerServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.Broker.Name} | grep Name | wc -l)"";  done;"  };
+            return args;
+        }
+        public static IList<string> WaitPrestoCoordContainer()
+        {
+            var args = new List<string>
+            {
+                "set -e; ",
+                $@"prestoServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.PrestoCoord.Name} | grep Name | wc -l)"";",
+                $@"until [ "+"${prestoServiceNumber} -ge 1 ]; do"+ $@" echo ""presto coordinator {Values.ReleaseName} isn't initialized yet ... check in 10 seconds ..."";  sleep 10; prestoServiceNumber=""$(nslookup -timeout=10 {Values.ReleaseName}-{Values.Settings.PrestoCoord.Name} | grep Name | wc -l)"";  done;"  };
             return args;
         }
         public static IList<string> ZooKeeper()

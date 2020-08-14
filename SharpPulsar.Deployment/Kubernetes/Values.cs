@@ -385,7 +385,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                                 {
                                     ConfigMapRef = new V1ConfigMapEnvSource
                                     {
-                                        Name = $"{ReleaseName}-{Settings.Autorecovery.Name}"
+                                        Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
                                     }
                                 }
                             },
@@ -622,32 +622,32 @@ namespace SharpPulsar.Deployment.Kubernetes
             return new Component
             {
                 ExtraInitContainers = new List<V1Container>
-            {
-                new V1Container
-                    {
-                        Name = "wait-zookeeper-ready",
-                        Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
-                        ImagePullPolicy = Images.Proxy.PullPolicy ,
-                        Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                        Args = new List<string> { string.Join(" ", Args.WaitZooKeeperContainer()) }
-                    },
+                {
                     new V1Container
-                    {
-                        Name = "wait-broker-ready",
-                        Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
-                        ImagePullPolicy = Images.Proxy.PullPolicy ,
-                        Command = new []
                         {
-                            "sh",
-                            "-c"
+                            Name = "wait-zookeeper-ready",
+                            Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
+                            ImagePullPolicy = Images.Proxy.PullPolicy ,
+                            Command = new []
+                            {
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string> { string.Join(" ", Args.WaitZooKeeperContainer()) }
                         },
-                        Args = new List<string> { string.Join(" ", Args.WaitBrokerContainer()) } 
-                    }
-            },
+                        new V1Container
+                        {
+                            Name = "wait-broker-ready",
+                            Image = $"{Images.Proxy.Repository}:{Images.Proxy.Tag}",
+                            ImagePullPolicy = Images.Proxy.PullPolicy ,
+                            Command = new []
+                            {
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string> { string.Join(" ", Args.WaitBrokerContainer()) } 
+                        }
+                },
                 Containers = new List<V1Container>
                 {
                     new V1Container
@@ -685,6 +685,21 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return new Component
             {
+                /*ExtraInitContainers = new List<V1Container> 
+                {
+                        new V1Container
+                        {
+                            Name = "wait-broker-ready",
+                            Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                            ImagePullPolicy = Images.Broker.PullPolicy ,
+                            Command = new []
+                            {
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string> { string.Join(" ", Args.WaitBrokerContainer()) }
+                        }
+                },*/
                 Containers = new List<V1Container>
                 {
                     new V1Container
@@ -722,6 +737,21 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return new Component
             {
+                /*ExtraInitContainers = new List<V1Container>
+                {
+                        new V1Container
+                        {
+                            Name = "wait-presto-coord-ready",
+                            Image = $"{Images.Presto.Repository}:{Images.Presto.Tag}",
+                            ImagePullPolicy = Images.Presto.PullPolicy ,
+                            Command = new []
+                            {
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string> { string.Join(" ", Args.WaitPrestoCoordContainer()) }
+                        }
+                },*/
                 Containers = new List<V1Container>
                 {
                     new V1Container
