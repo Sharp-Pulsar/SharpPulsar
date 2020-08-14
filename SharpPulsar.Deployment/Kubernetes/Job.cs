@@ -27,7 +27,6 @@ namespace SharpPulsar.Deployment.Kubernetes
             try
             {
                 var build = builder.Build();
-                File.AppendAllText($"{Guid.NewGuid()}.txt", JsonSerializer.Serialize(build, new JsonSerializerOptions { WriteIndented = true }));
                 _builder = new JobBuilder();
                 result.Response = _client.CreateNamespacedJob(build, ns, dryRun);
                 result.Success = true;

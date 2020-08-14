@@ -36,7 +36,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
             }
             else
                 _service.Builder()
-                    .ClusterIp(Values.Ingress.Proxy.Type);
+                    .Type(Values.Ingress.Proxy.Type);
             if(!Values.Tls.Enabled || !Values.Tls.Proxy.Enabled)
             {
                 _service.Builder()

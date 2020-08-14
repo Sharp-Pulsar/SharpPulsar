@@ -236,7 +236,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Broker = Config.Broker().RemoveRN(),
                 BookKeeper = Config.BookKeeper().RemoveRN(),
                 Proxy = Config.Proxy().RemoveRN(),
-                PrestoCoordinator = Config.PrestoCoord(Settings.PrestoCoord.Replicas <= 0 ? "false" : "true").RemoveRN(),
+                PrestoCoordinator = Config.PrestoCoord(Settings.PrestoCoord.Replicas > 0 ? "false" : "true").RemoveRN(),
                 PrestoWorker = Config.PrestoWorker().RemoveRN()
 
             };
@@ -252,7 +252,14 @@ namespace SharpPulsar.Deployment.Kubernetes
             Kop = new Component();
             Functions = new Component();
             AutoRecovery = AutoRecoveryComponent();
-            Ingress = new Ingress { Enabled = false };
+            Ingress = new Ingress 
+            { 
+                Enabled = false,
+                Proxy =new Ingress.IngressSetting
+                {
+                    Type = "LoadBalancer"
+                }
+            };
 
         }
         public static List<string> UserProvidedZookeepers { get; set; }
@@ -321,70 +328,70 @@ namespace SharpPulsar.Deployment.Kubernetes
             {
                 
                 ExtraInitContainers = new List<V1Container>
-            {
-                new V1Container
-                    {
-                        Name = "pulsar-bookkeeper-verify-clusterid",
-                        Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
-                        ImagePullPolicy = Images.Autorecovery.PullPolicy,
-                        Command = new []
+                {
+                    new V1Container
                         {
-                            "sh",
-                            "-c"
-                        },
-                        Args = new List<string>{ string.Join(" ", Args.AutoRecoveryIntContainer()) },
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
+                            Name = "pulsar-bookkeeper-verify-clusterid",
+                            Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
+                            ImagePullPolicy = Images.Autorecovery.PullPolicy,
+                            Command = new []
                             {
-                                ConfigMapRef = new V1ConfigMapEnvSource
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string>{ string.Join(" ", Args.AutoRecoveryIntContainer()) },
+                            EnvFrom = new List<V1EnvFromSource>
+                            {
+                                new V1EnvFromSource
                                 {
-                                    Name = $"{ReleaseName}-recovery"
+                                    ConfigMapRef = new V1ConfigMapEnvSource
+                                    {
+                                         Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                    }
                                 }
-                            }
-                        },
-                        VolumeMounts = VolumeMounts.RecoveryIntContainer()
-                    }
-            },
+                            },
+                            VolumeMounts = VolumeMounts.RecoveryIntContainer()
+                        }
+                },
                 Containers = new List<V1Container>
-            {
-                new V1Container
-                    {
-                        Name = $"{ReleaseName}-{Settings.Autorecovery.Name}",
-                        Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
-                        ImagePullPolicy = Images.Autorecovery.PullPolicy,
-                        Resources = new V1ResourceRequirements
+                {
+                    new V1Container
                         {
-                            Requests = new Dictionary<string, ResourceQuantity>
+                            Name = $"{ReleaseName}-{Settings.Autorecovery.Name}",
+                            Image = $"{Images.Autorecovery.Repository}:{Images.Autorecovery.Tag}",
+                            ImagePullPolicy = Images.Autorecovery.PullPolicy,
+                            Resources = new V1ResourceRequirements
                             {
+                                Requests = new Dictionary<string, ResourceQuantity>
                                 {
-                                    "memory", new ResourceQuantity(ResourcesRequests.AutoRecovery.Memory)
-                                },
-                                {
-                                    "cpu", new ResourceQuantity(ResourcesRequests.AutoRecovery.Cpu)
+                                    {
+                                        "memory", new ResourceQuantity(ResourcesRequests.AutoRecovery.Memory)
+                                    },
+                                    {
+                                        "cpu", new ResourceQuantity(ResourcesRequests.AutoRecovery.Cpu)
+                                    }
                                 }
-                            }
-                        },
-                        Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                        Args = new List<string>{ string.Join(" ", Args.AutoRecoveryContainer()) },
-                        Ports = Helpers.Ports.AutoRecovery(),
-                        EnvFrom = new List<V1EnvFromSource>
-                        {
-                            new V1EnvFromSource
+                            },
+                            Command = new []
                             {
-                                ConfigMapRef = new V1ConfigMapEnvSource
+                                "sh",
+                                "-c"
+                            },
+                            Args = new List<string>{ string.Join(" ", Args.AutoRecoveryContainer()) },
+                            Ports = Helpers.Ports.AutoRecovery(),
+                            EnvFrom = new List<V1EnvFromSource>
+                            {
+                                new V1EnvFromSource
                                 {
-                                    Name = $"{ReleaseName}-{Settings.Autorecovery.Name}"
+                                    ConfigMapRef = new V1ConfigMapEnvSource
+                                    {
+                                        Name = $"{ReleaseName}-{Settings.Autorecovery.Name}"
+                                    }
                                 }
-                            }
-                        },
-                        VolumeMounts = VolumeMounts.RecoveryContainer()
-                    }
-            },
+                            },
+                            VolumeMounts = VolumeMounts.RecoveryContainer()
+                        }
+                },
                 Volumes = Volumes.Recovery()
             };
         }
@@ -445,48 +452,48 @@ namespace SharpPulsar.Deployment.Kubernetes
             {                
                 
                 ExtraInitContainers = new List<V1Container>
-            {
-                // This init container will wait for zookeeper to be ready before
-                // deploying the bookies
-                new V1Container
                 {
-                    Name = "wait-zookeeper-ready",
-                    Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
-                    ImagePullPolicy = Images.Broker.PullPolicy,
-                    Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                    Args = new List<string>{ string.Join(" ", Args.BrokerZooIntContainer()) },
-                    VolumeMounts = VolumeMounts.BrokerContainer()
-                },
-                //# This init container will wait for bookkeeper to be ready before
-                //# deploying the broker
-                new V1Container
-                {
-                    Name = "wait-bookkeeper-ready",
-                    Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
-                    ImagePullPolicy = Images.Broker.PullPolicy,
-                    Command = new []
-                        {
-                            "sh",
-                            "-c"
-                        },
-                    Args = new List<string>{string.Join(" ", Args.BrokerBookieIntContainer()) },
-                    EnvFrom = new List<V1EnvFromSource>
+                    // This init container will wait for zookeeper to be ready before
+                    // deploying the bookies
+                    new V1Container
                     {
-                        new V1EnvFromSource
-                        {
-                            ConfigMapRef = new V1ConfigMapEnvSource
+                        Name = "wait-zookeeper-ready",
+                        Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                        ImagePullPolicy = Images.Broker.PullPolicy,
+                        Command = new []
                             {
-                                Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
-                            }
-                        }
+                                "sh",
+                                "-c"
+                            },
+                        Args = new List<string>{ string.Join(" ", Args.BrokerZooIntContainer()) },
+                        VolumeMounts = VolumeMounts.BrokerContainer()
                     },
-                    VolumeMounts = VolumeMounts.BrokerContainer()
-                }
-            },
+                    //# This init container will wait for bookkeeper to be ready before
+                    //# deploying the broker
+                    new V1Container
+                    {
+                        Name = "wait-bookkeeper-ready",
+                        Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                        ImagePullPolicy = Images.Broker.PullPolicy,
+                        Command = new []
+                            {
+                                "sh",
+                                "-c"
+                            },
+                        Args = new List<string>{string.Join(" ", Args.BrokerBookieIntContainer()) },
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                }
+                            }
+                        },
+                        VolumeMounts = VolumeMounts.BrokerContainer()
+                    }
+                },
                 Containers = new List<V1Container>
                 {
                     new V1Container
@@ -539,30 +546,30 @@ namespace SharpPulsar.Deployment.Kubernetes
             {
                 ExtraInitContainers = new List<V1Container>
                 {
-                new V1Container
-                {
-                    Name = "pulsar-bookkeeper-verify-clusterid",
-                    Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
-                    ImagePullPolicy = Images.Bookie.PullPolicy,
-                    Command = new[]
+                    new V1Container
                     {
-                         "sh",
-                         "-c"
-                    },
-                    Args = new List<string>{string.Join(" ", Args.BookieIntContainer()) },
-                    EnvFrom = new List<V1EnvFromSource>
-                    {
-                        new V1EnvFromSource
+                        Name = "pulsar-bookkeeper-verify-clusterid",
+                        Image = $"{Images.Bookie.Repository}:{Images.Bookie.Tag}",
+                        ImagePullPolicy = Images.Bookie.PullPolicy,
+                        Command = new[]
                         {
-                            ConfigMapRef = new V1ConfigMapEnvSource
+                             "sh",
+                             "-c"
+                        },
+                        Args = new List<string>{string.Join(" ", Args.BookieIntContainer()) },
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
                             {
-                                Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
+                                }
                             }
-                        }
-                    },
-                    VolumeMounts = VolumeMounts.BookieIntContainer()
-                }
-            },
+                        },
+                        VolumeMounts = VolumeMounts.BookieIntContainer()
+                    }
+                },
                 Containers = new List<V1Container>
                 {
                     new V1Container
@@ -1254,4 +1261,5 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, string> Functions { get; set; }
         public IDictionary<string, string> Toolset { get; set; }
     }
+
 }

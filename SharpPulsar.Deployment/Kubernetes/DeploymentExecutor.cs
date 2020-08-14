@@ -42,7 +42,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _zooKeeperRunner = new ZooKeeperRunner(job, configMap, pdb, service, statefulset, storage);
             _brokerRunner = new BrokerRunner(configMap, pdb, service, serviceAccount, statefulset, clusterRole, clusterRoleBinding);
             _bookieRunner = new BookieRunner(job, configMap, pdb, service, serviceAccount, statefulset, clusterRole, clusterRoleBinding, storage);
-            _proxyRunner = new ProxyRunner(configMap, pdb, service, statefulset);
+            _proxyRunner = new ProxyRunner(configMap, pdb, service, serviceAccount, statefulset);
             _prestoRunner = new PrestoRunner(configMap, statefulset, service);
             _networkCenterRunner = new NetworkCenterRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
             _certRunner = new CertRunner(_client, secret);

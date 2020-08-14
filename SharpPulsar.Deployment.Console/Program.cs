@@ -1,9 +1,5 @@
-﻿using k8s.Models;
-using Newtonsoft.Json;
-using SharpPulsar.Deployment.Kubernetes;
-using SharpPulsar.Deployment.Kubernetes.Helpers;
+﻿using SharpPulsar.Deployment.Kubernetes;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -14,7 +10,9 @@ namespace SharpPulsar.Deployment.Console
         static void Main(string[] args)
         {
             System.Console.WriteLine("Hello World!");
-            var values = new Values();
+            new Values();
+            //do this only when you are creating a new instance of Values properties. Old value is used
+            //Values.ReleaseName = "friday";
             var deploy = new DeploymentExecutor();
             string path = $@"Results\{DateTimeOffset.Now.ToUnixTimeMilliseconds()}.txt";
             using (StreamWriter sw = File.CreateText(path))
