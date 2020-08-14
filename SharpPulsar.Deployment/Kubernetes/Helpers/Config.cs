@@ -835,7 +835,7 @@ pulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holde
 # Number of threads to be used for managed ledger scheduled tasks,
 # default is Runtime.getRuntime().availableProcessors().
 # pulsar.managed-ledger-num-scheduler-threads =";
-            conf["health_check.sh"] =  $@"| 
+            conf["health_check.sh"] =  $@" 
 #!/bin/bash
 curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordinator["http"]}/v1/node | tr "", "" ""\n"" | grep --silent $(hostname -i)";
             return conf;

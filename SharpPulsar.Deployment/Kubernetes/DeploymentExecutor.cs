@@ -76,7 +76,6 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
                 yield return result;
             }
-
             foreach(var cert in _certRunner.Run(dryRun))
                 yield return cert;
 
