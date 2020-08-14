@@ -480,7 +480,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                         {
                             ConfigMapRef = new V1ConfigMapEnvSource
                             {
-                                Name = $"{ReleaseName}-{Settings.Broker.Name}"
+                                Name = $"{ReleaseName}-{Settings.BookKeeper.Name}"
                             }
                         }
                     },
