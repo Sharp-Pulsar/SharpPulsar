@@ -138,6 +138,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                 {
                     Enabled = true,
                     Name = "functions-worker"
+                }, 
+                AlertManager = new ComponentSetting
+                {
+                    Name = "alert-manager"
                 }
             };
             ExtraConfigs = extraConfigs ?? new ExtraConfigs
@@ -305,6 +309,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         public static Component BookKeeper { get; set; } 
         public static Component Broker { get; set; }
         public static Component Proxy { get; set; } 
+        public static Component PulsarDetector { get; set; } 
+        public static Component AlertManager { get; set; } 
+        public static Component Prometheus { get; set; } 
 
         public static Component PrestoCoordinator { get; set; }
         public static Component PrestoWorker { get; set; } 
@@ -816,6 +823,18 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             {"http", 8000}
         };
+        public IDictionary<string, int> AlertManager { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 9093}
+        };
+        public IDictionary<string, int> Prometheus { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 9090}
+        };
+        public IDictionary<string, int> PulsarDetector { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 9000}
+        };
         public IDictionary<string, int> ZooKeeper { get; set; } = new Dictionary<string, int>
         {
             {"metrics", 8000},
@@ -833,6 +852,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public bool Grafana { get; set; } = false;
         // alerting - alert-manager
         public bool AlertManager { get; set; } = false;
+        public string AlertManagerPath { get; set; }
     }
     public  sealed class Images 
     {
@@ -897,6 +917,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ComponentSetting Function { get; set; }
         public ComponentSetting Toolset { get; set; }
         public ComponentSetting Kop { get; set; }
+        public ComponentSetting AlertManager { get; set; }
+        public ComponentSetting PulsarDetector { get; set; }
     }
     public sealed class ComponentSetting
     {
@@ -1205,10 +1227,6 @@ namespace SharpPulsar.Deployment.Kubernetes
             public int InitialDelaySeconds { get; set; }
             public int PeriodSeconds { get; set; }
         }
-    }
-    public class Common
-    {
-        public List<V1Container> ExtraInitContainers { get; set; }
     }
     public class Component
     {

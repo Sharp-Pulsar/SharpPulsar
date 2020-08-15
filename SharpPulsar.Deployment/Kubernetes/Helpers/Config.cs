@@ -1,5 +1,7 @@
-﻿using System;
+﻿using SharpPulsar.Deployment.Kubernetes.Prometheus;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
@@ -839,6 +841,188 @@ pulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holde
 #!/bin/bash
 curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordinator["http"]}/v1/node | tr "", "" ""\n"" | grep --silent $(hostname -i)";
             return conf;
+        }
+
+        public static IDictionary<string, string> Prometheus(RuleGroup rules = default)
+        {
+            var config = new Dictionary<string, string>();
+            var yaml = new PrometheusYaml
+            {
+                Global = new Global
+                {
+                    ScrapeInterval = "15s"
+                }
+            };
+            if (Values.Monitoring.AlertManager)
+            {
+                yaml.RuleFiles = new List<string>
+                {
+                    "rules.yml"
+                };
+                yaml.Alerting = new Alerting
+                {
+                    AlertManagers = new AlertManagers
+                    {
+                        StaticConfigs = new StaticConfigs
+                        {
+                            Targets = new List<string>
+                            {
+                                $"{Values.ReleaseName}-{Values.Settings.AlertManager.Name}:{Values.Ports.AlertManager["http"]}"
+                            }
+                        },
+                        PathPrefix = $"{Values.Monitoring.AlertManagerPath}/"
+                    }
+                };
+            }
+            yaml.ScrapeConfigs = new List<IDictionary<string, object>>
+            {
+                new Dictionary<string, object>
+                {
+                    {"job_name","'prometheus'" },
+                    {"static_configs", new Dictionary<string, object>
+                        {
+                            {"targets", new  List<string>
+                                    {
+                                        $"'127.0.0.1:{Values.Ports.Prometheus["http"]}'"
+                                    }
+                            }
+                        }
+                    },
+                    {"metrics_path", Values.Ingress.Enabled? "/prometheus/metrics": "" }
+                },
+                new Dictionary<string, object>
+                {
+                    {"job_name", "'kubernetes-pods'"},
+                    {"kubernetes_sd_configs", new KeyValuePair<string,string>("role","pod") },
+                    {"relabel_configs", new List<Dictionary<string, object>> 
+                        { 
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_annotation_prometheus_io_scrape" } },
+                                {"action", "keep" },
+                                {"regex", true}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_annotation_prometheus_io_path" } },
+                                {"action", "replace" },
+                                {"target_label", "__metrics_path__"},
+                                {"regex", "(.+)"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port" } },
+                                {"action", "replace" },
+                                {"regex", @"([^:]+)(?::\d+)?;(\d+)"},
+                                {"replacement", "$1:$2"},
+                                {"target_label", "__address__"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"action", "labelmap" },
+                                {"regex", "__meta_kubernetes_pod_label_(.+)"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_namespace" } },
+                                {"action", "replace" },
+                                {"target_label", "kubernetes_namespace"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_label_component" } },
+                                {"action", "replace" },
+                                {"target_label", "job"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_name" } },
+                                {"action", "replace" },
+                                {"target_label", "kubernetes_pod_name"}
+                            }
+                        } 
+                    }
+                },
+                new Dictionary<string, object>
+                {
+                    {"job_name", "'kubernetes-nodes'"},
+                    {"scheme", "https"},
+                    {"kubernetes_sd_configs", new KeyValuePair<string,string>("role","node") },
+                    {"tls_config", new KeyValuePair<string,string>("ca_file", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt") },
+                    {"bearer_token_file", "/var/run/secrets/kubernetes.io/serviceaccount/token"},
+                    {"relabel_configs", new List<Dictionary<string, object>> 
+                        { 
+                            new Dictionary<string, object>
+                            {
+                                {"action", "labelmap" },
+                                {"regex", "__meta_kubernetes_node_label_(.+)"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"target_label", "__address__"},
+                                {"replacement", "kubernetes.default.svc:443"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_node_name" } },
+                                {"regex", "(.+)"},
+                                {"target_label", "__metrics_path__"},
+                                {"replacement", "/api/v1/nodes/${1}/proxy/metrics"}
+                            }
+                        } 
+                    }
+                },
+                new Dictionary<string, object>
+                {
+                    {"job_name", "'kubernetes-cadvisor'"},
+                    {"scheme", "https"},
+                    {"kubernetes_sd_configs", new KeyValuePair<string,string>("role","node") },
+                    {"tls_config", new KeyValuePair<string,string>("ca_file", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt") },
+                    {"bearer_token_file", "/var/run/secrets/kubernetes.io/serviceaccount/token"},
+                    {"relabel_configs", new List<Dictionary<string, object>> 
+                        { 
+                            new Dictionary<string, object>
+                            {
+                                {"action", "labelmap" },
+                                {"regex", "__meta_kubernetes_node_label_(.+)"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"target_label", "__address__"},
+                                {"replacement", "kubernetes.default.svc:443"}
+                            },
+                            new Dictionary<string, object>
+                            {
+                                {"source_labels", new List<string>{ "__meta_kubernetes_node_name" } },
+                                {"regex", "(.+)"},
+                                {"target_label", "__metrics_path__"},
+                                {"replacement", "/api/v1/nodes/${1}/proxy/metrics/cadvisor"}
+                            }
+                        } 
+                    }
+                }
+            };
+            if (Values.Settings.PulsarDetector.Enabled)
+            {
+                var ls = (Dictionary<string, List<string>>)yaml.ScrapeConfigs.First()["static_configs"];
+                ls["targets"].Add($"'{Values.ReleaseName}-{Values.Settings.PulsarDetector.Name}:{Values.Ports.PulsarDetector["http"]}'");
+                yaml.ScrapeConfigs.First()["static_configs"] = ls;
+            }
+            if(Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt"))
+            {
+                yaml.ScrapeConfigs[1].Add("bearer_token_file", "/pulsar/tokens/client/token");
+            }
+            var serializer = new YamlDotNet.Serialization.Serializer();
+            var serialized = serializer.Serialize(yaml);
+            config.Add("prometheus.yml", serialized);
+            if(rules != null)
+            {
+                var rls = serializer.Serialize(rules);
+                config.Add("rules.yml", rls);
+            }
+            else
+                config.Add("rules.yml", "");
+            return config;
         }
     }
 }
