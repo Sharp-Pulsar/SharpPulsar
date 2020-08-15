@@ -8,43 +8,43 @@ namespace SharpPulsar.Deployment.Kubernetes
 {
     public class Values
     {
-        public Values()
+        public Values(string @namespace = "pulsar", string cluster = "pulsar", string releaseName = "pulsar", string app = "pulsar"
+            , bool persistence = true, bool localStorage = false, bool antiAffinity = true, bool initialize = true, string configurationStore = ""
+            , string configurationStoreMetadataPrefix = "", bool createNamespace = true, string metadataPrefix = "", Authentication authentication = null, Tls tls = null,
+            List<string> userProvidedZookeepers = null, Monitoring monitoring = null, Images images = null, Probes probes = null, Ports ports = null,
+            ComponentSettings componentSettings = null, ExtraConfigs extraConfigs = null, ResourcesRequests resourcesRequests = null, ConfigMaps configMaps = null,
+            Component zooKeeperComponent = null, Component bookKeeperComponent = null, Component autoRecoveryComponent = null, Component brokerComponent = null,
+            Component proxyComponent = null, Component prestoCoordinatorComponent = null, Component prestoWorkComponent = null, Component toolSetComponent = null, Component functionComponent = null,
+            Component kopComponent = null, Ingress ingress = null)
         {
-            InstallCertManager = false;
-            ResourcesRequests = new ResourcesRequests
-            {
-                ZooKeeper = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" },
-                Broker = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
-                BookKeeper = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" },
-                AutoRecovery = new ResourcesRequest { Memory = "64Mi", Cpu= "0.05"}
-            };
-            Authentication = new Authentication
+            ResourcesRequests = resourcesRequests ?? new ResourcesRequests();
+            Authentication = authentication ?? new Authentication
             {
                 Enabled = false
             };
-            Tls = new Tls
+            Tls = tls ?? new Tls
             {
                 Enabled = false
+                
             };
-            Namespace = "pulsar";
-            Cluster = "pulsar";
-            ReleaseName = "pulsar";
-            App = "pulsar";
-            UserProvidedZookeepers = new List<string>();
-            Persistence = true;
-            LocalStorage = false;
-            AntiAffinity = true;
-            Initialize = true;
-            ConfigurationStore = "";
-            ConfigurationStoreMetadataPrefix = "";
-            Namespace = "pulsar";
-            NamespaceCreate = true;
-            MetadataPrefix = "";
-            Monitoring = new Monitoring();
-            Images = new Images();
-            Probe = new Probes();
-            Ports = new Ports();
-            Settings = new ComponentSettings
+            Namespace = @namespace;
+            Cluster = cluster;
+            ReleaseName = releaseName;
+            App = app;
+            UserProvidedZookeepers = userProvidedZookeepers ?? new List<string>();
+            Persistence = persistence;
+            LocalStorage = localStorage;
+            AntiAffinity = antiAffinity;
+            Initialize = initialize;
+            ConfigurationStore = configurationStore;
+            ConfigurationStoreMetadataPrefix = configurationStoreMetadataPrefix;
+            NamespaceCreate = createNamespace;
+            MetadataPrefix = metadataPrefix;
+            Monitoring = monitoring ?? new Monitoring();
+            Images = images ?? new Images();
+            Probe = probes ?? new Probes();
+            Ports = ports ?? new Ports();
+            Settings = componentSettings ?? new ComponentSettings
             {
                 Autorecovery = new ComponentSetting
                 {
@@ -140,7 +140,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                     Name = "functions-worker"
                 }
             };
-            ExtraConfigs = new ExtraConfigs
+            ExtraConfigs = extraConfigs ?? new ExtraConfigs
             {
                 ZooKeeper = new ExtraConfig
                 {
@@ -230,30 +230,19 @@ namespace SharpPulsar.Deployment.Kubernetes
                     }
                 }
             };
-            ConfigMaps = new ConfigMaps
-            {
-                AutoRecovery = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } },
-                ZooKeeper = Config.ZooKeeper().RemoveRN(),
-                Broker = Config.Broker().RemoveRN(),
-                BookKeeper = Config.BookKeeper().RemoveRN(),
-                Proxy = Config.Proxy().RemoveRN(),
-                PrestoCoordinator = Config.PrestoCoord(Settings.PrestoCoord.Replicas > 0 ? "false" : "true").RemoveRN(),
-                PrestoWorker = Config.PrestoWorker().RemoveRN()
-
-            };
+            ConfigMaps = configMaps ?? new ConfigMaps();
             //Dependencies order
-            ZooKeeper = ZooKeeperComponent();
-            BookKeeper = BookKeeperComponent();
-            AutoRecovery = AutoRecoveryComponent();
-            Broker = BrokerComponent();
-            Proxy = ProxyComponent();
-            PrestoCoordinator = PrestoCoordinatorComponent();
-            PrestoWorker = PrestoWorkComponent();
-            Toolset = new Component();
-            Kop = new Component();
-            Functions = new Component();
-            AutoRecovery = AutoRecoveryComponent();
-            Ingress = new Ingress 
+            ZooKeeper = zooKeeperComponent ?? ZooKeeperComponent();
+            BookKeeper = bookKeeperComponent ?? BookKeeperComponent();
+            AutoRecovery = autoRecoveryComponent ?? AutoRecoveryComponent();
+            Broker = brokerComponent ?? BrokerComponent();
+            Proxy = proxyComponent ?? ProxyComponent();
+            PrestoCoordinator = prestoCoordinatorComponent ?? PrestoCoordinatorComponent();
+            PrestoWorker = prestoWorkComponent ?? PrestoWorkComponent();
+            Toolset = toolSetComponent ?? new Component();
+            Kop = kopComponent ?? new Component();
+            Functions = functionComponent ?? new Component();
+            Ingress = ingress ?? new Ingress 
             { 
                 Enabled = false,
                 Proxy =new Ingress.IngressSetting
@@ -263,7 +252,6 @@ namespace SharpPulsar.Deployment.Kubernetes
             };
 
         }
-        public bool InstallCertManager { get; set; }
         public static List<string> UserProvidedZookeepers { get; set; }
         public static bool Persistence { get; set; }
         public static bool LocalStorage { get; set; }
@@ -1234,10 +1222,10 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public sealed class ResourcesRequests
     {
-        public ResourcesRequest AutoRecovery { get; set; }
-        public ResourcesRequest ZooKeeper { get; set; }
-        public ResourcesRequest BookKeeper { get; set; }
-        public ResourcesRequest Broker { get; set; }
+        public ResourcesRequest AutoRecovery { get; set; } = new ResourcesRequest { Memory = "64Mi", Cpu = "0.05" };
+        public ResourcesRequest ZooKeeper { get; set; } = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" };
+        public ResourcesRequest BookKeeper { get; set; } = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" };
+        public ResourcesRequest Broker { get; set; } = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" };
         public ResourcesRequest Proxy { get; set; }
         public ResourcesRequest PrestoCoordinator { get; set; }
         public ResourcesRequest PrestoWorker { get; set; }
@@ -1283,13 +1271,13 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public sealed class ConfigMaps
     {
-        public IDictionary<string, string> ZooKeeper { get; set; }
-        public IDictionary<string, string> BookKeeper { get; set; }
-        public IDictionary<string, string> Broker { get; set; }
-        public IDictionary<string, string> PrestoCoordinator { get; set; }
-        public IDictionary<string, string> PrestoWorker { get; set; }
-        public IDictionary<string, string> Proxy { get; set; }
-        public IDictionary<string, string> AutoRecovery { get; set; }
+        public IDictionary<string, string> ZooKeeper { get; set; } = Config.ZooKeeper().RemoveRN();
+        public IDictionary<string, string> BookKeeper { get; set; } = Config.BookKeeper().RemoveRN();
+        public IDictionary<string, string> Broker { get; set; } = Config.Broker().RemoveRN();
+        public IDictionary<string, string> PrestoCoordinator { get; set; } = Config.PrestoCoord(Values.Settings.PrestoCoord.Replicas > 0 ? "false" : "true").RemoveRN();
+        public IDictionary<string, string> PrestoWorker { get; set; } = Config.PrestoWorker().RemoveRN();
+        public IDictionary<string, string> Proxy { get; set; } = Config.Proxy().RemoveRN();
+        public IDictionary<string, string> AutoRecovery { get; set; } = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } };
         public IDictionary<string, string> Functions { get; set; }
         public IDictionary<string, string> Toolset { get; set; }
     }
