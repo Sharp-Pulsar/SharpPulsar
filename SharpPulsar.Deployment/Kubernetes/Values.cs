@@ -142,7 +142,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                 AlertManager = new ComponentSetting
                 {
                     Name = "alert-manager"
-                }
+                },
+                PulsarDetector = new ComponentSetting()
             };
             ExtraConfigs = extraConfigs ?? new ExtraConfigs
             {

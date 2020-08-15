@@ -24,6 +24,7 @@ namespace SharpPulsar.Deployment.Kubernetes
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
         {
+            var hel = Helpers.Config.Prometheus();
             var config = conf ?? KubernetesClientConfiguration.BuildDefaultConfig();
             _client = new k8s.Kubernetes(config);
             

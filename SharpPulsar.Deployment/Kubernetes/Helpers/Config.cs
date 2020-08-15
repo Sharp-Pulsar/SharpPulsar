@@ -846,35 +846,28 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
         public static IDictionary<string, string> Prometheus(RuleGroup rules = default)
         {
             var config = new Dictionary<string, string>();
-            var yaml = new PrometheusYaml
+            var yamlDict = new Dictionary<string, object>
             {
-                Global = new Global
-                {
-                    ScrapeInterval = "15s"
-                }
+                {"global", new Dictionary<string, string>{ { "scrape_interval", "15s" } } }
             };
             if (Values.Monitoring.AlertManager)
             {
-                yaml.RuleFiles = new List<string>
+                yamlDict.Add("rule_files", new List<string> {"rules.yml" });
+                yamlDict.Add("alerting", new Dictionary<string, object> 
                 {
-                    "rules.yml"
-                };
-                yaml.Alerting = new Alerting
-                {
-                    AlertManagers = new AlertManagers
-                    {
-                        StaticConfigs = new StaticConfigs
+                    {"alertmanagers", new Dictionary<string, object>
                         {
-                            Targets = new List<string>
-                            {
-                                $"{Values.ReleaseName}-{Values.Settings.AlertManager.Name}:{Values.Ports.AlertManager["http"]}"
-                            }
-                        },
-                        PathPrefix = $"{Values.Monitoring.AlertManagerPath}/"
+                            {"static_configs", new Dictionary<string, object> 
+                                {
+                                    {"targets", new List<string>{ $"{Values.ReleaseName}-{Values.Settings.AlertManager.Name}:{Values.Ports.AlertManager["http"]}" } }
+                                } 
+                            },
+                            {"path_prefix", $"{Values.Monitoring.AlertManagerPath}/"}
+                        } 
                     }
-                };
+                });
             }
-            yaml.ScrapeConfigs = new List<IDictionary<string, object>>
+            var scrapeConfigs = new List<IDictionary<string, object>>
             {
                 new Dictionary<string, object>
                 {
@@ -893,7 +886,7 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                 new Dictionary<string, object>
                 {
                     {"job_name", "'kubernetes-pods'"},
-                    {"kubernetes_sd_configs", new KeyValuePair<string,string>("role","pod") },
+                    {"kubernetes_sd_configs", new Dictionary<string, string>{ { "role", "pod" } } },
                     {"relabel_configs", new List<Dictionary<string, object>> 
                         { 
                             new Dictionary<string, object>
@@ -947,8 +940,8 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                 {
                     {"job_name", "'kubernetes-nodes'"},
                     {"scheme", "https"},
-                    {"kubernetes_sd_configs", new KeyValuePair<string,string>("role","node") },
-                    {"tls_config", new KeyValuePair<string,string>("ca_file", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt") },
+                    {"kubernetes_sd_configs", new Dictionary<string, string>{ { "role", "node" } } },
+                    {"tls_config", new Dictionary<string, string>{ { "ca_file", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" } } },
                     {"bearer_token_file", "/var/run/secrets/kubernetes.io/serviceaccount/token"},
                     {"relabel_configs", new List<Dictionary<string, object>> 
                         { 
@@ -976,8 +969,8 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                 {
                     {"job_name", "'kubernetes-cadvisor'"},
                     {"scheme", "https"},
-                    {"kubernetes_sd_configs", new KeyValuePair<string,string>("role","node") },
-                    {"tls_config", new KeyValuePair<string,string>("ca_file", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt") },
+                    {"kubernetes_sd_configs", new Dictionary<string, string>{ { "role", "node" } }  },
+                    {"tls_config", new Dictionary<string, string>{ { "ca_file", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" } } },
                     {"bearer_token_file", "/var/run/secrets/kubernetes.io/serviceaccount/token"},
                     {"relabel_configs", new List<Dictionary<string, object>> 
                         { 
@@ -1004,20 +997,21 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
             };
             if (Values.Settings.PulsarDetector.Enabled)
             {
-                var ls = (Dictionary<string, List<string>>)yaml.ScrapeConfigs.First()["static_configs"];
+                var ls = (Dictionary<string, List<string>>)scrapeConfigs.First()["static_configs"];
                 ls["targets"].Add($"'{Values.ReleaseName}-{Values.Settings.PulsarDetector.Name}:{Values.Ports.PulsarDetector["http"]}'");
-                yaml.ScrapeConfigs.First()["static_configs"] = ls;
+                scrapeConfigs.First()["static_configs"] = ls;
             }
             if(Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt"))
             {
-                yaml.ScrapeConfigs[1].Add("bearer_token_file", "/pulsar/tokens/client/token");
+                scrapeConfigs[1].Add("bearer_token_file", "/pulsar/tokens/client/token");
             }
+            yamlDict["scrape_configs"] = scrapeConfigs;
             var serializer = new YamlDotNet.Serialization.Serializer();
-            var serialized = serializer.Serialize(yaml);
+            var serialized = serializer.Serialize(yamlDict);
             config.Add("prometheus.yml", serialized);
             if(rules != null)
             {
-                var rls = serializer.Serialize(rules);
+                var rls = serializer.Serialize(rules.Data);
                 config.Add("rules.yml", rls);
             }
             else

@@ -99,11 +99,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Prometheus
 
     public class RuleGroup
     {
-        [JsonProperty(PropertyName = "name")]
-        public string Name { get; set; }
-
-        [JsonProperty(PropertyName = "rules")]
-        public List<IDictionary<string, string>> Rules { get; set; }
+        public IDictionary<string, object> Data { get; set; } = new Dictionary<string, object>
+        {
+            {"name", ""},
+            {"rules" , new Dictionary<string, object>() }
+        };
     }
 
     public class RecordRule
