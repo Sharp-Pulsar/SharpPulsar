@@ -143,7 +143,15 @@ namespace SharpPulsar.Deployment.Kubernetes
                 {
                     Name = "alert-manager"
                 },
-                PulsarDetector = new ComponentSetting()
+                PulsarDetector = new ComponentSetting(),
+                Prometheus = new ComponentSetting
+                {
+                    Name = "prometheus",
+                    Replicas = 1,
+                    Service = $"{ReleaseName}-prometheus",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel"
+                }
             };
             ExtraConfigs = extraConfigs ?? new ExtraConfigs
             {
@@ -233,7 +241,17 @@ namespace SharpPulsar.Deployment.Kubernetes
                         {"namespaceDelimiterRewriteEnable", "true" },{ "rewriteNamespaceDelimiter", "/"},
                         {"bookkeeperThrottleValue", "0" }, {"managedLedgerCacheSizeMB", "0"}
                     }
+                },
+                Prometheus = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        {"PrometheusArgsRetention", "15d" },
+                        {"ConfigmapReload", false },
+                        {"ExtraVolumeDirs", null }
+                    }
                 }
+
             };
             ConfigMaps = configMaps ?? new ConfigMaps();
             //Dependencies order
@@ -257,6 +275,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             };
 
         }
+        public static Rbac Rbac { get; set; } = new Rbac();
         public static List<string> UserProvidedZookeepers { get; set; }
         public static bool Persistence { get; set; }
         public static bool LocalStorage { get; set; }
@@ -781,6 +800,34 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Volumes = Volumes.PrestoWorker()
             };
         }
+        private Component PrometheusComponent()
+        {
+            return new Component
+            {
+                Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = $"{ReleaseName}-{Settings.Prometheus.Name }",
+                        Image = $"{Images.Prometheus.Repository}:{Images.Prometheus.Tag}",
+                        ImagePullPolicy = Images.Prometheus.PullPolicy,
+                        SecurityContext = new V1SecurityContext
+                        {
+                            RunAsUser = 65534,
+                            RunAsNonRoot = true,
+                            RunAsGroup = 65534
+                        },
+                        Args = new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
+                        Ports = Helpers.Ports.Prometheus(),
+                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Prometheus, $"{ExtraConfigs.Prometheus.Holder["Url"]}/-/ready", Ports.Prometheus["http"]),
+                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Prometheus, $"{ExtraConfigs.Prometheus.Holder["Url"]}/-/healthy", Ports.Prometheus["http"]),
+                        //StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Prometheus, "/status.html", Ports.Prometheus["http"]),
+                        VolumeMounts = VolumeMounts.ProxyContainer()//here
+                    }
+                },
+                Volumes = Volumes.Proxy()
+            };
+        }
     }
     public sealed class ProxyServiceUrl
     {
@@ -920,6 +967,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ComponentSetting Kop { get; set; }
         public ComponentSetting AlertManager { get; set; }
         public ComponentSetting PulsarDetector { get; set; }
+        public ComponentSetting Prometheus { get; set; }
+        public ComponentSetting Grafana { get; set; }
+        public ComponentSetting PulsarManager { get; set; }
     }
     public sealed class ComponentSetting
     {
@@ -944,6 +994,13 @@ namespace SharpPulsar.Deployment.Kubernetes
         public string ZooConnect { get; set; }
         public string ZNode { get; set; }
         public Storage Storage { get; set; }
+        public Annotations Annotations { get; set; } = new Annotations();
+        public IDictionary<string, string> ExtraConfigMap { get; set; } = new Dictionary<string, string>();
+    }
+    public class Annotations
+    {
+        public IDictionary<string, string> Service { get; set; } = new Dictionary<string, string>();
+        public IDictionary<string, string> Template { get; set; } = new Dictionary<string, string>();
     }
     public sealed class Ingress 
     { 
@@ -1066,6 +1123,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ExtraConfig PrestoCoordinator { get; set; }
         public ExtraConfig PrestoWorker { get; set; }
         public ExtraConfig AutoRecovery { get; set; }
+        public ExtraConfig Prometheus { get; set; }
     }
     public sealed class Probes
     {
@@ -1191,6 +1249,30 @@ namespace SharpPulsar.Deployment.Kubernetes
                 PeriodSeconds = 30
             }
         };
+        public ComponentProbe Prometheus { get; set; } = new ComponentProbe
+        {
+            Liveness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 30,
+                PeriodSeconds = 10
+            },
+            Readiness = new ProbeOptions
+            {
+                Enabled = true,
+                FailureThreshold = 10,
+                InitialDelaySeconds = 30,
+                PeriodSeconds = 10
+            },
+            Startup = new ProbeOptions
+            {
+                Enabled = false,
+                FailureThreshold = 30,
+                InitialDelaySeconds = 10,
+                PeriodSeconds = 30
+            }
+        };
         public ComponentProbe Bookie { get; set; } = new ComponentProbe
         {
             Liveness = new ProbeOptions
@@ -1299,6 +1381,16 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, string> AutoRecovery { get; set; } = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } };
         public IDictionary<string, string> Functions { get; set; }
         public IDictionary<string, string> Toolset { get; set; }
+        public IDictionary<string, string> Prometheus { get; set; } = Config.Prometheus();
+        public IDictionary<string, string> PulsarManager { get; set; }
+        public IDictionary<string, string> PulsarDetector { get; set; }
+        public IDictionary<string, string> Grafana { get; set; }
+        public IDictionary<string, string> AlertManager { get; set; }
     }
-
+    public class Rbac
+    {
+        public bool Enabled { get; set; } = true;
+        public string RoleName { get; set; } = "pulsar-operator";
+        public string RoleNameBinding { get; set; } = "pulsar-operator-cluster-role-binding";
+    }
 }

@@ -24,14 +24,27 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _cluster.Metadata.Labels = labels;
             return this;
         }
-        public ClusterRoleBuilder AddRule(string[] apiGroups, string[] resources, string[] verbs)
+        public ClusterRoleBuilder AddRule(string[] apiGroups, string[] resources, string[] verbs, string[] nonResourceURLs = null)
         {
-            _cluster.Rules.Add(new V1PolicyRule 
-            { 
-                ApiGroups = apiGroups,
-                Resources = resources,
-                Verbs = verbs
-            });
+           if(nonResourceURLs == null)
+            {
+                _cluster.Rules.Add(new V1PolicyRule
+                {
+                    ApiGroups = apiGroups,
+                    Resources = resources,
+                    Verbs = verbs
+                });
+            }
+            else
+            {
+                _cluster.Rules.Add(new V1PolicyRule
+                {
+                    ApiGroups = apiGroups,
+                    Resources = resources,
+                    Verbs = verbs,
+                    NonResourceURLs = nonResourceURLs
+                });
+            }
             return this;
         }
         public V1ClusterRole Build()

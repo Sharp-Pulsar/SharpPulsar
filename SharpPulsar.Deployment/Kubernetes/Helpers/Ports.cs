@@ -73,6 +73,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             return ports;
         }
 
+        public static List<V1ContainerPort> Prometheus()
+        {
+            var ports = new List<V1ContainerPort>
+            {
+                new V1ContainerPort { Name = "server", ContainerPort = Values.Ports.Prometheus["http"] }
+            };
+            return ports;
+        }
+
         public static List<V1ContainerPort> PrestoCoord()
         {
             var ports = new List<V1ContainerPort>

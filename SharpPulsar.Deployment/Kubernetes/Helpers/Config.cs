@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Deployment.Kubernetes.Prometheus;
+﻿using SharpPulsar.Deployment.Kubernetes.Extensions;
+using SharpPulsar.Deployment.Kubernetes.Prometheus;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,7 +42,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 zk.Add("PULSAR_PREFIX_reconfigEnabled", "true");
                 zk.Add("PULSAR_PREFIX_quorumListenOnAllIPs", "true");
             }
-            return zk;
+            return zk.AddRange(Values.Settings.ZooKeeper.ExtraConfigMap);
         }
 
         public static IDictionary<string, string> BookKeeper()
@@ -100,7 +101,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             else
                 conf.Add("zkServers", $"{Values.Settings.ZooKeeper.Service}:{Values.Ports.ZooKeeper["client"]}");
-            return conf;
+            return conf.AddRange(Values.Settings.BookKeeper.ExtraConfigMap);
         }
         public static IDictionary<string, string> Broker()
         {
@@ -270,7 +271,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 }
             }
             
-            return conf;
+            return conf.AddRange(Values.Settings.Broker.ExtraConfigMap);
         }
         public static IDictionary<string, string> Proxy()
         {
@@ -380,7 +381,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 -XX:-ResizePLAB
 -XX:+ExitOnOutOfMemoryError
 -XX:+PerfDisableSharedMem");
-            return conf;
+            return conf.AddRange(Values.Settings.Proxy.ExtraConfigMap);
         }
         public static IDictionary<string, string> PrestoCoord(string schedule)
         {
@@ -881,7 +882,7 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                             }
                         }
                     },
-                    {"metrics_path", Values.Ingress.Enabled? "/prometheus/metrics": "" }
+                    {"metrics_path", ""/*because it will be subdomain*/ }//Values.Ingress.Enabled? "/prometheus/metrics": "" }
                 },
                 new Dictionary<string, object>
                 {
