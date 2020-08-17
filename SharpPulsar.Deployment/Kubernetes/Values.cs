@@ -15,7 +15,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ComponentSettings componentSettings = null, ExtraConfigs extraConfigs = null, ResourcesRequests resourcesRequests = null, ConfigMaps configMaps = null,
             Component zooKeeperComponent = null, Component bookKeeperComponent = null, Component autoRecoveryComponent = null, Component brokerComponent = null,
             Component proxyComponent = null, Component prestoCoordinatorComponent = null, Component prestoWorkComponent = null, Component toolSetComponent = null, Component functionComponent = null,
-            Component kopComponent = null, Ingress ingress = null, Component prometheus = null, ConfigmapReloads configmapReloads = null)
+            Component kopComponent = null, Ingress ingress = null, Component prometheus = null, ConfigmapReloads configmapReloads = null, Component grafana = null)
         {
             ResourcesRequests = resourcesRequests ?? new ResourcesRequests();
             Authentication = authentication ?? new Authentication
@@ -251,8 +251,15 @@ namespace SharpPulsar.Deployment.Kubernetes
                         {"ExtraVolumeDirs", null },
                         {"VolumeMounts", new List<V1VolumeMount> ()}
                     }
+                },
+                Grafana = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        {"Username","pulsar" },
+                        {"Password","pulsar" }
+                    }
                 }
-
             };
             ConfigMaps = configMaps ?? new ConfigMaps();
             //Dependencies order
@@ -268,6 +275,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Functions = functionComponent ?? new Component();
             ConfigmapReloads = configmapReloads ?? new ConfigmapReloads();
             Prometheus = prometheus ?? PrometheusComponent();
+            Grafana = grafana ?? GrafanaComponent();
             Ingress = ingress ?? new Ingress 
             { 
                 Enabled = false,
@@ -332,8 +340,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public static Component BookKeeper { get; set; } 
         public static Component Broker { get; set; }
         public static Component Proxy { get; set; } 
-        public static Component PulsarDetector { get; set; } 
-        public static Component AlertManager { get; set; } 
+        public static Component Grafana { get; set; } 
         public static Component Prometheus { get; set; } 
 
         public static Component PrestoCoordinator { get; set; }
@@ -811,6 +818,14 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Volumes = Volumes.Prometheus()
             };
         }
+        private Component GrafanaComponent()
+        {
+            return new Component
+            {
+                Containers = Containers.Prometheus(),
+                Volumes = Volumes.Prometheus()
+            };
+        }
     }
     public sealed class ProxyServiceUrl
     {
@@ -853,6 +868,11 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, int> AutoRecovery { get; set; } = new Dictionary<string, int>
         {
             {"http", 8000}
+        };
+        public IDictionary<string, int> Grafana { get; set; } = new Dictionary<string, int>
+        {
+            {"http", 3000},
+            {"targetPort", 3000 }
         };
         public IDictionary<string, int> AlertManager { get; set; } = new Dictionary<string, int>
         {
@@ -963,7 +983,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         public string Service { get; set; }
         public string Host { get; set; }
         public Offload Offload { get; set; } = new Offload();
-
+        public V1ResourceRequirements Resources { get; set; } = new V1ResourceRequirements();
+        public IDictionary<string, string> NodeSelector { get; set; } = new Dictionary<string, string>();
+        public List<V1Toleration> Tolerations { get; set; } = new List<V1Toleration>();
         public ProxyServiceUrl ProxyServiceUrl { get; set; } = new ProxyServiceUrl();
         public bool UsePolicyPodDisruptionBudget { get; set; }
         public bool EnableFunctionCustomizerRuntime { get; set; } = false;
@@ -1030,6 +1052,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IngressSetting Proxy { get; set; } = new IngressSetting();
         public IngressSetting Presto { get; set; } = new IngressSetting();
         public IngressSetting Broker { get; set; } = new IngressSetting();
+        public IngressSetting Grafana { get; set; } = new IngressSetting();
         public string DomainSuffix { get; set; }
         public List<HttpRule> HttpRules { get; set; } = new List<HttpRule>();
         public sealed class IngressSetting
@@ -1140,6 +1163,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ExtraConfig PrestoWorker { get; set; }
         public ExtraConfig AutoRecovery { get; set; }
         public ExtraConfig Prometheus { get; set; }
+        public ExtraConfig Grafana { get; set; }
     }
     public sealed class Probes
     {
@@ -1343,6 +1367,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ResourcesRequest ZooKeeper { get; set; } = new ResourcesRequest { Memory = "256Mi", Cpu = "0.1" };
         public ResourcesRequest BookKeeper { get; set; } = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" };
         public ResourcesRequest Broker { get; set; } = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" };
+        public ResourcesRequest Grafana { get; set; } = new ResourcesRequest { Memory = "250Mi", Cpu = "0.1" };
         public ResourcesRequest Proxy { get; set; }
         public ResourcesRequest PrestoCoordinator { get; set; }
         public ResourcesRequest PrestoWorker { get; set; }

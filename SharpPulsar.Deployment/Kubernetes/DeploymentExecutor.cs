@@ -3,6 +3,7 @@ using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Bookie;
 using SharpPulsar.Deployment.Kubernetes.Broker;
 using SharpPulsar.Deployment.Kubernetes.Certificate;
+using SharpPulsar.Deployment.Kubernetes.Grafana;
 using SharpPulsar.Deployment.Kubernetes.NetworkCenter;
 using SharpPulsar.Deployment.Kubernetes.Presto;
 using SharpPulsar.Deployment.Kubernetes.Prometheus;
@@ -15,18 +16,18 @@ namespace SharpPulsar.Deployment.Kubernetes
     public class DeploymentExecutor
     {
         private readonly IKubernetes _client;
-        private ZooKeeperRunner _zooKeeperRunner;
-        private BrokerRunner _brokerRunner;
-        private BookieRunner _bookieRunner;
-        private ProxyRunner _proxyRunner;
-        private PrestoRunner _prestoRunner;
-        private NetworkCenterRunner _networkCenterRunner;
+        private readonly ZooKeeperRunner _zooKeeperRunner;
+        private readonly BrokerRunner _brokerRunner;
+        private readonly BookieRunner _bookieRunner;
+        private readonly ProxyRunner _proxyRunner;
+        private readonly PrestoRunner _prestoRunner;
+        private readonly NetworkCenterRunner _networkCenterRunner;
         private readonly PrometheusRunner _prometheusRunner;
+        private readonly GrafanaRunner _grafanaRunner;
         private readonly CertRunner _certRunner;
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
         {
-            var hel = Helpers.Config.Prometheus();
             var config = conf ?? KubernetesClientConfiguration.BuildDefaultConfig();
             _client = new k8s.Kubernetes(config);
             
@@ -50,6 +51,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _networkCenterRunner = new NetworkCenterRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
             _certRunner = new CertRunner(_client, secret);
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
+            _grafanaRunner = new GrafanaRunner(_client, secret, service);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
@@ -103,7 +105,11 @@ namespace SharpPulsar.Deployment.Kubernetes
                 yield return prox;
 
             foreach(var prest in _prestoRunner.Run(dryRun))
-                yield return prest;
+                yield return prest;            
+
+            foreach(var graf in _grafanaRunner.Run(dryRun))
+                yield return graf;
+
         }
         public RunResult Delete(string dryRun = default)
         {
