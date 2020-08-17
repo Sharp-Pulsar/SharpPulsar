@@ -125,6 +125,25 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return vols;
         }
+        public static List<V1Volume> Prometheus()
+        {
+            var vols = new List<V1Volume> 
+            { 
+                new V1Volume{ Name = "config-volume", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}"} }
+            };
+            foreach (var vm in Values.ConfigmapReloads.Prometheus.ExtraConfigmapMounts)
+                vols.Add(new V1Volume { Name = $"{Values.ConfigmapReloads.Prometheus.Name}-{vm.Name}", ConfigMap = vm.ConfigMap });
+
+            if (!Values.Persistence && !Values.Settings.Prometheus.Persistence)
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-data", EmptyDir = new V1EmptyDirVolumeSource() });
+
+            if (Values.Persistence && Values.Settings.Prometheus.Persistence)
+                vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-data", PersistentVolumeClaim = new V1PersistentVolumeClaimVolumeSource { ClaimName = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-data" } });
+
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt"))
+                vols.Add(new V1Volume { Name = "client-token", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-token-{Values.Authentication.Users.Client}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "TOKEN", Path = "client/token" } } } });
+            return vols;
+        }
         public static List<V1Volume> PrestoCoord()
         {
             var vols = new List<V1Volume>();

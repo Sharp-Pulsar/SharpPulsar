@@ -60,5 +60,44 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             });
             return extras;
         }
+
+        public static List<V1Container> Prometheus()
+        {
+            var container = new List<V1Container> 
+            {
+                new V1Container
+                {
+                     Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name }",
+                     Image = $"{Values.Images.Prometheus.Repository}:{Values.Images.Prometheus.Tag}",
+                     ImagePullPolicy = Values.Images.Prometheus.PullPolicy,
+                     SecurityContext = new V1SecurityContext
+                     {
+                         RunAsUser = 65534,
+                         RunAsNonRoot = true,
+                         RunAsGroup = 65534
+                      },
+                     Args = new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
+                     Ports = Ports.Prometheus(),
+                     ReadinessProbe = Probe.HttpActionReadiness(Values.Probe.Prometheus, "/-/ready", Values.Ports.Prometheus["http"]),
+                     LivenessProbe = Probe.HttpActionLiviness(Values.Probe.Prometheus, $"/-/healthy", Values.Ports.Prometheus["http"]),
+                     //StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Prometheus, "/status.html", Ports.Prometheus["http"]),
+                     VolumeMounts = VolumeMounts.PrometheusContainer()
+                }
+            };
+            if (Values.ConfigmapReloads.Prometheus.Enabled)
+            {
+                var cont = new V1Container 
+                { 
+                    Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-{Values.ConfigmapReloads.Prometheus.Name}",
+                    Image = $"{Values.ConfigmapReloads.Prometheus.Image.Repository}:{Values.ConfigmapReloads.Prometheus.Image.Tag}",
+                    ImagePullPolicy = Values.ConfigmapReloads.Prometheus.Image.PullPolicy,
+                    Args = Args.PrometheusReloadContainer(),
+                    VolumeMounts = VolumeMounts.PrometheusReloadContainer()
+                };
+
+                container.Insert(0, cont);
+            }
+            return container;
+        }
     }
 }

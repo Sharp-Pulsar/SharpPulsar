@@ -222,24 +222,36 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 if (Values.Tls.Enabled)
                 {
-                    var url = $"--web.external-url=https://prometheus.{Values.Ingress.DomainSuffix}";
+                    var url = $"https://prometheus.{Values.Ingress.DomainSuffix}";
                     Values.ExtraConfigs.Prometheus.Holder["Url"] = url;
                     args.Add($"--web.external-url={url}/");
                 }
                 else
                 {
-                    var url = $"--web.external-url=http://prometheus.{Values.Ingress.DomainSuffix}";
+                    var url = $"http://prometheus.{Values.Ingress.DomainSuffix}";
                     Values.ExtraConfigs.Prometheus.Holder["Url"] = url;
                     args.Add($"--web.external-url={url}/");
                 }
             }
             else
             {
-                Values.ExtraConfigs.Prometheus.Holder["Url"] = "";
                 args.Add($"--web.external-url=/prometheus");
             }
 
-            args.Add("bin/pulsar bookie;");
+            return args;
+        }
+        public static IList<string> PrometheusReloadContainer()
+        {
+            var args = new List<string>
+            {
+                "--volume-dir=/etc/config",
+                $"--webhook-url=http://127.0.0.1:{Values.Ports.Prometheus["http"]}/-/reload"                
+            };
+            foreach (var kv in Values.ConfigmapReloads.Prometheus.ExtraArgs)
+                args.Add($"--{kv.Key}={kv.Value}");
+
+            foreach (var d in Values.ConfigmapReloads.Prometheus.ExtraVolumeDirs)
+                args.Add($"--volume-dir={d}");
 
             return args;
         }

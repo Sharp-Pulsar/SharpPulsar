@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Deployment.Kubernetes.Prometheus.Rbac;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.Prometheus
 {

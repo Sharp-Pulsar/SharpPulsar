@@ -5,6 +5,7 @@ using SharpPulsar.Deployment.Kubernetes.Broker;
 using SharpPulsar.Deployment.Kubernetes.Certificate;
 using SharpPulsar.Deployment.Kubernetes.NetworkCenter;
 using SharpPulsar.Deployment.Kubernetes.Presto;
+using SharpPulsar.Deployment.Kubernetes.Prometheus;
 using SharpPulsar.Deployment.Kubernetes.Proxy;
 using SharpPulsar.Deployment.Kubernetes.Zoo;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         private ProxyRunner _proxyRunner;
         private PrestoRunner _prestoRunner;
         private NetworkCenterRunner _networkCenterRunner;
+        private readonly PrometheusRunner _prometheusRunner;
         private readonly CertRunner _certRunner;
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
@@ -47,6 +49,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _prestoRunner = new PrestoRunner(configMap, statefulset, service);
             _networkCenterRunner = new NetworkCenterRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
             _certRunner = new CertRunner(_client, secret);
+            _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
@@ -77,6 +80,9 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
                 yield return result;
             }
+            foreach (var pr in _prometheusRunner.Run(dryRun))
+                yield return pr;
+
             foreach(var cert in _certRunner.Run(dryRun))
                 yield return cert;
 

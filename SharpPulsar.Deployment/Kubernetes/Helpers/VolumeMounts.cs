@@ -1,6 +1,7 @@
 ﻿using k8s.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
@@ -109,6 +110,32 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     vols.Add(new V1VolumeMount { Name = "broker-ca", MountPath = "/pulsar/certs/broker", ReadOnlyProperty = true });
                 }
             }
+            return vols;
+        }
+        
+        public static List<V1VolumeMount> PrometheusContainer()
+        {
+            var vols = new List<V1VolumeMount> 
+            {
+                new V1VolumeMount { Name = "config-volume", MountPath = "/etc/config"},
+                new V1VolumeMount { Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-data", MountPath = "/prometheus"}
+            };
+
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt"))
+                vols.Add(new V1VolumeMount { Name = "client-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
+
+            return vols;
+        }
+        
+        public static List<V1VolumeMount> PrometheusReloadContainer()
+        {
+            var vols = new List<V1VolumeMount> 
+            {
+                new V1VolumeMount { Name = "config-volume", MountPath = "/etc/config"}
+            };
+            foreach (var kv in Values.ConfigmapReloads.Prometheus.ExtraConfigmapMounts)
+                vols.Add(new V1VolumeMount { Name = kv.Name, MountPath = kv.MountPath, SubPath = kv.SubPath, ReadOnlyProperty = kv.Readonly });
+
             return vols;
         }
 

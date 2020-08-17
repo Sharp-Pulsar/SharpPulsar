@@ -15,7 +15,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             ComponentSettings componentSettings = null, ExtraConfigs extraConfigs = null, ResourcesRequests resourcesRequests = null, ConfigMaps configMaps = null,
             Component zooKeeperComponent = null, Component bookKeeperComponent = null, Component autoRecoveryComponent = null, Component brokerComponent = null,
             Component proxyComponent = null, Component prestoCoordinatorComponent = null, Component prestoWorkComponent = null, Component toolSetComponent = null, Component functionComponent = null,
-            Component kopComponent = null, Ingress ingress = null)
+            Component kopComponent = null, Ingress ingress = null, Component prometheus = null, ConfigmapReloads configmapReloads = null)
         {
             ResourcesRequests = resourcesRequests ?? new ResourcesRequests();
             Authentication = authentication ?? new Authentication
@@ -248,7 +248,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                     {
                         {"PrometheusArgsRetention", "15d" },
                         {"ConfigmapReload", false },
-                        {"ExtraVolumeDirs", null }
+                        {"ExtraVolumeDirs", null },
+                        {"VolumeMounts", new List<V1VolumeMount> ()}
                     }
                 }
 
@@ -265,6 +266,8 @@ namespace SharpPulsar.Deployment.Kubernetes
             Toolset = toolSetComponent ?? new Component();
             Kop = kopComponent ?? new Component();
             Functions = functionComponent ?? new Component();
+            ConfigmapReloads = configmapReloads ?? new ConfigmapReloads();
+            Prometheus = prometheus ?? PrometheusComponent();
             Ingress = ingress ?? new Ingress 
             { 
                 Enabled = false,
@@ -297,7 +300,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         //// If you do so, all the pulsar and bookkeeper metadata will
         //// be stored under the provided path
         public static string MetadataPrefix { get; set; }
-
+        public static ConfigmapReloads ConfigmapReloads { get; set; }
         public static Tls Tls { get; set; }
         //// Monitoring Components
         ////
@@ -804,28 +807,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             return new Component
             {
-                Containers = new List<V1Container>
-                {
-                    new V1Container
-                    {
-                        Name = $"{ReleaseName}-{Settings.Prometheus.Name }",
-                        Image = $"{Images.Prometheus.Repository}:{Images.Prometheus.Tag}",
-                        ImagePullPolicy = Images.Prometheus.PullPolicy,
-                        SecurityContext = new V1SecurityContext
-                        {
-                            RunAsUser = 65534,
-                            RunAsNonRoot = true,
-                            RunAsGroup = 65534
-                        },
-                        Args = new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
-                        Ports = Helpers.Ports.Prometheus(),
-                        ReadinessProbe = Helpers.Probe.HttpActionReadiness(Probe.Prometheus, $"{ExtraConfigs.Prometheus.Holder["Url"]}/-/ready", Ports.Prometheus["http"]),
-                        LivenessProbe = Helpers.Probe.HttpActionLiviness(Probe.Prometheus, $"{ExtraConfigs.Prometheus.Holder["Url"]}/-/healthy", Ports.Prometheus["http"]),
-                        //StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Prometheus, "/status.html", Ports.Prometheus["http"]),
-                        VolumeMounts = VolumeMounts.ProxyContainer()//here
-                    }
-                },
-                Volumes = Volumes.Proxy()
+                Containers = Containers.Prometheus(),
+                Volumes = Volumes.Prometheus()
             };
         }
     }
@@ -996,6 +979,39 @@ namespace SharpPulsar.Deployment.Kubernetes
         public Storage Storage { get; set; }
         public Annotations Annotations { get; set; } = new Annotations();
         public IDictionary<string, string> ExtraConfigMap { get; set; } = new Dictionary<string, string>();
+    }
+    public class ConfigmapReloads
+    {
+        public ConfigmapReload Prometheus { get; set; } = new ConfigmapReload
+        {
+            Name = "configmap-reload",
+            Enabled = true,
+            Image = new Images.Image
+            {
+                Repository = "jimmidyson/configmap-reload",
+                Tag = "v0.3.0",
+                PullPolicy = "IfNotPresent"
+            }
+        };
+        public ConfigmapReload AlertManager { get; set; } = new ConfigmapReload();
+        public sealed class ConfigmapReload
+        {
+            public bool Enabled { get; set; }
+            public string Name { get; set; }
+            public ResourcesRequest ResourcesRequest { get; set; }
+            public List<VolumeMount> ExtraConfigmapMounts { get; set; }
+            public List<string> ExtraVolumeDirs { get; set; }
+            public Dictionary<string, string> ExtraArgs { get; set; }
+            public Images.Image Image { get; set; }
+        }
+        public class VolumeMount
+        {
+            public string Name { get; set; }
+            public string MountPath {get; set;}
+            public bool Readonly { get; set; }
+            public string SubPath { get; set; }
+            public V1ConfigMapVolumeSource ConfigMap { get; set; }
+        }
     }
     public class Annotations
     {
