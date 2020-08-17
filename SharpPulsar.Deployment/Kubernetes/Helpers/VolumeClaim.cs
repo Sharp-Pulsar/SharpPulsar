@@ -44,7 +44,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     {
                         Metadata = new V1ObjectMeta
                         {
-                            Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}", 
+                            Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-data", 
                             NamespaceProperty = Values.Namespace
                         },
                         Spec = new V1PersistentVolumeClaimSpec
@@ -97,5 +97,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return new List<V1PersistentVolumeClaim>();
         }
+        
     }
 }

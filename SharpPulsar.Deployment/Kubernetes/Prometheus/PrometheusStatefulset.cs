@@ -47,7 +47,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Prometheus
                 .SpecBuilder()
                 .Tolerations(Values.Prometheus.Tolerations)
                 .SecurityContext(Values.Prometheus.SecurityContext)
-                .ServiceAccountName($"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}")
+                .ServiceAccountName($"{Values.ReleaseName}-{Values.Rbac.RoleName}")
                 .NodeSelector(Values.Prometheus.NodeSelector)
                 .PodAntiAffinity(Helpers.AntiAffinity.AffinityTerms(Values.Settings.Prometheus))
                 .TerminationGracePeriodSeconds(Values.Settings.Prometheus.GracePeriodSeconds)

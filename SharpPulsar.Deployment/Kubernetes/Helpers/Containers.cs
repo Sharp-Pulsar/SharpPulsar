@@ -70,13 +70,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                      Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name }",
                      Image = $"{Values.Images.Prometheus.Repository}:{Values.Images.Prometheus.Tag}",
                      ImagePullPolicy = Values.Images.Prometheus.PullPolicy,
-                     SecurityContext = new V1SecurityContext
-                     {
-                         RunAsUser = 65534,
-                         RunAsNonRoot = true,
-                         RunAsGroup = 65534
-                      },
-                     Args = new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
+                     Args = Args.PrometheusContainer(), //new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
                      Ports = Ports.Prometheus(),
                      ReadinessProbe = Probe.HttpActionReadiness(Values.Probe.Prometheus, "/-/ready", Values.Ports.Prometheus["http"]),
                      LivenessProbe = Probe.HttpActionLiviness(Values.Probe.Prometheus, $"/-/healthy", Values.Ports.Prometheus["http"]),
@@ -91,7 +85,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                     Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name}-{Values.ConfigmapReloads.Prometheus.Name}",
                     Image = $"{Values.ConfigmapReloads.Prometheus.Image.Repository}:{Values.ConfigmapReloads.Prometheus.Image.Tag}",
                     ImagePullPolicy = Values.ConfigmapReloads.Prometheus.Image.PullPolicy,
-                    Args = Args.PrometheusReloadContainer(),
+                    Args = Args.PrometheusReloadContainer(),// new List<string> { string.Join(" ", Args.PrometheusReloadContainer()) },
                     VolumeMounts = VolumeMounts.PrometheusReloadContainer()
                 };
 

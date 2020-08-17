@@ -33,7 +33,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Grafana
                                 {"release", Values.ReleaseName },
                                 {"component",Values.Settings.Grafana.Name }
                             });
-            if (Values.Ingress.Grafana.Enabled)
+            if (!Values.Ingress.Grafana.Enabled)
                 _service.Builder().Type("LoadBalancer");
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }

@@ -27,7 +27,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Grafana
                 },
                 Spec = new V1DeploymentSpec
                 {
-                    Replicas = 1,
+                    Replicas = Values.Settings.Grafana.Replicas,
                     Selector = new V1LabelSelector
                     {
                         MatchLabels = new Dictionary<string, string>

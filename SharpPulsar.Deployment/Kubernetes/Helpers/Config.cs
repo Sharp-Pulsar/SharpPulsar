@@ -601,7 +601,7 @@ pulsar.bookkeeper-throttle-value={ Values.ExtraConfigs.PrestoCoordinator.Holder[
 ##### MANAGED LEDGER CONFIGS ###### 
 
 # Amount of memory to use for caching data payload in managed ledger. This memory
-# is allocated from JVM direct memory and it's shared across all the managed ledgers
+# is allocated from JVM direct memory and its shared across all the managed ledgers
 # running in same sql worker. 0 is represents disable the cache, default is 0.
 pulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holder["managedLedgerCacheSizeMB"]}
 # Number of threads to be used for managed ledger tasks dispatching,
@@ -829,7 +829,7 @@ pulsar.bookkeeper-throttle-value={ Values.ExtraConfigs.PrestoCoordinator.Holder[
 ######## MANAGED LEDGER CONFIGS ########
 
 # Amount of memory to use for caching data payload in managed ledger. This memory
-# is allocated from JVM direct memory and it's shared across all the managed ledgers
+# is allocated from JVM direct memory and its shared across all the managed ledgers
 # running in same sql worker. 0 is represents disable the cache, default is 0.
 pulsar.managed-ledger-cache-size-MB={Values.ExtraConfigs.PrestoCoordinator.Holder["managedLedgerCacheSizeMB"]}
 # Number of threads to be used for managed ledger tasks dispatching,
@@ -853,14 +853,14 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
             };
             if (Values.Monitoring.AlertManager)
             {
-                yamlDict.Add("rule_files", new List<string> {"rules.yml" });
+                yamlDict.Add("rule_files", new List<string> {"'rules.yml'" });
                 yamlDict.Add("alerting", new Dictionary<string, object> 
                 {
                     {"alertmanagers", new Dictionary<string, object>
                         {
                             {"static_configs", new Dictionary<string, object> 
                                 {
-                                    {"targets", new List<string>{ $"{Values.ReleaseName}-{Values.Settings.AlertManager.Name}:{Values.Ports.AlertManager["http"]}" } }
+                                    {"targets", $"['{Values.ReleaseName}-{Values.Settings.AlertManager.Name}:{Values.Ports.AlertManager["http"]}']" }
                                 } 
                             },
                             {"path_prefix", $"{Values.Monitoring.AlertManagerPath}/"}
@@ -875,14 +875,10 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                     {"job_name","'prometheus'" },
                     {"static_configs", new Dictionary<string, object>
                         {
-                            {"targets", new  List<string>
-                                    {
-                                        $"'127.0.0.1:{Values.Ports.Prometheus["http"]}'"
-                                    }
-                            }
+                            {"targets", $"['localhost:{Values.Ports.Prometheus["http"]}']" }
                         }
                     },
-                    {"metrics_path", ""/*because it will be subdomain*/ }//Values.Ingress.Enabled? "/prometheus/metrics": "" }
+                    {"metrics_path", ""/*because it will be subdomain*/ }
                 },
                 new Dictionary<string, object>
                 {
@@ -892,20 +888,20 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                         { 
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_annotation_prometheus_io_scrape" } },
+                                {"source_labels", "[__meta_kubernetes_pod_annotation_prometheus_io_scrape]"  },
                                 {"action", "keep" },
                                 {"regex", true}
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_annotation_prometheus_io_path" } },
+                                {"source_labels", "[__meta_kubernetes_pod_annotation_prometheus_io_path]" },
                                 {"action", "replace" },
                                 {"target_label", "__metrics_path__"},
                                 {"regex", "(.+)"}
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port" } },
+                                {"source_labels", "[__address__,__meta_kubernetes_pod_annotation_prometheus_io_port]"},
                                 {"action", "replace" },
                                 {"regex", @"([^:]+)(?::\d+)?;(\d+)"},
                                 {"replacement", "$1:$2"},
@@ -918,19 +914,19 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_namespace" } },
+                                {"source_labels", "[__meta_kubernetes_namespace]" },
                                 {"action", "replace" },
                                 {"target_label", "kubernetes_namespace"}
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_label_component" } },
+                                {"source_labels", "[__meta_kubernetes_pod_label_component]" },
                                 {"action", "replace" },
                                 {"target_label", "job"}
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_pod_name" } },
+                                {"source_labels", "[__meta_kubernetes_pod_name]" },
                                 {"action", "replace" },
                                 {"target_label", "kubernetes_pod_name"}
                             }
@@ -958,7 +954,7 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_node_name" } },
+                                {"source_labels", "[__meta_kubernetes_node_name]" },
                                 {"regex", "(.+)"},
                                 {"target_label", "__metrics_path__"},
                                 {"replacement", "/api/v1/nodes/${1}/proxy/metrics"}
@@ -987,7 +983,7 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
                             },
                             new Dictionary<string, object>
                             {
-                                {"source_labels", new List<string>{ "__meta_kubernetes_node_name" } },
+                                {"source_labels", "[__meta_kubernetes_node_name]" },
                                 {"regex", "(.+)"},
                                 {"target_label", "__metrics_path__"},
                                 {"replacement", "/api/v1/nodes/${1}/proxy/metrics/cadvisor"}
@@ -999,7 +995,7 @@ curl --silent {Values.Settings.PrestoCoord.Service}:{Values.Ports.PrestoCoordina
             if (Values.Settings.PulsarDetector.Enabled)
             {
                 var ls = (Dictionary<string, List<string>>)scrapeConfigs.First()["static_configs"];
-                ls["targets"].Add($"'{Values.ReleaseName}-{Values.Settings.PulsarDetector.Name}:{Values.Ports.PulsarDetector["http"]}'");
+                ls["targets"].Add($"{Values.ReleaseName}-{Values.Settings.PulsarDetector.Name}:{Values.Ports.PulsarDetector["http"]}");
                 scrapeConfigs.First()["static_configs"] = ls;
             }
             if(Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt"))

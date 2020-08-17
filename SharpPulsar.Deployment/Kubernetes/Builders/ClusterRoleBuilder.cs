@@ -40,7 +40,6 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
                 _cluster.Rules.Add(new V1PolicyRule
                 {
                     ApiGroups = apiGroups,
-                    Resources = resources,
                     Verbs = verbs,
                     NonResourceURLs = nonResourceURLs
                 });

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Deployment.Kubernetes.Extensions;
+using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.Prometheus
 {
@@ -20,7 +21,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Prometheus
                                 {"release", Values.ReleaseName },
                                 {"component", Values.Settings.Prometheus.Name },
                             })
-                .Data(Values.ConfigMaps.Prometheus);
+                .Data(Values.ConfigMaps.Prometheus.RemoveRN());
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
     }

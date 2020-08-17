@@ -1,7 +1,6 @@
 ﻿using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Extensions;
 using SharpPulsar.Deployment.Kubernetes.Helpers;
-using System;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes
@@ -71,6 +70,18 @@ namespace SharpPulsar.Deployment.Kubernetes
                     ZooConnect = Tls.ZooKeeper.Enabled ? $"{ReleaseName}-zookeeper:2281" : $"{ReleaseName}-zookeeper:2181",
                     UpdateStrategy = "RollingUpdate",
                     PodManagementPolicy = "OrderedReady",
+                    Resources = new V1ResourceRequirements
+                    {
+                        Requests = new Dictionary<string, ResourceQuantity>
+                                {
+                                    {
+                                        "memory", new ResourceQuantity(ResourcesRequests.ZooKeeper.Memory)
+                                    },
+                                    {
+                                        "cpu", new ResourceQuantity(ResourcesRequests.ZooKeeper.Cpu)
+                                    }
+                                }
+                    }
                 },
                 Broker = new ComponentSetting
                 {
@@ -79,7 +90,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                     Name = "broker",
                     Service = $"{ReleaseName}-broker",
                     Host = "${HOSTNAME}." + $"{ReleaseName}-broker.{Namespace}.svc.cluster.local",
-                    ZNode = $"{MetadataPrefix}/loadbalance/brokers/"+ "${HOSTNAME}." + $"{ReleaseName}-broker.{Namespace}.svc.cluster.local:2181",
+                    ZNode = $"{MetadataPrefix}/loadbalance/brokers/" + "${HOSTNAME}." + $"{ReleaseName}-broker.{Namespace}.svc.cluster.local:2181",
                     UpdateStrategy = "RollingUpdate",
                     EnableFunctionCustomizerRuntime = false,
                     PulsarFunctionsExtraClasspath = "extraLibs",
@@ -138,7 +149,7 @@ namespace SharpPulsar.Deployment.Kubernetes
                 {
                     Enabled = true,
                     Name = "functions-worker"
-                }, 
+                },
                 AlertManager = new ComponentSetting
                 {
                     Name = "alert-manager"
@@ -146,11 +157,31 @@ namespace SharpPulsar.Deployment.Kubernetes
                 PulsarDetector = new ComponentSetting(),
                 Prometheus = new ComponentSetting
                 {
+                    Enabled = true,
                     Name = "prometheus",
                     Replicas = 1,
                     Service = $"{ReleaseName}-prometheus",
                     UpdateStrategy = "RollingUpdate",
-                    PodManagementPolicy = "Parallel"
+                    PodManagementPolicy = "Parallel", 
+                    Storage = new Storage
+                    {
+                        Size = "10Gi"
+                    }
+                },
+                Grafana = new ComponentSetting
+                {
+                    Enabled = true,
+                    Name = "grafana",
+                    Replicas = 1,
+                    GracePeriodSeconds = 30,
+                    Resources = new V1ResourceRequirements
+                    {
+                        Requests = new Dictionary<string, ResourceQuantity>
+                        {
+                            {"memory", new ResourceQuantity("250Mi") },
+                            {"cpu", new ResourceQuantity("0.1") }
+                        }
+                    }
                 }
             };
             ExtraConfigs = extraConfigs ?? new ExtraConfigs
@@ -273,17 +304,17 @@ namespace SharpPulsar.Deployment.Kubernetes
             Toolset = toolSetComponent ?? new Component();
             Kop = kopComponent ?? new Component();
             Functions = functionComponent ?? new Component();
-            ConfigmapReloads = configmapReloads ?? new ConfigmapReloads();
-            Prometheus = prometheus ?? PrometheusComponent();
-            Grafana = grafana ?? GrafanaComponent();
-            Ingress = ingress ?? new Ingress 
-            { 
+            Ingress = ingress ?? new Ingress
+            {
                 Enabled = false,
-                Proxy =new Ingress.IngressSetting
+                Proxy = new Ingress.IngressSetting
                 {
                     Type = "LoadBalancer"
                 }
             };
+            ConfigmapReloads = configmapReloads ?? new ConfigmapReloads();
+            Prometheus = prometheus ?? PrometheusComponent();
+            Grafana = grafana ?? GrafanaComponent();
 
         }
         public static Rbac Rbac { get; set; } = new Rbac();
@@ -433,18 +464,8 @@ namespace SharpPulsar.Deployment.Kubernetes
                             Name = $"{ReleaseName}-{Settings.ZooKeeper.Name}",
                             Image = $"{Images.ZooKeeper.Repository}:{Images.ZooKeeper.Tag}",
                             ImagePullPolicy = Images.ZooKeeper.PullPolicy,
-                            Resources = new V1ResourceRequirements
-                            {
-                                Requests = new Dictionary<string, ResourceQuantity>
-                                {
-                                    {
-                                        "memory", new ResourceQuantity(ResourcesRequests.ZooKeeper.Memory)
-                                    },
-                                    {
-                                        "cpu", new ResourceQuantity(ResourcesRequests.ZooKeeper.Cpu)
-                                    }
-                                }
-                            },
+                            Resources = Settings.ZooKeeper.Resources,
+
                             Command = new []
                             {
                                 "sh",
@@ -815,15 +836,22 @@ namespace SharpPulsar.Deployment.Kubernetes
             return new Component
             {
                 Containers = Containers.Prometheus(),
-                Volumes = Volumes.Prometheus()
+                Volumes = Volumes.Prometheus(),
+                PVC = VolumeClaim.Prometheus(),
+                SecurityContext = new V1PodSecurityContext
+                {
+                    FsGroup = 65534,
+                    RunAsNonRoot = true,
+                    RunAsGroup = 65534,
+                    RunAsUser = 65534
+                }
             };
         }
         private Component GrafanaComponent()
         {
             return new Component
             {
-                Containers = Containers.Prometheus(),
-                Volumes = Volumes.Prometheus()
+                
             };
         }
     }
@@ -898,9 +926,9 @@ namespace SharpPulsar.Deployment.Kubernetes
     public  sealed class Monitoring
     {
         // monitoring - prometheus
-        public bool Prometheus { get; set; } = false;
+        public bool Prometheus { get; set; } = true;
         // monitoring - grafana
-        public bool Grafana { get; set; } = false;
+        public bool Grafana { get; set; } = true;
         // alerting - alert-manager
         public bool AlertManager { get; set; } = false;
         public string AlertManagerPath { get; set; }
@@ -1020,11 +1048,11 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             public bool Enabled { get; set; }
             public string Name { get; set; }
-            public ResourcesRequest ResourcesRequest { get; set; }
-            public List<VolumeMount> ExtraConfigmapMounts { get; set; }
-            public List<string> ExtraVolumeDirs { get; set; }
-            public Dictionary<string, string> ExtraArgs { get; set; }
-            public Images.Image Image { get; set; }
+            public ResourcesRequest ResourcesRequest { get; set; } = new ResourcesRequest();
+            public List<VolumeMount> ExtraConfigmapMounts { get; set; } = new List<VolumeMount>();
+            public List<string> ExtraVolumeDirs { get; set; } = new List<string>();
+            public Dictionary<string, string> ExtraArgs { get; set; } = new Dictionary<string, string>();
+            public Images.Image Image { get; set; } = new Images.Image();
         }
         public class VolumeMount
         {
