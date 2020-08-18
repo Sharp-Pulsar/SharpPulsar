@@ -6,7 +6,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
 {
     public class Probe
     {
-        public static V1Probe HttpActionLiviness(ComponentProbe probes, string path, int port)
+        public static V1Probe HttpActionLiviness(ComponentProbe probes, string path, int port, string scheme = "HTTP")
         {
             if (!probes.Liveness.Enabled)
                 return new V1Probe();
@@ -15,14 +15,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 HttpGet = new V1HTTPGetAction
                 {
                     Path = path,
-                    Port = port
+                    Port = port,
+                    Scheme = scheme
                 },
                 InitialDelaySeconds = probes.Liveness.InitialDelaySeconds,
                 FailureThreshold = probes.Liveness.FailureThreshold,
                 PeriodSeconds = probes.Liveness.PeriodSeconds
             };
         }
-        public static V1Probe HttpActionReadiness(ComponentProbe probes, string path, int port)
+        public static V1Probe HttpActionReadiness(ComponentProbe probes, string path, int port, string scheme = "HTTP")
         {
             if (!probes.Readiness.Enabled)
                 return new V1Probe();
@@ -31,14 +32,15 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 HttpGet = new V1HTTPGetAction
                 {
                     Path = path,
-                    Port = port
+                    Port = port,
+                    Scheme = scheme
                 },
                 InitialDelaySeconds = probes.Readiness.InitialDelaySeconds,
                 FailureThreshold = probes.Readiness.FailureThreshold,
                 PeriodSeconds = probes.Readiness.PeriodSeconds
             };
         }
-        public static V1Probe HttpActionStartup(ComponentProbe probes, string path, int port)
+        public static V1Probe HttpActionStartup(ComponentProbe probes, string path, int port, string scheme = "HTTP")
         {
             if (!probes.Startup.Enabled)
                 return new V1Probe();
@@ -47,7 +49,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 HttpGet = new V1HTTPGetAction
                 {
                     Path = path,
-                    Port = port
+                    Port = port,
+                    Scheme = scheme
                 },
                 InitialDelaySeconds = probes.Startup.InitialDelaySeconds,
                 FailureThreshold = probes.Startup.FailureThreshold,

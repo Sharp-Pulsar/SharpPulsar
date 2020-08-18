@@ -45,7 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "true" },
-                                {"prometheus.io/port", Values.Ports.Proxy["http"].ToString() }
+                                {"prometheus.io/port", "8080" }
                             }
                  )
                 .SpecBuilder()

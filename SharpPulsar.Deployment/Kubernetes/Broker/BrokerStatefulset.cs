@@ -45,7 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Broker
                             }, new Dictionary<string, string>
                             {
                                 {"prometheus.io/scrape", "true" },
-                                {"prometheus.io/port", "8000" }
+                                {"prometheus.io/port", "8080" }
                             }
                  )
                 .SpecBuilder()

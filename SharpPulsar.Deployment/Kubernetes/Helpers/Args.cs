@@ -211,33 +211,12 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             var args = new List<string>
             {
                 "--config.file=/etc/config/prometheus.yml",
+                "--storage.tsdb.retention.time=15d",
                 "--storage.tsdb.path=/prometheus",
                 "--web.console.libraries=/etc/prometheus/console_libraries",
                 "--web.console.templates=/etc/prometheus/consoles",
                 "--web.enable-lifecycle"
             };
-            if(!string.IsNullOrWhiteSpace(Values.ExtraConfigs.Prometheus.Holder["PrometheusArgsRetention"].ToString()))
-                args.Add($"--storage.tsdb.retention.time={Values.ExtraConfigs.Prometheus.Holder["PrometheusArgsRetention"]}");
-            if (Values.Ingress.Enabled)
-            {
-                if (Values.Tls.Enabled)
-                {
-                    var url = $"https://prometheus.{Values.Ingress.DomainSuffix}";
-                    Values.ExtraConfigs.Prometheus.Holder["Url"] = url;
-                    args.Add($"--web.external-url={url}/");
-                }
-                else
-                {
-                    var url = $"http://prometheus.{Values.Ingress.DomainSuffix}";
-                    Values.ExtraConfigs.Prometheus.Holder["Url"] = url;
-                    args.Add($"--web.external-url={url}/");
-                }
-            }
-            else
-            {
-                args.Add($"--web.external-url=/prometheus");
-            }
-
             return args;
         }
         public static IList<string> PrometheusReloadContainer()
