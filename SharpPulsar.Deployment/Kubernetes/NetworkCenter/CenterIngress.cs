@@ -25,10 +25,10 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     Name = $"{Values.ReleaseName}-{Values.Namespace}-ingress",
                     Annotations = new Dictionary<string, string>
                     {
-                        {"kubernetes.io/ingress.class","nginx" },
-                        {"ingress.kubernetes.io/ssl-redirect", "true" },
-                        {"cert-manager.io/cluster-issuer","letsencrypt" },
-                        {"kubernetes.io/tls-acme", "true"}
+                        {"kubernetes.io/ingress.class","nginx" }
+                        //{"ingress.kubernetes.io/ssl-redirect", "true" },
+                        //{"cert-manager.io/cluster-issuer","letsencrypt" },
+                        //{"kubernetes.io/tls-acme", "true"}
                     }
                 },
                 Spec = new Networkingv1beta1IngressSpec
@@ -50,7 +50,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         public CenterIngress Rule(string host, string path, string service, int port)
         {
             var hosts =_ingress.Spec.Rules.Where(x => x.Host.Equals(host, StringComparison.OrdinalIgnoreCase));
-            if (hosts.Count() > 0)
+            if (hosts.Count() == 0)
                 return CreateHostRule(host, path, service, port);
 
             return AddRule(host, path, service, port); 

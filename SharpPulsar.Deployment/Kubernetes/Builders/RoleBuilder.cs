@@ -10,7 +10,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         {
             _role = new V1Role
             {
-                Metadata = new V1ObjectMeta()
+                Metadata = new V1ObjectMeta(),
+                Rules = new List<V1PolicyRule>()
             };
         }
         public RoleBuilder Name(string name, string @namespace)

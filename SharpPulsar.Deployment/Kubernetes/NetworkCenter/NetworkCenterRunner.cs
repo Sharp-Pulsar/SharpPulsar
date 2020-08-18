@@ -6,6 +6,10 @@ using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 {
+    //https://docs.microsoft.com/en-us/azure/aks/ingress-tls
+    //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
+    //https://kubernetes.io/docs/concepts/services-networking/ingress/
+    //https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/
     internal class NetworkCenterRunner
     {
         private readonly NginxConfiguration _nginxConfiguration;
@@ -91,20 +95,20 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     var httpPort = Values.Ports.Proxy["http"].ToString();
                     var ports = new Dictionary<string, string>
                     {
-                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{httpPort}"
+                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Service}:{httpPort}"
                     };
                     if(Values.Tls.Enabled && Values.Tls.Proxy.Enabled)
                     {
                         var httpsPort = Values.Ports.Proxy["https"].ToString();
-                        ports[httpsPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{httpsPort}";
+                        ports[httpsPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Service}:{httpsPort}";
 
                         var pulsarsslPort = Values.Ports.Proxy["pulsarssl"].ToString();
-                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{pulsarsslPort}";
+                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Service}:{pulsarsslPort}";
                     }
                     else
                     {
                         var pulsarPort = Values.Ports.Proxy["pulsar"].ToString();
-                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Name}:{pulsarPort}";
+                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Service}:{pulsarPort}";
                     }
                     result = _tcpServices.Run(ports, dryRun);
                     yield return result;
@@ -118,20 +122,20 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     var httpPort = Values.Ports.Broker["http"].ToString();
                     var ports = new Dictionary<string, string>
                     {
-                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{httpPort}"
+                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Broker.Service}:{httpPort}"
                     };
                     if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
                     {
                         var httpsPort = Values.Ports.Broker["https"].ToString();
-                        ports[httpsPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{httpsPort}";
+                        ports[httpsPort] = $"{Values.Namespace}/{Values.Settings.Broker.Service}:{httpsPort}";
 
                         var pulsarsslPort = Values.Ports.Broker["pulsarssl"].ToString();
-                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{pulsarsslPort}";
+                        ports[pulsarsslPort] = $"{Values.Namespace}/{Values.Settings.Broker.Service}:{pulsarsslPort}";
                     }
                     else
                     {
                         var pulsarPort = Values.Ports.Broker["pulsar"].ToString();
-                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Broker.Name}:{pulsarPort}";
+                        ports[pulsarPort] = $"{Values.Namespace}/{Values.Settings.Broker.Service}:{pulsarPort}";
                     }
                     result = _tcpServices.Run(ports, dryRun);
                     yield return result;

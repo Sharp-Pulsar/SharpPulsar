@@ -50,8 +50,8 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                             },
                             Annotations = new Dictionary<string, string>
                             {
-                                { "\"prometheus.io/port\"", "10254"},
-                                { "\"prometheus.io/scrape\"", "true" }
+                                { "prometheus.io/port", "10254"},
+                                { "prometheus.io/scrape", "true" }
                             }
                         },
                         Spec = new V1PodSpec
@@ -69,13 +69,13 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                                     ImagePullPolicy = Values.Images.Ingress.PullPolicy,
                                     Args = new List<string>
                                     {
-                                        $@"/nginx-ingress-controller 
-                                            --election-id=ingress-controller-leader
-                                            --configmap={Values.Namespace}/{Values.ReleaseName}-nginx-configuration
-                                            --tcp-services-configmap={Values.Namespace}/{Values.ReleaseName}-tcp-services
-                                            --udp-services-configmap={Values.Namespace}/{Values.ReleaseName}-udp-services
-                                            --publish-service={Values.Namespace}/{Values.ReleaseName}-nginx-ingress-controller
-                                            --annotations-prefix=nginx.ingress.kubernetes.io"
+                                        @"/nginx-ingress-controller",
+                                        "--election-id=ingress-controller-leader",
+                                        $"--configmap={Values.Namespace}/{Values.ReleaseName}-nginx-configuration",
+                                        $"--tcp-services-configmap={Values.Namespace}/{Values.ReleaseName}-tcp-services",
+                                        $"--udp-services-configmap={Values.Namespace}/{Values.ReleaseName}-udp-services",
+                                        $"--publish-service={Values.Namespace}/{Values.ReleaseName}-nginx-ingress-controller",
+                                        "--annotations-prefix=nginx.ingress.kubernetes.io"
                                     },
                                     SecurityContext = new V1SecurityContext
                                     {
@@ -91,7 +91,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                                                 "NET_BIND_SERVICE"
                                             }
                                         },
-                                        RunAsUser = 33
+                                        RunAsUser = 101
                                     },
                                     Env = new List<V1EnvVar>
                                     {

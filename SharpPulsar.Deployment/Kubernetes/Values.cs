@@ -306,9 +306,10 @@ namespace SharpPulsar.Deployment.Kubernetes
             Functions = functionComponent ?? new Component();
             Ingress = ingress ?? new Ingress
             {
-                Enabled = false,
+                Enabled = true,
                 Proxy = new Ingress.IngressSetting
                 {
+                    Enabled = true,
                     Type = "LoadBalancer"
                 }
             };
@@ -1069,9 +1070,9 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, string> Template { get; set; } = new Dictionary<string, string>();
     }
     public sealed class Ingress 
-    { 
-        public bool Rbac { get; set; }
-        public bool Enabled { get; set; }
+    {
+        public bool Rbac { get; set; } = true;
+        public bool Enabled { get; set; } = true;
         public int Replicas { get; set; } = 1;
         public int GracePeriodSeconds { get; set; } = 30;
 
@@ -1082,7 +1083,41 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IngressSetting Broker { get; set; } = new IngressSetting();
         public IngressSetting Grafana { get; set; } = new IngressSetting();
         public string DomainSuffix { get; set; }
-        public List<HttpRule> HttpRules { get; set; } = new List<HttpRule>();
+        public List<HttpRule> HttpRules { get; set; } = new List<HttpRule> 
+        { 
+            new HttpRule
+            {
+                Host = "grafana.splsar.ga",
+                Port = 3000,
+                Path = "/",
+                Tls = false,
+                ServiceName = $"{Values.ReleaseName}-{Values.Settings.Grafana.Name}"
+            }, 
+            new HttpRule
+            {
+                Host = "admin.splsar.ga",
+                Port = 8080,
+                Path = "/",
+                Tls = false,
+                ServiceName = Values.Settings.Proxy.Service
+            }, 
+            new HttpRule
+            {
+                Host = "data.splsar.ga",
+                Port = 6650,
+                Path = "/",
+                Tls = false,
+                ServiceName = Values.Settings.Proxy.Service
+            },
+            new HttpRule
+            {
+                Host = "presto.splsar.ga",
+                Port = 8081,
+                Path = "/",
+                Tls = false,
+                ServiceName = Values.Settings.PrestoCoord.Service
+            },
+        };
         public sealed class IngressSetting
         {
             public bool Enabled { get; set; }

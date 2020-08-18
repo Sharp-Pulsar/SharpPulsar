@@ -27,13 +27,14 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
                                 {"component", "nginx-ingress-controller" }
-                            });
+                            })
+                .Type("LoadBalancer");
             if (!Values.Tls.Enabled)
             {
                 _service.Builder()
                 .Ports(new List<V1ServicePort>
                 {
-                    new V1ServicePort{Name = "http", TargetPort = 80, Protocol = "TCP" }
+                    new V1ServicePort{Name = "http", Port = 80, Protocol = "TCP" }
                 });
             }
             else
@@ -41,7 +42,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                 _service.Builder()
                 .Ports(new List<V1ServicePort>
                 {
-                    new V1ServicePort{Name = "https", TargetPort = 443, Protocol = "TCP" }
+                    new V1ServicePort{Name = "https", Port = 443, Protocol = "TCP" }
                 });
             }
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
