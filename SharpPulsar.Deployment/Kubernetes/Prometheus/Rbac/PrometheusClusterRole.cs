@@ -22,7 +22,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Prometheus.Rbac
                                 {"release", Values.ReleaseName }
                             })
                 .AddRule(new[] { "" }, new[] { "nodes", "nodes/proxy", "services", "endpoints", "pods" }, new[] { "get", "list", "watch" })
-                .AddRule(new[] { "" }, new[] { "" }, new[] { "get"}, new[] { "/metrics" })
+                .AddRule(new[] { "/metrics" }, new[] { "get"})
                 .AddRule(new[] { "" }, new[] { "namespaces", "persistentvolumes", "persistentvolumeclaims" }, new[] { "list", "watch", "get", "create" })
                 .AddRule(new[] { "", "extensions", "apps" }, new[] { "pods", "deployments", "ingresses", "secrets", "statefulsets" }, new[] { "list", "watch", "get", "update", "create", "delete", "patch" })
                 .AddRule(new[] { ""}, new[] { "replicasets" }, new[] { "list", "watch", "get"})

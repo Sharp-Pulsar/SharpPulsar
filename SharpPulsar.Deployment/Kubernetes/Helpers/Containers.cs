@@ -70,10 +70,10 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                      Name = $"{Values.ReleaseName}-{Values.Settings.Prometheus.Name }",
                      Image = $"{Values.Images.Prometheus.Repository}:{Values.Images.Prometheus.Tag}",
                      ImagePullPolicy = Values.Images.Prometheus.PullPolicy,
-                     Args = Args.PrometheusContainer(), //new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
+                     //Args = Args.PrometheusContainer(), //new List<string>{ string.Join(" ", Args.PrometheusContainer()) },
                      Ports = Ports.Prometheus(),
-                     ReadinessProbe = Probe.HttpActionReadiness(Values.Probe.Prometheus, "/-/ready", Values.Ports.Prometheus["http"]),
-                     LivenessProbe = Probe.HttpActionLiviness(Values.Probe.Prometheus, $"/-/healthy", Values.Ports.Prometheus["http"]),
+                     //ReadinessProbe = Probe.HttpActionReadiness(Values.Probe.Prometheus, $"{Values.Settings.Prometheus.Service}/-/ready", Values.Ports.Prometheus["http"]),
+                     //LivenessProbe = Probe.HttpActionLiviness(Values.Probe.Prometheus, $"{Values.Settings.Prometheus.Service}/-/healthy", Values.Ports.Prometheus["http"]),
                      //StartupProbe = Helpers.Probe.HttpActionStartup(Probe.Prometheus, "/status.html", Ports.Prometheus["http"]),
                      VolumeMounts = VolumeMounts.PrometheusContainer()
                 }
