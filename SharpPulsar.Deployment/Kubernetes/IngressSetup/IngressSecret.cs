@@ -3,12 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
-    internal class CenterSecret
+    internal class IngressSecret
     {
         private readonly Secret _secret;
-        public CenterSecret(Secret secret)
+        public IngressSecret(Secret secret)
         {
             _secret = secret;
         }

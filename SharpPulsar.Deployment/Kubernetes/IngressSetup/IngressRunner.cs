@@ -1,10 +1,9 @@
 ﻿using k8s;
-using SharpPulsar.Deployment.Kubernetes.NetworkCenter.ConfigMaps;
-using SharpPulsar.Deployment.Kubernetes.NetworkCenter.Rbac;
+using SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
 
     //https://dzone.com/articles/nginx-ingress-controller-configuration-in-aks
@@ -12,47 +11,36 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
     //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
     //https://kubernetes.io/docs/concepts/services-networking/ingress/
     //https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/
-    internal class NetworkCenterRunner
+    internal class IngressRunner
     {
         private readonly NginxConfiguration _nginxConfiguration;
         private readonly TcpServices _tcpServices;
         private readonly UdpServices _udpServices;
 
-        private readonly CenterRole _centerRole;
-        private readonly CenterRoleBinding _centerRoleBinding;
-        private readonly CenterClusterRole _centerClusterRole;
-        private readonly CenterClusterRoleBinding _centerClusterRoleBinding;
-        private readonly CenterServiceAccount _centerServiceAccount;
+        private readonly Ingress _centerIngress;
+        private readonly IngressService _centerService;
 
-        private readonly CenterIngress _centerIngress;
-        private readonly CenterService _centerService;
-        private readonly Deployment _deployment;
-
-        private readonly CenterSecret _secret;
+        private readonly IngressSecret _secret;
         private readonly TcpIngressService _tcpIngressService;
-        public NetworkCenterRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
+        public IngressRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
         {
-            _deployment = new Deployment(k8s);
-            _centerIngress = new CenterIngress(k8s);
+            _centerIngress = new Ingress(k8s);
 
             _nginxConfiguration = new NginxConfiguration(configMap);
             _tcpServices = new TcpServices(configMap);
             _udpServices = new UdpServices(configMap);
+            _centerService = new IngressService(service);
 
-            _centerRole = new CenterRole(role);
-            _centerRoleBinding = new CenterRoleBinding(roleBinding);
-
-            _centerClusterRole = new CenterClusterRole(clusterRole);
-            _centerClusterRoleBinding = new CenterClusterRoleBinding(clusterRoleBinding);
-
-            _centerServiceAccount = new CenterServiceAccount(serviceAccount);
-            _centerService = new CenterService(service);
-
-            _secret = new CenterSecret(secret);
+            _secret = new IngressSecret(secret);
             _tcpIngressService = new TcpIngressService(service);
 
         }
-
+        /// <summary>
+        /// First of all =>>>> kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
+        /// https://kubernetes.github.io/ingress-nginx/deploy/
+        /// </summary>
+        /// <param name="dryRun"></param>
+        /// <returns></returns>
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
             RunResult result;
@@ -70,28 +58,6 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                 result = _secret.Run(dryRun);
                 yield return result;
 
-                if (Values.Ingress.DeployNginxController)
-                {
-                    result = _deployment.Run(dryRun);
-                    yield return result;
-                }
-                if(Values.Ingress.Rbac)
-                {
-                    result = _centerServiceAccount.Run(dryRun);
-                    yield return result;
-
-                    result = _centerClusterRole.Run(dryRun);
-                    yield return result;
-
-                    result = _centerClusterRoleBinding.Run(dryRun);
-                    yield return result;
-
-                    result = _centerRole.Run(dryRun);
-                    yield return result;
-
-                    result = _centerRoleBinding.Run(dryRun);
-                    yield return result;
-                }
                 if (Values.Ingress.Proxy.Enabled)
                 {
                     var httpPort = Values.Ports.Proxy["http"].ToString();

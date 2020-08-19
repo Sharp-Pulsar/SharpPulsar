@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
     //https://kubernetes.github.io/ingress-nginx/user-guide/exposing-tcp-udp-services/
-    internal class CenterIngress
+    internal class Ingress
     {
         private readonly IKubernetes _client;
         private readonly Networkingv1beta1Ingress _ingress;
@@ -15,7 +15,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         /// Ingress for grafana, pulsar manager and prometheus
         /// </summary>
         /// <param name="client"></param>
-        public CenterIngress(IKubernetes client)
+        public Ingress(IKubernetes client)
         {
             _client = client;
             _ingress = new Networkingv1beta1Ingress
@@ -25,10 +25,10 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                     Name = $"{Values.ReleaseName}-{Values.Namespace}-ingress",
                     Annotations = new Dictionary<string, string>
                     {
-                        {"kubernetes.io/ingress.class","nginx" }
-                        //{"ingress.kubernetes.io/ssl-redirect", "true" },
-                        //{"cert-manager.io/cluster-issuer","letsencrypt" },
-                        //{"kubernetes.io/tls-acme", "true"}
+                        {"kubernetes.io/ingress.class","nginx" },
+                        {"ingress.kubernetes.io/ssl-redirect", "true" },
+                        {"cert-manager.io/cluster-issuer","letsencrypt" },
+                        {"kubernetes.io/tls-acme", "true"}
                     }
                 },
                 Spec = new Networkingv1beta1IngressSpec
@@ -38,7 +38,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
                 }
             };
         }
-        public CenterIngress AddTls(params string[] hosts)
+        public Ingress AddTls(params string[] hosts)
         {
             if(hosts.Count() > 0)
             {
@@ -50,7 +50,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             }
             return this;
         }
-        public CenterIngress Rule(string host, string path, string service, int port)
+        public Ingress Rule(string host, string path, string service, int port)
         {
             var hosts =_ingress.Spec.Rules.Where(x => x.Host.Equals(host, StringComparison.OrdinalIgnoreCase));
             if (hosts.Count() == 0)
@@ -58,7 +58,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 
             return AddRule(host, path, service, port); 
         }
-        private CenterIngress CreateHostRule(string host, string path, string service, int port)
+        private Ingress CreateHostRule(string host, string path, string service, int port)
         {
             _ingress.Spec.Rules.Add(new Networkingv1beta1IngressRule
             {
@@ -81,7 +81,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
             });
             return this;
         }
-        private CenterIngress AddRule(string host, string path, string service, int port)
+        private Ingress AddRule(string host, string path, string service, int port)
         {
             _ingress.Spec.Rules.First(x => x.Host.Equals(host, StringComparison.OrdinalIgnoreCase))
                 .Http.Paths.Add(new Networkingv1beta1HTTPIngressPath

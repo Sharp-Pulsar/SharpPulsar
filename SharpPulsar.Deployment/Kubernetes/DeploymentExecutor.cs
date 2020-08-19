@@ -4,7 +4,7 @@ using SharpPulsar.Deployment.Kubernetes.Bookie;
 using SharpPulsar.Deployment.Kubernetes.Broker;
 using SharpPulsar.Deployment.Kubernetes.Certificate;
 using SharpPulsar.Deployment.Kubernetes.Grafana;
-using SharpPulsar.Deployment.Kubernetes.NetworkCenter;
+using SharpPulsar.Deployment.Kubernetes.IngressSetup;
 using SharpPulsar.Deployment.Kubernetes.Presto;
 using SharpPulsar.Deployment.Kubernetes.Prometheus;
 using SharpPulsar.Deployment.Kubernetes.Proxy;
@@ -21,7 +21,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         private readonly BookieRunner _bookieRunner;
         private readonly ProxyRunner _proxyRunner;
         private readonly PrestoRunner _prestoRunner;
-        private readonly NetworkCenterRunner _networkCenterRunner;
+        private readonly IngressRunner _networkCenterRunner;
         private readonly PrometheusRunner _prometheusRunner;
         private readonly GrafanaRunner _grafanaRunner;
         private readonly CertRunner _certRunner;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _bookieRunner = new BookieRunner(job, configMap, pdb, service, serviceAccount, statefulset, clusterRole, clusterRoleBinding, storage);
             _proxyRunner = new ProxyRunner(configMap, pdb, service, serviceAccount, statefulset);
             _prestoRunner = new PrestoRunner(configMap, statefulset, service);
-            _networkCenterRunner = new NetworkCenterRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
+            _networkCenterRunner = new IngressRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
             _certRunner = new CertRunner(_client, secret);
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);

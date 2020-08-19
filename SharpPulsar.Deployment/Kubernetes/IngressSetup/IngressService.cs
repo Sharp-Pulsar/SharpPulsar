@@ -1,12 +1,12 @@
 ﻿using k8s.Models;
 using System.Collections.Generic;
 
-namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
-    internal class CenterService
+    internal class IngressService
     {
         private readonly Service _service;
-        public CenterService(Service service)
+        public IngressService(Service service)
         {
             _service = service;
         }
@@ -14,19 +14,19 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         public RunResult Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata($"{Values.ReleaseName}-nginx-ingress-controller", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-ingress-controller", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", "nginx-ingress-controller" }
+                                {"component", Values.Settings.Proxy.Name }
                             })
                 .Selector(new Dictionary<string, string>()
                             {
                                 {"app", Values.App },
                                 {"release", Values.ReleaseName },
-                                {"component", "nginx-ingress-controller" }
+                                {"component", Values.Settings.Proxy.Name }
                             })
                 .Type("LoadBalancer");
             if (!Values.Tls.Enabled)

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using static SharpPulsar.Deployment.Kubernetes.Tls;
 
-namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
     //https://kubernetes.github.io/ingress-nginx/user-guide/exposing-tcp-udp-services/
     internal class TcpIngressService
