@@ -69,13 +69,15 @@ namespace SharpPulsar.Akka.Network
 
             try
             {
+                if (SniProxy)
+                    endPoint = new Uri(_clientConfiguration.ProxyServiceUrl);
+
                 if (!_encrypt)
                 {
                     tcpClient.Connect(endPoint.Host, endPoint.Port);
                     return tcpClient.GetStream();
                 }
-                if(SniProxy)
-                    endPoint = new Uri(_clientConfiguration.ProxyServiceUrl);
+                
                 var addressesTask = Dns.GetHostAddressesAsync(endPoint.Host);
                 var addresses = SynchronizationContextSwitcher.NoContext(async () => await addressesTask).Result;
                 var socketTask = ConnectAsync(addresses, endPoint.Port);

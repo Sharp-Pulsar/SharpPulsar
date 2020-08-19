@@ -20,7 +20,7 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter.Rbac
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName }
                             })
-                .AddRule(new[] { "" }, new[] { "configmaps", "namespaces", "pods", "secrets" }, new[] { "get" }, new[] {"" })
+                .AddRule(new[] { "" }, new[] { "configmaps", "pods", "secrets" }, new[] { "get" }, new[] {"" })
                 .AddRule(new[] { "" }, new[] { "configmaps" }, new[] { "get", "update" }, new[] 
                 {
                     //Defaults to "<election-id>-<ingress-class>"

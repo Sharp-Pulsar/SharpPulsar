@@ -48,15 +48,22 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         {
             _service.Builder()
                 .Metadata($"{Values.ReleaseName}-{Values.Namespace}-tcp-ingress", Values.Namespace)
+                .Annotations(new Dictionary<string, string> {
+                    {"app.kubernetes.io/name", "ingress-nginx"},
+                    {"app.kubernetes.io/part-of", "ingress-nginx"}
+                })
                 .Labels(new Dictionary<string, string>
                             {
-                                {"app.kubernetes.io/name", "ingress-nginx"},
-                                {"app.kubernetes.io/part-of", "ingress-nginx"}
+                                {"app", Values.App },
+                                {"cluster", Values.Cluster },
+                                {"release", Values.ReleaseName },
+                                {"component", Values.Settings.Proxy.Name }
                             })
                 .Selector(new Dictionary<string, string>()
                             {
-                                {"app.kubernetes.io/name", "ingress-nginx"},
-                                {"app.kubernetes.io/part-of", "ingress-nginx"}
+                                {"app", Values.App },
+                                {"release", Values.ReleaseName },
+                                {"component", Values.Settings.Proxy.Name }
                             })
                 .Type("LoadBalancer");
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);

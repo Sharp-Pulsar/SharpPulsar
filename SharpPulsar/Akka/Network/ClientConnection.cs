@@ -93,7 +93,7 @@ namespace SharpPulsar.Akka.Network
                 var connector = new Connector(_conf);
                 var connect = connector.Connect(RemoteAddress, RemoteHostName);
                 _context.System.Log.Info($"Opening Connection to: {RemoteAddress}");
-                _stream = new PulsarStream(connect);
+                _stream = new PulsarStream(connect, _log);
                 Send(new ReadOnlySequence<byte>(NewConnectCommand()));
 
             }

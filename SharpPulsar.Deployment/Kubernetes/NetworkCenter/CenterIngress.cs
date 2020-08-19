@@ -40,11 +40,14 @@ namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
         }
         public CenterIngress AddTls(params string[] hosts)
         {
-            _ingress.Spec.Tls.Add(new Networkingv1beta1IngressTLS
+            if(hosts.Count() > 0)
             {
-                Hosts = new List<string>(hosts),
-                SecretName = $"{Values.ReleaseName}-ingress-secret"
-            });
+                _ingress.Spec.Tls.Add(new Networkingv1beta1IngressTLS
+                {
+                    Hosts = new List<string>(hosts),
+                    SecretName = $"{Values.ReleaseName}-ingress-secret"
+                });
+            }
             return this;
         }
         public CenterIngress Rule(string host, string path, string service, int port)

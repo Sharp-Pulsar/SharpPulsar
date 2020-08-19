@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+using Akka.Event;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -32,9 +33,11 @@ namespace SharpPulsar.Akka.Network
         private readonly PipeReader _reader;
         private readonly PipeWriter _writer;
         private int _isDisposed;
+        private ILoggingAdapter _log;
 
-        public PulsarStream(Stream stream)
+        public PulsarStream(Stream stream, ILoggingAdapter log)
         {
+            _log = log;
             _stream = stream;
             var options = new PipeOptions(pauseWriterThreshold: PauseAtMoreThan10Mb, resumeWriterThreshold: ResumeAt5MbOrLess);
             var pipe = new Pipe(options);
@@ -82,7 +85,7 @@ namespace SharpPulsar.Akka.Network
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                _log.Error(ex.ToString());
             }
             finally
             {

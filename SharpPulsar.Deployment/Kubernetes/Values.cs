@@ -1076,7 +1076,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public int Replicas { get; set; } = 1;
         public int GracePeriodSeconds { get; set; } = 30;
 
-        public bool DeployNginxController { get; set; } = true;
+        public bool DeployNginxController { get; set; } = false;
 
         public IngressSetting Proxy { get; set; } = new IngressSetting();
         public IngressSetting Presto { get; set; } = new IngressSetting();
@@ -1101,14 +1101,6 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Tls = false,
                 ServiceName = Values.Settings.Proxy.Service
             }, 
-            new HttpRule
-            {
-                Host = "data.splsar.ga",
-                Port = 6650,
-                Path = "/",
-                Tls = false,
-                ServiceName = Values.Settings.Proxy.Service
-            },
             new HttpRule
             {
                 Host = "presto.splsar.ga",

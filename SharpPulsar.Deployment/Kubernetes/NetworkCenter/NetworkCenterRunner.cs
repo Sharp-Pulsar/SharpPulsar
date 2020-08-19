@@ -6,6 +6,8 @@ using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.NetworkCenter
 {
+
+    //https://dzone.com/articles/nginx-ingress-controller-configuration-in-aks
     //https://docs.microsoft.com/en-us/azure/aks/ingress-tls
     //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
     //https://kubernetes.io/docs/concepts/services-networking/ingress/
