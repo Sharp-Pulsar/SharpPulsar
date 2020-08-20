@@ -45,7 +45,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 _ingress.Spec.Tls.Add(new Networkingv1beta1IngressTLS
                 {
                     Hosts = new List<string>(hosts),
-                    SecretName = $"{Values.ReleaseName}-ingress-secret"
+                    SecretName = "wildcard"
                 });
             }
             return this;

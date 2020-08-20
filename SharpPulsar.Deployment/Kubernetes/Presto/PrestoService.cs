@@ -25,8 +25,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Presto
                 .Ports(new List<V1ServicePort>
                 {
                     new V1ServicePort{Name = "http-coord", Port = Values.Ports.PrestoCoordinator["http"], TargetPort = Values.Ports.PrestoCoordinator["http"], Protocol = "TCP" }
-                })
-                .Type("LoadBalancer")
+                })                
                 .Selector(new Dictionary<string, string>
                             {
                                 {"app", Values.App },

@@ -1082,7 +1082,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IngressSetting Presto { get; set; } = new IngressSetting();
         public IngressSetting Broker { get; set; } = new IngressSetting();
         public IngressSetting Grafana { get; set; } = new IngressSetting();
-        public string DomainSuffix { get; set; }
         public List<HttpRule> HttpRules { get; set; } = new List<HttpRule> 
         { 
             new HttpRule
@@ -1090,37 +1089,29 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Host = "grafana.splsar.ga",
                 Port = 3000,
                 Path = "/",
-                Tls = false,
+                Tls = true,
                 ServiceName = $"{Values.ReleaseName}-{Values.Settings.Grafana.Name}"
-            }, 
-            new HttpRule
-            {
-                Host = "admin.splsar.ga",
-                Port = 8080,
-                Path = "/",
-                Tls = false,
-                ServiceName = Values.Settings.Proxy.Service
             }, 
             new HttpRule
             {
                 Host = "presto.splsar.ga",
                 Port = 8081,
                 Path = "/",
-                Tls = false,
+                Tls = true,
                 ServiceName = Values.Settings.PrestoCoord.Service
             },
         };
         public sealed class IngressSetting
         {
             public bool Enabled { get; set; }
-            public bool Tls { get; set; }
+            public bool Tls { get; set; } = true;
             public string Type { get; set; }
             public IDictionary<string,string> Annotations { get; set; }
             public IDictionary<string,string> ExtraSpec { get; set; }
         }
         public sealed class HttpRule
         {
-            public bool Tls { get; set; }
+            public bool Tls { get; set; } = true;
             public string Host { get; set; }
             public int Port { get; set; }
             public string Path { get; set; }
@@ -1129,17 +1120,8 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public sealed class Tls
     {
-        //echo <service principal password> | openssl base64
-        public string SecretPassword { get; set; }
-        public bool Enabled { get; set; } = false;
-        //90 days
-        public string Duration { get; set; } = "2160h";
-        //15 days
-        public string RenewBefore { get; set; } = "360h";
-        public string Organization { get; set; } = "pulsar";
-        public int KeySize { get; set; } = 4096;
-        public string KeyAlgorithm { get; set; } = "rsa";
-        public string KeyEncoding { get; set; } = "pkcs8";
+        public bool Enabled { get; set; } = true;
+        
         public ComponentTls ZooKeeper { get; set; } = new ComponentTls
         {
             CertName = "tls-zookeeper"
@@ -1156,18 +1138,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         { 
             CertName = "tls-bookie"
         };
-        public ComponentTls PulsarManager { get; set; } = new ComponentTls 
-        { 
-            CertName = "tls-pulsar-manager"
-        };
-        public ComponentTls Presto { get; set; } = new ComponentTls 
-        { 
-            CertName = "tls-presto"
-        };
-        public ComponentTls PulsarDetector { get; set; } = new ComponentTls 
-        { 
-            CertName = "tls-pulsar-detector"
-        };
         public ComponentTls AutoRecovery { get; set; } = new ComponentTls 
         { 
             Enabled = true,
@@ -1180,7 +1150,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         };
         public class ComponentTls 
         {
-            public bool Enabled { get; set; } = false;
+            public bool Enabled { get; set; } = true;
             public string CertName { get; set; }
         }
     }

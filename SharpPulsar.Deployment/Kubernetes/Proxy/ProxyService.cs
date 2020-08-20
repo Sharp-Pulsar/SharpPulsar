@@ -37,7 +37,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Proxy
             else
                 _service.Builder()
                     .Type(Values.Ingress.Proxy.Type);
-            if(!Values.Tls.Enabled || !Values.Tls.Proxy.Enabled)
+            if(!Values.Tls.Enabled && !Values.Tls.Proxy.Enabled)
             {
                 _service.Builder()
                 .Ports(new List<V1ServicePort>

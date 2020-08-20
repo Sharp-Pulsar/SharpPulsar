@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
-
+    // https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
     //https://dzone.com/articles/nginx-ingress-controller-configuration-in-aks
     //https://docs.microsoft.com/en-us/azure/aks/ingress-tls
     //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
@@ -16,7 +16,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
         private readonly NginxConfiguration _nginxConfiguration;
         private readonly TcpServices _tcpServices;
         private readonly UdpServices _udpServices;
-
+        
         private readonly Ingress _centerIngress;
         private readonly IngressService _centerService;
 
@@ -36,8 +36,13 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 
         }
         /// <summary>
+        /// https://docs.microsoft.com/en-us/azure/aks/ingress-tls
         /// First of all =>>>> kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
         /// https://kubernetes.github.io/ingress-nginx/deploy/
+        /// https://cert-manager.io/docs/configuration/acme/dns01/azuredns/
+        /// https://github.com/fbeltrao/aks-letsencrypt/blob/6fd10fc92e5cc53588fe0c47be8cd0fcb17edaf7/setup-wildcard-certificates-with-azure-dns.md
+        /// https://cert-manager.io/docs/tutorials/acme/ingress/
+        /// https://cert-manager.io/docs/installation/kubernetes/
         /// </summary>
         /// <param name="dryRun"></param>
         /// <returns></returns>

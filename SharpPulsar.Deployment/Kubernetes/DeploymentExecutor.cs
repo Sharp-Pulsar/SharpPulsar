@@ -2,7 +2,6 @@
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Bookie;
 using SharpPulsar.Deployment.Kubernetes.Broker;
-using SharpPulsar.Deployment.Kubernetes.Certificate;
 using SharpPulsar.Deployment.Kubernetes.Grafana;
 using SharpPulsar.Deployment.Kubernetes.IngressSetup;
 using SharpPulsar.Deployment.Kubernetes.Presto;
@@ -24,7 +23,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         private readonly IngressRunner _networkCenterRunner;
         private readonly PrometheusRunner _prometheusRunner;
         private readonly GrafanaRunner _grafanaRunner;
-        private readonly CertRunner _certRunner;
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
         {
@@ -49,7 +47,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _proxyRunner = new ProxyRunner(configMap, pdb, service, serviceAccount, statefulset);
             _prestoRunner = new PrestoRunner(configMap, statefulset, service);
             _networkCenterRunner = new IngressRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
-            _certRunner = new CertRunner(_client, secret);
+            
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);
         }
@@ -84,9 +82,6 @@ namespace SharpPulsar.Deployment.Kubernetes
             }
             foreach (var pr in _prometheusRunner.Run(dryRun))
                 yield return pr;
-
-            foreach(var cert in _certRunner.Run(dryRun))
-                yield return cert;
 
             foreach(var net in _networkCenterRunner.Run(dryRun))
                 yield return net;

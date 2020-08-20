@@ -1,0 +1,44 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    #server: https://acme-v02.api.letsencrypt.org/directory
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: <your email>
+    privateKeySecretRef:
+      name: letsencrypt
+    # Use dns-01 challenges in order to support wildcard domain names
+    solvers:
+    - dns01:
+        azuredns:
+          clientID: AZURE_CERT_MANAGER_SP_APP_ID
+          clientSecretSecretRef:
+          # The following is the secret we created in Kubernetes. Issuer will use this to present challenge to Azure DNS.
+          # https://cert-manager.io/docs/configuration/acme/dns01/azuredns/
+            name: azuredns-config
+            key: client-secret
+          subscriptionID: AZURE_SUBSCRIPTION_ID
+          tenantID: AZURE_TENANT_ID
+          resourceGroupName: AZURE_DNS_ZONE_RESOURCE_GROUP
+          hostedZoneName: AZURE_DNS_ZONE
+          # Azure Cloud Environment, default to AzurePublicCloud
+          environment: AzurePublicCloud
+---
+
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: wildcard
+  namespace: pulsar
+spec:
+  secretName: wildcard
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
+  commonName: '*.<your-domain>'
+  dnsNames:
+  - '*.example.com'
+  - example.com
+  - foo.com

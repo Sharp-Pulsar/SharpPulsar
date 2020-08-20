@@ -20,8 +20,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
         }
         public TcpIngressService ConfigurePorts(ComponentTls tls, IDictionary<string, int> ports)
         {
-            _service.Builder();
-            if(Values.Tls.Enabled && tls.Enabled)
+            //_service.Builder();
+            /*if(Values.Tls.Enabled && tls.Enabled)
             {
                 _service.Builder()
                 .Ports(new List<V1ServicePort>
@@ -41,13 +41,13 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     new V1ServicePort{Name = "pulsar", Port = ports["pulsar"], Protocol = "TCP" }
                     //new V1ServicePort{Name = "kafkaPlainText", TargetPort = Values.Ports.Kop["kafkaplain"], Protocol = "TCP" }
                 });
-            }
+            }*/
             return this;
         }
         public RunResult Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata($"{Values.ReleaseName}-{Values.Namespace}-tcp-ingress", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-tcp-ingress", "ingress-nginx")//We need to keep this in that namespace incase of frequent modification
                 .Annotations(new Dictionary<string, string> {
                     {"app.kubernetes.io/name", "ingress-nginx"},
                     {"app.kubernetes.io/part-of", "ingress-nginx"}
@@ -66,7 +66,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                 {"component", Values.Settings.Proxy.Name }
                             })
                 .Type("LoadBalancer");
-            return _service.Run(_service.Builder(), Values.Namespace, dryRun);
+            return _service.Run(_service.Builder(), "ingress-nginx", dryRun);
         }
     }
 }

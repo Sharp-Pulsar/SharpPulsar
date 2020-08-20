@@ -204,7 +204,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 conf.Add("functionsWorkerEnabled", "false");
 
             conf.Add("webServicePort", $"{ Values.Ports.Broker["http"] }");
-            if(!Values.Tls.Enabled || !Values.Tls.Broker.Enabled)
+            if(!Values.Tls.Enabled && !Values.Tls.Broker.Enabled)
                 conf.Add("brokerServicePort", $"{ Values.Ports.Broker["pulsar"]  }");
             if (Values.Tls.Enabled || Values.Tls.Broker.Enabled)
             {

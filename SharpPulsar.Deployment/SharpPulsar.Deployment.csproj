@@ -16,6 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Kubernetes\Certificate\ClusterIssuer.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Kubernetes\IngressSetup\AzureCloudDeploy.yml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
