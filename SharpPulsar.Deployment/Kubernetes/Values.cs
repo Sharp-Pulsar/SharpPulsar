@@ -1103,7 +1103,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         };
         public sealed class IngressSetting
         {
-            public bool Enabled { get; set; }
+            public bool Enabled { get; set; } = true;
             public bool Tls { get; set; } = true;
             public string Type { get; set; }
             public IDictionary<string,string> Annotations { get; set; }
