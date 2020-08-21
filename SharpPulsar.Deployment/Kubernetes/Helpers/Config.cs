@@ -1128,5 +1128,125 @@ scrape_configs:
         target_label: kubernetes_pod_name"; 
             return new Dictionary<string, string> { { "prometheus.yml", prometheus } };
         }
+
+        public static IDictionary<string, string> ToolSet()
+        {
+            var conf = new Dictionary<string, string>
+                        {
+                            {"keytool.sh", @"
+    #!/bin/bash
+    component=$1
+    name=$2
+    isClient=$3
+    crtFile=/pulsar/certs/${component}/tls.crt
+    keyFile=/pulsar/certs/${component}/tls.key
+    caFile=/pulsar/certs/ca/ca.crt
+    p12File=/pulsar/${component}.p12
+    keyStoreFile=/pulsar/${component}.keystore.jks
+    trustStoreFile=/pulsar/${component}.truststore.jks
+    
+    function checkFile() {
+         local file=$1
+        local len=$(wc -c ${file} | awk '{print $1}')
+        echo ""processing ${file} : len = ${ len}
+            ""
+        if [!-f ${ file} ]; then
+           echo ""${file} is not found""
+            return -1
+        fi
+        if [ $len - le 0]; then
+            echo ""${file} is empty""
+            return -1
+        fi
+    }
+
+    function ensureFileNotEmpty()
+        {
+            local file =$1
+            until checkFile ${ file}; do
+                echo ""file isn't initialized yet ... check in 3 seconds ..."" && sleep 3;
+            done;
+        }
+
+    ensureFileNotEmpty ${crtFile}
+    ensureFileNotEmpty ${keyFile}
+    ensureFileNotEmpty ${caFile}
+    
+    export PASSWORD=$(head /dev/urandom | base64 | head -c 24)
+    
+    openssl pkcs12 \
+        -export \
+        -in ${crtFile} \
+        -inkey ${keyFile} \
+        -out ${p12File} \
+        -name ${name} \
+        -passout ""pass:${ PASSWORD}
+            ""
+
+
+    keytool - importkeystore \
+        -srckeystore ${ p12File} \
+        -srcstoretype PKCS12 - srcstorepass ""${PASSWORD}"" \
+        -alias ${ name} \
+        -destkeystore ${ keyStoreFile} \
+        -deststorepass ""${PASSWORD}""
+
+
+    keytool - import \
+        -file ${ caFile} \
+        -storetype JKS \
+        -alias ${ name} \
+        -keystore ${ trustStoreFile} \
+        -storepass ""${PASSWORD}"" \
+        -trustcacerts - noprompt
+
+
+    ensureFileNotEmpty ${ keyStoreFile}
+            ensureFileNotEmpty ${ trustStoreFile}
+
+            if [[""x${isClient}"" == ""xtrue""]]; then
+              echo ""update tls client settings ...""
+"}
+                        };
+            if (Values.Tls.ZooKeeper.Enabled)
+            {
+                conf["keytool.sh"] += @"
+        echo $'\n' >> conf/pulsar_env.sh
+        echo ""PULSAR_EXTRA_OPTS =\""${PULSAR_EXTRA_OPTS} -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.client.secure=true -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf / pulsar_env.sh
+        echo $'\n' >> conf / bkenv.sh
+        echo ""BOOKIE_EXTRA_OPTS=\""${BOOKIE_EXTRA_OPTS} -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.client.secure=true -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf / bkenv.sh
+        echo $'\n' >> conf / bkenv.sh
+";
+            }
+            if (Values.Tls.Broker.Enabled && Values.Settings.Kop.Enabled)
+            {
+                conf["keytool.sh"] += @"
+        echo $'\n' >> conf/broker.conf
+        echo ""kopSslKeystorePassword =${ PASSWORD}
+                "" >> conf/broker.conf
+        echo $'\n' >> conf / broker.conf
+        echo ""kopSslKeyPassword=${PASSWORD}"" >> conf / broker.conf
+        echo $'\n' >> conf / broker.conf
+        echo ""kopSslTruststorePassword=${PASSWORD}"" >> conf / broker.conf
+";
+            }
+            else
+            {
+                conf["keytool.sh"] += @"echo ""update tls client settings ...""";
+            }
+            if (Values.Tls.ZooKeeper.Enabled)
+            {
+                conf["keytool.sh"] += @"
+        echo $'\n' >> conf/pulsar_env.sh
+        echo ""PULSAR_EXTRA_OPTS =\""${PULSAR_EXTRA_OPTS} -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf / pulsar_env.sh
+";
+            }
+            conf["keytool.sh"] += @"
+        fi
+        echo ${PASSWORD} > conf/password
+";
+            return conf;
+        }
+
     }
 }

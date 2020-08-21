@@ -98,7 +98,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 vols.Add(new V1VolumeMount { Name = "token-keys", MountPath = "/pulsar/keys", ReadOnlyProperty = true });
                 vols.Add(new V1VolumeMount { Name = "proxy-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
             }
-            if (Values.Tls.Enabled || (Values.Tls.Proxy.Enabled || Values.Tls.Broker.Enabled ))
+            if (Values.Tls.Enabled)
             {
                 if(Values.Tls.Proxy.Enabled)
                 {

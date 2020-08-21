@@ -5,7 +5,9 @@ using System.Linq;
 
 namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 {
-    // https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
+    //https://docs.nginx.com/nginx-ingress-controller/installation/installation-with-helm/
+    //https://pixelrobots.co.uk/2019/09/update-your-azure-aks-service-principal-credentials/
+    //https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
     //https://dzone.com/articles/nginx-ingress-controller-configuration-in-aks
     //https://docs.microsoft.com/en-us/azure/aks/ingress-tls
     //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
@@ -57,8 +59,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 result = _udpServices.Run(dryRun);
                 yield return result;
 
-                result = _centerService.Run(dryRun);
-                yield return result;
+                //result = _centerService.Run(dryRun);
+                //yield return result;
 
                 result = _secret.Run(dryRun);
                 yield return result;
@@ -86,9 +88,9 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     result = _tcpServices.Run(ports, dryRun);
                     yield return result;
 
-                    _tcpIngressService.ConfigurePorts(Values.Tls.Proxy, Values.Ports.Proxy);
-                    result = _tcpIngressService.Run(dryRun);
-                    yield return result;
+                    //_tcpIngressService.ConfigurePorts(Values.Tls.Proxy, Values.Ports.Proxy);
+                    //result = _tcpIngressService.Run(dryRun);
+                    //yield return result;
                 }
                 else if (Values.Ingress.Broker.Enabled)
                 {
@@ -113,9 +115,9 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     result = _tcpServices.Run(ports, dryRun);
                     yield return result;
 
-                    _tcpIngressService.ConfigurePorts(Values.Tls.Broker, Values.Ports.Broker);
-                    result = _tcpIngressService.Run(dryRun);
-                    yield return result;
+                    //_tcpIngressService.ConfigurePorts(Values.Tls.Broker, Values.Ports.Broker);
+                    //result = _tcpIngressService.Run(dryRun);
+                    //yield return result;
                 }
 
                 var tls = new HashSet<string>();

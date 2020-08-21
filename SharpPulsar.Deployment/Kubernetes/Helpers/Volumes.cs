@@ -23,7 +23,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1Volume> ZooKeeper()
         {
             var vols = new List<V1Volume>();
-            if(!Values.Persistence || !Values.Settings.ZooKeeper.Persistence)
+            if(!Values.Persistence && !Values.Settings.ZooKeeper.Persistence)
                 vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-data", EmptyDir = new V1EmptyDirVolumeSource() });
             else if((bool)Values.ExtraConfigs.ZooKeeper.Holder["UseSeparateDiskForTxlog"])
                 vols.Add(new V1Volume { Name = $"{Values.ReleaseName}-{Values.Settings.ZooKeeper.Name}-dataLog", EmptyDir = new V1EmptyDirVolumeSource() });
@@ -80,7 +80,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 vols.Add(new V1Volume { Name = "broker-token", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-token-{Values.Authentication.Users.Broker}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "TOKEN", Path = "broker/token" } } } });
             }              
            
-            if (Values.Tls.Enabled && (Values.Tls.Broker.Enabled || (Values.Tls.Bookie.Enabled || Values.Tls.ZooKeeper.Enabled)))
+            if (Values.Tls.Enabled)
             {
                 vols.Add(new V1Volume { Name = "broker-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.Broker.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
                 vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });

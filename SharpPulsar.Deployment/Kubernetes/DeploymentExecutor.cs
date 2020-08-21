@@ -7,6 +7,7 @@ using SharpPulsar.Deployment.Kubernetes.IngressSetup;
 using SharpPulsar.Deployment.Kubernetes.Presto;
 using SharpPulsar.Deployment.Kubernetes.Prometheus;
 using SharpPulsar.Deployment.Kubernetes.Proxy;
+using SharpPulsar.Deployment.Kubernetes.Toolset;
 using SharpPulsar.Deployment.Kubernetes.Zoo;
 using System.Collections.Generic;
 
@@ -23,6 +24,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         private readonly IngressRunner _networkCenterRunner;
         private readonly PrometheusRunner _prometheusRunner;
         private readonly GrafanaRunner _grafanaRunner;
+        private readonly ToolsetRunner _toolsetRunner;
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
         {
@@ -50,6 +52,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);
+            _toolsetRunner = new ToolsetRunner(configMap);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
@@ -80,6 +83,10 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
                 yield return result;
             }
+
+            foreach (var tool in _toolsetRunner.Run(dryRun))
+                yield return tool;
+            
             foreach (var pr in _prometheusRunner.Run(dryRun))
                 yield return pr;
 

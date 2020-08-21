@@ -1076,8 +1076,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         public int Replicas { get; set; } = 1;
         public int GracePeriodSeconds { get; set; } = 30;
 
-        public bool DeployNginxController { get; set; } = false;
-
         public IngressSetting Proxy { get; set; } = new IngressSetting();
         public IngressSetting Presto { get; set; } = new IngressSetting();
         public IngressSetting Broker { get; set; } = new IngressSetting();
@@ -1100,6 +1098,26 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Tls = true,
                 ServiceName = Values.Settings.PrestoCoord.Service
             },
+            new HttpRule
+            {
+                Host = "admin.splsar.ga",//let see how transport server works
+                Port = 8443,
+                Path = "/",
+                Tls = true,
+                ServiceName = Values.Settings.Proxy.Enabled ? 
+                Values.Settings.Proxy.Service
+                : Values.Settings.Broker.Service // expose broker via proxy or ingress
+            },
+            new HttpRule
+            {
+                Host = "data.splsar.ga",//let see how transport server works
+                Port = 6651,
+                Path = "/",
+                Tls = true,
+                ServiceName = Values.Settings.Proxy.Enabled ? 
+                Values.Settings.Proxy.Service
+                : Values.Settings.Broker.Service // expose broker via proxy or ingress
+            }
         };
         public sealed class IngressSetting
         {
@@ -1120,37 +1138,42 @@ namespace SharpPulsar.Deployment.Kubernetes
     }
     public sealed class Tls
     {
-        public bool Enabled { get; set; } = true;
+        public bool Enabled { get; set; } = false;
         
+        //Should disable - not
         public ComponentTls ZooKeeper { get; set; } = new ComponentTls
         {
+            Enabled = false,
             CertName = "tls-zookeeper"
         };
         public ComponentTls Proxy { get; set; } = new ComponentTls
         {
+            Enabled = true,
             CertName = "tls-proxy"
         };
         public ComponentTls Broker { get; set; } = new ComponentTls 
         { 
+            Enabled = false,
             CertName = "tls-broker"
         };
         public ComponentTls Bookie { get; set; } = new ComponentTls 
         { 
+            Enabled = false,
             CertName = "tls-bookie"
         };
         public ComponentTls AutoRecovery { get; set; } = new ComponentTls 
         { 
-            Enabled = true,
+            Enabled = false,
             CertName = "tls-recovery"
         };
         public ComponentTls ToolSet { get; set; } = new ComponentTls 
         { 
-            Enabled = true, 
+            Enabled = false, 
             CertName = "tls-toolset"
         };
         public class ComponentTls 
         {
-            public bool Enabled { get; set; } = true;
+            public bool Enabled { get; set; } = false;
             public string CertName { get; set; }
         }
     }
@@ -1446,7 +1469,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, string> Proxy { get; set; } = Config.Proxy().RemoveRN();
         public IDictionary<string, string> AutoRecovery { get; set; } = new Dictionary<string, string> { { "BOOKIE_MEM", "-Xms64m -Xmx64m" } };
         public IDictionary<string, string> Functions { get; set; }
-        public IDictionary<string, string> Toolset { get; set; }
+        public IDictionary<string, string> Toolset { get; set; } = Config.ToolSet().RemoveRN();
         public IDictionary<string, string> Prometheus { get; set; } = Config.Prometheus();
         public IDictionary<string, string> PulsarManager { get; set; }
         public IDictionary<string, string> PulsarDetector { get; set; }
