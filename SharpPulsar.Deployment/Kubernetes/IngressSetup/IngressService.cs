@@ -28,23 +28,12 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                 {"release", Values.ReleaseName },
                                 {"component", Values.Settings.Proxy.Name }
                             })
-                .Type("LoadBalancer");
-            if (!Values.Tls.Enabled)
-            {
-                _service.Builder()
+                .Type("LoadBalancer")
                 .Ports(new List<V1ServicePort>
                 {
-                    new V1ServicePort{Name = "http", Port = 80, Protocol = "TCP" }
-                });
-            }
-            else
-            {
-                _service.Builder()
-                .Ports(new List<V1ServicePort>
-                {
+                    new V1ServicePort{Name = "http", Port = 80, Protocol = "TCP" },
                     new V1ServicePort{Name = "https", Port = 443, Protocol = "TCP" }
                 });
-            }
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }
     }

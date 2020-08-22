@@ -59,8 +59,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 result = _udpServices.Run(dryRun);
                 yield return result;
 
-                //result = _centerService.Run(dryRun);
-                //yield return result;
+                result = _centerService.Run(dryRun);
+                yield return result;
 
                 result = _secret.Run(dryRun);
                 yield return result;
@@ -88,9 +88,9 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     result = _tcpServices.Run(ports, dryRun);
                     yield return result;
 
-                    //_tcpIngressService.ConfigurePorts(Values.Tls.Proxy, Values.Ports.Proxy);
-                    //result = _tcpIngressService.Run(dryRun);
-                    //yield return result;
+                    _tcpIngressService.ConfigurePorts(Values.Tls.Proxy, Values.Ports.Proxy);
+                    result = _tcpIngressService.Run(dryRun);
+                    yield return result;
                 }
                 else if (Values.Ingress.Broker.Enabled)
                 {
@@ -115,9 +115,9 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     result = _tcpServices.Run(ports, dryRun);
                     yield return result;
 
-                    //_tcpIngressService.ConfigurePorts(Values.Tls.Broker, Values.Ports.Broker);
-                    //result = _tcpIngressService.Run(dryRun);
-                    //yield return result;
+                    _tcpIngressService.ConfigurePorts(Values.Tls.Broker, Values.Ports.Broker);
+                    result = _tcpIngressService.Run(dryRun);
+                    yield return result;
                 }
 
                 var tls = new HashSet<string>();

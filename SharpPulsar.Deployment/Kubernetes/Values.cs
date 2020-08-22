@@ -979,7 +979,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         {
             public string ContainerName { get; set; }
             public string Repository { get; set; } = "apachepulsar/pulsar-all";
-            public string Tag { get; set; } = "2.6.0";
+            public string Tag { get; set; } = "2.6.1";
             public string PullPolicy { get; set; } = "IfNotPresent";
             public bool HasCommand { get; set; } = false;
         }
@@ -1097,26 +1097,6 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Path = "/",
                 Tls = true,
                 ServiceName = Values.Settings.PrestoCoord.Service
-            },
-            new HttpRule
-            {
-                Host = "admin.splsar.ga",//let see how transport server works
-                Port = 8443,
-                Path = "/",
-                Tls = true,
-                ServiceName = Values.Settings.Proxy.Enabled ? 
-                Values.Settings.Proxy.Service
-                : Values.Settings.Broker.Service // expose broker via proxy or ingress
-            },
-            new HttpRule
-            {
-                Host = "data.splsar.ga",//let see how transport server works
-                Port = 6651,
-                Path = "/",
-                Tls = true,
-                ServiceName = Values.Settings.Proxy.Enabled ? 
-                Values.Settings.Proxy.Service
-                : Values.Settings.Broker.Service // expose broker via proxy or ingress
             }
         };
         public sealed class IngressSetting

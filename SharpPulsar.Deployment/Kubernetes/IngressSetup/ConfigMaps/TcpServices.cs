@@ -20,8 +20,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
                                 {"component", Values.Settings.Proxy.Name },
-                            });
-                //.Data(ports);
+                            })
+                .Data(ports);
 
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);
         }
