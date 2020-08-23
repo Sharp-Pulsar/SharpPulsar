@@ -20,9 +20,6 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
         private readonly UdpServices _udpServices;
         
         private readonly Ingress _centerIngress;
-        private readonly IngressService _centerService;
-
-        private readonly IngressSecret _secret;
         private readonly TcpIngressService _tcpIngressService;
         public IngressRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
         {
@@ -31,9 +28,6 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
             _nginxConfiguration = new NginxConfiguration(configMap);
             _tcpServices = new TcpServices(configMap);
             _udpServices = new UdpServices(configMap);
-            _centerService = new IngressService(service);
-
-            _secret = new IngressSecret(secret);
             _tcpIngressService = new TcpIngressService(service);
 
         }
@@ -57,12 +51,6 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 yield return result;
 
                 result = _udpServices.Run(dryRun);
-                yield return result;
-
-                result = _centerService.Run(dryRun);
-                yield return result;
-
-                result = _secret.Run(dryRun);
                 yield return result;
 
                 if (Values.Ingress.Proxy.Enabled)

@@ -61,7 +61,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 new V1ContainerPort { Name = "http", ContainerPort = Values.Ports.Proxy["http"] }
             };
-            if (!Values.Tls.Enabled || !Values.Tls.Proxy.Enabled)
+            if (!Values.Tls.Enabled && !Values.Tls.Proxy.Enabled)
             {
                 ports.Add(new V1ContainerPort { Name = "pulsar", ContainerPort = Values.Ports.Proxy["pulsar"] });
             }

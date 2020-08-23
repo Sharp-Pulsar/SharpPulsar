@@ -10,8 +10,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             };
-            //if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                //args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.Settings.Autorecovery.Host} true;");
+            if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+                args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.Settings.Autorecovery.Host} true;");
 
             args.Add("until bin/bookkeeper shell whatisinstanceid; do sleep 3; done; ");
             return args;
@@ -19,8 +19,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static IList<string> BrokerZooIntContainer()
         {
             var args = new List<string>();
-            //if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                //args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
 
             if (!string.IsNullOrWhiteSpace(Values.ConfigurationStore))
                 args.Add($@"until bin/bookkeeper org.apache.zookeeper.ZooKeeperMain -server {Values.ConfigurationStore} get {Values.ConfigurationStoreMetadataPrefix}/admin/clusters/""{ Values.Namespace }""; do");
@@ -33,8 +33,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static IList<string> BrokerBookieIntContainer()
         {
             var args = new List<string>();
-            //if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                //args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
 
             args.Add("bin/apply-config-from-env.py conf/bookkeeper.conf;");
             args.Add($@"until bin/bookkeeper shell whatisinstanceid; do echo ""bookkeeper cluster is not initialized yet. Backoff for 3 seconds...""; sleep 3; done; ");
@@ -54,8 +54,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                 @"echo ""OK"" > status;"
             };
 
-            //if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                //args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh broker {Values.Settings.Broker.Host} true;");
             
             args.Add($"bin/pulsar zookeeper-shell -server {Values.Settings.ZooKeeper.ZooConnect} get {Values.Settings.Broker.ZNode};");
             
@@ -70,8 +70,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             };
-            //if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                //args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.Settings.Autorecovery.Host} true;");
+            if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+                args.Add($"/pulsar/keytool/keytool.sh autorecovery {Values.Settings.Autorecovery.Host} true;");
 
             args.Add("bin/bookkeeper autorecovery");
             return args;
@@ -171,8 +171,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             }; 
-            //if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
-                //args.Add($"/pulsar/keytool/keytool.sh bookie {Values.Settings.BookKeeper.Host} true;");
+            if (Values.Tls.Enabled && Values.Tls.ZooKeeper.Enabled)
+                args.Add($"/pulsar/keytool/keytool.sh bookie {Values.Settings.BookKeeper.Host} true;");
 
             args.Add("bin/pulsar bookie;");
 
@@ -248,8 +248,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             {
                 "bin/apply-config-from-env.py conf/bookkeeper.conf;"
             }; 
-            //if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                //args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
 
             args.Add(@"until bin/bookkeeper shell whatisinstanceid; do sleep 3; done;");
 
@@ -268,8 +268,8 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             arg += $@"--broker-service-url-tls pulsar+ssl://{Values.ReleaseName}-{Values.Settings.Broker.Name}.{Values.Namespace}.svc.cluster.local:6651/ ";
 
             var args = new List<string>(); 
-            //if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
-                //args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Bookie.Enabled /*&& Values.Tls.Kop.Enabled*/)))
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
 
             args.Add(arg);
 
