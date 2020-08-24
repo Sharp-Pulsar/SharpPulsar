@@ -2,7 +2,6 @@
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Bookie;
 using SharpPulsar.Deployment.Kubernetes.Broker;
-using SharpPulsar.Deployment.Kubernetes.Certificate;
 using SharpPulsar.Deployment.Kubernetes.Grafana;
 using SharpPulsar.Deployment.Kubernetes.IngressSetup;
 using SharpPulsar.Deployment.Kubernetes.Presto;
@@ -26,7 +25,6 @@ namespace SharpPulsar.Deployment.Kubernetes
         private readonly PrometheusRunner _prometheusRunner;
         private readonly GrafanaRunner _grafanaRunner;
         private readonly ToolsetRunner _toolsetRunner;
-        private readonly SecretsRunner _secretsRunner;
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
         {
@@ -54,8 +52,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);
-            _toolsetRunner = new ToolsetRunner(configMap);
-            _secretsRunner = new SecretsRunner(secret);
+            _toolsetRunner = new ToolsetRunner(configMap, service, statefulset);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
@@ -86,10 +83,6 @@ namespace SharpPulsar.Deployment.Kubernetes
                 }
                 yield return result;
             }
-
-            foreach (var sec in _secretsRunner.Run(dryRun))
-                yield return sec;
-
 
             foreach (var tool in _toolsetRunner.Run(dryRun))
                 yield return tool;

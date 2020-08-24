@@ -32,6 +32,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 
         }
         /// <summary>
+        /// https://medium.com/faun/wildcard-k8s-4998173b16c8
         /// https://docs.microsoft.com/en-us/azure/aks/ingress-tls
         /// First of all =>>>> kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
         /// https://kubernetes.github.io/ingress-nginx/deploy/

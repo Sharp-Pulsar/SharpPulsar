@@ -23,6 +23,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 Metadata = new V1ObjectMeta
                 {
                     Name = $"{Values.ReleaseName}-{Values.Namespace}-ingress",
+                    NamespaceProperty = Values.Namespace,
                     Annotations = new Dictionary<string, string>
                     {
                         {"kubernetes.io/ingress.class","nginx" },

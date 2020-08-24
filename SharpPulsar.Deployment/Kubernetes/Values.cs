@@ -18,37 +18,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             CertificateSecrets certificateSecrets = null)
         {
             //Testing purposes
-            CertificateSecrets = certificateSecrets ?? new CertificateSecrets 
-            {
-                CertificateAuthority = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVERENDQXZTZ0F3SUJBZ0lJTmNPQ1kxdG84SnN3RFFZSktvWklodmNOQVFFTEJRQXdnWXN4Q3pBSkJnTlYKQkFZVEFrNUhNUTB3Q3dZRFZRUUlFd1JQWjNWdU1SRXdEd1lEVlFRSEV3aEJZbVZ2YTNWMFlURVZNQk1HQTFVRQpDaE1NVjJocGRHVWdVSFZ5Y0d4bE1ROHdEUVlEVlFRTEV3WkVaWFpQY0hNeER6QU5CZ05WQkFNVEJuQjFiSE5oCmNqRWhNQjhHQ1NxR1NJYjNEUUVKQVJZU1pXRmlZVzV2Ym5WQVoyMWhhV3d1WTI5dE1CNFhEVEl3TURneU1qRTEKTXpFd01Gb1hEVE13TURneU1qRTFNekV3TUZvd2dZc3hDekFKQmdOVkJBWVRBazVITVEwd0N3WURWUVFJRXdSUApaM1Z1TVJFd0R3WURWUVFIRXdoQlltVnZhM1YwWVRFVk1CTUdBMVVFQ2hNTVYyaHBkR1VnVUhWeWNHeGxNUTh3CkRRWURWUVFMRXdaRVpYWlBjSE14RHpBTkJnTlZCQU1UQm5CMWJITmhjakVoTUI4R0NTcUdTSWIzRFFFSkFSWVMKWldGaVlXNXZiblZBWjIxaGFXd3VZMjl0TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQwpBUUVBdU9NT3JYY1VlYSs1QXdhQndPL2xqbHkwSC9RdzZKUUNwQklRTGRINWFwa3diVFFWOFJ1WEI5VXRScmNOClErLzFnb1R4dEsyVnBjcGdRcnphNWphdFFNMkpBbWdRSkV6eHc3YWFhVVdKMGJRMys3N2wxaUFYaGVSdWVEakMKZHFRWWNVYXFZYngxaEI4a3l0bkw3Z3UvcXdGa0JmbHIyRFQ0NHVPRXBPeDF6RHB0enpvWUIwdlJZeTV6UnB4Mwp0VUpWZWRhRUwwNm5ES1d4TVIwa3daQWZKWERHOGFiM2tHV3prbnpVY2N3UE9pa2JQdWJVMGNSQ05Jbk1tR1E0Cm8zbUVjVytlYzhWbVp3V2ZRVHNxM1NkbmN6OVdCbzgwVVRLeTdzTmtSWW55VGZRcUN0VFhIN0RnTWNHNEtObWwKZ013ZlJMOXkxMEJRRzNwSGZ6ejBUSHRmblFJREFRQUJvM0l3Y0RBUEJnTlZIUk1CQWY4RUJUQURBUUgvTUIwRwpBMVVkRGdRV0JCUXBTSG9WaEVrU2lVYjBSbGpWMWVjeFFzdllYVEFMQmdOVkhROEVCQU1DQVFZd0VRWUpZSVpJCkFZYjRRZ0VCQkFRREFnQUhNQjRHQ1dDR1NBR0crRUlCRFFRUkZnOTRZMkVnWTJWeWRHbG1hV05oZEdVd0RRWUoKS29aSWh2Y05BUUVMQlFBRGdnRUJBSmdWSjkwQkh4c3pXN1NzSUVWcERNTFhubXYwcFhYcGkyS2hnOXp4L3VYdwpIYTE3WjhYQXlvUWhRSHBpaTUwdkljdGlRK2xZMTZnWUlodWRXVWRGZWx5OWxXU0NVemI5cUJITWhlL2dtcmJ0CjYydUFVWERWTGZhNkwxdE9HekxFYzVsOWphUWhQQUFXMkM0b2Q5T3BJU0hzS3dPRVJldTlIcGw5N3N2dU40cmMKZjdZYnkzSnZmay93dXZGMzdiTGRKWWZxRmdXUzlLSDRDT0NGU3NadFJ0YllvVXhpOTdmWmdlTit2VENGeUE1cgpRTHZ5OWtnbXZKZ2hoMnQ0UkhTSjA4Zkxpc2ZwRTZmMVo5S3VyeFlDY0xibWtuWGUxWVZnV21CZ1h2NTIxcHRjCmw5V1lDL3Ziaml1THEyTUs2a1IrMUsvdUdtOVpOc2RmckRrMHpHdDAwSjQ9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
-                AzureDnsPassword = "Vnk4dHhUZV80fks2SjA4azV5MWpfay42VDBMSVZqa2dyVQo=",
-                Broker = new CertificateSecrets.ComponentSecret
-                {
-                    Private = "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBd1FndFhncTM1NVFJbTdnWEJ5b3huVDA5STR1eTBzNXFWS0Nrdmo2UEdua0p0c3BxCmg0NnJaNmZycUZwMWhic2xWN1RTNmJjZ1A5UkJpZmVSU1J4M1QzQWxRMFlyRDhaYjl4VElKM3ZSNnZkQkVPajIKME1EdkdUQ3VVRERvdFZRSG5xY2kxdm1XZWt0K2hNK0VtUjVEOGhFbXhqU1VzZkVQNlV2L3RqY1N2djdCa0tWbgpBQ1RMelR1NW1aaE03OHd4T2RpLzZwWTFjUXA5ZjhPcDMreDA2Y2pHVE0reEUwL1pRRWhDZityOXZNNjFqeW5nCm5ZeVp3MXlGanBqZm5vdlpMYk54elgzR09icjJTZlUzT2s3bUdvS1V0bXFGNmRYNGUyK1p1NjhRNE1Ga3BJYzAKMU9MVlJMQ3l1ZEJIdGZQZFo0Y2piRWFCQUF2cjF0elFobEwybndJREFRQUJBb0lCQUZCMHpCUUtlNlMyZXZBTQp4dXhobGRSb0ZmZWUzcVluQ3dMREFtZVpRNlJSRnM5dGh3R0JZY2dPb1piR1BYM0VCMGlMUWUzUU9remdkNEMrCkEzeHB0UUVUU1RURkptV28wK1FrY1ZpanIxYzBQNWFBdzM4M0szRmdiUWRYbTJjWTR5UXBuY2ZrdCtlNVY3NmIKa0RVUi9GZ0U5aGhmQ2lzd3d1VUduRXFpb2RtaE16a0c3OHlybWpqY2N0U1dWaEFYeVJGNENJZWx3am1PZkRKRQpOY00ycVNNaGhEV0QxVmVJcTJGWFVqOEV4SmN2SWdwdGFVeHFyUzYxSE1vbTd0a3E3ZUUrcGNpT2hrNm9ROUVTClU2aDdOTHlrdGRqaEZxNlBpUmRYekkxaUpZWEVVT2hsWktxS0ZuYWhGejlFZlRneW82dS9ZZVRHU3dwcDlxUVMKSEtjNWJzRUNnWUVBOS80Ky9VdEE3UDF4STVtYVB1OVFGUTRLV2U5R2xJQ3BGOWdNcnVLQVdXb0I4N3hMWWxaKwp5VUdUOHhpc3NhRWdzREpPWTJIaUs4WEhYR0liWWFmM2o2Y0hxZ1ZpbFFtMWZLNXBHVm9tdTRWajJKNmVzUGswCkU0N1gydlQ5U0RUR2JIT2xJK3J5OTJKY2diMFFMRTJFRFJCRHFzbmZ1bzhENzkyeWtjWjFsR2tDZ1lFQXgwT28KSHNYOWFOWE5RQnRzRGdSQThjTG9JaUlEakxQTFpQa3JyWUppcUVqQ0VWMVlydVhyMXFoKytFTGFQMmFCdkxLcgpzaEtuclpmbFdjT2FpUVZldWhrMEY4bHFWcGEyVVA4WDNMSlNHbU95eVNrODNCcHlnNEZvbGxxWDl5Z2U1UWRBCkw3cWFNdmtwcWM0ZWE1WXNKcE9XM1dZQ0F1YllFTldvV0dEUXNjY0NnWUJqckwvYWhMV3F5MDcvRlF6SEFONzYKSjNPSHBFR0ZESlZxTFA4a0I0dTQ1SCsyWEZjY1JsR2RTSXRUcVBZNFN0L2RrY3FwN1R5L2hUWFU3dVc4Z1l0aQpKS3RTN2VrcXFBVlhBSzdqYnJXa3B6OXpZSVc5OGR1NWhLOURwVFpzSURJa2d2SzhGZ0hqNXBmeDJYQzNyY3hHCmgrUDZzRHNKTzlSRVE2SXpMMFl4Q1FLQmdBbkRVOXBtSXZ0ZTlsWjh3WGVTVjhoQW4zVUVxNTNhTlUzMk0yQ2wKOGNXREF4Y3N0cXFqRTBJS01XWmlpQ1R4RmN3MENOdUp0SE41N0wvUUtLTXNBeThsQ3Z0YlgvMXNGdlN5K3UxUwpRMW1OcHZYYU1tUXFXNC83NkM3dHMySmxzZFhRM0NFNmlGR1ZDYWlMTTh4YnFFQWZuUld0Nk0xUm1DYURBV09MCklzNkRBb0dBQmVFaVBpL3kzNGlOaHdQMXpoUmJvejBrcG9sU3FaMWFEMWRVeC9ZMTBYQnUzc1g2K3pudW5wWXAKelFwQTZPdzd1dDU5MjRtcFQ3Q25SbXQzenYrK0JJMVNkZjZhNlBpK3RPSzdibnVBSGtpTXJyS0hWanZuSlF4UQpabHdOQksveTRzMVp4ajViNFdScFpjbEppZVowZWV4aUZOUjJmUExiQ3l2RnA4VXpnUEU9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==",
-                    Public = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF3UWd0WGdxMzU1UUltN2dYQnlveApuVDA5STR1eTBzNXFWS0Nrdmo2UEdua0p0c3BxaDQ2clo2ZnJxRnAxaGJzbFY3VFM2YmNnUDlSQmlmZVJTUngzClQzQWxRMFlyRDhaYjl4VElKM3ZSNnZkQkVPajIwTUR2R1RDdVVERG90VlFIbnFjaTF2bVdla3QraE0rRW1SNUQKOGhFbXhqU1VzZkVQNlV2L3RqY1N2djdCa0tWbkFDVEx6VHU1bVpoTTc4d3hPZGkvNnBZMWNRcDlmOE9wMyt4MAo2Y2pHVE0reEUwL1pRRWhDZityOXZNNjFqeW5nbll5WncxeUZqcGpmbm92WkxiTnh6WDNHT2JyMlNmVTNPazdtCkdvS1V0bXFGNmRYNGUyK1p1NjhRNE1Ga3BJYzAxT0xWUkxDeXVkQkh0ZlBkWjRjamJFYUJBQXZyMXR6UWhsTDIKbndJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=="
-                },
-                Bookie = new CertificateSecrets.ComponentSecret
-                {
-                    Private = "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBeityc1ZHRkR5bjdIMWRiaDB0WjVodVR0WFR4THJrZm8zaTgzOTBoU2NwMDNkZTgzCmRsNGM0M29KL2hPYWpET1FSMUx3NE1PTVAvSVUxQjQxaUI2blFSbGFVYlYwWis5UXlqUmc3Mjcycmd0ZWJzOFYKL1BOTndkMFJWMm12a3R2Z1RHcG9mdVdlSDdmakFkQXFTM24rYXozN0NFWVhaYUpLbmNDMytPdlcxY09LUnl5YQpjdGw4QlplREZQV2dqbUpyaVd2K3AreUxxWndBZG9aazVKVFRoenNvL2dmUTV5cnBOWXBoZ0FPQlFqbjlDKy9KClNDRGl3azVDQ3A3NUJ1SjI1M0k1ak03SElvNHROdU95RE1UQVlqZ3RiYVJMRmZXNFFsd1ViMmlhNzhib2c1eGwKRWs1elRkQ21yVkVqbjlxbFpuYk9DakhaQWM4VnpSSzN2Y0lHaHdJREFRQUJBb0lCQUFLNXBvMVlsUVhqY1lVWgpBdTY3aHU1QXMrZkQ4WTRBUFVva1BreU1jeUF6ZFZXalpBdTJJaFROTmJKUjJYVzYrMG9rQ1NvNUJlNlVvcmRCCkNoeVZva1dWS256bHJ2ZnB5QnBPWTNMZjluWERpbUpUYm90Wk9ReXdkQmk4TnVQcTQ5NjhpbEFYZkdJWUMrNnIKSnRMRWI1UkNSTGNRRENCMTV4cDRPekVWRGtUUS9FTUJYRWtINkdDOXVtL2dOMVJuY0o4eCtVYTBDQzE4M09WMApjWXBpYSs4a0ZERU5mNW14MlJzWEV5bld6K0F5SnpvOXRaNkZlZ2ZoQ2ZTQnF2dE5YWHh3T0RodFJpOExIazJ2CkpRdlFEY1g3Ym12Umpzd29QMnZnR0VKNVJ4NzFlc01LSVhmUllnSllQWko0WjNmemY3dnUzdFd6UmEvY1p5QW0KTmhXRnJsRUNnWUVBN2RsbVlyZzZEcmVSSGhpNU11bDNjbXA3REk0TmJBclBjMGJ3dzR0cUNtRURDdldIOG9acQpQWmtSRWJCczRxQkNjWUhGaXAyMStXL2RBYzhySU53R2twS3diU2FhOWZ1QlNrcWJJZXFFRXUwNXhLTGZOdWkrCjRjWlNxVGxtT1pyRmdOUkdtVytFd2MzUUlTalg2UGdlMFhMZFU1MUI5dnYxaHprcDcyQmgyVThDZ1lFQTM4akkKZytmZFN5TVVET09haXFwWjFFWm1oZ1FHTXlLREg3ZXR4WFhKMVgrZklpcVE5WkRsKzMvUFhUOWFnU0JSdUNBVwpuZmF1c2hVSGdMMkFnNG5UQTY2TWpldVJndm4xaVpOVzhzcWF6YUh2Rnc5U0tEcWNscXZkUlgyc0V5NFZkS1NqCmJYb0E0UGR2SExORkYvcVgzSGNsQlc1bE1CQ05SSUVJbWZQeVFVa0NnWUJHTUgyeWJFTlZ6SDRhcjVrWG1TWVMKc2JHV1J1VlhHT21YVHp3RnVNS1dSWUtzWFVDOUpVVjg0QXJWZVlib2FmcXhuR1k3UGNkUjBOMGJoNU5tb3dlZApnWVJtOFptUk5hTTExVVpxZjlaeDcyZTR5NGVyb0l1VC9QNnZ5YXlORzB0bGRUOVFVRVNSSExkcTBhN0ZwVk1TCjVCN0VhZ2ZwWnZsUjZtQ2hyNE93cVFLQmdRRFVTMG5OdUx5NmR3Q2lhWmxHU3UwRTcvUjYxbjU3TEJad2xIT0oKaTRCNXhhUlZhVVF6Y2M1N2xIaEg0YjRlR1diczRhUVRIdDREbXVlUFBqY1lranRZbHRKSUlGM2VmdnBzRlJhNwpKWEZOK24weXh4b05oK3pkRXhYS3dybm5TQ1NhajBWcXFmOERiRGhBWmVENktvUytaVmo5bWdqc1hBZG9JWERqCmZBVXA0UUtCZ0hoRmxxdkg0dzJ1Sk1ieEk0Z2FKWElVallmWVloWTk2WHJLSU5RZmtKTmc2akhPSXc4QVYrb0EKRlJYaEh1UDlQclR4UVJlR0FDMlZ4elY0WHlwTllFVk4xbXJZYVY3ellxL0N4V2lsb2I5a2VURHNWaENBS3N2NAp5VU12STFvZHlKSmF6enlOZFlLbEdEcUx4aVRMKzZZZnh0RDJUa0dUdExwZEZYcXFwRjV2Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==",
-                    Public = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF6K3JzVkdGRHluN0gxZGJoMHRaNQpodVR0WFR4THJrZm8zaTgzOTBoU2NwMDNkZTgzZGw0YzQzb0ovaE9hakRPUVIxTHc0TU9NUC9JVTFCNDFpQjZuClFSbGFVYlYwWis5UXlqUmc3Mjcycmd0ZWJzOFYvUE5Od2QwUlYybXZrdHZnVEdwb2Z1V2VIN2ZqQWRBcVMzbisKYXozN0NFWVhaYUpLbmNDMytPdlcxY09LUnl5YWN0bDhCWmVERlBXZ2ptSnJpV3YrcCt5THFad0Fkb1prNUpUVApoenNvL2dmUTV5cnBOWXBoZ0FPQlFqbjlDKy9KU0NEaXdrNUNDcDc1QnVKMjUzSTVqTTdISW80dE51T3lETVRBCllqZ3RiYVJMRmZXNFFsd1ViMmlhNzhib2c1eGxFazV6VGRDbXJWRWpuOXFsWm5iT0NqSFpBYzhWelJLM3ZjSUcKaHdJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=="
-                },
-                Proxy = new CertificateSecrets.ComponentSecret
-                {
-                    Public = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUE0MkhGamtwVG5rOVo3QXJoOHpiYwp5OWdVL1lEZk9iT0dvbmZGZU5mUjRjTWxlWWl0Wm5hOFhySCtPN3UzanJlK0gvYlYvTzZJL1ZEeWt4bCtTbTZQCjFMNGJlaTNmMDRtQUxLcXdsbDBISVJiVWxsS202eHprS0lZTnBLdXNjM0tyTzlDVTR4N2FhaU50NXZzWnkvbmgKK3pJdDYwUm80TmR1eWVvRTVnN0czUStkZ0hPQVlVSS9YTzdXc3VhT3hNb2pSOVpMbXUzS2plNXo3ZUU1d1lmdwpRU0NYK2lYc3BGK012T2pkMVlrRDVyUGRVdEZBRGlRRitBbTVqSnI4TE5Oakw0WjdQc2NhdWw1ZGJkRzJnVWhDCnBIZmlpem1zVlZYR1VIdXpCS2RDdXJCZUFNNnVtY0NPZzBpVGppc2c5dCt0M3ByaFQ0MnZUNFBadUJtaVl5c20KS1FJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==",
-                    Private = "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBNDJIRmprcFRuazlaN0FyaDh6YmN5OWdVL1lEZk9iT0dvbmZGZU5mUjRjTWxlWWl0ClpuYThYckgrTzd1M2pyZStIL2JWL082SS9WRHlreGwrU202UDFMNGJlaTNmMDRtQUxLcXdsbDBISVJiVWxsS20KNnh6a0tJWU5wS3VzYzNLck85Q1U0eDdhYWlOdDV2c1p5L25oK3pJdDYwUm80TmR1eWVvRTVnN0czUStkZ0hPQQpZVUkvWE83V3N1YU94TW9qUjlaTG11M0tqZTV6N2VFNXdZZndRU0NYK2lYc3BGK012T2pkMVlrRDVyUGRVdEZBCkRpUUYrQW01akpyOExOTmpMNFo3UHNjYXVsNWRiZEcyZ1VoQ3BIZmlpem1zVlZYR1VIdXpCS2RDdXJCZUFNNnUKbWNDT2cwaVRqaXNnOXQrdDNwcmhUNDJ2VDRQWnVCbWlZeXNtS1FJREFRQUJBb0lCQUU3Y3VESVRvVkRFNE1FMwpQUXFudW9pUWx5Y2RMVTdMN3lRbU9qMGhUVS9wNlBOdjdnUWRwbE9KbEUyUFc2aUtIY3prUlcrR0k4a0g3RG9NCm0zcWhRZzFkS2hhRUZwODlqMUR1bW5Sc0syN1Voa0xrdzdQRHYzWTJtRURHc2ZjUWpFY2ducUx2TG4ybGNCYXUKZkZIOGh0NGlsejZENllRaDgvRGYwM2NmSk9YQ1AxRUdJSXBibm51aXR2alIvbTg4MnZiQXBkWTJHWHIrT2JjVAp2dC8ybyt0SGc2SUNySW9hVURqbkFMUEhDLzdrUW5VeXpYYll0RWVLRE9XZFNNUTMrSWdrcFpLSzJuTHNlMzgxCldFVy9qT2JuK2pCTUI0OUZueDVBUTdxbC9UR2RQNU4wNU5UZ2MvaHo3enVvd3hVMjFsTzN4bVVMcitVQ3JkY0MKNjVrZ0dVa0NnWUVBOWN5QnIvU2p1M2VyeEFJR0FxdTJNSWFoaHpJRXlQcXBNcW9Uay9JdUFIZmdRRlNqMlE4Kwo3LzRrdHF4a2Y1NjRjNjVsN09MazlLRFJkeFlDVlJ2RXN1aWlaR1hKa2oxc3dzemtFU05RaXA1WnhnNHl5RHVECmgwenB5WGxlMjFyL2JmV1FYSmV1TUgwVm5TMXliVTFPUG9XY284OGFZQUpra3BaSTM4cStGYzhDZ1lFQTdOR1kKR2M1bVUrRkl1Rk1kc0haaXZVNTlPWGJQR3dROCt1MGNDVWp5eGFvc1BWSGVSQzd4YXdwcU5zTVBraHpHazExKwowd2JHcUVlc2NMQmZKQ2U3WjNPTG5QTW84MlZJSG5NOHprSzhqMklVR1FReTRuRWRzNVZ6WkFhL1JZWFNUb2VUCjZjay9uRzUrQlM1M3RUMUtOeEs4VHJPc0NsZnRpRTBmZ0hBbmVvY0NnWUVBNnI0RnVRSmRnRU1ZNHBmQUg3clgKdzE1QVUzcGNnWWlLSUYyM1Z0cTZQaTQrRjVIOTdPV1hpT0hoTkNoTnptZko1b2pPeEw0b1JNeDFYMUxBcFlGZwppRENPTG0zYlpQT090RGV6TS83VEE1K1pRd0g2VTZvcXdnT2RYcEd3R3JPOEw4cU90UzhTNXpIK2UxNlU0bmdxCjJxRUY2SmQ0cStwOUhGVzBnUzRCL1pjQ2dZQkl6d081WTJpNGZ6bnhXYlIyRFYrOEhnYUlCVXdWWFU4MlFuSHQKTk4xWEFrUEpzb0xvYVpwVnM0VUdReUJsWnExeW56c2Z2Q1NWbGp1aEJjaXFnQUN4QktnMjM5ZUdSV3hQMkZRbwpnZ0lnL3lGNHMzN0ZlY3VNNi9Ubkd0L3hpdndtb3E1S0lWS0tVTG96ODU1Z1BYQzB6L0RQTFpSR05kUlVwSWw3CjNuOTB2d0tCZ1FDejNOVEx4SDNZZFQrMDFXUFNLRmRCb0tybjZKR1V3bWxYeHN0akRjZkZuT3RuazJXWDdwL2kKeW9xcGhqWnR4bGwrVnNNQkxxUW04QXNVQlk3bXlQTVl5eUJQcVFFWHZUdkxMbDNFdWVIL3c1cC9BOUZyQ00yawpLRXI0R2ZBN3QzN2o3TENKMlpMY3FNaWRlQVZnMG9oUnB1QkREWW1XalFTYkdyYnIvdkhTWFE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo="
-                },
-                Zoo = new CertificateSecrets.ComponentSecret
-                {
-                    Public = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFzT25wV1p5RlRPdm16UjJCbk5xOQpNN0NoRVU2TkpHZzJhanZxbjdQaGUxcUNNREtCQUdLcFhiQ3UrVkxzOE5aYUpvYTBuUFFDMVVHU2oybGJJSDJyCkRQZXJQNml5OGQvdkltQmpGK0h3UFhSWGEzQytmZzk0dFJrcmlvb3hhYXhrbmNGYkh1K0F6UkI1S1dzV2ZaczcKbitXLys2ZDhhOEpyQWNxYUlkSy9zSkx3VTZlMlV3KzdaUjVIZloyLzUvY3d4SFBZTzJSWEFOaklHWFZvcmpsWgpNdTFtT3QxR0hIWEdUeEg4TTBDYnVaZ2QzVVFESDhXc2VnSU1UTUsyTlIyZkViTG1OL0M4TGszNnRsY2xNZXVxClJnVWZNKzhSY09aZWlLMmV4L0xIdGRUejlSanI2Mml5NWRnTWJtL3V1R1NEMjBLdkNOaXVmbU1mVDBmSnNxdXgKU1FJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==",
-                    Private = "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBc09ucFdaeUZUT3ZtelIyQm5OcTlNN0NoRVU2TkpHZzJhanZxbjdQaGUxcUNNREtCCkFHS3BYYkN1K1ZMczhOWmFKb2EwblBRQzFVR1NqMmxiSUgyckRQZXJQNml5OGQvdkltQmpGK0h3UFhSWGEzQysKZmc5NHRSa3Jpb294YWF4a25jRmJIdStBelJCNUtXc1dmWnM3bitXLys2ZDhhOEpyQWNxYUlkSy9zSkx3VTZlMgpVdys3WlI1SGZaMi81L2N3eEhQWU8yUlhBTmpJR1hWb3JqbFpNdTFtT3QxR0hIWEdUeEg4TTBDYnVaZ2QzVVFECkg4V3NlZ0lNVE1LMk5SMmZFYkxtTi9DOExrMzZ0bGNsTWV1cVJnVWZNKzhSY09aZWlLMmV4L0xIdGRUejlSanIKNjJpeTVkZ01ibS91dUdTRDIwS3ZDTml1Zm1NZlQwZkpzcXV4U1FJREFRQUJBb0lCQUZubG9yUHNlemdKTDNEUApLNHVmQTBGKzRYbS81cXkzWDk4L3J3dVVCbUgrTGVWNzVGMWp4UmhjcmF6MzNIck5FV1krVVF6b1dZQXdIOTlMCjlBaGdrMGkxbVlseG1leWFsQk50MHl6Um5KZzl4Q1pPVmg0TWtwUER4SUpUa3FSVis1TEdMQjFlS3A4SlhlZ1UKQ0l1dkUrOCtlZjNRcjhLNk9sSGd0ODIwSDhBRE1jR21TRHFMS2RPV3VzTWxYa0tveUVIWnlNc1BvdWxpSGNXcApXWndtT09taFNUT3k3ZDIyVFBtWm1xbEdSSW5uNGRSV0VxbWNOOGRlajFpdmFhc1BodlJsUGU4T2dGNWRSc0pKCmV4UlZiZUpYY3krSEpha1lsRFN6eWQ4MXZtTklHMjMxNlNIbXVWY1JJR2lwZUpWTjkyZnBuakZzei9rRHU4SkEKdXlNUUMxa0NnWUVBNVlLejFxMk5WY0sveTVMd1hoakhvVXd2OEhxcEpZeUJaVk0wZnBqWWh2ZFZCcXVwOGFiQgpIUHR0ZkZEOEJLeTdNQ1ZBZFgzMHhxZU82Mk1TWWE2K2VtdjZHNGIwLytPaW0vOFBWYVJ5NEFwcDJTL3lHYU4vCjl6WWxzelpCYTRsVmtjU3cwekJxTFBSeGkrdWJpU3lRNlppcjlzdFNSL0xESklEajdtVm9yWk1DZ1lFQXhWVWsKVWNlMDhnTTVUbEVwa09xYkZSR2o5Ynl6SncyeGtFRDJ2UDU4cC93a3NJTi80ZllZc3AwWTVjTjdLN2hJNzZlQQpvZEk1TC9YNk85YmRXQWJRNWdzTnAvMHBFRlpQZzYzeVJhME1DM2ZwQnBha2VwZEh0TWpPZi9pVTQ4RFRsWDQ4CnQ0VHNZeDhXOVdlV1NpaUl2U2s2ZU4vTGE4NEhpVHc0ckt3MGp6TUNnWUVBblltVzJoL3M2Tll5QXBHTTdub0IKNVlTL1QwbFMrNVF6YVpLd2NNbUhyelRzcHhTRUpYeDZCK1BKcGxDTWZNVDRCRGM5eEtnOXNYSm9Wc2g5WUpHcQo2NnRjVlRMUXp5aTRnRzJXWUFudVZEeXhwVVFVNFdacU93MXUyVkcvbkFuN3M0QVloQTR5ZzBNVEFhRXE5UUNqClE4VHBIUkU1SEd2VmFTUVQwSnJKUElNQ2dZQjluUU12bzhiRlA5UWN6SUYvSkRod0l2aVNGdnFiNDVXaVZCZzgKbW1yVHJDZld6UDU4NG1FNllkSlZnQ2hKM2xkZlp1cjFGNU1idXFMOXNIclo3QXpTUXpzQU1xRVBLMElXZW9YOApZSG1JVzE1VXVWUWVUV3B4NUZtL0VJZ0dxdHFGRVFTcGRjM2NFeEJVU3dwYVRvOHNpckFUL2JIS0FDNi81enZVCmZ4SStEUUtCZ1FDT2RrbUFld0NucVhJN1FxaEhmNVZ3SjB0RHROc3F5M1BYQnlMREVrd200M2hxQUhQTFpyYWUKVmhtV2tRdExIOUtvWnU4VnlYSEU4Wm5RM2Y3eU9OUjB4TEVlTVpDVzhqZ1hhMlFZb3F1T2N3dUtjdy9JUHFCNAo3K0tPZW9pdW5oem1JdmU2bjdlM1UrSGN5UmFUMmpTRks4Kzd1dEV4VFpXVERmQklUTkwxeFE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo="
-                },
-                Recovery = new CertificateSecrets.ComponentSecret
-                {
-                    Private = "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcFFJQkFBS0NBUUVBM09ZT0tCUGp1L1NFMzVNL0xManN6WTVDdnhoRHEyeFZEckpaUHZiUzhLKy8vb2dwCk9OOVZ2NnhGMHhCYVN6OEpqRVViNnBZLytNenpkOFJIcUJsclBDRllIZXVnbFF2MmxWNlB4NlVRV3FRZ0Nha1IKK2owUFRMdjd6bkptSWFBZ2NMblZxWWJiQ2ZscTVoMWR6V2tvSjk1TDFuMVZPRmRKVXFwOFVySkdSMU1VRDBnWApxVFh4MUFKQUVKZ1NtMG1DMDUzWExtbDJSTkh2cjR5MDIxUWRKTXl4RlZ3eWxuQmtlYmJPU29ZanJkMTVzVXRYCjdJZmRMVzNCcW1nOXdScWhxRmdlYldwUmpPbTdCTHBES1JCeFBYdVBWd3pEdkV6RVhIcVQweXR1ZUU2OC85MnMKUnI4bWRGTGdmeGI1Qi8zZEc3eW5ubmpGd1FHRFgzNUIvZlI5cHdJREFRQUJBb0lCQVFDcyszYlFpYXJIMEJhUgpZaVNScUFyQWVZdnBTMTRLaXA0ZEVTcjBOS05CR2MvMnliZkdNcFphcjlSS0VUODBONXdKZlVEOE5rYklWZTYrCnRqVUsvVVROWktzMVd3UjRVMUw0NjRFYWJUZGVVN0pHL2wvMm53UXhLZkJwWFlwL0FIOEc1Mi9hL3FEZXNiTzEKbWYrUDBLNUNja0RmS1d5bjN5cXJFcGlpeGJwbE5NTzBUSVordUNYTko0Kzh0SXZaNXVsREdqVGZSZDhlamVpSQp5N0p5Z2k1MlhqWHdLMUN0dTVJR2xlNHRtWUI0RUZkQlA4WHVxYmtXT0MvYVRPS2FXaWhDR3VJcFdreElqaDJ4Cjl3U2p1TDB2d3JnUTJQenExUmlsc0xXdkFjbWFLMlFVWSsrY0ZLbmllQ0V2ZEcweVFDVnRVVlZuTElDOEtlbkQKVDVWZlNKZmhBb0dCQVB0L3pQNWdOMDBOc0lzck1QR0JXaGhIRXJQZHVTYWZ1cEhrSlNZRFFoeFh2QU41eXZBRgphZXhrNXA0MHoyNFcwUEVyTnBXak55Z05jYjF6SS9zT0VkaWdaZUxndEtGUlg0WEpkZ3JrSFdzK3BEaUU3WDNrCjB2TmZxU09KRVpiamdaQlR6anl6WkpqbmtRc2NLRjZseG1OWHo2SGg4YW9qeWRoR2FRWXhFWjlSQW9HQkFPRGEKRUQ0SmZKQS9KdHZDQjYva1FOYUV6ZkN4UXdNd1BnWks5ai9pZFNkcGUyeWlZOWtkajloNlN5c2FtOVptVUtragpnNDVod2x3MGt3eVdzb3BZQm8xd3lHS2JMYUIwb2drT05aczNmOHZUVUlOK0RQS0NjUldvQnRjdXhlNnYxbTBuCjR6aG42UGR2RmxOWjBNWjUzOE81SmNVS3N0Q2w0UFZwUnRVOUJyOTNBb0dCQU1CeGxvYS9VUkdnL0FwQnpuMisKSVJhYXEvRCtKSU10ampHOGhjQ0VsYjNpVkhmRVpra3JtMVhNRDd2WFpUSTBPMFdQYjRFcEZ6ZUtzaEhwWFFycQpSVFdoNXRTb1pROWJtT0JpdS9TeGdPRmpXWDMyR1ZSUUdDc3FjOTVCTURocGRlYmVlZDF3MS9VNG5JQUgxOHcwCnhZMld6OFpyZ2VSUzVreWI5QmxNeXROQkFvR0FaZjlsZU03UzI1aGFKendZUXBqWE5MaWZ0dnlpT25NSzM4M24KY01sb2ZZMWkrTCtkYmFMMFdxMzNKVUYzeWNVMTk5UHRYSXhLSDR1VjNSTUxRS2gzcUhldDN0VW4yRzZ3QmsyVQowYWxXWm42Z09sWFd4N2VXVnMyVzlNdjU2N0dHSXBRQ2hkYlZIbEVkSG9oU3BZWXBsRjZMbkp1aXkvVkRXKy82CnVzWnBKamNDZ1lFQW54QmRXNXFxbmZIMnNqaFZFQ1BtTlhxVmlCMzhXendqK25PNFVxTzlFaVFPRnZZM0U2NVAKL0FzUlJEbFcxb2VhanMwbE8rOUFDeTB1VnR5cFFKU1Y5ZFNwUnBJYmswODZmL1pkWWY0TDRkYllJS2xjSEpxZwpyVDMzbStvSm40TGUrenRiTUt3UFJUbU5jVHh2Nk9sWS9WVlcyNFhRYXdFT21aMzdsVEN5eGZzPQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=",
-                    Public = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUEzT1lPS0JQanUvU0UzNU0vTExqcwp6WTVDdnhoRHEyeFZEckpaUHZiUzhLKy8vb2dwT045VnY2eEYweEJhU3o4SmpFVWI2cFkvK016emQ4UkhxQmxyClBDRllIZXVnbFF2MmxWNlB4NlVRV3FRZ0Nha1IrajBQVEx2N3puSm1JYUFnY0xuVnFZYmJDZmxxNWgxZHpXa28KSjk1TDFuMVZPRmRKVXFwOFVySkdSMU1VRDBnWHFUWHgxQUpBRUpnU20wbUMwNTNYTG1sMlJOSHZyNHkwMjFRZApKTXl4RlZ3eWxuQmtlYmJPU29ZanJkMTVzVXRYN0lmZExXM0JxbWc5d1JxaHFGZ2ViV3BSak9tN0JMcERLUkJ4ClBYdVBWd3pEdkV6RVhIcVQweXR1ZUU2OC85MnNScjhtZEZMZ2Z4YjVCLzNkRzd5bm5uakZ3UUdEWDM1Qi9mUjkKcHdJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg=="
-                }
-
-            };
+            CertificateSecrets = certificateSecrets ?? new CertificateSecrets{};
             ResourcesRequests = resourcesRequests ?? new ResourcesRequests();
             Authentication = authentication ?? new Authentication
             {
@@ -56,7 +26,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             };
             Tls = tls ?? new Tls
             {
-                Enabled = true
+                Enabled = false
                 
             };
             Namespace = @namespace;
@@ -215,6 +185,24 @@ namespace SharpPulsar.Deployment.Kubernetes
                             {"cpu", new ResourceQuantity("0.1") }
                         }
                     }
+                },
+                Toolset = new ComponentSetting
+                {
+                    Enabled = true,
+                    Name = "toolset",
+                    Replicas = 1,
+                    Service = $"{ReleaseName}-toolset",
+                    Host = "${HOSTNAME}." + $"{ReleaseName}-toolset.{Namespace}.svc.cluster.local",
+                    UpdateStrategy = "RollingUpdate",
+                    PodManagementPolicy = "Parallel",
+                    GracePeriodSeconds = 0,
+                    ExtraConfigMap = new Dictionary<string, string>
+                    {
+                        {"PULSAR_MEM", @"
+-Xms64M
+-Xmx128M
+-XX:MaxDirectMemorySize=128M" }
+                    }.RemoveRN()
                 }
             };
             ExtraConfigs = extraConfigs ?? new ExtraConfigs
@@ -323,6 +311,13 @@ namespace SharpPulsar.Deployment.Kubernetes
                         {"Username","pulsar" },
                         {"Password","pulsar" }
                     }
+                },
+                Toolset = new ExtraConfig
+                {
+                    Holder = new Dictionary<string, object>
+                    {
+                        {"UseProxy", Settings.Proxy.Enabled }
+                    }
                 }
             };
             ConfigMaps = configMaps ?? new ConfigMaps();
@@ -334,7 +329,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Proxy = proxyComponent ?? ProxyComponent();
             PrestoCoordinator = prestoCoordinatorComponent ?? PrestoCoordinatorComponent();
             PrestoWorker = prestoWorkComponent ?? PrestoWorkComponent();
-            Toolset = toolSetComponent ?? new Component();
+            Toolset = toolSetComponent ?? ToolSetComponent();
             Kop = kopComponent ?? new Component();
             Functions = functionComponent ?? new Component();
             Ingress = ingress ?? new Ingress
@@ -890,6 +885,51 @@ namespace SharpPulsar.Deployment.Kubernetes
                 
             };
         }
+        private Component ToolSetComponent()
+        {
+            return new Component
+            {
+                Containers = new List<V1Container>
+                {
+                    new V1Container
+                    {
+                        Name = "pulsar",
+                        Image = $"{Images.Broker.Repository}:{Images.Broker.Tag}",
+                        ImagePullPolicy = Images.Broker.PullPolicy,
+                        Resources = new V1ResourceRequirements
+                        {
+                            Requests = new Dictionary<string, ResourceQuantity>
+                            {
+                                {
+                                    "memory", new ResourceQuantity(ResourcesRequests.Toolset.Memory)
+                                },
+                                {
+                                    "cpu", new ResourceQuantity(ResourcesRequests.Toolset.Cpu)
+                                }
+                            }
+                        },
+                        Command = new []
+                        {
+                            "sh",
+                            "-c"
+                        },
+                        Args = new List<string>{ string.Join(" ", Args.Toolset()) },
+                        EnvFrom = new List<V1EnvFromSource>
+                        {
+                            new V1EnvFromSource
+                            {
+                                ConfigMapRef = new V1ConfigMapEnvSource
+                                {
+                                    Name = $"{ReleaseName}-{Settings.Toolset.Name}"
+                                }
+                            }
+                        },
+                        VolumeMounts = VolumeMounts.Toolset()
+                    }
+                },
+                Volumes = Volumes.Toolset()
+            };
+        }
     }
     public sealed class ProxyServiceUrl
     {
@@ -1174,7 +1214,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         //Should disable - not
         public ComponentTls ZooKeeper { get; set; } = new ComponentTls
         {
-            Enabled = true,
+            Enabled = false,
             CertName = "tls-zookeeper"
         };
         public ComponentTls Proxy { get; set; } = new ComponentTls
@@ -1189,7 +1229,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         };
         public ComponentTls Bookie { get; set; } = new ComponentTls 
         { 
-            Enabled = true,
+            Enabled = false,
             CertName = "tls-bookie"
         };
         public ComponentTls AutoRecovery { get; set; } = new ComponentTls 
@@ -1243,6 +1283,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ExtraConfig AutoRecovery { get; set; }
         public ExtraConfig Prometheus { get; set; }
         public ExtraConfig Grafana { get; set; }
+        public ExtraConfig Toolset { get; set; }
     }
     public sealed class Probes
     {
@@ -1447,6 +1488,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         public ResourcesRequest BookKeeper { get; set; } = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" };
         public ResourcesRequest Broker { get; set; } = new ResourcesRequest { Memory = "512Mi", Cpu = "0.2" };
         public ResourcesRequest Grafana { get; set; } = new ResourcesRequest { Memory = "250Mi", Cpu = "0.1" };
+        public ResourcesRequest Toolset { get; set; } = new ResourcesRequest { Memory = "250Mi", Cpu = "0.1" };
         public ResourcesRequest Proxy { get; set; }
         public ResourcesRequest PrestoCoordinator { get; set; }
         public ResourcesRequest PrestoWorker { get; set; }

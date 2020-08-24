@@ -11,7 +11,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Toolset
         {
             _config = config;
         }
-        public RunResult Run(string dryRun = default)
+        public RunResult RunKeyTool(string dryRun = default)
         {
             _config.Builder()
                 .Metadata($"{Values.ReleaseName}-keytool-configmap", Values.Namespace)
@@ -21,6 +21,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Toolset
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
                                 {"component", "keytool" },
+                            })
+                .Data(Helpers.Config.KeyTool());
+            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
+        }
+        public RunResult Run(string dryRun = default)
+        {
+            _config.Builder()
+                .Metadata($"{Values.ReleaseName}-{Values.Settings.Toolset.Name}", Values.Namespace)
+                .Labels(new Dictionary<string, string>
+                            {
+                                {"app", Values.App },
+                                {"cluster", Values.Cluster },
+                                {"release", Values.ReleaseName },
+                                {"component", Values.Settings.Toolset.Name },
                             })
                 .Data(Values.ConfigMaps.Toolset);
             return _config.Run(_config.Builder(), Values.Namespace, dryRun);

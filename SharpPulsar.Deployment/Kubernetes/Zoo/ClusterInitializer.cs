@@ -14,7 +14,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Zoo
         public RunResult Run(string dryRun = default)
         {
             _job.Builder()
-                .Metadata($"{Values.ReleaseName}-pulsar-init", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-cluster-init", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },

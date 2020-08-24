@@ -51,7 +51,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
                         {
                             {"zkLedgersRootPath", $"{Values.MetadataPrefix}/ledgers" },
                             {"httpServerEnabled", "true" },
-                            {"httpServerPort", "8000" },
+                            {"httpServerPort", Values.Ports.Bookie["http"].ToString() },
                             {"statsProviderClass", "org.apache.bookkeeper.stats.prometheus.PrometheusMetricsProvider" },
                             {"useHostNameAsBookieID", "true" },
                             //Do not retain journal files as it increase the disk utilization
@@ -1132,111 +1132,142 @@ scrape_configs:
         public static IDictionary<string, string> ToolSet()
         {
             var conf = new Dictionary<string, string>
-                        {
-                            {"keytool.sh", @"#!/bin/bash
-component=$1
-name=$2
-isClient=$3
-crtFile=/pulsar/certs/${component}/tls.crt
-keyFile=/pulsar/certs/${component}/tls.key
-caFile=/pulsar/certs/ca/ca.crt
-p12File=/pulsar/${component}.p12
-keyStoreFile=/pulsar/${component}.keystore.jks
-trustStoreFile=/pulsar/${component}.truststore.jks
-function checkFile() {
-    local file=$1
-    local len=$(wc -c ${file} | awk '{print $1}')
-    echo ""processing ${file} : len = ${ len}""
-    if [ ! -f ${ file} ]; then
-        echo ""${file} is not found""
-        return -1
-    fi
-    if [ $len -le 0 ]; then
-        echo ""${file} is empty""
-        return -1
-    fi
-}
-
-function ensureFileNotEmpty() {
-    local file =$1
-    until checkFile ${ file}; do
-        echo ""file isn't initialized yet ... check in 3 seconds ..."" && sleep 3;
-    done;
-}
-
-ensureFileNotEmpty ${crtFile}
-ensureFileNotEmpty ${keyFile}
-ensureFileNotEmpty ${caFile}
-    
-export PASSWORD=$(head /dev/urandom | base64 | head -c 24)
-    
-openssl pkcs12 \
-    -export \
-    -in ${crtFile} \
-    -inkey ${keyFile} \
-    -out ${p12File} \
-    -name ${name} \
-    -passout ""pass:${ PASSWORD}""
-
-keytool -importkeystore \
-    -srckeystore ${ p12File} \
-    -srcstoretype PKCS12 -srcstorepass ""${PASSWORD}"" \
-    -alias ${name} \
-    -destkeystore ${keyStoreFile} \
-    -deststorepass ""${PASSWORD}""
-
-keytool -import \
-    -file ${caFile} \
-    -storetype JKS \
-    -alias ${name} \
-    -keystore ${trustStoreFile} \
-    -storepass ""${PASSWORD}"" \
-    -trustcacerts -noprompt
-
-
-ensureFileNotEmpty ${keyStoreFile}
-ensureFileNotEmpty ${trustStoreFile}
-
-if [[ ""x${isClient}"" == ""xtrue"" ]]; then
-    echo ""update tls client settings ...""
-"}
-                        };
-            if (Values.Tls.ZooKeeper.Enabled)
             {
-                conf["keytool.sh"] += @"
-echo $'\n' >> conf/pulsar_env.sh
-echo ""PULSAR_EXTRA_OPTS =\""${PULSAR_EXTRA_OPTS} -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.client.secure=true -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf / pulsar_env.sh
-echo $'\n' >> conf / bkenv.sh
-echo ""BOOKIE_EXTRA_OPTS=\""${BOOKIE_EXTRA_OPTS} -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.client.secure=true -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf / bkenv.sh
-echo $'\n' >> conf / bkenv.sh
-";
-            }
-            if (Values.Tls.Broker.Enabled && Values.Settings.Kop.Enabled)
+                {"BOOKIE_LOG_APPENDER","RollingFile" },
+                { "zkServers", $"{Values.Settings.ZooKeeper.ZooConnect}"},
+                {"zkLedgersRootPath", $"{Values.MetadataPrefix}/ledgers" },
+                {"httpServerEnabled", "true" },
+                {"httpServerPort", Values.Ports.Bookie["http"].ToString() },
+                {"statsProviderClass", "org.apache.bookkeeper.stats.prometheus.PrometheusMetricsProvider" },
+                {"useHostNameAsBookieID", "true" },
+            };
+            if (!(bool)Values.ExtraConfigs.Toolset.Holder["UseProxy"])
             {
-                conf["keytool.sh"] += @"
-echo $'\n' >> conf/broker.conf
-echo ""kopSslKeystorePassword =${ PASSWORD}"" >> conf/broker.conf
-echo $'\n' >> conf / broker.conf
-echo ""kopSslKeyPassword=${PASSWORD}"" >> conf / broker.conf
-echo $'\n' >> conf / broker.conf
-echo ""kopSslTruststorePassword=${PASSWORD}"" >> conf / broker.conf
-";
+                if(Values.Tls.Enabled && Values.Tls.Broker.Enabled)
+                {
+                    conf["webServiceUrl"] = $"https://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["https"]}/";
+                    conf["brokerServiceUrl"] = $"pulsar+ssl://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsarssl"]}/";
+                    conf["useTls"] = "true";
+                    conf["tlsAllowInsecureConnection"] = "false";
+                    conf["tlsTrustCertsFilePath"] = "/pulsar/certs/ca/ca.crt";
+                    conf["tlsEnableHostnameVerification"] = "false";
+                }
+                else
+                {
+                    conf["webServiceUrl"] = $"http://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["http"]}/";
+                    conf["brokerServiceUrl"] = $"pulsar://{Values.ReleaseName}-{Values.Settings.Broker.Name}:{Values.Ports.Broker["pulsar"]}/";
+
+                }
             }
             else
             {
-                conf["keytool.sh"] += @"echo ""update tls client settings ...""";
+                if (Values.Tls.Enabled && Values.Tls.Proxy.Enabled)
+                {
+                    conf["webServiceUrl"] = $"https://{Values.ReleaseName}-{Values.Settings.Proxy.Name}:{Values.Ports.Proxy["https"]}/";
+                    conf["brokerServiceUrl"] = $"pulsar+ssl://{Values.ReleaseName}-{Values.Settings.Proxy.Name}:{Values.Ports.Proxy["pulsarssl"]}/";
+                    conf["useTls"] = "true";
+                    conf["tlsAllowInsecureConnection"] = "false";
+                    conf["tlsTrustCertsFilePath"] = "/pulsar/certs/proxy-ca/ca.crt";
+                    conf["tlsEnableHostnameVerification"] = "false";
+                }
+                else
+                {
+                    conf["webServiceUrl"] = $"http://{Values.ReleaseName}-{Values.Settings.Proxy.Name}:{Values.Ports.Proxy["http"]}/";
+                    conf["brokerServiceUrl"] = $"pulsar://{Values.ReleaseName}-{Values.Settings.Proxy.Name}:{Values.Ports.Proxy["pulsar"]}/";
+
+                }
             }
-            if (Values.Tls.ZooKeeper.Enabled)
+            if(Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt"))
             {
-                conf["keytool.sh"] += @"
-echo $'\n' >> conf/pulsar_env.sh
-echo ""PULSAR_EXTRA_OPTS =\""${PULSAR_EXTRA_OPTS} -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf / pulsar_env.sh
-";
+                conf["authParams"] = "file:///pulsar/tokens/client/token";
+                conf["authPlugin"] = "org.apache.pulsar.client.impl.auth.AuthenticationToken";
             }
-            conf["keytool.sh"] += @"
-fi
-echo ${PASSWORD} > conf/password
-";
+            return conf.AddRange(Values.Settings.Toolset.ExtraConfigMap);
+        }
+
+        public static IDictionary<string, string> KeyTool()
+        {
+            var conf = new Dictionary<string, string>
+                        {
+                            {"keytool.sh", @"
+
+    #!/bin/bash
+    component=$1
+    name=$2
+    isClient=$3
+    crtFile=/pulsar/certs/${component}/tls.crt
+    keyFile=/pulsar/certs/${component}/tls.key
+    caFile=/pulsar/certs/ca/ca.crt
+    p12File=/pulsar/${component}.p12
+    keyStoreFile=/pulsar/${component}.keystore.jks
+    trustStoreFile=/pulsar/${component}.truststore.jks
+    
+    function checkFile() {
+        local file=$1
+        local len=$(wc -c ${file} | awk '{print $1}')
+        echo ""processing ${file} : len = ${ len}""
+        if [!-f ${ file} ]; then
+           echo ""${file} is not found""
+            return -1
+        fi
+        if [ $len -le 0]; then
+            echo ""${file} is empty""
+            return -1
+        fi
+    }
+
+        function ensureFileNotEmpty()
+        {
+            local file =$1
+            until checkFile ${file}; do
+                echo ""file isn't initialized yet ... check in 3 seconds ..."" && sleep 3;
+            done;
+        }
+
+        ensureFileNotEmpty ${crtFile}
+        ensureFileNotEmpty ${keyFile}
+        ensureFileNotEmpty ${caFile}
+
+        PASSWORD =$(head /dev/urandom | base64 | head -c 24)
+    
+    openssl pkcs12 \
+        -export \
+        -in ${crtFile} \
+        -inkey ${keyFile} \
+        -out ${p12File} \
+        -name ${name} \
+        -passout ""pass:${PASSWORD}""
+
+
+    keytool -importkeystore \
+        -srckeystore ${p12File} \
+        -srcstoretype PKCS12 -srcstorepass ""${PASSWORD}"" \
+        -alias ${name} \
+        -destkeystore ${keyStoreFile} \
+        -deststorepass ""${PASSWORD}""
+
+
+    keytool -import \
+        -file ${caFile} \
+        -storetype JKS \
+        -alias ${name} \
+        -keystore ${trustStoreFile} \
+        -storepass ""${PASSWORD}"" \
+        -trustcacerts -noprompt
+
+
+    ensureFileNotEmpty ${ keyStoreFile}
+    ensureFileNotEmpty ${ trustStoreFile}
+
+if [[""x${isClient}"" == ""xtrue""]]; then
+  echo $'\n' >> conf/pulsar_env.sh
+        echo ""PULSAR_EXTRA_OPTS=\""${PULSAR_EXTRA_OPTS} -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.client.secure=true -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf/pulsar_env.sh
+        echo $'\n' >> conf/bkenv.sh
+        echo ""BOOKIE_EXTRA_OPTS=\""${BOOKIE_EXTRA_OPTS} -Dzookeeper.clientCnxnSocket=org.apache.zookeeper.ClientCnxnSocketNetty -Dzookeeper.client.secure=true -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf/bkenv.sh
+    else
+        echo $'\n' >> conf/pulsar_env.sh
+        echo ""PULSAR_EXTRA_OPTS=\""${PULSAR_EXTRA_OPTS} -Dzookeeper.ssl.keyStore.location=${keyStoreFile} -Dzookeeper.ssl.keyStore.password=${PASSWORD} -Dzookeeper.ssl.trustStore.location=${trustStoreFile} -Dzookeeper.ssl.trustStore.password=${PASSWORD}\"""" >> conf/pulsar_env.sh
+    fi"} };
             return conf;
         }
 

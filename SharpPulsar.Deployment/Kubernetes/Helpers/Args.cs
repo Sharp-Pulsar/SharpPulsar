@@ -186,7 +186,20 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }; 
             return args;
         }
-        
+        public static IList<string> Toolset()
+        {
+            var args = new List<string>
+            {
+                "bin/apply-config-from-env.py conf/client.conf;",
+                "bin/apply-config-from-env.py conf/bookkeeper.conf;"
+            };
+            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || Values.Tls.Broker.Enabled))
+                args.Add($"/pulsar/keytool/keytool.sh toolset {Values.Settings.Toolset.Host} true;");
+
+            args.Add("sleep 10000000000");
+            return args;
+        }
+
         public static IList<string> ProxyContainer()
         {
             var args = new List<string>

@@ -47,7 +47,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
         public RunResult Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata("tcp-ingress", "ingress-nginx")//We need to keep this in that namespace incase of frequent modification
+                .Metadata($"{Values.ReleaseName}-tcp-ingress", Values.Namespace)
                 
                 .Labels(new Dictionary<string, string>
                             {

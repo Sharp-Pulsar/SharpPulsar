@@ -112,7 +112,30 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return vols;
         }
-        
+
+        public static List<V1VolumeMount> Toolset()
+        {
+            var vols = new List<V1VolumeMount>();
+            if (Values.Tls.Enabled)
+            {
+                if (Values.Tls.ZooKeeper.Enabled || Values.Tls.Broker.Enabled)
+                {
+                    vols.Add(new V1VolumeMount { Name = "toolset-certs", MountPath = "/pulsar/certs/toolset", ReadOnlyProperty = true });
+                    vols.Add(new V1VolumeMount { Name = "ca", MountPath = "/pulsar/certs/ca", ReadOnlyProperty = true });
+                    vols.Add(new V1VolumeMount { Name = "keytool", MountPath = "/pulsar/keytool/keytool.sh", SubPath = "keytool.sh" });
+
+                }
+                if (Values.Tls.Broker.Enabled || Values.Tls.Proxy.Enabled)
+                {
+                    vols.Add(new V1VolumeMount { Name = "proxy-ca", MountPath = "/pulsar/certs/proxy-ca", ReadOnlyProperty = true });
+                }
+                if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase) && !Values.Authentication.Vault)
+                {
+                    vols.Add(new V1VolumeMount { Name = "client-token", MountPath = "/pulsar/tokens", ReadOnlyProperty = true });
+                }
+            }
+            return vols;
+        }
         public static List<V1VolumeMount> PrometheusContainer()
         {
             var vols = new List<V1VolumeMount> 

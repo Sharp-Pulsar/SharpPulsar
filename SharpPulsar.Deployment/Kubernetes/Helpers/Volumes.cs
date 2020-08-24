@@ -125,6 +125,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
             }
             return vols;
         }
+
         public static List<V1Volume> Prometheus()
         {
             var vols = new List<V1Volume> 
@@ -177,14 +178,27 @@ namespace SharpPulsar.Deployment.Kubernetes.Helpers
         public static List<V1Volume> Toolset()
         {
             var vols = new List<V1Volume>();
-            if (Values.Tls.Enabled && (Values.Tls.ZooKeeper.Enabled || Values.Tls.Broker.Enabled))
+            if (Values.Tls.Enabled)
             {
-                vols.Add(new V1Volume { Name = "toolset-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.ToolSet.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
-                vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });                
+
+                if (Values.Tls.Broker.Enabled)
+                {
+                    vols.Add(new V1Volume { Name = "toolset-certs", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-{Values.Tls.ToolSet.CertName}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "tls.crt", Path = "tls.crt" }, new V1KeyToPath { Key = "tls.key", Path = "tls.key" } } } });
+                    vols.Add(new V1Volume { Name = "ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
+                }
+                if (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.components.kop*/))
+                {
+                    vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
+                }
+                if (Values.Tls.Broker.Enabled || Values.Tls.Proxy.Enabled)
+                {
+                    vols.Add(new V1Volume { Name = "proxy-ca", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName}-ca-tls", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "ca.crt", Path = "ca.crt" } } } });
+                    
+                }
             }
-            if (Values.Tls.ZooKeeper.Enabled || (Values.Tls.Broker.Enabled /*&& Values.components.kop*/))
+            if (Values.Authentication.Enabled && Values.Authentication.Provider.Equals("jwt", StringComparison.OrdinalIgnoreCase))
             {
-                vols.Add(new V1Volume { Name = "keytool", ConfigMap = new V1ConfigMapVolumeSource { Name = $"{Values.ReleaseName}-keytool-configmap", DefaultMode = Convert.ToInt32("0775", 8)/*to octal*/ } });
+                vols.Add(new V1Volume { Name = "client-token", Secret = new V1SecretVolumeSource { SecretName = $"{Values.ReleaseName }-token-{Values.Authentication.Users.Client}", Items = new List<V1KeyToPath> { new V1KeyToPath { Key = "TOKEN", Path = "client/token" } } } });
             }
             return vols;
         }
