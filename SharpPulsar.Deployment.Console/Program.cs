@@ -47,7 +47,7 @@ namespace SharpPulsar.Deployment.Console
                     Private = File.ReadAllText($"{basePath}Zoo-Private.pem")
                 }
             };*/
-            new Values(@namespace: "ingress-nginx");
+            new Values();
             //do this only when you are creating a new instance of Values properties. Old value is used
             //Values.ReleaseName = "friday";
             var deploy = new DeploymentExecutor();

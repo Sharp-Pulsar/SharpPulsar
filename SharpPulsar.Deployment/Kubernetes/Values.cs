@@ -1219,12 +1219,12 @@ namespace SharpPulsar.Deployment.Kubernetes
         };
         public ComponentTls Proxy { get; set; } = new ComponentTls
         {
-            Enabled = true,
+            Enabled = false,
             CertName = "tls-proxy"
         };
         public ComponentTls Broker { get; set; } = new ComponentTls 
         { 
-            Enabled = true,
+            Enabled = false,
             CertName = "tls-broker"
         };
         public ComponentTls Bookie { get; set; } = new ComponentTls 
