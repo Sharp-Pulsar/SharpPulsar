@@ -27,7 +27,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     Annotations = new Dictionary<string, string>
                     {
                         {"kubernetes.io/ingress.class","nginx" },
-                        {"ingress.kubernetes.io/ssl-redirect", "true" },
+                        {"ingress.kubernetes.io/ssl-redirect", "false" },
                         {"cert-manager.io/cluster-issuer","letsencrypt" },
                         {"kubernetes.io/tls-acme", "true"}
                     }

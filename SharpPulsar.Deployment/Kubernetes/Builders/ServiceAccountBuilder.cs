@@ -13,10 +13,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
                 Metadata = new V1ObjectMeta()
             };
         }
-        public ServiceAccountBuilder Metadata(string name, string @namespace)
+        public ServiceAccountBuilder Metadata(string name, string @namespace = "")
         {
             _serviceAccount.Metadata.Name = name;
-            _serviceAccount.Metadata.NamespaceProperty = @namespace;
+            if(!string.IsNullOrWhiteSpace(@namespace))
+                _serviceAccount.Metadata.NamespaceProperty = @namespace;
             return this;
         }
         public ServiceAccountBuilder Labels(IDictionary<string, string> labels)

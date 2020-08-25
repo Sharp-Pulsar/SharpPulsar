@@ -2,6 +2,7 @@
 using k8s.Models;
 using SharpPulsar.Deployment.Kubernetes.Bookie;
 using SharpPulsar.Deployment.Kubernetes.Broker;
+using SharpPulsar.Deployment.Kubernetes.ExternalDns;
 using SharpPulsar.Deployment.Kubernetes.Grafana;
 using SharpPulsar.Deployment.Kubernetes.IngressSetup;
 using SharpPulsar.Deployment.Kubernetes.Presto;
@@ -25,6 +26,7 @@ namespace SharpPulsar.Deployment.Kubernetes
         private readonly PrometheusRunner _prometheusRunner;
         private readonly GrafanaRunner _grafanaRunner;
         private readonly ToolsetRunner _toolsetRunner;
+        private readonly ExternalDnsRunner _externalDnsRunner;
 
         public DeploymentExecutor(KubernetesClientConfiguration conf = default)
         {
@@ -53,6 +55,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);
             _toolsetRunner = new ToolsetRunner(configMap, service, statefulset);
+            _externalDnsRunner = new ExternalDnsRunner(_client, clusterRole, clusterRoleBinding, serviceAccount);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
@@ -92,6 +95,9 @@ namespace SharpPulsar.Deployment.Kubernetes
 
             foreach(var net in _networkCenterRunner.Run(dryRun))
                 yield return net;
+
+            foreach(var dns in _externalDnsRunner.Run(dryRun))
+                yield return dns;
 
 
             foreach(var zoo in _zooKeeperRunner.Run(dryRun))

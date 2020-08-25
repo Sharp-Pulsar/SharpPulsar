@@ -15,8 +15,9 @@ namespace SharpPulsar.Deployment.Kubernetes
             Component zooKeeperComponent = null, Component bookKeeperComponent = null, Component autoRecoveryComponent = null, Component brokerComponent = null,
             Component proxyComponent = null, Component prestoCoordinatorComponent = null, Component prestoWorkComponent = null, Component toolSetComponent = null, Component functionComponent = null,
             Component kopComponent = null, Ingress ingress = null, Component prometheus = null, ConfigmapReloads configmapReloads = null, Component grafana = null,
-            CertificateSecrets certificateSecrets = null)
+            CertificateSecrets certificateSecrets = null, string domainSuffix = null)
         {
+            DomainSuffix = domainSuffix ?? "splsar.ga";
             //Testing purposes
             CertificateSecrets = certificateSecrets ?? new CertificateSecrets{};
             ResourcesRequests = resourcesRequests ?? new ResourcesRequests();
@@ -346,7 +347,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Grafana = grafana ?? GrafanaComponent();
 
         }
-
+        public static string DomainSuffix { get; set; }
         public static CertificateSecrets CertificateSecrets { get; set; }
         public static Rbac Rbac { get; set; } = new Rbac();
         public static List<string> UserProvidedZookeepers { get; set; }

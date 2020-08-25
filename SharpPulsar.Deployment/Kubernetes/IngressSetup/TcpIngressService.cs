@@ -22,8 +22,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
         {
             var port = new List<V1ServicePort> 
             { 
-                //new V1ServicePort{Name = "grafana", Port = Values.Ports.Grafana["http"], Protocol = "TCP"},
-                //new V1ServicePort{Name = "presto", Port = Values.Ports.PrestoCoordinator["http"], Protocol = "TCP"}
+                new V1ServicePort{Name = "grafana", Port = Values.Ports.Grafana["http"], Protocol = "TCP"},
+                new V1ServicePort{Name = "presto", Port = Values.Ports.PrestoCoordinator["http"], Protocol = "TCP"}
             };
             if(Values.Tls.Enabled && tls.Enabled)
             {
@@ -54,8 +54,11 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                 {"app.kubernetes.io/name", "ingress-nginx"},
                                 {"app.kubernetes.io/part-of", "ingress-nginx"}
                             })
-                .Type("LoadBalancer");
-            return _service.Run(_service.Builder(), "ingress-nginx", dryRun);
+                .Annotations(new Dictionary<string, string> {
+                    {"external-dns.alpha.kubernetes.io/hostname",$"data.{Values.ReleaseName}.{Values.DomainSuffix}" }
+                });
+            //.Type("LoadBalancer")
+            return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }
     }
 }
