@@ -48,11 +48,18 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
         {
             _service.Builder()
                 .Metadata($"{Values.ReleaseName}-tcp-ingress", Values.Namespace)
-                .Annotations(new Dictionary<string, string> {
-                    {"external-dns.alpha.kubernetes.io/hostname",$"data.{Values.ReleaseName}.{Values.DomainSuffix}" },
-                    {"kubernetes.io/ingress.class", "nginx" }
+                .Labels(new Dictionary<string, string> {
+                    {"app.kubernetes.io/name", "ingress-nginx" },
+                    {"app.kubernetes.io/part-of", "ingress-nginx" },
                 })
-            .Type("ClusterIP");
+                .Annotations(new Dictionary<string, string> {
+                    {"external-dns.alpha.kubernetes.io/hostname",$"data.{Values.DomainSuffix}" }
+                }).
+                Selector(new Dictionary<string, string> {
+                    {"app.kubernetes.io/name", "ingress-nginx" },
+                    {"app.kubernetes.io/part-of", "ingress-nginx" },
+                })
+            .Type("LoadBalancer");
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }
     }

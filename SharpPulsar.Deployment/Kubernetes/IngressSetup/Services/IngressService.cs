@@ -37,8 +37,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
                 .ExternalTrafficPolicy("Local")
                 .Ports(new List<V1ServicePort>
                 {
-                    new V1ServicePort{Name = "http", TargetPort = "http", Port = 80, Protocol = "TCP" }
-                    //new V1ServicePort{Name = "https", TargetPort = "https", Port = 443, Protocol = "TCP" }
+                    new V1ServicePort{Name = "http", TargetPort = "http", Port = 80, Protocol = "TCP" },
+                    new V1ServicePort{Name = "https", TargetPort = "https", Port = 443, Protocol = "TCP" }
                 });
 
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);

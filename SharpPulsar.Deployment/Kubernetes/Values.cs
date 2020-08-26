@@ -1178,27 +1178,19 @@ namespace SharpPulsar.Deployment.Kubernetes
         { 
             new HttpRule
             {
-                Host = $"monitor.{Values.ReleaseName}.{Values.DomainSuffix}",
+                Host = $"grafana.{Values.DomainSuffix}",
                 Port = 3000,
-                Path = "/grafana",
+                Path = "/",
                 Tls = true,
                 ServiceName = $"{Values.ReleaseName}-{Values.Settings.Grafana.Name}"
             }, 
             new HttpRule
             {
-                Host = $"presto.{Values.ReleaseName}.{Values.DomainSuffix}",
+                Host = $"presto.{Values.DomainSuffix}",
                 Port = 8081,
                 Path = "/",
                 Tls = true,
                 ServiceName = Values.Settings.PrestoCoord.Service
-            },
-            new HttpRule
-            {
-                Host = $"monitor.{Values.ReleaseName}.{Values.DomainSuffix}",
-                Port = 80,
-                Path = "/",
-                Tls = true,
-                ServiceName = "default"
             }
         };
         public sealed class IngressSetting
