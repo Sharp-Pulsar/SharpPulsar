@@ -338,12 +338,12 @@ spec:
                   - /wait-shutdown
           args:
             - /nginx-ingress-controller
-            - --tcp-services-configmap=pulsar/pulsar-tcp-services
-            - --udp-services-configmap=pulsar/pulsar-udp-services
+            - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
+            - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
             - --publish-service=$(POD_NAMESPACE)/ingress-nginx-controller
             - --election-id=ingress-controller-leader
             - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
-            - --configmap=pulsar/pulsar-nginx-configuration
+            - --configmap=$(POD_NAMESPACE)/nginx-configuration
             - --ingress-class=nginx
             - --validating-webhook=:8443
             - --validating-webhook-certificate=/usr/local/certificates/cert

@@ -13,7 +13,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
         public RunResult Run(Dictionary<string, string> ports, string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-tcp-services", "ingress-nginx")
+                .Metadata("tcp-services", "ingress-nginx")
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },

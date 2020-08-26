@@ -13,7 +13,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
         public RunResult Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-udp-services", "ingress-nginx")
+                .Metadata("udp-services", "ingress-nginx")
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
