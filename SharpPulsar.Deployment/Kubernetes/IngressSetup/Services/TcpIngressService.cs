@@ -59,7 +59,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
                     {"app.kubernetes.io/name", "ingress-nginx" },
                     {"app.kubernetes.io/part-of", "ingress-nginx" },
                 })
-            .Type("LoadBalancer");
+            .Type("ClusterIP");
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }
     }

@@ -54,6 +54,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
                                     Args = new List<string>
                                     {
                                         "--source=service",
+                                        "--publish-internal-services",//https://github.com/kubernetes-sigs/external-dns/issues/403
                                         "--source=ingress",
                                         $"--domain-filter={Values.DomainSuffix}", //(optional) change to match the azure dns zone,
                                         "--provider=azure",
