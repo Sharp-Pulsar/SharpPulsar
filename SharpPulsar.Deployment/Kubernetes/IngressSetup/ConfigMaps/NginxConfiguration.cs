@@ -12,7 +12,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
         public RunResult Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-nginx-configuration", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-nginx-configuration", "ingress-nginx")
                 .Labels(new Dictionary<string, string>
                             {
                                 {"app", Values.App },
@@ -25,7 +25,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
                     {"use-forwarded-headers", "true" }
                 });
 
-            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
+            return _config.Run(_config.Builder(), "ingress-nginx", dryRun);
         }
     }
 }

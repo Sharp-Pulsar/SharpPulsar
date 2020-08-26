@@ -47,7 +47,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
         public RunResult Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata($"{Values.ReleaseName}-tcp-ingress", Values.Namespace)
+                .Metadata($"{Values.ReleaseName}-tcp-ingress", "ingress-nginx")
                 .Labels(new Dictionary<string, string> {
                     {"app.kubernetes.io/name", "ingress-nginx" },
                     {"app.kubernetes.io/part-of", "ingress-nginx" },
@@ -60,7 +60,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
                     {"app.kubernetes.io/part-of", "ingress-nginx" },
                 })
             .Type("ClusterIP");
-            return _service.Run(_service.Builder(), Values.Namespace, dryRun);
+            return _service.Run(_service.Builder(), "ingress-nginx", dryRun);
         }
     }
 }
