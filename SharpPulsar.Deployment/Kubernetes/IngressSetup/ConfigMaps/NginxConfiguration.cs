@@ -18,7 +18,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
                                 {"app", Values.App },
                                 {"cluster", Values.Cluster },
                                 {"release", Values.ReleaseName },
-                                {"component", Values.Settings.Proxy.Name },
+                                {"component", "ingress-nginx" },
                             })
                 .Data(new Dictionary<string, string> 
                 {

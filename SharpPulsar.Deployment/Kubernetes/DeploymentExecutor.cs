@@ -55,7 +55,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);
             _toolsetRunner = new ToolsetRunner(configMap, service, statefulset);
-            _externalDnsRunner = new ExternalDnsRunner(_client, clusterRole, clusterRoleBinding, serviceAccount);
+            _externalDnsRunner = new ExternalDnsRunner(_client, secret, clusterRole, clusterRoleBinding, serviceAccount);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using static SharpPulsar.Deployment.Kubernetes.Tls;
 
-namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
 {
     //https://kubernetes.github.io/ingress-nginx/user-guide/exposing-tcp-udp-services/
     internal class TcpIngressService
@@ -48,16 +48,11 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
         {
             _service.Builder()
                 .Metadata($"{Values.ReleaseName}-tcp-ingress", Values.Namespace)
-                
-                .Labels(new Dictionary<string, string>
-                            {
-                                {"app.kubernetes.io/name", "ingress-nginx"},
-                                {"app.kubernetes.io/part-of", "ingress-nginx"}
-                            })
                 .Annotations(new Dictionary<string, string> {
-                    {"external-dns.alpha.kubernetes.io/hostname",$"data.{Values.ReleaseName}.{Values.DomainSuffix}" }
-                });
-            //.Type("LoadBalancer")
+                    {"external-dns.alpha.kubernetes.io/hostname",$"data.{Values.ReleaseName}.{Values.DomainSuffix}" },
+                    {"kubernetes.io/ingress.class", "nginx" }
+                })
+            .Type("ClusterIP");
             return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }
     }

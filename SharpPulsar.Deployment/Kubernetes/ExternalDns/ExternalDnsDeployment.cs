@@ -1,24 +1,23 @@
 ﻿using k8s;
 using k8s.Models;
-using System;
 using System.Collections.Generic;
-using System.Text;
-
 namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
 {
     internal class ExternalDnsDeployment
     {
         private readonly IKubernetes _client;
         private readonly V1Deployment _deployment;
-        public ExternalDnsDeployment(IKubernetes client)
+        private readonly AzureConfig _azureConfig;
+        public ExternalDnsDeployment(IKubernetes client, Secret secret)
         {
             _client = client;
+            _azureConfig = new AzureConfig(secret);
             _deployment = new V1Deployment
             {
                 Metadata = new V1ObjectMeta
                 {
                     Name = "external-dns",
-                    NamespaceProperty = Values.Namespace
+                    NamespaceProperty = "cert-manager"
                 },
                 Spec = new V1DeploymentSpec
                 {
@@ -64,7 +63,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
                                     {
                                         new V1VolumeMount
                                         {
-                                            Name = "secret-azuredns-config",
+                                            Name = "azure-config-file",
                                             MountPath = "/etc/kubernetes",
                                             ReadOnlyProperty = true
                                         }
@@ -75,10 +74,10 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
                             {
                                 new V1Volume
                                 {
-                                    Name = "secret-azuredns-config",
+                                    Name = "azure-config-file",
                                     Secret = new V1SecretVolumeSource
                                     {
-                                        SecretName = "secret-azuredns-config"
+                                        SecretName = "azure-config-file"
                                     }
                                 }
                             }
@@ -88,12 +87,25 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
             };
         }
 
-        public RunResult Run(string dryRun = default)
+        public IEnumerable<RunResult> Run(string dryRun = default)
         {
             var result = new RunResult();
             try
             {
-                result.Response = _client.CreateNamespacedDeployment(_deployment, Values.Namespace, dryRun);
+                result = _azureConfig.Run(dryRun);
+            }
+            catch (Microsoft.Rest.RestException ex)
+            {
+                if (ex is Microsoft.Rest.HttpOperationException e)
+                    result.HttpOperationException = e;
+                else
+                    result.Exception = ex;
+                result.Success = false;
+            }
+            yield return result;
+            try
+            {                
+                result.Response = _client.CreateNamespacedDeployment(_deployment, "cert-manager", dryRun);
                 result.Success = true;
             }
             catch (Microsoft.Rest.RestException ex)
@@ -104,7 +116,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
                     result.Exception = ex;
                 result.Success = false;
             }
-            return result;
+            yield return result;
         }
     }
 }

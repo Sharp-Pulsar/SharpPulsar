@@ -20,6 +20,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _binding.Metadata.Name = name;
             return this;
         }
+        public RoleBindingBuilder Namespace(string name)
+        {
+            _binding.Metadata.NamespaceProperty = name;
+            return this;
+        }
         public RoleBindingBuilder Labels(IDictionary<string, string> labels)
         {
             _binding.Metadata.Labels = labels;

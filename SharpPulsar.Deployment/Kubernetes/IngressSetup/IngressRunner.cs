@@ -1,5 +1,7 @@
 ﻿using k8s;
 using SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps;
+using SharpPulsar.Deployment.Kubernetes.IngressSetup.Rbac;
+using SharpPulsar.Deployment.Kubernetes.IngressSetup.Services;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,20 +17,43 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
     //https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/
     internal class IngressRunner
     {
+        private readonly IngressNamespace _ingressNamespace;
         private readonly NginxConfiguration _nginxConfiguration;
         private readonly TcpServices _tcpServices;
         private readonly UdpServices _udpServices;
         
         private readonly Ingress _centerIngress;
         private readonly TcpIngressService _tcpIngressService;
+
+        private readonly IngressRole _ingressRole;
+        private readonly IngressRoleBinding _ingressRoleBinding;
+        private readonly IngressClusterRole _ingressClusterRole;
+        private readonly IngressClusterRoleBinding _ingressClusterRoleBinding;
+        private readonly IngressServiceAccount _ingressServiceAccount;
+
+        private readonly ControllerConfigMap _controllerConfigMap;
+
+        private readonly IngressService _ingressService;
+        private readonly Deployment _deployment;
         public IngressRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
         {
+            _ingressNamespace = new IngressNamespace(k8s);
             _centerIngress = new Ingress(k8s);
-
+            _controllerConfigMap = new ControllerConfigMap(configMap);
             _nginxConfiguration = new NginxConfiguration(configMap);
             _tcpServices = new TcpServices(configMap);
             _udpServices = new UdpServices(configMap);
             _tcpIngressService = new TcpIngressService(service);
+
+            _ingressClusterRole = new IngressClusterRole(clusterRole);
+            _ingressClusterRoleBinding = new IngressClusterRoleBinding(clusterRoleBinding);
+            _ingressRole = new IngressRole(role);
+            _ingressRoleBinding = new IngressRoleBinding(roleBinding);
+
+            _ingressServiceAccount = new IngressServiceAccount(serviceAccount);
+            _ingressService = new IngressService(service);
+
+            _deployment = new Deployment(k8s);
 
         }
         /// <summary>
@@ -48,6 +73,15 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
             RunResult result;
             if (Values.Ingress.Enabled)
             {
+                //result =  _ingressNamespace.Run(dryRun);
+                //yield return result;
+                
+                //result = _controllerConfigMap.Run(dryRun);
+                //yield return result;
+
+                //result = _ingressServiceAccount.Run(dryRun);
+                //yield return result;
+
                 result = _nginxConfiguration.Run(dryRun);
                 yield return result;
 
@@ -59,7 +93,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     var httpPort = Values.Ports.Proxy["http"].ToString();
                     var ports = new Dictionary<string, string>
                     {
-                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Service}:{httpPort}"
+                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Proxy.Service}:{httpPort}",
+                        ["8081"] = $"{Values.Namespace}/{Values.Settings.PrestoCoord.Service}:8081"
                     };
                     if(Values.Tls.Enabled && Values.Tls.Proxy.Enabled)
                     {
@@ -86,7 +121,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     var httpPort = Values.Ports.Broker["http"].ToString();
                     var ports = new Dictionary<string, string>
                     {
-                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Broker.Service}:{httpPort}"
+                        [httpPort] = $"{Values.Namespace}/{Values.Settings.Broker.Service}:{httpPort}",
+                        ["8081"] = $"{Values.Namespace}/{Values.Settings.PrestoCoord.Service}:8081"
                     };
                     if (Values.Tls.Enabled && Values.Tls.Broker.Enabled)
                     {
@@ -108,6 +144,24 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     result = _tcpIngressService.Run(dryRun);
                     yield return result;
                 }
+
+                /*result = _ingressClusterRole.Run(dryRun);
+                yield return result;
+
+                result = _ingressClusterRoleBinding.Run(dryRun);
+                yield return result;
+
+                result = _ingressRole.Run(dryRun);
+                yield return result;
+
+                result = _ingressRoleBinding.Run(dryRun);
+                yield return result;
+
+                result = _ingressService.Run(dryRun);
+                yield return result;
+
+                result = _deployment.Run(dryRun);
+                yield return result;*/
 
                 var tls = new HashSet<string>();
                 foreach (var r in Values.Ingress.HttpRules)

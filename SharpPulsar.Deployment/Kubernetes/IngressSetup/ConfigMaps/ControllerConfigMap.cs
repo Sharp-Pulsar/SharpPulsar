@@ -1,24 +1,22 @@
-﻿using k8s.Models;
+﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
 {
-    internal class UdpServices
+    internal class ControllerConfigMap
     {
         private readonly ConfigMap _config;
-        public UdpServices(ConfigMap config)
+        public ControllerConfigMap(ConfigMap config)
         {
             _config = config;
         }
         public RunResult Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata($"{Values.ReleaseName}-udp-services", Values.Namespace)
+                .Metadata("ingress-nginx-controller", Values.Namespace)
                 .Labels(new Dictionary<string, string>
                             {
-                                {"app", Values.App },
-                                {"cluster", Values.Cluster },
-                                {"release", Values.ReleaseName },
                                 {"component", "ingress-nginx" },
                             });
 
@@ -26,3 +24,4 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
         }
     }
 }
+

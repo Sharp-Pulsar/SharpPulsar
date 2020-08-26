@@ -15,8 +15,9 @@ namespace SharpPulsar.Deployment.Kubernetes
             Component zooKeeperComponent = null, Component bookKeeperComponent = null, Component autoRecoveryComponent = null, Component brokerComponent = null,
             Component proxyComponent = null, Component prestoCoordinatorComponent = null, Component prestoWorkComponent = null, Component toolSetComponent = null, Component functionComponent = null,
             Component kopComponent = null, Ingress ingress = null, Component prometheus = null, ConfigmapReloads configmapReloads = null, Component grafana = null,
-            CertificateSecrets certificateSecrets = null, string domainSuffix = null)
+            CertificateSecrets certificateSecrets = null, string domainSuffix = null, ExternalDnsConfig externalDnsConfig = null)
         {
+            ExternalDnsConfig = externalDnsConfig ?? new ExternalDnsConfig();
             DomainSuffix = domainSuffix ?? "splsar.ga";
             //Testing purposes
             CertificateSecrets = certificateSecrets ?? new CertificateSecrets{};
@@ -347,6 +348,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             Grafana = grafana ?? GrafanaComponent();
 
         }
+        internal static ExternalDnsConfig ExternalDnsConfig { get; set; }
         public static string DomainSuffix { get; set; }
         public static CertificateSecrets CertificateSecrets { get; set; }
         public static Rbac Rbac { get; set; } = new Rbac();
@@ -1176,19 +1178,27 @@ namespace SharpPulsar.Deployment.Kubernetes
         { 
             new HttpRule
             {
-                Host = "grafana.splsar.ga",
+                Host = $"monitor.{Values.ReleaseName}.{Values.DomainSuffix}",
                 Port = 3000,
-                Path = "/",
+                Path = "/grafana",
                 Tls = true,
                 ServiceName = $"{Values.ReleaseName}-{Values.Settings.Grafana.Name}"
             }, 
             new HttpRule
             {
-                Host = "presto.splsar.ga",
+                Host = $"presto.{Values.ReleaseName}.{Values.DomainSuffix}",
                 Port = 8081,
                 Path = "/",
                 Tls = true,
                 ServiceName = Values.Settings.PrestoCoord.Service
+            },
+            new HttpRule
+            {
+                Host = $"monitor.{Values.ReleaseName}.{Values.DomainSuffix}",
+                Port = 80,
+                Path = "/",
+                Tls = true,
+                ServiceName = "default"
             }
         };
         public sealed class IngressSetting
@@ -1201,8 +1211,8 @@ namespace SharpPulsar.Deployment.Kubernetes
         }
         public sealed class HttpRule
         {
-            public bool Tls { get; set; } = true;
             public string Host { get; set; }
+            public bool Tls { get; set; } = true;
             public int Port { get; set; }
             public string Path { get; set; }
             public string ServiceName { get; set; }
@@ -1549,6 +1559,14 @@ namespace SharpPulsar.Deployment.Kubernetes
         public IDictionary<string, string> PulsarDetector { get; set; }
         public IDictionary<string, string> Grafana { get; set; }
         public IDictionary<string, string> AlertManager { get; set; }
+    }
+    public sealed class ExternalDnsConfig
+    {
+        public string TenantId { get; set; }
+        public string SubscriptionId { get; set; }
+        public string ResourceGroup { get; set; }
+        public string ServicePrincipalAppId { get; set; }
+        public string ServicePrincipalSecret { get; set; }
     }
     public class Rbac
     {

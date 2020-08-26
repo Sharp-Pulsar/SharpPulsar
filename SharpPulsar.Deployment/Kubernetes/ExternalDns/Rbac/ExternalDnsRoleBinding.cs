@@ -16,7 +16,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns.Rbac
             _config.Builder()
                 .Name("external-dns-viewer")
                 .RoleRef("rbac.authorization.k8s.io", "ClusterRole", "external-dns")
-                .AddSubject(Values.Namespace, "ServiceAccount", "external-dns");
+                .AddSubject("cert-manager", "ServiceAccount", "external-dns");
             return _config.Run(_config.Builder(), dryRun);
         }
     }

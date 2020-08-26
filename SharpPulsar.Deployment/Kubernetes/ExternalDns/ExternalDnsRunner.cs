@@ -13,7 +13,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
         private readonly ExternalDnsRoleBinding _externalDnsRoleBinding;
         private readonly ExternalDnsServiceAccount _externalDnsServiceAccount;
         private readonly ExternalDnsDeployment _externalDnsDeployment;
-        public ExternalDnsRunner(IKubernetes client, ClusterRole role, ClusterRoleBinding roleBinding, ServiceAccount serviceAccount)
+        public ExternalDnsRunner(IKubernetes client, Secret secret, ClusterRole role, ClusterRoleBinding roleBinding, ServiceAccount serviceAccount)
         {
             if (role == null)
                 throw new ArgumentNullException("ClusterRole is null");
@@ -26,7 +26,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
             _externalDnsRole = new ExternalDnsRole(role);
             _externalDnsRoleBinding = new ExternalDnsRoleBinding(roleBinding);
             _externalDnsServiceAccount = new ExternalDnsServiceAccount(serviceAccount);
-            _externalDnsDeployment = new ExternalDnsDeployment(client);
+            _externalDnsDeployment = new ExternalDnsDeployment(client, secret);
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
@@ -41,8 +41,8 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
                 var rb = _externalDnsRoleBinding.Run(dryRun);
                 yield return rb;
 
-                var dep = _externalDnsDeployment.Run(dryRun);
-                yield return dep;
+                foreach(var dep in _externalDnsDeployment.Run(dryRun))
+                    yield return dep;
             }
         }
     }

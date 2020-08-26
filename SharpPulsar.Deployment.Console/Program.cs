@@ -9,8 +9,26 @@ namespace SharpPulsar.Deployment.Console
     {
         static void Main(string[] args)
         {
-            
-            System.Console.WriteLine("Hello World!");
+            System.Console.WriteLine("Enter Azure TenantId:");
+            var tenantid = System.Console.ReadLine();
+            System.Console.WriteLine("Enter Azure SubscriptionId");
+            var subId = System.Console.ReadLine();
+            System.Console.WriteLine("Enter Azure Dns Resource Group");
+            var group = System.Console.ReadLine();
+            System.Console.WriteLine("Enter Service Principal App Id");
+            var appid = System.Console.ReadLine();
+            System.Console.WriteLine("Enter Service Principal Secret");
+            var secret = System.Console.ReadLine();
+
+            var azure = new ExternalDnsConfig
+            {
+                TenantId = tenantid,
+                SubscriptionId = subId,
+                ResourceGroup = group,
+                ServicePrincipalAppId = appid,
+                ServicePrincipalSecret = secret
+            };
+
             //var basePath = @"Kubernetes\Certificate\PEMs\";
             /*var certs = new CertificateSecrets
             {
@@ -47,7 +65,7 @@ namespace SharpPulsar.Deployment.Console
                     Private = File.ReadAllText($"{basePath}Zoo-Private.pem")
                 }
             };*/
-            new Values();
+            new Values(externalDnsConfig: azure);
             //do this only when you are creating a new instance of Values properties. Old value is used
             //Values.ReleaseName = "friday";
             var deploy = new DeploymentExecutor();
