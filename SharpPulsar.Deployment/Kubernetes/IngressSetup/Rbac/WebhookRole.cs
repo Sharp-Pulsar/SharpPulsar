@@ -29,7 +29,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Rbac
                     {"helm.sh/hook", "pre-install,pre-upgrade,post-install,post-upgrade"},
                     {"helm.sh/hook-delete-policy", "before-hook-creation,hook-succeeded"}
                 })
-                .AddRule(new[] { "" }, new[] { "secrets" }, new[] { "get", "create" }, new[] { "" });
+                .AddRule(new[] { "" }, new[] { "secrets" }, new[] { "get", "create" });
             return _config.Run(_config.Builder(), "ingress-nginx", dryRun);
         }
     }

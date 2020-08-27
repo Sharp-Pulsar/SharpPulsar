@@ -39,7 +39,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
                     new V1ServicePort{Name = "https-webhook", TargetPort = "webhook", Port = 443}
                 });
 
-            return _service.Run(_service.Builder(), Values.Namespace, dryRun);
+            return _service.Run(_service.Builder(), "ingress-nginx", dryRun);
         }
     }
 }

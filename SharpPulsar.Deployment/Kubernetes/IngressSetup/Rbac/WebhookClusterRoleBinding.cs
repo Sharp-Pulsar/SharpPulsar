@@ -14,7 +14,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Rbac
         public RunResult Run(string dryRun = default)
         {
             _config.Builder()
-                .Name("ingress-nginx")
+                .Name("ingress-nginx-admission")
                 .Labels(new Dictionary<string, string>
                 {
                     {"helm.sh/chart", "ingress-nginx-2.11.1"},

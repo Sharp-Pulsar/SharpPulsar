@@ -50,7 +50,7 @@ namespace SharpPulsar.Deployment.Kubernetes
             _bookieRunner = new BookieRunner(job, configMap, pdb, service, serviceAccount, statefulset, clusterRole, clusterRoleBinding, storage);
             _proxyRunner = new ProxyRunner(configMap, pdb, service, serviceAccount, statefulset);
             _prestoRunner = new PrestoRunner(configMap, statefulset, service);
-            _networkCenterRunner = new IngressRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret);
+            _networkCenterRunner = new IngressRunner(_client, configMap, service, serviceAccount, role, roleBinding, clusterRole, clusterRoleBinding, secret, job);
             
             _prometheusRunner = new PrometheusRunner(clusterRole, clusterRoleBinding, serviceAccount, service, configMap, statefulset);
             _grafanaRunner = new GrafanaRunner(_client, secret, service);
@@ -59,6 +59,10 @@ namespace SharpPulsar.Deployment.Kubernetes
         }
         public IEnumerable<RunResult> Run(string dryRun = default)
         {
+
+            foreach (var net in _networkCenterRunner.Run(dryRun))
+                yield return net;
+
             if (Values.NamespaceCreate)
             {
                 var result = new RunResult();
@@ -92,9 +96,6 @@ namespace SharpPulsar.Deployment.Kubernetes
             
             foreach (var pr in _prometheusRunner.Run(dryRun))
                 yield return pr;
-
-            foreach(var net in _networkCenterRunner.Run(dryRun))
-                yield return net;
 
             foreach(var dns in _externalDnsRunner.Run(dryRun))
                 yield return dns;

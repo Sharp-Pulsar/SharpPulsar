@@ -16,7 +16,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 Metadata = new V1ObjectMeta
                 {
                     Name = "ingress-nginx-controller",
-                    NamespaceProperty = Values.Namespace,
+                    NamespaceProperty = "ingress-nginx",
                     Labels = new Dictionary<string, string>
                     {
                         {"helm.sh/chart", "ingress-nginx-2.11.1"},
@@ -221,7 +221,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
             var result = new RunResult();
             try
             {
-                result.Response = _client.CreateNamespacedDeployment(_deployment, Values.Namespace, dryRun); 
+                result.Response = _client.CreateNamespacedDeployment(_deployment, "ingress-nginx", dryRun); 
                 result.Success = true;
             }
             catch (Microsoft.Rest.RestException ex)

@@ -41,6 +41,16 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             });
             return this;
         }
+        public RoleBuilder AddRule(string[] apiGroups, string[] resources, string[] verbs)
+        {
+            _role.Rules.Add(new V1PolicyRule
+            {
+                ApiGroups = apiGroups,
+                Resources = resources,
+                Verbs = verbs
+            });
+            return this;
+        }
         public V1Role Build()
         {
             return _role;
