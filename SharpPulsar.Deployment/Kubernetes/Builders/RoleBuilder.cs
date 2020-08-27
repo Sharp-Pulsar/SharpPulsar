@@ -25,6 +25,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _role.Metadata.Labels = labels;
             return this;
         }
+        public RoleBuilder Annotation(IDictionary<string, string> annot)
+        {
+            _role.Metadata.Annotations = annot;
+            return this;
+        }
         public RoleBuilder AddRule(string[] apiGroups, string[] resources, string[] verbs, string[] resourceNames)
         {
             _role.Rules.Add(new V1PolicyRule

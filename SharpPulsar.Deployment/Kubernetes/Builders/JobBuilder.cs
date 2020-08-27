@@ -27,6 +27,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _job.Metadata.Labels = labels;
             return this;
         }
+        public JobBuilder Annotation(IDictionary<string, string> annot)
+        {
+            _job.Metadata.Annotations = annot;
+            return this;
+        }
         public PodTemplateSpecBuilder TempBuilder()
         {
             return _tempBuilder;

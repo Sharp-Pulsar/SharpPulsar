@@ -13,13 +13,15 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Rbac
         public RunResult Run(string dryRun = default)
         {
             _config.Builder()
-                .Name($"{Values.ReleaseName}-ingress-nginx", Values.Namespace)
+                .Name("ingress-nginx", "ingress-nginx")
                 .Labels(new Dictionary<string, string>
                 {
-                    {"app", Values.App },
-                    {"cluster", Values.Cluster },
-                    {"release", Values.ReleaseName },
-                    {"component", "nginx-ingress-controller" }
+                    {"helm.sh/chart", "ingress-nginx-2.11.1"},
+                    {"app.kubernetes.io/name", "ingress-nginx"},
+                    {"app.kubernetes.io/instance", "ingress-nginx"},
+                    {"app.kubernetes.io/version", "0.34.1"},
+                    {"app.kubernetes.io/managed-by", "Helm"},
+                    {"app.kubernetes.io/component", "controller"}
                 })
                 .AddRule(new[] { "" }, new[] { "namespaces" }, new[] { "get" }, new[] {"" })
                 .AddRule(new[] { "" }, new[] { "configmaps", "pods", "secrets", "endpoints" }, new[] { "get", "list", "watch" }, new[] {"" })
@@ -35,7 +37,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Rbac
                 .AddRule(new[] { "" }, new[] { "configmaps" }, new[] { "create" }, new[] { ""})
                 .AddRule(new[] { "" }, new[] { "endpoints" }, new[] { "create", "get", "update" }, new[] { "" })
                 .AddRule(new[] { "" }, new[] { "events" }, new[] { "create", "patch" }, new[] { "" });
-            return _config.Run(_config.Builder(), Values.Namespace, dryRun);
+            return _config.Run(_config.Builder(), "ingress-nginx", dryRun);
         }
     }
 }

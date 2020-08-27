@@ -15,14 +15,16 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
             {
                 Metadata = new V1ObjectMeta
                 {
-                    Name = $"{Values.ReleaseName}-nginx-ingress-controller",
+                    Name = "ingress-nginx-controller",
                     NamespaceProperty = Values.Namespace,
                     Labels = new Dictionary<string, string>
                     {
-                        {"app", Values.App },
-                        {"cluster", Values.Cluster },
-                        {"release", Values.ReleaseName },
-                        {"component", "nginx-ingress-controller" }
+                        {"helm.sh/chart", "ingress-nginx-2.11.1"},
+                        {"app.kubernetes.io/name", "ingress-nginx"},
+                        {"app.kubernetes.io/instance", "ingress-nginx"},
+                        {"app.kubernetes.io/version", "0.34.1"},
+                        {"app.kubernetes.io/managed-by", "Helm"},
+                        {"app.kubernetes.io/component", "controller"}
                     }
                 },
                 Spec = new V1DeploymentSpec
@@ -32,49 +34,48 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                     {
                         MatchLabels = new Dictionary<string, string>
                             {
-                                { "app", Values.App },
-                                { "release", Values.ReleaseName },
-                                {"component", "nginx-ingress-controller" }
+                                {"app.kubernetes.io/name", "ingress-nginx"},
+                                {"app.kubernetes.io/instance", "ingress-nginx"},
+                                {"app.kubernetes.io/component", "controller"}
                             }
                     },
+                    RevisionHistoryLimit = 10,
+                    MinReadySeconds = 0,
                     Template = new V1PodTemplateSpec
                     {
                         Metadata = new V1ObjectMeta
                         {
                             Labels = new Dictionary<string, string>
                             {
-                                { "app", Values.App },
-                                { "cluster", Values.Cluster },
-                                { "release", Values.ReleaseName },
-                                {"component", "nginx-ingress-controller" }
-                            },
-                            Annotations = new Dictionary<string, string>
-                            {
-                                { "prometheus.io/port", "10254"},
-                                { "prometheus.io/scrape", "true" }
+                                {"app.kubernetes.io/name", "ingress-nginx"},
+                                {"app.kubernetes.io/instance", "ingress-nginx"},
+                                {"app.kubernetes.io/component", "controller"}
                             }
                         },
                         Spec = new V1PodSpec
                         {
-                            NodeSelector = new Dictionary<string, string> { },
-                            Tolerations = new List<V1Toleration> { },
+                            DnsPolicy = "ClusterFirst",
                             ServiceAccount = "ingress-nginx",
-                            TerminationGracePeriodSeconds = Values.Ingress.GracePeriodSeconds,
+                            TerminationGracePeriodSeconds = 300,
                             Containers = new List<V1Container>
                             {
                                 new V1Container
                                 {
-                                    Name = "nginx-ingress-controller",
+                                    Name = "controller",
                                     Image = $"{Values.Images.Ingress.Repository}:{Values.Images.Ingress.Tag}",
                                     ImagePullPolicy = Values.Images.Ingress.PullPolicy,
                                     Args = new List<string>
                                     {
                                         @"/nginx-ingress-controller",
-                                        $"--configmap={Values.Namespace}/{Values.ReleaseName}-nginx-configuration",
-                                        $"--tcp-services-configmap={Values.Namespace}/{Values.ReleaseName}-tcp-services",
-                                        $"--udp-services-configmap={Values.Namespace}/{Values.ReleaseName}-udp-services",
-                                        $"--publish-service={Values.Namespace}/{Values.ReleaseName}-ingress-nginx",
-                                        "--annotations-prefix=nginx.ingress.kubernetes.io"
+                                        "--tcp-services-configmap=$(POD_NAMESPACE)/tcp-services",
+                                        "--udp-services-configmap=$(POD_NAMESPACE)/udp-services",
+                                        "--publish-service=$(POD_NAMESPACE)/ingress-nginx-controller",
+                                        "--election-id=ingress-controller-leader",
+                                        "--configmap=$(POD_NAMESPACE)/ingress-nginx-controller",
+                                        "--ingress-class=nginx",
+                                        "--validating-webhook=:8443",
+                                        "--validating-webhook-certificate=/usr/local/certificates/cert",
+                                        "--validating-webhook-key=/usr/local/certificates/key",
                                     },
                                     SecurityContext = new V1SecurityContext
                                     {
@@ -130,6 +131,12 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                             Name = "https",
                                             ContainerPort = 443,
                                             Protocol = "TCP"
+                                        },
+                                        new V1ContainerPort
+                                        {
+                                            Name = "webhook",
+                                            ContainerPort = 8443,
+                                            Protocol = "TCP"
                                         }
                                     },
                                     LivenessProbe = new V1Probe
@@ -140,11 +147,11 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                             Port = 10254,
                                             Scheme = "HTTP"
                                         },
-                                        FailureThreshold = 3,
+                                        FailureThreshold = 5,
                                         InitialDelaySeconds = 10,
                                         PeriodSeconds = 10,
                                         SuccessThreshold = 1,
-                                        TimeoutSeconds = 10
+                                        TimeoutSeconds = 1
                                     },
                                     ReadinessProbe = new V1Probe
                                     {
@@ -158,7 +165,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                         InitialDelaySeconds = 10,
                                         PeriodSeconds = 10,
                                         SuccessThreshold = 1,
-                                        TimeoutSeconds = 10
+                                        TimeoutSeconds = 1
                                     },
                                     Lifecycle = new V1Lifecycle
                                     {
@@ -172,6 +179,34 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                                                 }
                                             }
                                         }
+                                    },
+                                    VolumeMounts = new List<V1VolumeMount>
+                                    {
+                                        new V1VolumeMount
+                                        {
+                                            Name = "webhook-cert",
+                                            MountPath = "/usr/local/certificates/",
+                                            ReadOnlyProperty = true
+                                        }
+                                    },
+                                    Resources = new V1ResourceRequirements
+                                    {
+                                        Requests = new Dictionary<string, ResourceQuantity>
+                                        {
+                                            {"memory", new ResourceQuantity("90Mi") },
+                                            {"cpu", new ResourceQuantity("100m") },
+                                        }
+                                    }
+                                }
+                            },
+                            Volumes = new List<V1Volume>
+                            {
+                                new V1Volume
+                                {
+                                    Name = "webhook-cert",
+                                    Secret = new V1SecretVolumeSource
+                                    {
+                                        SecretName = "ingress-nginx-admission"
                                     }
                                 }
                             }

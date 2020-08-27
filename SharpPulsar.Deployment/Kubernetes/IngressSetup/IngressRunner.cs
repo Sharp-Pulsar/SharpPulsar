@@ -33,7 +33,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
 
         private readonly ControllerConfigMap _controllerConfigMap;
 
-        private readonly IngressService _ingressService;
+        private readonly ControllerService _ingressService;
         private readonly Deployment _deployment;
         public IngressRunner(IKubernetes k8s, ConfigMap configMap, Service service, ServiceAccount serviceAccount, Role role, RoleBinding roleBinding, ClusterRole clusterRole, ClusterRoleBinding clusterRoleBinding, Secret secret)
         {
@@ -51,7 +51,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
             _ingressRoleBinding = new IngressRoleBinding(roleBinding);
 
             _ingressServiceAccount = new IngressServiceAccount(serviceAccount);
-            _ingressService = new IngressService(service);
+            _ingressService = new ControllerService(service);
 
             _deployment = new Deployment(k8s);
 

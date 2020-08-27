@@ -9,10 +9,27 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         private readonly PodSpecBuilder _podSpecBuilder;
         public PodTemplateSpecBuilder()
         {
-            _spec = new V1PodTemplateSpec();
+            _spec = new V1PodTemplateSpec {
+                Metadata = new V1ObjectMeta()
+            };
             _podSpecBuilder = new PodSpecBuilder();
         }
-        public PodTemplateSpecBuilder Metadata(IDictionary<string,string> labels, IDictionary<string,string> annotations)
+        public PodTemplateSpecBuilder Name(string name)
+        {
+            _spec.Metadata.Name = name;
+            return this;
+        }
+        public PodTemplateSpecBuilder Labels(IDictionary<string,string> labels)
+        {
+            _spec.Metadata.Labels = labels;
+            return this;
+        }
+        public PodTemplateSpecBuilder Annotations(IDictionary<string,string> annotations)
+        {
+            _spec.Metadata.Annotations = annotations;
+            return this;
+        }
+        public PodTemplateSpecBuilder Metadata(IDictionary<string, string> labels, IDictionary<string, string> annotations)
         {
             _spec.Metadata = new V1ObjectMeta
             {

@@ -24,6 +24,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _cluster.Metadata.Labels = labels;
             return this;
         }
+        public ClusterRoleBuilder Annotations(IDictionary<string, string> annot)
+        {
+            _cluster.Metadata.Annotations = annot;
+            return this;
+        }
         public ClusterRoleBuilder AddRule(string[] apiGroups, string[] resources, string[] verbs)
         {
             _cluster.Rules.Add(new V1PolicyRule

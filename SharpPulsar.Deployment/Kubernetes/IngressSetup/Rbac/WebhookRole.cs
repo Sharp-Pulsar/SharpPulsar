@@ -2,19 +2,19 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
+namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Rbac
 {
-    internal class ControllerConfigMap
+    internal class WebhookRole
     {
-        private readonly ConfigMap _config;
-        public ControllerConfigMap(ConfigMap config)
+        private readonly Role _config;
+        public WebhookRole(Role config)
         {
             _config = config;
         }
         public RunResult Run(string dryRun = default)
         {
             _config.Builder()
-                .Metadata("ingress-nginx-controller", "ingress-nginx")
+                .Name("ingress-nginx-admission", "ingress-nginx")
                 .Labels(new Dictionary<string, string>
                 {
                     {"helm.sh/chart", "ingress-nginx-2.11.1"},
@@ -22,14 +22,15 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
                     {"app.kubernetes.io/instance", "ingress-nginx"},
                     {"app.kubernetes.io/version", "0.34.1"},
                     {"app.kubernetes.io/managed-by", "Helm"},
-                    {"app.kubernetes.io/component", "controller"}
+                    {"app.kubernetes.io/component", "admission-webhook"}
                 })
-                .Data(new Dictionary<string, string>
+                .Annotation(new Dictionary<string, string>
                 {
-                    {"use-forwarded-headers", "true" }
-                });
+                    {"helm.sh/hook", "pre-install,pre-upgrade,post-install,post-upgrade"},
+                    {"helm.sh/hook-delete-policy", "before-hook-creation,hook-succeeded"}
+                })
+                .AddRule(new[] { "" }, new[] { "secrets" }, new[] { "get", "create" }, new[] { "" });
             return _config.Run(_config.Builder(), "ingress-nginx", dryRun);
         }
     }
 }
-

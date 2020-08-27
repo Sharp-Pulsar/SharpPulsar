@@ -15,12 +15,14 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
             _config.Builder()
                 .Metadata("tcp-services", "ingress-nginx")
                 .Labels(new Dictionary<string, string>
-                            {
-                                {"app", Values.App },
-                                {"cluster", Values.Cluster },
-                                {"release", Values.ReleaseName },
-                                {"component", "ingress-nginx" },
-                            })
+                {
+                    {"helm.sh/chart", "ingress-nginx-2.11.1"},
+                    {"app.kubernetes.io/name", "ingress-nginx"},
+                    {"app.kubernetes.io/instance", "ingress-nginx"},
+                    {"app.kubernetes.io/version", "0.34.1"},
+                    {"app.kubernetes.io/managed-by", "Helm"},
+                    {"app.kubernetes.io/component", "controller"}
+                })
                 .Data(ports);
 
             return _config.Run(_config.Builder(), "ingress-nginx", dryRun);

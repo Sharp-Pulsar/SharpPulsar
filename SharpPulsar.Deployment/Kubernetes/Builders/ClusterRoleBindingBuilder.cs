@@ -25,6 +25,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _binding.Metadata.Labels = labels;
             return this;
         }
+        public ClusterRoleBindingBuilder Annotations(IDictionary<string, string> annot)
+        {
+            _binding.Metadata.Annotations = annot;
+            return this;
+        }
         public ClusterRoleBindingBuilder RoleRef(string apiGroup, string kind, string name)
         {
             _binding.RoleRef.ApiGroup = apiGroup;

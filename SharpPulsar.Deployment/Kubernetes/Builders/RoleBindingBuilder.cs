@@ -30,6 +30,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
             _binding.Metadata.Labels = labels;
             return this;
         }
+        public RoleBindingBuilder Annotation(IDictionary<string, string> annot)
+        {
+            _binding.Metadata.Annotations = annot;
+            return this;
+        }
         public RoleBindingBuilder RoleRef(string apiGroup, string kind, string name)
         {
             _binding.RoleRef.ApiGroup = apiGroup;

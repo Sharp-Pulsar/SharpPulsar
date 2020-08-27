@@ -10,7 +10,7 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         {
             _serviceAccount = new V1ServiceAccount
             {
-                Metadata = new V1ObjectMeta()
+                Metadata = new V1ObjectMeta(),
             };
         }
         public ServiceAccountBuilder Metadata(string name, string @namespace = "")
@@ -23,6 +23,11 @@ namespace SharpPulsar.Deployment.Kubernetes.Builders
         public ServiceAccountBuilder Labels(IDictionary<string, string> labels)
         {
             _serviceAccount.Metadata.Labels = labels;
+            return this;
+        }
+        public ServiceAccountBuilder Annotation(IDictionary<string, string> annot)
+        {
+            _serviceAccount.Metadata.Annotations = annot;
             return this;
         }
         public V1ServiceAccount Build()
