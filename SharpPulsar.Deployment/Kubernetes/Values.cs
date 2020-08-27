@@ -1191,6 +1191,14 @@ namespace SharpPulsar.Deployment.Kubernetes
                 Path = "/",
                 Tls = true,
                 ServiceName = Values.Settings.PrestoCoord.Service
+            },
+            new HttpRule
+            {
+                Host = $"data.{Values.DomainSuffix}",
+                Port = 8080,
+                Path = "/",
+                Tls = true,
+                ServiceName = Values.Settings.Proxy.Service
             }
         };
         public sealed class IngressSetting

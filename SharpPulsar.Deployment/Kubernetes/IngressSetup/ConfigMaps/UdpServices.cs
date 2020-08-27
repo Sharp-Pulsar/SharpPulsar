@@ -1,5 +1,4 @@
-﻿using k8s.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
 {

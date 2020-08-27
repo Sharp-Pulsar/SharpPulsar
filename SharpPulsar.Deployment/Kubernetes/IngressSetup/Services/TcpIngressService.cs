@@ -20,11 +20,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
         }
         public TcpIngressService ConfigurePorts(ComponentTls tls, IDictionary<string, int> ports)
         {
-            var port = new List<V1ServicePort> 
-            { 
-                new V1ServicePort{Name = "grafana", Port = Values.Ports.Grafana["http"], Protocol = "TCP"},
-                new V1ServicePort{Name = "presto", Port = Values.Ports.PrestoCoordinator["http"], Protocol = "TCP"}
-            };
+            var port = new List<V1ServicePort>();
             if(Values.Tls.Enabled && tls.Enabled)
             {
                 port.AddRange(new[] 
@@ -47,20 +43,27 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.Services
         public RunResult Run(string dryRun = default)
         {
             _service.Builder()
-                .Metadata($"{Values.ReleaseName}-tcp-ingress", "ingress-nginx")
+                .Metadata($"{Values.ReleaseName}-tcp-ingress", Values.Namespace)
                 .Labels(new Dictionary<string, string> {
+                    {"app", Values.App },
+                    {"cluster", Values.Cluster },
+                    {"release", Values.ReleaseName },
+                    {"component", Values.Settings.Proxy.Name },
                     {"app.kubernetes.io/name", "ingress-nginx" },
                     {"app.kubernetes.io/part-of", "ingress-nginx" },
                 })
-                .Annotations(new Dictionary<string, string> {
+                /*.Annotations(new Dictionary<string, string> {
                     {"external-dns.alpha.kubernetes.io/hostname",$"data.{Values.DomainSuffix}" }
-                }).
-                Selector(new Dictionary<string, string> {
+                })*/
+                .Selector(new Dictionary<string, string> {
+                    {"app", Values.App },
+                    {"release", Values.ReleaseName },
+                    {"component",Values.Settings.Proxy.Name },
                     {"app.kubernetes.io/name", "ingress-nginx" },
                     {"app.kubernetes.io/part-of", "ingress-nginx" },
                 })
             .Type("ClusterIP");
-            return _service.Run(_service.Builder(), "ingress-nginx", dryRun);
+            return _service.Run(_service.Builder(), Values.Namespace, dryRun);
         }
     }
 }

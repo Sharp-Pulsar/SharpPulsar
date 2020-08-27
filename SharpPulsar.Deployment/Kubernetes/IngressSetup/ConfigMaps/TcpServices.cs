@@ -22,8 +22,8 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup.ConfigMaps
                     {"app.kubernetes.io/version", "0.34.1"},
                     {"app.kubernetes.io/managed-by", "Helm"},
                     {"app.kubernetes.io/component", "controller"}
-                })
-                .Data(ports);
+                });
+                //.Data(ports);
 
             return _config.Run(_config.Builder(), "ingress-nginx", dryRun);
         }
