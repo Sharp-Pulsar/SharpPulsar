@@ -82,8 +82,6 @@ namespace Samples
             if (string.IsNullOrWhiteSpace(endPoint))
                  throw new ArgumentException("endpoint cannot be null");
             var uri = new Uri(endPoint);
-            if(uri.Scheme.ToLower() != "pulsar")
-                throw new ArgumentException("endpoint scheme is invalid");
             Console.WriteLine("Is Broker behind a pulsar proxy(Y/N)");
             var proxy = Console.ReadLine();
             var useProxy = proxy.ToLower() == "y";

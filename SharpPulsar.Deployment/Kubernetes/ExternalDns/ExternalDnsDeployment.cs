@@ -50,7 +50,7 @@ namespace SharpPulsar.Deployment.Kubernetes.ExternalDns
                                 new V1Container
                                 {
                                     Name = "external-dns",
-                                    Image = "registry.opensource.zalan.do/teapot/external-dns:latest",
+                                    Image = "k8s.gcr.io/external-dns/external-dns:v0.7.3",
                                     Args = new List<string>
                                     {
                                         "--source=service",

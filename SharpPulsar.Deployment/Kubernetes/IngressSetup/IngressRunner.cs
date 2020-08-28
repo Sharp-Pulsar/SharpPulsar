@@ -220,7 +220,7 @@ namespace SharpPulsar.Deployment.Kubernetes.IngressSetup
                 }
                 _centerIngress.AddTls(tls.ToArray());
                 //So we wait: ingress-nginx-admission-patch needs to patch ingress-nginx-admission secret else ingress deployment fails
-                Thread.Sleep(TimeSpan.FromSeconds(30));
+                Thread.Sleep(TimeSpan.FromSeconds(60));
                 result = _centerIngress.Run(dryRun);
                 yield return result;
             }
