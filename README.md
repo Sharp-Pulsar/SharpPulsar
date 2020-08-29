@@ -97,7 +97,7 @@ var pulsarSystem = PulsarSystem.GetInstance(clientConfig);
                 .ConsumerEventListener(consumerListener)
                 .SubscriptionType(CommandSubscribe.SubType.Exclusive)
                 .Schema(jsonSchem)
-                
+                .SetConsumptionType(ConsumptionType.Queue)
                 .MessageListener(messageListener)
                 .StartMessageId(MessageIdFields.Earliest)
                 .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
