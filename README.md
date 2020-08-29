@@ -105,7 +105,9 @@ var pulsarSystem = PulsarSystem.GetInstance(clientConfig);
             system.PulsarConsumer(new CreateConsumer(jsonSchem, consumerConfig));
 ```
 4 - [Explore more](https://github.com/eaba/SharpPulsar/blob/master/Sample/Program.cs)
+
 5 - It is a big sin not to report any difficulties or issues being experienced using SharpPulsar
+
 ## License
 
 This project is licensed under the Apache License Version 2.0 - see the [LICENSE](LICENSE) file for details.
