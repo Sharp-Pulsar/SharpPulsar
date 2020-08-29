@@ -1258,7 +1258,8 @@ namespace Samples
                 sends.Add(new Send(student, metadata.ToImmutableDictionary(), $"{DateTimeOffset.Now.ToUnixTimeMilliseconds()}"));
             }
             var bulk = new BulkSend(sends, topic);
-            system.BulkSend(bulk, t.Producer);
+            foreach (var s in system.BulkSend(bulk, t.Producer))
+                Console.WriteLine(JsonSerializer.Serialize(s, new JsonSerializerOptions { WriteIndented = true}));
             Task.Delay(5000).Wait();
             File.AppendAllLines("receipts-bulk.txt", Receipts);
         }
@@ -1803,7 +1804,7 @@ namespace Samples
                 .EventListener(consumerListener)
                 .ReaderListener(readerListener)
                 .Topic(topic)
-                .StartMessageId(MessageIdFields.Latest)
+                .StartMessageId(MessageIdFields.Earliest)
                 .ReaderConfigurationData;
             system.PulsarReader(new CreateReader(jsonSchem, readerConfig));
         }

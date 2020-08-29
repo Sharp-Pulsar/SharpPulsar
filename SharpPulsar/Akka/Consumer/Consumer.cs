@@ -1122,7 +1122,7 @@ namespace SharpPulsar.Akka.Consumer
                     }
                 }
                 encryptionCtx = new EncryptionContext();
-                var encParam = new sbyte[MessageCryptoFields.IvLen];
+                var encParam = new sbyte[msgMetadata.EncryptionParam.Length];
                 msgMetadata.EncryptionParam.CopyTo((byte[])(object)encParam, 0);
                 int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
                 encryptionCtx.Keys = keys;
