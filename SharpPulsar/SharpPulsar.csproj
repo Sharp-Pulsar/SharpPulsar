@@ -40,22 +40,22 @@ Is it that SharpPulsar has no bugs? cause nobody is opening issues......</Packag
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.9" />
+    <PackageReference Include="akka" Version="1.4.10" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.5" />
     <PackageReference Include="Apache.Avro" Version="1.10.0" />
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="avroschemagenerator" Version="1.6.0" />
-    <PackageReference Include="BeetleX" Version="1.5.2.6" />
+    <PackageReference Include="BeetleX" Version="1.5.3.2" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.12.4" />
+    <PackageReference Include="Google.Protobuf" Version="3.13.0" />
     <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
     <PackageReference Include="IdentityModel" Version="4.3.1" />
     <PackageReference Include="JsonSubTypes" Version="1.7.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.1.11" />
     <PackageReference Include="Mail.dll" Version="3.0.20174.2011" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.6" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.7" />
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.21" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Nito.AsyncEx.Tasks" Version="5.0.0" />
