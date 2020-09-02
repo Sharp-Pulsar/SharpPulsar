@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using Akka.Configuration;
+using NLog;
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.Function;
@@ -85,6 +86,15 @@ namespace SharpPulsar.Akka
         }
         private PulsarSystem(ClientConfigurationData conf)
         {
+            var nlog = new NLog.Config.LoggingConfiguration();
+            var logfile = new NLog.Targets
+                .FileTarget("logFile")
+            {
+                FileName = "logs.log",
+                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}"
+            };
+            nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+            LogManager.Configuration = nlog;
             _topicSubTypes = new Dictionary<string, CommandSubscribe.SubType>();
             _managerState = new PulsarManagerState
             {

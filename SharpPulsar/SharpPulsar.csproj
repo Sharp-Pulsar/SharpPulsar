@@ -2,13 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>1.4.1</Version>
+    <Version>1.4.2</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Apache Pulsar, Akka.Net</PackageTags>
-    <PackageReleaseNotes>Destination array was not long enough fix
+    <PackageReleaseNotes>Removed NLog.config
 
-Is it that SharpPulsar has no bugs? cause nobody is opening issues......</PackageReleaseNotes>
+Configured NLog programmetically
+
+Logs to logs.log</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -37,6 +39,10 @@ Is it that SharpPulsar has no bugs? cause nobody is opening issues......</Packag
     <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
     <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
     <Compile Remove="Presto\FixJsonDataUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="NLog.config" />
   </ItemGroup>
 
   <ItemGroup>
@@ -90,9 +96,6 @@ Is it that SharpPulsar has no bugs? cause nobody is opening issues......</Packag
     <None Update="Akka\Function\Api\Swagger.json">
       <Generator>NSwagCodeGenerator</Generator>
       <LastGenOutput>Swagger.cs</LastGenOutput>
-    </None>
-    <None Update="NLog.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
