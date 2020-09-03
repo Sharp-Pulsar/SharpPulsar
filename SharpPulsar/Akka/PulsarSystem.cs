@@ -47,7 +47,7 @@ namespace SharpPulsar.Akka
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(ClientConfigurationData conf)
+        public static PulsarSystem GetInstance(ClientConfigurationData conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
         {
             if (_instance == null)
             {
@@ -55,7 +55,7 @@ namespace SharpPulsar.Akka
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf);
+                        _instance = new PulsarSystem(conf, loggingConfiguration);
                     }
                 }
             }
@@ -84,17 +84,19 @@ namespace SharpPulsar.Akka
             _conf = conf;
             _pulsarManager = _actorSystem.ActorOf(PulsarManager.Prop(conf, _managerState), "PulsarManager");
         }
-        private PulsarSystem(ClientConfigurationData conf)
+        private PulsarSystem(ClientConfigurationData conf, NLog.Config.LoggingConfiguration loggingConfiguration)
         {
             var nlog = new NLog.Config.LoggingConfiguration();
             var logfile = new NLog.Targets
                 .FileTarget("logFile")
             {
                 FileName = "logs.log",
-                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}"
+                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}",
+                ArchiveEvery = NLog.Targets.FileArchivePeriod.Hour,
+                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.DateAndSequence
             };
             nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
-            LogManager.Configuration = nlog;
+            LogManager.Configuration = loggingConfiguration ?? nlog;
             _topicSubTypes = new Dictionary<string, CommandSubscribe.SubType>();
             _managerState = new PulsarManagerState
             {
