@@ -4,18 +4,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Net;
-using System.Net.Security;
 using System.Reflection;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
-using BeetleX;
-using BeetleX.Buffers;
-using BeetleX.Clients;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Consumer;
@@ -36,8 +29,8 @@ namespace SharpPulsar.Akka.Network
     //https://thorsten-hans.com/custom-domains-in-azure-kubernetes-with-nginx-ingress-azure-cli
     public class ClientConnection: ReceiveActor, IWithUnboundedStash
     {
-        private uint? _frameSize;
-        private AsyncTcpClient _client;
+        //private uint? _frameSize;
+        //private AsyncTcpClient _client;
         private readonly IAuthentication _authentication;
         private PulsarStream _stream;
         private readonly IActorRef _self;
