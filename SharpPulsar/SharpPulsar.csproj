@@ -35,9 +35,9 @@ Logs to logs.log</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Impl\Schema\GenerateSchema.cs" />
-    <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
-    <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
+    <Compile Remove="Pulsar\Schema\GenerateSchema.cs" />
+    <Compile Remove="Pulsar\Schema\KeyValueSchema.cs" />
+    <Compile Remove="Pulsar\Schema\KeyValueSchemaInfo.cs" />
     <Compile Remove="Presto\FixJsonDataUtils.cs" />
   </ItemGroup>
 
