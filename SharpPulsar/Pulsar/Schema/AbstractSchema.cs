@@ -24,11 +24,10 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 namespace SharpPulsar.Pulsar.Schema
 {
     using SharpPulsar.Common.Schema;
+    using SharpPulsar.Pulsar.Api;
 
     public abstract class AbstractSchema : ISchema
 	{
-		public abstract ISchema Auto();
-
 		public abstract ISchema Json(ISchemaDefinition schemaDefinition);
 		public abstract ISchema Json(object pojo);
 

@@ -23,7 +23,7 @@ using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Shared;
 
-namespace SharpPulsar.Impl.Schema
+namespace SharpPulsar.Pulsar.Schema
 {
     /// <summary>
 	/// A schema for bytes array.
@@ -33,11 +33,6 @@ namespace SharpPulsar.Impl.Schema
 
 		private static readonly BytesSchema Instance = new BytesSchema();
         
-        public override ISchema Auto()
-        {
-            throw new System.NotImplementedException();
-        }
-
         public override ISchema Json(ISchemaDefinition schemaDefinition)
         {
             throw new System.NotImplementedException();

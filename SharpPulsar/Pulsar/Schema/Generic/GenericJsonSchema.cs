@@ -25,7 +25,7 @@ using SharpPulsar.Protocol.Schema;
 
 namespace SharpPulsar.Impl.Schema.Generic
 {
-    using IGenericRecordBuilder = Api.Schema.IGenericRecordBuilder;
+    using IGenericRecordBuilder = Pulsar.Api.Schema.IGenericRecordBuilder;
 	using SharpPulsar.Pulsar.Api.Schema;
 
 	/// <summary>

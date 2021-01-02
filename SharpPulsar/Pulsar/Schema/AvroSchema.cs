@@ -23,7 +23,7 @@ using SharpPulsar.Shared;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema
+namespace SharpPulsar.Pulsar.Schema
 {
 	using Api;
 	using SharpPulsar.Pulsar.Api.Schema;

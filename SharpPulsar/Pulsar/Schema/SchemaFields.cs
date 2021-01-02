@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Api;
 
-namespace SharpPulsar.Impl.Schema
+namespace SharpPulsar.Pulsar.Schema
 {
     public static class SchemaFields
     {

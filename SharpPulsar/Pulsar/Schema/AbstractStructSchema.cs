@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Pulsar.Api;
 using SharpPulsar.Pulsar.Api.Schema;
 using System;
 using System.Collections.Generic;
@@ -7,10 +8,8 @@ using System.Text;
 
 namespace SharpPulsar.Pulsar.Schema
 {
-    internal class AbstractStructSchema : AbstractSchema
+    public class AbstractStructSchema : AbstractSchema
     {
-        protected internal static readonly Logger LOG = LoggerFactory.getLogger(typeof(AbstractStructSchema));
-
         private readonly ISchemaInfo _schemaInfo;
         private ISchemaReader _reader;
         private ISchemaWriter _writer;
@@ -22,29 +21,29 @@ namespace SharpPulsar.Pulsar.Schema
         }
         public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-        public override ISchema Auto()
-        {
-            throw new NotImplementedException();
-        }
 
         public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
         {
             throw new NotImplementedException();
         }
 
-        public override object Decode(byte[] byteBuf, Type returnType)
+        public override sbyte[] Encode(object message)
         {
-            throw new NotImplementedException();
+            return _writer.Write(message);
         }
 
         public override object Decode(sbyte[] bytes, Type returnType)
         {
-            throw new NotImplementedException();
+            return _reader.Read(bytes);
+        }
+        public override object Decode(byte[] bytes, Type returnType)
+        {
+            return _reader.Read((sbyte[])(object)bytes);
         }
 
-        public override sbyte[] Encode(object message)
+        public override object Decode(byte[] bytes, sbyte[] schemaVersion, Type returnType)
         {
-            throw new NotImplementedException();
+            return _reader.Read((sbyte[])(object)bytes, schemaVersion);
         }
 
         public override ISchema Json(ISchemaDefinition schemaDefinition)

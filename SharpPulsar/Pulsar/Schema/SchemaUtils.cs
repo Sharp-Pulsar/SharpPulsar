@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Shared;
 
 /// <summary>
@@ -26,7 +27,7 @@ using SharpPulsar.Shared;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema
+namespace SharpPulsar.Pulsar.Schema
 {
 	
 
@@ -195,7 +196,27 @@ namespace SharpPulsar.Impl.Schema
         {
             return JsonSerializer.Deserialize<IDictionary<string, string>>(serializedProperties);
         }
+		public static bool GetJsr310ConversionEnabledFromSchemaInfo(SchemaInfo schemaInfo)
+		{
+			if (schemaInfo != null)
+			{
+				if(schemaInfo.Properties.TryGetValue(SchemaDefinitionBuilderImpl.Jsr310ConversionEnabled, out var st))
+				  return bool.Parse(st);
+			}
+			return false;
+		}
 
+		public static Avro.Schema ParseAvroSchema(string schemaJson)
+		{
+		 //Avro.Schema.Parse parser = new Avro.Schema();
+		 //parser.ValidateDefaults = false;
+			return Avro.Schema.Parse(schemaJson);
+		}
+
+		public static SchemaInfo ParseSchemaInfo(ISchemaDefinition schemaDefinition, SchemaType schemaType)
+		{
+			return SchemaInfo.Builder().schema(Encoding.UTF8.GetBytes(createAvroSchema(schemaDefinition).ToString())).properties(schemaDefinition.Properties).name("").type(schemaType).build();
+		}
 	}
 
 }

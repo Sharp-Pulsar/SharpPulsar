@@ -22,7 +22,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Shared;
 
-namespace SharpPulsar.Impl.Schema
+namespace SharpPulsar.Pulsar.Schema
 {
 	/// <summary>
 	/// Auto detect schema.
