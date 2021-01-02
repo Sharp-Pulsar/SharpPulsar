@@ -8,11 +8,11 @@ using System.Text;
 
 namespace SharpPulsar.Pulsar.Schema
 {
-    public class AbstractStructSchema : AbstractSchema
+    public class AbstractStructSchema<T> : AbstractSchema<T>
     {
         private readonly ISchemaInfo _schemaInfo;
-        private ISchemaReader _reader;
-        private ISchemaWriter _writer;
+        private ISchemaReader<T> _reader;
+        private ISchemaWriter<T> _writer;
         private ISchemaInfoProvider _schemaInfoProvider;
 
         public AbstractStructSchema(ISchemaInfo schemaInfo)
@@ -21,49 +21,21 @@ namespace SharpPulsar.Pulsar.Schema
         }
         public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-        public override sbyte[] Encode(object message)
+        public override sbyte[] Encode(T message)
         {
             return _writer.Write(message);
         }
 
-        public override T Decode<T>(sbyte[] bytes, T returnType = default)
+        public override T Decode(byte[] bytes)
         {
-            return _reader.Read(bytes, returnType);
-        }
-        public override T Decode<T>(byte[] bytes, T returnType = default)
-        {
-            return _reader.Read((sbyte[])(object)bytes, returnType);
+            return _reader.Read(bytes);
         }
 
-        public override T Decode<T>(byte[] bytes, sbyte[] schemaVersion, T returnType = default)
+        public override T Decode(byte[] bytes, byte[] schemaVersion)
         {
-            return _reader.Read((sbyte[])(object)bytes, schemaVersion, returnType);
+            return _reader.Read(bytes, schemaVersion);
         }
 
-        public override ISchema Json(ISchemaDefinition schemaDefinition)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override ISchema Json(object pojo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool RequireFetchingSchemaInfo()
-        {
-            return false;
-        }
-
-        public override bool SupportSchemaVersioning()
-        {
-            return false;
-        }
-
-        public override void Validate(sbyte[] message)
-        {
-            throw new NotImplementedException();
-        }
         public override ISchemaInfoProvider SchemaInfoProvider
         {
             set
@@ -75,7 +47,7 @@ namespace SharpPulsar.Pulsar.Schema
             }
         }
 
-        protected internal virtual ISchemaWriter Writer
+        protected internal virtual ISchemaWriter<T> Writer
         {
             set
             {
@@ -83,7 +55,7 @@ namespace SharpPulsar.Pulsar.Schema
             }
         }
 
-        protected internal virtual ISchemaReader Reader
+        protected internal virtual ISchemaReader<T> Reader
         {
             set
             {

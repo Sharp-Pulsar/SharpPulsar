@@ -27,7 +27,7 @@ namespace SharpPulsar.Pulsar.Schema
 	/// <summary>
 	/// A schema for `java.util.Date` or `java.sql.Date`.
 	/// </summary>
-	public class DateSchema : AbstractSchema
+	public class DateSchema : AbstractSchema<DateTime>
 	{
 
 	   private static readonly DateSchema _instance;
@@ -50,36 +50,25 @@ namespace SharpPulsar.Pulsar.Schema
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(object message)
+	   public override sbyte[] Encode(DateTime message)
 	   {
 		  if (null == message)
 		  {
 			 return null;
 		  }
 
-		  long date = ((DateTime)message).Ticks;
+		  long date = message.Ticks;
 		  return LongSchema.Of().Encode(date);
 	   }
 
-	   public override T Decode<T>(sbyte[] bytes)
+	   public override DateTime Decode(byte[] bytes)
 	   {
 		  if (null == bytes)
 		  {
 			 return default;
 		  }
 
-		  long decode = (long)LongSchema.Of().Decode(bytes, returnType);
-		  return new DateTime(decode);
-	   }
-
-	   public override object Decode(byte[] byteBuf, Type returnType)
-	   {
-		  if (null == byteBuf)
-		  {
-			 return null;
-		  }
-
-		  long decode = (long)LongSchema.Of().Decode(byteBuf, returnType);
+		  long decode = (long)LongSchema.Of().Decode(bytes);
 		  return new DateTime(decode);
 	   }
 

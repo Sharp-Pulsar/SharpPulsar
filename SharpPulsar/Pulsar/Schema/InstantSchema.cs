@@ -1,4 +1,9 @@
-﻿/// <summary>
+﻿using NodaTime;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,73 +21,68 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for `java.time.Instant`.
 	/// </summary>
-	public class InstantSchema : AbstractSchema<Instant>
+	public class InstantSchema : AbstractSchema<Instant?>
 	{
 
-	   private static readonly InstantSchema INSTANCE;
-	   private static readonly SchemaInfo SCHEMA_INFO;
+	   private static readonly InstantSchema _instance;
+	   private static readonly ISchemaInfo _schemaInfo;
 
 	   static InstantSchema()
 	   {
-		   SCHEMA_INFO = (new SchemaInfo()).setName("Instant").setType(SchemaType.INSTANT).setSchema(new sbyte[0]);
-		   INSTANCE = new InstantSchema();
+			var info = new SchemaInfo
+			{
+				Name = "Instant",
+				Type = SchemaType.INSTANT,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new InstantSchema();
 	   }
 
-	   public static InstantSchema of()
+	   public static InstantSchema Of()
 	   {
-		  return INSTANCE;
+		  return _instance;
 	   }
 
-	   public override sbyte[] encode(Instant message)
-	   {
-		  if (null == message)
-		  {
-			 return null;
-		  }
-		  // Instant is accurate to nanoseconds and requires two value storage.
-		  ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
-		  buffer.putLong(message.EpochSecond);
-		  buffer.putInt(message.Nano);
-		  return buffer.array();
-	   }
+		public override sbyte[] Encode(Instant? message)
+		{
+			if (null == message)
+			{
+				return null;
+			}
+			// Instant is accurate to nanoseconds and requires two value storage.
+			/*ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
+			buffer.putLong(message.EpochSecond);
+			buffer.putInt(message.Nano);
+			  return LongSchema.Of().Encode(epochDay);
+			  return buffer.array();*/
+			long epochDay = message.Value.ToDateTimeOffset().ToUnixTimeMilliseconds();
+			return LongSchema.Of().Encode(epochDay);
+		}
 
-	   public override Instant decode(sbyte[] bytes)
+	   public override Instant? Decode(byte[] bytes)
 	   {
 		  if (null == bytes)
 		  {
 			 return null;
 		  }
-		  ByteBuffer buffer = ByteBuffer.wrap(bytes);
-		  long epochSecond = buffer.Long;
-		  int nanos = buffer.Int;
-		  return Instant.ofEpochSecond(epochSecond, nanos);
+			//ByteBuffer buffer = ByteBuffer.wrap(bytes);
+			//long epochSecond = buffer.Long;
+			//int nanos = buffer.Int;
+			long? decode = LongSchema.Of().Decode(bytes);
+			return Instant.FromDateTimeOffset(DateTimeOffset.FromUnixTimeMilliseconds(decode.Value));
 	   }
 
-	   public override Instant decode(ByteBuf byteBuf)
-	   {
-		  if (null == byteBuf)
-		  {
-			 return null;
-		  }
-		  long epochSecond = byteBuf.readLong();
-		  int nanos = byteBuf.readInt();
-		  return Instant.ofEpochSecond(epochSecond, nanos);
-	   }
-
-	   public override SchemaInfo SchemaInfo
+	   public override ISchemaInfo SchemaInfo
 	   {
 		   get
 		   {
-			  return SCHEMA_INFO;
+			  return _schemaInfo;
 		   }
 	   }
 	}

@@ -25,7 +25,7 @@ namespace SharpPulsar.Pulsar.Api.Schema
 	/// Deserialize messages from bytes.
 	/// </summary>
 
-	public interface ISchemaReader
+	public interface ISchemaReader<T>
 	{
 
 		/// <summary>
@@ -33,9 +33,9 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// </summary>
 		/// <param name="bytes"> the data </param>
 		/// <returns> the serialized object </returns>
-		virtual T Read<T>(sbyte[] bytes, T returnType = default)
+		virtual T Read(byte[] bytes)
 		{
-			return Read(bytes, 0, bytes.Length, returnType);
+			return Read(bytes, 0, bytes.Length);
 		}
 
 		/// <summary>
@@ -45,14 +45,14 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// <param name="offset"> the byte[] initial position </param>
 		/// <param name="length"> the byte[] read length </param>
 		/// <returns> the serialized object </returns>
-		T Read<T>(sbyte[] bytes, int offset, int length, T returnType = default);
+		T Read(byte[] bytes, int offset, int length);
 
 		/// <summary>
 		/// serialize bytes convert pojo.
 		/// </summary>
 		/// <param name="inputStream"> the stream of message </param>
 		/// <returns> the serialized object </returns>
-		T Read<T>(Stream inputStream, T returnType = default);
+		T Read(Stream inputStream);
 
 		/// <summary>
 		/// Serialize bytes convert pojo.
@@ -60,9 +60,9 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// <param name="bytes"> the data </param>
 		/// <param name="schemaVersion"> the schema version of message </param>
 		/// <returns> the serialized object </returns>
-		virtual T Read<T>(sbyte[] bytes, sbyte[] schemaVersion, T returnType = default)
+		virtual T Read(byte[] bytes, byte[] schemaVersion)
 		{
-			return Read(bytes, 0, bytes.Length, returnType);
+			return Read(bytes, 0, bytes.Length);
 		}
 
 		/// <summary>
@@ -71,9 +71,9 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// <param name="inputStream"> the stream of message </param>
 		/// <param name="schemaVersion"> the schema version of message </param>
 		/// <returns> the serialized object </returns>
-		virtual T Read<T>(Stream inputStream, sbyte[] schemaVersion, T returnType = default)
+		virtual T Read(Stream inputStream, sbyte[] schemaVersion)
 		{
-			return Read(inputStream, returnType);
+			return Read(inputStream);
 		}
 
 		/// <summary>

@@ -115,12 +115,12 @@ namespace SharpPulsar.Pulsar
 			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
-		public static ISchema GetSchema(ISchemaInfo schemaInfo)
+		public static ISchema<object> GetSchema(ISchemaInfo schemaInfo)
 		{
-			return AutoConsumeSchema.GetSchema((SchemaInfo)schemaInfo);
+			return (ISchema<object>)AutoConsumeSchema.GetSchema((SchemaInfo)schemaInfo);
 		}
 
-		public static IGenericSchema GetGenericSchema(ISchemaInfo schemaInfo)
+		public static IGenericSchema<IGenericRecord> GetGenericSchema(ISchemaInfo schemaInfo)
 		{
 			return GenericSchemaImpl.Of((SchemaInfo)schemaInfo);
 		}

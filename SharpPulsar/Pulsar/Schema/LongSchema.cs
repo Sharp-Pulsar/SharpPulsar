@@ -26,7 +26,7 @@ namespace SharpPulsar.Pulsar.Schema
 	/// <summary>
 	/// A schema for `Long`.
 	/// </summary>
-	public class LongSchema : AbstractSchema
+	public class LongSchema : AbstractSchema<long?>
 	{
 
 		private static readonly LongSchema _instance;
@@ -37,7 +37,7 @@ namespace SharpPulsar.Pulsar.Schema
 			var info = new SchemaInfo
 			{
 				Name = "INT64",
-				Type = SchemaType.Int64,
+				Type = SchemaType.INT64,
 				Schema = new sbyte[0]
 			};
 			_schemaInfo = info;
@@ -49,7 +49,7 @@ namespace SharpPulsar.Pulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message, Type returnType)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -57,15 +57,7 @@ namespace SharpPulsar.Pulsar.Schema
 			}
 		}
 
-		public override void Validate(byte[] message, Type returnType)
-		{
-			if (message.Length != 8)
-			{
-				throw new SchemaSerializationException("Size of data received by LongSchema is not 8");
-			}
-		}
-
-		public override sbyte[] Encode(object data)
+		public override sbyte[] Encode(long? data)
 		{
 			if (null == data)
 			{
@@ -73,40 +65,23 @@ namespace SharpPulsar.Pulsar.Schema
 			}
 			else
 			{
-				return new sbyte[] {(sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data};
+				return new sbyte[] {(sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data.Value};
 			}
 		}
 
-		public override object Decode(sbyte[] bytes, Type returnType)
+		public override long? Decode(byte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			Validate(bytes, returnType);
+			Validate(bytes);
 			long value = 0L;
 			foreach (sbyte b in bytes)
 			{
 				value <<= 8;
                 value |= b & 0xFF;
 			}
-			return value;
-		}
-
-		public override object Decode(byte[] byteBuf, Type returnType)
-		{
-			if (null == byteBuf)
-			{
-				return null;
-			}
-			Validate(byteBuf, returnType);
-			long value = 0L;
-			for (int i = 0; i < 8; i++)
-			{
-				value <<= 8;
-				value |= byteBuf[i] & 0xFF;
-			}
-
 			return value;
 		}
 

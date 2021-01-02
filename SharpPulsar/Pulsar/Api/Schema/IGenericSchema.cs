@@ -21,11 +21,12 @@
 namespace SharpPulsar.Pulsar.Api.Schema
 {
 	using SharpPulsar.Api;
+    using System;
 
-	/// <summary>
-	/// A schema that serializes and deserializes between <seealso cref="IGenericRecord"/> and bytes.
-	/// </summary>
-	public interface IGenericSchema : ISchema 
+    /// <summary>
+    /// A schema that serializes and deserializes between <seealso cref="IGenericRecord"/> and bytes.
+    /// </summary>
+    public interface IGenericSchema<T> : ISchema<T> where T: IGenericRecord
 	{
 
 		/// <summary>
@@ -39,6 +40,17 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// </summary>
 		/// <returns> generic record builder </returns>
 		IGenericRecordBuilder NewRecordBuilder();
+
+		static IGenericSchema<T> Of(ISchemaInfo schemaInfo)
+		{
+			throw new Exception("GenericSchema interface implementation class must rewrite this method !");
+		}
+
+		static IGenericSchema<T> Of(ISchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
+		{
+			throw new Exception("GenericSchema interface implementation class must rewrite this method !");
+		}
+
 
 	}
 

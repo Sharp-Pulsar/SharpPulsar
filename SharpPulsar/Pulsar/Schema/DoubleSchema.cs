@@ -1,4 +1,8 @@
-﻿using SharpPulsar.Pulsar.Schema;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Pulsar.Schema;
+using SharpPulsar.Shared;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -17,30 +21,36 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
 
 	/// <summary>
 	/// A schema for `Double`.
 	/// </summary>
-	public class DoubleSchema : AbstractSchema
+	public class DoubleSchema : AbstractSchema<double?>
 	{
 
-		private static readonly DoubleSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		private static readonly DoubleSchema _instance;
+		private static readonly ISchemaInfo _schemaInfo;
 
 		static DoubleSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("Double").setType(SchemaType.DOUBLE).setSchema(new sbyte[0]);
-			INSTANCE = new DoubleSchema();
+			var info = new SchemaInfo
+			{
+				Name = "Double",
+				Type = SchemaType.DOUBLE,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new DoubleSchema();
 		}
 
-		public static DoubleSchema of()
+		public static DoubleSchema Of()
 		{
-			return INSTANCE;
+			return _instance;
 		}
 
-		public override void validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -48,16 +58,8 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override void validate(ByteBuf message)
-		{
-			if (message.readableBytes() != 8)
-			{
-				throw new SchemaSerializationException("Size of data received by DoubleSchema is not 8");
-			}
-		}
 
-
-		public override sbyte[] encode(double? message)
+		public override sbyte[] Encode(double? message)
 		{
 			if (null == message)
 			{
@@ -65,49 +67,33 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				long bits = System.BitConverter.DoubleToInt64Bits(message);
+				long bits = System.BitConverter.DoubleToInt64Bits(message.Value);
 				return new sbyte[] {(sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte) bits};
 			}
 		}
 
-		public override double? decode(sbyte[] bytes)
+		public override double? Decode(byte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			validate(bytes);
+			Validate(bytes);
 			long value = 0;
 			foreach (sbyte b in bytes)
 			{
 				value <<= 8;
 				value |= b & 0xFF;
 			}
-			return Double.longBitsToDouble(value);
+			
+			return System.BitConverter.Int64BitsToDouble(value);
 		}
 
-		public override double? decode(ByteBuf byteBuf)
-		{
-			if (null == byteBuf)
-			{
-				return null;
-			}
-			validate(byteBuf);
-			long value = 0;
-
-			for (int i = 0; i < 8; i++)
-			{
-				value <<= 8;
-				value |= byteBuf.getByte(i) & 0xFF;
-			}
-			return Double.longBitsToDouble(value);
-		}
-
-		public override SchemaInfo SchemaInfo
+		public override ISchemaInfo SchemaInfo
 		{
 			get
 			{
-				return SCHEMA_INFO;
+				return _schemaInfo;
 			}
 		}
 	}

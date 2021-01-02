@@ -31,10 +31,10 @@ namespace SharpPulsar.Impl.Schema
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoConsumeSchema : ISchema
+	public class AutoConsumeSchema : ISchema<IGenericRecord>
 	{
 
-		private ISchema _schema;
+		private ISchema<IGenericRecord> _schema;
 
 		private string _topicName;
 
@@ -42,7 +42,7 @@ namespace SharpPulsar.Impl.Schema
 
 		private ISchemaInfoProvider _schemaInfoProvider;
 
-		public virtual ISchema Schema
+		public virtual ISchema<IGenericRecord> Schema
 		{
 			set => this._schema = value;
         }
@@ -57,7 +57,7 @@ namespace SharpPulsar.Impl.Schema
 		{
 			EnsureSchemaInitialized();
 
-			_schema.Validate(message, null);
+			_schema.Validate(message);
 		}
 
 		public bool SupportSchemaVersioning()
@@ -65,7 +65,7 @@ namespace SharpPulsar.Impl.Schema
 			return true;
 		}
 
-		public sbyte[] Encode(object message)
+		public sbyte[] Encode(IGenericRecord message)
 		{
 			if(!(message is IGenericRecord))
 				throw  new ArgumentException($"{message.GetType()} is not IGenericRecord");
@@ -106,9 +106,9 @@ namespace SharpPulsar.Impl.Schema
             Log.LogInformation("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
         }
 
-		private IGenericSchema GenerateSchema(SchemaInfo schemaInfo)
+		private IGenericSchema<IGenericRecord> GenerateSchema(SchemaInfo schemaInfo)
 		{
-			if (schemaInfo.Type != SchemaType.Avro && schemaInfo.Type != SchemaType.Json)
+			if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
 			{
 				throw new System.Exception("Currently auto consume only works for topics with avro or json schemas");
 			}
@@ -116,21 +116,96 @@ namespace SharpPulsar.Impl.Schema
 			// to decode the messages.
 			return GenericSchemaImpl.Of(schemaInfo, false);
 		}
-
-		public static ISchema GetSchema(SchemaInfo schemaInfo)
+		public ISchema<IGenericRecord> Clone()
 		{
-			switch (schemaInfo.Type.Value)
+			ISchema<IGenericRecord> schema = ISchema<IGenericRecord>.AutoConsume();
+			if (_schema != null)
+			{
+				schema.ConfigureSchemaInfo(_topicName, _componentName, _schema.SchemaInfo);
+			}
+			else
+			{
+				schema.ConfigureSchemaInfo(_topicName, _componentName, null);
+			}
+			if (_schemaInfoProvider != null)
+			{
+				schema.SchemaInfoProvider = _schemaInfoProvider;
+			}
+			return schema;
+		}
+		public static object GetSchema(SchemaInfo schemaInfo)
+		{
+			switch (schemaInfo.Type.innerEnumValue)
 			{ 
-				case -1:
+				case SchemaType.InnerEnum.INT32:
 					return BytesSchema.Of();
-				case 4:
-				case 2:
+				case SchemaType.InnerEnum.AVRO:
+				case SchemaType.InnerEnum.JSON:
 					return GenericSchemaImpl.Of(schemaInfo);
 				default:
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}
+			/*switch (schemaInfo.Type)
+		{
+			case INT8:
+				return ByteSchema.of();
+			case INT16:
+				return ShortSchema.of();
+			case INT32:
+				return IntSchema.of();
+			case INT64:
+				return LongSchema.of();
+			case STRING:
+				return StringSchema.utf8();
+			case FLOAT:
+				return FloatSchema.of();
+			case DOUBLE:
+				return DoubleSchema.of();
+			case BOOLEAN:
+				return BooleanSchema.of();
+			case BYTES:
+				return BytesSchema.of();
+			case DATE:
+				return DateSchema.of();
+			case TIME:
+				return TimeSchema.of();
+			case TIMESTAMP:
+				return TimestampSchema.of();
+			case INSTANT:
+				return InstantSchema.of();
+			case LOCAL_DATE:
+				return LocalDateSchema.of();
+			case LOCAL_TIME:
+				return LocalTimeSchema.of();
+			case LOCAL_DATE_TIME:
+				return LocalDateTimeSchema.of();
+			case JSON:
+				return GenericJsonSchema.of(schemaInfo);
+			case AVRO:
+				return GenericAvroSchema.of(schemaInfo);
+			case PROTOBUF_NATIVE:
+				return GenericProtobufNativeSchema.of(schemaInfo);
+			case KEY_VALUE:
+				KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.decodeKeyValueSchemaInfo(schemaInfo);
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
+//ORIGINAL LINE: Schema<?> keySchema = getSchema(kvSchemaInfo.getKey());
+				Schema<object> keySchema = getSchema(kvSchemaInfo.Key);
+//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
+//ORIGINAL LINE: Schema<?> valueSchema = getSchema(kvSchemaInfo.getValue());
+				Schema<object> valueSchema = getSchema(kvSchemaInfo.Value);
+				return KeyValueSchema.of(keySchema, valueSchema);
+			default:
+				throw new System.ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 		}
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<AutoConsumeSchema>();
+*/
+		}
+
+        object ICloneable.Clone()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<AutoConsumeSchema>();
 	}
 
 }

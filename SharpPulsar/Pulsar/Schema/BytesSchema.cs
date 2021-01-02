@@ -35,19 +35,9 @@ namespace SharpPulsar.Pulsar.Schema
         
         
         public override ISchemaInfo SchemaInfo {get;}
-        public override bool SupportSchemaVersioning()
-        {
-            return false;
-        }
-
-        public override ISchemaInfoProvider SchemaInfoProvider
-        {
-            set => throw new System.NotImplementedException();
-        }
-
         public BytesSchema()
 		{
-            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.Bytes, Schema = new sbyte[0]};
+            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.BYTES, Schema = new sbyte[0]};
             SchemaInfo = s;
 		}
 
@@ -63,18 +53,9 @@ namespace SharpPulsar.Pulsar.Schema
 			return (sbyte[])(object)message;
 		}
 
-        public override object Decode(sbyte[] bytes, Type returnType)
+        public override byte[] Decode(byte[] bytes)
 		{
-			return (T)Convert.ChangeType(bytes, typeof(T));
-		}
-
-		public override object Decode(byte[] byteBuf, Type returnType)
-		{
-			if (byteBuf == null)
-			{
-				return null;
-			}
-			return Convert.ChangeType(byteBuf, returnType);
+			return bytes;
 		}
 
 	}

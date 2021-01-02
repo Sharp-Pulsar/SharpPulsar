@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,70 +20,61 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for `java.sql.Time`.
 	/// </summary>
-	public class TimeSchema : AbstractSchema<Time>
+	public class TimeSchema : AbstractSchema<DateTime?>
 	{
 
-	   private static readonly TimeSchema INSTANCE;
-	   private static readonly SchemaInfo SCHEMA_INFO;
+	   private static readonly TimeSchema _instance;
+	   private static readonly ISchemaInfo _schemaInfo;
 
 	   static TimeSchema()
 	   {
-		   SCHEMA_INFO = (new SchemaInfo()).setName("Time").setType(SchemaType.TIME).setSchema(new sbyte[0]);
-		   INSTANCE = new TimeSchema();
+			var info = new SchemaInfo
+			{
+				Name = "Time",
+				Type = SchemaType.TIME,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new TimeSchema();
 	   }
 
-	   public static TimeSchema of()
+	   public static TimeSchema Of()
 	   {
-		  return INSTANCE;
+		  return _instance;
 	   }
 
-	   public override sbyte[] encode(Time message)
+	   public override sbyte[] Encode(DateTime? message)
 	   {
 		  if (null == message)
 		  {
 			 return null;
 		  }
 
-		  long? time = message.Time;
-		  return LongSchema.of().encode(time);
+		  long? time = new DateTimeOffset(message.Value).ToUnixTimeMilliseconds();
+		  return LongSchema.Of().Encode(time.Value);
 	   }
 
-	   public override Time decode(sbyte[] bytes)
+	   public override DateTime? Decode(byte[] bytes)
 	   {
 		  if (null == bytes)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(bytes);
-		  return new Time(decode);
+		  long? decode = LongSchema.Of().Decode(bytes);
+		  return DateTimeOffset.FromUnixTimeMilliseconds(decode.Value).DateTime;
 	   }
 
-	   public override Time decode(ByteBuf byteBuf)
-	   {
-		  if (null == byteBuf)
-		  {
-			 return null;
-		  }
-
-		  long? decode = LongSchema.of().decode(byteBuf);
-		  return new Time(decode);
-	   }
-
-	   public override SchemaInfo SchemaInfo
+	   public override ISchemaInfo SchemaInfo
 	   {
 		   get
 		   {
-			  return SCHEMA_INFO;
+			  return _schemaInfo;
 		   }
 	   }
 	}

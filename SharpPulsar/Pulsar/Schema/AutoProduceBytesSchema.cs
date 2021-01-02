@@ -28,30 +28,30 @@ namespace SharpPulsar.Pulsar.Schema
 	/// <summary>
 	/// Auto detect schema.
 	/// </summary>
-	public class AutoProduceBytesSchema : ISchema
+	public class AutoProduceBytesSchema<T> : ISchema<byte[]>
 	{
 
 		private bool _requireSchemaValidation = true;
-		private ISchema _schema;
+		private ISchema<T> _schema;
 
 		public AutoProduceBytesSchema()
 		{
 		}
 
-		public AutoProduceBytesSchema(ISchema schema)
+		public AutoProduceBytesSchema(ISchema<T> schema)
 		{
 			_schema = schema;
 			var schemaInfo = schema.SchemaInfo;
-			_requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.Bytes && schemaInfo.Type != SchemaType.None;
+			_requireSchemaValidation = schemaInfo != null && schemaInfo.Type != SchemaType.BYTES && schemaInfo.Type != SchemaType.NONE;
 		}
 
-		public virtual ISchema Schema
+		public virtual ISchema<T> Schema
 		{
             get => _schema;
             set
 			{
 				_schema = value;
-				_requireSchemaValidation = value.SchemaInfo != null && SchemaType.Bytes != value.SchemaInfo.Type && SchemaType.None != value.SchemaInfo.Type;
+				_requireSchemaValidation = value.SchemaInfo != null && SchemaType.BYTES != value.SchemaInfo.Type && SchemaType.NONE != value.SchemaInfo.Type;
 			}
 		}
 
@@ -70,10 +70,10 @@ namespace SharpPulsar.Pulsar.Schema
 		{
 			EnsureSchemaInitialized();
 
-			_schema.Validate(message, null);
+			_schema.Validate(message);
 		}
 
-		public sbyte[] Encode(object message)
+		public sbyte[] Encode(byte[] message)
 		{
 			if(!(message is sbyte[]))
 				throw new ArgumentException($"{message.GetType()} is not sbyte[]");
@@ -82,10 +82,10 @@ namespace SharpPulsar.Pulsar.Schema
 			if (_requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				_schema.Validate((sbyte[])message, null);
+				_schema.Validate((sbyte[])(object)message);
 			}
 
-			return (sbyte[])message;
+			return (sbyte[])(object)message;
 		}
 
 		public sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
@@ -95,13 +95,22 @@ namespace SharpPulsar.Pulsar.Schema
 			if (_requireSchemaValidation)
 			{
 				// verify the message can be detected by the underlying schema
-				_schema.Decode(bytes, schemaVersion, typeof(sbyte[]));
+				_schema.Decode(bytes, schemaVersion);
 			}
 
 			return bytes;
 		}
+		public ISchema<byte[]> Clone()
+		{
+			return new AutoProduceBytesSchema<byte[]>((ISchema<byte[]>)_schema.Clone());
+		}
 
-		public virtual ISchemaInfo SchemaInfo
+        object ICloneable.Clone()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual ISchemaInfo SchemaInfo
 		{
 			get
 			{

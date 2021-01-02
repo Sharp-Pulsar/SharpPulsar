@@ -1,4 +1,8 @@
-﻿using System;
+﻿using NodaTime;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,75 +22,70 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 
 	/// <summary>
 	/// A schema for `java.time.LocalDateTime`.
 	/// </summary>
-	public class LocalDateTimeSchema : AbstractSchema<DateTime>
+	public class LocalDateTimeSchema : AbstractSchema<LocalDateTime?>
 	{
 
-	   private static readonly LocalDateTimeSchema INSTANCE;
-	   private static readonly SchemaInfo SCHEMA_INFO;
+	   private static readonly LocalDateTimeSchema _instance;
+	   private static readonly ISchemaInfo _schemaInfo;
 	   public const string DELIMITER = ":";
 
 	   static LocalDateTimeSchema()
 	   {
-		   SCHEMA_INFO = (new SchemaInfo()).setName("LocalDateTime").setType(SchemaType.LOCAL_DATE_TIME).setSchema(new sbyte[0]);
-		   INSTANCE = new LocalDateTimeSchema();
+			var info = new SchemaInfo
+			{
+				Name = "LocalDateTime",
+				Type = SchemaType.LocalDateTime,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new LocalDateTimeSchema();
 	   }
 
 	   public static LocalDateTimeSchema of()
 	   {
-		  return INSTANCE;
+		  return _instance;
 	   }
 
-	   public override sbyte[] encode(DateTime message)
+	   public override sbyte[] Encode(LocalDateTime? message)
 	   {
 		  if (null == message)
 		  {
 			 return null;
 		  }
-		  //LocalDateTime is accurate to nanoseconds and requires two value storage.
-		  ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
-		  buffer.putLong(message.toLocalDate().toEpochDay());
-		  buffer.putLong(message.toLocalTime().toNanoOfDay());
-		  return buffer.array();
-	   }
+			//LocalDateTime is accurate to nanoseconds and requires two value storage.
+			//ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
+			//buffer.putLong(message.toLocalDate().toEpochDay());
+			//buffer.putLong(message.toLocalTime().toNanoOfDay());
+			long? epochDay = new DateTimeOffset(message.Value.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
+			return LongSchema.Of().Encode(epochDay);
+		}
 
-	   public override DateTime decode(sbyte[] bytes)
-	   {
-		  if (null == bytes)
-		  {
-			 return null;
-		  }
-		  ByteBuffer buffer = ByteBuffer.wrap(bytes);
-		  long epochDay = buffer.Long;
-		  long nanoOfDay = buffer.Long;
-		  return new DateTime(LocalDate.ofEpochDay(epochDay), LocalTime.ofNanoOfDay(nanoOfDay));
-	   }
+		public override LocalDateTime? Decode(byte[] bytes)
+		{
+			if (null == bytes)
+			{
+				return null;
+			}
+			//ByteBuffer buffer = ByteBuffer.wrap(bytes);
+			//long epochDay = buffer.Long;
+			//long nanoOfDay = buffer.Long;
+			//return new DateTime(LocalDate.ofEpochDay(epochDay), LocalTime.ofNanoOfDay(nanoOfDay));
+			long? decode = LongSchema.Of().Decode(bytes);
+			return LocalDateTime.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode.Value).DateTime);
+		}
 
-	   public override DateTime decode(ByteBuf byteBuf)
-	   {
-		  if (null == byteBuf)
-		  {
-			 return null;
-		  }
-		  long epochDay = byteBuf.readLong();
-		  long nanoOfDay = byteBuf.readLong();
-		  return new DateTime(LocalDate.ofEpochDay(epochDay), LocalTime.ofNanoOfDay(nanoOfDay));
-	   }
 
-	   public override SchemaInfo SchemaInfo
+	   public override ISchemaInfo SchemaInfo
 	   {
 		   get
 		   {
-			  return SCHEMA_INFO;
+			  return _schemaInfo;
 		   }
 	   }
 	}

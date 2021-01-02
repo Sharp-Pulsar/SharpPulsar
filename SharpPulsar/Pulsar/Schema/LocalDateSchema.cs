@@ -1,4 +1,9 @@
-﻿/// <summary>
+﻿using NodaTime;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,70 +21,62 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `java.time.LocalDate`.
 	/// </summary>
-	public class LocalDateSchema : AbstractSchema<LocalDate>
+	public class LocalDateSchema : AbstractSchema<LocalDate?>
 	{
 
-	   private static readonly LocalDateSchema INSTANCE;
-	   private static readonly SchemaInfo SCHEMA_INFO;
+	   private static readonly LocalDateSchema _instance;
+	   private static readonly ISchemaInfo _schemaInfo;
 
 	   static LocalDateSchema()
 	   {
-		   SCHEMA_INFO = (new SchemaInfo()).setName("LocalDate").setType(SchemaType.LOCAL_DATE).setSchema(new sbyte[0]);
-		   INSTANCE = new LocalDateSchema();
+			var info = new SchemaInfo
+			{
+				Name = "LocalDate",
+				Type = SchemaType.LocalDate,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new LocalDateSchema();
 	   }
 
-	   public static LocalDateSchema of()
+	   public static LocalDateSchema Of()
 	   {
-		  return INSTANCE;
+		  return _instance;
 	   }
 
-	   public override sbyte[] encode(LocalDate message)
+	   public override sbyte[] Encode(LocalDate? message)
 	   {
 		  if (null == message)
 		  {
 			 return null;
 		  }
 
-		  long? epochDay = message.toEpochDay();
-		  return LongSchema.of().encode(epochDay);
+		  long? epochDay = new DateTimeOffset(message.Value.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
+		  return LongSchema.Of().Encode(epochDay);
 	   }
 
-	   public override LocalDate decode(sbyte[] bytes)
+	   public override LocalDate? Decode(byte[] bytes)
 	   {
 		  if (null == bytes)
 		  {
 			 return null;
 		  }
 
-		  long? decode = LongSchema.of().decode(bytes);
-		  return LocalDate.ofEpochDay(decode);
+		  long? decode = LongSchema.Of().Decode(bytes);
+		  return LocalDate.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode.Value).DateTime);
 	   }
 
-	   public override LocalDate decode(ByteBuf byteBuf)
-	   {
-		  if (null == byteBuf)
-		  {
-			 return null;
-		  }
-
-		  long? decode = LongSchema.of().decode(byteBuf);
-		  return LocalDate.ofEpochDay(decode);
-	   }
-
-	   public override SchemaInfo SchemaInfo
+	   public override ISchemaInfo SchemaInfo
 	   {
 		   get
 		   {
-			  return SCHEMA_INFO;
+			  return _schemaInfo;
 		   }
 	   }
 	}

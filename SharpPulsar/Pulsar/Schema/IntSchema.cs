@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,34 +20,35 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 	/// <summary>
 	/// A schema for `Integer`.
 	/// </summary>
-	public class IntSchema : AbstractSchema<int>
+	public class IntSchema : AbstractSchema<int?>
 	{
 
-		private static readonly IntSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		private static readonly IntSchema _instance;
+		private static readonly ISchemaInfo _schemaInfo;
 
 		static IntSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("INT32").setType(SchemaType.INT32).setSchema(new sbyte[0]);
-			INSTANCE = new IntSchema();
+			var info = new SchemaInfo
+			{
+				Name = "INT32",
+				Type = SchemaType.INT32,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new IntSchema();
 		}
 
-		public static IntSchema of()
+		public static IntSchema Of()
 		{
-			return INSTANCE;
+			return _instance;
 		}
 
-		public override void validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -51,15 +56,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override void validate(ByteBuf message)
-		{
-			if (message.readableBytes() != 4)
-			{
-				throw new SchemaSerializationException("Size of data received by IntSchema is not 4");
-			}
-		}
-
-		public override sbyte[] encode(int? message)
+		public override sbyte[] Encode(int? message)
 		{
 			if (null == message)
 			{
@@ -67,17 +64,17 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				return new sbyte[] {(sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), message.Value};
+				return new sbyte[] {(sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message.Value};
 			}
 		}
 
-		public override int? decode(sbyte[] bytes)
+		public override int? Decode(byte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			validate(bytes);
+			Validate(bytes);
 			int value = 0;
 			foreach (sbyte b in bytes)
 			{
@@ -87,29 +84,11 @@ namespace org.apache.pulsar.client.impl.schema
 			return value;
 		}
 
-		public override int? decode(ByteBuf byteBuf)
-		{
-			if (null == byteBuf)
-			{
-				return null;
-			}
-			validate(byteBuf);
-			int value = 0;
-
-			for (int i = 0; i < 4; i++)
-			{
-				value <<= 8;
-				value |= byteBuf.getByte(i) & 0xFF;
-			}
-
-			return value;
-		}
-
-		public override SchemaInfo SchemaInfo
+		public override ISchemaInfo SchemaInfo
 		{
 			get
 			{
-				return SCHEMA_INFO;
+				return _schemaInfo;
 			}
 		}
 	}

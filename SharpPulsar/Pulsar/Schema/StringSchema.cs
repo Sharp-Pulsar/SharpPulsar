@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,17 +24,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static com.google.common.@base.Preconditions.checkArgument;
-
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using FastThreadLocal = io.netty.util.concurrent.FastThreadLocal;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-
 
 	/// <summary>
 	/// Schema definition for Strings encoded in UTF-8 format.
@@ -38,67 +35,74 @@ namespace org.apache.pulsar.client.impl.schema
 
 		internal static readonly string CHARSET_KEY;
 
-		private static readonly SchemaInfo DEFAULT_SCHEMA_INFO;
-		private static readonly Charset DEFAULT_CHARSET;
+		private static readonly ISchemaInfo DefaultSchemaInfo;
+		private static readonly Encoding DefaultEncoding;
 		private static readonly StringSchema UTF8;
 
 		static StringSchema()
 		{
 			// Ensure the ordering of the static initialization
 			CHARSET_KEY = "__charset";
-			DEFAULT_CHARSET = StandardCharsets.UTF_8;
-			DEFAULT_SCHEMA_INFO = (new SchemaInfo()).setName("String").setType(SchemaType.STRING).setSchema(new sbyte[0]);
-
-			UTF8 = new StringSchema(StandardCharsets.UTF_8);
-		}
-
-		private static readonly FastThreadLocal<sbyte[]> tmpBuffer = new FastThreadLocalAnonymousInnerClass();
-
-		private class FastThreadLocalAnonymousInnerClass : FastThreadLocal<sbyte[]>
-		{
-			protected internal override sbyte[] initialValue()
+			DefaultEncoding = Encoding.UTF8;
+			var info = new SchemaInfo
 			{
-				return new sbyte[1024];
-			}
+				Name = "String",
+				Type = SchemaType.STRING,
+				Schema = new sbyte[0]
+			};
+			DefaultSchemaInfo = info;
+
+			UTF8 = new StringSchema(Encoding.UTF8);
 		}
 
-		public static StringSchema fromSchemaInfo(SchemaInfo schemaInfo)
+		public static StringSchema FromSchemaInfo(SchemaInfo schemaInfo)
 		{
-			checkArgument(SchemaType.STRING == schemaInfo.Type, "Not a string schema");
-			string charsetName = schemaInfo.Properties.get(CHARSET_KEY);
+			if(SchemaType.STRING != schemaInfo.Type)
+				throw new ArgumentException("Not a string schema");
+
+			string charsetName = schemaInfo.Properties[CHARSET_KEY];
 			if (null == charsetName)
 			{
 				return UTF8;
 			}
 			else
 			{
-				return new StringSchema(Charset.forName(charsetName));
+				return new StringSchema(Encoding.GetEncoding(charsetName));
 			}
 		}
 
-		public static StringSchema utf8()
+		public static StringSchema Utf8()
 		{
 			return UTF8;
 		}
 
-		private readonly Charset charset;
-		private readonly SchemaInfo schemaInfo;
+		private readonly Encoding _encoding;
+		private readonly ISchemaInfo _schemaInfo;
 
 		public StringSchema()
 		{
-			this.charset = DEFAULT_CHARSET;
-			this.schemaInfo = DEFAULT_SCHEMA_INFO;
+			_encoding = DefaultEncoding;
+			_schemaInfo =  DefaultSchemaInfo;
 		}
 
-		public StringSchema(Charset charset)
+		public StringSchema(Encoding encoding)
 		{
-			this.charset = charset;
-			IDictionary<string, string> properties = new Dictionary<string, string>();
-			properties[CHARSET_KEY] = charset.name();
-			this.schemaInfo = (new SchemaInfo()).setName(DEFAULT_SCHEMA_INFO.Name).setType(SchemaType.STRING).setSchema(DEFAULT_SCHEMA_INFO.Schema).setProperties(properties);
+			_encoding = encoding;
+            IDictionary<string, string> properties = new Dictionary<string, string>
+            {
+                [CHARSET_KEY] = encoding.EncodingName
+            };
+			var info = new SchemaInfo
+			{
+				Name = DefaultSchemaInfo.Name,
+				Type = SchemaType.STRING,
+				Schema = DefaultSchemaInfo.Schema,
+				Properties = properties
+			};
+			_schemaInfo = info;
 		}
 
-		public virtual sbyte[] encode(string message)
+		public override sbyte[] Encode(string message)
 		{
 			if (null == message)
 			{
@@ -106,48 +110,27 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				return message.GetBytes(charset);
+				return (sbyte[])(object)_encoding.GetBytes(message);
 			}
 		}
 
-		public virtual string decode(sbyte[] bytes)
+		public override string Decode(byte[] bytes)
 		{
 			if (null == bytes)
 			{
-				return null;
+				return string.Empty;
 			}
 			else
 			{
-				return StringHelper.NewString(bytes, charset);
+				return _encoding.GetString(bytes);
 			}
 		}
 
-		public override string decode(ByteBuf byteBuf)
-		{
-			if (null == byteBuf)
-			{
-				return null;
-			}
-			else
-			{
-				int size = byteBuf.readableBytes();
-				sbyte[] bytes = tmpBuffer.get();
-				if (size > bytes.Length)
-				{
-					bytes = new sbyte[size * 2];
-					tmpBuffer.set(bytes);
-				}
-				byteBuf.readBytes(bytes, 0, size);
-
-				return StringHelper.NewString(bytes, 0, size, charset);
-			}
-		}
-
-		public virtual SchemaInfo SchemaInfo
+		public override ISchemaInfo SchemaInfo
 		{
 			get
 			{
-				return schemaInfo;
+				return _schemaInfo;
 			}
 		}
 	}

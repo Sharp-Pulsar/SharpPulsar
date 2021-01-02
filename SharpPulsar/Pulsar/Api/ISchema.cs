@@ -42,7 +42,7 @@ namespace SharpPulsar.Pulsar.Api
 		/// <exception cref="Exceptions.SchemaSerializationException"> if it is not a valid message </exception>
 		virtual void Validate(sbyte[] message)
 		{
-			Decode(message, returnType);
+			Decode(message);
 		}
 
 		/// <summary>
@@ -88,7 +88,7 @@ namespace SharpPulsar.Pulsar.Api
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes, Type returnType)
+		virtual object Decode(sbyte[] bytes)
 		{
 			// use `null` to indicate ignoring schema version
 			return Decode(bytes, null);
@@ -102,7 +102,7 @@ namespace SharpPulsar.Pulsar.Api
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion, Type returnType)
+		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(bytes);
@@ -257,7 +257,7 @@ namespace SharpPulsar.Pulsar.Api
             return DefaultImplementation.NewAutoProduceSchema(schema);
         }
 
-        static ISchema<T> GetSchema(ISchemaInfo schemaInfo)
+        static ISchema<object> GetSchema(ISchemaInfo schemaInfo)
         {
             return DefaultImplementation.GetSchema(schemaInfo);
         }
@@ -272,7 +272,7 @@ namespace SharpPulsar.Pulsar.Api
 		/// </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
-        static IGenericSchema Generic(ISchemaInfo schemaInfo)
+        static IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo)
         {
             return DefaultImplementation.GetGenericSchema(schemaInfo);
         }

@@ -25,44 +25,37 @@ using SharpPulsar.Common.Schema;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-
-	using Field = Api.Schema.Field;
     using SharpPulsar.Pulsar.Api.Schema;
 	using Schema;
+    using SharpPulsar.Pulsar.Schema;
+    using SharpPulsar.Shared;
 
-	/// <summary>
-	/// A generic schema representation.
-	/// </summary>
-	public abstract class GenericSchemaImpl : StructSchema, IGenericSchema
+    /// <summary>
+    /// A generic schema representation for AvroBasedGenericSchema .
+    /// warning :
+    /// we suggest migrate GenericSchemaImpl.of() to  <GenericSchema Implementor>.of() method (e.g. GenericJsonSchema ã€�GenericAvroSchema )
+    /// </summary>
+    public abstract class GenericSchemaImpl : AvroBaseStructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
 	{
 		public abstract IGenericRecordBuilder NewRecordBuilder();
-		public abstract override ISchema Auto();
-		
-        public abstract ISchema Json(Type pojo);
-        public abstract override bool RequireFetchingSchemaInfo();
-		public abstract override bool SupportSchemaVersioning();
-		public abstract override void Validate(sbyte[] message, Type returnType);
+		protected internal readonly IList<Field> fields;
 
-
-        // the flag controls whether to use the provided schema as reader schema
-		// to decode the messages. In `AUTO_CONSUME` mode, setting this flag to `false`
-		// allows decoding the messages using the schema associated with the messages.
-		protected internal readonly bool UseProvidedSchemaAsReaderSchema;
-
-        protected GenericSchemaImpl(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
+		protected internal GenericSchemaImpl(SchemaInfo schemaInfo) : base(schemaInfo)
 		{
-
-			Fields = ((RecordSchema)Schema).Fields.Select(f => new Field() { Name = f.Name, Index = f.Pos}).ToList();
-			UseProvidedSchemaAsReaderSchema = useProvidedSchemaAsReaderSchema;
+			fields = ((RecordSchema)schema).Fields.Select(f => new Field() { Name = f.Name, Index = f.Pos }).ToList();
 		}
 
-		public  IList<Field> Fields { get; }
-
-		//IList<Field> IGenericSchema<IGenericRecord>.Fields => throw new NotImplementedException();
+		public IList<Field> Fields
+		{
+			get
+			{
+				return fields;
+			}
+		}
 
 		/// <summary>
 		/// Create a generic schema out of a <tt>SchemaInfo</tt>.
-		/// </summary>
+		///  warning : we suggest migrate GenericSchemaImpl.of() to  <GenericSchema Implementor>.of() method (e.g. GenericJsonSchema ã€�GenericAvroSchema ) </summary>
 		/// <param name="schemaInfo"> schema info </param>
 		/// <returns> a generic schema instance </returns>
 		public static GenericSchemaImpl Of(SchemaInfo schemaInfo)
@@ -70,23 +63,22 @@ namespace SharpPulsar.Impl.Schema.Generic
 			return Of(schemaInfo, true);
 		}
 
+		/// <summary>
+		/// warning :
+		/// we suggest migrate GenericSchemaImpl.of() to  <GenericSchema Implementor>.of() method (e.g. GenericJsonSchema ã€�GenericAvroSchema ) </summary>
+		/// <param name="schemaInfo"> <seealso cref="SchemaInfo"/> </param>
+		/// <param name="useProvidedSchemaAsReaderSchema"> <seealso cref="Boolean"/> </param>
+		/// <returns> generic schema implementation </returns>
 		public static GenericSchemaImpl Of(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema)
-        {
-            var ty = schemaInfo.Type;
-			switch (ty.Value)
+		{
+			switch (schemaInfo.Type.InnerEnumValue)
 			{
-				case 4:
-				case 2:
+				case SchemaType.InnerEnum.Avro:
 					return new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
 				default:
-					throw new NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'");
+					throw new System.NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'");
 			}
 		}
-
-		IGenericRecordBuilder IGenericSchema.NewRecordBuilder()
-		{
-			throw new NotImplementedException();
-		}
 	}
-
 }
+

@@ -23,7 +23,7 @@ namespace SharpPulsar.Pulsar.Schema
 	/// and <seealso cref="SchemaType.Protobuf"/>.
 	/// </para>
 	/// </summary>
-	public abstract class AvroBaseStructSchema : AbstractStructSchema
+	public abstract class AvroBaseStructSchema<T> : AbstractStructSchema<T>
 	{
 
 		protected internal readonly Avro.Schema schema;

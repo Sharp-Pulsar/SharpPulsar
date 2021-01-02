@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Shared;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,34 +20,36 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace org.apache.pulsar.client.impl.schema
+namespace SharpPulsar.Pulsar.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>
 	/// A schema for `Float`.
 	/// </summary>
-	public class FloatSchema : AbstractSchema<float>
+	public class FloatSchema : AbstractSchema<float?>
 	{
 
-		private static readonly FloatSchema INSTANCE;
-		private static readonly SchemaInfo SCHEMA_INFO;
+		private static readonly FloatSchema _instance;
+		private static readonly ISchemaInfo _schemaInfo;
 
 		static FloatSchema()
 		{
-			SCHEMA_INFO = (new SchemaInfo()).setName("Float").setType(SchemaType.FLOAT).setSchema(new sbyte[0]);
-			INSTANCE = new FloatSchema();
+			var info = new SchemaInfo
+			{
+				Name = "Float",
+				Type = SchemaType.FLOAT,
+				Schema = new sbyte[0]
+			};
+			_schemaInfo = info;
+			_instance = new FloatSchema();
 		}
 
-		public static FloatSchema of()
+		public static FloatSchema Of()
 		{
-			return INSTANCE;
+			return _instance;
 		}
 
-		public override void validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -51,15 +57,7 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 		}
 
-		public override void validate(ByteBuf message)
-		{
-			if (message.readableBytes() != 4)
-			{
-				throw new SchemaSerializationException("Size of data received by FloatSchema is not 4");
-			}
-		}
-
-		public override sbyte[] encode(float? message)
+		public override sbyte[] Encode(float? message)
 		{
 			if (null == message)
 			{
@@ -67,49 +65,32 @@ namespace org.apache.pulsar.client.impl.schema
 			}
 			else
 			{
-				long bits = Float.floatToRawIntBits(message);
+				long bits = System.BitConverter.SingleToInt32Bits(message.Value);
 				return new sbyte[] {(sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte) bits};
 			}
 		}
 
-		public override float? decode(sbyte[] bytes)
+		public override float? Decode(byte[] bytes)
 		{
 			if (null == bytes)
 			{
 				return null;
 			}
-			validate(bytes);
+			Validate(bytes);
 			int value = 0;
 			foreach (sbyte b in bytes)
 			{
 				value <<= 8;
 				value |= b & 0xFF;
 			}
-			return Float.intBitsToFloat(value);
+			return System.BitConverter.Int32BitsToSingle(value);
 		}
 
-		public override float? decode(ByteBuf byteBuf)
-		{
-			if (null == byteBuf)
-			{
-				return null;
-			}
-			validate(byteBuf);
-			int value = 0;
-			for (int i = 0; i < 4; i++)
-			{
-				value <<= 8;
-				value |= byteBuf.getByte(i) & 0xFF;
-			}
-
-			return Float.intBitsToFloat(value);
-		}
-
-		public override SchemaInfo SchemaInfo
+		public override ISchemaInfo SchemaInfo
 		{
 			get
 			{
-				return SCHEMA_INFO;
+				return _schemaInfo;
 			}
 		}
 	}
