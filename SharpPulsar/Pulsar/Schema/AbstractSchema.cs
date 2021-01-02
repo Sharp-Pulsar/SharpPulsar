@@ -23,50 +23,28 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 /// </summary>
 namespace SharpPulsar.Pulsar.Schema
 {
-    using SharpPulsar.Common.Schema;
-    using SharpPulsar.Pulsar.Api;
-
-    public abstract class AbstractSchema : ISchema
+	public abstract class AbstractSchema<T> : ISchema<T>
 	{
-		public virtual ISchema Json(ISchemaDefinition schemaDefinition)
-        {
-			throw new NotImplementedException();
-        }
-		public virtual ISchema Json(object pojo)
-		{
-			throw new NotImplementedException();
-		}
-		public virtual void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
-		{
-			throw new NotImplementedException();
-		}
-		public virtual bool RequireFetchingSchemaInfo()
-		{
-			return false;
-		}
+		public abstract ISchema Auto();
 
-		public virtual ISchemaInfo SchemaInfo {get;}
-		public virtual ISchemaInfoProvider SchemaInfoProvider
-		{
-			get;
-			set;
-		}
+		public abstract ISchema Json(ISchemaDefinition schemaDefinition);
+		public abstract ISchema Json(object pojo);
 
-		public virtual bool SupportSchemaVersioning()
-		{
-			return false;
-		}
+		public abstract void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo);
+		public abstract bool RequireFetchingSchemaInfo();
+
+		public abstract ISchemaInfo SchemaInfo {get;}
+		public abstract ISchemaInfoProvider SchemaInfoProvider {set;}
+
+		public abstract bool SupportSchemaVersioning();
 		public abstract sbyte[] Encode(object message);
-		public virtual void Validate(sbyte[] message)
-        {
-			throw new NotImplementedException();
-		}
+		public abstract void Validate(sbyte[] message, Type returnType);
 
 		/// <summary>
 		/// Check if the message read able Length Length is a valid object for this schema.
 		/// 
 		/// <para>The implementation can choose what its most efficient approach to validate the schema.
-		/// If the implementation doesn't provide it, it will attempt to use <seealso cref="decode(ByteBuf)"/>
+		/// If the implementation doesn't provide it, it will attempt to use <seealso cref="Decode(ByteBuf)"/>
 		/// to see if this schema can decode this message or not as a validation mechanism to verify
 		/// the bytes.
 		/// 
@@ -86,7 +64,7 @@ namespace SharpPulsar.Pulsar.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract T Decode<T>(byte[] byteBuf, T returnType = default);
+		public abstract object Decode(byte[] byteBuf, Type returnType);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -95,13 +73,18 @@ namespace SharpPulsar.Pulsar.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual T Decode<T>(byte[] byteBuf, sbyte[] schemaVersion, T returnType = default)
+		public virtual object Decode(byte[] byteBuf, sbyte[] schemaVersion, Type returnType)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return Decode(byteBuf, returnType);
+			return Decode(byteBuf);
 		}
         
-        public abstract T Decode<T>(sbyte[] bytes, T returnType = default);
+		public ISchema<T> Clone()
+		{
+			return this;
+		}
+        
+        public abstract object Decode(sbyte[] bytes, Type returnType);
 	}
 
 }

@@ -203,7 +203,7 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-        public ProducerConfigBuilder Schema(ISchema schema)
+        public ProducerConfigBuilder Schema<T>(ISchema<T> schema)
         {
 			if(schema == null)
 				throw new ArgumentException("Schema is null");

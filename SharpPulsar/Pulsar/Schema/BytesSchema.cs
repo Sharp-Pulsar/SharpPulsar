@@ -28,16 +28,11 @@ namespace SharpPulsar.Pulsar.Schema
     /// <summary>
 	/// A schema for bytes array.
 	/// </summary>
-	public class BytesSchema : AbstractSchema
+	public class BytesSchema : AbstractSchema<byte[]>
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
         
-
-        public override bool RequireFetchingSchemaInfo()
-        {
-            return false;
-        }
         
         public override ISchemaInfo SchemaInfo {get;}
         public override bool SupportSchemaVersioning()
@@ -45,6 +40,10 @@ namespace SharpPulsar.Pulsar.Schema
             return false;
         }
 
+        public override ISchemaInfoProvider SchemaInfoProvider
+        {
+            set => throw new System.NotImplementedException();
+        }
 
         public BytesSchema()
 		{
@@ -57,30 +56,25 @@ namespace SharpPulsar.Pulsar.Schema
 			return Instance;
 		}
 
-		public override sbyte[] Encode(object message)
+		public override sbyte[] Encode(byte[] message)
 		{
-            if(!(message is sbyte[]))
+			if (!(message is sbyte[]))
                 throw new ArgumentException($"{message.GetType()} is not sbyte[]");
-			return (sbyte[])message;
+			return (sbyte[])(object)message;
 		}
 
-        public override void Validate(sbyte[] message, Type returnType)
-        {
-            
-        }
-
-        public override T Decode<T>(sbyte[] bytes)
+        public override object Decode(sbyte[] bytes, Type returnType)
 		{
 			return (T)Convert.ChangeType(bytes, typeof(T));
 		}
 
-		public override T Decode<T>(byte[] byteBuf)
+		public override object Decode(byte[] byteBuf, Type returnType)
 		{
 			if (byteBuf == null)
 			{
-				return default;
+				return null;
 			}
-			return (T)Convert.ChangeType(byteBuf, typeof(T));
+			return Convert.ChangeType(byteBuf, returnType);
 		}
 
 	}
