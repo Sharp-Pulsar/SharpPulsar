@@ -19,6 +19,7 @@
 
 using System;
 using SharpPulsar.Api;
+using SharpPulsar.Pulsar.Api;
 using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Shared;
 

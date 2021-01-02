@@ -33,9 +33,9 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// </summary>
 		/// <param name="bytes"> the data </param>
 		/// <returns> the serialized object </returns>
-		virtual object Read(sbyte[] bytes)
+		virtual T Read<T>(sbyte[] bytes, T returnType = default)
 		{
-			return Read(bytes, 0, bytes.Length);
+			return Read(bytes, 0, bytes.Length, returnType);
 		}
 
 		/// <summary>
@@ -45,14 +45,14 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// <param name="offset"> the byte[] initial position </param>
 		/// <param name="length"> the byte[] read length </param>
 		/// <returns> the serialized object </returns>
-		object Read(sbyte[] bytes, int offset, int length);
+		T Read<T>(sbyte[] bytes, int offset, int length, T returnType = default);
 
 		/// <summary>
 		/// serialize bytes convert pojo.
 		/// </summary>
 		/// <param name="inputStream"> the stream of message </param>
 		/// <returns> the serialized object </returns>
-		object Read(Stream inputStream);
+		T Read<T>(Stream inputStream, T returnType = default);
 
 		/// <summary>
 		/// Serialize bytes convert pojo.
@@ -60,9 +60,9 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// <param name="bytes"> the data </param>
 		/// <param name="schemaVersion"> the schema version of message </param>
 		/// <returns> the serialized object </returns>
-		virtual object Read(sbyte[] bytes, sbyte[] schemaVersion)
+		virtual T Read<T>(sbyte[] bytes, sbyte[] schemaVersion, T returnType = default)
 		{
-			return Read(bytes, 0, bytes.Length);
+			return Read(bytes, 0, bytes.Length, returnType);
 		}
 
 		/// <summary>
@@ -71,9 +71,9 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// <param name="inputStream"> the stream of message </param>
 		/// <param name="schemaVersion"> the schema version of message </param>
 		/// <returns> the serialized object </returns>
-		virtual object Read(Stream inputStream, sbyte[] schemaVersion)
+		virtual T Read<T>(Stream inputStream, sbyte[] schemaVersion, T returnType = default)
 		{
-			return Read(inputStream);
+			return Read(inputStream, returnType);
 		}
 
 		/// <summary>

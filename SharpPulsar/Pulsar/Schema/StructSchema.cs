@@ -47,17 +47,17 @@ namespace SharpPulsar.Pulsar.Schema
 	/// and <seealso cref="SchemaType.Protobuf"/>.
 	/// </para>
 	/// </summary>
-	public abstract class StructSchema : AbstractSchema
+	public abstract class StructSchema<T> : AbstractSchema
 	{
 
-		protected internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(StructSchema));
+		protected internal static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(StructSchema<T>));
 
 		protected internal readonly Avro.Schema Schema;
 		private readonly SchemaInfo _schemaInfo;
-        private GenericAvroReader _reader;
+        private GenericAvroReader<T> _reader;
         private GenericAvroWriter _writer;
         private ISchemaInfoProvider _schemaInfoProvider;
-        private readonly ConcurrentDictionary<BytesSchemaVersion, GenericAvroReader> _readerCache = new ConcurrentDictionary<BytesSchemaVersion, GenericAvroReader>();
+        private readonly ConcurrentDictionary<BytesSchemaVersion, GenericAvroReader<T>> _readerCache = new ConcurrentDictionary<BytesSchemaVersion, GenericAvroReader<T>>();
 
 		protected StructSchema(SchemaInfo schemaInfo)
 		{

@@ -21,29 +21,23 @@ namespace SharpPulsar.Pulsar.Schema
         }
         public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-
-        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
-        {
-            throw new NotImplementedException();
-        }
-
         public override sbyte[] Encode(object message)
         {
             return _writer.Write(message);
         }
 
-        public override object Decode(sbyte[] bytes, Type returnType)
+        public override T Decode<T>(sbyte[] bytes, T returnType = default)
         {
-            return _reader.Read(bytes);
+            return _reader.Read(bytes, returnType);
         }
-        public override object Decode(byte[] bytes, Type returnType)
+        public override T Decode<T>(byte[] bytes, T returnType = default)
         {
-            return _reader.Read((sbyte[])(object)bytes);
+            return _reader.Read((sbyte[])(object)bytes, returnType);
         }
 
-        public override object Decode(byte[] bytes, sbyte[] schemaVersion, Type returnType)
+        public override T Decode<T>(byte[] bytes, sbyte[] schemaVersion, T returnType = default)
         {
-            return _reader.Read((sbyte[])(object)bytes, schemaVersion);
+            return _reader.Read((sbyte[])(object)bytes, schemaVersion, returnType);
         }
 
         public override ISchema Json(ISchemaDefinition schemaDefinition)
@@ -58,15 +52,15 @@ namespace SharpPulsar.Pulsar.Schema
 
         public override bool RequireFetchingSchemaInfo()
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public override bool SupportSchemaVersioning()
         {
-            throw new NotImplementedException();
+            return false;
         }
 
-        public override void Validate(sbyte[] message, Type returnType)
+        public override void Validate(sbyte[] message)
         {
             throw new NotImplementedException();
         }

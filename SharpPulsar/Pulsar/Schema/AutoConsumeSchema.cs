@@ -5,6 +5,8 @@ using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Shared;
+using SharpPulsar.Pulsar.Api;
+using SharpPulsar.Pulsar.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

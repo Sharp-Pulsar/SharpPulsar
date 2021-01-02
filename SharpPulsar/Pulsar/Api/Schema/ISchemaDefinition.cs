@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Akka.Util;
 using SharpPulsar.Impl;
 
 /// <summary>
@@ -66,6 +67,18 @@ namespace SharpPulsar.Pulsar.Api.Schema
 		/// </summary>
 		/// <returns> the flag of supportSchemaVersioning </returns>
 		bool SupportSchemaVersioning {get;}
+
+		/// <summary>
+		/// Get a configured schema reader.
+		/// </summary>
+		/// <returns> optional containing configured schema reader or empty optional if none is configure </returns>
+		Option<ISchemaReader> SchemaReaderOpt { get; }
+
+		/// <summary>
+		/// Get a configured schema writer.
+		/// </summary>
+		/// <returns> optional containing configured schema writer or empty optional if none is configure </returns>
+		Option<ISchemaWriter> SchemaWriterOpt { get; }
 	}
 
 }

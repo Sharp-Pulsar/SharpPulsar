@@ -40,9 +40,9 @@ namespace SharpPulsar.Pulsar.Api
 		/// </summary>
 		/// <param name="message"> the messages to verify </param>
 		/// <exception cref="Exceptions.SchemaSerializationException"> if it is not a valid message </exception>
-		virtual void Validate(sbyte[] message, Type returnType)
+		virtual void Validate<T>(sbyte[] message)
 		{
-			Decode(message, returnType);
+			Decode<T>(message);
 		}
 
 		/// <summary>
@@ -88,7 +88,7 @@ namespace SharpPulsar.Pulsar.Api
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes, Type returnType)
+		virtual T Decode<T>(sbyte[] bytes, T returnType = default)
 		{
 			// use `null` to indicate ignoring schema version
 			return Decode(bytes, null, returnType);
@@ -102,7 +102,7 @@ namespace SharpPulsar.Pulsar.Api
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion, Type returnType)
+		virtual T Decode<T>(sbyte[] bytes, sbyte[] schemaVersion, T returnType = default)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(bytes, returnType);

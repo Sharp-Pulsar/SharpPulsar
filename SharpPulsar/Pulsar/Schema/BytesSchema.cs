@@ -33,20 +33,6 @@ namespace SharpPulsar.Pulsar.Schema
 
 		private static readonly BytesSchema Instance = new BytesSchema();
         
-        public override ISchema Json(ISchemaDefinition schemaDefinition)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema Json(object pojo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
-        {
-            
-        }
 
         public override bool RequireFetchingSchemaInfo()
         {
@@ -59,10 +45,6 @@ namespace SharpPulsar.Pulsar.Schema
             return false;
         }
 
-        public override ISchemaInfoProvider SchemaInfoProvider
-        {
-            set => throw new System.NotImplementedException();
-        }
 
         public BytesSchema()
 		{
@@ -87,18 +69,18 @@ namespace SharpPulsar.Pulsar.Schema
             
         }
 
-        public override object Decode(sbyte[] bytes, Type returnType)
+        public override T Decode<T>(sbyte[] bytes)
 		{
-			return bytes;
+			return (T)Convert.ChangeType(bytes, typeof(T));
 		}
 
-		public override object Decode(byte[] byteBuf, Type returnType)
+		public override T Decode<T>(byte[] byteBuf)
 		{
 			if (byteBuf == null)
 			{
-				return null;
+				return default;
 			}
-			return Convert.ChangeType(byteBuf, returnType);
+			return (T)Convert.ChangeType(byteBuf, typeof(T));
 		}
 
 	}

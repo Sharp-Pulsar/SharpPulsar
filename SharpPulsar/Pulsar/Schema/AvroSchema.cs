@@ -31,31 +31,27 @@ namespace SharpPulsar.Pulsar.Schema
 	/// <summary>
 	/// A schema implementation to deal with json data.
 	/// </summary>
-	public class AvroSchema : StructSchema
+	public class AvroSchema : AvroBaseStructSchema
 	{
-
+		private object _classInstance;
 		private AvroSchema(SchemaInfo schemaInfo) : base(schemaInfo)
 		{
 			SchemaInfo = schemaInfo;
 		}
-
-        public override GenericAvroReader LoadReader(BytesSchemaVersion schemaVersion)
-        {
-            var schemaInfo = GetSchemaInfoByVersion(schemaVersion.Get());
-            if (schemaInfo != null)
-            {
-                return new GenericAvroReader(ParseAvroSchema(schemaInfo.SchemaDefinition), schemaVersion.Get());
-            }
-
-            return Reader;
-        }
-
+		private AvroSchema(ISchemaReader reader, ISchemaWriter writer, SchemaInfo schemaInfo) : base(schemaInfo)
+		{
+			Reader = reader;
+			Writer = writer;
+		}
 
 		public override ISchemaInfo SchemaInfo { get; }
 
 		public static AvroSchema Of(ISchemaDefinition schemaDefinition)
 		{
-			return new AvroSchema(ParseSchemaInfo(schemaDefinition, SchemaType.Avro));
+			if(schemaDefinition.SchemaReaderOpt.HasValue && schemaDefinition.SchemaWriterOpt.HasValue)
+				return new AvroSchema(schemaDefinition.SchemaReaderOpt.Value, schemaDefinition.SchemaWriterOpt.Value, SchemaUtils.ParseSchemaInfo(schemaDefinition, SchemaType.Avro));
+			
+			return new AvroSchema(SchemaUtils.ParseSchemaInfo(schemaDefinition, SchemaType.Avro));
 		}
 
 		public static AvroSchema Of(Type pojo)
@@ -66,49 +62,6 @@ namespace SharpPulsar.Pulsar.Schema
 		public static AvroSchema Of(Type pojo, IDictionary<string, string> properties)
 		{
 			return Of(ISchemaDefinition.Builder().WithPojo(pojo).WithProperties(properties).Build());
-		}
-
-		public override ISchema Auto()
-		{
-			throw new NotImplementedException();
-		}
-
-		public override ISchema Json(ISchemaDefinition schemaDefinition)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override ISchema Json(object pojo)
-		{
-			throw new NotImplementedException();
-		}
-
-
-		public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override bool RequireFetchingSchemaInfo()
-		{
-			return true;
-		}
-
-		public override bool SupportSchemaVersioning()
-		{
-			return true;
-		}
-
-		public override void Validate(sbyte[] message, Type returnType)
-		{
-			throw new NotImplementedException();
-		}
-
-		public override object Decode(byte[] byteBuf, Type returnType)
-		{
-			if (Reader == null)
-				Reader = new GenericAvroReader(Schema, new sbyte[] { 0 });
-			return Reader.Read(byteBuf, returnType);
 		}
 
 	}

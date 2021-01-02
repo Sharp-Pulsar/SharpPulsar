@@ -23,7 +23,7 @@ namespace SharpPulsar.Pulsar.Api.Schema
         /// <summary>
         /// Serialize messages into bytes.
         /// </summary>
-        public sbyte[] Write(object message);
+        public sbyte[] Write<T>(T message);
 
     }
 }

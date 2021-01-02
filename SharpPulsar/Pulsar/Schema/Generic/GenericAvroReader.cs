@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-    public class GenericAvroReader
+    public class GenericAvroReader<T>
 	{
         private readonly Avro.Schema _schema;
 		private readonly sbyte[] _schemaVersion;
@@ -35,14 +35,14 @@ namespace SharpPulsar.Impl.Schema.Generic
             _schemaVersion = schemaVersion;
         }
 
-		public object Read(byte[] message, Type returnType)
+		public T Read(byte[] message, Type returnType)
         {
             var r = new ReflectDefaultReader(returnType, _schema, _schema, new ClassCache());
             using var stream = new MemoryStream(message);
-            return r.Read(default(object), new BinaryDecoder(stream));
+            return (T)r.Read(default(object), new BinaryDecoder(stream));
         }
 		
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(GenericAvroReader));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(GenericAvroReader<T>));
 	}
 
 }

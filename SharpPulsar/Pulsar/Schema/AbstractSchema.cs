@@ -28,18 +28,39 @@ namespace SharpPulsar.Pulsar.Schema
 
     public abstract class AbstractSchema : ISchema
 	{
-		public abstract ISchema Json(ISchemaDefinition schemaDefinition);
-		public abstract ISchema Json(object pojo);
+		public virtual ISchema Json(ISchemaDefinition schemaDefinition)
+        {
+			throw new NotImplementedException();
+        }
+		public virtual ISchema Json(object pojo)
+		{
+			throw new NotImplementedException();
+		}
+		public virtual void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
+		{
+			throw new NotImplementedException();
+		}
+		public virtual bool RequireFetchingSchemaInfo()
+		{
+			return false;
+		}
 
-		public abstract void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo);
-		public abstract bool RequireFetchingSchemaInfo();
+		public virtual ISchemaInfo SchemaInfo {get;}
+		public virtual ISchemaInfoProvider SchemaInfoProvider
+		{
+			get;
+			set;
+		}
 
-		public abstract ISchemaInfo SchemaInfo {get;}
-		public abstract ISchemaInfoProvider SchemaInfoProvider {set;}
-
-		public abstract bool SupportSchemaVersioning();
+		public virtual bool SupportSchemaVersioning()
+		{
+			return false;
+		}
 		public abstract sbyte[] Encode(object message);
-		public abstract void Validate(sbyte[] message, Type returnType);
+		public virtual void Validate(sbyte[] message)
+        {
+			throw new NotImplementedException();
+		}
 
 		/// <summary>
 		/// Check if the message read able Length Length is a valid object for this schema.
@@ -54,7 +75,7 @@ namespace SharpPulsar.Pulsar.Schema
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		public virtual void Validate(byte[] byteBuf, Type returnType)
+		public virtual void Validate(byte[] byteBuf)
 		{
 			throw new SchemaSerializationException("This method is not supported");
 		}
@@ -65,7 +86,7 @@ namespace SharpPulsar.Pulsar.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract object Decode(byte[] byteBuf, Type returnType);
+		public abstract T Decode<T>(byte[] byteBuf, T returnType = default);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -74,13 +95,13 @@ namespace SharpPulsar.Pulsar.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual object Decode(byte[] byteBuf, sbyte[] schemaVersion, Type returnType)
+		public virtual T Decode<T>(byte[] byteBuf, sbyte[] schemaVersion, T returnType = default)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(byteBuf, returnType);
 		}
         
-        public abstract object Decode(sbyte[] bytes, Type returnType);
+        public abstract T Decode<T>(sbyte[] bytes, T returnType = default);
 	}
 
 }

@@ -4,8 +4,11 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using AvroSchemaGenerator;
+using SharpPulsar.Common;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Shared;
 
@@ -205,17 +208,40 @@ namespace SharpPulsar.Pulsar.Schema
 			}
 			return false;
 		}
+		public static Avro.Schema CreateAvroSchema(ISchemaDefinition schemaDefinition)
+		{
+			var pojo = schemaDefinition.Pojo;
+
+			if (!string.IsNullOrWhiteSpace(schemaDefinition.JsonDef))
+			{
+				return ParseAvroSchema(schemaDefinition.JsonDef);
+			}
+
+			var schema = pojo.GetSchema();
+			return ParseAvroSchema(schema);
+
+		}
 
 		public static Avro.Schema ParseAvroSchema(string schemaJson)
 		{
-		 //Avro.Schema.Parse parser = new Avro.Schema();
-		 //parser.ValidateDefaults = false;
 			return Avro.Schema.Parse(schemaJson);
 		}
 
 		public static SchemaInfo ParseSchemaInfo(ISchemaDefinition schemaDefinition, SchemaType schemaType)
 		{
-			return SchemaInfo.Builder().schema(Encoding.UTF8.GetBytes(createAvroSchema(schemaDefinition).ToString())).properties(schemaDefinition.Properties).name("").type(schemaType).build();
+			return new SchemaInfoBuilder().SetSchema(CreateAvroSchema(schemaDefinition).ToString().GetBytes()).SetProperties(schemaDefinition.Properties).SetName("").SetType(schemaType).Build();
+		}
+		public static Avro.Schema ExtractAvroSchema(ISchemaDefinition schemaDefinition, Type pojo)
+		{
+			try
+			{
+				return ParseAvroSchema(pojo.GetField("SCHEMA$").GetValue(null).ToString());
+			}
+			catch (Exception ignored) when (ignored is ArgumentException)
+			{
+				//return schemaDefinition.AlwaysAllowNull ? ReflectData.AllowNull.get().getSchema(pojo) : ReflectData.get().getSchema(pojo);
+				return Avro.Schema.Parse(pojo.GetSchema());
+			}
 		}
 	}
 

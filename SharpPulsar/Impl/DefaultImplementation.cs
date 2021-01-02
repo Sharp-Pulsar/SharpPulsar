@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
+using SharpPulsar.Pulsar.Api;
+using SharpPulsar.Pulsar.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
