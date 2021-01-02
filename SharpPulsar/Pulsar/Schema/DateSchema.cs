@@ -38,7 +38,7 @@ namespace SharpPulsar.Pulsar.Schema
 			var info = new SchemaInfo
 			{
 				Name = "Date",
-				Type = SchemaType.Date,
+				Type = SchemaType.DATE,
 				Schema = new sbyte[0]
 			};
 			_schemaInfo = info;
