@@ -143,7 +143,7 @@ namespace SharpPulsar.Akka
 
         }
 
-        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer(CreateProducer producer, CancellationToken token = default)
+        public (IActorRef Producer, string Topic, string ProducerName) PulsarProducer<T>(CreateProducer producer, CancellationToken token = default)
         {
             if (producer == null)
                 throw new ArgumentNullException(nameof(producer), "null");
@@ -159,7 +159,7 @@ namespace SharpPulsar.Akka
 
             var topic = TopicName.Get(conf.TopicName);
             conf.TopicName = topic.ToString();
-            var p = new NewProducer(producer.Schema, _conf, conf);
+            var p = new NewProducer<T>(producer.Schema, _conf, conf);
             _pulsarManager.Tell(p);
             if (_managerState.ProducerQueue.TryTake(out var createdProducer, _conf.OperationTimeoutMs, token))
             {

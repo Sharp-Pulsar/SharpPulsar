@@ -28,47 +28,14 @@ namespace SharpPulsar.Impl.Schema
     /// <summary>
 	/// A schema for bytes array.
 	/// </summary>
-	public class BytesSchema : AbstractSchema
+	public class BytesSchema : AbstractSchema<byte[]>
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
         
-        public override ISchema Auto()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema Json(ISchemaDefinition schemaDefinition)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema Json(object pojo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
-        {
-            
-        }
-
-        public override bool RequireFetchingSchemaInfo()
-        {
-            return false;
-        }
         
         public override ISchemaInfo SchemaInfo {get;}
-        public override bool SupportSchemaVersioning()
-        {
-            return false;
-        }
-
-        public override ISchemaInfoProvider SchemaInfoProvider
-        {
-            set => throw new System.NotImplementedException();
-        }
-
+       
         public BytesSchema()
 		{
             var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.Bytes, Schema = new sbyte[0]};
@@ -80,30 +47,16 @@ namespace SharpPulsar.Impl.Schema
 			return Instance;
 		}
 
-		public override sbyte[] Encode(object message)
+		public override sbyte[] Encode(byte[] message)
 		{
-            if(!(message is sbyte[]))
+			if (!(message is sbyte[]))
                 throw new ArgumentException($"{message.GetType()} is not sbyte[]");
-			return (sbyte[])message;
+			return (sbyte[])(object)message;
 		}
 
-        public override void Validate(sbyte[] message, Type returnType)
-        {
-            
-        }
-
-        public override object Decode(sbyte[] bytes, Type returnType)
+        public override byte[] Decode(byte[] bytes)
 		{
 			return bytes;
-		}
-
-		public override object Decode(byte[] byteBuf, Type returnType)
-		{
-			if (byteBuf == null)
-			{
-				return null;
-			}
-			return Convert.ChangeType(byteBuf, returnType);
 		}
 
 	}
