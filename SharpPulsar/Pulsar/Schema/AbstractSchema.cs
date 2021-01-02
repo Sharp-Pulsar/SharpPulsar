@@ -2,6 +2,7 @@
 using SharpPulsar.Pulsar.Api.Schema;
 using SharpPulsar.Api;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
+using SharpPulsar.Pulsar.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
