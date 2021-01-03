@@ -1,7 +1,7 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System;

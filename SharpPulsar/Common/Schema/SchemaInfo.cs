@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using SharpPulsar.Impl;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Pulsar;
 
 /// <summary>

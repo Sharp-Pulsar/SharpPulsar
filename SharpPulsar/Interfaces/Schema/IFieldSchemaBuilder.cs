@@ -17,13 +17,9 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Schema
+namespace SharpPulsar.Interfaces.ISchema
 {
-	
-	/// <summary>
-	/// Build a field for a record.
-	/// </summary>
-	public interface IFieldSchemaBuilder<out T>
+	public interface IFieldSchemaBuilder<T> where T : IFieldSchemaBuilder<T>
 	{
 
 		/// <summary>
@@ -82,5 +78,4 @@ namespace SharpPulsar.Interfaces.Schema
 		T DefaultValue(object value);
 
 	}
-
 }

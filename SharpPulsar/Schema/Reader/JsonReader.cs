@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

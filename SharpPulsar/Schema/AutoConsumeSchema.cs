@@ -5,7 +5,7 @@ using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Shared;
 using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Schema;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
 
 /// <summary>

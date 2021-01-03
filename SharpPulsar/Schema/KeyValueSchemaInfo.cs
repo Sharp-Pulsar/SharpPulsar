@@ -1,7 +1,7 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System.Collections.Generic;

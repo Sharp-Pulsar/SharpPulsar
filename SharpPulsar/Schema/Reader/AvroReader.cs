@@ -1,5 +1,5 @@
 ﻿using Avro.Generic;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using System;
 using System.Collections.Generic;
 using System.IO;

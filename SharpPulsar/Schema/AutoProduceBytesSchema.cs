@@ -19,7 +19,7 @@
 
 using System;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schema

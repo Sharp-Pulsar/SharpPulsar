@@ -4,7 +4,7 @@ using System.Text;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Interfaces.Interceptor;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schema

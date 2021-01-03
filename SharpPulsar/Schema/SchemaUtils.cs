@@ -10,7 +10,7 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Shared;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -199,11 +199,11 @@ namespace SharpPulsar.Schema
         {
             return JsonSerializer.Deserialize<IDictionary<string, string>>(serializedProperties);
         }
-		public static bool GetJsr310ConversionEnabledFromSchemaInfo(SchemaInfo schemaInfo)
+		public static bool GetJsr310ConversionEnabledFromSchemaInfo<T>(SchemaInfo schemaInfo)
 		{
 			if (schemaInfo != null)
 			{
-				if(schemaInfo.Properties.TryGetValue(SchemaDefinitionBuilderImpl.Jsr310ConversionEnabled, out var st))
+				if(schemaInfo.Properties.TryGetValue(SchemaDefinitionBuilderImpl<T>.Jsr310ConversionEnabled, out var st))
 				  return bool.Parse(st);
 			}
 			return false;

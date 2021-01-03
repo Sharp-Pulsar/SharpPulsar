@@ -63,7 +63,7 @@ namespace SharpPulsar.Interfaces
 		sbyte[] Data {get;}
 
 		/// <summary>
-		/// Get the de-serialized value of the message, according the configured <seealso cref="Schema"/>.
+		/// Get the de-serialized value of the message, according the configured <seealso cref="ISchema"/>.
 		/// </summary>
 		/// <returns> the deserialized value of the message </returns>
 		object Value {get;}

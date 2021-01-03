@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Common;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using System.Collections.Generic;
 
 /// <summary>

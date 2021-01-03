@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Schema
+namespace SharpPulsar.Interfaces.ISchema
 {
     /// <summary>
 	/// Builder to build schema.
@@ -29,11 +30,12 @@ namespace SharpPulsar.Interfaces.Schema
 		/// </summary>
 		/// <param name="name"> name of the record. </param>
 		/// <returns> builder to build the schema for a record. </returns>
-		/*static IRecordSchemaBuilder Record(string name)
+		static IRecordSchemaBuilder Record(string name)
 		{
-			return DefaultImplementation.newRecordSchemaBuilder(name);
+			//return DefaultImplementation.newRecordSchemaBuilder(name);
+			throw new NotImplementedException(name);
 		}
-		*/
+		
 	}
 
 }

@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Schema
+namespace SharpPulsar.Interfaces.ISchema
 {
 
 	/// <summary>

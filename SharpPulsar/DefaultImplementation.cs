@@ -11,7 +11,8 @@ using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Schema;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +32,7 @@ using SharpPulsar.Interfaces.Schema;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Pulsar
+namespace SharpPulsar
 {
 	/// <summary>
 	/// Helper class for class instantiations and it also contains methods to work with schemas.
@@ -43,7 +44,7 @@ namespace SharpPulsar.Pulsar
 
 		public static ISchemaDefinitionBuilder<T> NewSchemaDefinitionBuilder<T>()
 		{
-			return new SchemaDefinitionBuilderImpl();
+			return new SchemaDefinitionBuilderImpl<T>();
 		}
 
 
@@ -51,7 +52,7 @@ namespace SharpPulsar.Pulsar
 		{
 			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch);
 		}
-        
+
 		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
 		{
 			return MessageId.FromByteArray(data);
@@ -66,10 +67,10 @@ namespace SharpPulsar.Pulsar
 		{
 			return new AuthenticationToken(token);
 		}
-        public static IAuthentication NewAuthenticationSts(string client, string secret, string authority)
-        {
-            return new AuthenticationOAuth2(client, secret, authority);
-        }
+		public static IAuthentication NewAuthenticationSts(string client, string secret, string authority)
+		{
+			return new AuthenticationOAuth2(client, secret, authority);
+		}
 		public static IAuthentication NewAuthenticationToken(Func<string> supplier)
 		{
 			return new AuthenticationToken(supplier);
@@ -94,10 +95,10 @@ namespace SharpPulsar.Pulsar
 		{
 			return new BytesSchema();
 		}
-		
-		public static ISchema NewAvroSchema(ISchemaDefinition schemaDefinition)
+
+		public static ISchema<T> NewAvroSchema<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return AvroSchema.Of(schemaDefinition);
+			return AvroSchema<T>.Of(schemaDefinition);
 		}
 
 		public static ISchema NewAutoConsumeSchema()
@@ -105,14 +106,14 @@ namespace SharpPulsar.Pulsar
 			return new AutoConsumeSchema();
 		}
 
-		public static ISchema NewAutoProduceSchema()
+		public static ISchema<byte[]> NewAutoProduceSchema()
 		{
-			return new AutoProduceBytesSchema();
+			return new AutoProduceBytesSchema<byte[]>();
 		}
 
-		public static ISchema NewAutoProduceSchema(ISchema schema)
+		public static ISchema<byte[]> NewAutoProduceSchema<T>(ISchema<T> schema)
 		{
-			return new AutoProduceBytesSchema(schema);
+			return new AutoProduceBytesSchema<T>(schema);
 			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 

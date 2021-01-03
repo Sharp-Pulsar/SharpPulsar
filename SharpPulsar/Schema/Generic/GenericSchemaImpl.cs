@@ -26,7 +26,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 {
     using SharpPulsar.Schema;
     using SharpPulsar.Shared;
-    using SharpPulsar.Interfaces.Schema;
+    using SharpPulsar.Interfaces.ISchema;
     using SharpPulsar.Common;
     using Avro;
     using Field = Common.Field;

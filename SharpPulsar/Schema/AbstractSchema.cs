@@ -1,7 +1,7 @@
 ﻿using System;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,7 +30,7 @@ namespace SharpPulsar.Schema
 			throw new NotImplementedException();
         }
 
-		public virtual ISchema<T> Json(ISchemaDefinition schemaDefinition)
+		public virtual ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
 		{
 			throw new NotImplementedException();
 		}

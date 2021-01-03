@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
 

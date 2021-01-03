@@ -1,5 +1,5 @@
 ﻿
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 namespace SharpPulsar.Schema
 {
     public class AbstractStructSchema<T> : AbstractSchema<T>

@@ -19,7 +19,7 @@
 
 using System;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 namespace SharpPulsar.Schema.Writer
