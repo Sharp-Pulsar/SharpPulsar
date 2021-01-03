@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Api;
-using SharpPulsar.Pulsar.Api.Schema;
+using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Auth;
 using SharpPulsar.Impl.Schema;
@@ -9,8 +9,8 @@ using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Pulsar.Api;
-using SharpPulsar.Pulsar.Schema;
+using SharpPulsar.Interfaces.Interceptor;
+using SharpPulsar.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

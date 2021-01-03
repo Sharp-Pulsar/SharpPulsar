@@ -30,7 +30,7 @@ using SharpPulsar.Batch;
 using SharpPulsar.Stats.Producer;
 using SharpPulsar.Utils;
 using ProducerStatsDisabled = SharpPulsar.Impl.ProducerStatsDisabled;
-using SharpPulsar.Pulsar.Api.Interceptor;
+using SharpPulsar.Interfaces.Interceptor.Interceptor;
 
 namespace SharpPulsar.Akka.Producer
 {

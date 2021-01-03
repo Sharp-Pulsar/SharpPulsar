@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Utility;
-using SharpPulsar.Pulsar.Api.Interceptor;
+using SharpPulsar.Interfaces.Interceptor.Interceptor;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
