@@ -208,7 +208,7 @@ namespace SharpPulsar.Schema
 			}
 			return false;
 		}
-		public static Avro.Schema CreateAvroSchema(ISchemaDefinition schemaDefinition)
+		public static Avro.Schema CreateAvroSchema<T>(ISchemaDefinition<T> schemaDefinition)
 		{
 			var pojo = schemaDefinition.Pojo;
 
@@ -227,11 +227,11 @@ namespace SharpPulsar.Schema
 			return Avro.Schema.Parse(schemaJson);
 		}
 
-		public static SchemaInfo ParseSchemaInfo(ISchemaDefinition schemaDefinition, SchemaType schemaType)
+		public static ISchemaInfo ParseSchemaInfo<T>(ISchemaDefinition<T> schemaDefinition, SchemaType schemaType)
 		{
 			return new SchemaInfoBuilder().SetSchema(CreateAvroSchema(schemaDefinition).ToString().GetBytes()).SetProperties(schemaDefinition.Properties).SetName("").SetType(schemaType).Build();
 		}
-		public static Avro.Schema ExtractAvroSchema(ISchemaDefinition schemaDefinition, Type pojo)
+		public static Avro.Schema ExtractAvroSchema<T>(ISchemaDefinition<T> schemaDefinition, Type pojo)
 		{
 			try
 			{

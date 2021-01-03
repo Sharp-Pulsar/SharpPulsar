@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Avro;
 using SharpPulsar.Common.Schema;
 
 /// <summary>
@@ -25,10 +24,12 @@ using SharpPulsar.Common.Schema;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-    using SharpPulsar.Interfaces.Interceptor.Schema;
-	using Schema;
     using SharpPulsar.Schema;
     using SharpPulsar.Shared;
+    using SharpPulsar.Interfaces.Schema;
+    using SharpPulsar.Common;
+    using Avro;
+    using Field = Common.Field;
 
     /// <summary>
     /// A generic schema representation for AvroBasedGenericSchema .
@@ -73,7 +74,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			switch (schemaInfo.Type.InnerEnumValue)
 			{
-				case SchemaType.InnerEnum.Avro:
+				case SchemaType.InnerEnum.AVRO:
 					return new GenericAvroSchema(schemaInfo, useProvidedSchemaAsReaderSchema);
 				default:
 					throw new System.NotSupportedException("Generic schema is not supported on schema type " + schemaInfo.Type + "'");

@@ -53,7 +53,7 @@ namespace SharpPulsar.Schema
 			Condition.CheckArgument(SchemaType.JSON == Type || SchemaType.AVRO == Type);
 			if (SchemaType.JSON == Type)
 			{
-				return new KeyValueSchema<K, V>(JSONSchema.of(Key), JSONSchema.of(Value), KeyValueEncodingType.INLINE);
+				return new KeyValueSchema<K, V>(JSONSchema<K>.Of(Key), JSONSchema<V>.Of(Value), KeyValueEncodingType.INLINE);
 			}
 			else
 			{

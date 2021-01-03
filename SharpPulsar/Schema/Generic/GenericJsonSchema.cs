@@ -25,8 +25,6 @@ using SharpPulsar.Protocol.Schema;
 
 namespace SharpPulsar.Impl.Schema.Generic
 {
-    using IGenericRecordBuilder = Pulsar.Api.Schema.IGenericRecordBuilder;
-	using SharpPulsar.Interfaces.Interceptor.Schema;
 
 	/// <summary>
 	/// A generic json schema.

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Microsoft.Extensions.Logging;
 using SharpPulsar.Common;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Interfaces.Schema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>
@@ -26,11 +26,8 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = Api.Schema.Field;
-    using SharpPulsar.Interfaces.Interceptor.Schema;
-
-
-	public class GenericJsonReader : ISchemaReader
+	//using Field = Api.Schema.Field;
+	public class GenericJsonReader : ISchemaReader<GenericJsonRecord>
 	{
 
 		private readonly ObjectMapper _objectMapper;
@@ -49,11 +46,11 @@ namespace SharpPulsar.Impl.Schema.Generic
 			_fields = fields;
 			_schemaVersion = schemaVersion;
 		}
-		public GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
+		public GenericJsonRecord Read(byte[] bytes, int offset, int length)
 		{
 			try
 			{
-				var jn = _objectMapper.ReadValue(StringHelper.NewString(bytes, offset, length, Encoding.UTF8.EncodingName));
+				var jn = _objectMapper.ReadValue(StringHelper.NewString((sbyte[])(object)bytes, offset, length, Encoding.UTF8.EncodingName));
 				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
 			catch (IOException ioe)
@@ -62,7 +59,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 		}
 
-		public object Read(Stream inputStream)
+		public GenericJsonRecord Read(Stream inputStream)
 		{
 			try
 			{
@@ -75,23 +72,10 @@ namespace SharpPulsar.Impl.Schema.Generic
 			}
 			finally
 			{
-				try
-				{
-					inputStream.Close();
-				}
-				catch (IOException e)
-				{
-					Log.LogError("GenericJsonReader close inputStream close error", e.Message);
-				}
+				inputStream.Close();
 			}
 		}
 
-		object ISchemaReader.Read(sbyte[] Bytes, int Offset, int Length)
-		{
-			throw new System.NotImplementedException();
-		}
-
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(GenericJsonReader));
 	}
 
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Avro.Generic;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,18 +23,17 @@ using Avro.Generic;
 /// </summary>
 namespace SharpPulsar.Schema
 {
-	using SharpPulsar.Interfaces.Interceptor.Schema;
-
-
 	/// <summary>
 	/// Builder to build <seealso cref="GenericRecord"/>.
 	/// </summary>
-	public class SchemaDefinitionBuilderImpl : ISchemaDefinitionBuilder
+	public class SchemaDefinitionBuilderImpl<T> : ISchemaDefinitionBuilder<T>
 	{
 
 		public const string AlwaysAllowNull = "__alwaysAllowNull";
         public const string Jsr310ConversionEnabled = "__jsr310ConversionEnabled";
+		private ISchemaReader<T> _reader;
 
+		private ISchemaWriter<T> _writer;
 		/// <summary>
 		/// the schema definition class
 		/// </summary>
@@ -69,56 +69,69 @@ namespace SharpPulsar.Schema
 		/// </summary>
 		private bool _supportSchemaVersioning = false;
 
-		public ISchemaDefinitionBuilder WithAlwaysAllowNull(bool alwaysAllowNull)
+		public ISchemaDefinitionBuilder<T> WithAlwaysAllowNull(bool alwaysAllowNull)
 		{
 			_alwaysAllowNull = alwaysAllowNull;
 			return this;
 		}
 
 
-        public ISchemaDefinitionBuilder WithJsr310ConversionEnabled(bool jsr310ConversionEnabled)
+        public ISchemaDefinitionBuilder<T> WithJSR310ConversionEnabled(bool jsr310ConversionEnabled)
         {
             _jsr310ConversionEnabled = jsr310ConversionEnabled;
             return this;
         }
 
-		public ISchemaDefinitionBuilder AddProperty(string key, string value)
+		public ISchemaDefinitionBuilder<T> AddProperty(string key, string value)
 		{
 			_properties[key] = value;
 			return this;
 		}
 
-		public ISchemaDefinitionBuilder WithPojo(Type clazz)
+		public ISchemaDefinitionBuilder<T> WithPojo(Type clazz)
 		{
 			_clazz = clazz;
 			return this;
 		}
 
-		public ISchemaDefinitionBuilder WithJsonDef(string jsonDef)
+		public ISchemaDefinitionBuilder<T> WithJsonDef(string jsonDef)
 		{
 			_jsonDef = jsonDef;
 			return this;
 		}
 
-		public  ISchemaDefinitionBuilder WithSupportSchemaVersioning(bool supportSchemaVersioning)
+		public  ISchemaDefinitionBuilder<T> WithSupportSchemaVersioning(bool supportSchemaVersioning)
 		{
 			_supportSchemaVersioning = supportSchemaVersioning;
 			return this;
 		}
 
-		public  ISchemaDefinitionBuilder WithProperties(IDictionary<string, string> properties)
+		public  ISchemaDefinitionBuilder<T> WithProperties(IDictionary<string, string> properties)
 		{
 			_properties = properties;
 			return this;
 		}
 
-		public  ISchemaDefinition Build()
+		public ISchemaDefinitionBuilder<T> WithSchemaReader(ISchemaReader<T> reader)
+		{
+			_reader = reader;
+			return this;
+		}
+
+
+		public ISchemaDefinitionBuilder<T> WithSchemaWriter(ISchemaWriter<T> writer)
+		{
+			_writer = writer;
+			return this;
+		}
+
+		public  ISchemaDefinition<T> Build()
 		{
 			Precondition.Condition.CheckArgument(!string.IsNullOrWhiteSpace(_jsonDef) || _clazz != null, "Must specify one of the pojo or jsonDef for the schema definition.");
 			Precondition.Condition.CheckArgument(!(!string.IsNullOrWhiteSpace(_jsonDef) && _clazz != null), "Not allowed to set pojo and jsonDef both for the schema definition.");
 			_properties[AlwaysAllowNull] = _alwaysAllowNull ? "true" : "false";
 			_properties[Jsr310ConversionEnabled] = _jsr310ConversionEnabled ? "true" : "false";
-			return new SchemaDefinitionImpl(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning, _jsr310ConversionEnabled);
+			return new SchemaDefinitionImpl<T>(_clazz, _jsonDef, _alwaysAllowNull, _properties, _supportSchemaVersioning, _jsr310ConversionEnabled, _reader, _writer);
 
 		}
 	}

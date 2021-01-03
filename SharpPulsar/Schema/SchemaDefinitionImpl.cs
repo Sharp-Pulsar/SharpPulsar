@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Akka.Util;
+using SharpPulsar.Interfaces.Schema;
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,20 +24,17 @@ using System.Collections.Immutable;
 namespace SharpPulsar.Schema
 {
 
-	using SharpPulsar.Interfaces.Interceptor.Schema;
-
-
 	/// <summary>
 	/// A json schema definition
-	/// <seealso cref="ISchemaDefinition"/> for the json schema definition.
+	/// <seealso cref="ISchemaDefinition<T>"/> for the json schema definition.
 	/// </summary>
-	public class SchemaDefinitionImpl : ISchemaDefinition
-    {
+	public class SchemaDefinitionImpl<T> : ISchemaDefinition<T>
+	{
 
-        /// <summary>
-        /// the schema definition class
-        /// </summary>
-        private Type _pojo;
+		/// <summary>
+		/// the schema definition class
+		/// </summary>
+		private Type _pojo = typeof(T);
 		/// <summary>
 		/// The flag of schema type always allow null
 		/// 
@@ -45,45 +43,111 @@ namespace SharpPulsar.Schema
 		/// false you can define the field by yourself by the annotation@Nullable
 		/// 
 		/// </summary>
-		public virtual bool AlwaysAllowNull {get;}
-		public virtual bool Jsr310ConversionEnabled {get;}
+		private readonly bool _alwaysAllowNull;
 
-		private IDictionary<string, string> _properties;
+		private readonly IDictionary<string, string> _properties;
 
-		public virtual string JsonDef {get;}
+		private readonly string _jsonDef;
 
-		public virtual bool SupportSchemaVersioning {get;}
+		private readonly bool _supportSchemaVersioning;
 
-		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning, bool jsr310ConversionEnabled)
+		private readonly bool _jsr310ConversionEnabled;
+
+		private readonly ISchemaReader<T> _reader;
+
+		private readonly ISchemaWriter<T> _writer;
+
+		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning, bool jsr310ConversionEnabled, ISchemaReader<T> reader, ISchemaWriter<T> writer)
 		{
-			AlwaysAllowNull = alwaysAllowNull;
-			_properties = properties;
-			JsonDef = jsonDef;
-			_pojo = pojo;
-			SupportSchemaVersioning = supportSchemaVersioning;
-            Jsr310ConversionEnabled = jsr310ConversionEnabled;
-        }
+			this._alwaysAllowNull = alwaysAllowNull;
+			this._properties = properties;
+			this._jsonDef = jsonDef;
+			this._pojo = pojo;
+			this._supportSchemaVersioning = supportSchemaVersioning;
+			this._jsr310ConversionEnabled = jsr310ConversionEnabled;
+			this._reader = reader;
+			this._writer = writer;
+		}
+
 		/// <summary>
 		/// get schema whether always allow null or not
 		/// </summary>
 		/// <returns> schema always null or not </returns>
+		public virtual bool AlwaysAllowNull
+		{
+			get
+			{
+				return _alwaysAllowNull;
+			}
+		}
+
+		public bool Jsr310ConversionEnabled
+		{
+			get
+			{
+				return _jsr310ConversionEnabled;
+			}
+		}
 
 		/// <summary>
 		/// Get json schema definition
 		/// </summary>
 		/// <returns> schema class </returns>
+		public virtual string JsonDef
+		{
+			get
+			{
+				return _jsonDef;
+			}
+		}
+
 		/// <summary>
 		/// Get pojo schema definition
 		/// </summary>
 		/// <returns> pojo class </returns>
-		public virtual Type Pojo => _pojo;
+		public Type Pojo
+		{
+			get
+			{
+				return _pojo;
+			}
+		}
 
+		public bool SupportSchemaVersioning
+		{
+			get
+			{
+				return _supportSchemaVersioning;
+			}
+		}
 
-        /// <summary>
+		public Option<ISchemaReader<T>> SchemaReaderOpt
+		{
+			get
+			{
+				return new Option<ISchemaReader<T>>(_reader);
+			}
+		}
+
+		public Option<ISchemaWriter<T>> SchemaWriterOpt
+		{
+			get
+			{
+				return new Option<ISchemaWriter<T>>(_writer);
+			}
+		}
+
+		/// <summary>
 		/// Get schema class
 		/// </summary>
 		/// <returns> schema class </returns>
-		public virtual IDictionary<string, string> Properties => _properties.ToImmutableDictionary();
-    }
+		public virtual IDictionary<string, string> Properties
+		{
+			get
+			{
+				return new Dictionary<string, string>(_properties);
+			}
+		}
 
+	}
 }

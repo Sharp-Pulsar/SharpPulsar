@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Akka.Util;
 using SharpPulsar.Impl;
+using SharpPulsar.Pulsar;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,16 +27,16 @@ namespace SharpPulsar.Interfaces.Schema
     /// <summary>
 	/// Interface for schema definition.
 	/// </summary>
-	public interface ISchemaDefinition
+	public interface ISchemaDefinition<T>
     {
 
 		/// <summary>
 		/// Get a new builder instance that can used to configure and build a <seealso cref="SchemaDefinition"/> instance.
 		/// </summary>
-		/// <returns> the <seealso cref="SchemaDefinition"/> </returns>
-        static ISchemaDefinitionBuilder Builder()
+		/// <returns> the <seealso cref="ISchemaDefinition<T>"/> </returns>
+        static ISchemaDefinitionBuilder<T> Builder()
         {
-            return DefaultImplementation.NewSchemaDefinitionBuilder();
+            return DefaultImplementation.NewSchemaDefinitionBuilder<T>();
         }
 
 		/// <summary>
@@ -72,13 +73,13 @@ namespace SharpPulsar.Interfaces.Schema
 		/// Get a configured schema reader.
 		/// </summary>
 		/// <returns> optional containing configured schema reader or empty optional if none is configure </returns>
-		Option<ISchemaReader> SchemaReaderOpt { get; }
+		Option<ISchemaReader<T>> SchemaReaderOpt { get; }
 
 		/// <summary>
 		/// Get a configured schema writer.
 		/// </summary>
 		/// <returns> optional containing configured schema writer or empty optional if none is configure </returns>
-		Option<ISchemaWriter> SchemaWriterOpt { get; }
+		Option<ISchemaWriter<T>> SchemaWriterOpt { get; }
 	}
 
 }

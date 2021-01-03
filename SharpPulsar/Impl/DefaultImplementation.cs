@@ -11,6 +11,7 @@ using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Schema;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -40,7 +41,7 @@ namespace SharpPulsar.Pulsar
 
 		//private static readonly Type CLIENT_BUILDER_IMPL = new ClientBuilderImpl();
 
-		public static ISchemaDefinitionBuilder NewSchemaDefinitionBuilder()
+		public static ISchemaDefinitionBuilder<T> NewSchemaDefinitionBuilder<T>()
 		{
 			return new SchemaDefinitionBuilderImpl();
 		}

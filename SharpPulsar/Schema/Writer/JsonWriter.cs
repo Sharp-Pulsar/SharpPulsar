@@ -18,14 +18,14 @@
 /// </summary>
 
 using System;
-using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Interfaces.Schema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
-namespace SharpPulsar.Impl.Schema.Writer
+namespace SharpPulsar.Schema.Writer
 {
 
-	public class JsonWriter : ISchemaWriter
+	public class JsonWriter<T> : ISchemaWriter<T>
 	{
 
 		private readonly ObjectMapper _objectMapper;
@@ -35,13 +35,13 @@ namespace SharpPulsar.Impl.Schema.Writer
 			this._objectMapper = objectMapper;
 		}
 
-		public sbyte[] Write(object message)
+		public sbyte[] Write(T message)
 		{
 			try
 			{
 				return (sbyte[])(Array)_objectMapper.WriteValueAsBytes(message);
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
 				throw new SchemaSerializationException(e);
 			}

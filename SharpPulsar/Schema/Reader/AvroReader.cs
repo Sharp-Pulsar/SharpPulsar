@@ -1,5 +1,5 @@
 ﻿using Avro.Generic;
-using SharpPulsar.Interfaces.Interceptor.Schema;
+using SharpPulsar.Interfaces.Schema;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,17 +7,18 @@ using System.Text;
 
 namespace SharpPulsar.Schema.Reader
 {
-    public class AvroReader : ISchemaReader
+    public class AvroReader<T> : ISchemaReader<T>
     {
-        private GenericReader _reader;
-        public object Read(sbyte[] bytes, int offset, int length)
+        private GenericReader<T> _reader;
+        public T Read(byte[] bytes, int offset, int length)
         {
             throw new NotImplementedException();
         }
 
-        public object Read(Stream inputStream)
+        public T Read(Stream inputStream)
         {
             throw new NotImplementedException();
         }
+
     }
 }

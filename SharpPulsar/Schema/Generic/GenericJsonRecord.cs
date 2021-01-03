@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using SharpPulsar.Common;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,8 +23,6 @@ using Newtonsoft.Json.Linq;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = Api.Schema.Field;
-
 	/// <summary>
 	/// Generic json record.
 	/// </summary>

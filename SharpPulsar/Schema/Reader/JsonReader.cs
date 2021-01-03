@@ -2,9 +2,9 @@
 using System.IO;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,10 +24,10 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema.Reader
+namespace SharpPulsar.Schema.Reader
 {
 
-	public class JsonReader : ISchemaReader
+	public class JsonReader<T> : ISchemaReader<T>
 	{
 		private readonly ObjectMapper _objectMapper;
 
@@ -36,11 +36,11 @@ namespace SharpPulsar.Impl.Schema.Reader
 			this._objectMapper = objectMapper;
 		}
 
-		public  object Read(sbyte[] bytes, int offset, int length)
+		public  T Read(byte[] bytes, int offset, int length)
 		{
 			try
 			{
-				return _objectMapper.ReadValue((byte[])(Array)bytes, offset, length);
+				return (T)_objectMapper.ReadValue(bytes, offset, length);
 			}
 			catch (IOException e)
 			{
@@ -48,13 +48,13 @@ namespace SharpPulsar.Impl.Schema.Reader
 			}
 		}
 
-		public object Read(Stream inputStream)
+		public T Read(Stream inputStream)
 		{
 			try
             {
                 var t = _objectMapper.ReadValue(inputStream).Children<JObject>();
 				
-				return t;
+				return (T)Convert.ChangeType(t, typeof(T));
 			}
 			catch (IOException e)
 			{
@@ -73,7 +73,7 @@ namespace SharpPulsar.Impl.Schema.Reader
 			}
 		}
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(JsonReader));
+		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(JsonReader<T>));
 	}
 
 }

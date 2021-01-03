@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common;
+using SharpPulsar.Interfaces.Schema;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,8 +22,6 @@
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	using Field = Api.Schema.Field;
-	using IGenericRecord = Api.Schema.IGenericRecord;
 
 	/// <summary>
 	/// A generic record carrying schema version.

@@ -32,11 +32,11 @@ namespace SharpPulsar.Schema
 	public class AvroSchema<T> : AvroBaseStructSchema<T>
 	{
 		private object _classInstance;
-		private AvroSchema(SchemaInfo schemaInfo) : base(schemaInfo)
+		private AvroSchema(ISchemaInfo schemaInfo) : base(schemaInfo)
 		{
 			SchemaInfo = schemaInfo;
 		}
-		private AvroSchema(ISchemaReader<T> reader, ISchemaWriter<T> writer, SchemaInfo schemaInfo) : base(schemaInfo)
+		private AvroSchema(ISchemaReader<T> reader, ISchemaWriter<T> writer, ISchemaInfo schemaInfo) : base(schemaInfo)
 		{
 			Reader = reader;
 			Writer = writer;
@@ -44,7 +44,7 @@ namespace SharpPulsar.Schema
 
 		public override ISchemaInfo SchemaInfo { get; }
 
-		public static AvroSchema<T> Of(ISchemaDefinition schemaDefinition)
+		public static AvroSchema<T> Of(ISchemaDefinition<T> schemaDefinition)
 		{
 			if(schemaDefinition.SchemaReaderOpt.HasValue && schemaDefinition.SchemaWriterOpt.HasValue)
 				return new AvroSchema<T>(schemaDefinition.SchemaReaderOpt.Value, schemaDefinition.SchemaWriterOpt.Value, SchemaUtils.ParseSchemaInfo(schemaDefinition, SchemaType.AVRO));
@@ -54,12 +54,12 @@ namespace SharpPulsar.Schema
 
 		public static AvroSchema<T> Of(Type pojo)
 		{
-			return Of(ISchemaDefinition.Builder().WithPojo(pojo).Build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
 		public static AvroSchema<T> Of(Type pojo, IDictionary<string, string> properties)
 		{
-			return Of(ISchemaDefinition.Builder().WithPojo(pojo).WithProperties(properties).Build());
+			return Of(ISchemaDefinition<T>.Builder().WithPojo(pojo).WithProperties(properties).Build());
 		}
 
 	}

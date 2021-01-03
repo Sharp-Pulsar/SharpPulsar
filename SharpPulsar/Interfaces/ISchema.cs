@@ -197,7 +197,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a Schema instance </returns>
 		static ISchema<T> Json(Type pojo)
 		{
-            return DefaultImplementation.NewAvroSchema(ISchemaDefinition.Builder().WithPojo(pojo).Build());
+            return DefaultImplementation.NewAvroSchema(ISchemaDefinition<T>.Builder<T>().WithPojo(pojo).Build());
         }
 
         /// <summary>
