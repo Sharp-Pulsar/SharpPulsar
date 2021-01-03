@@ -16,25 +16,24 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
-    /// <summary>
-    /// Configuration for the "dead letter queue" feature in consumer.
-    /// </summary>
-    /// <seealso cref= DeadLetterPolicy </seealso>
-    public class DeadLetterPolicy
-    {
+	/// <summary>
+	/// A field in a record, consisting of a field name, index, and
+	/// <seealso cref="ISchema"/> for the field value.
+	/// </summary>
+	public class Field
+	{
 
-        /// <summary>
-        /// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
-        /// </summary>
-        public int MaxRedeliverCount { get; set; }
+		/// <summary>
+		/// The field name.
+		/// </summary>
+		public string Name;
+		/// <summary>
+		/// The index of the field within the record.
+		/// </summary>
+		public int Index;
 
-        /// <summary>
-        /// Name of the topic where the failing messages will be sent.
-        /// </summary>
-        public string DeadLetterTopic { get; set; }
-
-    }
+	}
 
 }

@@ -1,12 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
-using SharpPulsar.Api;
-using SharpPulsar.Api.Schema;
-using SharpPulsar.Common.Enum;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,75 +18,95 @@ using SharpPulsar.Shared;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema
+namespace Org.Apache.Pulsar.Client.Impl.Schema
 {
+	//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
+	//	import static com.google.common.@base.Preconditions.checkArgument;
+
+	using Getter = lombok.Getter;
+	using Slf4j = lombok.@extern.slf4j.Slf4j;
+	using Schema = org.apache.pulsar.client.api.Schema;
+	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
+	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
+	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
+	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
+	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
+	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
 
 	/// <summary>
 	/// [Key, Value] pair schema definition
 	/// </summary>
-	public class KeyValueSchema<TK, TV> : ISchema<KeyValue<TK, TV>>
+	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+	//ORIGINAL LINE: @Slf4j public class KeyValueSchema<K, V> implements org.apache.pulsar.client.api.Schema<org.apache.pulsar.common.schema.KeyValue<K, V>>
+	public class KeyValueSchema<K, V> : Schema<KeyValue<K, V>>
 	{
-		private readonly ISchema<TK> keySchema;
-		private readonly ISchema<TV> valueSchema;
+		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+		//ORIGINAL LINE: @Getter private final org.apache.pulsar.client.api.Schema<K> keySchema;
+		private readonly Schema<K> _keySchema;
+		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+		//ORIGINAL LINE: @Getter private final org.apache.pulsar.client.api.Schema<V> valueSchema;
+		private readonly Schema<V> _valueSchema;
 
-		private readonly KeyValueEncodingType keyValueEncodingType;
+		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
+		//ORIGINAL LINE: @Getter private final org.apache.pulsar.common.schema.KeyValueEncodingType keyValueEncodingType;
+		private readonly KeyValueEncodingType _keyValueEncodingType;
 
 		// schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
 		//   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
-		private SchemaInfo schemaInfo;
-		protected internal ISchemaInfoProvider _schemaInfoProvider;
+		private SchemaInfo _schemaInfo;
+		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods of the current type:
+		protected internal SchemaInfoProvider SchemaInfoProviderConflict;
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-		public static ISchema<KeyValue<TK, TV>> Of(TK key, TV value, SchemaType type)
+		public static Schema<KeyValue<K, V>> Of<K, V>(Type Key, Type Value, SchemaType Type)
 		{
-			Precondition.Condition.CheckArgument(SchemaType.Json == type || SchemaType.Avro == type);
-			if (SchemaType.Json == type)
+			checkArgument(SchemaType.JSON == Type || SchemaType.AVRO == Type);
+			if (SchemaType.JSON == Type)
 			{
-				return new KeyValueSchema<TK, TV>(JsonSchema<TK>.Of(key), JsonSchema<TV>.Of(value), KeyValueEncodingType.Inline);
+				return new KeyValueSchema<KeyValue<K, V>>(JSONSchema.of(Key), JSONSchema.of(Value), KeyValueEncodingType.INLINE);
 			}
 			else
-            {
-                return null;
-                // AVRO
-                //return new KeyValueSchema<TK, TV>(AvroSchema.Of(key), AvroSchema.Of(value), KeyValueEncodingType.Inline);
-            }
+			{
+				// AVRO
+				return new KeyValueSchema<KeyValue<K, V>>(AvroSchema.of(Key), AvroSchema.of(Value), KeyValueEncodingType.INLINE);
+			}
 		}
 
 
-		public static ISchema<KeyValue<TK, TV>> Of<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema)
+		public static Schema<KeyValue<K, V>> Of<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema)
 		{
-			return new KeyValueSchema<TK, TV>(keySchema, valueSchema, KeyValueEncodingType.Inline);
+			return new KeyValueSchema<KeyValue<K, V>>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
 		}
 
-		public static ISchema<KeyValue<TK, TV>> Of<TK, TV>(ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		public static Schema<KeyValue<K, V>> Of<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			return new KeyValueSchema<TK, TV>(keySchema, valueSchema, keyValueEncodingType);
+			return new KeyValueSchema<KeyValue<K, V>>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
 
-		private static readonly ISchema<KeyValue<sbyte[], sbyte[]>> KV_BYTES = new KeyValueSchema<sbyte[], sbyte[]>(BytesSchema.Of(), BytesSchema.Of());
+		private static readonly Schema<KeyValue<sbyte[], sbyte[]>> _kvBytes = new KeyValueSchema<KeyValue<sbyte[], sbyte[]>>(BytesSchema.of(), BytesSchema.of());
 
-		public static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+		public static Schema<KeyValue<sbyte[], sbyte[]>> KvBytes()
 		{
-			return KV_BYTES;
+			return _kvBytes;
 		}
 
-		public  bool SupportSchemaVersioning()
+		public override bool SupportSchemaVersioning()
 		{
-			return keySchema.SupportSchemaVersioning() || valueSchema.SupportSchemaVersioning();
+			return _keySchema.supportSchemaVersioning() || _valueSchema.supportSchemaVersioning();
 		}
 
-		private KeyValueSchema(ISchema<TK> keySchema, ISchema<TV> valueSchema) : this(keySchema, valueSchema, KeyValueEncodingType.Inline)
+		private KeyValueSchema(Schema<K> KeySchema, Schema<V> ValueSchema) : this(KeySchema, ValueSchema, KeyValueEncodingType.INLINE)
 		{
 		}
 
-		private KeyValueSchema(ISchema<TK> keySchema, ISchema<TV> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		private KeyValueSchema(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			this.keySchema = keySchema;
-			this.valueSchema = valueSchema;
-			this.keyValueEncodingType = keyValueEncodingType;
-			this._schemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass(this);
+			this._keySchema = KeySchema;
+			this._valueSchema = ValueSchema;
+			this._keyValueEncodingType = KeyValueEncodingType;
+			this.SchemaInfoProviderConflict = new SchemaInfoProviderAnonymousInnerClass(this);
 			// if either key schema or value schema requires fetching schema info,
 			// we don't need to configure the key/value schema info right now.
 			// defer configuring the key/value schema info until `configureSchemaInfo` is called.
@@ -104,149 +116,215 @@ namespace SharpPulsar.Impl.Schema
 			}
 		}
 
-		public class SchemaInfoProviderAnonymousInnerClass : ISchemaInfoProvider
+		private class SchemaInfoProviderAnonymousInnerClass : SchemaInfoProvider
 		{
-			private readonly KeyValueSchema<TK, TV> outerInstance;
+			private readonly KeyValueSchema<K, V> _outerInstance;
 
-			public SchemaInfoProviderAnonymousInnerClass(KeyValueSchema<TK, TV> outerInstance)
+			public SchemaInfoProviderAnonymousInnerClass(KeyValueSchema<K, V> OuterInstance)
 			{
-				this.outerInstance = outerInstance;
+				this._outerInstance = OuterInstance;
 			}
 
-			public ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
+			public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-				return new ValueTask<ISchemaInfo>(outerInstance.schemaInfo);
+				return CompletableFuture.completedFuture(outerInstance._schemaInfo);
 			}
 
-			public ValueTask<ISchemaInfo> LatestSchema => new ValueTask<ISchemaInfo>(outerInstance.schemaInfo);
+			public override CompletableFuture<SchemaInfo> LatestSchema
+			{
+				get
+				{
+					return CompletableFuture.completedFuture(outerInstance._schemaInfo);
+				}
+			}
 
-            public string TopicName => "key-value-schema";
-        }
+			public override string TopicName
+			{
+				get
+				{
+					return "key-value-schema";
+				}
+			}
+		}
 
 		// encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
-		public virtual sbyte[] Encode(KeyValue<TK, TV> message)
+		public virtual sbyte[] Encode(KeyValue<K, V> Message)
 		{
-			if (keyValueEncodingType == KeyValueEncodingType.Inline)
+			if (_keyValueEncodingType != null && _keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
-				return KeyValue<TK, TV>.Encode(message.Key, keySchema, message.Value, valueSchema);
+				return KeyValue.encode(Message.Key, _keySchema, Message.Value, _valueSchema);
 			}
 			else
 			{
-				return valueSchema.Encode(message.Value);
+				if (Message.Value == null)
+				{
+					return null;
+				}
+				return _valueSchema.encode(Message.Value);
 			}
 		}
 
-		public virtual KeyValue<TK, TV> Decode(sbyte[] bytes)
+		public virtual KeyValue<K, V> Decode(sbyte[] Bytes)
 		{
-			return Decode(bytes, null);
+			return Decode(Bytes, null);
 		}
 
-		public virtual KeyValue<TK, TV> Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public virtual KeyValue<K, V> Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
 		{
-			if (this.keyValueEncodingType == KeyValueEncodingType.Separated)
+			if (this._keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 			{
 				throw new SchemaSerializationException("This method cannot be used under this SEPARATED encoding type");
 			}
 
-			return KeyValue<TK, TV>.Decode(bytes, (keyBytes, valueBytes) => Decode(keyBytes, valueBytes, schemaVersion));
+			return KeyValue.decode(Bytes, (keyBytes, valueBytes) => Decode(keyBytes, valueBytes, SchemaVersion));
 		}
 
-		public virtual KeyValue<TK, TV> Decode(sbyte[] keyBytes, sbyte[] valueBytes, sbyte[] schemaVersion)
+		public virtual KeyValue<K, V> Decode(sbyte[] KeyBytes, sbyte[] ValueBytes, sbyte[] SchemaVersion)
 		{
-			TK k;
-			if (keySchema.SupportSchemaVersioning() && schemaVersion != null)
+			K K;
+			if (KeyBytes == null)
 			{
-				k = keySchema.Decode(keyBytes, schemaVersion);
+				K = default(K);
 			}
 			else
 			{
-				k = keySchema.Decode(keyBytes);
+				if (_keySchema.supportSchemaVersioning() && SchemaVersion != null)
+				{
+					K = _keySchema.decode(KeyBytes, SchemaVersion);
+				}
+				else
+				{
+					K = _keySchema.decode(KeyBytes);
+				}
 			}
-			TV v;
-			if (valueSchema.SupportSchemaVersioning() && schemaVersion != null)
+
+			V V;
+			if (ValueBytes == null)
 			{
-				v = valueSchema.Decode(valueBytes, schemaVersion);
+				V = default(V);
 			}
 			else
 			{
-				v = valueSchema.Decode(valueBytes);
+				if (_valueSchema.supportSchemaVersioning() && SchemaVersion != null)
+				{
+					V = _valueSchema.decode(ValueBytes, SchemaVersion);
+				}
+				else
+				{
+					V = _valueSchema.decode(ValueBytes);
+				}
 			}
-			return new KeyValue<TK, TV>(k, v);
+			return new KeyValue<K, V>(K, V);
 		}
 
-		public ISchemaInfo SchemaInfo => this.schemaInfo;
-
-        public  ISchemaInfoProvider SchemaInfoProvider
+		public virtual SchemaInfo SchemaInfo
 		{
-			set => this._schemaInfoProvider = value;
-        }
-
-		public bool RequireFetchingSchemaInfo()
-		{
-			return keySchema.RequireFetchingSchemaInfo() || valueSchema.RequireFetchingSchemaInfo();
+			get
+			{
+				return this._schemaInfo;
+			}
 		}
 
-		public void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
+		public virtual SchemaInfoProvider SchemaInfoProvider
 		{
-			KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
-			keySchema.ConfigureSchemaInfo(topicName, "key", kvSchemaInfo.Key);
-			valueSchema.ConfigureSchemaInfo(topicName, "value", kvSchemaInfo.Value);
+			set
+			{
+				this.SchemaInfoProviderConflict = value;
+			}
+		}
+
+		public override bool RequireFetchingSchemaInfo()
+		{
+			return _keySchema.requireFetchingSchemaInfo() || _valueSchema.requireFetchingSchemaInfo();
+		}
+
+		public override void ConfigureSchemaInfo(string TopicName, string ComponentName, SchemaInfo SchemaInfo)
+		{
+			KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo = KeyValueSchemaInfo.decodeKeyValueSchemaInfo(SchemaInfo);
+			_keySchema.configureSchemaInfo(TopicName, "key", KvSchemaInfo.Key);
+			_valueSchema.configureSchemaInfo(TopicName, "value", KvSchemaInfo.Value);
 			ConfigureKeyValueSchemaInfo();
 
-			if (null == this.schemaInfo)
+			if (null == this._schemaInfo)
 			{
-				throw new Exception("No key schema info or value schema info : key = " + keySchema.SchemaInfo + ", value = " + valueSchema.SchemaInfo);
+				throw new Exception("No key schema info or value schema info : key = " + _keySchema.SchemaInfo + ", value = " + _valueSchema.SchemaInfo);
 			}
+		}
+
+		public override Schema<KeyValue<K, V>> Clone()
+		{
+			return KeyValueSchema.of(_keySchema.clone(), _valueSchema.clone(), _keyValueEncodingType);
 		}
 
 		private void ConfigureKeyValueSchemaInfo()
 		{
-			this.schemaInfo = KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(keySchema, valueSchema, keyValueEncodingType);
+			this._schemaInfo = KeyValueSchemaInfo.encodeKeyValueSchemaInfo(_keySchema, _valueSchema, _keyValueEncodingType);
 
-			this.keySchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass2(this);
+			this._keySchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass2(this);
 
-			this.valueSchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass3(this);
+			this._valueSchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass3(this);
 		}
 
-		public class SchemaInfoProviderAnonymousInnerClass2 : ISchemaInfoProvider
+		private class SchemaInfoProviderAnonymousInnerClass2 : SchemaInfoProvider
 		{
-			private readonly KeyValueSchema<TK, TV> outerInstance;
+			private readonly KeyValueSchema<K, V> _outerInstance;
 
-			public SchemaInfoProviderAnonymousInnerClass2(KeyValueSchema<TK, TV> outerInstance)
+			public SchemaInfoProviderAnonymousInnerClass2(KeyValueSchema<K, V> OuterInstance)
 			{
-				this.outerInstance = outerInstance;
+				this._outerInstance = OuterInstance;
 			}
 
-			public ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
+			public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-				var oy =  outerInstance._schemaInfoProvider.GetSchemaByVersion(schemaVersion).AsTask().ContinueWith(si => new ValueTask<ISchemaInfo>(KeyValueSchemaInfo.DecodeKeyValueSchemaInfo((SchemaInfo)si.Result).Key));
-				return oy.Result;
-            }
+				return outerInstance.SchemaInfoProviderConflict.getSchemaByVersion(SchemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Key);
+			}
 
-			public ValueTask<ISchemaInfo> LatestSchema => new ValueTask<ISchemaInfo>(((StructSchema<TK>) outerInstance.keySchema).SchemaInfo);
+			public override CompletableFuture<SchemaInfo> LatestSchema
+			{
+				get
+				{
+					return CompletableFuture.completedFuture(((AbstractStructSchema<K>)outerInstance._keySchema).schemaInfo);
+				}
+			}
 
-            public string TopicName => "key-schema";
-        }
+			public override string TopicName
+			{
+				get
+				{
+					return "key-schema";
+				}
+			}
+		}
 
-		public class SchemaInfoProviderAnonymousInnerClass3 : ISchemaInfoProvider
+		private class SchemaInfoProviderAnonymousInnerClass3 : SchemaInfoProvider
 		{
-			private readonly KeyValueSchema<TK, TV> _outerInstance;
+			private readonly KeyValueSchema<K, V> _outerInstance;
 
-			public SchemaInfoProviderAnonymousInnerClass3(KeyValueSchema<TK, TV> outerInstance)
+			public SchemaInfoProviderAnonymousInnerClass3(KeyValueSchema<K, V> OuterInstance)
 			{
-				this._outerInstance = outerInstance;
+				this._outerInstance = OuterInstance;
 			}
 
-			public ValueTask<ISchemaInfo> GetSchemaByVersion(sbyte[] schemaVersion)
+			public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-                var oy = _outerInstance._schemaInfoProvider.GetSchemaByVersion(schemaVersion).AsTask().ContinueWith(si => new ValueTask<ISchemaInfo>(KeyValueSchemaInfo.DecodeKeyValueSchemaInfo((SchemaInfo)si.Result).Key));
-                return oy.Result;
+				return outerInstance.SchemaInfoProviderConflict.getSchemaByVersion(SchemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Value);
 			}
 
-			public ValueTask<ISchemaInfo> LatestSchema => new ValueTask<ISchemaInfo>(((StructSchema<TV>) _outerInstance.valueSchema).SchemaInfo);
+			public override CompletableFuture<SchemaInfo> LatestSchema
+			{
+				get
+				{
+					return CompletableFuture.completedFuture(((AbstractStructSchema<V>)outerInstance._valueSchema).schemaInfo);
+				}
+			}
 
-            public string TopicName => "value-schema";
-        }
+			public override string TopicName
+			{
+				get
+				{
+					return "value-schema";
+				}
+			}
+		}
 	}
-
 }

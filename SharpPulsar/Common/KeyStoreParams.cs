@@ -16,25 +16,16 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+
+namespace SharpPulsar.Common
 {
 	/// <summary>
-	/// Standard hashing functions available when choosing the partition to use for a particular message.
-	/// </summary>
-	public enum HashingScheme
-	{
-
-		/// <summary>
-		/// Use regular <code>String.hashCode()</code>.
-		/// </summary>
-		JavaStringHash,
-
-		/// <summary>
-		/// Use Murmur3 hashing function.
-		/// <a href="https://en.wikipedia.org/wiki/MurmurHash">https://en.wikipedia.org/wiki/MurmurHash</a>
-		/// </summary>
-		Murmur332Hash
-
-	}
-
+    /// KeyStore parameters used for tls authentication.
+    /// </summary>
+    public class KeyStoreParams
+    {
+        public string KeyStoreType { get; set; }
+        public string KeyStorePath { get; set; }
+        public string KeyStorePassword { get; set; }
+    }
 }

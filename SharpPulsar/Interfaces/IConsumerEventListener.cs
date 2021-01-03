@@ -20,7 +20,7 @@
 using System;
 using SharpPulsar.Akka.InternalCommands.Consumer;
 
-namespace SharpPulsar.Api
+namespace SharpPulsar.Interfaces
 {
 
 	/// <summary>

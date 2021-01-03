@@ -16,24 +16,24 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Interceptor.Schema
+namespace SharpPulsar.Common
 {
 	/// <summary>
-	/// A field in a record, consisting of a field name, index, and
-	/// <seealso cref="ISchema"/> for the field value.
+	/// KeyShared mode of KeyShared subscription.
 	/// </summary>
-	public class Field
+	public enum KeySharedMode
 	{
 
 		/// <summary>
-		/// The field name.
+		/// Auto split while new consumer connected.
 		/// </summary>
-		public string Name;
-		/// <summary>
-		/// The index of the field within the record.
-		/// </summary>
-		public int Index;
+		AutoSplit,
 
+		/// <summary>
+		/// New consumer with fixed hash range to attach the topic, if new consumer use conflict hash range with
+		/// exits consumers, new consumer will be rejected.
+		/// </summary>
+		Sticky
 	}
 
 }

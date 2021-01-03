@@ -1,6 +1,6 @@
-﻿using System;
-using SharpPulsar.Interfaces.Interceptor.Schema;
-using SharpPulsar.Impl;
+﻿using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Pulsar;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,8 +20,8 @@ using SharpPulsar.Impl;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Interceptor
-{
+namespace SharpPulsar.Interfaces
+{ 
 	/// <summary>
 	/// Message schema definition.
 	/// </summary>

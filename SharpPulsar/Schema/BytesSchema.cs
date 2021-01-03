@@ -18,9 +18,8 @@
 /// </summary>
 
 using System;
-using SharpPulsar.Api;
-using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Common.Schema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schema

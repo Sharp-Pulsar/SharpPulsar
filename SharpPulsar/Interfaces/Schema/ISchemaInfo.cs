@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Shared;
 
-namespace SharpPulsar.Interfaces.Interceptor.Schema
+namespace SharpPulsar.Interfaces.Schema
 {
     public interface ISchemaInfo
     {

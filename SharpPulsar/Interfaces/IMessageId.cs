@@ -20,7 +20,7 @@ using SharpPulsar.Impl;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Interfaces
 {
 
     /// <summary>

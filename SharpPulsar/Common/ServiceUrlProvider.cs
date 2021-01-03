@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
 	/// <summary>
 	/// The provider to provide the service url.

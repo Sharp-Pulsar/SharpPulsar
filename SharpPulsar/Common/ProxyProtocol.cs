@@ -1,5 +1,5 @@
 ﻿
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
     /// <summary>
     /// Protcol type to determine type of proxy routing when client connects to proxy using

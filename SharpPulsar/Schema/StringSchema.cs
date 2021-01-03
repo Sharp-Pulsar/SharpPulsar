@@ -1,9 +1,8 @@
 ﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Interfaces.Interceptor.Schema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text;
 
 /// <summary>

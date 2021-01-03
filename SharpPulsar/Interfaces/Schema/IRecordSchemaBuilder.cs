@@ -19,7 +19,7 @@
 
 using SharpPulsar.Shared;
 
-namespace SharpPulsar.Interfaces.Interceptor.Schema
+namespace SharpPulsar.Interfaces.Schema
 {
     /// <summary>
 	/// Building the schema for a <seealso cref="IGenericRecord"/>.

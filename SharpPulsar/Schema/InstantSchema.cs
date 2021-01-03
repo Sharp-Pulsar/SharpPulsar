@@ -1,6 +1,6 @@
 ﻿using NodaTime;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Interfaces.Interceptor.Schema;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 /// <summary>

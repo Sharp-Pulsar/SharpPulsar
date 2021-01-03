@@ -6,7 +6,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
-using SharpPulsar.Interfaces.Interceptor.Interceptor;
+using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Utils;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 

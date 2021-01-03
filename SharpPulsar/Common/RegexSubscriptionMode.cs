@@ -16,53 +16,28 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
 	/// <summary>
-	/// Int range.
+	/// When subscribing to topics using a regular expression, one can specify
+	/// to only pick a certain type of topics.
 	/// </summary>
-	public class Range
+	public enum RegexSubscriptionMode
 	{
+		/// <summary>
+		/// Only subscribe to persistent topics.
+		/// </summary>
+		PersistentOnly,
 
-		public virtual int Start {get;}
-		public virtual int End {get;}
+		/// <summary>
+		/// Only subscribe to non-persistent topics.
+		/// </summary>
+		NonPersistentOnly,
 
-
-		public Range(int start, int end)
-		{
-			if (end < start)
-			{
-				throw new System.ArgumentException("Range end must >= range start.");
-			}
-			this.Start = start;
-			this.End = end;
-		}
-
-		public static Range Of(int start, int end)
-		{
-			return new Range(start, end);
-		}
-
-
-
-		public virtual Range Intersect(Range range)
-		{
-			int start = range.Start > this.Start ? range.Start : this.Start;
-			int end = range.End < this.End ? range.End : this.End;
-			if (end >= start)
-			{
-				return Range.Of(start, end);
-			}
-			else
-			{
-				return null;
-			}
-		}
-
-		public override string ToString()
-		{
-			return "[" + Start + ", " + End + "]";
-		}
+		/// <summary>
+		/// Subscribe to both persistent and non-persistent topics.
+		/// </summary>
+		AllTopics
 	}
 
 }

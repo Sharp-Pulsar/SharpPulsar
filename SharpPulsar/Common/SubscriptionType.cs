@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
 	/// <summary>
 	/// Types of subscription supported by Pulsar.

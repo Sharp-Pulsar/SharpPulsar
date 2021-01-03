@@ -9,8 +9,8 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Builder;
-using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Shared;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -61,9 +61,9 @@ namespace SharpPulsar.Schema
 		static SchemaUtils()
 		{
 			// string
-			SchemaTypeClasses[SchemaType.String] = new List<Type>{ typeof(string) };
+			SchemaTypeClasses[SchemaType.STRING] = new List<Type>{ typeof(string) };
 			// bytes
-			SchemaTypeClasses[SchemaType.Bytes] = new List<Type>{typeof(sbyte[]), typeof(byte[])};
+			SchemaTypeClasses[SchemaType.BYTES] = new List<Type>{typeof(sbyte[]), typeof(byte[])};
 			// build the reverse mapping
 			SchemaTypeClasses.ToList().ForEach((x => x.Value.ToList().ForEach(clz => JavaClassSchemaTypes.Add(clz, x.Key))));
 		}
@@ -97,18 +97,18 @@ namespace SharpPulsar.Schema
 				throw new System.Exception("Invalid Java object for schema type " + type + " : " + val.GetType() + @" for field : """ + name + @"""");
 			}
 
-			switch (type.InnerEnumValue)
+			switch (type.innerEnumValue)
 			{
-				case SchemaType.InnerEnum.Int8:
-				case SchemaType.InnerEnum.Int16:
-				case SchemaType.InnerEnum.Protobuf:
-				case SchemaType.InnerEnum.Avro:
+				case SchemaType.InnerEnum.INT8:
+				case SchemaType.InnerEnum.INT16:
+				case SchemaType.InnerEnum.PROTOBUF:
+				case SchemaType.InnerEnum.AVRO:
 				case SchemaType.InnerEnum.AutoConsume:
 				case SchemaType.InnerEnum.AutoPublish:
-				case SchemaType.InnerEnum.Auto:
+				case SchemaType.InnerEnum.AUTO:
 				case SchemaType.InnerEnum.KeyValue:
-				case SchemaType.InnerEnum.Json:
-				case SchemaType.InnerEnum.None:
+				case SchemaType.InnerEnum.JSON:
+				case SchemaType.InnerEnum.NONE:
 					throw new System.Exception("Currently " + type.GetType().Name + " is not supported");
 				default:
 					break;

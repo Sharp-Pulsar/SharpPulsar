@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
 	/// <summary>
 	/// When creating a consumer, if the subscription does not exist, a new subscription will be created. By default the

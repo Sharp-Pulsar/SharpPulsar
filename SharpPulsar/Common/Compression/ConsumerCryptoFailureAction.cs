@@ -16,28 +16,39 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+
+using SharpPulsar.Impl.Auth;
+
+namespace SharpPulsar.Interfaces
 {
 	/// <summary>
-	/// When subscribing to topics using a regular expression, one can specify
-	/// to only pick a certain type of topics.
+	/// The action a consumer should take when a consumer receives a
+	/// message that it cannot decrypt.
 	/// </summary>
-	public enum RegexSubscriptionMode
+	public enum ConsumerCryptoFailureAction
 	{
 		/// <summary>
-		/// Only subscribe to persistent topics.
+		/// This is the default option to fail consume messages until crypto succeeds.
 		/// </summary>
-		PersistentOnly,
+		Fail,
 
 		/// <summary>
-		/// Only subscribe to non-persistent topics.
+		/// Message is silently acknowledged and not delivered to the application.
 		/// </summary>
-		NonPersistentOnly,
+		Discard,
 
 		/// <summary>
-		/// Subscribe to both persistent and non-persistent topics.
+		/// Deliver the encrypted message to the application. It's the application's responsibility to decrypt the message.
+		/// 
+		/// <para>If message is also compressed, decompression will fail. If message contain batch messages, client will not be
+		/// able to retrieve individual messages in the batch.
+		/// 
+		/// </para>
+		/// <para>Delivered encrypted message contains <seealso cref="EncryptionContext"/> which contains encryption and compression
+		/// information in it using which application can decrypt consumed message payload.
+		/// </para>
 		/// </summary>
-		AllTopics
+		Consume
 	}
 
 }

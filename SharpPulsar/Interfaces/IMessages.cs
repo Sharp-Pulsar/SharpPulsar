@@ -18,10 +18,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Interfaces
 {
 	/// <summary>
-	/// A container that holds the list <seealso cref="Message"/> for a topic. </summary>
+	/// A container that holds the list <seealso cref="IMessage"/> for a topic. </summary>
 	/// @param  </param>
 	public interface IMessages : IEnumerable<IMessage>
 	{

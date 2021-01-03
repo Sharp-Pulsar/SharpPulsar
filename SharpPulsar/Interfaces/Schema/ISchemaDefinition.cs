@@ -21,7 +21,7 @@ using SharpPulsar.Impl;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Interceptor.Schema
+namespace SharpPulsar.Interfaces.Schema
 {
     /// <summary>
 	/// Interface for schema definition.

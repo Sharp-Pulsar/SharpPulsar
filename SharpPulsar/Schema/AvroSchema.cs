@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Schema.Generic;
+using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Shared;
 
@@ -25,9 +26,6 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Schema
 {
-	using Api;
-	using SharpPulsar.Interfaces.Interceptor.Schema;
-
 	/// <summary>
 	/// A schema implementation to deal with json data.
 	/// </summary>

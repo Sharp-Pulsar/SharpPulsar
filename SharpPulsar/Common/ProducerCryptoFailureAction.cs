@@ -17,15 +17,22 @@
 /// under the License.
 /// </summary>
 
-namespace SharpPulsar.Api
+namespace SharpPulsar.Common
 {
 	/// <summary>
-    /// KeyStore parameters used for tls authentication.
-    /// </summary>
-    public class KeyStoreParams
-    {
-        public string KeyStoreType { get; set; }
-        public string KeyStorePath { get; set; }
-        public string KeyStorePassword { get; set; }
-    }
+	/// The action the producer will take in case of encryption failures.
+	/// </summary>
+	public enum ProducerCryptoFailureAction
+	{
+		/// <summary>
+		/// This is the default option to fail send if crypto operation fails.
+		/// </summary>
+		Fail,
+
+		/// <summary>
+		/// Ignore crypto failure and proceed with sending unencrypted messages.
+		/// </summary>
+		Send
+	}
+
 }

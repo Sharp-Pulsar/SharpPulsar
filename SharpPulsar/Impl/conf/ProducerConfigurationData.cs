@@ -6,6 +6,7 @@ using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Utility;
 using SharpPulsar.Interfaces.Interceptor.Interceptor;
+using SharpPulsar.Interfaces.Interceptor;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

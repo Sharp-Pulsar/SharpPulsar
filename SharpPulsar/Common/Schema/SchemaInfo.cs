@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using SharpPulsar.Impl;
+using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Pulsar;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -58,11 +60,11 @@ namespace SharpPulsar.Common.Schema
 					return "";
 				}
 
-				switch (Type.InnerEnumValue)
+				switch (Type.innerEnumValue)
 				{
-					case SchemaType.InnerEnum.Avro:
-					case SchemaType.InnerEnum.Json:
-					case SchemaType.InnerEnum.Protobuf:
+					case SchemaType.InnerEnum.AVRO:
+					case SchemaType.InnerEnum.JSON:
+					case SchemaType.InnerEnum.PROTOBUF:
 						return StringHelper.NewString(Schema, Encoding.UTF8.WebName);
 					//case SchemaType.InnerEnum.KeyValue:
 						//KeyValue<SchemaInfo, SchemaInfo> schemaInfoKeyValue = DefaultImplementation.d.DecodeKeyValueSchemaInfo(this);

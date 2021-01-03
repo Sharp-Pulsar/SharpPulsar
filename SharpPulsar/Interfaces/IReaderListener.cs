@@ -19,7 +19,7 @@
 
 using Akka.Actor;
 
-namespace SharpPulsar.Api
+namespace SharpPulsar.Interfaces
 {
 
 	/// <summary>

@@ -1,8 +1,7 @@
 ﻿using System;
-using SharpPulsar.Interfaces.Interceptor.Schema;
-using SharpPulsar.Api;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
-using SharpPulsar.Interfaces.Interceptor;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

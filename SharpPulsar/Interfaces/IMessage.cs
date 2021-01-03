@@ -19,7 +19,7 @@ using SharpPulsar.Impl.Auth;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Api
+namespace SharpPulsar.Interfaces
 {
 	/// <summary>
 	/// The message abstraction used in Pulsar.

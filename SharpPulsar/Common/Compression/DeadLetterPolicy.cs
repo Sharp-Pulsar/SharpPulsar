@@ -16,14 +16,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Interfaces.Schema
+namespace SharpPulsar.Interfaces
 {
-    public interface ISchemaWriter<T>
+    /// <summary>
+    /// Configuration for the "dead letter queue" feature in consumer.
+    /// </summary>
+    /// <seealso cref= DeadLetterPolicy </seealso>
+    public class DeadLetterPolicy
     {
+
         /// <summary>
-        /// Serialize messages into bytes.
+        /// Maximum number of times that a message will be redelivered before being sent to the dead letter queue.
         /// </summary>
-        public sbyte[] Write(T message);
+        public int MaxRedeliverCount { get; set; }
+
+        /// <summary>
+        /// Name of the topic where the failing messages will be sent.
+        /// </summary>
+        public string DeadLetterTopic { get; set; }
 
     }
+
 }

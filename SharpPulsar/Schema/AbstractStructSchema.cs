@@ -1,11 +1,5 @@
-﻿using SharpPulsar.Api;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Interfaces.Interceptor;
-using SharpPulsar.Interfaces.Interceptor.Schema;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿
+using SharpPulsar.Interfaces.Schema;
 namespace SharpPulsar.Schema
 {
     public class AbstractStructSchema<T> : AbstractSchema<T>
