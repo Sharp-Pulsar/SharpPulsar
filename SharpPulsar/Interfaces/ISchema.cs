@@ -88,7 +88,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes)
+		virtual T Decode(sbyte[] bytes)
 		{
 			// use `null` to indicate ignoring schema version
 			return Decode(bytes, null);
@@ -102,7 +102,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual object Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		virtual T Decode(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(bytes);

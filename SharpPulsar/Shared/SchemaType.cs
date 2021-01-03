@@ -229,9 +229,9 @@ namespace SharpPulsar.Shared
 			AutoPublish
 		}
 
-		public readonly InnerEnum innerEnumValue;
-		private readonly string nameValue;
-		private readonly int ordinalValue;
+		public readonly InnerEnum InnerEnumValue;
+		public readonly string Name;
+		private readonly int _ordinal;
 		private static int nextOrdinal = 0;
 
 		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods of the current type:
@@ -241,9 +241,9 @@ namespace SharpPulsar.Shared
 		{
 			this._value = Value;
 
-			nameValue = name;
-			ordinalValue = nextOrdinal++;
-			innerEnumValue = innerEnum;
+			Name = name;
+			_ordinal = nextOrdinal++;
+			InnerEnumValue = innerEnum;
 		}
 
 		public int Value
@@ -332,7 +332,7 @@ namespace SharpPulsar.Shared
 
 		public static bool IsPrimitiveType(SchemaType Type)
 		{
-			switch (Type.innerEnumValue)
+			switch (Type.InnerEnumValue)
 			{
 				case InnerEnum.STRING:
 				case InnerEnum.BOOLEAN:
@@ -360,7 +360,7 @@ namespace SharpPulsar.Shared
 
 		public static bool IsStructType(SchemaType type)
 		{
-			switch (type.innerEnumValue)
+			switch (type.InnerEnumValue)
 			{
 				case InnerEnum.AVRO:
 				case InnerEnum.JSON:
@@ -379,19 +379,19 @@ namespace SharpPulsar.Shared
 
 		public int Ordinal()
 		{
-			return ordinalValue;
+			return _ordinal;
 		}
 
 		public override string ToString()
 		{
-			return nameValue;
+			return Name;
 		}
 
 		public static SchemaType ValueOf(string name)
 		{
 			foreach (SchemaType enumInstance in SchemaType.valueList)
 			{
-				if (enumInstance.nameValue == name)
+				if (enumInstance.Name == name)
 				{
 					return enumInstance;
 				}

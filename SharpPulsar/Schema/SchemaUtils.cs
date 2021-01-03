@@ -97,7 +97,7 @@ namespace SharpPulsar.Schema
 				throw new System.Exception("Invalid Java object for schema type " + type + " : " + val.GetType() + @" for field : """ + name + @"""");
 			}
 
-			switch (type.innerEnumValue)
+			switch (type.InnerEnumValue)
 			{
 				case SchemaType.InnerEnum.INT8:
 				case SchemaType.InnerEnum.INT16:

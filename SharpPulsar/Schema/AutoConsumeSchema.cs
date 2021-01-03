@@ -135,7 +135,7 @@ namespace SharpPulsar.Impl.Schema
 		}
 		public static object GetSchema(SchemaInfo schemaInfo)
 		{
-			switch (schemaInfo.Type.innerEnumValue)
+			switch (schemaInfo.Type.InnerEnumValue)
 			{ 
 				case SchemaType.InnerEnum.INT32:
 					return BytesSchema.Of();

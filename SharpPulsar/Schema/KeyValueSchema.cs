@@ -1,4 +1,10 @@
-﻿using System;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Precondition;
+using SharpPulsar.Shared;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -18,95 +24,77 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Schema
 {
-	//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-	//	import static com.google.common.@base.Preconditions.checkArgument;
-
-	using Getter = lombok.Getter;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaInfoProvider = org.apache.pulsar.client.api.schema.SchemaInfoProvider;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
+	
 
 	/// <summary>
 	/// [Key, Value] pair schema definition
 	/// </summary>
-	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-	//ORIGINAL LINE: @Slf4j public class KeyValueSchema<K, V> implements org.apache.pulsar.client.api.Schema<org.apache.pulsar.common.schema.KeyValue<K, V>>
-	public class KeyValueSchema<K, V> : Schema<KeyValue<K, V>>
+	public class KeyValueSchema<K, V> : ISchema<KeyValue<K, V>>
 	{
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @Getter private final org.apache.pulsar.client.api.Schema<K> keySchema;
-		private readonly Schema<K> _keySchema;
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @Getter private final org.apache.pulsar.client.api.Schema<V> valueSchema;
-		private readonly Schema<V> _valueSchema;
+		private readonly ISchema<K> _keySchema;
 
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @Getter private final org.apache.pulsar.common.schema.KeyValueEncodingType keyValueEncodingType;
+		private readonly ISchema<V> _valueSchema;
+
 		private readonly KeyValueEncodingType _keyValueEncodingType;
 
 		// schemaInfo combined by KeySchemaInfo and ValueSchemaInfo:
 		//   [keyInfo.length][keyInfo][valueInfo.length][ValueInfo]
-		private SchemaInfo _schemaInfo;
-		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods of the current type:
-		protected internal SchemaInfoProvider SchemaInfoProviderConflict;
+		private ISchemaInfo _schemaInfo;
+
+		private ISchemaInfoProvider _schemaInfoProvider;
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-		public static Schema<KeyValue<K, V>> Of<K, V>(Type Key, Type Value, SchemaType Type)
+		public static ISchema<KeyValue<K, V>> Of(Type Key, Type Value, SchemaType Type)
 		{
-			checkArgument(SchemaType.JSON == Type || SchemaType.AVRO == Type);
+			Condition.CheckArgument(SchemaType.JSON == Type || SchemaType.AVRO == Type);
 			if (SchemaType.JSON == Type)
 			{
-				return new KeyValueSchema<KeyValue<K, V>>(JSONSchema.of(Key), JSONSchema.of(Value), KeyValueEncodingType.INLINE);
+				return new KeyValueSchema<K, V>(JSONSchema.of(Key), JSONSchema.of(Value), KeyValueEncodingType.INLINE);
 			}
 			else
 			{
 				// AVRO
-				return new KeyValueSchema<KeyValue<K, V>>(AvroSchema.of(Key), AvroSchema.of(Value), KeyValueEncodingType.INLINE);
+				return new KeyValueSchema<K, V>(AvroSchema<K>.Of(Key), AvroSchema<V>.Of(Value), KeyValueEncodingType.INLINE);
 			}
 		}
 
 
-		public static Schema<KeyValue<K, V>> Of<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema)
 		{
-			return new KeyValueSchema<KeyValue<K, V>>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
+			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
 		}
 
-		public static Schema<KeyValue<K, V>> Of<K, V>(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			return new KeyValueSchema<KeyValue<K, V>>(KeySchema, ValueSchema, KeyValueEncodingType);
+			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
 
-		private static readonly Schema<KeyValue<sbyte[], sbyte[]>> _kvBytes = new KeyValueSchema<KeyValue<sbyte[], sbyte[]>>(BytesSchema.of(), BytesSchema.of());
+		private static readonly ISchema<KeyValue<byte[], byte[]>> _kvBytes = new KeyValueSchema<byte[], byte[]>(BytesSchema.Of(), BytesSchema.Of());
 
-		public static Schema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+		public static ISchema<KeyValue<byte[], byte[]>> KvBytes()
 		{
 			return _kvBytes;
 		}
 
-		public override bool SupportSchemaVersioning()
+		public virtual bool SupportSchemaVersioning()
 		{
-			return _keySchema.supportSchemaVersioning() || _valueSchema.supportSchemaVersioning();
+			return _keySchema.SupportSchemaVersioning() || _valueSchema.SupportSchemaVersioning();
 		}
 
-		private KeyValueSchema(Schema<K> KeySchema, Schema<V> ValueSchema) : this(KeySchema, ValueSchema, KeyValueEncodingType.INLINE)
+		private KeyValueSchema(ISchema<K> KeySchema, ISchema<V> ValueSchema) : this(KeySchema, ValueSchema, KeyValueEncodingType.INLINE)
 		{
 		}
 
-		private KeyValueSchema(Schema<K> KeySchema, Schema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		private KeyValueSchema(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			this._keySchema = KeySchema;
 			this._valueSchema = ValueSchema;
 			this._keyValueEncodingType = KeyValueEncodingType;
-			this.SchemaInfoProviderConflict = new SchemaInfoProviderAnonymousInnerClass(this);
+			_schemaInfoProvider = new InfoSchemaInfoProvider(this);
 			// if either key schema or value schema requires fetching schema info,
 			// we don't need to configure the key/value schema info right now.
 			// defer configuring the key/value schema info until `configureSchemaInfo` is called.
@@ -116,29 +104,29 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			}
 		}
 
-		private class SchemaInfoProviderAnonymousInnerClass : SchemaInfoProvider
+		private class InfoSchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
 
-			public SchemaInfoProviderAnonymousInnerClass(KeyValueSchema<K, V> OuterInstance)
+			public InfoSchemaInfoProvider(KeyValueSchema<K, V> OuterInstance)
 			{
 				this._outerInstance = OuterInstance;
 			}
 
-			public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
+			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-				return CompletableFuture.completedFuture(outerInstance._schemaInfo);
+				return _outerInstance._schemaInfo;
 			}
 
-			public override CompletableFuture<SchemaInfo> LatestSchema
+			public ISchemaInfo LatestSchema
 			{
 				get
 				{
-					return CompletableFuture.completedFuture(outerInstance._schemaInfo);
+					return _outerInstance._schemaInfo;
 				}
 			}
 
-			public override string TopicName
+			public string TopicName
 			{
 				get
 				{
@@ -152,7 +140,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 		{
 			if (_keyValueEncodingType != null && _keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
-				return KeyValue.encode(Message.Key, _keySchema, Message.Value, _valueSchema);
+				return KeyValue<K, V>.Encode(Message.Key, _keySchema, Message.Value, _valueSchema);
 			}
 			else
 			{
@@ -160,7 +148,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 				{
 					return null;
 				}
-				return _valueSchema.encode(Message.Value);
+				return _valueSchema.Encode(Message.Value);
 			}
 		}
 
@@ -176,7 +164,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 				throw new SchemaSerializationException("This method cannot be used under this SEPARATED encoding type");
 			}
 
-			return KeyValue.decode(Bytes, (keyBytes, valueBytes) => Decode(keyBytes, valueBytes, SchemaVersion));
+			return KeyValue<K, V>.Decode(Bytes, (keyBytes, valueBytes) => Decode(keyBytes, valueBytes, SchemaVersion));
 		}
 
 		public virtual KeyValue<K, V> Decode(sbyte[] KeyBytes, sbyte[] ValueBytes, sbyte[] SchemaVersion)
@@ -188,13 +176,13 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			}
 			else
 			{
-				if (_keySchema.supportSchemaVersioning() && SchemaVersion != null)
+				if (_keySchema.SupportSchemaVersioning() && SchemaVersion != null)
 				{
-					K = _keySchema.decode(KeyBytes, SchemaVersion);
+					K = _keySchema.Decode(KeyBytes, SchemaVersion);
 				}
 				else
 				{
-					K = _keySchema.decode(KeyBytes);
+					K = _keySchema.Decode(KeyBytes);
 				}
 			}
 
@@ -205,19 +193,19 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			}
 			else
 			{
-				if (_valueSchema.supportSchemaVersioning() && SchemaVersion != null)
+				if (_valueSchema.SupportSchemaVersioning() && SchemaVersion != null)
 				{
-					V = _valueSchema.decode(ValueBytes, SchemaVersion);
+					V = _valueSchema.Decode(ValueBytes, SchemaVersion);
 				}
 				else
 				{
-					V = _valueSchema.decode(ValueBytes);
+					V = _valueSchema.Decode(ValueBytes);
 				}
 			}
 			return new KeyValue<K, V>(K, V);
 		}
 
-		public virtual SchemaInfo SchemaInfo
+		public virtual ISchemaInfo SchemaInfo
 		{
 			get
 			{
@@ -225,24 +213,24 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			}
 		}
 
-		public virtual SchemaInfoProvider SchemaInfoProvider
+		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
-				this.SchemaInfoProviderConflict = value;
+				this._schemaInfoProvider = value;
 			}
 		}
 
-		public override bool RequireFetchingSchemaInfo()
+		public virtual bool RequireFetchingSchemaInfo()
 		{
-			return _keySchema.requireFetchingSchemaInfo() || _valueSchema.requireFetchingSchemaInfo();
+			return _keySchema.RequireFetchingSchemaInfo() || _valueSchema.RequireFetchingSchemaInfo();
 		}
 
-		public override void ConfigureSchemaInfo(string TopicName, string ComponentName, SchemaInfo SchemaInfo)
+		public virtual void ConfigureSchemaInfo(string TopicName, string ComponentName, ISchemaInfo schemaInfo)
 		{
-			KeyValue<SchemaInfo, SchemaInfo> KvSchemaInfo = KeyValueSchemaInfo.decodeKeyValueSchemaInfo(SchemaInfo);
-			_keySchema.configureSchemaInfo(TopicName, "key", KvSchemaInfo.Key);
-			_valueSchema.configureSchemaInfo(TopicName, "value", KvSchemaInfo.Value);
+			var KvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
+			_keySchema.ConfigureSchemaInfo(TopicName, "key", KvSchemaInfo.Key);
+			_valueSchema.ConfigureSchemaInfo(TopicName, "value", KvSchemaInfo.Value);
 			ConfigureKeyValueSchemaInfo();
 
 			if (null == this._schemaInfo)
@@ -251,43 +239,49 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			}
 		}
 
-		public override Schema<KeyValue<K, V>> Clone()
+		public ISchema<KeyValue<K, V>> Clone()
 		{
-			return KeyValueSchema.of(_keySchema.clone(), _valueSchema.clone(), _keyValueEncodingType);
+			return Of(_keySchema.Clone(), _valueSchema.Clone(), _keyValueEncodingType);
 		}
 
 		private void ConfigureKeyValueSchemaInfo()
 		{
-			this._schemaInfo = KeyValueSchemaInfo.encodeKeyValueSchemaInfo(_keySchema, _valueSchema, _keyValueEncodingType);
+			this._schemaInfo = KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(_keySchema, _valueSchema, _keyValueEncodingType);
 
-			this._keySchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass2(this);
+			this._keySchema.SchemaInfoProvider = new KeySchemaInfoProvider(this);
 
-			this._valueSchema.SchemaInfoProvider = new SchemaInfoProviderAnonymousInnerClass3(this);
+			this._valueSchema.SchemaInfoProvider = new ValueSchemaInfoProvider(this);
 		}
+		
+        object ICloneable.Clone()
+        {
+            return Clone();
+        }
 
-		private class SchemaInfoProviderAnonymousInnerClass2 : SchemaInfoProvider
+        private class KeySchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
 
-			public SchemaInfoProviderAnonymousInnerClass2(KeyValueSchema<K, V> OuterInstance)
+			public KeySchemaInfoProvider(KeyValueSchema<K, V> OuterInstance)
 			{
 				this._outerInstance = OuterInstance;
 			}
 
-			public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
+			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-				return outerInstance.SchemaInfoProviderConflict.getSchemaByVersion(SchemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Key);
+				var si = _outerInstance._schemaInfoProvider.GetSchemaByVersion(SchemaVersion);
+				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Key;
 			}
 
-			public override CompletableFuture<SchemaInfo> LatestSchema
+			public ISchemaInfo LatestSchema
 			{
 				get
 				{
-					return CompletableFuture.completedFuture(((AbstractStructSchema<K>)outerInstance._keySchema).schemaInfo);
+					return _outerInstance._keySchema.SchemaInfo;
 				}
 			}
 
-			public override string TopicName
+			public string TopicName
 			{
 				get
 				{
@@ -296,29 +290,30 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			}
 		}
 
-		private class SchemaInfoProviderAnonymousInnerClass3 : SchemaInfoProvider
+		private class ValueSchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
 
-			public SchemaInfoProviderAnonymousInnerClass3(KeyValueSchema<K, V> OuterInstance)
+			public ValueSchemaInfoProvider(KeyValueSchema<K, V> OuterInstance)
 			{
 				this._outerInstance = OuterInstance;
 			}
 
-			public override CompletableFuture<SchemaInfo> GetSchemaByVersion(sbyte[] SchemaVersion)
+			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
 			{
-				return outerInstance.SchemaInfoProviderConflict.getSchemaByVersion(SchemaVersion).thenApply(si => KeyValueSchemaInfo.decodeKeyValueSchemaInfo(si).Value);
+				var si = _outerInstance._schemaInfoProvider.GetSchemaByVersion(SchemaVersion);
+				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Value;
 			}
 
-			public override CompletableFuture<SchemaInfo> LatestSchema
+			public ISchemaInfo LatestSchema
 			{
 				get
 				{
-					return CompletableFuture.completedFuture(((AbstractStructSchema<V>)outerInstance._valueSchema).schemaInfo);
+					return _outerInstance._valueSchema.SchemaInfo;
 				}
 			}
 
-			public override string TopicName
+			public string TopicName
 			{
 				get
 				{

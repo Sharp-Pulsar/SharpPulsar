@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Api;
+using SharpPulsar.Interfaces;
 using System;
 using System.Text;
 
@@ -75,7 +76,7 @@ namespace SharpPulsar.Common.Schema
 		/// <param name="value"> value object to encode </param>
 		/// <param name="valueWriter"> a writer to encode value object </param>
 		/// <returns> the encoded bytes array </returns>
-		public static sbyte[] Encode(TK key, ISchema keyWriter, TV value, ISchema valueWriter)
+		public static sbyte[] Encode(TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
 		{
 			var keyBytes = keyWriter.Encode(key);
 			var valueBytes = valueWriter.Encode(value);

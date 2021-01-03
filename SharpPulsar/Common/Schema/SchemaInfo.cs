@@ -60,7 +60,7 @@ namespace SharpPulsar.Common.Schema
 					return "";
 				}
 
-				switch (Type.innerEnumValue)
+				switch (Type.InnerEnumValue)
 				{
 					case SchemaType.InnerEnum.AVRO:
 					case SchemaType.InnerEnum.JSON:
