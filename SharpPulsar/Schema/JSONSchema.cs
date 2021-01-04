@@ -42,7 +42,7 @@ namespace SharpPulsar.Schema
 
 		private JSONSchema(ISchemaInfo SchemaInfo, Type pojo, ISchemaReader<T> reader, ISchemaWriter<T> writer) : base(SchemaInfo)
 		{
-			this._pojo = pojo;
+			_pojo = pojo;
 			Writer = writer;
 			Reader = reader;
 		}

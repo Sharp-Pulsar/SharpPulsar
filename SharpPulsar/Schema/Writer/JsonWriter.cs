@@ -18,6 +18,7 @@
 /// </summary>
 
 using System;
+using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Interfaces.ISchema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
@@ -30,16 +31,16 @@ namespace SharpPulsar.Schema.Writer
 
 		private readonly ObjectMapper _objectMapper;
 
-		public JsonWriter(ObjectMapper objectMapper)
+		public JsonWriter()
 		{
-			this._objectMapper = objectMapper;
+			_objectMapper = new ObjectMapper();
 		}
 
 		public sbyte[] Write(T message)
 		{
 			try
 			{
-				return (sbyte[])(Array)_objectMapper.WriteValueAsBytes(message);
+				return _objectMapper.WriteValueAsBytes(message).ToSBytes();
 			}
 			catch (Exception e)
 			{

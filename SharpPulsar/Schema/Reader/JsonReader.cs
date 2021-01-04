@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using SharpPulsar.Impl.Conf;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -36,13 +37,13 @@ namespace SharpPulsar.Schema.Reader
 			this._objectMapper = objectMapper;
 		}
 
-		public  T Read(byte[] bytes, int offset, int length)
+		public  T Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				return (T)_objectMapper.ReadValue(bytes, offset, length);
+				return (T)_objectMapper.ReadValue(bytes.ToBytes(), offset, length);
 			}
-			catch (IOException e)
+			catch (Exception e)
 			{
 				throw new SchemaSerializationException(e);
 			}
@@ -66,14 +67,13 @@ namespace SharpPulsar.Schema.Reader
 				{
 					inputStream.Close();
 				}
-				catch (IOException e)
+				catch (Exception e)
 				{
-					Log.LogError("JsonReader close inputStream close error", e.Message);
+					throw new SchemaSerializationException(e);
 				}
 			}
 		}
 
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(JsonReader<T>));
 	}
 
 }
