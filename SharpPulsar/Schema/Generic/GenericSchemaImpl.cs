@@ -22,7 +22,7 @@ using SharpPulsar.Common.Schema;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema.Generic
+namespace SharpPulsar.Schema.Generic
 {
     using SharpPulsar.Schema;
     using SharpPulsar.Shared;

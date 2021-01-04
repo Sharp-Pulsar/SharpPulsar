@@ -23,21 +23,21 @@ using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
 
-namespace SharpPulsar.Impl.Schema.Generic
+namespace SharpPulsar.Schema.Generic
 {
 
 	/// <summary>
 	/// A generic json schema.
 	/// </summary>
-	public class GenericAvroSchema : GenericSchemaImpl
+	public class GenericJsonSchema : GenericSchemaImpl
 	{
-		private static readonly ILogger _log = Utility.Log.Logger.CreateLogger(typeof(GenericAvroSchema));
+		private static readonly ILogger _log = Utility.Log.Logger.CreateLogger(typeof(GenericJsonSchema));
 
-        public GenericAvroSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
+        public GenericJsonSchema(SchemaInfo schemaInfo) : this(schemaInfo, true)
 		{
 		}
 
-        public GenericAvroSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
+        public GenericJsonSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo, useProvidedSchemaAsReaderSchema)
 		{
 		}
 
@@ -47,51 +47,16 @@ namespace SharpPulsar.Impl.Schema.Generic
             return Reader;
         }
 
-		public override IGenericRecordBuilder NewRecordBuilder()
-		{
-			throw new System.NotSupportedException("Json Schema doesn't support record builder yet");
-		}
-
-        public override ISchema Auto()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema Json(Type pojo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override bool RequireFetchingSchemaInfo()
+        public bool RequireFetchingSchemaInfo()
         {
             return true;
         }
 
-        public override bool SupportSchemaVersioning()
+        public bool SupportSchemaVersioning()
         {
             return true;
         }
 
-        public override void Validate(sbyte[] message, Type returnType)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        
-        public override ISchema Json(ISchemaDefinition schemaDefinition)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override ISchema Json(object pojo)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public override void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo)
-        {
-            throw new System.NotImplementedException();
-        }
     }
 
 }
