@@ -18,18 +18,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
+
 
 	public class LocalDateTimeSchemaTest
 	{
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaEncode()
 		public virtual void TestSchemaEncode()
 		{
 			LocalDateTimeSchema Schema = LocalDateTimeSchema.of();
@@ -41,8 +36,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(Expected, Schema.encode(LocalDateTime));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaEncodeDecodeFidelity()
+
 		public virtual void TestSchemaEncodeDecodeFidelity()
 		{
 			LocalDateTimeSchema Schema = LocalDateTimeSchema.of();
@@ -54,8 +48,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(LocalDateTime, Schema.decode(ByteBuf));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaDecode()
+
 		public virtual void TestSchemaDecode()
 		{
 			DateTime LocalDateTime = new DateTime(2020, 8, 22, 2, 0, 0);
@@ -77,8 +70,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(ExpectedNanoOfDay, Decode.toLocalTime().toNanoOfDay());
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNullEncodeDecode()
+
 		public virtual void TestNullEncodeDecode()
 		{
 			ByteBuf ByteBuf = null;

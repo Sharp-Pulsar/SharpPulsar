@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Interfaces;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,39 +17,25 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertSame;
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using Test = org.testng.annotations.Test;
 
 	/// <summary>
 	/// Unit test <seealso cref="BytesSchema"/>.
 	/// </summary>
 	public class BytesSchemaTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testBytesSchemaOf()
 		public virtual void TestBytesSchemaOf()
 		{
 			TestBytesSchema(BytesSchema.of());
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaBYTES()
 		public virtual void TestSchemaBYTES()
 		{
-			TestBytesSchema(Schema.BYTES);
+			TestBytesSchema(ISchema<sbyte[]>.Bytes);
 		}
 
-		private void TestBytesSchema(Schema<sbyte[]> Schema)
+		private void TestBytesSchema(ISchema<sbyte[]> Schema)
 		{
 			sbyte[] Data = "hello world".GetBytes(UTF_8);
 

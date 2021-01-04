@@ -18,35 +18,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.@internal.junit.ArrayAsserts.assertArrayEquals;
-
-
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using DataProvider = org.testng.annotations.DataProvider;
-	using Test = org.testng.annotations.Test;
-
 	/// <summary>
 	/// Unit test <seealso cref="StringSchema"/>.
 	/// </summary>
 	public class StringSchemaTest
 	{
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testUtf8Charset()
 		public virtual void TestUtf8Charset()
 		{
 			StringSchema Schema = new StringSchema();
@@ -66,8 +45,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Schema.decode(ByteBuf), MyString);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAsciiCharset()
 		public virtual void TestAsciiCharset()
 		{
 			StringSchema Schema = new StringSchema(US_ASCII);
@@ -88,8 +65,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Schema.decode(ByteBuf), MyString);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaInfoWithoutCharset()
 		public virtual void TestSchemaInfoWithoutCharset()
 		{
 			SchemaInfo Si = (new SchemaInfo()).setName("test-schema-info-without-charset").setType(SchemaType.STRING).setSchema(new sbyte[0]).setProperties(Collections.emptyMap());
@@ -107,8 +82,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Schema.decode(ByteBuf), MyString);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @DataProvider(name = "charsets") public Object[][] charsets()
 		public virtual object[][] Charsets()
 		{
 			return new object[][]
@@ -118,8 +91,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			};
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(dataProvider = "charsets") public void testSchemaInfoWithCharset(java.nio.charset.Charset charset)
 		public virtual void TestSchemaInfoWithCharset(Charset Charset)
 		{
 			IDictionary<string, string> Properties = new Dictionary<string, string>();

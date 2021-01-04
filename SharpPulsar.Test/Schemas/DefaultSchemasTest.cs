@@ -18,20 +18,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-	using ConsumerBuilder = org.apache.pulsar.client.api.ConsumerBuilder;
-	using ProducerBuilder = org.apache.pulsar.client.api.ProducerBuilder;
-	using PulsarClient = org.apache.pulsar.client.api.PulsarClient;
-	using PulsarClientException = org.apache.pulsar.client.api.PulsarClientException;
-	using ReaderBuilder = org.apache.pulsar.client.api.ReaderBuilder;
-	using Assert = org.testng.Assert;
-	using AfterClass = org.testng.annotations.AfterClass;
-	using BeforeClass = org.testng.annotations.BeforeClass;
-	using Test = org.testng.annotations.Test;
 
 	public class DefaultSchemasTest
 	{
@@ -39,41 +27,29 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 
 		private const string TEST_TOPIC = "persistent://sample/standalone/ns1/test-topic";
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeClass public void setup() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void Setup()
 		{
 			_client = PulsarClient.builder().serviceUrl("pulsar://localhost:6650").build();
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testConsumerInstantiation()
 		public virtual void TestConsumerInstantiation()
 		{
 			ConsumerBuilder<string> StringConsumerBuilder = _client.newConsumer(new StringSchema()).topic(TEST_TOPIC);
 			Assert.assertNotNull(StringConsumerBuilder);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testProducerInstantiation()
 		public virtual void TestProducerInstantiation()
 		{
 			ProducerBuilder<string> StringProducerBuilder = _client.newProducer(new StringSchema()).topic(TEST_TOPIC);
 			Assert.assertNotNull(StringProducerBuilder);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testReaderInstantiation()
 		public virtual void TestReaderInstantiation()
 		{
 			ReaderBuilder<string> StringReaderBuilder = _client.newReader(new StringSchema()).topic(TEST_TOPIC);
 			Assert.assertNotNull(StringReaderBuilder);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testStringSchema() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestStringSchema()
 		{
 			string TestString = "hello world";
@@ -88,9 +64,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(StringSchemaUtf16.encode(TestString), Bytes2);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @AfterClass public void tearDown() throws org.apache.pulsar.client.api.PulsarClientException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TearDown()
 		{
 			_client.close();

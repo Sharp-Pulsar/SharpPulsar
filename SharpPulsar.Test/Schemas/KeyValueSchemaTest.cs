@@ -18,32 +18,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-	using Maps = com.google.common.collect.Maps;
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaSerializationException = org.apache.pulsar.client.api.SchemaSerializationException;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using Color = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Color;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
-
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class KeyValueSchemaTest
 	public class KeyValueSchemaTest
 	{
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullAvroSchemaCreate()
 		public virtual void TestAllowNullAvroSchemaCreate()
 		{
 			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
@@ -65,8 +43,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(SchemaInfo1, SchemaInfo2);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testFillParametersToSchemainfo()
 		public virtual void TestFillParametersToSchemainfo()
 		{
 			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
@@ -93,8 +69,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("value.schema.properties"), "{\"bar.key\":\"key\"}");
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullAvroSchemaCreate()
 		public virtual void TestNotAllowNullAvroSchemaCreate()
 		{
 			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
@@ -116,8 +90,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(SchemaInfo1, SchemaInfo2);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullJsonSchemaCreate()
+
 		public virtual void TestAllowNullJsonSchemaCreate()
 		{
 			JSONSchema<Foo> FooSchema = JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
@@ -145,8 +118,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(SchemaInfo1, SchemaInfo3);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullJsonSchemaCreate()
+
 		public virtual void TestNotAllowNullJsonSchemaCreate()
 		{
 			JSONSchema<Foo> FooSchema = JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
@@ -175,8 +147,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(SchemaInfo1, SchemaInfo3);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullSchemaEncodeAndDecode()
+
 		public virtual void TestAllowNullSchemaEncodeAndDecode()
 		{
 			Schema KeyValueSchema = Schema.KeyValue(typeof(Foo), typeof(Bar));
@@ -202,8 +173,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Bar, BarBack);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullSchemaEncodeAndDecode()
+
 		public virtual void TestNotAllowNullSchemaEncodeAndDecode()
 		{
 			Schema KeyValueSchema = Schema.KeyValue(JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build()), JSONSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).withAlwaysAllowNull(false).build()));
@@ -229,8 +199,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Bar, BarBack);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testDefaultKeyValueEncodingTypeSchemaEncodeAndDecode()
+
 		public virtual void TestDefaultKeyValueEncodingTypeSchemaEncodeAndDecode()
 		{
 			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
@@ -260,8 +229,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Bar, BarBack);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testInlineKeyValueEncodingTypeSchemaEncodeAndDecode()
+
 		public virtual void TestInlineKeyValueEncodingTypeSchemaEncodeAndDecode()
 		{
 
@@ -292,8 +260,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSeparatedKeyValueEncodingTypeSchemaEncodeAndDecode()
+
 		public virtual void TestSeparatedKeyValueEncodingTypeSchemaEncodeAndDecode()
 		{
 			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
@@ -330,8 +297,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Bar, BarBack);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testAllowNullBytesSchemaEncodeAndDecode()
+
 		public virtual void TestAllowNullBytesSchemaEncodeAndDecode()
 		{
 			AvroSchema<Foo> FooAvroSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
@@ -361,8 +327,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(Bar, BarBack);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNotAllowNullBytesSchemaEncodeAndDecode()
+
 		public virtual void TestNotAllowNullBytesSchemaEncodeAndDecode()
 		{
 			AvroSchema<Foo> FooAvroSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());

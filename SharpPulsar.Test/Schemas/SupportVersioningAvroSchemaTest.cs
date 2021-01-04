@@ -16,26 +16,8 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using GenericAvroSchema = Org.Apache.Pulsar.Client.Impl.Schema.Generic.GenericAvroSchema;
-	using MultiVersionSchemaInfoProvider = Org.Apache.Pulsar.Client.Impl.Schema.Generic.MultiVersionSchemaInfoProvider;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using BeforeMethod = org.testng.annotations.BeforeMethod;
-	using Test = org.testng.annotations.Test;
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.powermock.api.mockito.PowerMockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-
 	public class SupportVersioningAvroSchemaTest
 	{
 		private MultiVersionSchemaInfoProvider _multiVersionSchemaInfoProvider;
@@ -43,9 +25,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 		private GenericAvroSchema _genericAvroSchema;
 		private AvroSchema<SchemaTestUtils.FooV2> _avroFooV2Schema;
 
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeMethod public void setup()
 		public virtual void Setup()
 		{
 			this._multiVersionSchemaInfoProvider = mock(typeof(MultiVersionSchemaInfoProvider));
@@ -56,8 +35,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			_genericAvroSchema = new GenericAvroSchema(SchemaInfo);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testDecode()
 		public virtual void TestDecode()
 		{
 			when(_multiVersionSchemaInfoProvider.getSchemaByVersion(any(typeof(sbyte[])))).thenReturn(CompletableFuture.completedFuture(_genericAvroSchema.SchemaInfo));

@@ -16,28 +16,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using MultiVersionSchemaInfoProvider = Org.Apache.Pulsar.Client.Impl.Schema.Generic.MultiVersionSchemaInfoProvider;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.powermock.api.mockito.PowerMockito.when;
-
 	public class SupportVersioningKeyValueSchemaTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testKeyValueVersioningEncodeDecode()
 		public virtual void TestKeyValueVersioningEncodeDecode()
 		{
 			MultiVersionSchemaInfoProvider MultiVersionSchemaInfoProvider = mock(typeof(MultiVersionSchemaInfoProvider));
@@ -69,8 +51,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(KeyValueEncodingType.valueOf(KeyValueSchema.SchemaInfo.Properties.get("kv.encoding.type")), KeyValueEncodingType.INLINE);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSeparateKeyValueVersioningEncodeDecode()
 		public virtual void TestSeparateKeyValueVersioningEncodeDecode()
 		{
 			MultiVersionSchemaInfoProvider MultiVersionSchemaInfoProvider = mock(typeof(MultiVersionSchemaInfoProvider));
@@ -97,8 +77,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(KeyValueEncodingType.valueOf(KeyValueSchema.SchemaInfo.Properties.get("kv.encoding.type")), KeyValueEncodingType.SEPARATED);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testKeyValueDefaultVersioningEncodeDecode()
 		public virtual void TestKeyValueDefaultVersioningEncodeDecode()
 		{
 			AvroSchema<SchemaTestUtils.Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<SchemaTestUtils.Foo>().withPojo(typeof(SchemaTestUtils.Foo)).build());
@@ -126,8 +104,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(KeyValueEncodingType.valueOf(KeyValueSchema.SchemaInfo.Properties.get("kv.encoding.type")), KeyValueEncodingType.INLINE);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testKeyValueLatestVersioningEncodeDecode()
 		public virtual void TestKeyValueLatestVersioningEncodeDecode()
 		{
 			AvroSchema<SchemaTestUtils.Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<SchemaTestUtils.Foo>().withPojo(typeof(SchemaTestUtils.Foo)).build());

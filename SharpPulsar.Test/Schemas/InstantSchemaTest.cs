@@ -16,18 +16,12 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
 
 	public class InstantSchemaTest
 	{
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaEncode()
 		public virtual void TestSchemaEncode()
 		{
 			InstantSchema Schema = InstantSchema.of();
@@ -39,8 +33,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(Expected, Schema.encode(Instant));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaEncodeDecodeFidelity()
+
 		public virtual void TestSchemaEncodeDecodeFidelity()
 		{
 			InstantSchema Schema = InstantSchema.of();
@@ -52,8 +45,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(Instant, Schema.decode(ByteBuf));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaDecode()
+
 		public virtual void TestSchemaDecode()
 		{
 			Instant Instant = Instant.now();
@@ -75,8 +67,7 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(Nano, Decode.Nano);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNullEncodeDecode()
+
 		public virtual void TestNullEncodeDecode()
 		{
 			ByteBuf ByteBuf = null;

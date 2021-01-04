@@ -16,18 +16,10 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-	using ByteBuf = io.netty.buffer.ByteBuf;
-	using ByteBufAllocator = io.netty.buffer.ByteBufAllocator;
-	using Assert = org.testng.Assert;
-	using Test = org.testng.annotations.Test;
-
 	public class BooleanSchemaTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaEncode()
 		public virtual void TestSchemaEncode()
 		{
 			BooleanSchema Schema = BooleanSchema.of();
@@ -37,8 +29,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(ExpectedFalse, Schema.encode(false));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaEncodeDecodeFidelity()
 		public virtual void TestSchemaEncodeDecodeFidelity()
 		{
 			BooleanSchema Schema = BooleanSchema.of();
@@ -46,8 +36,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(new bool?(false), Schema.decode(Schema.encode(false)));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSchemaDecode()
 		public virtual void TestSchemaDecode()
 		{
 			sbyte[] TrueBytes = new sbyte[] {1};
@@ -65,8 +53,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			Assert.assertEquals(new bool?(false), Schema.decode(ByteBuf));
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNullEncodeDecode()
 		public virtual void TestNullEncodeDecode()
 		{
 			ByteBuf ByteBuf = null;

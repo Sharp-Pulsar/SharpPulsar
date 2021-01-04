@@ -19,40 +19,12 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl.Schema
+namespace SharpPulsar.Test.Schema
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.KEY_VALUE_SCHEMA_INFO_INCLUDE_PRIMITIVE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.schema.SchemaTestUtils.KEY_VALUE_SCHEMA_INFO_NOT_INCLUDE_PRIMITIVE;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.@internal.junit.ArrayAsserts.assertArrayEquals;
-
-	using Slf4j = lombok.@extern.slf4j.Slf4j;
-	using Schema = org.apache.pulsar.client.api.Schema;
-	using SchemaDefinition = org.apache.pulsar.client.api.schema.SchemaDefinition;
-	using Bar = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Bar;
-	using Foo = Org.Apache.Pulsar.Client.Impl.Schema.SchemaTestUtils.Foo;
-	using DefaultImplementation = org.apache.pulsar.client.@internal.DefaultImplementation;
-	using KeyValue = org.apache.pulsar.common.schema.KeyValue;
-	using KeyValueEncodingType = org.apache.pulsar.common.schema.KeyValueEncodingType;
-	using SchemaInfo = org.apache.pulsar.common.schema.SchemaInfo;
-	using SchemaType = org.apache.pulsar.common.schema.SchemaType;
-	using JSONException = org.json.JSONException;
-	using DataProvider = org.testng.annotations.DataProvider;
-	using Test = org.testng.annotations.Test;
 
 	/// <summary>
 	/// Unit test <seealso cref="KeyValueSchemaInfoTest"/>.
 	/// </summary>
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Slf4j public class KeyValueSchemaInfoTest
 	public class KeyValueSchemaInfoTest
 	{
 
@@ -95,15 +67,11 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 		public static readonly Schema<Foo> FooSchema = Schema.AVRO(SchemaDefinition.builder<Foo>().withAlwaysAllowNull(false).withPojo(typeof(Foo)).withProperties(_fooProperties).build());
 		public static readonly Schema<Bar> BarSchema = Schema.JSON(SchemaDefinition.builder<Bar>().withAlwaysAllowNull(true).withPojo(typeof(Bar)).withProperties(_barProperties).build());
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(expectedExceptions = IllegalArgumentException.class) public void testDecodeNonKeyValueSchemaInfo()
 		public virtual void TestDecodeNonKeyValueSchemaInfo()
 		{
 			DefaultImplementation.decodeKeyValueSchemaInfo(FooSchema.SchemaInfo);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @DataProvider(name = "encodingTypes") public Object[][] encodingTypes()
 		public virtual object[][] EncodingTypes()
 		{
 			return new object[][]
@@ -113,8 +81,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			};
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(dataProvider = "encodingTypes") public void encodeDecodeKeyValueSchemaInfo(org.apache.pulsar.common.schema.KeyValueEncodingType encodingType)
 		public virtual void EncodeDecodeKeyValueSchemaInfo(KeyValueEncodingType EncodingType)
 		{
 			Schema<KeyValue<Foo, Bar>> KvSchema = Schema.KeyValue(FooSchema, BarSchema, EncodingType);
@@ -131,8 +97,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(SchemaInfoKeyValue.Value, BarSchema.SchemaInfo);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(dataProvider = "encodingTypes") public void encodeDecodeNestedKeyValueSchemaInfo(org.apache.pulsar.common.schema.KeyValueEncodingType encodingType)
 		public virtual void EncodeDecodeNestedKeyValueSchemaInfo(KeyValueEncodingType EncodingType)
 		{
 			Schema<KeyValue<string, Bar>> NestedSchema = Schema.KeyValue(Schema.STRING, BarSchema, KeyValueEncodingType.INLINE);
@@ -154,8 +118,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertEquals(NestedSchemaInfoKeyValue.Value, BarSchema.SchemaInfo);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testKeyValueSchemaInfoBackwardCompatibility()
 		public virtual void TestKeyValueSchemaInfoBackwardCompatibility()
 		{
 			Schema<KeyValue<Foo, Bar>> KvSchema = Schema.KeyValue(FooSchema, BarSchema, KeyValueEncodingType.SEPARATED);
@@ -179,9 +141,6 @@ namespace Org.Apache.Pulsar.Client.Impl.Schema
 			assertTrue(ValueSchemaInfo.Properties.Empty);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testKeyValueSchemaInfoToString() throws org.json.JSONException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestKeyValueSchemaInfoToString()
 		{
 			string HavePrimitiveType = DefaultImplementation.convertKeyValueSchemaInfoDataToString(KeyValueSchemaInfo.decodeKeyValueSchemaInfo(Schema.KeyValue(Schema.AVRO(typeof(Foo)), Schema.STRING).SchemaInfo));
