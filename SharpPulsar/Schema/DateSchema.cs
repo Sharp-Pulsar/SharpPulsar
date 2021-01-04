@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
@@ -52,25 +53,15 @@ namespace SharpPulsar.Schema
 
 	   public override sbyte[] Encode(DateTime message)
 	   {
-		  if (null == message)
-		  {
-			 return null;
-		  }
-
-		  long date = message.Ticks;
-		  return LongSchema.Of().Encode(date);
+		  long date = new DateTimeOffset(message).ToUnixTimeSeconds().LongToBigEndian();
+		  return BitConverter.GetBytes(date).ToSBytes();
 	   }
 
-	   public override DateTime Decode(sbyte[] bytes)
-	   {
-		  if (null == bytes)
-		  {
-			 return default;
-		  }
-
-		  long decode = (long)LongSchema.Of().Decode(bytes);
-		  return new DateTime(decode);
-	   }
+		public override DateTime Decode(sbyte[] bytes)
+		{
+			var decode = BitConverter.ToInt64(bytes.ToBytes(), 0).LongFromBigEndian();
+			return new DateTime(decode);
+		}
 
 	   public override ISchemaInfo SchemaInfo
 	   {

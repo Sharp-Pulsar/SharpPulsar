@@ -1,7 +1,9 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
+using System;
 using System.Diagnostics.CodeAnalysis;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -58,25 +60,17 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override sbyte[] Encode([NotNull]short message)
+		public override sbyte[] Encode(short message)
 		{
-			return new sbyte[] { (sbyte)((int)((uint)message >> 8)), (sbyte)message };
+			return BitConverter.GetBytes(message.Int16ToBigEndian()).ToSBytes();
+			//return new sbyte[] { (sbyte)((int)((uint)message >> 8)), (sbyte)message };
 		}
 
-		public override short? Decode(sbyte[] bytes)
+		public override short Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
 			Validate(bytes);
-			short value = 0;
-			foreach (sbyte b in bytes)
-			{
-				value <<= 8;
-				value |= (short)(b & 0xFF);
-			}
-			return value;
+
+			return BitConverter.ToInt16(bytes.ToBytes(), 0).Int16FromBigEndian();
 		}
 
 		public override ISchemaInfo SchemaInfo

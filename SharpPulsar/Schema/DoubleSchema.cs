@@ -1,8 +1,11 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schema;
 using SharpPulsar.Shared;
+using System;
+using System.Linq;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -61,21 +64,15 @@ namespace SharpPulsar.Schema
 
 		public override sbyte[] Encode(double message)
 		{
-			long bits = System.BitConverter.DoubleToInt64Bits(message);
-			return new sbyte[] { (sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
+			return BitConverter.GetBytes(message).Reverse().ToArray().ToSBytes();
+			//return new sbyte[] { (sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
 		}
 
 		public override double Decode(sbyte[] bytes)
 		{
+			var val = bytes.Reverse().ToArray().ToBytes();
 			Validate(bytes);
-			long value = 0;
-			foreach (sbyte b in bytes)
-			{
-				value <<= 8;
-				value |= b & 0xFF;
-			}
-			
-			return System.BitConverter.Int64BitsToDouble(value);
+			return BitConverter.ToDouble(val, 8);
 		}
 
 		public override ISchemaInfo SchemaInfo

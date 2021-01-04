@@ -1,7 +1,10 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
+using System;
+using System.Linq;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -59,21 +62,21 @@ namespace SharpPulsar.Schema
 
 		public override sbyte[] Encode(float message)
 		{
-			long bits = System.BitConverter.SingleToInt32Bits(message);
-			return new sbyte[] { (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
+			return BitConverter.GetBytes(message).Reverse().ToArray().ToSBytes();
+			//return new sbyte[] { (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
 
 		}
 
 		public override float Decode(sbyte[] bytes)
 		{
 			Validate(bytes);
-			int value = 0;
+			/*int value = 0;
 			foreach (sbyte b in bytes)
 			{
 				value <<= 8;
 				value |= b & 0xFF;
-			}
-			return System.BitConverter.Int32BitsToSingle(value);
+			}*/
+			return BitConverter.ToSingle(bytes.ToBytes().Reverse().ToArray(), 0);
 		}
 
 		public override ISchemaInfo SchemaInfo

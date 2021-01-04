@@ -1,7 +1,9 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
+using System;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -58,19 +60,21 @@ namespace SharpPulsar.Schema
 
 		public override sbyte[] Encode(int message)
 		{
-			return new sbyte[] { (sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message };
+			return BitConverter.GetBytes(message.IntToBigEndian()).ToSBytes();
+			//return new sbyte[] { (sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message };
 		}
 
 		public override int Decode(sbyte[] bytes)
 		{
 			Validate(bytes);
-			int value = 0;
+			/*int value = 0;
 			foreach (sbyte b in bytes)
 			{
 				value <<= 8;
 				value |= b & 0xFF;
 			}
-			return value;
+			return value;*/
+			return BitConverter.ToInt32(bytes.ToBytes(), 0).IntFromBigEndian();
 		}
 
 		public override ISchemaInfo SchemaInfo

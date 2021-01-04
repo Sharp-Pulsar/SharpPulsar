@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
@@ -59,19 +60,15 @@ namespace SharpPulsar.Schema
 
 		public override sbyte[] Encode(long data)
 		{
-			return new sbyte[] { (sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data };
+			return (sbyte[])(object)BitConverter.GetBytes(data.LongToBigEndian());
+			//return new sbyte[] { (sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data };
 		}
 
 		public override long Decode(sbyte[] bytes)
 		{
 			Validate(bytes);
-			long value = 0L;
-			foreach (sbyte b in bytes)
-			{
-				value <<= 8;
-                value |= b & 0xFF;
-			}
-			return value;
+			var val = BitConverter.ToInt64(bytes.ToBytes(), 0);
+			return val.LongFromBigEndian();
 		}
 
 		public override ISchemaInfo SchemaInfo

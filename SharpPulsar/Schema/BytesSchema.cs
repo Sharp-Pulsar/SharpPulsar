@@ -47,9 +47,6 @@ namespace SharpPulsar.Schema
 
 		public override sbyte[] Encode(sbyte[] message)
 		{
-			if (message is null)
-				return null;
-
 			return message;
 		}
 

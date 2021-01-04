@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
@@ -25,7 +26,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `java.sql.Time`.
 	/// </summary>
-	public class TimeSchema : AbstractSchema<DateTime?>
+	public class TimeSchema : AbstractSchema<TimeSpan>
 	{
 
 	   private static readonly TimeSchema _instance;
@@ -48,26 +49,15 @@ namespace SharpPulsar.Schema
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(DateTime? message)
+	   public override sbyte[] Encode(TimeSpan message)
 	   {
-		  if (null == message)
-		  {
-			 return null;
-		  }
-
-		  long? time = new DateTimeOffset(message.Value).ToUnixTimeMilliseconds();
-		  return LongSchema.Of().Encode(time.Value);
+			long time = ((long)message.TotalMilliseconds).LongToBigEndian();
+		  return BitConverter.GetBytes(time).ToSBytes();
 	   }
 
-	   public override DateTime? Decode(sbyte[] bytes)
+	   public override TimeSpan Decode(sbyte[] bytes)
 	   {
-		  if (null == bytes)
-		  {
-			 return null;
-		  }
-
-		  long? decode = LongSchema.Of().Decode(bytes);
-		  return DateTimeOffset.FromUnixTimeMilliseconds(decode.Value).DateTime;
+			return TimeSpan.FromMilliseconds(BitConverter.ToInt64(bytes.ToBytes(), 0).LongFromBigEndian());
 	   }
 
 	   public override ISchemaInfo SchemaInfo

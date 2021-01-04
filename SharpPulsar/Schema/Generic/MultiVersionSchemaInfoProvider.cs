@@ -1,10 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
-using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Interfaces.ISchema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
