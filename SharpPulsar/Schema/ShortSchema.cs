@@ -2,6 +2,7 @@
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
+using System.Diagnostics.CodeAnalysis;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -26,7 +27,7 @@ namespace SharpPulsar.Schema
     /// <summary>
     /// A schema for `Short`.
     /// </summary>
-    public class ShortSchema : AbstractSchema<short?>
+    public class ShortSchema : AbstractSchema<short>
 	{
 
 		private static readonly ShortSchema _instance;
@@ -49,7 +50,7 @@ namespace SharpPulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(byte[] message)
+		public override void Validate(sbyte[] message)
 		{
 			if (message.Length != 2)
 			{
@@ -57,19 +58,12 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override sbyte[] Encode(short? message)
+		public override sbyte[] Encode([NotNull]short message)
 		{
-			if (null == message)
-			{
-				return null;
-			}
-			else
-			{
-				return new sbyte[] {(sbyte)((int)((uint)message >> 8)), (sbyte)message.Value};
-			}
+			return new sbyte[] { (sbyte)((int)((uint)message >> 8)), (sbyte)message };
 		}
 
-		public override short? Decode(byte[] bytes)
+		public override short? Decode(sbyte[] bytes)
 		{
 			if (null == bytes)
 			{

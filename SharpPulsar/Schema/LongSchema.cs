@@ -26,7 +26,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `Long`.
 	/// </summary>
-	public class LongSchema : AbstractSchema<long?>
+	public class LongSchema : AbstractSchema<long>
 	{
 
 		private static readonly LongSchema _instance;
@@ -49,7 +49,7 @@ namespace SharpPulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(byte[] message)
+		public override void Validate(sbyte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -57,24 +57,13 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override sbyte[] Encode(long? data)
+		public override sbyte[] Encode(long data)
 		{
-			if (null == data)
-			{
-				return null;
-			}
-			else
-			{
-				return new sbyte[] {(sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data.Value};
-			}
+			return new sbyte[] { (sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data };
 		}
 
-		public override long? Decode(byte[] bytes)
+		public override long Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
 			Validate(bytes);
 			long value = 0L;
 			foreach (sbyte b in bytes)

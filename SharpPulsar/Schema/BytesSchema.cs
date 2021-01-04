@@ -27,7 +27,7 @@ namespace SharpPulsar.Schema
     /// <summary>
 	/// A schema for bytes array.
 	/// </summary>
-	public class BytesSchema : AbstractSchema<byte[]>
+	public class BytesSchema : AbstractSchema<sbyte[]>
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
@@ -45,14 +45,15 @@ namespace SharpPulsar.Schema
 			return Instance;
 		}
 
-		public override sbyte[] Encode(byte[] message)
+		public override sbyte[] Encode(sbyte[] message)
 		{
-			if (!(message is sbyte[]))
-                throw new ArgumentException($"{message.GetType()} is not sbyte[]");
-			return (sbyte[])(object)message;
+			if (message is null)
+				return null;
+
+			return message;
 		}
 
-        public override byte[] Decode(byte[] bytes)
+        public override sbyte[] Decode(sbyte[] bytes)
 		{
 			return bytes;
 		}

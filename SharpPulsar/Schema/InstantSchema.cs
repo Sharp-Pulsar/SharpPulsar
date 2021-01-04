@@ -26,7 +26,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `java.time.Instant`.
 	/// </summary>
-	public class InstantSchema : AbstractSchema<Instant?>
+	public class InstantSchema : AbstractSchema<Instant>
 	{
 
 	   private static readonly InstantSchema _instance;
@@ -49,28 +49,20 @@ namespace SharpPulsar.Schema
 		  return _instance;
 	   }
 
-		public override sbyte[] Encode(Instant? message)
+		public override sbyte[] Encode(Instant message)
 		{
-			if (null == message)
-			{
-				return null;
-			}
 			// Instant is accurate to nanoseconds and requires two value storage.
 			/*ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
 			buffer.putLong(message.EpochSecond);
 			buffer.putInt(message.Nano);
 			  return LongSchema.Of().Encode(epochDay);
 			  return buffer.array();*/
-			long epochDay = message.Value.ToDateTimeOffset().ToUnixTimeMilliseconds();
+			long epochDay = message.ToDateTimeOffset().ToUnixTimeMilliseconds();
 			return LongSchema.Of().Encode(epochDay);
 		}
 
-	   public override Instant? Decode(byte[] bytes)
+	   public override Instant Decode(sbyte[] bytes)
 	   {
-		  if (null == bytes)
-		  {
-			 return null;
-		  }
 			//ByteBuffer buffer = ByteBuffer.wrap(bytes);
 			//long epochSecond = buffer.Long;
 			//int nanos = buffer.Int;

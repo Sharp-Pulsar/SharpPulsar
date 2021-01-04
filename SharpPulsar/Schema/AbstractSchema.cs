@@ -25,45 +25,20 @@ namespace SharpPulsar.Schema
 {
 	public abstract class AbstractSchema<T> : ISchema<T>
 	{
-		public virtual ISchema<T> Auto()
-        {
-			throw new NotImplementedException();
-        }
-
-		public virtual ISchema<T> Json(ISchemaDefinition<T> schemaDefinition)
+		public virtual ISchemaInfoProvider SchemaInfoProvider
 		{
-			throw new NotImplementedException();
-		}
-		public virtual ISchema<T> Json(object pojo)
-		{
-			throw new NotImplementedException();
-		}
-
-		public virtual void ConfigureSchemaInfo(string topic, string componentName, ISchemaInfo schemaInfo)
-		{
-			throw new NotImplementedException();
-		}
-		public virtual bool RequireFetchingSchemaInfo()
-		{
-			return false;
-		}
-
-		public virtual ISchemaInfo SchemaInfo {get;}
-		public virtual ISchemaInfoProvider SchemaInfoProvider {
-			set { 
+			set
+			{
 			}
 		}
-
+		public virtual ISchemaInfo SchemaInfo {get;}
+		
 		public virtual bool SupportSchemaVersioning()
 		{
 			return true;
 		}
 		public abstract sbyte[] Encode(T message);
-		public virtual void Validate(sbyte[] message)
-		{
-			throw new NotImplementedException();
-		}
-
+		
 		/// <summary>
 		/// Check if the message read able Length Length is a valid object for this schema.
 		/// 
@@ -77,7 +52,7 @@ namespace SharpPulsar.Schema
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		public virtual void Validate(byte[] byteBuf)
+		public virtual void Validate(sbyte[] byteBuf)
 		{
 			throw new SchemaSerializationException("This method is not supported");
 		}
@@ -88,7 +63,7 @@ namespace SharpPulsar.Schema
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract T Decode(byte[] byteBuf);
+		public abstract T Decode(sbyte[] byteBuf);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -97,7 +72,7 @@ namespace SharpPulsar.Schema
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual T Decode(byte[] byteBuf, byte[] schemaVersion)
+		public virtual T Decode(sbyte[] byteBuf, sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(byteBuf);

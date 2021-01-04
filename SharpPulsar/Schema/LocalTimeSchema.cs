@@ -26,7 +26,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `java.time.LocalTime`.
 	/// </summary>
-	public class LocalTimeSchema : AbstractSchema<LocalTime?>
+	public class LocalTimeSchema : AbstractSchema<LocalTime>
 	{
 
 	   private static readonly LocalTimeSchema _instance;
@@ -49,26 +49,16 @@ namespace SharpPulsar.Schema
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(LocalTime? message)
+	   public override sbyte[] Encode(LocalTime message)
 	   {
-		  if (null == message)
-		  {
-			 return null;
-		  }
-
-		  long? nanoOfDay = message.Value.NanosecondOfDay;
+		  var nanoOfDay = message.NanosecondOfDay;
 		  return LongSchema.Of().Encode(nanoOfDay);
 	   }
 
-	   public override LocalTime? Decode(byte[] bytes)
+	   public override LocalTime Decode(sbyte[] bytes)
 	   {
-		  if (null == bytes)
-		  {
-			 return null;
-		  }
-
-		  long? decode = LongSchema.Of().Decode(bytes);
-		  return LocalTime.FromNanosecondsSinceMidnight(decode.Value);
+		  var decode = LongSchema.Of().Decode(bytes);
+		  return LocalTime.FromNanosecondsSinceMidnight(decode);
 	   }
 
 	   public override ISchemaInfo SchemaInfo

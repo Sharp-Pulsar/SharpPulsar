@@ -113,7 +113,7 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override string Decode(byte[] bytes)
+		public override string Decode(sbyte[] bytes)
 		{
 			if (null == bytes)
 			{
@@ -121,7 +121,7 @@ namespace SharpPulsar.Schema
 			}
 			else
 			{
-				return _encoding.GetString(bytes);
+				return _encoding.GetString((byte[])(object)bytes);
 			}
 		}
 

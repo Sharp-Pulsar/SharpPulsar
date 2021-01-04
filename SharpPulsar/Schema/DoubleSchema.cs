@@ -27,7 +27,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `Double`.
 	/// </summary>
-	public class DoubleSchema : AbstractSchema<double?>
+	public class DoubleSchema : AbstractSchema<double>
 	{
 
 		private static readonly DoubleSchema _instance;
@@ -50,7 +50,7 @@ namespace SharpPulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(byte[] message)
+		public override void Validate(sbyte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -59,25 +59,14 @@ namespace SharpPulsar.Schema
 		}
 
 
-		public override sbyte[] Encode(double? message)
+		public override sbyte[] Encode(double message)
 		{
-			if (null == message)
-			{
-				return null;
-			}
-			else
-			{
-				long bits = System.BitConverter.DoubleToInt64Bits(message.Value);
-				return new sbyte[] {(sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte) bits};
-			}
+			long bits = System.BitConverter.DoubleToInt64Bits(message);
+			return new sbyte[] { (sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
 		}
 
-		public override double? Decode(byte[] bytes)
+		public override double Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
 			Validate(bytes);
 			long value = 0;
 			foreach (sbyte b in bytes)

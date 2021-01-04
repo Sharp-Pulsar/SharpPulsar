@@ -1,18 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using SharpPulsar.Api;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Interfaces.Interceptor;
+﻿using System.Text;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schema
 {
-
-	//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-	//	import static org.apache.pulsar.client.impl.schema.util.SchemaUtil.parseAvroSchema;
-
 	/// <summary>
 	/// This is a base schema implementation for Avro Based `Struct` types.
 	/// A struct type is used for presenting records (objects) which

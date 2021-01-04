@@ -73,9 +73,9 @@ namespace SharpPulsar.Schema
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
 
-		private static readonly ISchema<KeyValue<byte[], byte[]>> _kvBytes = new KeyValueSchema<byte[], byte[]>(BytesSchema.Of(), BytesSchema.Of());
+		private static readonly ISchema<KeyValue<sbyte[], sbyte[]>> _kvBytes = new KeyValueSchema<sbyte[], sbyte[]>(BytesSchema.Of(), BytesSchema.Of());
 
-		public static ISchema<KeyValue<byte[], byte[]>> KvBytes()
+		public static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
 		{
 			return _kvBytes;
 		}

@@ -62,12 +62,14 @@ namespace SharpPulsar.Schema
 				try
 				{
 					var jsonBackwardsCompatibleSchema = _pojo.GetSchema();
-					BackwardsCompatibleSchemaInfo = new SchemaInfo();
-					BackwardsCompatibleSchemaInfo.Name = "";
-					BackwardsCompatibleSchemaInfo.Properties = SchemaInfo.Properties;
-					BackwardsCompatibleSchemaInfo.Type = SchemaType.JSON;
-					BackwardsCompatibleSchemaInfo.Schema = (sbyte[])(object)_jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema);
-				}
+                    BackwardsCompatibleSchemaInfo = new SchemaInfo
+                    {
+                        Name = "",
+                        Properties = SchemaInfo.Properties,
+                        Type = SchemaType.JSON,
+                        Schema = (sbyte[])(object)_jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
+                    };
+                }
 				catch (Exception ex)
 				{
 					throw ex;

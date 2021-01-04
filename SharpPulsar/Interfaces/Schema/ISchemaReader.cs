@@ -33,7 +33,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// </summary>
 		/// <param name="bytes"> the data </param>
 		/// <returns> the serialized object </returns>
-		virtual T Read(byte[] bytes)
+		virtual T Read(sbyte[] bytes)
 		{
 			return Read(bytes, 0, bytes.Length);
 		}
@@ -45,7 +45,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// <param name="offset"> the byte[] initial position </param>
 		/// <param name="length"> the byte[] read length </param>
 		/// <returns> the serialized object </returns>
-		T Read(byte[] bytes, int offset, int length);
+		T Read(sbyte[] bytes, int offset, int length);
 
 		/// <summary>
 		/// serialize bytes convert pojo.
@@ -60,7 +60,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// <param name="bytes"> the data </param>
 		/// <param name="schemaVersion"> the schema version of message </param>
 		/// <returns> the serialized object </returns>
-		virtual T Read(byte[] bytes, byte[] schemaVersion)
+		virtual T Read(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			return Read(bytes, 0, bytes.Length);
 		}

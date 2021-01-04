@@ -28,7 +28,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `java.time.LocalDateTime`.
 	/// </summary>
-	public class LocalDateTimeSchema : AbstractSchema<LocalDateTime?>
+	public class LocalDateTimeSchema : AbstractSchema<LocalDateTime>
 	{
 
 	   private static readonly LocalDateTimeSchema _instance;
@@ -52,32 +52,24 @@ namespace SharpPulsar.Schema
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(LocalDateTime? message)
+	   public override sbyte[] Encode(LocalDateTime message)
 	   {
-		  if (null == message)
-		  {
-			 return null;
-		  }
 			//LocalDateTime is accurate to nanoseconds and requires two value storage.
 			//ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
 			//buffer.putLong(message.toLocalDate().toEpochDay());
 			//buffer.putLong(message.toLocalTime().toNanoOfDay());
-			long? epochDay = new DateTimeOffset(message.Value.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
+			var epochDay = new DateTimeOffset(message.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
 			return LongSchema.Of().Encode(epochDay);
 		}
 
-		public override LocalDateTime? Decode(byte[] bytes)
+		public override LocalDateTime Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
 			//ByteBuffer buffer = ByteBuffer.wrap(bytes);
 			//long epochDay = buffer.Long;
 			//long nanoOfDay = buffer.Long;
 			//return new DateTime(LocalDate.ofEpochDay(epochDay), LocalTime.ofNanoOfDay(nanoOfDay));
-			long? decode = LongSchema.Of().Decode(bytes);
-			return LocalDateTime.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode.Value).DateTime);
+			var decode = LongSchema.Of().Decode(bytes);
+			return LocalDateTime.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode).DateTime);
 		}
 
 

@@ -27,7 +27,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `java.time.LocalDate`.
 	/// </summary>
-	public class LocalDateSchema : AbstractSchema<LocalDate?>
+	public class LocalDateSchema : AbstractSchema<LocalDate>
 	{
 
 	   private static readonly LocalDateSchema _instance;
@@ -50,26 +50,16 @@ namespace SharpPulsar.Schema
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(LocalDate? message)
+	   public override sbyte[] Encode(LocalDate message)
 	   {
-		  if (null == message)
-		  {
-			 return null;
-		  }
-
-		  long? epochDay = new DateTimeOffset(message.Value.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
+		  long epochDay = new DateTimeOffset(message.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
 		  return LongSchema.Of().Encode(epochDay);
 	   }
 
-	   public override LocalDate? Decode(byte[] bytes)
+	   public override LocalDate Decode(sbyte[] bytes)
 	   {
-		  if (null == bytes)
-		  {
-			 return null;
-		  }
-
-		  long? decode = LongSchema.Of().Decode(bytes);
-		  return LocalDate.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode.Value).DateTime);
+		  var decode = LongSchema.Of().Decode(bytes);
+		  return LocalDate.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode).DateTime);
 	   }
 
 	   public override ISchemaInfo SchemaInfo

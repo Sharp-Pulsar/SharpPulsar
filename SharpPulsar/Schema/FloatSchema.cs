@@ -26,7 +26,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `Float`.
 	/// </summary>
-	public class FloatSchema : AbstractSchema<float?>
+	public class FloatSchema : AbstractSchema<float>
 	{
 
 		private static readonly FloatSchema _instance;
@@ -49,7 +49,7 @@ namespace SharpPulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(byte[] message)
+		public override void Validate(sbyte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -57,25 +57,15 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override sbyte[] Encode(float? message)
+		public override sbyte[] Encode(float message)
 		{
-			if (null == message)
-			{
-				return null;
-			}
-			else
-			{
-				long bits = System.BitConverter.SingleToInt32Bits(message.Value);
-				return new sbyte[] {(sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte) bits};
-			}
+			long bits = System.BitConverter.SingleToInt32Bits(message);
+			return new sbyte[] { (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
+
 		}
 
-		public override float? Decode(byte[] bytes)
+		public override float Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
 			Validate(bytes);
 			int value = 0;
 			foreach (sbyte b in bytes)

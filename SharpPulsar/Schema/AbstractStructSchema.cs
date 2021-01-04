@@ -7,8 +7,6 @@ namespace SharpPulsar.Schema
         private readonly ISchemaInfo _schemaInfo;
         private ISchemaReader<T> _reader;
         private ISchemaWriter<T> _writer;
-        private ISchemaInfoProvider _schemaInfoProvider;
-
         public AbstractStructSchema(ISchemaInfo schemaInfo)
         {
             _schemaInfo = schemaInfo;
@@ -20,12 +18,12 @@ namespace SharpPulsar.Schema
             return _writer.Write(message);
         }
 
-        public override T Decode(byte[] bytes)
+        public override T Decode(sbyte[] bytes)
         {
             return _reader.Read(bytes);
         }
 
-        public override T Decode(byte[] bytes, byte[] schemaVersion)
+        public override T Decode(sbyte[] bytes, sbyte[] schemaVersion)
         {
             return _reader.Read(bytes, schemaVersion);
         }

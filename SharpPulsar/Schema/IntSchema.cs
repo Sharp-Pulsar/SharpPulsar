@@ -25,7 +25,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `Integer`.
 	/// </summary>
-	public class IntSchema : AbstractSchema<int?>
+	public class IntSchema : AbstractSchema<int>
 	{
 
 		private static readonly IntSchema _instance;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(byte[] message)
+		public override void Validate(sbyte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -56,24 +56,13 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override sbyte[] Encode(int? message)
+		public override sbyte[] Encode(int message)
 		{
-			if (null == message)
-			{
-				return null;
-			}
-			else
-			{
-				return new sbyte[] {(sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message.Value};
-			}
+			return new sbyte[] { (sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message };
 		}
 
-		public override int? Decode(byte[] bytes)
+		public override int Decode(sbyte[] bytes)
 		{
-			if (null == bytes)
-			{
-				return null;
-			}
 			Validate(bytes);
 			int value = 0;
 			foreach (sbyte b in bytes)

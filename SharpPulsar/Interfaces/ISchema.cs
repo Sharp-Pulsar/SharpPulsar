@@ -1,6 +1,9 @@
-﻿using SharpPulsar.Common.Schema;
+﻿using NodaTime;
+using SharpPulsar.Common.Schema;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Shared;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -38,9 +41,9 @@ namespace SharpPulsar.Interfaces
 	 /// </summary>
 	 /// <param name="message"> the messages to verify </param>
 	 /// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		virtual void Validate(sbyte[] Message)
+		virtual void Validate([NotNull] sbyte[] message)
 		{
-			decode(message);
+			Decode(message);
 		}
 
 		/// <summary>
@@ -51,7 +54,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a byte array with the serialized content </returns>
 		/// <exception cref="SchemaSerializationException">
 		///             if the serialization fails </exception>
-		sbyte[] Encode(T message);
+		sbyte[] Encode([NotNull]T message);
 
 		/// <summary>
 		/// Returns whether this schema supports versioning.
@@ -73,7 +76,7 @@ namespace SharpPulsar.Interfaces
 			return false;
 		}
 
-		virtual SchemaInfoProvider SchemaInfoProvider
+		virtual ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -86,10 +89,10 @@ namespace SharpPulsar.Interfaces
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode(sbyte[] Bytes)
+		virtual T Decode([NotNull]sbyte[] bytes)
 		{
 			// use `null` to indicate ignoring schema version
-			return decode(bytes, null);
+			return Decode(bytes, null);
 		}
 
 		/// <summary>
@@ -100,14 +103,14 @@ namespace SharpPulsar.Interfaces
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
+		virtual T Decode([NotNull]sbyte[] bytes, [NotNull]sbyte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
-			return decode(bytes);
+			return Decode(bytes);
 		}
 
 		/// <returns> an object that represents the Schema associated metadata </returns>
-		SchemaInfo SchemaInfo { get; }
+		ISchemaInfo SchemaInfo { get; }
 
 		/// <summary>
 		/// Check if this schema requires fetching schema info to configure the schema.
@@ -125,7 +128,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="topic"> topic name </param>
 		/// <param name="componentName"> component name </param>
 		/// <param name="schemaInfo"> schema info </param>
-		virtual void ConfigureSchemaInfo(string Topic, string ComponentName, SchemaInfo SchemaInfo)
+		virtual void ConfigureSchemaInfo(string topic, string componentName, ISchemaInfo schemaInfo)
 		{
 			// no-op
 		}
@@ -139,123 +142,79 @@ namespace SharpPulsar.Interfaces
 		/// <summary>
 		/// Schema that doesn't perform any encoding on the message payloads. Accepts a byte array and it passes it through.
 		/// </summary>
-		public static ISchema<sbyte[]> BYTES = DefaultImplementation.newBytesSchema();
+		public static ISchema<sbyte[]> Bytes = DefaultImplementation.NewBytesSchema();
 
-		/// <summary>
-		/// ByteBuffer Schema.
-		/// </summary>
-		public static ISchema<ByteBuffer> BYTEBUFFER = DefaultImplementation.newByteBufferSchema();
 
 		/// <summary>
 		/// Schema that can be used to encode/decode messages whose values are String. The payload is encoded with UTF-8.
 		/// </summary>
-		public static ISchema<string> STRING = DefaultImplementation.newStringSchema();
+		public static ISchema<string> String = DefaultImplementation.NewStringSchema();
 
 		/// <summary>
 		/// INT8 Schema.
 		/// </summary>
-		public static ISchema<sbyte> INT8 = DefaultImplementation.newByteSchema();
+		public static ISchema<sbyte> Int8 = DefaultImplementation.NewByteSchema();
 
 		/// <summary>
 		/// INT16 Schema.
 		/// </summary>
-		public static ISchema<short> INT16 = DefaultImplementation.newShortSchema();
+		public static ISchema<short> Int16 = DefaultImplementation.NewShortSchema();
 
 		/// <summary>
 		/// INT32 Schema.
 		/// </summary>
-		public static ISchema<int> INT32 = DefaultImplementation.newIntSchema();
+		public static ISchema<int> Int32 = DefaultImplementation.NewIntSchema();
 
 		/// <summary>
 		/// INT64 Schema.
 		/// </summary>
-		public static ISchema<long> INT64 = DefaultImplementation.newLongSchema();
+		public static ISchema<long> Int64 = DefaultImplementation.NewLongSchema();
 
 		/// <summary>
 		/// Boolean Schema.
 		/// </summary>
-		public static ISchema<bool> BOOL = DefaultImplementation.newBooleanSchema();
+		public static ISchema<bool> Bool = DefaultImplementation.NewBooleanSchema();
 
 		/// <summary>
 		/// Float Schema.
 		/// </summary>
-		public static ISchema<float> FLOAT = DefaultImplementation.newFloatSchema();
+		public static ISchema<float> Float = DefaultImplementation.NewFloatSchema();
 
 		/// <summary>
 		/// Double Schema.
 		/// </summary>
-		public static ISchema<double> DOUBLE = DefaultImplementation.newDoubleSchema();
+		public static ISchema<double> Double = DefaultImplementation.NewDoubleSchema();
 
 		/// <summary>
 		/// Date Schema.
 		/// </summary>
-		public static ISchema<DateTime> DATE = DefaultImplementation.newDateSchema();
-
-		/// <summary>
-		/// Time Schema.
-		/// </summary>
-		public static ISchema<Time> TIME = DefaultImplementation.newTimeSchema();
-
-		/// <summary>
-		/// Timestamp Schema.
-		/// </summary>
-		public static ISchema<Timestamp> TIMESTAMP = DefaultImplementation.newTimestampSchema();
+		public static ISchema<DateTime> Date = DefaultImplementation.NewDateSchema();
 
 		/// <summary>
 		/// Instant Schema.
 		/// </summary>
-		public static ISchema<Instant> INSTANT = DefaultImplementation.newInstantSchema();
+		public static ISchema<Instant> Instant = DefaultImplementation.NewInstantSchema();
 		/// <summary>
 		/// LocalDate Schema.
 		/// </summary>
-		public static ISchema<LocalDate> LOCAL_DATE = DefaultImplementation.newLocalDateSchema();
+		public static ISchema<LocalDate> LocalDate = DefaultImplementation.NewLocalDateSchema();
 		/// <summary>
 		/// LocalTime Schema.
 		/// </summary>
-		public static ISchema<LocalTime> LOCAL_TIME = DefaultImplementation.newLocalTimeSchema();
+		public static ISchema<LocalTime> LocalTime = DefaultImplementation.NewLocalTimeSchema();
 		/// <summary>
 		/// LocalDateTime Schema.
 		/// </summary>
-		public static ISchema<DateTime> LOCAL_DATE_TIME = DefaultImplementation.newLocalDateTimeSchema();
-
-		/// <summary>
-		/// Create a Protobuf schema type with schema definition.
-		/// </summary>
-		/// <param name="schemaDefinition"> schemaDefinition the definition of the schema </param>
-		/// <returns> a Schema instance </returns>
-		static ISchema<T> PROTOBUF<T>(SchemaDefinition<T> SchemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
-		{
-			return DefaultImplementation.newProtobufSchema(schemaDefinition);
-		}
-
-		/// <summary>
-		/// Create a Protobuf-Native schema type by extracting the fields of the specified class.
-		/// </summary>
-		/// <param name="clazz"> the Protobuf generated class to be used to extract the schema </param>
-		/// <returns> a Schema instance </returns>
-		static ISchema<T> PROTOBUF_NATIVE<T>(Type Clazz) where T : com.google.protobuf.GeneratedMessageV3
-		{
-			return DefaultImplementation.newProtobufNativeSchema(SchemaDefinition.builder().withPojo(clazz).build());
-		}
-
-		/// <summary>
-		/// Create a Protobuf-Native schema type with schema definition.
-		/// </summary>
-		/// <param name="schemaDefinition"> schemaDefinition the definition of the schema </param>
-		/// <returns> a Schema instance </returns>
-		static ISchema<T> PROTOBUF_NATIVE<T>(SchemaDefinition<T> SchemaDefinition) where T : com.google.protobuf.GeneratedMessageV3
-		{
-			return DefaultImplementation.newProtobufNativeSchema(schemaDefinition);
-		}
+		public static ISchema<LocalDateTime> LocalDateTime = DefaultImplementation.NewLocalDateTimeSchema();
 
 		/// <summary>
 		/// Create a  Avro schema type by default configuration of the class.
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the Avro schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> AVRO<T>(Type Pojo)
+		static ISchema<T> Avro(Type pojo)
 		{
-			return DefaultImplementation.newAvroSchema(SchemaDefinition.builder().withPojo(pojo).build());
+			return DefaultImplementation.NewAvroSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
 		/// <summary>
@@ -263,9 +222,9 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> AVRO<T>(SchemaDefinition<T> SchemaDefinition)
+		static ISchema<T> Avro<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return DefaultImplementation.newAvroSchema(schemaDefinition);
+			return DefaultImplementation.NewAvroSchema(schemaDefinition);
 		}
 
 		/// <summary>
@@ -273,9 +232,9 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="pojo"> the POJO class to be used to extract the JSON schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> JSON<T>(Type Pojo)
+		static ISchema<T> Json<T>(Type pojo)
 		{
-			return DefaultImplementation.newJSONSchema(SchemaDefinition.builder().withPojo(pojo).build());
+			return DefaultImplementation.NewJsonSchema(ISchemaDefinition<T>.Builder().WithPojo(pojo).Build());
 		}
 
 		/// <summary>
@@ -283,55 +242,55 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> JSON<T>(SchemaDefinition SchemaDefinition)
+		static ISchema<T> Json<T>(ISchemaDefinition<T> schemaDefinition)
 		{
-			return DefaultImplementation.newJSONSchema(schemaDefinition);
+			return DefaultImplementation.NewJsonSchema(schemaDefinition);
 		}
 
 		/// <summary>
 		/// Key Value Schema using passed in schema type, support JSON and AVRO currently.
 		/// </summary>
-		static ISchema<KeyValue<K, V>> KeyValue<K, V>(Type Key, Type Value, SchemaType Type)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(Type key, Type value, SchemaType type)
 		{
-			return DefaultImplementation.newKeyValueSchema(key, value, type);
+			return DefaultImplementation.NewKeyValueSchema<K, V>(key, value, type);
 		}
 
 		/// <summary>
 		/// Schema that can be used to encode/decode KeyValue.
 		/// </summary>
-		static ISchema<KeyValue<sbyte[], sbyte[]>> KV_BYTES()
+		static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
 		{
-			return DefaultImplementation.newKeyValueBytesSchema();
+			return DefaultImplementation.NewKeyValueBytesSchema();
 		}
 
 		/// <summary>
 		/// Key Value Schema whose underneath key and value schemas are JSONSchema.
 		/// </summary>
-		static ISchema<KeyValue<K, V>> KeyValue<K, V>(Type Key, Type Value)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(Type key, Type value)
 		{
-			return DefaultImplementation.newKeyValueSchema(key, value, SchemaType.JSON);
+			return DefaultImplementation.NewKeyValueSchema<K, V>(key, value, SchemaType.JSON);
 		}
 
 		/// <summary>
 		/// Key Value Schema using passed in key and value schemas.
 		/// </summary>
-		static ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> Key, ISchema<V> Value)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> key, ISchema<V> value)
 		{
-			return DefaultImplementation.newKeyValueSchema(key, value);
+			return DefaultImplementation.NewKeyValueSchema(key, value);
 		}
 
 		/// <summary>
 		/// Key Value Schema using passed in key, value and encoding type schemas.
 		/// </summary>
-		static ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> Key, ISchema<V> Value, KeyValueEncodingType KeyValueEncodingType)
+		static ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> key, ISchema<V> value, KeyValueEncodingType keyValueEncodingType)
 		{
-			return DefaultImplementation.newKeyValueSchema(key, value, keyValueEncodingType);
+			return DefaultImplementation.NewKeyValueSchema(key, value, keyValueEncodingType);
 		}
 
 		[Obsolete]
-		static ISchema<GenericRecord> AUTO()
+		static ISchema<IGenericRecord> Auto()
 		{
-			return AUTO_CONSUME();
+			return AutoConsume();
 		}
 
 		/// <summary>
@@ -346,9 +305,9 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> the auto schema instance </returns>
-		static ISchema<GenericRecord> AUTO_CONSUME()
+		static ISchema<IGenericRecord> AutoConsume()
 		{
-			return DefaultImplementation.newAutoConsumeSchema();
+			return DefaultImplementation.NewAutoConsumeSchema();
 		}
 
 		/// <summary>

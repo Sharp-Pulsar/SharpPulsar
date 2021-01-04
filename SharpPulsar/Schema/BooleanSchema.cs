@@ -27,7 +27,7 @@ namespace SharpPulsar.Schema
 	/// <summary>
 	/// A schema for `Boolean`.
 	/// </summary>
-	public class BooleanSchema : AbstractSchema<bool?>
+	public class BooleanSchema : AbstractSchema<bool>
 	{
 
 		private static readonly BooleanSchema _instance;
@@ -50,7 +50,7 @@ namespace SharpPulsar.Schema
 			return _instance;
 		}
 
-		public override void Validate(byte[] message)
+		public override void Validate(sbyte[] message)
 		{
 			if (message.Length != 1)
 			{
@@ -58,24 +58,13 @@ namespace SharpPulsar.Schema
 			}
 		}
 
-		public override sbyte[] Encode(bool? message)
+		public override sbyte[] Encode(bool message)
 		{
-			if (null == message || !(message is bool b))
-			{
-				return null;
-			}
-			else
-			{
-				return new sbyte[]{(sbyte)(b ? 1 : 0)};
-			}
+			return new sbyte[] { (sbyte)(message ? 1 : 0) };
 		}
 
-		public override bool? Decode(byte[] bytes)
+		public override bool Decode(sbyte[] bytes)
         {
-			if (null == bytes)
-			{
-				return null;
-			}
 			Validate(bytes);
 			return bytes[0] != 0;
 		}

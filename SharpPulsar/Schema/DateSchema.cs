@@ -61,7 +61,7 @@ namespace SharpPulsar.Schema
 		  return LongSchema.Of().Encode(date);
 	   }
 
-	   public override DateTime Decode(byte[] bytes)
+	   public override DateTime Decode(sbyte[] bytes)
 	   {
 		  if (null == bytes)
 		  {

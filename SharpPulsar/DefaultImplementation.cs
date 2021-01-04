@@ -13,6 +13,9 @@ using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Schema;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
+using System.Text;
+using NodaTime;
+using SharpPulsar.Shared;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -91,7 +94,7 @@ namespace SharpPulsar
 			return AuthenticationUtil.Create(authPluginClassName, authParams);
 		}
 
-		public static ISchema NewBytesSchema()
+		public static ISchema<sbyte[]> NewBytesSchema()
 		{
 			return new BytesSchema();
 		}
@@ -101,7 +104,7 @@ namespace SharpPulsar
 			return AvroSchema<T>.Of(schemaDefinition);
 		}
 
-		public static ISchema NewAutoConsumeSchema()
+		public static ISchema<IGenericRecord> NewAutoConsumeSchema()
 		{
 			return new AutoConsumeSchema();
 		}
@@ -110,7 +113,73 @@ namespace SharpPulsar
 		{
 			return new AutoProduceBytesSchema<byte[]>();
 		}
+		public static ISchema<string> NewStringSchema()
+		{
+			return new StringSchema();
+			//return catchExceptions(()-> (Schema<String>) newClassInstance("org.apache.pulsar.client.impl.schema.StringSchema")
+							//.newInstance());
+		}
 
+		public static ISchema<string> NewStringSchema(Encoding encoding)
+		{
+			return new StringSchema(encoding);
+			/*return catchExceptions(
+					()-> (Schema<String>) getConstructor(
+						"org.apache.pulsar.client.impl.schema.StringSchema", Charset.class)
+                        .newInstance(charset));*/
+		}
+		public static ISchema<sbyte> NewByteSchema()
+		{
+			return new ByteSchema();
+		}
+		public static ISchema<short> NewShortSchema()
+		{
+			return new ShortSchema();
+		}
+		public static ISchema<int> NewIntSchema()
+		{
+			return new IntSchema();
+		}
+		public static ISchema<long> NewLongSchema()
+		{
+			return new LongSchema();
+		}
+		public static ISchema<bool> NewBooleanSchema()
+		{
+			return new BooleanSchema();
+		}
+		public static ISchema<float> NewFloatSchema()
+		{
+			return new FloatSchema();
+		}
+		public static ISchema<double> NewDoubleSchema()
+		{
+			return new DoubleSchema();
+		}
+		public static ISchema<DateTime> NewDateSchema()
+		{
+			return new DateSchema();
+		}
+		public static ISchema<Instant> NewInstantSchema()
+		{
+			return new InstantSchema();
+		}
+		public static ISchema<LocalDate> NewLocalDateSchema()
+		{
+			return new LocalDateSchema();
+		}
+		public static ISchema<LocalTime> NewLocalTimeSchema()
+		{
+			return new LocalTimeSchema();
+		}
+		public static ISchema<LocalDateTime> NewLocalDateTimeSchema()
+		{
+			return new LocalDateTimeSchema();
+		}
+		public static ISchema<T> NewJsonSchema<T>(ISchemaDefinition<T> schemaDefinition)
+		{
+			return JSONSchema<T>.Of(schemaDefinition);
+		}
 		public static ISchema<byte[]> NewAutoProduceSchema<T>(ISchema<T> schema)
 		{
 			return new AutoProduceBytesSchema<T>(schema);
@@ -127,7 +196,27 @@ namespace SharpPulsar
 			return GenericSchemaImpl.Of((SchemaInfo)schemaInfo);
 		}
 
+		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema)
+		{
+			//return catchExceptions(() => (Schema<KeyValue<K, V>>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema)).invoke(null, KeySchema, ValueSchema));
+			return KeyValueSchema<K, V>.Of(keySchema, valueSchema);
+		}
 
+		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		{
+			//return catchExceptions(() => (Schema<KeyValue<K, V>>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, KeySchema, ValueSchema, KeyValueEncodingType));
+			return KeyValueSchema<K, V>.Of(keySchema, valueSchema, keyValueEncodingType);
+		}
+
+		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(Type key, Type value, SchemaType type)
+		{
+			//return catchExceptions(() => (Schema<KeyValue<K, V>>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, Key, Value, Type));
+			return KeyValueSchema<K, V>.Of(key, value, type);
+		}
+		public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
+		{
+			return KeyValueSchema<sbyte[], sbyte[]>.KvBytes();
+		}
 
 		/// <summary>
 		/// Jsonify the schema info.
