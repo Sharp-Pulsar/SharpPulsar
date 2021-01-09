@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,36 +23,24 @@ namespace SharpPulsar.Test.Schema
 	
 	public class DoubleSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncode()
 		{
-			DoubleSchema Schema = DoubleSchema.of();
-			double? Data = new double?(12345678.1234);
-			long LongData = System.BitConverter.DoubleToInt64Bits(Data);
-			sbyte[] Expected = new sbyte[] {(sbyte)((long)((ulong)LongData >> 56)), (sbyte)((long)((ulong)LongData >> 48)), (sbyte)((long)((ulong)LongData >> 40)), (sbyte)((long)((ulong)LongData >> 32)), (sbyte)((long)((ulong)LongData >> 24)), (sbyte)((long)((ulong)LongData >> 16)), (sbyte)((long)((ulong)LongData >> 8)), ((long?)LongData).Value};
-			Assert.assertEquals(Expected, Schema.encode(Data));
+			DoubleSchema schema = DoubleSchema.Of();
+			double? data = new double?(12345678.1234);
+			long LongData = System.BitConverter.DoubleToInt64Bits(data.Value);
+			sbyte[] Expected = new sbyte[] {(sbyte)((long)((ulong)LongData >> 56)), (sbyte)((long)((ulong)LongData >> 48)), (sbyte)((long)((ulong)LongData >> 40)), (sbyte)((long)((ulong)LongData >> 32)), (sbyte)((long)((ulong)LongData >> 24)), (sbyte)((long)((ulong)LongData >> 16)), (sbyte)((long)((ulong)LongData >> 8)), (sbyte)((long?)LongData).Value};
+			Assert.Equal(Expected, schema.Encode(data.Value));
 		}
 
-		public virtual void TestSchemaEncodeDecodeFidelity()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			DoubleSchema Schema = DoubleSchema.of();
-			double? Dbl = new double?(1234578.8754321);
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			sbyte[] Bytes = Schema.encode(Dbl);
-			ByteBuf.writeBytes(Bytes);
-			Assert.assertEquals(Dbl, Schema.decode(Bytes));
-			Assert.assertEquals(Dbl, Schema.decode(ByteBuf));
+			DoubleSchema schema = DoubleSchema.Of();
+			double? dbl = new double?(1234578.8754321);
+			sbyte[] bytes = schema.Encode(dbl.Value);
+			Assert.Equal(dbl, schema.Decode(bytes));
 		}
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-			Assert.assertNull(DoubleSchema.of().encode(null));
-			Assert.assertNull(DoubleSchema.of().decode(ByteBuf));
-			Assert.assertNull(DoubleSchema.of().decode(Bytes));
-		}
-
 	}
 
 }
