@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpPulsar.Schema;
+using System;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,48 +24,23 @@ namespace SharpPulsar.Test.Schema
 {
 	public class DateSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncode()
 		{
-			DateSchema Schema = DateSchema.of();
+			DateSchema Schema = DateSchema.Of();
 			DateTime Data = DateTime.Now;
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data.Ticks >> 56)), (sbyte)((int)((uint)Data.Ticks >> 48)), (sbyte)((int)((uint)Data.Ticks >> 40)), (sbyte)((int)((uint)Data.Ticks >> 32)), (sbyte)((int)((uint)Data.Ticks >> 24)), (sbyte)((int)((uint)Data.Ticks >> 16)), (sbyte)((int)((uint)Data.Ticks >> 8)), ((long?)Data.Ticks).Value};
-			Assert.assertEquals(Expected, Schema.encode(Data));
+			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data.Ticks >> 56)), (sbyte)((int)((uint)Data.Ticks >> 48)), (sbyte)((int)((uint)Data.Ticks >> 40)), (sbyte)((int)((uint)Data.Ticks >> 32)), (sbyte)((int)((uint)Data.Ticks >> 24)), (sbyte)((int)((uint)Data.Ticks >> 16)), (sbyte)((int)((uint)Data.Ticks >> 8)), (sbyte)((long?)Data.Ticks).Value};
+			Assert.Equal(Expected, Schema.Encode(Data));
 		}
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			DateSchema Schema = DateSchema.of();
+			DateSchema Schema = DateSchema.Of();
 			DateTime Date = DateTime.Now;
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			sbyte[] Bytes = Schema.encode(Date);
-			ByteBuf.writeBytes(Bytes);
-			Assert.assertEquals(Date, Schema.decode(Bytes));
-			Assert.assertEquals(Date, Schema.decode(ByteBuf));
+			sbyte[] Bytes = Schema.Encode(Date);
+			Assert.Equal(Date, Schema.Decode(Bytes));
 		}
 
-
-		public virtual void TestSchemaDecode()
-		{
-			sbyte[] ByteData = new sbyte[] {0, 0, 0, 0, 0, 10, 24, 42};
-			long Expected = 10 * 65536 + 24 * 256 + 42;
-			DateSchema Schema = DateSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			ByteBuf.writeBytes(ByteData);
-			Assert.assertEquals(Expected, Schema.decode(ByteData).Time);
-			Assert.assertEquals(Expected, Schema.decode(ByteBuf).Time);
-		}
-
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-
-			Assert.assertNull(DateSchema.of().encode(null));
-			Assert.assertNull(DateSchema.of().decode(ByteBuf));
-			Assert.assertNull(DateSchema.of().decode(Bytes));
-		}
 
 	}
 
