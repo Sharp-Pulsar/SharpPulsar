@@ -1,4 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Schema;
+using SharpPulsar.Shared;
+using System.Text;
+using System.Collections.Generic;
+using Xunit;
+using static SharpPulsar.Test.Schema.SchemaTestUtils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,87 +30,67 @@ namespace SharpPulsar.Test.Schema
 {
 	public class KeyValueSchemaTest
 	{
-		public virtual void TestAllowNullAvroSchemaCreate()
+		[Fact]
+		public void TestAllowNullAvroSchemaCreate()
 		{
-			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			AvroSchema<Bar> BarSchema = AvroSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).build());
+			AvroSchema<Foo> fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+			AvroSchema<Bar> barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema1 = Schema.KeyValue(FooSchema, BarSchema);
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema2 = Schema.KeyValue(typeof(Foo), typeof(Bar), SchemaType.AVRO);
+			ISchema<KeyValue<Foo, Bar>> keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
+			ISchema<KeyValue<Foo, Bar>> keyValueSchema2 = ISchema<object>.KeyValue<Foo, Bar>(typeof(Foo), typeof(Bar), SchemaType.AVRO);
 
-			assertEquals(KeyValueSchema1.SchemaInfo.Type, SchemaType.KEY_VALUE);
-			assertEquals(KeyValueSchema2.SchemaInfo.Type, SchemaType.KEY_VALUE);
+			Assert.Equal(keyValueSchema1.SchemaInfo.Type, SchemaType.KeyValue);
+			Assert.Equal(keyValueSchema2.SchemaInfo.Type, SchemaType.KeyValue);
 
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema1).KeySchema.SchemaInfo.Type, SchemaType.AVRO);
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema1).ValueSchema.SchemaInfo.Type, SchemaType.AVRO);
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema2).KeySchema.SchemaInfo.Type, SchemaType.AVRO);
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema2).ValueSchema.SchemaInfo.Type, SchemaType.AVRO);
+			Assert.Equal(((KeyValueSchema<Foo, Bar>) keyValueSchema1).KeySchema().SchemaInfo.Type, SchemaType.AVRO);
+			Assert.Equal(((KeyValueSchema<Foo, Bar>) keyValueSchema1).ValueSchema().SchemaInfo.Type, SchemaType.AVRO);
+			Assert.Equal(((KeyValueSchema<Foo, Bar>) keyValueSchema2).KeySchema().SchemaInfo.Type, SchemaType.AVRO);
+			Assert.Equal(((KeyValueSchema<Foo, Bar>) keyValueSchema2).ValueSchema().SchemaInfo.Type, SchemaType.AVRO);
 
-			string SchemaInfo1 = new string(KeyValueSchema1.SchemaInfo.Schema);
-			string SchemaInfo2 = new string(KeyValueSchema2.SchemaInfo.Schema);
-			assertEquals(SchemaInfo1, SchemaInfo2);
+			var schemaInfo1 = Encoding.UTF8.GetString((byte[])(object)keyValueSchema1.SchemaInfo.Schema);
+			var schemaInfo2 = Encoding.UTF8.GetString((byte[])(object)keyValueSchema2.SchemaInfo.Schema);
+			Assert.Equal(schemaInfo1, schemaInfo2);
 		}
-
-		public virtual void TestFillParametersToSchemainfo()
+		[Fact]
+		public void TestFillParametersToSchemainfo()
 		{
-			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			AvroSchema<Bar> BarSchema = AvroSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).build());
+			AvroSchema<Foo> FooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+			AvroSchema<Bar> BarSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
 			FooSchema.SchemaInfo.Name = "foo";
 			FooSchema.SchemaInfo.Type = SchemaType.AVRO;
-			IDictionary<string, string> KeyProperties = Maps.newTreeMap();
+			IDictionary<string, string> KeyProperties = new Dictionary<string, string>();
 			KeyProperties["foo.key1"] = "value";
 			KeyProperties["foo.key2"] = "value";
 			FooSchema.SchemaInfo.Properties = KeyProperties;
 			BarSchema.SchemaInfo.Name = "bar";
 			BarSchema.SchemaInfo.Type = SchemaType.AVRO;
-			IDictionary<string, string> ValueProperties = Maps.newTreeMap();
+			IDictionary<string, string> ValueProperties = new Dictionary<string, string>(); 
 			ValueProperties["bar.key"] = "key";
 			BarSchema.SchemaInfo.Properties = ValueProperties;
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema1 = Schema.KeyValue(FooSchema, BarSchema);
+			ISchema<KeyValue<Foo, Bar>> KeyValueSchema1 = ISchema<object>.KeyValue(FooSchema, BarSchema);
 
-			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("key.schema.name"), "foo");
-			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("key.schema.type"), SchemaType.AVRO.ToString());
-			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("key.schema.properties"), "{\"foo.key1\":\"value\",\"foo.key2\":\"value\"}");
-			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("value.schema.name"), "bar");
-			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("value.schema.type"), SchemaType.AVRO.ToString());
-			assertEquals(KeyValueSchema1.SchemaInfo.Properties.get("value.schema.properties"), "{\"bar.key\":\"key\"}");
+			Assert.Equal("foo", KeyValueSchema1.SchemaInfo.Properties["key.schema.name"]);
+			Assert.Equal(KeyValueSchema1.SchemaInfo.Properties["key.schema.type"], SchemaType.AVRO.ToString());
+			Assert.Equal("{\"foo.key1\":\"value\",\"foo.key2\":\"value\"}", KeyValueSchema1.SchemaInfo.Properties["key.schema.properties"]);
+			Assert.Equal("bar", KeyValueSchema1.SchemaInfo.Properties["value.schema.name"]);
+			Assert.Equal(KeyValueSchema1.SchemaInfo.Properties["value.schema.type"], SchemaType.AVRO.ToString());
+			Assert.Equal("{\"bar.key\":\"key\"}", KeyValueSchema1.SchemaInfo.Properties["value.schema.properties"]);
 		}
 
-		public virtual void TestNotAllowNullAvroSchemaCreate()
+		[Fact]
+		public void TestAllowNullJsonSchemaCreate()
 		{
-			AvroSchema<Foo> FooSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			AvroSchema<Bar> BarSchema = AvroSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).withAlwaysAllowNull(false).build());
+			JSONSchema<Foo> FooSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+			JSONSchema<Bar> BarSchema = JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema1 = Schema.KeyValue(FooSchema, BarSchema);
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema2 = Schema.KeyValue(AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build()), AvroSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).withAlwaysAllowNull(false).build()));
+			ISchema<KeyValue<Foo, Bar>> KeyValueSchema1 = ISchema<object>.KeyValue(FooSchema, BarSchema);
+			ISchema<KeyValue<Foo, Bar>> KeyValueSchema2 = ISchema<object>.KeyValue<Foo, Bar>(typeof(Foo), typeof(Bar), SchemaType.JSON);
+			ISchema<KeyValue<Foo, Bar>> KeyValueSchema3 = ISchema<object>.KeyValue<Foo, Bar>(typeof(Foo), typeof(Bar));
 
-			assertEquals(KeyValueSchema1.SchemaInfo.Type, SchemaType.KEY_VALUE);
-			assertEquals(KeyValueSchema2.SchemaInfo.Type, SchemaType.KEY_VALUE);
-
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema1).KeySchema.SchemaInfo.Type, SchemaType.AVRO);
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema1).ValueSchema.SchemaInfo.Type, SchemaType.AVRO);
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema2).KeySchema.SchemaInfo.Type, SchemaType.AVRO);
-			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema2).ValueSchema.SchemaInfo.Type, SchemaType.AVRO);
-
-			string SchemaInfo1 = new string(KeyValueSchema1.SchemaInfo.Schema);
-			string SchemaInfo2 = new string(KeyValueSchema2.SchemaInfo.Schema);
-			assertEquals(SchemaInfo1, SchemaInfo2);
-		}
-
-
-		public virtual void TestAllowNullJsonSchemaCreate()
-		{
-			JSONSchema<Foo> FooSchema = JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			JSONSchema<Bar> BarSchema = JSONSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).build());
-
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema1 = Schema.KeyValue(FooSchema, BarSchema);
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema2 = Schema.KeyValue(typeof(Foo), typeof(Bar), SchemaType.JSON);
-			Schema<KeyValue<Foo, Bar>> KeyValueSchema3 = Schema.KeyValue(typeof(Foo), typeof(Bar));
-
-			assertEquals(KeyValueSchema1.SchemaInfo.Type, SchemaType.KEY_VALUE);
-			assertEquals(KeyValueSchema2.SchemaInfo.Type, SchemaType.KEY_VALUE);
-			assertEquals(KeyValueSchema3.SchemaInfo.Type, SchemaType.KEY_VALUE);
+			Assert.Equal(KeyValueSchema1.SchemaInfo.Type, SchemaType.KeyValue);
+			Assert.Equal(KeyValueSchema2.SchemaInfo.Type, SchemaType.KeyValue);
+			Assert.Equal(KeyValueSchema3.SchemaInfo.Type, SchemaType.KeyValue);
 
 			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema1).KeySchema.SchemaInfo.Type, SchemaType.JSON);
 			assertEquals(((KeyValueSchema<Foo, Bar>) KeyValueSchema1).ValueSchema.SchemaInfo.Type, SchemaType.JSON);
@@ -145,58 +133,6 @@ namespace SharpPulsar.Test.Schema
 			string SchemaInfo3 = new string(KeyValueSchema3.SchemaInfo.Schema);
 			assertEquals(SchemaInfo1, SchemaInfo2);
 			assertEquals(SchemaInfo1, SchemaInfo3);
-		}
-
-
-		public virtual void TestAllowNullSchemaEncodeAndDecode()
-		{
-			Schema KeyValueSchema = Schema.KeyValue(typeof(Foo), typeof(Bar));
-
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
-
-			Foo Foo = new Foo();
-			Foo.Field1 = "field1";
-			Foo.Field2 = "field2";
-			Foo.Field3 = 3;
-			Foo.Field4 = Bar;
-			Foo.Color = Color.RED;
-
-			sbyte[] EncodeBytes = KeyValueSchema.encode(new KeyValue(Foo, Bar));
-			Assert.assertTrue(EncodeBytes.Length > 0);
-
-			KeyValue<Foo, Bar> KeyValue = (KeyValue<Foo, Bar>) KeyValueSchema.decode(EncodeBytes);
-			Foo FooBack = KeyValue.Key;
-			Bar BarBack = KeyValue.Value;
-
-			assertEquals(Foo, FooBack);
-			assertEquals(Bar, BarBack);
-		}
-
-
-		public virtual void TestNotAllowNullSchemaEncodeAndDecode()
-		{
-			Schema KeyValueSchema = Schema.KeyValue(JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build()), JSONSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).withAlwaysAllowNull(false).build()));
-
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
-
-			Foo Foo = new Foo();
-			Foo.Field1 = "field1";
-			Foo.Field2 = "field2";
-			Foo.Field3 = 3;
-			Foo.Field4 = Bar;
-			Foo.Color = Color.RED;
-
-			sbyte[] EncodeBytes = KeyValueSchema.encode(new KeyValue(Foo, Bar));
-			Assert.assertTrue(EncodeBytes.Length > 0);
-
-			KeyValue<Foo, Bar> KeyValue = (KeyValue<Foo, Bar>) KeyValueSchema.decode(EncodeBytes);
-			Foo FooBack = KeyValue.Key;
-			Bar BarBack = KeyValue.Value;
-
-			assertEquals(Foo, FooBack);
-			assertEquals(Bar, BarBack);
 		}
 
 
@@ -297,65 +233,6 @@ namespace SharpPulsar.Test.Schema
 			assertEquals(Bar, BarBack);
 		}
 
-
-		public virtual void TestAllowNullBytesSchemaEncodeAndDecode()
-		{
-			AvroSchema<Foo> FooAvroSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).build());
-			AvroSchema<Bar> BarAvroSchema = AvroSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).build());
-
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
-
-			Foo Foo = new Foo();
-			Foo.Field1 = "field1";
-			Foo.Field2 = "field2";
-			Foo.Field3 = 3;
-			Foo.Field4 = Bar;
-			Foo.Color = Color.RED;
-			Foo.FieldUnableNull = "notNull";
-
-			sbyte[] FooBytes = FooAvroSchema.encode(Foo);
-			sbyte[] BarBytes = BarAvroSchema.encode(Bar);
-
-			sbyte[] EncodeBytes = Schema.KV_BYTES().encode(new KeyValue<>(FooBytes, BarBytes));
-			KeyValue<sbyte[], sbyte[]> DecodeKV = Schema.KV_BYTES().decode(EncodeBytes);
-
-			Foo FooBack = FooAvroSchema.decode(DecodeKV.Key);
-			Bar BarBack = BarAvroSchema.decode(DecodeKV.Value);
-
-			assertEquals(Foo, FooBack);
-			assertEquals(Bar, BarBack);
-		}
-
-
-		public virtual void TestNotAllowNullBytesSchemaEncodeAndDecode()
-		{
-			AvroSchema<Foo> FooAvroSchema = AvroSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			AvroSchema<Bar> BarAvroSchema = AvroSchema.of(SchemaDefinition.builder<Bar>().withPojo(typeof(Bar)).withAlwaysAllowNull(false).build());
-
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
-
-			Foo Foo = new Foo();
-			Foo.Field1 = "field1";
-			Foo.Field2 = "field2";
-			Foo.Field3 = 3;
-			Foo.Field4 = Bar;
-			Foo.Color = Color.RED;
-			Foo.FieldUnableNull = "notNull";
-
-			sbyte[] FooBytes = FooAvroSchema.encode(Foo);
-			sbyte[] BarBytes = BarAvroSchema.encode(Bar);
-
-			sbyte[] EncodeBytes = Schema.KV_BYTES().encode(new KeyValue<>(FooBytes, BarBytes));
-			KeyValue<sbyte[], sbyte[]> DecodeKV = Schema.KV_BYTES().decode(EncodeBytes);
-
-			Foo FooBack = FooAvroSchema.decode(DecodeKV.Key);
-			Bar BarBack = BarAvroSchema.decode(DecodeKV.Value);
-
-			assertEquals(Foo, FooBack);
-			assertEquals(Bar, BarBack);
-		}
 	}
 
 }

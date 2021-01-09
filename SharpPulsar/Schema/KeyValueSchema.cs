@@ -225,7 +225,14 @@ namespace SharpPulsar.Schema
 		{
 			return _keySchema.RequireFetchingSchemaInfo() || _valueSchema.RequireFetchingSchemaInfo();
 		}
-
+		public ISchema<K> KeySchema()
+        {
+			return _keySchema;
+        }
+		public ISchema<V> ValueSchema()
+        {
+			return _valueSchema;
+        }
 		public virtual void ConfigureSchemaInfo(string TopicName, string ComponentName, ISchemaInfo schemaInfo)
 		{
 			var KvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
