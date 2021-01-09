@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using System;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,35 +24,29 @@ namespace SharpPulsar.Test.Schema
 
 	public class FloatSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncode()
 		{
-			FloatSchema Schema = FloatSchema.of();
-			float? Data = new float?(12345678.1234);
-			long LongData = Float.floatToRawIntBits(Data);
-			sbyte[] Expected = new sbyte[] {(sbyte)((long)((ulong)LongData >> 24)), (sbyte)((long)((ulong)LongData >> 16)), (sbyte)((long)((ulong)LongData >> 8)), ((long?)LongData).Value};
-			Assert.assertEquals(Expected, Schema.encode(Data));
+			FloatSchema schema = FloatSchema.Of();
+			var data = 12345678.1234F;
+			long longData = BitConverter.SingleToInt32Bits(data);
+			sbyte[] Expected = new sbyte[] {(sbyte)((long)((ulong)longData >> 24)), (sbyte)((long)((ulong)longData >> 16)), (sbyte)((long)((ulong)longData >> 8)), (sbyte)longData };
+			Assert.Equal(Expected, schema.Encode(data));
 		}
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			FloatSchema Schema = FloatSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(4);
-			float? Dbl = new float?(1234578.8754321);
-			sbyte[] Bytes = Schema.encode(Dbl);
-			ByteBuf.writeBytes(Schema.encode(Dbl));
-			Assert.assertEquals(Dbl, Schema.decode(Bytes));
-			Assert.assertEquals(Dbl, Schema.decode(ByteBuf));
+			FloatSchema schema = FloatSchema.Of();
+			var dbl = 1234578.8754321F;
+			sbyte[] bytes = schema.Encode(dbl);
+			Assert.Equal(dbl, schema.Decode(bytes));
 
 		}
-
-		public virtual void TestNullEncodeDecode()
+		[Fact]
+		public void TestNullEncodeDecode()
 		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-			Assert.assertNull(FloatSchema.of().encode(null));
-			Assert.assertNull(FloatSchema.of().decode(Bytes));
-			Assert.assertNull(FloatSchema.of().decode(ByteBuf));
+			sbyte[] bytes = null;
+			Assert.Null(FloatSchema.Of().Decode(bytes));
 		}
 	}
 
