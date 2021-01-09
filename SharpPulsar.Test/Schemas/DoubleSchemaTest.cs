@@ -1,5 +1,8 @@
 ﻿using SharpPulsar.Schema;
+using System;
+using System.Linq;
 using Xunit;
+using SharpPulsar.Extension;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -27,18 +30,17 @@ namespace SharpPulsar.Test.Schema
 		public void TestSchemaEncode()
 		{
 			DoubleSchema schema = DoubleSchema.Of();
-			double? data = new double?(12345678.1234);
-			long LongData = System.BitConverter.DoubleToInt64Bits(data.Value);
-			sbyte[] Expected = new sbyte[] {(sbyte)((long)((ulong)LongData >> 56)), (sbyte)((long)((ulong)LongData >> 48)), (sbyte)((long)((ulong)LongData >> 40)), (sbyte)((long)((ulong)LongData >> 32)), (sbyte)((long)((ulong)LongData >> 24)), (sbyte)((long)((ulong)LongData >> 16)), (sbyte)((long)((ulong)LongData >> 8)), (sbyte)((long?)LongData).Value};
-			Assert.Equal(Expected, schema.Encode(data.Value));
+			var data = 12345678.1234D;
+			sbyte[] expected = BitConverter.GetBytes(data).Reverse().ToArray().ToSBytes(); //new sbyte[] {(sbyte)((long)((ulong)LongData >> 56)), (sbyte)((long)((ulong)LongData >> 48)), (sbyte)((long)((ulong)LongData >> 40)), (sbyte)((long)((ulong)LongData >> 32)), (sbyte)((long)((ulong)LongData >> 24)), (sbyte)((long)((ulong)LongData >> 16)), (sbyte)((long)((ulong)LongData >> 8)), (sbyte)((long?)LongData).Value};
+			Assert.Equal(expected, schema.Encode(data));
 		}
 
 		[Fact]
 		public void TestSchemaEncodeDecodeFidelity()
 		{
 			DoubleSchema schema = DoubleSchema.Of();
-			double? dbl = new double?(1234578.8754321);
-			sbyte[] bytes = schema.Encode(dbl.Value);
+			var dbl = 1234578.8754321D;
+			sbyte[] bytes = schema.Encode(dbl);
 			Assert.Equal(dbl, schema.Decode(bytes));
 		}
 	}

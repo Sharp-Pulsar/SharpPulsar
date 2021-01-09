@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Schema;
 using System;
 using Xunit;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,18 +28,19 @@ namespace SharpPulsar.Test.Schema
 		[Fact]
 		public void TestSchemaEncode()
 		{
-			DateSchema Schema = DateSchema.Of();
-			DateTime Data = DateTime.Now;
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data.Ticks >> 56)), (sbyte)((int)((uint)Data.Ticks >> 48)), (sbyte)((int)((uint)Data.Ticks >> 40)), (sbyte)((int)((uint)Data.Ticks >> 32)), (sbyte)((int)((uint)Data.Ticks >> 24)), (sbyte)((int)((uint)Data.Ticks >> 16)), (sbyte)((int)((uint)Data.Ticks >> 8)), (sbyte)((long?)Data.Ticks).Value};
-			Assert.Equal(Expected, Schema.Encode(Data));
+			DateSchema schema = DateSchema.Of();
+			DateTime data = DateTime.Now;
+			var date = new DateTimeOffset(data).ToUnixTimeSeconds().LongToBigEndian();
+			sbyte[] Expected = BitConverter.GetBytes(date).ToSBytes(); ;//new sbyte[] {(sbyte)((int)((uint)data.Ticks >> 56)), (sbyte)((int)((uint)data.Ticks >> 48)), (sbyte)((int)((uint)data.Ticks >> 40)), (sbyte)((int)((uint)data.Ticks >> 32)), (sbyte)((int)((uint)data.Ticks >> 24)), (sbyte)((int)((uint)data.Ticks >> 16)), (sbyte)((int)((uint)data.Ticks >> 8)), (sbyte)((long?)data.Ticks).Value};
+			Assert.Equal(Expected, schema.Encode(data));
 		}
 		[Fact]
 		public void TestSchemaEncodeDecodeFidelity()
 		{
-			DateSchema Schema = DateSchema.Of();
-			DateTime Date = DateTime.Now;
-			sbyte[] Bytes = Schema.Encode(Date);
-			Assert.Equal(Date, Schema.Decode(Bytes));
+			DateSchema schema = DateSchema.Of();
+			DateTime date = DateTime.Now;
+			sbyte[] bytes = schema.Encode(date);
+			Assert.Equal(date, schema.Decode(bytes));
 		}
 
 

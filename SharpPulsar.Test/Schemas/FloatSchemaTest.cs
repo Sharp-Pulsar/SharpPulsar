@@ -1,6 +1,8 @@
 ﻿using SharpPulsar.Schema;
 using System;
 using Xunit;
+using SharpPulsar.Extension;
+using System.Linq;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -29,9 +31,8 @@ namespace SharpPulsar.Test.Schema
 		{
 			FloatSchema schema = FloatSchema.Of();
 			var data = 12345678.1234F;
-			long longData = BitConverter.SingleToInt32Bits(data);
-			sbyte[] Expected = new sbyte[] {(sbyte)((long)((ulong)longData >> 24)), (sbyte)((long)((ulong)longData >> 16)), (sbyte)((long)((ulong)longData >> 8)), (sbyte)longData };
-			Assert.Equal(Expected, schema.Encode(data));
+			sbyte[] expected = BitConverter.GetBytes(data).Reverse().ToArray().ToSBytes();// new sbyte[] {(sbyte)((long)((ulong)longData >> 24)), (sbyte)((long)((ulong)longData >> 16)), (sbyte)((long)((ulong)longData >> 8)), (sbyte)longData };
+			Assert.Equal(expected, schema.Encode(data));
 		}
 		[Fact]
 		public void TestSchemaEncodeDecodeFidelity()
@@ -41,12 +42,6 @@ namespace SharpPulsar.Test.Schema
 			sbyte[] bytes = schema.Encode(dbl);
 			Assert.Equal(dbl, schema.Decode(bytes));
 
-		}
-		[Fact]
-		public void TestNullEncodeDecode()
-		{
-			sbyte[] bytes = null;
-			Assert.Null(FloatSchema.Of().Decode(bytes));
 		}
 	}
 
