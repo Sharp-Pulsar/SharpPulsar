@@ -1,5 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Schema;
+using System;
 using System.Collections.Generic;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,84 +26,60 @@ namespace SharpPulsar.Test.Schema
 {
 	public class JSONSchemaTest
 	{
-
-		public static void AssertJSONEqual(string S1, string S2)
+		[Fact]
+		public void TestAllowNullCorrectPolymorphism()
 		{
-			JSONAssert.assertEquals(S1, S2, false);
-		}
-		
-		public virtual void TestAllowNullCorrectPolymorphism()
-		{
-			Bar Bar = new Bar();
-			Bar.Field1 = true;
+            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            {
+                Field1 = true
+            };
 
-			DerivedFoo DerivedFoo = new DerivedFoo();
-			DerivedFoo.Field1 = "foo1";
-			DerivedFoo.Field2 = "bar2";
-			DerivedFoo.Field3 = 4;
-			DerivedFoo.Field4 = Bar;
-			DerivedFoo.Field5 = "derived1";
-			DerivedFoo.Field6 = 2;
+            SchemaTestUtils.DerivedFoo derivedFoo = new SchemaTestUtils.DerivedFoo
+            {
+                Field1 = "foo1",
+                Field2 = "bar2",
+                Field3 = 4,
+                Field4 = bar,
+                Field5 = "derived1",
+                Field6 = 2
+            };
 
-			Foo Foo = new Foo();
-			Foo.Field1 = "foo1";
-			Foo.Field2 = "bar2";
-			Foo.Field3 = 4;
-			Foo.Field4 = Bar;
+            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+            {
+                Field1 = "foo1",
+                Field2 = "bar2",
+                Field3 = 4,
+                Field4 = bar
+            };
 
-			SchemaTestUtils.DerivedDerivedFoo DerivedDerivedFoo = new SchemaTestUtils.DerivedDerivedFoo();
-			DerivedDerivedFoo.Field1 = "foo1";
-			DerivedDerivedFoo.Field2 = "bar2";
-			DerivedDerivedFoo.Field3 = 4;
-			DerivedDerivedFoo.Field4 = Bar;
-			DerivedDerivedFoo.Field5 = "derived1";
-			DerivedDerivedFoo.Field6 = 2;
-			DerivedDerivedFoo.Foo2 = Foo;
-			DerivedDerivedFoo.DerivedFoo = DerivedFoo;
+            SchemaTestUtils.DerivedDerivedFoo derivedDerivedFoo = new SchemaTestUtils.DerivedDerivedFoo
+            {
+                Field1 = "foo1",
+                Field2 = "bar2",
+                Field3 = 4,
+                Field4 = bar,
+                Field5 = "derived1",
+                Field6 = 2,
+                Foo2 = foo,
+                DerivedFoo = derivedFoo
+            };
 
-			// schema for base class
-			JSONSchema<Foo> BaseJsonSchema = JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(Foo)), Foo);
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(DerivedFoo)), Foo);
-			Assert.assertEquals(BaseJsonSchema.decode(BaseJsonSchema.encode(DerivedDerivedFoo)), Foo);
+            // schema for base class
+            JSONSchema<SchemaTestUtils.Foo> baseJsonSchema = JSONSchema< SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).WithAlwaysAllowNull(false).Build());
+			Assert.Equal(baseJsonSchema.Decode(baseJsonSchema.Encode(foo)), foo);
+			Assert.Equal(baseJsonSchema.Decode(baseJsonSchema.Encode(derivedFoo)), foo);
+			Assert.Equal(baseJsonSchema.Decode(baseJsonSchema.Encode(derivedDerivedFoo)), foo);
 
 			// schema for derived class
-			JSONSchema<DerivedFoo> DerivedJsonSchema = JSONSchema.of(SchemaDefinition.builder<DerivedFoo>().withPojo(typeof(DerivedFoo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(DerivedJsonSchema.decode(DerivedJsonSchema.encode(DerivedFoo)), DerivedFoo);
-			Assert.assertEquals(DerivedJsonSchema.decode(DerivedJsonSchema.encode(DerivedDerivedFoo)), DerivedFoo);
+			JSONSchema<SchemaTestUtils.DerivedFoo> derivedJsonSchema = JSONSchema<SchemaTestUtils.DerivedFoo>.Of(ISchemaDefinition<SchemaTestUtils.DerivedFoo>.Builder().WithPojo(typeof(SchemaTestUtils.DerivedFoo)).WithAlwaysAllowNull(false).Build());
+			Assert.Equal(derivedJsonSchema.Decode(derivedJsonSchema.Encode(derivedFoo)), derivedFoo);
+			Assert.Equal(derivedJsonSchema.Decode(derivedJsonSchema.Encode(derivedDerivedFoo)), derivedFoo);
 
 			//schema for derived derived class
-			JSONSchema<SchemaTestUtils.DerivedDerivedFoo> DerivedDerivedJsonSchema = JSONSchema.of(SchemaDefinition.builder<SchemaTestUtils.DerivedDerivedFoo>().withPojo(typeof(SchemaTestUtils.DerivedDerivedFoo)).withAlwaysAllowNull(false).build());
-			Assert.assertEquals(DerivedDerivedJsonSchema.decode(DerivedDerivedJsonSchema.encode(DerivedDerivedFoo)), DerivedDerivedFoo);
+			JSONSchema<SchemaTestUtils.DerivedDerivedFoo> derivedDerivedJsonSchema = JSONSchema<SchemaTestUtils.DerivedDerivedFoo>.Of(ISchemaDefinition<SchemaTestUtils.DerivedDerivedFoo>.Builder().WithPojo(typeof(SchemaTestUtils.DerivedDerivedFoo)).WithAlwaysAllowNull(false).Build());
+			Assert.Equal(derivedDerivedJsonSchema.Decode(derivedDerivedJsonSchema.Encode(derivedDerivedFoo)), derivedDerivedFoo);
 		}
 
-		public virtual void TestNotAllowNullDecodeWithInvalidContent()
-		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-			JsonSchema.decode(new sbyte[0]);
-		}
-
-		public virtual void TestDecodeByteBuf()
-		{
-			JSONSchema<Foo> JsonSchema = JSONSchema.of(SchemaDefinition.builder<Foo>().withPojo(typeof(Foo)).withAlwaysAllowNull(false).build());
-
-			Foo Foo1 = new Foo();
-			Foo1.Field1 = "foo1";
-			Foo1.Field2 = "bar1";
-			Foo1.Field4 = new Bar();
-			Foo1.FieldUnableNull = "notNull";
-
-			Foo Foo2 = new Foo();
-			Foo2.Field1 = "foo2";
-			Foo2.Field2 = "bar2";
-
-			sbyte[] Bytes1 = JsonSchema.encode(Foo1);
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Bytes1.Length);
-			ByteBuf.writeBytes(Bytes1);
-			Assert.assertTrue(Bytes1.Length > 0);
-			assertEquals(JsonSchema.decode(ByteBuf), Foo1);
-
-		}
 	}
 
 }
