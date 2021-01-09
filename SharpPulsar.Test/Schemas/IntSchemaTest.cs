@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using SharpPulsar.Extension;
+using System;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -25,50 +29,18 @@ namespace SharpPulsar.Test.Schema
 
 		public virtual void TestSchemaEncode()
 		{
-			IntSchema Schema = IntSchema.of();
-			int? Data = 1234578;
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data >> 24)), (sbyte)((int)((uint)Data >> 16)), (sbyte)((int)((uint)Data >> 8)), Data.Value};
-			Assert.assertEquals(Expected, Schema.encode(Data));
+			IntSchema schema = IntSchema.Of();
+			var data = 1234578;
+			sbyte[] expected = BitConverter.GetBytes(data.IntToBigEndian()).ToSBytes();
+			Assert.Equal(expected, schema.Encode(data));
 		}
-
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
-		{
-			IntSchema Schema = IntSchema.of();
-			int Start = 348592040;
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(4);
-			for (int I = 0; I < 100; ++I)
-			{
-				sbyte[] Encode = Schema.encode(Start + I);
-				ByteBuf.writerIndex(0);
-				ByteBuf.writeBytes(Encode);
-				int Decoded = Schema.decode(Encode);
-				Assert.assertEquals(Decoded, Start + I);
-				Decoded = Schema.decode(ByteBuf);
-				Assert.assertEquals(Decoded, Start + I);
-			}
-		}
-
-
+		
 		public virtual void TestSchemaDecode()
 		{
-			sbyte[] ByteData = new sbyte[] {0, 10, 24, 42};
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(4);
-			int? Expected = 10 * 65536 + 24 * 256 + 42;
-			IntSchema Schema = IntSchema.of();
-			ByteBuf.writeBytes(ByteData);
-			Assert.assertEquals(Expected, Schema.decode(ByteData));
-			Assert.assertEquals(Expected, Schema.decode(ByteBuf));
-		}
-
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-			Assert.assertNull(IntSchema.of().encode(null));
-			Assert.assertNull(IntSchema.of().decode(Bytes));
-			Assert.assertNull(IntSchema.of().decode(ByteBuf));
+			IntSchema schema = IntSchema.Of();
+			var data = 1234578;
+			var bytes = schema.Encode(data);
+			Assert.Equal(data, schema.Decode(bytes));
 		}
 
 	}
