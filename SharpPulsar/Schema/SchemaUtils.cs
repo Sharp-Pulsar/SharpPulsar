@@ -169,7 +169,7 @@ namespace SharpPulsar.Schema
 		/// </summary>
 		/// <param name="kvSchemaInfo"> the key/value schema info </param>
 		/// <returns> the convert schema info data string </returns>
-        public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
+        public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo)
 		{
 			var keyValue = new KeyValue<object, object>(SchemaType.IsPrimitiveType(kvSchemaInfo.Key.Type) ? "" : JsonSerializer.Serialize(kvSchemaInfo.Key.Schema), SchemaType.IsPrimitiveType(kvSchemaInfo.Value.Type) ? "" : JsonSerializer.Serialize(kvSchemaInfo.Value.Schema));
 			return JsonSerializer.Serialize(keyValue);

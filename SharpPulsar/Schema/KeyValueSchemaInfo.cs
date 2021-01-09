@@ -75,11 +75,11 @@ namespace SharpPulsar.Schema
 		/// </summary>
 		/// <param name="schemaInfo"> the schema info </param>
 		/// <returns> the kv encoding type </returns>
-		public static KeyValueEncodingType DecodeKeyValueEncodingType(SchemaInfo SchemaInfo)
+		public static KeyValueEncodingType DecodeKeyValueEncodingType(ISchemaInfo schemaInfo)
 		{
-			Condition.CheckArgument(SchemaType.KeyValue == SchemaInfo.Type, "Not a KeyValue schema");
+			Condition.CheckArgument(SchemaType.KeyValue == schemaInfo.Type, "Not a KeyValue schema");
 
-			var encodingTypeStr = SchemaInfo.Properties[KV_ENCODING_TYPE];
+			var encodingTypeStr = schemaInfo.Properties[KV_ENCODING_TYPE];
 			if (string.IsNullOrWhiteSpace(encodingTypeStr))
 			{
 				return KeyValueEncodingType.INLINE;

@@ -222,7 +222,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="schemaDefinition"> the definition of the schema </param>
 		/// <returns> a Schema instance </returns>
-		static ISchema<T> Avro<T>(ISchemaDefinition<T> schemaDefinition)
+		static ISchema<O> Avro<O>(ISchemaDefinition<O> schemaDefinition)
 		{
 			return DefaultImplementation.NewAvroSchema(schemaDefinition);
 		}

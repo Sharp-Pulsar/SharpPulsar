@@ -40,9 +40,9 @@ namespace SharpPulsar.Test.Schema
 			{
 				new object[] {Schema.STRING.SchemaInfo, UTF8_SCHEMA_INFO},
 				new object[] {Schema.INT32.SchemaInfo, INT32_SCHEMA_INFO},
-				new object[] {KeyValueSchemaInfoTest.FooSchema.SchemaInfo, FOO_SCHEMA_INFO},
-				new object[] {KeyValueSchemaInfoTest.BarSchema.SchemaInfo, BAR_SCHEMA_INFO},
-				new object[] {Schema.KeyValue(KeyValueSchemaInfoTest.FooSchema, KeyValueSchemaInfoTest.BarSchema, KeyValueEncodingType.SEPARATED).SchemaInfo, KV_SCHEMA_INFO}
+				new object[] {KeyValueSchemaInfoTest.fooSchema.SchemaInfo, FOO_SCHEMA_INFO},
+				new object[] {KeyValueSchemaInfoTest.barSchema.SchemaInfo, BAR_SCHEMA_INFO},
+				new object[] {Schema.KeyValue(KeyValueSchemaInfoTest.fooSchema, KeyValueSchemaInfoTest.barSchema, KeyValueEncodingType.SEPARATED).SchemaInfo, KV_SCHEMA_INFO}
 			};
 		}
 

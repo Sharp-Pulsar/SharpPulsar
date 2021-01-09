@@ -253,7 +253,7 @@ namespace SharpPulsar
 		/// </summary>
 		/// <param name="kvSchemaInfo"> the key/value schema info </param>
 		/// <returns> the convert key/value schema data string </returns>
-		public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
+		public static string ConvertKeyValueSchemaInfoDataToString(KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo)
 		{
 			return SchemaUtils.ConvertKeyValueSchemaInfoDataToString(kvSchemaInfo);
 		}
@@ -261,6 +261,53 @@ namespace SharpPulsar
 		public static IBatcherBuilder NewDefaultBatcherBuilder(ActorSystem system)
 		{
 			return new DefaultBatcherBuilder(system);
+		}
+		/// <summary>
+		/// Decode the kv encoding type from the schema info.
+		/// </summary>
+		/// <param name="schemaInfo"> the schema info </param>
+		/// <returns> the kv encoding type </returns>
+		public static KeyValueEncodingType DecodeKeyValueEncodingType(ISchemaInfo schemaInfo)
+		{
+			return KeyValueSchemaInfo.DecodeKeyValueEncodingType(schemaInfo);
+			//return catchExceptions(() => (KeyValueEncodingType)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "decodeKeyValueEncodingType", typeof(SchemaInfo)).invoke(null, SchemaInfo));
+		}
+
+		/// <summary>
+		/// Encode key & value into schema into a KeyValue schema.
+		/// </summary>
+		/// <param name="keySchema"> the key schema </param>
+		/// <param name="valueSchema"> the value schema </param>
+		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
+		/// <returns> the final schema info </returns>
+		public static ISchemaInfo EncodeKeyValueSchemaInfo<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		{
+			return EncodeKeyValueSchemaInfo("KeyValue", keySchema, valueSchema, keyValueEncodingType);
+		}
+
+		/// <summary>
+		/// Encode key & value into schema into a KeyValue schema.
+		/// </summary>
+		/// <param name="schemaName"> the final schema name </param>
+		/// <param name="keySchema"> the key schema </param>
+		/// <param name="valueSchema"> the value schema </param>
+		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
+		/// <returns> the final schema info </returns>
+		public static ISchemaInfo EncodeKeyValueSchemaInfo<K, V>(string schemaName, ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+		{
+			return KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(schemaName, keySchema, valueSchema, keyValueEncodingType);
+			//return catchExceptions(() => (SchemaInfo)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "encodeKeyValueSchemaInfo", typeof(string), typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, schemaName, keySchema, valueSchema, keyValueEncodingType));
+		}
+
+		/// <summary>
+		/// Decode the key/value schema info to get key schema info and value schema info.
+		/// </summary>
+		/// <param name="schemaInfo"> key/value schema info. </param>
+		/// <returns> the pair of key schema info and value schema info </returns>
+		public static KeyValue<ISchemaInfo, ISchemaInfo> DecodeKeyValueSchemaInfo(ISchemaInfo schemaInfo)
+		{
+			return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
+			//return catchExceptions(() => (KeyValue<SchemaInfo, SchemaInfo>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "decodeKeyValueSchemaInfo", typeof(SchemaInfo)).invoke(null, SchemaInfo));
 		}
 
 		public static IBatcherBuilder NewKeyBasedBatcherBuilder(ActorSystem system)

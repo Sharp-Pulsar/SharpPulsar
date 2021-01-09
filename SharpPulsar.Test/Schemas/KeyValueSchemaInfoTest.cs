@@ -1,5 +1,13 @@
-﻿using System.Collections;
+﻿using SharpPulsar.Common.Enum;
+using SharpPulsar.Common.Schema;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Schema;
+using SharpPulsar.Shared;
+using System.Collections;
 using System.Collections.Generic;
+using Xunit;
+using static SharpPulsar.Test.Schema.SchemaTestUtils;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,48 +36,32 @@ namespace SharpPulsar.Test.Schema
 	public class KeyValueSchemaInfoTest
 	{
 
-		private static readonly IDictionary<string, string> _fooProperties = new HashMapAnonymousInnerClass();
-
-		private class HashMapAnonymousInnerClass : Hashtable
+		private static readonly IDictionary<string, string> _fooProperties = new Dictionary<string, string> 
 		{
-			public HashMapAnonymousInnerClass()
-			{
-				_serialVersionUID = 58641844834472929L;
-
-				this.put("foo1", "foo-value1");
-				this.put("foo2", "foo-value2");
-				this.put("foo3", "foo-value3");
-			}
+			{"serialVersionUID", "58641844834472929" },
+			{"foo1", "foo-value1" },
+			{"foo2", "foo-value2" },
+			{"foo3", "foo-value3" }
+		
+		};
 
 
-			private static readonly long _serialVersionUID;
-
-		}
-
-		private static readonly IDictionary<string, string> _barProperties = new HashMapAnonymousInnerClass2();
-
-		private class HashMapAnonymousInnerClass2 : Hashtable
+		private static readonly IDictionary<string, string> _barProperties = new Dictionary<string, string>
 		{
-			public HashMapAnonymousInnerClass2()
-			{
-				_serialVersionUID = 58641844834472929L;
+			{"serialVersionUID", "58641844834472929" },
+			{"bar1", "bar-value1" },
+			{"bar2", "bar-value2" },
+			{"bar3", "bar-value3" }
 
-				this.put("bar1", "bar-value1");
-				this.put("bar2", "bar-value2");
-				this.put("bar3", "bar-value3");
-			}
+		};
 
+		public static readonly ISchema<Foo> fooSchema = ISchema<Foo>.Avro(ISchemaDefinition<Foo>.Builder().WithAlwaysAllowNull(false).WithPojo(typeof(Foo)).WithProperties(_fooProperties).Build());
+		public static readonly ISchema<Bar> barSchema = ISchema<Bar>.Json(ISchemaDefinition<Bar>.Builder().WithAlwaysAllowNull(true).WithPojo(typeof(Bar)).WithProperties(_barProperties).Build());
 
-			private static readonly long _serialVersionUID;
-
-		}
-
-		public static readonly Schema<Foo> FooSchema = Schema.AVRO(SchemaDefinition.builder<Foo>().withAlwaysAllowNull(false).withPojo(typeof(Foo)).withProperties(_fooProperties).build());
-		public static readonly Schema<Bar> BarSchema = Schema.JSON(SchemaDefinition.builder<Bar>().withAlwaysAllowNull(true).withPojo(typeof(Bar)).withProperties(_barProperties).build());
-
-		public virtual void TestDecodeNonKeyValueSchemaInfo()
+		[Fact]
+		public void TestDecodeNonKeyValueSchemaInfo()
 		{
-			DefaultImplementation.decodeKeyValueSchemaInfo(FooSchema.SchemaInfo);
+			DefaultImplementation.DecodeKeyValueSchemaInfo(fooSchema.SchemaInfo);
 		}
 
 		public virtual object[][] EncodingTypes()
@@ -80,74 +72,98 @@ namespace SharpPulsar.Test.Schema
 				new object[] {KeyValueEncodingType.SEPARATED}
 			};
 		}
-
-		public virtual void EncodeDecodeKeyValueSchemaInfo(KeyValueEncodingType EncodingType)
+		[Fact]
+		public void EncodeDecodeKeyValueSchemaInfoInline()
+        {
+			EncodeDecodeKeyValueSchemaInfo(KeyValueEncodingType.INLINE);
+		}
+		[Fact]
+		public void EncodeDecodeKeyValueSchemaInfoSeparated()
+        {
+			EncodeDecodeKeyValueSchemaInfo(KeyValueEncodingType.SEPARATED);
+		}
+		private void EncodeDecodeKeyValueSchemaInfo(KeyValueEncodingType encodingType)
 		{
-			Schema<KeyValue<Foo, Bar>> KvSchema = Schema.KeyValue(FooSchema, BarSchema, EncodingType);
-			SchemaInfo KvSchemaInfo = KvSchema.SchemaInfo;
-			assertEquals(DefaultImplementation.decodeKeyValueEncodingType(KvSchemaInfo), EncodingType);
+			ISchema<KeyValue<Foo, Bar>> kvSchema = ISchema<KeyValue<Foo,Bar>>.KeyValue(fooSchema, barSchema, encodingType);
+			ISchemaInfo kvSchemaInfo = kvSchema.SchemaInfo;
+			Assert.Equal(DefaultImplementation.DecodeKeyValueEncodingType(kvSchemaInfo), encodingType);
 
-			SchemaInfo EncodedSchemaInfo = DefaultImplementation.encodeKeyValueSchemaInfo(FooSchema, BarSchema, EncodingType);
-			assertEquals(EncodedSchemaInfo, KvSchemaInfo);
-			assertEquals(DefaultImplementation.decodeKeyValueEncodingType(EncodedSchemaInfo), EncodingType);
+			ISchemaInfo encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(fooSchema, barSchema, encodingType);
+			Assert.Equal(encodedSchemaInfo, kvSchemaInfo);
+			Assert.Equal(DefaultImplementation.DecodeKeyValueEncodingType(encodedSchemaInfo), encodingType);
 
-			KeyValue<SchemaInfo, SchemaInfo> SchemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(KvSchemaInfo);
+			var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
 
-			assertEquals(SchemaInfoKeyValue.Key, FooSchema.SchemaInfo);
-			assertEquals(SchemaInfoKeyValue.Value, BarSchema.SchemaInfo);
+			Assert.Equal(schemaInfoKeyValue.Key, fooSchema.SchemaInfo);
+			Assert.Equal(schemaInfoKeyValue.Value, barSchema.SchemaInfo);
 		}
 
-		public virtual void EncodeDecodeNestedKeyValueSchemaInfo(KeyValueEncodingType EncodingType)
+		[Fact]
+		public void EncodeDecodeNestedKeyValueSchemaInfoInline()
 		{
-			Schema<KeyValue<string, Bar>> NestedSchema = Schema.KeyValue(Schema.STRING, BarSchema, KeyValueEncodingType.INLINE);
-			Schema<KeyValue<Foo, KeyValue<string, Bar>>> KvSchema = Schema.KeyValue(FooSchema, NestedSchema, EncodingType);
-			SchemaInfo KvSchemaInfo = KvSchema.SchemaInfo;
-			assertEquals(DefaultImplementation.decodeKeyValueEncodingType(KvSchemaInfo), EncodingType);
-
-			SchemaInfo EncodedSchemaInfo = DefaultImplementation.encodeKeyValueSchemaInfo(FooSchema, NestedSchema, EncodingType);
-			assertEquals(EncodedSchemaInfo, KvSchemaInfo);
-			assertEquals(DefaultImplementation.decodeKeyValueEncodingType(EncodedSchemaInfo), EncodingType);
-
-			KeyValue<SchemaInfo, SchemaInfo> SchemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(KvSchemaInfo);
-
-			assertEquals(SchemaInfoKeyValue.Key, FooSchema.SchemaInfo);
-			assertEquals(SchemaInfoKeyValue.Value.Type, SchemaType.KEY_VALUE);
-			KeyValue<SchemaInfo, SchemaInfo> NestedSchemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(SchemaInfoKeyValue.Value);
-
-			assertEquals(NestedSchemaInfoKeyValue.Key, Schema.STRING.SchemaInfo);
-			assertEquals(NestedSchemaInfoKeyValue.Value, BarSchema.SchemaInfo);
+			EncodeDecodeNestedKeyValueSchemaInfo(KeyValueEncodingType.INLINE);
 		}
-
-		public virtual void TestKeyValueSchemaInfoBackwardCompatibility()
+		[Fact]
+		public void EncodeDecodeNestedKeyValueSchemaInfoSeparated()
 		{
-			Schema<KeyValue<Foo, Bar>> KvSchema = Schema.KeyValue(FooSchema, BarSchema, KeyValueEncodingType.SEPARATED);
+			EncodeDecodeNestedKeyValueSchemaInfo(KeyValueEncodingType.SEPARATED);
+		}
+		private void EncodeDecodeNestedKeyValueSchemaInfo(KeyValueEncodingType encodingType)
+		{
+			var nestedSchema = ISchema<KeyValue<string, Bar>>.KeyValue(ISchema<object>.String, barSchema, KeyValueEncodingType.INLINE);
+			var kvSchema = ISchema<KeyValue<string, Bar>>.KeyValue(fooSchema, nestedSchema, encodingType);
+			var kvSchemaInfo = kvSchema.SchemaInfo;
+			Assert.Equal(DefaultImplementation.DecodeKeyValueEncodingType(kvSchemaInfo), encodingType);
 
-			SchemaInfo OldSchemaInfo = (new SchemaInfo()).setName("").setType(SchemaType.KEY_VALUE).setSchema(KvSchema.SchemaInfo.Schema).setProperties(Collections.emptyMap());
+			var encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(fooSchema, nestedSchema, encodingType);
+			Assert.Equal(encodedSchemaInfo, kvSchemaInfo);
+			Assert.Equal(DefaultImplementation.DecodeKeyValueEncodingType(encodedSchemaInfo), encodingType);
 
-			assertEquals(DefaultImplementation.decodeKeyValueEncodingType(OldSchemaInfo), KeyValueEncodingType.INLINE);
+			var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
 
-			KeyValue<SchemaInfo, SchemaInfo> SchemaInfoKeyValue = DefaultImplementation.decodeKeyValueSchemaInfo(OldSchemaInfo);
+			Assert.Equal(schemaInfoKeyValue.Key, fooSchema.SchemaInfo);
+			Assert.Equal(schemaInfoKeyValue.Value.Type, SchemaType.KeyValue);
+			var nestedSchemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(schemaInfoKeyValue.Value);
+
+			Assert.Equal(nestedSchemaInfoKeyValue.Key, ISchema<object>.String.SchemaInfo);
+			Assert.Equal(nestedSchemaInfoKeyValue.Value, barSchema.SchemaInfo);
+		}
+		[Fact]
+		private void TestKeyValueSchemaInfoBackwardCompatibility()
+		{
+			var kvSchema = ISchema<KeyValue<Foo, Bar>>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.SEPARATED);
+
+            var oldSchemaInfo = new SchemaInfo
+            {
+                Name = "",
+                Type = SchemaType.KeyValue,
+                Schema = kvSchema.SchemaInfo.Schema,
+                Properties = new Dictionary<string, string>()
+            };
+            Assert.Equal(KeyValueEncodingType.INLINE, DefaultImplementation.DecodeKeyValueEncodingType(oldSchemaInfo));
+
+			var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(oldSchemaInfo);
 			// verify the key schema
-			SchemaInfo KeySchemaInfo = SchemaInfoKeyValue.Key;
-			assertEquals(SchemaType.BYTES, KeySchemaInfo.Type);
-			assertArrayEquals("Expected schema = " + FooSchema.SchemaInfo.SchemaDefinition + " but found " + KeySchemaInfo.SchemaDefinition, FooSchema.SchemaInfo.Schema, KeySchemaInfo.Schema);
-			assertFalse(FooSchema.SchemaInfo.Properties.Empty);
-			assertTrue(KeySchemaInfo.Properties.Empty);
+			ISchemaInfo keySchemaInfo = schemaInfoKeyValue.Key;
+			Assert.Equal(SchemaType.BYTES, keySchemaInfo.Type);
+			Assert.Equal(fooSchema.SchemaInfo.Schema, keySchemaInfo.Schema);//"Expected schema = " + fooSchema.SchemaInfo.SchemaDefinition + " but found " + keySchemaInfo.SchemaDefinition
+			Assert.False(fooSchema.SchemaInfo.Properties.Count == 0);
+			Assert.True(keySchemaInfo.Properties.Count == 0);
 			// verify the value schema
-			SchemaInfo ValueSchemaInfo = SchemaInfoKeyValue.Value;
-			assertEquals(SchemaType.BYTES, ValueSchemaInfo.Type);
-			assertArrayEquals(BarSchema.SchemaInfo.Schema, ValueSchemaInfo.Schema);
-			assertFalse(BarSchema.SchemaInfo.Properties.Empty);
-			assertTrue(ValueSchemaInfo.Properties.Empty);
+			var valueSchemaInfo = schemaInfoKeyValue.Value;
+			Assert.Equal(SchemaType.BYTES, valueSchemaInfo.Type);
+			Assert.Equal(barSchema.SchemaInfo.Schema, valueSchemaInfo.Schema);
+			Assert.False(barSchema.SchemaInfo.Properties.Count == 0);
+			Assert.True(valueSchemaInfo.Properties.Count == 0);
 		}
-
-		public virtual void TestKeyValueSchemaInfoToString()
+		[Fact]
+		public void TestKeyValueSchemaInfoToString()
 		{
-			string HavePrimitiveType = DefaultImplementation.convertKeyValueSchemaInfoDataToString(KeyValueSchemaInfo.decodeKeyValueSchemaInfo(Schema.KeyValue(Schema.AVRO(typeof(Foo)), Schema.STRING).SchemaInfo));
-			JSONSchemaTest.AssertJSONEqual(HavePrimitiveType, KEY_VALUE_SCHEMA_INFO_INCLUDE_PRIMITIVE);
+			var havePrimitiveType = DefaultImplementation.ConvertKeyValueSchemaInfoDataToString(KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(ISchema<object>.KeyValue(ISchema<Foo>.Avro(typeof(Foo)), ISchema<object>.String).SchemaInfo));
+			Assert.Equal(havePrimitiveType, KEY_VALUE_SCHEMA_INFO_INCLUDE_PRIMITIVE);
 
-			string NotHavePrimitiveType = DefaultImplementation.convertKeyValueSchemaInfoDataToString(KeyValueSchemaInfo.decodeKeyValueSchemaInfo(Schema.KeyValue(Schema.AVRO(typeof(Foo)), Schema.AVRO(typeof(Foo))).SchemaInfo));
-			JSONSchemaTest.AssertJSONEqual(NotHavePrimitiveType, KEY_VALUE_SCHEMA_INFO_NOT_INCLUDE_PRIMITIVE);
+			var notHavePrimitiveType = DefaultImplementation.ConvertKeyValueSchemaInfoDataToString(KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(ISchema<object>.KeyValue(ISchema<Foo>.Avro(typeof(Foo)), ISchema<Foo>.Avro(typeof(Foo))).SchemaInfo));
+			Assert.Equal(notHavePrimitiveType, KEY_VALUE_SCHEMA_INFO_NOT_INCLUDE_PRIMITIVE);
 		}
 
 	}
