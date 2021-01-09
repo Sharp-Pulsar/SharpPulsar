@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,46 +22,37 @@ namespace SharpPulsar.Test.Schema
 {
 	public class BooleanSchemaTest
 	{
+		[Fact]
 		public virtual void TestSchemaEncode()
 		{
-			BooleanSchema Schema = BooleanSchema.of();
+			BooleanSchema Schema = BooleanSchema.Of();
 			sbyte[] ExpectedTrue = new sbyte[] {1};
 			sbyte[] ExpectedFalse = new sbyte[] {0};
-			Assert.assertEquals(ExpectedTrue, Schema.encode(true));
-			Assert.assertEquals(ExpectedFalse, Schema.encode(false));
+			Assert.Equal(ExpectedTrue, Schema.Encode(true));
+			Assert.Equal(ExpectedFalse, Schema.Encode(false));
 		}
 
+		[Fact]
 		public virtual void TestSchemaEncodeDecodeFidelity()
 		{
-			BooleanSchema Schema = BooleanSchema.of();
-			Assert.assertEquals(new bool?(true), Schema.decode(Schema.encode(true)));
-			Assert.assertEquals(new bool?(false), Schema.decode(Schema.encode(false)));
+			BooleanSchema Schema = BooleanSchema.Of();
+			Assert.Equal(new bool?(true), Schema.Decode(Schema.Encode(true)));
+			Assert.Equal(new bool?(false), Schema.Decode(Schema.Encode(false)));
 		}
-
+		[Fact]
 		public virtual void TestSchemaDecode()
 		{
 			sbyte[] TrueBytes = new sbyte[] {1};
 			sbyte[] FalseBytes = new sbyte[] {0};
-			BooleanSchema Schema = BooleanSchema.of();
-			Assert.assertEquals(new bool?(true), Schema.decode(TrueBytes));
-			Assert.assertEquals(new bool?(false), Schema.decode(FalseBytes));
-
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(1);
-			ByteBuf.writeBytes(TrueBytes);
-			Assert.assertEquals(new bool?(true), Schema.decode(ByteBuf));
-			ByteBuf.writerIndex(0);
-			ByteBuf.writeBytes(FalseBytes);
-
-			Assert.assertEquals(new bool?(false), Schema.decode(ByteBuf));
+			BooleanSchema Schema = BooleanSchema.Of();
+			Assert.Equal(new bool?(true), Schema.Decode(TrueBytes));
+			Assert.Equal(new bool?(false), Schema.Decode(FalseBytes));
 		}
-
+		[Fact]
 		public virtual void TestNullEncodeDecode()
 		{
-			ByteBuf ByteBuf = null;
 			sbyte[] Bytes = null;
-			Assert.assertNull(BooleanSchema.of().encode(null));
-			Assert.assertNull(BooleanSchema.of().decode(ByteBuf));
-			Assert.assertNull(BooleanSchema.of().decode(Bytes));
+			Assert.Null(BooleanSchema.Of().Decode(Bytes));
 		}
 
 	}
