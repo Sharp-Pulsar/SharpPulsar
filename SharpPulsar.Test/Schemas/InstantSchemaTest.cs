@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using Xunit;
+using NodaTime;
+using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,62 +25,15 @@ namespace SharpPulsar.Test.Schema
 
 	public class InstantSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
-		{
-			InstantSchema Schema = InstantSchema.of();
-			Instant Instant = Instant.now();
-			ByteBuffer ByteBuffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
-			ByteBuffer.putLong(Instant.EpochSecond);
-			ByteBuffer.putInt(Instant.Nano);
-			sbyte[] Expected = ByteBuffer.array();
-			Assert.assertEquals(Expected, Schema.encode(Instant));
-		}
-
-
+		[Fact]
 		public virtual void TestSchemaEncodeDecodeFidelity()
 		{
-			InstantSchema Schema = InstantSchema.of();
-			Instant Instant = Instant.now();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Long.BYTES + Integer.BYTES);
-			sbyte[] Bytes = Schema.encode(Instant);
-			ByteBuf.writeBytes(Bytes);
-			Assert.assertEquals(Instant, Schema.decode(Bytes));
-			Assert.assertEquals(Instant, Schema.decode(ByteBuf));
+			InstantSchema schema = InstantSchema.Of();
+			Instant instant = Instant.FromDateTimeOffset(DateTimeOffset.Now);
+			sbyte[] bytes = schema.Encode(instant);
+			Assert.Equal(instant, schema.Decode(bytes));
 		}
 
-
-		public virtual void TestSchemaDecode()
-		{
-			Instant Instant = Instant.now();
-			ByteBuffer ByteBuffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
-			ByteBuffer.putLong(Instant.EpochSecond);
-			ByteBuffer.putInt(Instant.Nano);
-			sbyte[] ByteData = ByteBuffer.array();
-			long EpochSecond = Instant.EpochSecond;
-			long Nano = Instant.Nano;
-
-			InstantSchema Schema = InstantSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Long.BYTES + Integer.BYTES);
-			ByteBuf.writeBytes(ByteData);
-			Instant Decode = Schema.decode(ByteData);
-			Assert.assertEquals(EpochSecond, Decode.EpochSecond);
-			Assert.assertEquals(Nano, Decode.Nano);
-			Decode = Schema.decode(ByteBuf);
-			Assert.assertEquals(EpochSecond, Decode.EpochSecond);
-			Assert.assertEquals(Nano, Decode.Nano);
-		}
-
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-
-			Assert.assertNull(InstantSchema.of().encode(null));
-			Assert.assertNull(InstantSchema.of().decode(ByteBuf));
-			Assert.assertNull(InstantSchema.of().decode(Bytes));
-		}
 
 	}
 
