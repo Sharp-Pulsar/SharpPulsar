@@ -1,4 +1,7 @@
 ﻿using SharpPulsar.Interfaces;
+using SharpPulsar.Schema;
+using System.Text;
+using Xunit;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -25,28 +28,30 @@ namespace SharpPulsar.Test.Schema
 	/// </summary>
 	public class BytesSchemaTest
 	{
-		public virtual void TestBytesSchemaOf()
+		[Fact]
+		public void TestSchemaBYTES()
 		{
-			TestBytesSchema(BytesSchema.of());
+			ISchema<sbyte[]> Schema = ISchema<sbyte[]>.Bytes;
+			sbyte[] Data = (sbyte[])(object)Encoding.UTF8.GetBytes("hello world");
+
+			sbyte[] SerializedData = Schema.Encode(Data);
+			Assert.Same(Data, SerializedData);
+
+			sbyte[] DeserializedData = Schema.Decode(SerializedData);
+			Assert.Same(Data, DeserializedData);
+
 		}
-
-		public virtual void TestSchemaBYTES()
+		[Fact]
+		public void TestBytesSchemaOf()
 		{
-			TestBytesSchema(ISchema<sbyte[]>.Bytes);
-		}
+			ISchema<sbyte[]> Schema = BytesSchema.Of();
+			sbyte[] Data = (sbyte[])(object)Encoding.UTF8.GetBytes("hello world");
 
-		private void TestBytesSchema(ISchema<sbyte[]> Schema)
-		{
-			sbyte[] Data = "hello world".GetBytes(UTF_8);
+			sbyte[] SerializedData = Schema.Encode(Data);
+			Assert.Same(Data, SerializedData);
 
-			sbyte[] SerializedData = Schema.encode(Data);
-			assertSame(Data, SerializedData);
-
-			sbyte[] DeserializedData = Schema.decode(SerializedData);
-			assertSame(Data, DeserializedData);
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(DeserializedData.Length);
-			ByteBuf.writeBytes(DeserializedData);
-			assertEquals(Data, ((BytesSchema)Schema).decode(ByteBuf));
+			sbyte[] DeserializedData = Schema.Decode(SerializedData);
+			Assert.Same(Data, DeserializedData);
 
 		}
 
