@@ -46,11 +46,11 @@ namespace SharpPulsar.Impl.Schema.Generic
 			_fields = fields;
 			_schemaVersion = schemaVersion;
 		}
-		public GenericJsonRecord Read(byte[] bytes, int offset, int length)
+		public GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
 		{
 			try
 			{
-				var jn = _objectMapper.ReadValue(StringHelper.NewString((sbyte[])(object)bytes, offset, length, Encoding.UTF8.EncodingName));
+				var jn = _objectMapper.ReadValue(StringHelper.NewString(bytes, offset, length, Encoding.UTF8.EncodingName));
 				return new GenericJsonRecord(_schemaVersion, _fields, jn);
 			}
 			catch (IOException ioe)

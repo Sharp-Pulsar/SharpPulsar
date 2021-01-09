@@ -2,41 +2,40 @@
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl.Crypto;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Interfaces.Interceptor.Schema;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
+using SharpPulsar.Interfaces.ISchema;
 
 namespace SharpPulsar.Schema.Reader
 {
-    public abstract class AbstractMultiVersionReader : ISchemaReader
+    public abstract class AbstractMultiVersionReader<T> : ISchemaReader<T>
     {
-		protected internal readonly ISchemaReader providerSchemaReader;
+		protected internal readonly ISchemaReader<T> providerSchemaReader;
 		protected internal ISchemaInfoProvider schemaInfoProvider;
-		Cache<BytesSchemaVersion, ISchemaReader> _readerCache = new Cache<BytesSchemaVersion, ISchemaReader>(30);
+		Cache<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new Cache<BytesSchemaVersion, ISchemaReader<T>>(30);
 		
-		public AbstractMultiVersionReader(ISchemaReader providerSchemaReader)
+		public AbstractMultiVersionReader(ISchemaReader<T> providerSchemaReader)
 		{
 			this.providerSchemaReader = providerSchemaReader;
 		}
 
-		public override object Read(sbyte[] bytes, int offset, int length)
+		public T Read(sbyte[] bytes, int offset, int length)
 		{
 			return providerSchemaReader.Read(bytes);
 		}
-		public override object Read(sbyte[] bytes)
+		private T Read(sbyte[] bytes)
 		{
 			return providerSchemaReader.Read(bytes);
 		}
 
-		public override object Read(Stream inputStream)
+		public T Read(Stream inputStream)
 		{
 			return providerSchemaReader.Read(inputStream);
 		}
 
-		public override object Read(Stream inputStream, sbyte[] schemaVersion)
+		public virtual T Read(Stream inputStream, sbyte[] schemaVersion)
 		{
 			try
 			{
@@ -49,7 +48,7 @@ namespace SharpPulsar.Schema.Reader
 			}
 		}
 
-		public override object Read(sbyte[] bytes, sbyte[] schemaVersion)
+		public virtual T Read(sbyte[] bytes, sbyte[] schemaVersion)
 		{
 			try
 			{
@@ -66,7 +65,7 @@ namespace SharpPulsar.Schema.Reader
 			}
 		}
 
-		public override ISchemaInfoProvider SchemaInfoProvider
+		public ISchemaInfoProvider SchemaInfoProvider
 		{
 			set
 			{
@@ -79,7 +78,7 @@ namespace SharpPulsar.Schema.Reader
 		/// </summary>
 		/// <param name="schemaVersion"> the provided schema version </param>
 		/// <returns> the schema reader for decoding messages encoded by the provided schema version. </returns>
-		protected internal abstract ISchemaReader LoadReader(BytesSchemaVersion schemaVersion);
+		protected internal abstract ISchemaReader<T> LoadReader(BytesSchemaVersion schemaVersion);
 
 		/// <summary>
 		/// TODO: think about how to make this async

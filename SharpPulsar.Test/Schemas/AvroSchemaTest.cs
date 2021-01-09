@@ -1,6 +1,11 @@
-﻿using NodaTime;
+﻿using AvroSchemaGenerator;
+using NodaTime;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schema;
+using SharpPulsar.Schema.Reader;
+using SharpPulsar.Schema.Writer;
 using System;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +29,8 @@ namespace SharpPulsar.Test.Schema
 {
 	
 	public class AvroSchemaTest
-	{
+	{	
+
 		private class DefaultStruct
 		{
 			internal int Field1;
@@ -49,7 +55,7 @@ namespace SharpPulsar.Test.Schema
 			internal long TimeMicros;
 		}
 
-		private class JodaTimeLogicalType
+		private class NodaTimeLogicalType
 		{
 			internal LocalDate Date;
 			internal DateTime TimestampMillis;
@@ -57,80 +63,70 @@ namespace SharpPulsar.Test.Schema
 			internal long TimestampMicros;
 			internal long TimeMicros;
 		}
-
+		[Fact]
 		public virtual void TestLogicalType()
 		{
-			AvroSchema<SchemaLogicalType> AvroSchema = AvroSchema.of(SchemaDefinition.builder<SchemaLogicalType>().withPojo(typeof(SchemaLogicalType)).withJSR310ConversionEnabled(true).build());
+			AvroSchema<SchemaLogicalType> avroSchema = AvroSchema<SchemaLogicalType>.Of(ISchemaDefinition<SchemaLogicalType>.Builder().WithPojo(typeof(SchemaLogicalType)).WithJSR310ConversionEnabled(true).Build());
 
-			SchemaLogicalType SchemaLogicalType = new SchemaLogicalType();
-			SchemaLogicalType.TimestampMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000;
-			SchemaLogicalType.TimestampMillis = Instant.parse("2019-03-26T04:39:58.469Z");
-			SchemaLogicalType.Decimal = new decimal("12.34");
-			SchemaLogicalType.Date = LocalDate.now();
-			SchemaLogicalType.TimeMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000;
-			SchemaLogicalType.TimeMillis = LocalTime.now();
+            SchemaLogicalType schemaLogicalType = new SchemaLogicalType
+            {
+                TimestampMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
+                TimestampMillis = Instant.FromDateTimeOffset(DateTimeOffset.Parse("2019-03-26T04:39:58.469Z")),
+                Decimal = new decimal(12.34D),
+                Date = LocalDate.FromDateTime(DateTime.Now),
+                TimeMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
+                TimeMillis = LocalTime.FromNanosecondsSinceMidnight(DateTimeOffset.UtcNow.Ticks)
+            };
 
-			sbyte[] Bytes1 = AvroSchema.encode(SchemaLogicalType);
-			Assert.assertTrue(Bytes1.Length > 0);
+            sbyte[] bytes1 = avroSchema.Encode(schemaLogicalType);
+			Assert.True(bytes1.Length > 0);
 
-			SchemaLogicalType Object1 = AvroSchema.decode(Bytes1);
+			SchemaLogicalType object1 = avroSchema.Decode(bytes1);
 
-			assertEquals(Object1, SchemaLogicalType);
+			Assert.Equal(object1, schemaLogicalType);
 
 		}
 
-		public virtual void TestNodaTimeLogicalType()
+		[Fact]
+		public void TestNodaTimeLogicalType()
 		{
-			AvroSchema<JodaTimeLogicalType> AvroSchema = AvroSchema.of(SchemaDefinition.builder<JodaTimeLogicalType>().withPojo(typeof(JodaTimeLogicalType)).build());
-			JodaTimeLogicalType SchemaLogicalType = new JodaTimeLogicalType();
-			SchemaLogicalType.TimestampMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000;
-			SchemaLogicalType.TimestampMillis = new DateTime("2019-03-26T04:39:58.469Z", ISOChronology.InstanceUTC);
-			SchemaLogicalType.Date = LocalDate.now();
-			SchemaLogicalType.TimeMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000;
-			SchemaLogicalType.TimeMillis = LocalTime.now();
+			AvroSchema<NodaTimeLogicalType> avroSchema = AvroSchema<NodaTimeLogicalType>.Of(ISchemaDefinition<NodaTimeLogicalType>.Builder().WithPojo(typeof(NodaTimeLogicalType)).Build());
+            NodaTimeLogicalType schemaLogicalType = new NodaTimeLogicalType
+            {
+                TimestampMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
+                TimestampMillis = new DateTime(DateTime.Parse("2019-03-26T04:39:58.469Z").Ticks, DateTimeKind.Utc),
+                Date = LocalDate.FromDateTime(DateTime.Now),
+                TimeMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
+                TimeMillis = LocalTime.FromNanosecondsSinceMidnight(DateTimeOffset.UtcNow.Ticks)
+            };
+            sbyte[] Bytes1 = avroSchema.Encode(schemaLogicalType);
+			Assert.True(Bytes1.Length > 0);
 
-			sbyte[] Bytes1 = AvroSchema.encode(SchemaLogicalType);
-			Assert.assertTrue(Bytes1.Length > 0);
+			NodaTimeLogicalType Object1 = avroSchema.Decode(Bytes1);
 
-			JodaTimeLogicalType Object1 = AvroSchema.decode(Bytes1);
-
-			assertEquals(Object1, SchemaLogicalType);
+			Assert.Equal(Object1, schemaLogicalType);
 		}
 
-		public virtual void DiscardBufferIfBadAvroData()
-		{
-			AvroWriter<NasaMission> AvroWriter = new AvroWriter<NasaMission>(ReflectData.AllowNull.get().getSchema(typeof(NasaMission)));
-
-			NasaMission BadNasaMissionData = new NasaMission();
-			BadNasaMissionData.Id = 1;
-			// set null in the non-null field. The java set will accept it but going ahead, the avro encode will crash.
-			BadNasaMissionData.Name = null;
-
-			// Because data does not conform to schema expect a crash
-			Assert.assertThrows(typeof(SchemaSerializationException), () => AvroWriter.write(BadNasaMissionData));
-
-			// Get the buffered data using powermock
-			BinaryEncoder Encoder = Whitebox.getInternalState(AvroWriter, "encoder");
-
-			// Assert that the buffer position is reset to zero
-			Assert.assertEquals(((BufferedBinaryEncoder)Encoder).bytesBuffered(), 0);
-		}
-
+		[Fact]
 		public virtual void TestAvroSchemaUserDefinedReadAndWriter()
 		{
-			SchemaReader<Foo> Reader = new JacksonJsonReader<Foo>(new ObjectMapper(), typeof(Foo));
-			SchemaWriter<Foo> Writer = new JacksonJsonWriter<Foo>(new ObjectMapper());
-			SchemaDefinition<Foo> SchemaDefinition = SchemaDefinition.builder<Foo>().withPojo(typeof(Bar)).withSchemaReader(Reader).withSchemaWriter(Writer).build();
+			Avro.Schema avroSchema = Avro.Schema.Parse(typeof(SchemaTestUtils.Foo).GetSchema());
+			ISchemaReader<SchemaTestUtils.Foo> reader = new AvroReader<SchemaTestUtils.Foo>(avroSchema);
+			ISchemaWriter<SchemaTestUtils.Foo> writer = new AvroWriter<SchemaTestUtils.Foo>(avroSchema);
+			ISchemaDefinition<SchemaTestUtils.Foo> schemaDefinition = ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).WithSchemaReader(reader).WithSchemaWriter(writer).Build();
+		
+			AvroSchema<SchemaTestUtils.Foo> schema = AvroSchema<SchemaTestUtils.Foo>.Of(schemaDefinition);
+            var foo = new SchemaTestUtils.Foo
 
-			AvroSchema<Foo> Schema = AvroSchema.of(SchemaDefinition);
-			Foo Foo = new Foo();
-			Foo.Color = SchemaTestUtils.Color.RED;
-			string Field1 = "test";
-			Foo.Field1 = Field1;
-			Schema.encode(Foo);
-			Foo = Schema.decode(Schema.encode(Foo));
-			assertEquals(Foo.Color, SchemaTestUtils.Color.RED);
-			assertEquals(Field1, Foo.Field1);
+			{
+                Color = SchemaTestUtils.Color.RED
+            };
+            string Field1 = "test";
+			foo.Field1 = Field1;
+			schema.Encode(foo);
+			foo = schema.Decode(schema.Encode(foo));
+			Assert.Equal(SchemaTestUtils.Color.RED, foo.Color);
+			Assert.Equal(Field1, foo.Field1);
 		}
 
 	}
