@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using System;
+using SharpPulsar.Extension;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -22,55 +26,29 @@ namespace SharpPulsar.Test.Schema
 
 	public class LongSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncode()
 		{
-			LongSchema LongSchema = LongSchema.of();
-			long? Data = 1234578l;
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data >> 56)), (sbyte)((int)((uint)Data >> 48)), (sbyte)((int)((uint)Data >> 40)), (sbyte)((int)((uint)Data >> 32)), (sbyte)((int)((uint)Data >> 24)), (sbyte)((int)((uint)Data >> 16)), (sbyte)((int)((uint)Data >> 8)), Data.Value};
-			Assert.assertEquals(Expected, LongSchema.encode(Data));
+			LongSchema longSchema = LongSchema.Of();
+			var data = 1234578L;
+
+			sbyte[] Expected = (sbyte[])(object)BitConverter.GetBytes(data.LongToBigEndian());
+			Assert.Equal(Expected, longSchema.Encode(data));
 		}
 
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			LongSchema LongSchema = LongSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
+			LongSchema longSchema = LongSchema.Of();
 			long Start = 348592040;
 			for (int I = 0; I < 100; ++I)
 			{
-				sbyte[] Encode = LongSchema.encode(Start + I);
-				long Decoded = LongSchema.decode(Encode);
-				Assert.assertEquals(Decoded, Start + I);
-				ByteBuf.writerIndex(0);
-				ByteBuf.writeBytes(Encode);
-
-				Decoded = LongSchema.decode(ByteBuf);
-				Assert.assertEquals(Decoded, Start + I);
+				sbyte[] Encode = longSchema.Encode(Start + I);
+				long Decoded = longSchema.Decode(Encode);
+				Assert.Equal(Decoded, Start + I);
 			}
 		}
 
-
-		public virtual void TestSchemaDecode()
-		{
-			sbyte[] ByteData = new sbyte[] {0, 0, 0, 0, 0, 10, 24, 42};
-			long? Expected = 10 * 65536l + 24 * 256 + 42;
-			LongSchema LongSchema = LongSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			ByteBuf.writeBytes(ByteData);
-
-			Assert.assertEquals(Expected, LongSchema.decode(ByteData));
-			Assert.assertEquals(Expected, LongSchema.decode(ByteBuf));
-		}
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-			Assert.assertNull(LongSchema.of().encode(null));
-			Assert.assertNull(LongSchema.of().decode(ByteBuf));
-			Assert.assertNull(LongSchema.of().decode(Bytes));
-		}
 
 	}
 

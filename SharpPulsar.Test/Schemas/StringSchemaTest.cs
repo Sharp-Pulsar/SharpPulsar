@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Schema;
+using SharpPulsar.Shared;
+using System.Collections.Generic;
+using System.Text;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,90 +31,87 @@ namespace SharpPulsar.Test.Schema
 	/// </summary>
 	public class StringSchemaTest
 	{
-
+		[Fact]
 		public virtual void TestUtf8Charset()
 		{
 			StringSchema Schema = new StringSchema();
-			SchemaInfo Si = Schema.SchemaInfo;
-			assertFalse(Si.Properties.containsKey(StringSchema.CHARSET_KEY));
+			ISchemaInfo Si = Schema.SchemaInfo;
+			Assert.False(Si.Properties.ContainsKey(StringSchema.CHARSET_KEY));
 
 			string MyString = "my string for test";
-			sbyte[] Data = Schema.encode(MyString);
-			assertArrayEquals(Data, MyString.GetBytes(UTF_8));
+			sbyte[] Data = Schema.Encode(MyString);
+			Assert.Equal(Data, (sbyte[])(object)Encoding.UTF8.GetBytes(MyString));
 
-			string DecodedString = Schema.decode(Data);
-			assertEquals(DecodedString, MyString);
-
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Data.Length);
-			ByteBuf.writeBytes(Data);
-
-			assertEquals(Schema.decode(ByteBuf), MyString);
+			string DecodedString = Schema.Decode(Data);
+			Assert.Equal(DecodedString, MyString);
 		}
-
-		public virtual void TestAsciiCharset()
+		[Fact]
+		public void TestAsciiCharset()
 		{
-			StringSchema Schema = new StringSchema(US_ASCII);
-			SchemaInfo Si = Schema.SchemaInfo;
-			assertTrue(Si.Properties.containsKey(StringSchema.CHARSET_KEY));
-			assertEquals(Si.Properties.get(StringSchema.CHARSET_KEY), US_ASCII.name());
+			StringSchema Schema = new StringSchema(Encoding.ASCII);
+			ISchemaInfo Si = Schema.SchemaInfo;
+			Assert.True(Si.Properties.ContainsKey(StringSchema.CHARSET_KEY));
+			Assert.Equal(Si.Properties[StringSchema.CHARSET_KEY], Encoding.ASCII.EncodingName);
 
 			string MyString = "my string for test";
-			sbyte[] Data = Schema.encode(MyString);
-			assertArrayEquals(Data, MyString.GetBytes(US_ASCII));
+			sbyte[] Data = Schema.Encode(MyString);
+			Assert.Equal(Data, (sbyte[])(object)Encoding.ASCII.GetBytes(MyString));
 
-			string DecodedString = Schema.decode(Data);
-			assertEquals(DecodedString, MyString);
-
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Data.Length);
-			ByteBuf.writeBytes(Data);
-
-			assertEquals(Schema.decode(ByteBuf), MyString);
+			string DecodedString = Schema.Decode(Data);
+			Assert.Equal(DecodedString, MyString);
 		}
 
 		public virtual void TestSchemaInfoWithoutCharset()
 		{
-			SchemaInfo Si = (new SchemaInfo()).setName("test-schema-info-without-charset").setType(SchemaType.STRING).setSchema(new sbyte[0]).setProperties(Collections.emptyMap());
-			StringSchema Schema = StringSchema.fromSchemaInfo(Si);
-
-			string MyString = "my string for test";
-			sbyte[] Data = Schema.encode(MyString);
-			assertArrayEquals(Data, MyString.GetBytes(UTF_8));
-
-			string DecodedString = Schema.decode(Data);
-			assertEquals(DecodedString, MyString);
-
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Data.Length);
-			ByteBuf.writeBytes(Data);
-			assertEquals(Schema.decode(ByteBuf), MyString);
-		}
-
-		public virtual object[][] Charsets()
-		{
-			return new object[][]
-			{
-				new object[] {UTF_8},
-				new object[] {US_ASCII}
+			ISchemaInfo Si = new SchemaInfo() 
+			{ 			
+				Name = "test-schema-info-without-charset",
+				Type = SchemaType.STRING,
+				Schema = new sbyte[0],
+				Properties = new Dictionary<string, string>()
 			};
-		}
-
-		public virtual void TestSchemaInfoWithCharset(Charset Charset)
-		{
-			IDictionary<string, string> Properties = new Dictionary<string, string>();
-			Properties[StringSchema.CHARSET_KEY] = Charset.name();
-			SchemaInfo Si = (new SchemaInfo()).setName("test-schema-info-without-charset").setType(SchemaType.STRING).setSchema(new sbyte[0]).setProperties(Properties);
-			StringSchema Schema = StringSchema.fromSchemaInfo(Si);
+			StringSchema Schema = StringSchema.FromSchemaInfo(Si);
 
 			string MyString = "my string for test";
-			sbyte[] Data = Schema.encode(MyString);
-			assertArrayEquals(Data, MyString.GetBytes(Charset));
+			sbyte[] Data = Schema.Encode(MyString);
+			Assert.Equal(Data, (sbyte[])(object)Encoding.UTF8.GetBytes(MyString));
 
-			string DecodedString = Schema.decode(Data);
-			assertEquals(DecodedString, MyString);
+			string DecodedString = Schema.Decode(Data);
+			Assert.Equal(DecodedString, MyString);
+		}
+		[Fact]
+		public void TestSchemaInfoWithUtf8()
+        {
+			TestSchemaInfoWithCharset(Encoding.UTF8);
+		}
+		[Fact]
+		public void TestSchemaInfoWithASCII()
+        {
+			TestSchemaInfoWithCharset(Encoding.ASCII);
+		}
+		[Fact]
+		public void TestSchemaInfoWithUnicode()
+        {
+			TestSchemaInfoWithCharset(Encoding.Unicode);
+		}
+		private void TestSchemaInfoWithCharset(Encoding encoding)
+		{
+			IDictionary<string, string> properties = new Dictionary<string, string>();
+			properties[StringSchema.CHARSET_KEY] = encoding.EncodingName;
+			ISchemaInfo Si = new SchemaInfo() { 
+			  Name = "test-schema-info-with-charset",
+			  Type = SchemaType.STRING,
+			  Schema = new sbyte[0],
+			  Properties = properties
+			};
+			StringSchema Schema = StringSchema.FromSchemaInfo(Si);
 
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Data.Length);
-			ByteBuf.writeBytes(Data);
+			string MyString = "my string for test";
+			sbyte[] Data = Schema.Encode(MyString);
+			Assert.Equal(Data, (sbyte[])(object)encoding.GetBytes(MyString));
 
-			assertEquals(Schema.decode(ByteBuf), MyString);
+			string DecodedString = Schema.Decode(Data);
+			Assert.Equal(DecodedString, MyString);
 		}
 
 	}

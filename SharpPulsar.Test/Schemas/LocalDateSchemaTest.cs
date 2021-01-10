@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using NodaTime;
+using System;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,50 +25,15 @@ namespace SharpPulsar.Test.Schema
 
 	public class LocalDateSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			LocalDateSchema Schema = LocalDateSchema.of();
-			LocalDate LocalDate = LocalDate.now();
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)LocalDate.toEpochDay() >> 56)), (sbyte)((int)((uint)LocalDate.toEpochDay() >> 48)), (sbyte)((int)((uint)LocalDate.toEpochDay() >> 40)), (sbyte)((int)((uint)LocalDate.toEpochDay() >> 32)), (sbyte)((int)((uint)LocalDate.toEpochDay() >> 24)), (sbyte)((int)((uint)LocalDate.toEpochDay() >> 16)), (sbyte)((int)((uint)LocalDate.toEpochDay() >> 8)), ((long?)LocalDate.toEpochDay()).Value};
-			Assert.assertEquals(Expected, Schema.encode(LocalDate));
+			LocalDateSchema Schema = LocalDateSchema.Of();
+			LocalDate localDate = LocalDate.FromDateTime(DateTime.Now);
+			sbyte[] Bytes = Schema.Encode(localDate);
+			Assert.Equal(localDate, Schema.Decode(Bytes));
 		}
 
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
-		{
-			LocalDateSchema Schema = LocalDateSchema.of();
-			LocalDate LocalDate = LocalDate.now();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			sbyte[] Bytes = Schema.encode(LocalDate);
-			ByteBuf.writeBytes(Bytes);
-			Assert.assertEquals(LocalDate, Schema.decode(Bytes));
-			Assert.assertEquals(LocalDate, Schema.decode(ByteBuf));
-		}
-
-
-		public virtual void TestSchemaDecode()
-		{
-			sbyte[] ByteData = new sbyte[] {0, 0, 0, 0, 0, 10, 24, 42};
-			long Expected = 10 * 65536 + 24 * 256 + 42;
-
-			LocalDateSchema Schema = LocalDateSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			ByteBuf.writeBytes(ByteData);
-			Assert.assertEquals(Expected, Schema.decode(ByteData).toEpochDay());
-			Assert.assertEquals(Expected, Schema.decode(ByteBuf).toEpochDay());
-		}
-
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-
-			Assert.assertNull(LocalDateSchema.of().encode(null));
-			Assert.assertNull(LocalDateSchema.of().decode(ByteBuf));
-			Assert.assertNull(LocalDateSchema.of().decode(Bytes));
-		}
 
 	}
 

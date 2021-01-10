@@ -32,7 +32,7 @@ namespace SharpPulsar.Schema
 	public class StringSchema : AbstractSchema<string>
 	{
 
-		internal static readonly string CHARSET_KEY;
+		public static readonly string CHARSET_KEY;
 
 		private static readonly ISchemaInfo DefaultSchemaInfo;
 		private static readonly Encoding DefaultEncoding;
@@ -54,7 +54,7 @@ namespace SharpPulsar.Schema
 			UTF8 = new StringSchema(Encoding.UTF8);
 		}
 
-		public static StringSchema FromSchemaInfo(SchemaInfo schemaInfo)
+		public static StringSchema FromSchemaInfo(ISchemaInfo schemaInfo)
 		{
 			if(SchemaType.STRING != schemaInfo.Type)
 				throw new ArgumentException("Not a string schema");

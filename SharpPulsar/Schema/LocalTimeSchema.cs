@@ -44,7 +44,7 @@ namespace SharpPulsar.Schema
 			_instance = new LocalTimeSchema();
 	   }
 
-	   public static LocalTimeSchema of()
+	   public static LocalTimeSchema Of()
 	   {
 		  return _instance;
 	   }

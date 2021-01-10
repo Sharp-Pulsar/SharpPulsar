@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿using NodaTime;
+using SharpPulsar.Schema;
+using System;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -22,50 +26,16 @@ namespace SharpPulsar.Test.Schema
 
 	public class LocalTimeSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			LocalTimeSchema Schema = LocalTimeSchema.of();
-			LocalTime LocalTime = LocalTime.now();
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 56)), (sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 48)), (sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 40)), (sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 32)), (sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 24)), (sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 16)), (sbyte)((int)((uint)LocalTime.toNanoOfDay() >> 8)), ((long?)LocalTime.toNanoOfDay()).Value};
-			Assert.assertEquals(Expected, Schema.encode(LocalTime));
+			LocalTimeSchema Schema = LocalTimeSchema.Of();
+			LocalTime localTime = LocalTime.FromTicksSinceMidnight(DateTime.UtcNow.Ticks);
+			sbyte[] Bytes = Schema.Encode(localTime);
+			Assert.Equal(localTime, Schema.Decode(Bytes));
 		}
 
 
-		public virtual void TestSchemaEncodeDecodeFidelity()
-		{
-			LocalTimeSchema Schema = LocalTimeSchema.of();
-			LocalTime LocalTime = LocalTime.now();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			sbyte[] Bytes = Schema.encode(LocalTime);
-			ByteBuf.writeBytes(Bytes);
-			Assert.assertEquals(LocalTime, Schema.decode(Bytes));
-			Assert.assertEquals(LocalTime, Schema.decode(ByteBuf));
-		}
-
-
-		public virtual void TestSchemaDecode()
-		{
-			sbyte[] ByteData = new sbyte[] {0, 0, 0, 0, 0, 10, 24, 42};
-			long Expected = 10 * 65536 + 24 * 256 + 42;
-
-			LocalTimeSchema Schema = LocalTimeSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(8);
-			ByteBuf.writeBytes(ByteData);
-			Assert.assertEquals(Expected, Schema.decode(ByteData).toNanoOfDay());
-			Assert.assertEquals(Expected, Schema.decode(ByteBuf).toNanoOfDay());
-		}
-
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-
-			Assert.assertNull(LocalTimeSchema.of().encode(null));
-			Assert.assertNull(LocalTimeSchema.of().decode(ByteBuf));
-			Assert.assertNull(LocalTimeSchema.of().decode(Bytes));
-		}
 
 	}
 

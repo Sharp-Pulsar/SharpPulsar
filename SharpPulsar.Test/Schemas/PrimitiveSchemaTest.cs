@@ -1,6 +1,12 @@
-﻿using System;
+﻿using NodaTime;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Schema;
+using SharpPulsar.Shared;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,89 +35,45 @@ namespace SharpPulsar.Test.Schema
 	public class PrimitiveSchemaTest
 	{
 
-		private static readonly IDictionary<Schema, IList<object>> _testData = new HashMapAnonymousInnerClass();
-
-		private class HashMapAnonymousInnerClass : Hashtable
+		private static readonly IDictionary<object, IList<object>> _testData = new Dictionary<object, IList<object>>() 
 		{
-			public HashMapAnonymousInnerClass()
-			{
+			{BooleanSchema.Of(), new List<object>{ false, true }},
+			{StringSchema.Utf8(), new List<object>{ "my string" }},
+			{ByteSchema.Of(), new List<object>{ unchecked((sbyte) 32767), unchecked((sbyte) -32768)} },
+			{ShortSchema.Of(), new List<object>{ (short) 32767, (short) -32768} },
+			{IntSchema.Of(), new List<object>{ (int) 423412424, (int) -41243432} },
+			{LongSchema.Of(), new List<object>{ 922337203685477580L, -922337203685477581L } },
+			{FloatSchema.Of(), new List<object>{ 5678567.12312f, -5678567.12341f } },
+			{DoubleSchema.Of(), new List<object>{ 5678567.12312d, -5678567.12341d } },
+			{BytesSchema.Of(), new List<object>{ Encoding.UTF8.GetBytes("my string") } },
+			{DateSchema.Of(), new List<object>{ new DateTime(DateTime.Now.Ticks - 10000), new DateTime(DateTime.Now.Ticks) } },
+			{TimeSchema.Of(), new List<object>{ TimeSpan.FromTicks((DateTime.Now).Ticks - 10000), TimeSpan.FromTicks((DateTime.Now).Ticks)} },
+			{TimestampSchema.Of(), new List<object>{DateTimeOffset.FromUnixTimeMilliseconds((DateTime.Now).Ticks), DateTimeOffset.FromUnixTimeMilliseconds((DateTime.Now).Ticks)} },
+			{InstantSchema.Of(), new List<object>{Instant.FromDateTimeUtc(DateTime.UtcNow), Instant.FromDateTimeUtc(DateTime.UtcNow.AddSeconds(-(60 * 23L)))} },
+			{LocalDateSchema.Of(), new List<object>{LocalDate.FromDateTime(DateTime.Now), LocalDate.FromDateTime(DateTime.Now.AddDays(-2))} },
+			{LocalTimeSchema.Of(), new List<object>{LocalTime.FromTicksSinceMidnight(DateTime.Now.Ticks), LocalTime.FromTicksSinceMidnight(DateTime.Now.AddHours(-2).Ticks)} },
+			{LocalDateTimeSchema.Of(), new List<object>{ LocalDateTime.FromDateTime(DateTime.Now), LocalDateTime.FromDateTime(DateTime.Now.AddDays(-70))} },
 
-				this.put(BooleanSchema.of(), Arrays.asList(false, true));
-				this.put(StringSchema.utf8(), Arrays.asList("my string"));
-				this.put(ByteSchema.of(), Arrays.asList(unchecked((sbyte) 32767), unchecked((sbyte) -32768)));
-				this.put(ShortSchema.of(), Arrays.asList((short) 32767, (short) -32768));
-				this.put(IntSchema.of(), Arrays.asList((int) 423412424, (int) -41243432));
-				this.put(LongSchema.of(), Arrays.asList(922337203685477580L, -922337203685477581L));
-				this.put(FloatSchema.of(), Arrays.asList(5678567.12312f, -5678567.12341f));
-				this.put(DoubleSchema.of(), Arrays.asList(5678567.12312d, -5678567.12341d));
-				this.put(BytesSchema.of(), Arrays.asList("my string".GetBytes(UTF_8)));
-				this.put(ByteBufferSchema.of(), Arrays.asList(ByteBuffer.allocate(10).put("my string".GetBytes(UTF_8))));
-				this.put(ByteBufSchema.of(), Arrays.asList(Unpooled.wrappedBuffer("my string".GetBytes(UTF_8))));
-				this.put(DateSchema.of(), Arrays.asList(new Date((DateTime.Now).Ticks - 10000), new Date((DateTime.Now).Ticks)));
-				this.put(TimeSchema.of(), Arrays.asList(new Time((DateTime.Now).Ticks - 10000), new Time((DateTime.Now).Ticks)));
-				this.put(TimestampSchema.of(), Arrays.asList(new Timestamp((DateTime.Now).Ticks), new Timestamp((DateTime.Now).Ticks)));
-				this.put(InstantSchema.of(), Arrays.asList(Instant.now(), Instant.now().minusSeconds(60 * 23L)));
-				this.put(LocalDateSchema.of(), Arrays.asList(LocalDate.now(), LocalDate.now().minusDays(2)));
-				this.put(LocalTimeSchema.of(), Arrays.asList(LocalTime.now(), LocalTime.now().minusHours(2)));
-				this.put(LocalDateTimeSchema.of(), Arrays.asList(DateTime.Now, DateTime.Now.AddDays(-2), DateTime.Now.minusWeeks(10)));
-			}
+        };
 
-		}
-
-		private static readonly IDictionary<Schema, IList<object>> _testData2 = new HashMapAnonymousInnerClass2();
-
-		private class HashMapAnonymousInnerClass2 : Hashtable
-		{
-			public HashMapAnonymousInnerClass2()
-			{
-
-				this.put(Schema.BOOL, Arrays.asList(false, true));
-				this.put(Schema.STRING, Arrays.asList("my string"));
-				this.put(Schema.INT8, Arrays.asList(unchecked((sbyte) 32767), unchecked((sbyte) -32768)));
-				this.put(Schema.INT16, Arrays.asList((short) 32767, (short) -32768));
-				this.put(Schema.INT32, Arrays.asList((int) 423412424, (int) -41243432));
-				this.put(Schema.INT64, Arrays.asList(922337203685477580L, -922337203685477581L));
-				this.put(Schema.FLOAT, Arrays.asList(5678567.12312f, -5678567.12341f));
-				this.put(Schema.DOUBLE, Arrays.asList(5678567.12312d, -5678567.12341d));
-				this.put(Schema.BYTES, Arrays.asList("my string".GetBytes(UTF_8)));
-				this.put(Schema.BYTEBUFFER, Arrays.asList(ByteBuffer.allocate(10).put("my string".GetBytes(UTF_8))));
-				this.put(Schema.DATE, Arrays.asList(new Date((DateTime.Now).Ticks - 10000), new Date((DateTime.Now).Ticks)));
-				this.put(Schema.TIME, Arrays.asList(new Time((DateTime.Now).Ticks - 10000), new Time((DateTime.Now).Ticks)));
-				this.put(Schema.TIMESTAMP, Arrays.asList(new Timestamp((DateTime.Now).Ticks - 10000), new Timestamp((DateTime.Now).Ticks)));
-				this.put(Schema.INSTANT, Arrays.asList(Instant.now(), Instant.now().minusSeconds(60 * 23L)));
-				this.put(Schema.LOCAL_DATE, Arrays.asList(LocalDate.now(), LocalDate.now().minusDays(2)));
-				this.put(Schema.LOCAL_TIME, Arrays.asList(LocalTime.now(), LocalTime.now().minusHours(2)));
-				this.put(Schema.LOCAL_DATE_TIME, Arrays.asList(DateTime.Now, DateTime.Now.AddDays(-2), DateTime.Now.minusWeeks(10)));
-			}
-
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @DataProvider(name = "schemas") public Object[][] schemas()
 		public virtual object[][] Schemas()
 		{
 			return new object[][]
 			{
 				new object[] {_testData},
-				new object[] {_testData2}
+				//new object[] {_testData2}
 			};
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(dataProvider = "schemas") public void allSchemasShouldSupportNull(java.util.Map<org.apache.pulsar.client.api.Schema, java.util.List<Object>> testData)
-		public virtual void AllSchemasShouldSupportNull(IDictionary<Schema, IList<object>> TestData)
+		private void AllSchemasShouldSupportNull(IDictionary<ISchema<object>, IList<object>> TestData)
 		{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
-//ORIGINAL LINE: for (org.apache.pulsar.client.api.Schema<?> schema : testData.keySet())
-			foreach (Schema<object> Schema in TestData.Keys)
+			foreach (ISchema<object> Schema in TestData.Keys)
 			{
 				sbyte[] Bytes = null;
-				ByteBuf ByteBuf = null;
 				try
 				{
-					assertNull(Schema.encode(null), "Should support null in " + Schema.SchemaInfo.Name + " serialization");
-					assertNull(Schema.decode(Bytes), "Should support null in " + Schema.SchemaInfo.Name + " deserialization");
-					assertNull(((AbstractSchema) Schema).decode(ByteBuf), "Should support null in " + Schema.SchemaInfo.Name + " deserialization");
+					Assert.Null(Schema.Encode(null));
+					Assert.Null(Schema.Decode(Bytes));
 				}
 				catch (System.NullReferenceException Npe)
 				{
@@ -120,50 +82,25 @@ namespace SharpPulsar.Test.Schema
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(dataProvider = "schemas") public void allSchemasShouldRoundtripInput(java.util.Map<org.apache.pulsar.client.api.Schema, java.util.List<Object>> testData)
-		public virtual void AllSchemasShouldRoundtripInput(IDictionary<Schema, IList<object>> TestData)
+		[Fact]
+		public void AllSchemasShouldHaveSchemaType()
 		{
-			foreach (KeyValuePair<Schema, IList<object>> Test in TestData.SetOfKeyValuePairs())
-			{
-				log.info("Test schema {}", Test.Key);
-				foreach (object Value in Test.Value)
-				{
-					log.info("Encode : {}", Value);
-					try
-					{
-						assertEquals(Value, Test.Key.decode(Test.Key.encode(Value)), "Should get the original " + Test.Key.SchemaInfo.Name + " after serialization and deserialization");
-					}
-					catch (System.NullReferenceException Npe)
-					{
-						throw new System.NullReferenceException("NPE when using schema " + Test.Key + " : " + Npe.Message);
-					}
-				}
-			}
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void allSchemasShouldHaveSchemaType()
-		public virtual void AllSchemasShouldHaveSchemaType()
-		{
-			assertEquals(SchemaType.BOOLEAN, BooleanSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.INT8, ByteSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.INT16, ShortSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.INT32, IntSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.INT64, LongSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.FLOAT, FloatSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.DOUBLE, DoubleSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.STRING, StringSchema.utf8().SchemaInfo.Type);
-			assertEquals(SchemaType.BYTES, BytesSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.BYTES, ByteBufferSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.BYTES, ByteBufSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.DATE, DateSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.TIME, TimeSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.TIMESTAMP, TimestampSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.INSTANT, InstantSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.LOCAL_DATE, LocalDateSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.LOCAL_TIME, LocalTimeSchema.of().SchemaInfo.Type);
-			assertEquals(SchemaType.LOCAL_DATE_TIME, LocalDateTimeSchema.of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.BOOLEAN, BooleanSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.INT8, ByteSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.INT16, ShortSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.INT32, IntSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.INT64, LongSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.FLOAT, FloatSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.DOUBLE, DoubleSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.STRING, StringSchema.Utf8().SchemaInfo.Type);
+			Assert.Equal(SchemaType.BYTES, BytesSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.DATE, DateSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.TIME, TimeSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.TIMESTAMP, TimestampSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.INSTANT, InstantSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.LocalDate, LocalDateSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.LocalTime, LocalTimeSchema.Of().SchemaInfo.Type);
+			Assert.Equal(SchemaType.LocalDateTime, LocalDateTimeSchema.Of().SchemaInfo.Type);
 		}
 
 

@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using System;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,44 +24,12 @@ namespace SharpPulsar.Test.Schema
 
 	public class TimestampSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
-		{
-			TimestampSchema Schema = TimestampSchema.of();
-			Timestamp Data = new Timestamp(DateTimeHelper.CurrentUnixTimeMillis());
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data.Time >> 56)), (sbyte)((int)((uint)Data.Time >> 48)), (sbyte)((int)((uint)Data.Time >> 40)), (sbyte)((int)((uint)Data.Time >> 32)), (sbyte)((int)((uint)Data.Time >> 24)), (sbyte)((int)((uint)Data.Time >> 16)), (sbyte)((int)((uint)Data.Time >> 8)), ((long?)Data.Time).Value};
-			Assert.assertEquals(Expected, Schema.encode(Data));
-		}
-
-
+		[Fact]
 		public virtual void TestSchemaEncodeDecodeFidelity()
 		{
-			TimestampSchema Schema = TimestampSchema.of();
-			Timestamp Timestamp = new Timestamp(DateTimeHelper.CurrentUnixTimeMillis());
-			Assert.assertEquals(Timestamp, Schema.decode(Schema.encode(Timestamp)));
-		}
-
-
-		public virtual void TestSchemaDecode()
-		{
-			sbyte[] ByteData = new sbyte[] {0, 0, 0, 0, 0, 10, 24, 42};
-
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(ByteData.Length);
-			ByteBuf.writeBytes(ByteData);
-			long Expected = 10 * 65536 + 24 * 256 + 42;
-			TimestampSchema Schema = TimestampSchema.of();
-			Assert.assertEquals(Expected, Schema.decode(ByteData).Time);
-			Assert.assertEquals(Expected, Schema.decode(ByteBuf).Time);
-
-		}
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-			Assert.assertNull(TimestampSchema.of().encode(null));
-			Assert.assertNull(TimestampSchema.of().decode(ByteBuf));
-			Assert.assertNull(TimestampSchema.of().decode(Bytes));
+			TimestampSchema Schema = TimestampSchema.Of();
+			var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(DateTimeHelper.CurrentUnixTimeMillis());
+			Assert.Equal(timestamp, Schema.Decode(Schema.Encode(timestamp)));
 		}
 
 	}

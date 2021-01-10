@@ -1,4 +1,7 @@
-﻿using System;
+﻿using NodaTime;
+using SharpPulsar.Schema;
+using System;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,61 +27,13 @@ namespace SharpPulsar.Test.Schema
 
 	public class LocalDateTimeSchemaTest
 	{
-
-		public virtual void TestSchemaEncode()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			LocalDateTimeSchema Schema = LocalDateTimeSchema.of();
-			DateTime LocalDateTime = DateTime.Now;
-			ByteBuffer ByteBuffer = ByteBuffer.allocate(Long.BYTES * 2);
-			ByteBuffer.putLong(LocalDateTime.toLocalDate().toEpochDay());
-			ByteBuffer.putLong(LocalDateTime.toLocalTime().toNanoOfDay());
-			sbyte[] Expected = ByteBuffer.array();
-			Assert.assertEquals(Expected, Schema.encode(LocalDateTime));
-		}
-
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
-		{
-			LocalDateTimeSchema Schema = LocalDateTimeSchema.of();
-			DateTime LocalDateTime = DateTime.Now;
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Long.BYTES * 2);
-			sbyte[] Bytes = Schema.encode(LocalDateTime);
-			ByteBuf.writeBytes(Bytes);
-			Assert.assertEquals(LocalDateTime, Schema.decode(Bytes));
-			Assert.assertEquals(LocalDateTime, Schema.decode(ByteBuf));
-		}
-
-
-		public virtual void TestSchemaDecode()
-		{
-			DateTime LocalDateTime = new DateTime(2020, 8, 22, 2, 0, 0);
-			ByteBuffer ByteBuffer = ByteBuffer.allocate(Long.BYTES * 2);
-			ByteBuffer.putLong(LocalDateTime.toLocalDate().toEpochDay());
-			ByteBuffer.putLong(LocalDateTime.toLocalTime().toNanoOfDay());
-			sbyte[] ByteData = ByteBuffer.array();
-			long ExpectedEpochDay = LocalDateTime.toLocalDate().toEpochDay();
-			long ExpectedNanoOfDay = LocalDateTime.toLocalTime().toNanoOfDay();
-
-			LocalDateTimeSchema Schema = LocalDateTimeSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(Long.BYTES * 2);
-			ByteBuf.writeBytes(ByteData);
-			DateTime Decode = Schema.decode(ByteData);
-			Assert.assertEquals(ExpectedEpochDay, Decode.toLocalDate().toEpochDay());
-			Assert.assertEquals(ExpectedNanoOfDay, Decode.toLocalTime().toNanoOfDay());
-			Decode = Schema.decode(ByteBuf);
-			Assert.assertEquals(ExpectedEpochDay, Decode.toLocalDate().toEpochDay());
-			Assert.assertEquals(ExpectedNanoOfDay, Decode.toLocalTime().toNanoOfDay());
-		}
-
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-
-			Assert.assertNull(LocalDateSchema.of().encode(null));
-			Assert.assertNull(LocalDateSchema.of().decode(ByteBuf));
-			Assert.assertNull(LocalDateSchema.of().decode(Bytes));
+			LocalDateTimeSchema Schema = LocalDateTimeSchema.Of();
+			var localDateTime = LocalDateTime.FromDateTime(DateTime.Now);
+			sbyte[] Bytes = Schema.Encode(localDateTime);
+			Assert.Equal(localDateTime, Schema.Decode(Bytes));
 		}
 
 	}

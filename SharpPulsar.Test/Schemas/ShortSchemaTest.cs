@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using SharpPulsar.Schema;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,50 +23,27 @@ namespace SharpPulsar.Test.Schema
 
 	public class ShortSchemaTest
 	{
+		[Fact]
 		public virtual void TestSchemaEncode()
 		{
-			ShortSchema Schema = ShortSchema.of();
-			short? Data = 12345;
-			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)Data >> 8)), Data.Value};
-			Assert.assertEquals(Expected, Schema.encode(Data));
+			ShortSchema Schema = ShortSchema.Of();
+			short data = 12345;
+			sbyte[] Expected = new sbyte[] {(sbyte)((int)((uint)data >> 8)), (sbyte)data};
+			Assert.Equal(Expected, Schema.Encode(data));
 		}
-
-		public virtual void TestSchemaEncodeDecodeFidelity()
+		[Fact]
+		public void TestSchemaEncodeDecodeFidelity()
 		{
-			ShortSchema Schema = ShortSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(2);
+			ShortSchema Schema = ShortSchema.Of();
 			short Start = 3440;
 			for (short I = 0; I < 100; ++I)
 			{
-				sbyte[] Encode = Schema.encode((short)(Start + I));
-				ByteBuf.writerIndex(0);
-				ByteBuf.writeBytes(Encode);
-				int Decoded = Schema.decode(Encode);
-				Assert.assertEquals(Decoded, Start + I);
-				Decoded = Schema.decode(ByteBuf);
-				Assert.assertEquals(Decoded, Start + I);
+				sbyte[] Encode = Schema.Encode((short)(Start + I));
+				int Decoded = Schema.Decode(Encode);
+				Assert.Equal(Decoded, Start + I);
 			}
 		}
 
-		public virtual void TestSchemaDecode()
-		{
-			sbyte[] ByteData = new sbyte[] {24, 42};
-			short? Expected = 24 * 256 + 42;
-			ShortSchema Schema = ShortSchema.of();
-			ByteBuf ByteBuf = ByteBufAllocator.DEFAULT.buffer(2);
-			ByteBuf.writeBytes(ByteData);
-			Assert.assertEquals(Expected, Schema.decode(ByteData));
-			Assert.assertEquals(Expected, Schema.decode(ByteBuf));
-		}
-
-		public virtual void TestNullEncodeDecode()
-		{
-			ByteBuf ByteBuf = null;
-			sbyte[] Bytes = null;
-			Assert.assertNull(ShortSchema.of().encode(null));
-			Assert.assertNull(ShortSchema.of().decode(ByteBuf));
-			Assert.assertNull(ShortSchema.of().decode(Bytes));
-		}
 
 	}
 

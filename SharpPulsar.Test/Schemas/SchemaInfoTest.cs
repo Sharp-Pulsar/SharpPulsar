@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using SharpPulsar.Common.Schema;
+using SharpPulsar.Interfaces;
+using Xunit;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -33,22 +36,21 @@ namespace SharpPulsar.Test.Schema
 
 		private const string FOO_SCHEMA_INFO = "{\n" + "  \"name\": \"\",\n" + "  \"schema\": {\n" + "    \"type\": \"record\",\n" + "    \"name\": \"Foo\",\n" + "    \"namespace\": \"org.apache.pulsar.client.impl.schema.SchemaTestUtils\",\n" + "    \"fields\": [\n" + "      {\n" + "        \"name\": \"field1\",\n" + "        \"type\": [\n" + "          \"null\",\n" + "          \"string\"\n" + "        ]\n" + "      },\n" + "      {\n" + "        \"name\": \"field2\",\n" + "        \"type\": [\n" + "          \"null\",\n" + "          \"string\"\n" + "        ]\n" + "      },\n" + "      {\n" + "        \"name\": \"field3\",\n" + "        \"type\": \"int\"\n" + "      },\n" + "      {\n" + "        \"name\": \"field4\",\n" + "        \"type\": [\n" + "          \"null\",\n" + "          {\n" + "            \"type\": \"record\",\n" + "            \"name\": \"Bar\",\n" + "            \"fields\": [\n" + "              {\n" + "                \"name\": \"field1\",\n" + "                \"type\": \"boolean\"\n" + "              }\n" + "            ]\n" + "          }\n" + "        ]\n" + "      },\n" + "      {\n" + "        \"name\": \"color\",\n" + "        \"type\": [\n" + "          \"null\",\n" + "          {\n" + "            \"type\": \"enum\",\n" + "            \"name\": \"Color\",\n" + "            \"symbols\": [\n" + "              \"RED\",\n" + "              \"BLUE\"\n" + "            ]\n" + "          }\n" + "        ]\n" + "      },\n" + "      {\n" + "        \"name\": \"fieldUnableNull\",\n" + "        \"type\": \"string\",\n" + "        \"default\": \"defaultValue\"\n" + "      }\n" + "    ]\n" + "  },\n" + "  \"type\": \"AVRO\",\n" + "  \"properties\": {\n" + "    \"__alwaysAllowNull\": \"false\",\n" + "    \"__jsr310ConversionEnabled\": \"false\",\n" + "    \"foo1\": \"foo-value1\",\n" + "    \"foo2\": \"foo-value2\",\n" + "    \"foo3\": \"foo-value3\"\n" + "  }\n" + "}";
 
-		pr
 		public static object[][] Schemas()
 		{
 			return new object[][]
 			{
-				new object[] {Schema.STRING.SchemaInfo, UTF8_SCHEMA_INFO},
-				new object[] {Schema.INT32.SchemaInfo, INT32_SCHEMA_INFO},
+				new object[] {ISchema<object>.String.SchemaInfo, UTF8_SCHEMA_INFO},
+				new object[] { ISchema<object>.Int32.SchemaInfo, INT32_SCHEMA_INFO},
 				new object[] {KeyValueSchemaInfoTest.fooSchema.SchemaInfo, FOO_SCHEMA_INFO},
 				new object[] {KeyValueSchemaInfoTest.barSchema.SchemaInfo, BAR_SCHEMA_INFO},
-				new object[] {Schema.KeyValue(KeyValueSchemaInfoTest.fooSchema, KeyValueSchemaInfoTest.barSchema, KeyValueEncodingType.SEPARATED).SchemaInfo, KV_SCHEMA_INFO}
+				new object[] {ISchema<object>.KeyValue(KeyValueSchemaInfoTest.fooSchema, KeyValueSchemaInfoTest.barSchema, KeyValueEncodingType.SEPARATED).SchemaInfo, KV_SCHEMA_INFO}
 			};
 		}
 
 		public virtual void TestSchemaInfoToString(SchemaInfo Si, string JsonifiedStr)
 		{
-			assertEquals(Si.ToString(), JsonifiedStr);
+			Assert.Equal(Si.ToString(), JsonifiedStr);
 		}
 
 	}
