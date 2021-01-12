@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpPulsar
 {
-    internal sealed class ClientCnx: ReceiveActor
+    public sealed class ClientCnx: ReceiveActor
     {
     }
 }

@@ -1,10 +1,12 @@
-﻿using SharpPulsar;
+﻿using Akka.Actor;
+using SharpPulsar;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Transaction;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,15 +34,13 @@ namespace Org.Apache.Pulsar.Client.Impl
 	/// <summary>
 	/// Handler for transaction meta store.
 	/// </summary>
-	public class TransactionMetaStoreHandler : HandlerState, ConnectionHandler.Connection, System.IDisposable
+	public class TransactionMetaStoreHandler :  HandlerState, IConnection, System.IDisposable
 	{
-
-		private static readonly Logger _lOG = LoggerFactory.getLogger(typeof(TransactionMetaStoreHandler));
-
 		private readonly long _transactionCoordinatorId;
 		private ConnectionHandler _connectionHandler;
+		private ActorSystem _system;
 		private readonly ConcurrentLongHashMap<OpBase<object>> _pendingRequests = new ConcurrentLongHashMap<OpBase<object>>(16, 1);
-		private readonly ConcurrentLinkedQueue<RequestTime> _timeoutQueue;
+		private readonly ConcurrentQueue<RequestTime> _timeoutQueue;
 
 		private class RequestTime
 		{
@@ -49,8 +49,8 @@ namespace Org.Apache.Pulsar.Client.Impl
 
 			public RequestTime(long creationTime, long requestId)
 			{
-				this.CreationTimeMs = creationTime;
-				this.RequestId = requestId;
+				CreationTimeMs = creationTime;
+				RequestId = requestId;
 			}
 		}
 
@@ -61,23 +61,23 @@ namespace Org.Apache.Pulsar.Client.Impl
 
 		private CompletableFuture<Void> _connectFuture;
 
-		public TransactionMetaStoreHandler(long transactionCoordinatorId, PulsarClientImpl pulsarClient, string topic, CompletableFuture<Void> connectFuture) : base(pulsarClient, topic)
+		public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef pulsarClient, string topic, CompletableFuture<Void> connectFuture) : base(pulsarClient, topic)
 		{
-			this._transactionCoordinatorId = transactionCoordinatorId;
-			this._timeoutQueue = new ConcurrentLinkedQueue<RequestTime>();
-			this._blockIfReachMaxPendingOps = true;
-			this._semaphore = new Semaphore(1000);
-			this._requestTimeout = pulsarClient.Timer().newTimeout(this, pulsarClient.Configuration.OperationTimeoutMs, TimeUnit.MILLISECONDS);
-			this._connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(pulsarClient.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(pulsarClient.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(100, TimeUnit.MILLISECONDS).create(), this);
-			this._connectionHandler.GrabCnx();
-			this._connectFuture = connectFuture;
+			_transactionCoordinatorId = transactionCoordinatorId;
+			_timeoutQueue = new ConcurrentLinkedQueue<RequestTime>();
+			_blockIfReachMaxPendingOps = true;
+			_semaphore = new Semaphore(1000);
+			_requestTimeout = pulsarClient.Timer().newTimeout(this, pulsarClient.Configuration.OperationTimeoutMs, TimeUnit.MILLISECONDS);
+			_connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(pulsarClient.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(pulsarClient.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(100, TimeUnit.MILLISECONDS).create(), this);
+			_connectionHandler.GrabCnx();
+			_connectFuture = connectFuture;
 		}
 
 		public virtual void ConnectionFailed(PulsarClientException exception)
 		{
 			_lOG.error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, exception);
 			State = State.Failed;
-			this._connectFuture.completeExceptionally(exception);
+			_connectFuture.completeExceptionally(exception);
 		}
 
 		public virtual void ConnectionOpened(ClientCnx cnx)
@@ -89,7 +89,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			{
 				cnx.Channel().close();
 			}
-			this._connectFuture.complete(null);
+			_connectFuture.complete(null);
 		}
 
 		public virtual CompletableFuture<TxnID> NewTransactionAsync(long timeout, TimeUnit unit)
@@ -348,7 +348,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 
 			internal OpForTxnIdCallBack(Recycler.Handle<OpForTxnIdCallBack> recyclerHandle)
 			{
-				this.RecyclerHandle = recyclerHandle;
+				RecyclerHandle = recyclerHandle;
 			}
 
 			internal override void Recycle()
@@ -380,7 +380,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			}
 			internal OpForVoidCallBack(Recycler.Handle<OpForVoidCallBack> recyclerHandle)
 			{
-				this.RecyclerHandle = recyclerHandle;
+				RecyclerHandle = recyclerHandle;
 			}
 
 			internal override void Recycle()
@@ -529,12 +529,12 @@ namespace Org.Apache.Pulsar.Client.Impl
 
 		private ClientCnx Cnx()
 		{
-			return this._connectionHandler.Cnx();
+			return _connectionHandler.Cnx();
 		}
 
 		internal virtual void ConnectionClosed(ClientCnx cnx)
 		{
-			this._connectionHandler.ConnectionClosed(cnx);
+			_connectionHandler.ConnectionClosed(cnx);
 		}
 
 		public virtual void Dispose()
