@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Api;
-using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Utils;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
@@ -31,7 +31,7 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 namespace SharpPulsar.Akka.Configuration
 {
 
-	public sealed class ProducerConfigBuilder
+    public sealed class ProducerConfigBuilder
 	{
 		private ProducerConfigurationData _conf = new ProducerConfigurationData();
 
@@ -203,7 +203,7 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-        public ProducerConfigBuilder Schema(ISchema schema)
+        public ProducerConfigBuilder Schema<T>(ISchema<T> schema)
         {
 			if(schema == null)
 				throw new ArgumentException("Schema is null");

@@ -4,7 +4,6 @@ using SharpPulsar.Akka.InternalCommands;
 using SharpPulsar.Akka.InternalCommands.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
-using SharpPulsar.Api.Interceptor;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
@@ -31,6 +30,7 @@ using SharpPulsar.Batch;
 using SharpPulsar.Stats.Producer;
 using SharpPulsar.Utils;
 using ProducerStatsDisabled = SharpPulsar.Impl.ProducerStatsDisabled;
+using SharpPulsar.Interfaces.Interceptor.Interceptor;
 
 namespace SharpPulsar.Akka.Producer
 {

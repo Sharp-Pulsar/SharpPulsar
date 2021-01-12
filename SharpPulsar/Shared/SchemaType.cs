@@ -38,86 +38,111 @@ namespace SharpPulsar.Shared
 		/// <summary>
 		/// No schema defined.
 		/// </summary>
-		public static readonly SchemaType None = new SchemaType("NONE", InnerEnum.None, 0);
+		public static readonly SchemaType NONE = new SchemaType("NONE", InnerEnum.NONE, 0);
 
 		/// <summary>
 		/// Simple String encoding with UTF-8.
 		/// </summary>
-		public static readonly SchemaType String = new SchemaType("STRING", InnerEnum.String, 1);
+		public static readonly SchemaType STRING = new SchemaType("STRING", InnerEnum.STRING, 1);
 
 		/// <summary>
 		/// JSON object encoding and validation.
 		/// </summary>
-		public static readonly SchemaType Json = new SchemaType("JSON", InnerEnum.Json, 2);
+		public static readonly SchemaType JSON = new SchemaType("JSON", InnerEnum.JSON, 2);
 
 		/// <summary>
 		/// Protobuf message encoding and decoding.
 		/// </summary>
-		public static readonly SchemaType Protobuf = new SchemaType("PROTOBUF", InnerEnum.Protobuf, 3);
+		public static readonly SchemaType PROTOBUF = new SchemaType("PROTOBUF", InnerEnum.PROTOBUF, 3);
 
 		/// <summary>
 		/// Serialize and deserialize via avro.
 		/// </summary>
-		public static readonly SchemaType Avro = new SchemaType("AVRO", InnerEnum.Avro, 4);
+		public static readonly SchemaType AVRO = new SchemaType("AVRO", InnerEnum.AVRO, 4);
 
 		/// <summary>
 		/// boolean schema defined.
 		/// @since 2.3.0
 		/// </summary>
-		public static readonly SchemaType Boolean = new SchemaType("BOOLEAN", InnerEnum.Boolean, 5);
+		public static readonly SchemaType BOOLEAN = new SchemaType("BOOLEAN", InnerEnum.BOOLEAN, 5);
 
 		/// <summary>
 		/// A 8-byte integer.
 		/// </summary>
-		public static readonly SchemaType Int8 = new SchemaType("INT8", InnerEnum.Int8, 6);
+		public static readonly SchemaType INT8 = new SchemaType("INT8", InnerEnum.INT8, 6);
 
 		/// <summary>
 		/// A 16-byte integer.
 		/// </summary>
-		public static readonly SchemaType Int16 = new SchemaType("INT16", InnerEnum.Int16, 7);
+		public static readonly SchemaType INT16 = new SchemaType("INT16", InnerEnum.INT16, 7);
 
 		/// <summary>
 		/// A 32-byte integer.
 		/// </summary>
-		public static readonly SchemaType Int32 = new SchemaType("INT32", InnerEnum.Int32, 8);
+		public static readonly SchemaType INT32 = new SchemaType("INT32", InnerEnum.INT32, 8);
 
 		/// <summary>
 		/// A 64-byte integer.
 		/// </summary>
-		public static readonly SchemaType Int64 = new SchemaType("INT64", InnerEnum.Int64, 9);
+		public static readonly SchemaType INT64 = new SchemaType("INT64", InnerEnum.INT64, 9);
 
 		/// <summary>
 		/// A float number.
 		/// </summary>
-		public static readonly SchemaType Float = new SchemaType("FLOAT", InnerEnum.Float, 10);
+		public static readonly SchemaType FLOAT = new SchemaType("FLOAT", InnerEnum.FLOAT, 10);
 
 		/// <summary>
 		/// A double number.
 		/// </summary>
-		public static readonly SchemaType Double = new SchemaType("DOUBLE", InnerEnum.Double, 11);
+		public static readonly SchemaType DOUBLE = new SchemaType("DOUBLE", InnerEnum.DOUBLE, 11);
 
 		/// <summary>
 		/// Date.
 		/// @since 2.4.0
 		/// </summary>
-		public static readonly SchemaType Date = new SchemaType("DATE", InnerEnum.Date, 12);
+		public static readonly SchemaType DATE = new SchemaType("DATE", InnerEnum.DATE, 12);
 
 		/// <summary>
 		/// Time.
 		/// @since 2.4.0
 		/// </summary>
-		public static readonly SchemaType Time = new SchemaType("TIME", InnerEnum.Time, 13);
+		public static readonly SchemaType TIME = new SchemaType("TIME", InnerEnum.TIME, 13);
 
 		/// <summary>
 		/// Timestamp.
 		/// @since 2.4.0
 		/// </summary>
-		public static readonly SchemaType Timestamp = new SchemaType("TIMESTAMP", InnerEnum.Timestamp, 14);
+		public static readonly SchemaType TIMESTAMP = new SchemaType("TIMESTAMP", InnerEnum.TIMESTAMP, 14);
 
 		/// <summary>
 		/// A Schema that contains Key Schema and Value Schema.
 		/// </summary>
-		public static readonly SchemaType KeyValue = new SchemaType("KEY_VALUE", InnerEnum.KeyValue, 15);
+		public static readonly SchemaType KeyValue = new SchemaType("KeyValue", InnerEnum.KeyValue, 15);
+
+		/// <summary>
+		/// Instant.
+		/// </summary>
+		public static readonly SchemaType INSTANT = new SchemaType("INSTANT", InnerEnum.INSTANT, 16);
+
+		/// <summary>
+		/// LocalDate.
+		/// </summary>
+		public static readonly SchemaType LocalDate = new SchemaType("LocalDate", InnerEnum.LocalDate, 17);
+
+		/// <summary>
+		/// LocalTime.
+		/// </summary>
+		public static readonly SchemaType LocalTime = new SchemaType("LocalTime", InnerEnum.LocalTime, 18);
+
+		/// <summary>
+		/// LocalDateTime.
+		/// </summary>
+		public static readonly SchemaType LocalDateTime = new SchemaType("LocalDateTime", InnerEnum.LocalDateTime, 19);
+
+		/// <summary>
+		/// Protobuf native schema base on Descriptor.
+		/// </summary>
+		public static readonly SchemaType ProtobufNative = new SchemaType("ProtobufNative", InnerEnum.ProtobufNative, 20);
 
 		//
 		// Schemas that don't have schema info. the value should be negative.
@@ -126,144 +151,206 @@ namespace SharpPulsar.Shared
 		/// <summary>
 		/// A bytes array.
 		/// </summary>
-		public static readonly SchemaType Bytes = new SchemaType("BYTES", InnerEnum.Bytes, -1);
+		public static readonly SchemaType BYTES = new SchemaType("BYTES", InnerEnum.BYTES, -1);
 
 		/// <summary>
 		/// Auto Detect Schema Type.
 		/// </summary>
 		[System.Obsolete]
-		public static readonly SchemaType Auto = new SchemaType("AUTO", InnerEnum.Auto, -2);
+		public static readonly SchemaType AUTO = new SchemaType("AUTO", InnerEnum.AUTO, -2);
 
 		/// <summary>
 		/// Auto Consume Type.
 		/// </summary>
-		public static readonly SchemaType AutoConsume = new SchemaType("AUTO_CONSUME", InnerEnum.AutoConsume, -3);
+		public static readonly SchemaType AutoConsume = new SchemaType("AutoConsume", InnerEnum.AutoConsume, -3);
 
 		/// <summary>
 		/// Auto Publish Type.
 		/// </summary>
-		public static readonly SchemaType AutoPublish = new SchemaType("AUTO_PUBLISH", InnerEnum.AutoPublish, -4);
+		public static readonly SchemaType AutoPublish = new SchemaType("AutoPublish", InnerEnum.AutoPublish, -4);
 
-		private static readonly IList<SchemaType> ValueList = new List<SchemaType>();
+		private static readonly List<SchemaType> valueList = new List<SchemaType>();
 
-		
 		static SchemaType()
 		{
-			ValueList.Add(None);
-			ValueList.Add(String);
-			ValueList.Add(Json);
-			ValueList.Add(Protobuf);
-			ValueList.Add(Avro);
-			ValueList.Add(Boolean);
-			ValueList.Add(Int8);
-			ValueList.Add(Int16);
-			ValueList.Add(Int32);
-			ValueList.Add(Int64);
-			ValueList.Add(Float);
-			ValueList.Add(Double);
-			ValueList.Add(Date);
-			ValueList.Add(Time);
-			ValueList.Add(Timestamp);
-			ValueList.Add(KeyValue);
-			ValueList.Add(Bytes);
-			ValueList.Add(Auto);
-			ValueList.Add(AutoConsume);
-			ValueList.Add(AutoPublish);
+			valueList.Add(NONE);
+			valueList.Add(STRING);
+			valueList.Add(JSON);
+			valueList.Add(PROTOBUF);
+			valueList.Add(AVRO);
+			valueList.Add(BOOLEAN);
+			valueList.Add(INT8);
+			valueList.Add(INT16);
+			valueList.Add(INT32);
+			valueList.Add(INT64);
+			valueList.Add(FLOAT);
+			valueList.Add(DOUBLE);
+			valueList.Add(DATE);
+			valueList.Add(TIME);
+			valueList.Add(TIMESTAMP);
+			valueList.Add(KeyValue);
+			valueList.Add(INSTANT);
+			valueList.Add(LocalDate);
+			valueList.Add(LocalTime);
+			valueList.Add(LocalDateTime);
+			valueList.Add(ProtobufNative);
+			valueList.Add(BYTES);
+			valueList.Add(AUTO);
+			valueList.Add(AutoConsume);
+			valueList.Add(AutoPublish);
 		}
 
 		public enum InnerEnum
 		{
-			None,
-			String,
-			Json,
-			Protobuf,
-			Avro,
-			Boolean,
-			Int8,
-			Int16,
-			Int32,
-			Int64,
-			Float,
-			Double,
-			Date,
-			Time,
-			Timestamp,
+			NONE,
+			STRING,
+			JSON,
+			PROTOBUF,
+			AVRO,
+			BOOLEAN,
+			INT8,
+			INT16,
+			INT32,
+			INT64,
+			FLOAT,
+			DOUBLE,
+			DATE,
+			TIME,
+			TIMESTAMP,
 			KeyValue,
-			Bytes,
-			Auto,
+			INSTANT,
+			LocalDate,
+			LocalTime,
+			LocalDateTime,
+			ProtobufNative,
+			BYTES,
+			AUTO,
 			AutoConsume,
 			AutoPublish
 		}
 
 		public readonly InnerEnum InnerEnumValue;
-		private readonly string _nameValue;
-		private readonly int _ordinalValue;
-		private static int _nextOrdinal = 0;
+		public readonly string Name;
+		private readonly int _ordinal;
+		private static int nextOrdinal = 0;
 
-		private int _value;
+		//JAVA TO C# CONVERTER NOTE: Fields cannot have the same name as methods of the current type:
+		internal int _value;
 
-		internal SchemaType(string name, InnerEnum innerEnum, int value)
+		internal SchemaType(string name, InnerEnum innerEnum, int Value)
 		{
-			_value = value;
+			this._value = Value;
 
-			_nameValue = name;
-			_ordinalValue = _nextOrdinal++;
+			Name = name;
+			_ordinal = nextOrdinal++;
 			InnerEnumValue = innerEnum;
 		}
 
-		public int Value => _value;
-
-
-        public static SchemaType ValueOf(int value)
+		public int Value
 		{
-			return value switch
+			get
 			{
-				0 => None,
-				1 => String,
-				2 => Json,
-				3 => Protobuf,
-				4 => Avro,
-				5 => Boolean,
-				6 => Int8,
-				7 => Int16,
-				8 => Int32,
-				9 => Int64,
-				10 => Float,
-				11 => Double,
-				12 => Date,
-				13 => Time,
-				14 => Timestamp,
-				15 => KeyValue,
-				-1 => Bytes,
-				-2 => Auto,
-				-3 => AutoConsume,
-				-4 => AutoPublish,
-				_ => None,
-			};
+				return _value;
+			}
+		}
+
+		public static SchemaType ValueOf(int Value)
+		{
+			switch (Value)
+			{
+				case 0:
+					return NONE;
+				case 1:
+					return STRING;
+				case 2:
+					return JSON;
+				case 3:
+					return PROTOBUF;
+				case 4:
+					return AVRO;
+				case 5:
+					return BOOLEAN;
+				case 6:
+					return INT8;
+				case 7:
+					return INT16;
+				case 8:
+					return INT32;
+				case 9:
+					return INT64;
+				case 10:
+					return FLOAT;
+				case 11:
+					return DOUBLE;
+				case 12:
+					return DATE;
+				case 13:
+					return TIME;
+				case 14:
+					return TIMESTAMP;
+				case 15:
+					return KeyValue;
+				case 16:
+					return INSTANT;
+				case 17:
+					return LocalDate;
+				case 18:
+					return LocalTime;
+				case 19:
+					return LocalDateTime;
+				case 20:
+					return ProtobufNative;
+				case -1:
+					return BYTES;
+				case -2:
+					return AUTO;
+				case -3:
+					return AutoConsume;
+				case -4:
+					return AutoPublish;
+				default:
+					return NONE;
+			}
 		}
 
 
-		public bool Primitive => IsPrimitiveType(this);
-
-        public bool Struct => IsStructType(this);
-
-        public static bool IsPrimitiveType(SchemaType type)
+		public bool Primitive
 		{
-			switch (type.InnerEnumValue)
+			get
 			{
-				case InnerEnum.String:
-				case InnerEnum.Boolean:
-				case InnerEnum.Int8:
-				case InnerEnum.Int16:
-				case InnerEnum.Int32:
-				case InnerEnum.Int64:
-				case InnerEnum.Float:
-				case InnerEnum.Double:
-				case InnerEnum.Date:
-				case InnerEnum.Time:
-				case InnerEnum.Timestamp:
-				case InnerEnum.Bytes:
-				case InnerEnum.None:
+				return IsPrimitiveType(this);
+			}
+		}
+
+		public bool Struct
+		{
+			get
+			{
+				return IsStructType(this);
+			}
+		}
+
+		public static bool IsPrimitiveType(SchemaType Type)
+		{
+			switch (Type.InnerEnumValue)
+			{
+				case InnerEnum.STRING:
+				case InnerEnum.BOOLEAN:
+				case InnerEnum.INT8:
+				case InnerEnum.INT16:
+				case InnerEnum.INT32:
+				case InnerEnum.INT64:
+				case InnerEnum.FLOAT:
+				case InnerEnum.DOUBLE:
+				case InnerEnum.DATE:
+				case InnerEnum.TIME:
+				case InnerEnum.TIMESTAMP:
+				case InnerEnum.BYTES:
+				case InnerEnum.INSTANT:
+				case InnerEnum.LocalDate:
+				case InnerEnum.LocalTime:
+				case InnerEnum.LocalDateTime:
+				case InnerEnum.NONE:
 					return true;
 				default:
 					return false;
@@ -275,30 +362,42 @@ namespace SharpPulsar.Shared
 		{
 			switch (type.InnerEnumValue)
 			{
-				case InnerEnum.Avro:
-				case InnerEnum.Json:
-				case InnerEnum.Protobuf:
+				case InnerEnum.AVRO:
+				case InnerEnum.JSON:
+				case InnerEnum.PROTOBUF:
+				case InnerEnum.ProtobufNative:
 					return true;
 				default:
 					return false;
 			}
 		}
 
-		public static IList<SchemaType> Values()
+		public static SchemaType[] Values()
 		{
-			return ValueList;
+			return valueList.ToArray();
 		}
 
 		public int Ordinal()
 		{
-			return _ordinalValue;
+			return _ordinal;
 		}
 
 		public override string ToString()
 		{
-			return _nameValue;
+			return Name;
 		}
 
+		public static SchemaType ValueOf(string name)
+		{
+			foreach (SchemaType enumInstance in SchemaType.valueList)
+			{
+				if (enumInstance.Name == name)
+				{
+					return enumInstance;
+				}
+			}
+			throw new System.ArgumentException(name);
+		}
 	}
 
 }
