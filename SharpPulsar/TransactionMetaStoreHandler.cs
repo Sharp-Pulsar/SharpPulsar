@@ -1,7 +1,13 @@
-﻿using SharpPulsar.Exceptions;
+﻿using SharpPulsar;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Transaction;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,7 +32,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 	/// <summary>
 	/// Handler for transaction meta store.
 	/// </summary>
-	public class TransactionMetaStoreHandler : HandlerState, ConnectionHandler.Connection, System.IDisposable, TimerTask
+	public class TransactionMetaStoreHandler : HandlerState, ConnectionHandler.Connection, System.IDisposable
 	{
 
 		private static readonly Logger _lOG = LoggerFactory.getLogger(typeof(TransactionMetaStoreHandler));
@@ -119,9 +125,10 @@ namespace Org.Apache.Pulsar.Client.Impl
 				}
 				return;
 			}
-			if(!response.HasError())
+			
+			if(response.Error != null)
 			{
-				TxnID txnID = new TxnID(response.TxnidMostBits, response.TxnidLeastBits);
+				TxnID txnID = new TxnID((long)response.TxnidMostBits, (long)response.TxnidLeastBits);
 				if(_lOG.DebugEnabled)
 				{
 					_lOG.debug("Got new txn response {} for request {}", txnID, response.RequestId);
@@ -137,7 +144,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			OnResponse(op);
 		}
 
-		public virtual CompletableFuture<Void> AddPublishPartitionToTxnAsync(TxnID txnID, IList<string> partitions)
+		public async Task AddPublishPartitionToTxnAsync(TxnID txnID, IList<string> partitions)
 		{
 			if(_lOG.DebugEnabled)
 			{
@@ -150,7 +157,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 				return callback;
 			}
 			long requestId = ClientConflict.NewRequestId();
-			ByteBuf cmd = Commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
+			var cmd = Commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
 			OpForVoidCallBack op = OpForVoidCallBack.Create(cmd, callback);
 			_pendingRequests.Put(requestId, op);
 			_timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
@@ -159,7 +166,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			return callback;
 		}
 
-		internal virtual void HandleAddPublishPartitionToTxnResponse(PulsarApi.CommandAddPartitionToTxnResponse response)
+		internal virtual void HandleAddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse response)
 		{
 			OpForVoidCallBack op = (OpForVoidCallBack) _pendingRequests.Remove(response.RequestId);
 			if(op == null)
@@ -258,7 +265,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			return callback;
 		}
 
-		public virtual CompletableFuture<Void> AbortAsync(TxnID txnID, IList<MessageId> sendMessageIdList)
+		public virtual CompletableFuture<Void> AbortAsync(TxnID txnID, IList<IMessageId> sendMessageIdList)
 		{
 			if(_lOG.DebugEnabled)
 			{
@@ -272,21 +279,27 @@ namespace Org.Apache.Pulsar.Client.Impl
 			}
 			long requestId = ClientConflict.NewRequestId();
 
-			IList<PulsarApi.MessageIdData> messageIdDataList = new List<PulsarApi.MessageIdData>();
-			foreach(MessageId messageId in sendMessageIdList)
+			IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
+			foreach(IMessageId messageId in sendMessageIdList)
 			{
-				messageIdDataList.Add(PulsarApi.MessageIdData.NewBuilder().setLedgerId(((MessageIdImpl) messageId).LedgerId).setEntryId(((MessageIdImpl) messageId).EntryId).setPartition(((MessageIdImpl) messageId).PartitionIndex).build());
+				var msgIdData = new MessageIdData
+				{
+					ledgerId = (ulong)((MessageId)messageId).LedgerId,
+					entryId = (ulong)((MessageId)messageId).EntryId,
+					Partition = ((MessageId)messageId).PartitionIndex,
+
+				};
+				messageIdDataList.Add(msgIdData);
 			}
-			ByteBuf cmd = Commands.NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, PulsarApi.TxnAction.ABORT, messageIdDataList);
+			var cmd = Commands.NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort, messageIdDataList);
 			OpForVoidCallBack op = OpForVoidCallBack.Create(cmd, callback);
 			_pendingRequests.Put(requestId, op);
 			_timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			cmd.retain();
 			Cnx().Ctx().writeAndFlush(cmd, Cnx().Ctx().voidPromise());
 			return callback;
 		}
 
-		internal virtual void HandleEndTxnResponse(PulsarApi.CommandEndTxnResponse response)
+		internal virtual void HandleEndTxnResponse(CommandEndTxnResponse response)
 		{
 			OpForVoidCallBack op = (OpForVoidCallBack) _pendingRequests.Remove(response.RequestId);
 			if(op == null)
@@ -387,13 +400,13 @@ namespace Org.Apache.Pulsar.Client.Impl
 			}
 		}
 
-		private TransactionCoordinatorClientException GetExceptionByServerError(PulsarApi.ServerError serverError, string msg)
+		private TransactionCoordinatorClientException GetExceptionByServerError(ServerError serverError, string msg)
 		{
-			switch(serverError.innerEnumValue)
+			switch(serverError)
 			{
-				case PulsarApi.ServerError.InnerEnum.TransactionCoordinatorNotFound:
+				case ServerError.TransactionCoordinatorNotFound:
 					return new TransactionCoordinatorClientException.CoordinatorNotFoundException(msg);
-				case PulsarApi.ServerError.InnerEnum.InvalidTxnStatus:
+				case ServerError.InvalidTxnStatus:
 					return new TransactionCoordinatorClientException.InvalidTxnStatusException(msg);
 				default:
 					return new TransactionCoordinatorClientException(msg);
@@ -460,8 +473,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void run(io.netty.util.Timeout timeout) throws Exception
 		public override void Run(Timeout timeout)
 		{
 			if(timeout.Cancelled)
@@ -479,8 +490,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 				RequestTime lastPolled = _timeoutQueue.poll();
 				if(lastPolled != null)
 				{
-//JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
-//ORIGINAL LINE: OpBase<?> op = pendingRequests.remove(lastPolled.requestId);
 					OpBase<object> op = _pendingRequests.Remove(lastPolled.RequestId);
 					if(op != null && !op.Callback.Done)
 					{
@@ -528,8 +537,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			this._connectionHandler.ConnectionClosed(cnx);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
 		public virtual void Dispose()
 		{
 		}
