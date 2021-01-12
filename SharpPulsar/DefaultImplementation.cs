@@ -10,7 +10,7 @@ using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces.Interceptor;
-using SharpPulsar.Schema;
+using SharpPulsar.Schemas;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
 using System.Text;
