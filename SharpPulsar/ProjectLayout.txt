@@ -1,0 +1,5 @@
+﻿Akka Folder => To contain all codes related to Akka.Net
+Pulsar Folder => To contain all codes ported from java
+Trino(formerly known as Presto) Folder to contain all codes ported from java
+RestService Folder => to contain all RESTAPI implementation
+Helper Folder => To contain all helpers/extensions
