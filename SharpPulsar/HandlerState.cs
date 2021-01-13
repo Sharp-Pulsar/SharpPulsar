@@ -18,17 +18,23 @@ namespace SharpPulsar
 			RegisteringSchema // Handler is registering schema
 		}
 		private readonly IActorRef _client;//get get reference to the actor that implements PulsarClientImpl
-		protected internal readonly string Topic;
+		private readonly string _topic;
+		protected internal string Topic
+        {
+			get => _topic;
+        }
+		private readonly ActorSystem _system;
 
 		private State _state;
 
 		
 
-		public HandlerState(IActorRef client, string topic)
+		public HandlerState(IActorRef client, string topic, ActorSystem system)
 		{
 			_client = client;
-			this.Topic = topic;
+		    _topic = topic;
             _state = State.Uninitialized;
+			_system = system;
 		}
 
 		// moves the state to ready if it wasn't closed
@@ -71,14 +77,17 @@ namespace SharpPulsar
 
 		internal abstract string HandlerName { get; }
 
-		protected State GetAndUpdateState(State stateUpdate)
+		protected internal State GetAndUpdateState(State stateUpdate)
 		{
 			var state = _state;
 			_state = stateUpdate;
 			return state;
 		}
-
-		public IActorRef Client
+		protected internal ActorSystem System
+        {
+			get => _system;
+        }
+		protected internal IActorRef Client
 		{
 			get
 			{

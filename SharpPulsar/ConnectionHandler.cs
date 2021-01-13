@@ -6,54 +6,63 @@ using System;
 using System.Text;
 using BAMCIS.Util.Concurrent;
 using State = SharpPulsar.HandlerState.State;
+using SharpPulsar.Messages;
 
 namespace SharpPulsar
 {	
-	public sealed class GetConnection
+	public class ConnectionHandler:ReceiveActor
 	{
-		public string Topic { get; }
-        public GetConnection(string topic)
-        {
-			Topic = topic;
-        }
-    }
-	public class ConnectionHandler
-	{
-		internal interface IConnection
+		public interface IConnection
 		{
 			void ConnectionFailed(PulsarClientException exception);
 			void ConnectionOpened(ClientCnx cnx);
 		}
+		private sealed class GetCnx
+        {
+			public string Message { get; }
+            public GetCnx(string message)
+            {
+				Message = message;
+            }
+        }
 		private ClientCnx _clientCnx = null;
 
 		private readonly HandlerState _state;
 		private readonly Backoff _backoff;
-		private readonly long _epoch = 0L;
+		private long _epoch = 0L;
 		protected long LastConnectionClosedTimestamp = 0L;
 		private readonly ILoggingAdapter _log;
-
 		internal IConnection Connection;
+		private ICancelable _cancelable;
+		private readonly IActorContext _actorContext;
 
-		internal ConnectionHandler(HandlerState state, Backoff backoff, IConnection connection, ILoggingAdapter logger)
+		internal ConnectionHandler(HandlerState state, Backoff backoff, IConnection connection)
 		{
 			_state = state;
 			Connection = connection;
 			_backoff = backoff;
-			_log = logger;
+			_log = Context.System.Log;
+			_actorContext = Context;
+			Receive<GetCnx>(g =>
+			{
+				_log.Info(g.Message);
+				++_epoch;
+				GrabCnx();
+			});
 		}
 
-		protected internal virtual void GrabCnx()
+		private void GrabCnx()
 		{
 			if (_clientCnx != null)
 			{
-				_log.Warning("[{}] [{}] Client cnx already set, ignoring reconnection request", _state.Topic, _state.HandlerName);
+				_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Client cnx already set, ignoring reconnection request");
 				return;
 			}
 
 			if (!ValidStateForReconnection)
 			{
 				// Ignore connection closed when we are shutting down
-				_log.Info("[{}] [{}] Ignoring reconnection request (state: {})", _state.Topic, _state.HandlerName, _state);
+				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
 				return;
 			}
 
@@ -69,14 +78,14 @@ namespace SharpPulsar
 			}
 			catch (Exception t)
 			{
-				_log.Warning("[{}] [{}] Exception thrown while getting connection: ", _state.Topic, _state.HandlerName, t);
+				_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Exception thrown while getting connection: {t}");
 				ReconnectLater(t);
 			}
 		}
 
 		private void HandleConnectionError(Exception exception)
 		{
-			_log.Warning("[{}] [{}] Error connecting to broker: {}", _state.Topic, _state.HandlerName, exception.Message);
+			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Error connecting to broker: {exception.Message}");
 			if (exception is PulsarClientException)
 			{
 				Connection.ConnectionFailed((PulsarClientException)exception);
@@ -104,54 +113,52 @@ namespace SharpPulsar
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
 			{
-				_log.Info("[{}] [{}] Ignoring reconnection request (state: {})", _state.Topic, _state.HandlerName, _state.ConnectionState);
+				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
 				return;
 			}
 			long delayMs = _backoff.Next();
-			_log.Warning("[{}] [{}] Could not get connection to broker: {} -- Will try again in {} s", _state.Topic, _state.HandlerName, exception.Message, delayMs / 1000.0);
+			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Could not get connection to broker: {exception.Message} -- Will try again in {(delayMs/1000.0)} s");
 			_state.ConnectionState = State.Connecting;
-			State.ClientConflict.Timer().newTimeout(timeout =>
-			{
-				_log.info("[{}] [{}] Reconnecting after connection was closed", State.Topic, State.HandlerName);
-				++EpochConflict;
-				GrabCnx();
-			}, delayMs, TimeUnit.MILLISECONDS);
+			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(delayMs)), Self, new GetCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), Nobody.Instance);
 		}
 
 		public virtual void ConnectionClosed(ClientCnx cnx)
 		{
 			LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
-			_state.ClientConflict.CnxPool.releaseConnection(cnx);
-			if (_clientCnxUpdater.compareAndSet(this, cnx, null))
+			_state.Client.Ask(new ReleaseConnectionPool(cnx));
+			_clientCnx = null;
+			if (!ValidStateForReconnection)
 			{
-				if (!ValidStateForReconnection)
-				{
-					_log.info("[{}] [{}] Ignoring reconnection request (state: {})", _state.Topic, _state.HandlerName, _state.ConnectionState);
-					return;
-				}
-				long delayMs = _backoff.Next();
-				State.State = State.Connecting;
-				_log.info("[{}] [{}] Closed connection {} -- Will try again in {} s", _state.Topic, _state.HandlerName, cnx.Channel(), delayMs / 1000.0);
-				State.ClientConflict.Timer().newTimeout(timeout =>
-				{
-					_log.info("[{}] [{}] Reconnecting after timeout", State.Topic, State.HandlerName);
-					++EpochConflict;
-					GrabCnx();
-				}, delayMs, TimeUnit.MILLISECONDS);
+				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
+				return;
 			}
+			long delayMs = _backoff.Next();
+			_state.ConnectionState = State.Connecting;
+			//_log.Info("[{}] [{}] Closed connection -- Will try again in {} s", _state.Topic, _state.HandlerName, cnx.Channel()delayMs / 1000.0);
+			_log.Info($"[{ _state.Topic}] [{_state.HandlerName}] Closed connection -- Will try again in {(delayMs / 1000.0)} s");
+			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(delayMs)), Self, new GetCnx($"[{ _state.Topic}] [{_state.HandlerName}] Reconnecting after timeout"), Nobody.Instance);
+			
 		}
 
 		protected internal virtual void ResetBackoff()
 		{
 			_backoff.Reset();
 		}
-
-		public virtual ClientCnx Cnx()
+		public static Props Prop(HandlerState state, Backoff backoff, IConnection connection)
+        {
+			return Props.Create(() => new ConnectionHandler(state, backoff, connection));
+        }
+        protected override void PostStop()
+        {
+			_cancelable?.Cancel();
+            base.PostStop();
+        }
+        public virtual ClientCnx Cnx()
 		{
 			return _clientCnx;
 		}
 
-		protected  ClientCnx ClientCnx
+		protected internal ClientCnx ClientCnx
 		{
 			set
 			{
