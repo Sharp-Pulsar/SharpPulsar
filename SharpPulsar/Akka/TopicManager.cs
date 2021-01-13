@@ -1,6 +1,6 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Akka.Producer;
 using SharpPulsar.Akka.Reader;
 using SharpPulsar.Impl.Conf;

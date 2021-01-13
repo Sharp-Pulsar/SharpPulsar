@@ -5,7 +5,7 @@ using System.Threading;
 using Akka.Actor;
 using Nito.AsyncEx;
 using SharpPulsar.Akka;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Extension;

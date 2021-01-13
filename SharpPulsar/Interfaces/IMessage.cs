@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,6 +1,6 @@
 ﻿using System;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
 
 namespace SharpPulsar.Handlers

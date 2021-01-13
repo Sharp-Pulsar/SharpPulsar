@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

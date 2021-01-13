@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Api;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Collections.Generic;

@@ -2,7 +2,7 @@
 using PulsarAdmin.Models;
 using SharpPulsar.Akka;
 using SharpPulsar.Akka.Admin;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using Xunit;
 using Xunit.Abstractions;
 

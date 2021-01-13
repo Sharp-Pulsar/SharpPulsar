@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Messages;
+using SharpPulsar.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using Xunit;

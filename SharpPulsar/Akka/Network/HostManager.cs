@@ -1,6 +1,6 @@
 ﻿using System;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Network

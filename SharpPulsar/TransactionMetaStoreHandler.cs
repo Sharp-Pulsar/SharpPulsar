@@ -1,8 +1,12 @@
 ﻿using Akka.Actor;
+using Akka.Event;
+using BAMCIS.Util.Concurrent;
 using SharpPulsar;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
+using SharpPulsar.Impl.Conf;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Transaction;
@@ -29,17 +33,18 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar
 {
 	/// <summary>
 	/// Handler for transaction meta store.
 	/// </summary>
-	public class TransactionMetaStoreHandler :  HandlerState, IConnection, System.IDisposable
+	public class TransactionMetaStoreHandler : ReceiveActor,  ConnectionHandler.IConnection
 	{
 		private readonly long _transactionCoordinatorId;
 		private ConnectionHandler _connectionHandler;
+		private HandlerState _state;
 		private ActorSystem _system;
-		private readonly ConcurrentLongHashMap<OpBase<object>> _pendingRequests = new ConcurrentLongHashMap<OpBase<object>>(16, 1);
+		private readonly Dictionary<long, byte[]> _pendingRequests = new Dictionary<long, byte[]>();
 		private readonly ConcurrentQueue<RequestTime> _timeoutQueue;
 
 		private class RequestTime
@@ -55,48 +60,53 @@ namespace Org.Apache.Pulsar.Client.Impl
 		}
 
 		private readonly bool _blockIfReachMaxPendingOps;
-		private readonly Semaphore _semaphore;
+		private readonly ILoggingAdapter _log;
 
-		private Timeout _requestTimeout;
+		private ICancelable _requestTimeout;
 
-		private CompletableFuture<Void> _connectFuture;
-
-		public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef pulsarClient, string topic, CompletableFuture<Void> connectFuture) : base(pulsarClient, topic)
+		public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef pulsarClient, string topic, ClientConfigurationData conf)
 		{
+			_log = Context.System.Log;
+			_state = new HandlerState(pulsarClient, topic, Context.System, "Transaction meta store handler [" + _transactionCoordinatorId + "]");
 			_transactionCoordinatorId = transactionCoordinatorId;
-			_timeoutQueue = new ConcurrentLinkedQueue<RequestTime>();
+			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			_blockIfReachMaxPendingOps = true;
-			_semaphore = new Semaphore(1000);
 			_requestTimeout = pulsarClient.Timer().newTimeout(this, pulsarClient.Configuration.OperationTimeoutMs, TimeUnit.MILLISECONDS);
-			_connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(pulsarClient.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(pulsarClient.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(100, TimeUnit.MILLISECONDS).create(), this);
+			_connectionHandler = new ConnectionHandler(_state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), this);
 			_connectionHandler.GrabCnx();
-			_connectFuture = connectFuture;
+			Receive<NewTransaction>(t => 
+			{
+				var txId = NewTransaction(t.Timeout, t.Unit);
+				Sender.Tell(txId);
+			});
 		}
 
 		public virtual void ConnectionFailed(PulsarClientException exception)
 		{
-			_lOG.error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, exception);
-			State = State.Failed;
-			_connectFuture.completeExceptionally(exception);
+			_system.Log.Error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, exception);
+			_state.ConnectionState = HandlerState.State.Failed;
+			//send message to parent for exception
+			//_connectFuture.completeExceptionally(exception);
 		}
 
 		public virtual void ConnectionOpened(ClientCnx cnx)
 		{
-			_lOG.info("Transaction meta handler with transaction coordinator id {} connection opened.", _transactionCoordinatorId);
+			_system.Log.Info("Transaction meta handler with transaction coordinator id {} connection opened.", _transactionCoordinatorId);
 			_connectionHandler.ClientCnx = cnx;
 			cnx.RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, this);
-			if(!ChangeToReadyState())
+			if(!_state.ChangeToReadyState())
 			{
 				cnx.Channel().close();
 			}
-			_connectFuture.complete(null);
+			//send completion message to parent
+			//_connectFuture.complete(null);
 		}
 
-		public virtual CompletableFuture<TxnID> NewTransactionAsync(long timeout, TimeUnit unit)
+		private TxnID NewTransaction(long timeout, TimeUnit unit)
 		{
-			if(_lOG.DebugEnabled)
+			if(_system.Log.IsDebugEnabled)
 			{
-				_lOG.debug("New transaction with timeout in ms {}", unit.toMillis(timeout));
+				_system.Log.Debug("New transaction with timeout in ms {}", unit.ToMilliseconds(timeout));
 			}
 			CompletableFuture<TxnID> callback = new CompletableFuture<TxnID>();
 
@@ -105,23 +115,22 @@ namespace Org.Apache.Pulsar.Client.Impl
 				return callback;
 			}
 			long requestId = ClientConflict.NewRequestId();
-			ByteBuf cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, unit.toMillis(timeout));
+			var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, unit.ToMilliseconds(timeout));
 			OpForTxnIdCallBack op = OpForTxnIdCallBack.Create(cmd, callback);
 			_pendingRequests.Put(requestId, op);
-			_timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			cmd.retain();
+			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			Cnx().Ctx().writeAndFlush(cmd, Cnx().Ctx().voidPromise());
 			return callback;
 		}
 
 		internal virtual void HandleNewTxnResponse(CommandNewTxnResponse response)
 		{
-			OpForTxnIdCallBack op = (OpForTxnIdCallBack) _pendingRequests.Remove(response.RequestId);
-			if(op == null)
+			var op = _pendingRequests.Remove((long)response.RequestId);
+			if(!op)
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Got new txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
+					_log.Debug("Got new txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
 				}
 				return;
 			}
@@ -129,40 +138,43 @@ namespace Org.Apache.Pulsar.Client.Impl
 			if(response.Error != null)
 			{
 				TxnID txnID = new TxnID((long)response.TxnidMostBits, (long)response.TxnidLeastBits);
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Got new txn response {} for request {}", txnID, response.RequestId);
+					_log.Debug("Got new txn response {} for request {}", txnID, response.RequestId);
 				}
 				op.Callback.complete(txnID);
 			}
 			else
 			{
-				_lOG.error("Got new txn for request {} error {}", response.RequestId, response.Error);
+				_log.Error("Got new txn for request {} error {}", response.RequestId, response.Error);
 				op.Callback.completeExceptionally(GetExceptionByServerError(response.Error, response.Message));
 			}
 
 			OnResponse(op);
 		}
 
-		public async Task AddPublishPartitionToTxnAsync(TxnID txnID, IList<string> partitions)
+		private void AddPublishPartitionToTxnAsync(TxnID txnID, IList<string> partitions)
 		{
-			if(_lOG.DebugEnabled)
+			if(_log.IsDebugEnabled)
 			{
-				_lOG.debug("Add publish partition {} to txn {}", partitions, txnID);
+				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
-			CompletableFuture<Void> callback = new CompletableFuture<Void>();
-
 			if(!CanSendRequest(callback))
 			{
 				return callback;
 			}
-			long requestId = ClientConflict.NewRequestId();
+			long requestId = 0L;
+			_state.Client.Ask<long>(NewRequestId.Instance).ContinueWith(task => 
+			{
+				if (!task.IsFaulted)
+					requestId = task.Result;
+			
+			});
 			var cmd = Commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
 			OpForVoidCallBack op = OpForVoidCallBack.Create(cmd, callback);
-			_pendingRequests.Put(requestId, op);
-			_timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			cmd.retain();
-			Cnx().Ctx().writeAndFlush(cmd, Cnx().Ctx().voidPromise());
+			_pendingRequests.Add(requestId, cmd);
+			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
+			Cnx().Send(cmd, Cnx());
 			return callback;
 		}
 
@@ -171,38 +183,37 @@ namespace Org.Apache.Pulsar.Client.Impl
 			OpForVoidCallBack op = (OpForVoidCallBack) _pendingRequests.Remove(response.RequestId);
 			if(op == null)
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Got add publish partition to txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
+					_log.Debug("Got add publish partition to txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
 				}
 				return;
 			}
 			if(!response.HasError())
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Add publish partition for request {} success.", response.RequestId);
+					_log.Debug("Add publish partition for request {} success.", response.RequestId);
 				}
 				op.Callback.complete(null);
 			}
 			else
 			{
-				_lOG.error("Add publish partition for request {} error {}.", response.RequestId, response.Error);
+				_log.Error("Add publish partition for request {} error {}.", response.RequestId, response.Error);
 				op.Callback.completeExceptionally(GetExceptionByServerError(response.Error, response.Message));
 			}
 
 			OnResponse(op);
 		}
 
-		public virtual CompletableFuture<Void> AddSubscriptionToTxn(TxnID txnID, IList<PulsarApi.Subscription> subscriptionList)
+		private void AddSubscriptionToTxn(TxnID txnID, IList<Subscription> subscriptionList)
 		{
-			if(_lOG.DebugEnabled)
+			if(_log.IsDebugEnabled)
 			{
-				_lOG.debug("Add subscription {} to txn {}.", subscriptionList, txnID);
+				_log.Debug("Add subscription {} to txn {}.", subscriptionList, txnID);
 			}
-			CompletableFuture<Void> completableFuture = new CompletableFuture<Void>();
 			long requestId = ClientConflict.NewRequestId();
-			ByteBuf cmd = Commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
+			var cmd = Commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
 			OpForVoidCallBack op = OpForVoidCallBack.Create(cmd, completableFuture);
 			_pendingRequests.Put(requestId, op);
 			_timeoutQueue.add(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
@@ -211,38 +222,38 @@ namespace Org.Apache.Pulsar.Client.Impl
 			return completableFuture;
 		}
 
-		public virtual void HandleAddSubscriptionToTxnResponse(PulsarApi.CommandAddSubscriptionToTxnResponse response)
+		private void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse response)
 		{
 			OpForVoidCallBack op = (OpForVoidCallBack) _pendingRequests.Remove(response.RequestId);
 			if(op == null)
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Add subscription to txn timeout for request {}.", response.RequestId);
+					_log.Debug("Add subscription to txn timeout for request {}.", response.RequestId);
 				}
 				return;
 			}
 			if(!response.HasError())
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Add subscription to txn success for request {}.", response.RequestId);
+					_log.Debug("Add subscription to txn success for request {}.", response.RequestId);
 				}
 				op.Callback.complete(null);
 			}
 			else
 			{
-				_lOG.error("Add subscription to txn failed for request {} error {}.", response.RequestId, response.Error);
+				_log.Error("Add subscription to txn failed for request {} error {}.", response.RequestId, response.Error);
 				op.Callback.completeExceptionally(GetExceptionByServerError(response.Error, response.Message));
 			}
 			OnResponse(op);
 		}
 
-		public virtual CompletableFuture<Void> CommitAsync(TxnID txnID, IList<MessageId> sendMessageIdList)
+		private void Commit(TxnID txnID, IList<IMessageId> sendMessageIdList)
 		{
-			if(_lOG.DebugEnabled)
+			if(_log.IsDebugEnabled)
 			{
-				_lOG.debug("Commit txn {}", txnID);
+				_log.Debug("Commit txn {}", txnID);
 			}
 			CompletableFuture<Void> callback = new CompletableFuture<Void>();
 
@@ -265,11 +276,11 @@ namespace Org.Apache.Pulsar.Client.Impl
 			return callback;
 		}
 
-		public virtual CompletableFuture<Void> AbortAsync(TxnID txnID, IList<IMessageId> sendMessageIdList)
+		private void Abort(TxnID txnID, IList<IMessageId> sendMessageIdList)
 		{
-			if(_lOG.DebugEnabled)
+			if(_log.IsDebugEnabled)
 			{
-				_lOG.debug("Abort txn {}", txnID);
+				_log.Debug("Abort txn {}", txnID);
 			}
 			CompletableFuture<Void> callback = new CompletableFuture<Void>();
 
@@ -299,105 +310,31 @@ namespace Org.Apache.Pulsar.Client.Impl
 			return callback;
 		}
 
-		internal virtual void HandleEndTxnResponse(CommandEndTxnResponse response)
+		private void HandleEndTxnResponse(CommandEndTxnResponse response)
 		{
 			OpForVoidCallBack op = (OpForVoidCallBack) _pendingRequests.Remove(response.RequestId);
 			if(op == null)
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Got end txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
+					_log.Debug("Got end txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
 				}
 				return;
 			}
 			if(!response.HasError())
 			{
-				if(_lOG.DebugEnabled)
+				if(_log.IsDebugEnabled)
 				{
-					_lOG.debug("Got end txn response success for request {}", response.RequestId);
+					_log.Debug("Got end txn response success for request {}", response.RequestId);
 				}
 				op.Callback.complete(null);
 			}
 			else
 			{
-				_lOG.error("Got end txn response for request {} error {}", response.RequestId, response.Error);
+				_log.Error("Got end txn response for request {} error {}", response.RequestId, response.Error);
 				op.Callback.completeExceptionally(GetExceptionByServerError(response.Error, response.Message));
 			}
 
-			OnResponse(op);
-		}
-
-		private abstract class OpBase<T>
-		{
-			protected internal ByteBuf Cmd;
-			protected internal CompletableFuture<T> Callback;
-
-			internal abstract void Recycle();
-		}
-
-		private class OpForTxnIdCallBack : OpBase<TxnID>
-		{
-
-			internal static OpForTxnIdCallBack Create(ByteBuf cmd, CompletableFuture<TxnID> callback)
-			{
-				OpForTxnIdCallBack op = RECYCLER.get();
-				op.Callback = callback;
-				op.Cmd = cmd;
-				return op;
-			}
-
-			internal OpForTxnIdCallBack(Recycler.Handle<OpForTxnIdCallBack> recyclerHandle)
-			{
-				RecyclerHandle = recyclerHandle;
-			}
-
-			internal override void Recycle()
-			{
-				RecyclerHandle.recycle(this);
-			}
-
-			internal readonly Recycler.Handle<OpForTxnIdCallBack> RecyclerHandle;
-			internal static readonly Recycler<OpForTxnIdCallBack> RECYCLER = new RecyclerAnonymousInnerClass();
-
-			private class RecyclerAnonymousInnerClass : Recycler<OpForTxnIdCallBack>
-			{
-				protected internal override OpForTxnIdCallBack NewObject(Handle<OpForTxnIdCallBack> handle)
-				{
-					return new OpForTxnIdCallBack(handle);
-				}
-			}
-		}
-
-		private class OpForVoidCallBack : OpBase<Void>
-		{
-
-			internal static OpForVoidCallBack Create(ByteBuf cmd, CompletableFuture<Void> callback)
-			{
-				OpForVoidCallBack op = RECYCLER.get();
-				op.Callback = callback;
-				op.Cmd = cmd;
-				return op;
-			}
-			internal OpForVoidCallBack(Recycler.Handle<OpForVoidCallBack> recyclerHandle)
-			{
-				RecyclerHandle = recyclerHandle;
-			}
-
-			internal override void Recycle()
-			{
-				RecyclerHandle.recycle(this);
-			}
-
-			internal readonly Recycler.Handle<OpForVoidCallBack> RecyclerHandle;
-			internal static readonly Recycler<OpForVoidCallBack> RECYCLER = new RecyclerAnonymousInnerClass();
-
-			private class RecyclerAnonymousInnerClass : Recycler<OpForVoidCallBack>
-			{
-				protected internal override OpForVoidCallBack NewObject(Handle<OpForVoidCallBack> handle)
-				{
-					return new OpForVoidCallBack(handle);
-				}
-			}
 		}
 
 		private TransactionCoordinatorClientException GetExceptionByServerError(ServerError serverError, string msg)
@@ -413,12 +350,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			}
 		}
 
-		private void OnResponse<T1>(OpBase<T1> op)
-		{
-			ReferenceCountUtil.safeRelease(op.Cmd);
-			op.Recycle();
-			_semaphore.release();
-		}
 
 		private bool CanSendRequest<T1>(CompletableFuture<T1> callback)
 		{
@@ -494,9 +425,9 @@ namespace Org.Apache.Pulsar.Client.Impl
 					if(op != null && !op.Callback.Done)
 					{
 						op.Callback.completeExceptionally(new PulsarClientException.TimeoutException("Could not get response from transaction meta store within given timeout."));
-						if(_lOG.DebugEnabled)
+						if(_log.IsDebugEnabled)
 						{
-							_lOG.debug("Transaction coordinator request {} is timeout.", lastPolled.RequestId);
+							_log.Debug("Transaction coordinator request {} is timeout.", lastPolled.RequestId);
 						}
 						OnResponse(op);
 					}
@@ -541,7 +472,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 		{
 		}
 
-		public override string HandlerName
+		protected internal override string HandlerName
 		{
 			get
 			{

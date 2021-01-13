@@ -3,7 +3,7 @@
 namespace SharpPulsar
 {
 	
-	public abstract class HandlerState
+	public class HandlerState
 	{
 		public enum State
 		{
@@ -19,6 +19,7 @@ namespace SharpPulsar
 		}
 		private readonly IActorRef _client;//get get reference to the actor that implements PulsarClientImpl
 		private readonly string _topic;
+		private readonly string _name;
 		protected internal string Topic
         {
 			get => _topic;
@@ -29,16 +30,17 @@ namespace SharpPulsar
 
 		
 
-		public HandlerState(IActorRef client, string topic, ActorSystem system)
+		public HandlerState(IActorRef client, string topic, ActorSystem system, string name)
 		{
 			_client = client;
 		    _topic = topic;
             _state = State.Uninitialized;
 			_system = system;
+			_name = name;
 		}
 
 		// moves the state to ready if it wasn't closed
-		protected bool ChangeToReadyState()
+		protected internal bool ChangeToReadyState()
 		{
             switch (_state)
             {
@@ -75,7 +77,9 @@ namespace SharpPulsar
 		}
 
 
-		internal abstract string HandlerName { get; }
+		protected internal virtual string HandlerName {
+			get => _name;
+		}
 
 		protected internal State GetAndUpdateState(State stateUpdate)
 		{

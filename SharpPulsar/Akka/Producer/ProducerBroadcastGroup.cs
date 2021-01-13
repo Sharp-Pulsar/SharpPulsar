@@ -3,8 +3,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Routing;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Producer

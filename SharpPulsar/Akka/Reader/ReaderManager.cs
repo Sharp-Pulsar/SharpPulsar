@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.Reader

@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 
 namespace SharpPulsar.Common.Enum
 {

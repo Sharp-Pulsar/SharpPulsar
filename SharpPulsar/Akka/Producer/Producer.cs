@@ -1,7 +1,7 @@
 ﻿using Akka.Actor;
 using Org.BouncyCastle.Crypto;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
@@ -24,7 +24,7 @@ using Nito.AsyncEx;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl.Crypto;
+using SharpPulsar.Crypto;
 using IMessage = SharpPulsar.Api.IMessage;
 using SharpPulsar.Batch;
 using SharpPulsar.Stats.Producer;

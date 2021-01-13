@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpPulsar.Interfaces;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +21,6 @@
 /// </summary>
 namespace SharpPulsar.Impl
 {
-	using IMessageId = Api.IMessageId;
 	public class TopicMessageId : IMessageId
 	{
 

@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Akka.Consumer;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using AuthData = SharpPulsar.Impl.Auth.AuthData;
+using AuthData = SharpPulsar.Auth.AuthData;
 
 namespace SharpPulsar.Akka.Network
 {

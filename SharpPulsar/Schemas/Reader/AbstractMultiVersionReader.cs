@@ -1,6 +1,6 @@
 ﻿using Avro;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl.Crypto;
+using SharpPulsar.Crypto;
 using SharpPulsar.Protocol.Schema;
 using System;
 using System.IO;

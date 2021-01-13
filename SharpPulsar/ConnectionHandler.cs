@@ -51,7 +51,7 @@ namespace SharpPulsar
 			});
 		}
 
-		private void GrabCnx()
+		protected internal void GrabCnx()
 		{
 			if (_clientCnx != null)
 			{

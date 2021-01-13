@@ -5,7 +5,7 @@ using Akka.Actor;
 using Nito.AsyncEx;
 using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;

@@ -1,7 +1,7 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Interfaces.Interceptor.Schema;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using System;

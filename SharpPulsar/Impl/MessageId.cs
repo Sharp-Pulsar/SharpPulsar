@@ -4,6 +4,7 @@ using Google.Protobuf;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
 

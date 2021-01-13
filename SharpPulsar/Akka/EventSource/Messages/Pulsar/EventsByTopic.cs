@@ -1,5 +1,5 @@
 ﻿
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Impl.Conf;
 
 namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
