@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Common.Schema;
+﻿using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Schemas;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -30,7 +31,7 @@ namespace SharpPulsar.Protocol.Schema
 	public class SchemaInfoUtil
 	{
 
-		public static SchemaInfo NewSchemaInfo(string name, SchemaData data)
+		public static ISchemaInfo NewSchemaInfo(string name, SchemaData data)
 		{
 			return new SchemaInfo
 			{

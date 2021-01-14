@@ -105,6 +105,7 @@ Logs to logs.log</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Messages\Requests\" />
     <Folder Include="Tls\" />
   </ItemGroup>
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">

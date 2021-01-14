@@ -6,8 +6,6 @@ using System.Text;
 using System.Text.Json;
 using AvroSchemaGenerator;
 using SharpPulsar.Common;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Shared;
 using SharpPulsar.Interfaces.ISchema;
@@ -159,7 +157,7 @@ namespace SharpPulsar.Schemas
 		/// </summary>
 		/// <param name="kvSchemaInfo"> the key/value schema info </param>
 		/// <returns> the jsonified schema info </returns>
-		public static string JsonifyKeyValueSchemaInfo(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
+		public static string JsonifyKeyValueSchemaInfo(KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo)
 		{
             return JsonSerializer.Serialize(kvSchemaInfo);
         }

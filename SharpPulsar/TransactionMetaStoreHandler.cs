@@ -2,6 +2,7 @@
 using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar;
+using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
@@ -71,7 +72,7 @@ namespace SharpPulsar
 			_transactionCoordinatorId = transactionCoordinatorId;
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			_blockIfReachMaxPendingOps = true;
-			_requestTimeout = pulsarClient.Timer().newTimeout(this, pulsarClient.Configuration.OperationTimeoutMs, TimeUnit.MILLISECONDS);
+			_requestTimeout = pulsarClient.Timer().newTimeout(this, conf.OperationTimeoutMs, TimeUnit.MILLISECONDS);
 			_connectionHandler = new ConnectionHandler(_state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), this);
 			_connectionHandler.GrabCnx();
 			Receive<NewTransaction>(t => 
@@ -80,7 +81,10 @@ namespace SharpPulsar
 				Sender.Tell(txId);
 			});
 		}
-
+		public static Props Prop(long transactionCoordinatorId, IActorRef pulsarClient, string topic, ClientConfigurationData conf)
+        {
+			return Props.Create(()=> new TransactionMetaStoreHandler(transactionCoordinatorId, pulsarClient, topic, conf));
+        }
 		public virtual void ConnectionFailed(PulsarClientException exception)
 		{
 			_system.Log.Error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, exception);

@@ -94,7 +94,7 @@ namespace SharpPulsar.Akka.Producer
                 Stash.UnstashAll();
             });
 
-            Receive<SchemaResponse>(s =>
+            Receive<Messages.GetSchemaResponse>(s =>
             {
                 var info = new SchemaInfo
                 {

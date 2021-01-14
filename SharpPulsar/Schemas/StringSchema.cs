@@ -89,7 +89,7 @@ namespace SharpPulsar.Schemas
 			_encoding = encoding;
             IDictionary<string, string> properties = new Dictionary<string, string>
             {
-                [CHARSET_KEY] = encoding.EncodingName
+                [CHARSET_KEY] = encoding.WebName
             };
 			var info = new SchemaInfo
 			{

@@ -1280,7 +1280,7 @@ namespace SharpPulsar.Akka.Consumer
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetSchema(requestId, topic, BytesSchemaVersion.Of(version));
             var payload = new Payload(request, requestId, "GetSchema");
-            var ask = _broker.Ask<SchemaResponse>(payload);
+            var ask = _broker.Ask<Messages.GetSchemaResponse>(payload);
             var schema = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
         public void NewSubscribe()
@@ -1481,7 +1481,7 @@ namespace SharpPulsar.Akka.Consumer
                 }
 
             });
-            Receive<SchemaResponse>(s =>
+            Receive<Messages.GetSchemaResponse>(s =>
             {
                 var schema = new SchemaDataBuilder()
                     .SetData((sbyte[])(object)s.Schema)
