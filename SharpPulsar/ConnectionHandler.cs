@@ -7,16 +7,12 @@ using System.Text;
 using BAMCIS.Util.Concurrent;
 using State = SharpPulsar.HandlerState.State;
 using SharpPulsar.Messages;
+using SharpPulsar.Messages.Requests;
 
 namespace SharpPulsar
 {	
 	public class ConnectionHandler:ReceiveActor
 	{
-		public interface IConnection
-		{
-			void ConnectionFailed(PulsarClientException exception);
-			void ConnectionOpened(ClientCnx cnx);
-		}
 		private sealed class GetCnx
         {
 			public string Message { get; }
@@ -25,21 +21,21 @@ namespace SharpPulsar
 				Message = message;
             }
         }
-		private ClientCnx _clientCnx = null;
+		private IActorRef _clientCnx = null;
 
 		private readonly HandlerState _state;
 		private readonly Backoff _backoff;
 		private long _epoch = 0L;
 		protected long LastConnectionClosedTimestamp = 0L;
 		private readonly ILoggingAdapter _log;
-		internal IConnection Connection;
+		private readonly IActorRef _connection;
 		private ICancelable _cancelable;
 		private readonly IActorContext _actorContext;
 
-		internal ConnectionHandler(HandlerState state, Backoff backoff, IConnection connection)
+		internal ConnectionHandler(HandlerState state, Backoff backoff, IActorRef connection)
 		{
 			_state = state;
-			Connection = connection;
+			_connection = connection;
 			_backoff = backoff;
 			_log = Context.System.Log;
 			_actorContext = Context;
@@ -68,12 +64,12 @@ namespace SharpPulsar
 
 			try
 			{
-				_state.Client.Ask<ClientCnx>(new GetConnection(_state.Topic)).ContinueWith(task => 
+				_state.Client.Ask<IActorRef>(new GetConnection(_state.Topic)).ContinueWith(task => 
 				{
 					if (task.IsFaulted)
 						HandleConnectionError(task.Exception);
 					else
-						Connection.ConnectionOpened(task.Result);
+						_connection.Tell(new ConnectionOpened(task.Result));
 				});
 			}
 			catch (Exception t)
@@ -88,15 +84,15 @@ namespace SharpPulsar
 			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Error connecting to broker: {exception.Message}");
 			if (exception is PulsarClientException)
 			{
-				Connection.ConnectionFailed((PulsarClientException)exception);
+				_connection.Tell(new ConnectionFailed((PulsarClientException)exception));
 			}
 			else if (exception.InnerException is PulsarClientException)
 			{
-				Connection.ConnectionFailed((PulsarClientException)exception.InnerException);
+				_connection.Tell(new ConnectionFailed((PulsarClientException)exception.InnerException));
 			}
 			else
 			{
-				Connection.ConnectionFailed(new PulsarClientException(exception));
+				_connection.Tell(new PulsarClientException(exception));
 			}
 
 			var state = _state.ConnectionState;
@@ -122,7 +118,7 @@ namespace SharpPulsar
 			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(delayMs)), Self, new GetCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), Nobody.Instance);
 		}
 
-		public virtual void ConnectionClosed(ClientCnx cnx)
+		public virtual void ConnectionClosed(IActorRef cnx)
 		{
 			LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
 			_state.Client.Ask(new ReleaseConnectionPool(cnx));
@@ -144,7 +140,7 @@ namespace SharpPulsar
 		{
 			_backoff.Reset();
 		}
-		public static Props Prop(HandlerState state, Backoff backoff, IConnection connection)
+		public static Props Prop(HandlerState state, Backoff backoff, IActorRef connection)
         {
 			return Props.Create(() => new ConnectionHandler(state, backoff, connection));
         }
@@ -153,12 +149,12 @@ namespace SharpPulsar
 			_cancelable?.Cancel();
             base.PostStop();
         }
-        public virtual ClientCnx Cnx()
+        public virtual IActorRef Cnx()
 		{
 			return _clientCnx;
 		}
 
-		protected internal ClientCnx ClientCnx
+		protected internal IActorRef ClientCnx
 		{
 			set
 			{

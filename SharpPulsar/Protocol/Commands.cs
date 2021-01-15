@@ -15,6 +15,8 @@ using SharpPulsar.Api;
 using SharpPulsar.Protocol.Extension;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using Serializer = SharpPulsar.Akka.Network.Serializer;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Common;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -305,12 +307,12 @@ namespace SharpPulsar.Protocol
 			return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, true, null, new Dictionary<string,string>(), false, false, CommandSubscribe.InitialPosition.Earliest, resetStartMessageBackInSeconds, null, true);
 		}
 		
-		public static byte[] NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
+		public static byte[] NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
             return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
 		}
 
-		public static byte[] NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, SchemaInfo schemaInfo, bool createTopicIfDoesNotExist, Api.KeySharedPolicy keySharedPolicy)
+		public static byte[] NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy)
 		{
             var subscribe = new CommandSubscribe
             {
@@ -367,13 +369,13 @@ namespace SharpPulsar.Protocol
 
             return res.ToArray();
 		}
-        private static KeySharedMode ConvertKeySharedMode(Api.KeySharedMode? mode)
+        private static KeySharedMode ConvertKeySharedMode(Common.KeySharedMode? mode)
         {
             switch (mode)
             {
-                case Api.KeySharedMode.AutoSplit:
+                case Common.KeySharedMode.AutoSplit:
                     return KeySharedMode.AutoSplit;
-                case Api.KeySharedMode.Sticky:
+                case Common.KeySharedMode.Sticky:
                     return KeySharedMode.Sticky;
                 default:
                     throw new ArgumentException("Unexpected key shared mode: " + mode);
@@ -478,7 +480,7 @@ namespace SharpPulsar.Protocol
 			if (type < 0)
 			{
 				// this is unexpected
-				return SchemaType.None;
+				return SchemaType.NONE;
 			}
 			else
 			{
@@ -490,14 +492,14 @@ namespace SharpPulsar.Protocol
 			if (type.Value < 0)
 			{
 				// this is unexpected
-				return SchemaType.None;
+				return SchemaType.NONE;
 			}
 			else
 			{
 				return SchemaType.ValueOf(type.Value);
 			}
 		}
-		private static Proto.Schema GetSchema(SchemaInfo schemaInfo)
+		private static Proto.Schema GetSchema(ISchemaInfo schemaInfo)
 		{
             var schema = new Proto.Schema
             {
@@ -510,7 +512,7 @@ namespace SharpPulsar.Protocol
 			return schema;
 		}
 
-		public static byte[] NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, SchemaInfo schemaInfo, long epoch, bool userProvidedProducerName)
+		public static byte[] NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName)
 		{
             var producer = new CommandProducer
             {
@@ -721,7 +723,7 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewGetOrCreateSchema(long requestId, string topic, SchemaInfo schemaInfo)
+		public static byte[] NewGetOrCreateSchema(long requestId, string topic, ISchemaInfo schemaInfo)
 		{
             var getOrCreateSchema = new CommandGetOrCreateSchema
             {
@@ -745,7 +747,7 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewAddPartitionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits)
+		public static byte[] NewAddPartitionToTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, IList<string> partitions)
 		{
             var commandAddPartitionToTxn = new CommandAddPartitionToTxn
             {
@@ -753,6 +755,10 @@ namespace SharpPulsar.Protocol
                 TxnidLeastBits = (ulong) txnIdLeastBits,
                 TxnidMostBits = (ulong) txnIdMostBits
             };
+			if(partitions != null)
+            {
+				commandAddPartitionToTxn.Partitions.AddRange(partitions);
+            }				
             var res = Serializer.Serialize(commandAddPartitionToTxn.ToBaseCommand());
 			
 			return res.ToArray();
@@ -772,7 +778,7 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction)
+		public static byte[] NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction, IList<MessageIdData> messageIdDatas)
 		{
             var commandEndTxn = new CommandEndTxn
             {
@@ -781,6 +787,7 @@ namespace SharpPulsar.Protocol
                 TxnidMostBits = (ulong) txnIdMostBits,
                 TxnAction = txnAction
             };
+			commandEndTxn.MessageIds.AddRange(messageIdDatas);
             var res = Serializer.Serialize(commandEndTxn.ToBaseCommand());
 			
 			return res.ToArray();

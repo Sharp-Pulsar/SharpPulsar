@@ -22,14 +22,4 @@ namespace SharpPulsar.Messages
             Consumer = consumer;
         }
     }
-    public sealed class RegisterTransactionMetaStoreHandler
-    {
-        public long Id { get; }
-        public IActorRef Handler { get; }
-        public RegisterTransactionMetaStoreHandler(long id, IActorRef handler)
-        {
-            Id = id;
-            Handler = handler;
-        }
-    }
 }

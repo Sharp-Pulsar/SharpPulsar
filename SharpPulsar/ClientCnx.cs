@@ -93,6 +93,39 @@ namespace SharpPulsar
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
 			_socketClient.Connect();
+			Receive<Payload>(p => { 
+				switch(p.Command)
+                {
+					case "NewLookup":
+						NewLookup(p.Bytes, p.RequestId);
+						break;
+					case "NewGetTopicsOfNamespace":
+						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
+						break;
+					case "SendGetLastMessageId":
+						SendGetLastMessageId(p.Bytes, p.RequestId);
+						break;
+					case "SendGetRawSchema":
+						SendGetRawSchema(p.Bytes, p.RequestId);
+						break;
+					case "SendGetOrCreateSchema":
+						SendGetOrCreateSchema(p.Bytes, p.RequestId);
+						break;
+					case "NewAddSubscriptionToTxn":
+					case "NewAddPartitionToTxn":
+					case "NewTxn":
+					case "NewEndTxn":
+						_socketClient.SendMessageAsync(p.Bytes);
+						break;
+					default:
+						SendRequest(p.Bytes, p.RequestId);
+						break;
+
+				}
+				Receive<RegisterTransactionMetaStoreHandler>(h => {
+					RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
+				});
+			});
 		}
 		public static Props Prop(ClientConfigurationData conf, Uri endPoint, string targetBroker = "")
         {
@@ -626,6 +659,19 @@ namespace SharpPulsar
 			});
 			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
 		}
+		private void SendRequest(byte[] requestMessage, long requestId)
+		{
+			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+			_socketClient.SendMessageAsync(requestMessage).ContinueWith(task =>
+			{
+				if (task.IsFaulted) 
+				{
+					_log.Warning($"Failed to send {requestId} to broker: {task.Exception}");
+					_pendingRequests.Remove(requestId);
+					//future.completeExceptionally(writeFuture.cause());
+				}			
+			});
+		}
 
 		private void SendGetLastMessageId(byte[] request, long requestId)
 		{
@@ -682,8 +728,7 @@ namespace SharpPulsar
 
 		private IActorRef CheckAndGetTransactionMetaStoreHandler(long tcId)
 		{
-			var handler = _transactionMetaStoreHandlers[tcId];
-			if (handler == null)
+			if (_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
 			{
 				_socketClient.Dispose();
 				_log.Warning("Close the channel since can't get the transaction meta store handler, will reconnect later.");

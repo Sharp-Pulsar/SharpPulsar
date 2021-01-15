@@ -33,7 +33,6 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class AddSubscriptionToTxn
     {
         public TxnID TxnID { get; }
-        public string Topic { get; }
         public ImmutableList<Subscription> Subscriptions { get; }
         public AddSubscriptionToTxn(TxnID txnID, IList<Subscription> subscriptions)
         {
