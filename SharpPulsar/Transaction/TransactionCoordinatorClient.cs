@@ -3,11 +3,15 @@ using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Model;
+using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -111,169 +115,88 @@ namespace SharpPulsar.Transaction
 				return TopicName.TransactionCoordinatorAssign.ToString();
 			}
 		}
-		public virtual void Dispose()
-		{
-			try
-			{
-				CloseAsync().get();
-			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
-			}
-		}
+		
+		protected override void PostStop()
+        {
+			Close();
+        }
 
-		public virtual void Close()
+		private void Close()
 		{
-			CompletableFuture<Void> result = new CompletableFuture<Void>();
-			if(State == Org.Apache.Pulsar.Client.Api.Transaction.TransactionCoordinatorClientState.CLOSING || State == Org.Apache.Pulsar.Client.Api.Transaction.TransactionCoordinatorClientState.CLOSED)
+			if(State ==TransactionCoordinatorClientState.Closing || State == TransactionCoordinatorClientState.Closed)
 			{
-				_lOG.warn("The transaction meta store is closing or closed, doing nothing.");
-				result.complete(null);
+				_log.Warning("The transaction meta store is closing or closed, doing nothing.");
 			}
 			else
 			{
-				foreach(TransactionMetaStoreHandler handler in _handlers)
+				foreach(var handler in _handlers)
 				{
-					try
-					{
-						handler.Dispose();
-					}
-					catch(IOException e)
-					{
-						_lOG.warn("Close transaction meta store handler error", e);
-					}
+					handler.GracefulStop(TimeSpan.FromSeconds(1));
 				}
-				this._handlers = null;
-				result.complete(null);
 			}
-			return result;
 		}
 
-		public virtual TxnID NewTransaction()
+		private TxnID NewTransaction(NewTxn txn)
 		{
-			try
-			{
-				return NewTransactionAsync().get();
-			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
-			}
+			TxnID txnid = null;
+			NextHandler().Ask<NewTxnResponse>(txn).ContinueWith(task=> {
+				if (task.IsFaulted)
+					_log.Error(task.Exception.ToString());
+				else
+					txnid = new TxnID((long)task.Result.Response.TxnidMostBits, (long)task.Result.Response.TxnidLeastBits);
+			});
+			return txnid;
 		}
 
-		public virtual CompletableFuture<TxnID> NewTransactionAsync()
+		private void AddPublishPartitionToTxnAsync(AddPublishPartitionToTxn pub)
 		{
-			return NewTransactionAsync(DEFAULT_TXN_TTL_MS, TimeUnit.MILLISECONDS);
+			if (!_handlerMap.TryGetValue(pub.TxnID.MostSigBits, out var handler))
+			{
+				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(pub.TxnID.MostSigBits).ToString());
+			}
+			else
+				handler.Tell(pub);
 		}
 
-		public virtual TxnID NewTransaction(long timeout, TimeUnit unit)
+		private void AddSubscriptionToTxn(SubscriptionToTxn subToTxn)
 		{
-			try
+			if (!_handlerMap.TryGetValue(subToTxn.TxnID.MostSigBits, out var handler))
 			{
-				return NewTransactionAsync(timeout, unit).get();
+				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(subToTxn.TxnID.MostSigBits).ToString());
 			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
+            else
+            {
+				var sub = new Protocol.Proto.Subscription
+				{
+					Topic = subToTxn.Topic,
+					subscription = subToTxn.Subscription,
+				};
+				handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Protocol.Proto.Subscription> { sub }));
+
 			}
 		}
 
-		public virtual CompletableFuture<TxnID> NewTransactionAsync(long timeout, TimeUnit unit)
+		private void Commit(Commit commit)
 		{
-			return NextHandler().NewTransactionAsync(timeout, unit);
+			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
+			{
+				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(commit.TxnID.MostSigBits).ToString());
+			}
+			else
+				handler.Tell(commit);
 		}
 
-		public virtual void AddPublishPartitionToTxn(TxnID txnID, IList<string> partitions)
+		private void Abort(Abort abort)
 		{
-			try
+			if(!_handlerMap.TryGetValue(abort.TxnID.MostSigBits, out var handler))
 			{
-				AddPublishPartitionToTxnAsync(txnID, partitions).get();
+				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(abort.TxnID.MostSigBits).ToString());
 			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
-			}
+			else
+				handler.Tell(abort);
 		}
 
-		public virtual CompletableFuture<Void> AddPublishPartitionToTxnAsync(TxnID txnID, IList<string> partitions)
-		{
-			TransactionMetaStoreHandler handler = _handlerMap.Get(txnID.MostSigBits);
-			if(handler == null)
-			{
-				return FutureUtil.FailedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnID.MostSigBits));
-			}
-			return handler.AddPublishPartitionToTxnAsync(txnID, partitions);
-		}
-
-		public virtual void AddSubscriptionToTxn(TxnID txnID, string topic, string subscription)
-		{
-			try
-			{
-				AddSubscriptionToTxnAsync(txnID, topic, subscription).get();
-			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
-			}
-		}
-
-		public virtual CompletableFuture<Void> AddSubscriptionToTxnAsync(TxnID txnID, string topic, string subscription)
-		{
-			TransactionMetaStoreHandler handler = _handlerMap.Get(txnID.MostSigBits);
-			if(handler == null)
-			{
-				return FutureUtil.FailedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnID.MostSigBits));
-			}
-			PulsarApi.Subscription sub = PulsarApi.Subscription.NewBuilder().setTopic(topic).setSubscription(subscription).Build();
-			return handler.AddSubscriptionToTxn(txnID, Collections.singletonList(sub));
-		}
-
-		public virtual void Commit(TxnID txnID, IList<MessageId> messageIdList)
-		{
-			try
-			{
-				CommitAsync(txnID, messageIdList).get();
-			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
-			}
-		}
-
-		public virtual CompletableFuture<Void> CommitAsync(TxnID txnID, IList<MessageId> messageIdList)
-		{
-			TransactionMetaStoreHandler handler = _handlerMap.Get(txnID.MostSigBits);
-			if(handler == null)
-			{
-				return FutureUtil.FailedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnID.MostSigBits));
-			}
-			return handler.CommitAsync(txnID, messageIdList);
-		}
-
-		public virtual void Abort(TxnID txnID, IList<MessageId> messageIdList)
-		{
-			try
-			{
-				AbortAsync(txnID, messageIdList).get();
-			}
-			catch(Exception e)
-			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
-			}
-		}
-
-		public virtual CompletableFuture<Void> AbortAsync(TxnID txnID, IList<MessageId> messageIdList)
-		{
-			TransactionMetaStoreHandler handler = _handlerMap.Get(txnID.MostSigBits);
-			if(handler == null)
-			{
-				return FutureUtil.FailedFuture(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(txnID.MostSigBits));
-			}
-			return handler.AbortAsync(txnID, messageIdList);
-		}
-
-		public virtual Org.Apache.Pulsar.Client.Api.Transaction.TransactionCoordinatorClientState State
+		private TransactionCoordinatorClientState State
 		{
 			get
 			{
@@ -281,9 +204,9 @@ namespace SharpPulsar.Transaction
 			}
 		}
 
-		private TransactionMetaStoreHandler NextHandler()
+		private IActorRef NextHandler()
 		{
-			int index = MathUtils.SignSafeMod(_epoch.incrementAndGet(), _handlers.Length);
+			int index = MathUtils.SignSafeMod(++_epoch, _handlers.Count);
 			return _handlers[index];
 		}
 	}

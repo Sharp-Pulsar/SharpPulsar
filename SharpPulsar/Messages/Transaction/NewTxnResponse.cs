@@ -1,4 +1,6 @@
-﻿using SharpPulsar.Protocol.Proto;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Transaction;
 
 namespace SharpPulsar.Messages.Transaction
 {
@@ -8,6 +10,16 @@ namespace SharpPulsar.Messages.Transaction
         public NewTxnResponse(CommandNewTxnResponse response)
         {
             Response = response;
+        }
+    }
+    public sealed class NewTxn
+    {
+        public long Timeout { get; }
+        public TimeUnit TimeUnit { get; }
+        public NewTxn(long timeout, TimeUnit unit)
+        {
+            Timeout = timeout;
+            TimeUnit = unit;
         }
     }
     public sealed class EndTxnResponse

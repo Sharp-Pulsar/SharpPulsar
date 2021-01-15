@@ -113,7 +113,7 @@ namespace SharpPulsar.Transaction
 			if (_ackedTopics.Add(topic))
 			{
 				// we need to issue the request to TC to register the acked topic
-				_tcClient.Tell(new AddSubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription));
+				_tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription));
 			}
 		}
 

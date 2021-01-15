@@ -1,4 +1,5 @@
 ﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Transaction;
 using System;
 using System.Collections.Generic;
@@ -17,16 +18,27 @@ namespace SharpPulsar.Messages.Transaction
             Topics = topics.ToImmutableList();
         }
     }
-    public sealed class AddSubscriptionToTxn
+    public sealed class SubscriptionToTxn
     {
         public TxnID TxnID { get; }
         public string Topic { get; }
         public string Subscription { get; }
-        public AddSubscriptionToTxn(TxnID txnID, string topic, string subscription)
+        public SubscriptionToTxn(TxnID txnID, string topic, string subscription)
         {
             TxnID = txnID;
             Topic = topic;
             Subscription = subscription;
+        }
+    }
+    public sealed class AddSubscriptionToTxn
+    {
+        public TxnID TxnID { get; }
+        public string Topic { get; }
+        public ImmutableList<Subscription> Subscriptions { get; }
+        public AddSubscriptionToTxn(TxnID txnID, IList<Subscription> subscriptions)
+        {
+            TxnID = txnID;
+            Subscriptions = subscriptions.ToImmutableList();
         }
     }
     public sealed class NewTransaction
