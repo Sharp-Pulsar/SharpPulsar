@@ -19,10 +19,10 @@ using Akka.Util.Internal;
 using SharpPulsar.Messages;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Akka.Network;
-using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Entity;
 using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Tls;
 
 namespace SharpPulsar
 {
@@ -31,6 +31,7 @@ namespace SharpPulsar
         private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;
 		private State _state;
+		private readonly IActorRef _self;
 
 		private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
 		// LookupRequests that waiting in client side.
@@ -56,11 +57,13 @@ namespace SharpPulsar
 		private readonly IActorContext _actorContext;
 
 		private string _proxyToTargetBrokerAddress;
-		
+		private readonly byte[] _pong = Commands.NewPong();
+
 		private string _remoteHostName;
 		private bool _isTlsHostnameVerificationEnable;
+		private readonly ClientConfigurationData _clientConfigurationData;
 
-		private static readonly TlsHostnameVerifier _hostnameVerifier = new TlsHostnameVerifier();
+		private readonly TlsHostnameVerifier _hostnameVerifier;
 
 		private ICancelable _timeoutTask;
 
@@ -72,6 +75,9 @@ namespace SharpPulsar
 
 		public ClientCnx(ClientConfigurationData conf, Uri endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_self = Self;
+			_clientConfigurationData = conf;
+			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
 			_actorContext = Context;
 			_proxyToTargetBrokerAddress = targetBroker;
 			_socketClient = (SocketClient)SocketClient.CreateClient(conf, endPoint, endPoint.Host, Context.System.Log);
@@ -176,15 +182,6 @@ namespace SharpPulsar
         }
 		private void HandleConnected(CommandConnected connected)
 		{
-
-			if (_isTlsHostnameVerificationEnable && !string.ReferenceEquals(_remoteHostName, null) && !VerifyTlsHostName(_remoteHostName, Ctx))
-			{
-				// close the connection if host-verification failed with the broker
-				_log.Warning($"Failed to verify hostname of {_remoteHostName}");
-				_socketClient.Dispose();
-				return;
-			}
-
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Connecting);
 			if (connected.MaxMessageSize > 0)
 			{
@@ -384,7 +381,15 @@ namespace SharpPulsar
 				_log.Warning($"Received unknown request id from server: {lookupResult.RequestId}");
 			}
 		}
-
+		private void HandlePing(CommandPing ping)
+		{
+			// Immediately reply success to ping requests
+			if (_log.IsEnabled(LogLevel.DebugLevel))
+			{
+				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
+			}
+			_socketClient.SendMessageAsync(_pong);
+		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
 			if (_log.IsDebugEnabled)
@@ -714,39 +719,6 @@ namespace SharpPulsar
 			}
 		}
 
-		/// <summary>
-		/// verifies host name provided in x509 Certificate in tls session
-		/// 
-		/// it matches hostname with below scenarios
-		/// 
-		/// <pre>
-		///  1. Supports IPV4 and IPV6 host matching
-		///  2. Supports wild card matching for DNS-name
-		///  eg:
-		///     HostName                     CN           Result
-		/// 1.  localhost                    localhost    PASS
-		/// 2.  localhost                    local*       PASS
-		/// 3.  pulsar1-broker.com           pulsar*.com  PASS
-		/// </pre>
-		/// </summary>
-		/// <param name="ctx"> </param>
-		/// <returns> true if hostname is verified else return false </returns>
-		private bool VerifyTlsHostName(string hostname, ChannelHandlerContext ctx)
-		{
-			ChannelHandler sslHandler = ctx.channel().pipeline().get("tls");
-
-			SSLSession sslSession = null;
-			if (sslHandler != null)
-			{
-				sslSession = ((SslHandler)sslHandler).engine().Session;
-				if (_log.DebugEnabled)
-				{
-					_log.debug("Verifying HostName for {}, Cipher {}, Protocols {}", hostname, sslSession.CipherSuite, sslSession.Protocol);
-				}
-				return _hostnameVerifier.Verify(hostname, sslSession);
-			}
-			return false;
-		}
 		private void OnCommandReceived(ReadOnlySequence<byte> frame)
         {
 			var commandSize = frame.ReadUInt32(0, true);
@@ -761,6 +733,72 @@ namespace SharpPulsar
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
 					HandleMessage(msg, frame, commandSize);
+					break;
+				case BaseCommand.Type.GetLastMessageIdResponse:
+					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);
+					break;
+				case BaseCommand.Type.Connected:
+					HandleConnected(cmd.Connected);
+					break;
+				case BaseCommand.Type.GetTopicsOfNamespaceResponse:
+					HandleGetTopicsOfNamespaceSuccess(cmd.getTopicsOfNamespaceResponse);
+					break;
+				case BaseCommand.Type.Success:
+					HandleSuccess(cmd.Success);
+					break;
+				case BaseCommand.Type.SendReceipt:
+					HandleSendReceipt(cmd.SendReceipt);
+					break;
+				case BaseCommand.Type.GetOrCreateSchemaResponse:
+					HandleGetOrCreateSchemaResponse(cmd.getOrCreateSchemaResponse);
+					break;
+				case BaseCommand.Type.ProducerSuccess:
+					HandleProducerSuccess(cmd.ProducerSuccess);
+					break;
+				case BaseCommand.Type.Error:
+					HandleError(cmd.Error);
+					break;
+				case BaseCommand.Type.GetSchemaResponse:
+					HandleGetSchemaResponse(cmd.getSchemaResponse);
+					break;
+				case BaseCommand.Type.LookupResponse:
+					HandleLookupResponse(cmd.lookupTopicResponse);
+					break;
+				case BaseCommand.Type.PartitionedMetadataResponse:
+					HandlePartitionResponse(cmd.partitionMetadataResponse);
+					break;
+				case BaseCommand.Type.ActiveConsumerChange:
+					HandleActiveConsumerChange(cmd.ActiveConsumerChange);
+					break;
+				case BaseCommand.Type.NewTxnResponse:
+					HandleNewTxnResponse(cmd.newTxnResponse);
+					break;
+				case BaseCommand.Type.AddPartitionToTxnResponse:
+					HandleAddPartitionToTxnResponse(cmd.addPartitionToTxnResponse);
+					break;
+				case BaseCommand.Type.AddSubscriptionToTxnResponse:
+					HandleAddSubscriptionToTxnResponse(cmd.addSubscriptionToTxnResponse);
+					break;
+				case BaseCommand.Type.EndTxnResponse:
+					HandleEndTxnResponse(cmd.endTxnResponse);
+					break;
+				case BaseCommand.Type.SendError:
+					HandleSendError(cmd.SendError);
+					break;
+				case BaseCommand.Type.Ping:
+					HandlePing(cmd.Ping);
+					break;
+				case BaseCommand.Type.CloseProducer:
+					HandleCloseProducer(cmd.CloseProducer);
+					break;
+				case BaseCommand.Type.CloseConsumer:
+					HandleCloseConsumer(cmd.CloseConsumer);
+					break;
+				case BaseCommand.Type.ReachedEndOfTopic:
+					HandleReachedEndOfTopic(cmd.reachedEndOfTopic);
+					break;
+				default:
+					_log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
 					break;
 			}
 		}

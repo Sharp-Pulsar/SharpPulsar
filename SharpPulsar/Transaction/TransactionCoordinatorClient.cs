@@ -1,9 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Event;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Transaction;
@@ -11,7 +9,6 @@ using SharpPulsar.Model;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -63,7 +60,7 @@ namespace SharpPulsar.Transaction
 			}
 			catch(Exception e)
 			{
-				throw TransactionCoordinatorClientException.Unwrap(e);
+				_log.Error(TransactionCoordinatorClientException.Unwrap(e).ToString());
 			}
 		}
 
