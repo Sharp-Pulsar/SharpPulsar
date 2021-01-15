@@ -1,7 +1,6 @@
-﻿
-using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Protocol.Proto;
 
-namespace SharpPulsar.Messages
+namespace SharpPulsar.Messages.Transaction
 {
     public sealed class NewTxnResponse
     {

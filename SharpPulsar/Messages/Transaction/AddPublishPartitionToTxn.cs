@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Transaction;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Transaction;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -26,6 +27,16 @@ namespace SharpPulsar.Messages.Transaction
             TxnID = txnID;
             Topic = topic;
             Subscription = subscription;
+        }
+    }
+    public sealed class NewTransaction
+    {
+        public long TxnRequestTimeoutMs { get; }
+        public TimeUnit TimeUnit { get; }
+        public NewTransaction(long txnRequestTimeoutMs, TimeUnit unit)
+        {
+            TxnRequestTimeoutMs = txnRequestTimeoutMs;
+            TimeUnit = unit;
         }
     }
 }

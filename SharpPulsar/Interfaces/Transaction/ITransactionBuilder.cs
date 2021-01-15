@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
+using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -23,7 +25,7 @@ namespace SharpPulsar.Interfaces.Transaction
 	/// <summary>
 	/// The builder to build a transaction for Pulsar.
 	/// </summary>
-	public interface TransactionBuilder
+	public interface ITransactionBuilder
 	{
 
 		/// <summary>
@@ -39,13 +41,13 @@ namespace SharpPulsar.Interfaces.Transaction
 		/// <param name="timeout"> the transaction timeout value </param>
 		/// <param name="timeoutUnit"> the transaction timeout unit </param>
 		/// <returns> the transaction builder itself </returns>
-		TransactionBuilder WithTransactionTimeout(long timeout);
+		ITransactionBuilder WithTransactionTimeout(long timeout, TimeUnit timeUnit);
 
 		/// <summary>
 		/// Build the transaction with the configured settings.
 		/// </summary>
 		/// <returns> a future represents the result of starting a new transaction </returns>
-		ValueTask<ITransaction> Build();
+		IActorRef Build();
 
 	}
 

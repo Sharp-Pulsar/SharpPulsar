@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Event;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Transaction;
@@ -79,7 +80,10 @@ namespace SharpPulsar.Transaction
 			_sendFutureList = new List<CompletableFuture<MessageId>>();
 			_ackFutureList = new List<CompletableFuture<Void>>();
 		}
-
+		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+        {
+			return Props.Create(() => new Transaction(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits));
+        }
 		private long NextSequenceId()
 		{
 			return _sequenceId++;
@@ -132,7 +136,7 @@ namespace SharpPulsar.Transaction
 
 		private void Commit()
 		{
-			IList<MessageId> sendMessageIdList = new List<MessageId>(_sendFutureList.Count);
+			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendFutureList.Count);
 			CompletableFuture<Void> commitFuture = new CompletableFuture<Void>();
 			AllOpComplete().whenComplete((v, e) =>
 			{
@@ -162,40 +166,40 @@ namespace SharpPulsar.Transaction
 			return commitFuture;
 		}
 
-		public virtual CompletableFuture<Void> Abort()
+		public void Abort()
 		{
-			IList<MessageId> sendMessageIdList = new List<MessageId>(_sendFutureList.Count);
+			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendFutureList.Count);
 			CompletableFuture<Void> abortFuture = new CompletableFuture<Void>();
 			AllOpComplete().whenComplete((v, e) =>
 			{
-			if(e != null)
-			{
-				log.error(e.Message);
-			}
-			foreach(CompletableFuture<MessageId> future in _sendFutureList)
-			{
-				future.thenAccept(sendMessageIdList.add);
-			}
-			if(_cumulativeAckConsumers != null)
-			{
-				_cumulativeAckConsumers.forEach((consumer, integer) => _cumulativeAckConsumers.putIfAbsent(consumer, consumer.clearIncomingMessagesAndGetMessageNumber()));
-			}
-			_tcClient.AbortAsync(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList).whenComplete((vx, ex) =>
-			{
-				if(_cumulativeAckConsumers != null)
-				{
-					_cumulativeAckConsumers.forEach(ConsumerImpl.increaseAvailablePermits);
-					_cumulativeAckConsumers.Clear();
-				}
-				if(ex != null)
-				{
-					abortFuture.completeExceptionally(ex);
-				}
-				else
-				{
-					abortFuture.complete(null);
-				}
-			});
+					if(e != null)
+					{
+						log.error(e.Message);
+					}
+					foreach(CompletableFuture<MessageId> future in _sendFutureList)
+					{
+						future.thenAccept(sendMessageIdList.add);
+					}
+					if(_cumulativeAckConsumers != null)
+					{
+						_cumulativeAckConsumers.forEach((consumer, integer) => _cumulativeAckConsumers.putIfAbsent(consumer, consumer.clearIncomingMessagesAndGetMessageNumber()));
+					}
+					_tcClient.AbortAsync(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList).whenComplete((vx, ex) =>
+					{
+						if(_cumulativeAckConsumers != null)
+						{
+							_cumulativeAckConsumers.forEach(ConsumerImpl.increaseAvailablePermits);
+							_cumulativeAckConsumers.Clear();
+						}
+						if(ex != null)
+						{
+							abortFuture.completeExceptionally(ex);
+						}
+						else
+						{
+							abortFuture.complete(null);
+						}
+					});
 			});
 
 			return abortFuture;

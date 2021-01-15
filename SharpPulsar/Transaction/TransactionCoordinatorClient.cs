@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Event;
+using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces.Transaction;
@@ -122,7 +123,7 @@ namespace SharpPulsar.Transaction
 			}
 		}
 
-		public virtual CompletableFuture<Void> CloseAsync()
+		public virtual void Close()
 		{
 			CompletableFuture<Void> result = new CompletableFuture<Void>();
 			if(State == Org.Apache.Pulsar.Client.Api.Transaction.TransactionCoordinatorClientState.CLOSING || State == Org.Apache.Pulsar.Client.Api.Transaction.TransactionCoordinatorClientState.CLOSED)
