@@ -24,6 +24,7 @@ using SharpPulsar.Common.Entity;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
+using System.Net;
 
 namespace SharpPulsar
 {
@@ -70,12 +71,13 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, Uri endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, Uri endPoint, int protocolVersion, string targetBroker = "")
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_remoteHostName = endPoint.Host;
 			_self = Self;
 			_clientConfigurationData = conf;
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
@@ -140,11 +142,11 @@ namespace SharpPulsar
 				});
 			});
 		}
-		public static Props Prop(ClientConfigurationData conf, Uri endPoint, string targetBroker = "")
+		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
         {
 			return Props.Create(()=> new ClientCnx(conf, endPoint, targetBroker));
         }
-		public static Props Prop(ClientConfigurationData conf, Uri endPoint, int protocolVersion, string targetBroker = "")
+		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
         {
 			return Props.Create(()=> new ClientCnx(conf, endPoint, protocolVersion, targetBroker));
         }

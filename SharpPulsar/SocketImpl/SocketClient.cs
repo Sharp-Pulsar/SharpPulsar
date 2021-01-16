@@ -43,18 +43,18 @@ namespace SharpPulsar.SocketImpl
 
         private readonly ILoggingAdapter _logger;
 
-        private readonly Uri _server;
+        private readonly DnsEndPoint _server;
 
         private bool _connected;
 
         private readonly string _connectonId = string.Empty;
 
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
-        public static ISocketClient CreateClient(ClientConfigurationData conf, Uri server, string hostName, ILoggingAdapter logger)
+        public static ISocketClient CreateClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
         {            
             return new SocketClient(conf, server, hostName, logger);
         }
-        internal SocketClient(ClientConfigurationData conf, Uri server, string hostName, ILoggingAdapter logger)
+        internal SocketClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
         {
             _server = server;
             if (conf.ClientCertificates != null)
@@ -202,14 +202,17 @@ namespace SharpPulsar.SocketImpl
         {
             observer.OnNext(buffer);
         }
-        private Stream GetStream(Uri endPoint)
+        private Stream GetStream(DnsEndPoint endPoint)
         {
             var tcpClient = new TcpClient();
             Socket socket = null;
             try
             {
                 if (SniProxy)
-                    endPoint = new Uri(_clientConfiguration.ProxyServiceUrl);
+                {
+                    var url = new Uri(_clientConfiguration.ProxyServiceUrl);
+                    endPoint = new DnsEndPoint(url.Host, url.Port);
+                }                        
 
                 if (!_encrypt)
                 {
