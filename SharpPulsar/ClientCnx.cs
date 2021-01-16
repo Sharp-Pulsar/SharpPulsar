@@ -123,6 +123,18 @@ namespace SharpPulsar
 						break;
 
 				}
+				Receive<RegisterProducer>(m => {
+					RegisterProducer(m.ProducerId, m.Producer);
+				});
+				Receive<RegisterConsumer>(m => {
+					RegisterConsumer(m.ConsumerId, m.Consumer); 
+				});
+				Receive<RemoveProducer>(m => {
+					RemoveProducer(m.ProducerId);
+				});
+				Receive<RemoveConsumer>(m => {
+					RemoveConsumer(m.ConsumerId); 
+				});
 				Receive<RegisterTransactionMetaStoreHandler>(h => {
 					RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
 				});
