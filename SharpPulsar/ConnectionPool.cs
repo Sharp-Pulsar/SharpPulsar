@@ -9,28 +9,25 @@ using System.Net;
 
 namespace SharpPulsar
 {
-    public class ConnectionPool:ReceiveActor
+    public class ConnectionPool
     {
 		private readonly Dictionary<EndPoint, Dictionary<int, IActorRef/*ClientCnx*/>> _pool;
 
 		private readonly ClientConfigurationData _clientConfig;
 		private readonly int _maxConnectionsPerHosts;
-		private readonly bool _isSniProxy;
 		private readonly ILoggingAdapter _log;
-		public ConnectionPool(ClientConfigurationData conf)
+		private readonly IActorContext _context;
+		public ConnectionPool(ClientConfigurationData conf, ILoggingAdapter log, IActorContext context)
 		{
-			_log = Context.GetLogger();
+			_context = context;
+			_log = log;
 			_clientConfig = conf;
 			_maxConnectionsPerHosts = conf.ConnectionsPerBroker;
-			_isSniProxy = _clientConfig.UseTls && _clientConfig.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfig.ProxyServiceUrl);
+			//_isSniProxy = _clientConfig.UseTls && _clientConfig.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfig.ProxyServiceUrl);
 
 			_pool = new Dictionary<EndPoint, Dictionary<int, IActorRef>>();
-			Receive<GetConnectionForAddress>(m => {
-				var cnx = GetConnection(m.EndPoint, m.TargetBroker);
-				Sender.Tell(cnx);
-			});
 		}
-		private readonly Random _random = new Random();
+		private static readonly Random _random = new Random();
 
 
 		/// <summary>
@@ -53,39 +50,48 @@ namespace SharpPulsar
 		/// <param name="physicalAddress">
 		///            the real address where the TCP connection should be made </param>
 		/// <returns> a future that will produce the ClientCnx object </returns>
-		private IActorRef GetConnection(DnsEndPoint address, string targetBroker)
+		public IActorRef GetConnection(DnsEndPoint address)
+        {
+			return GetConnection(address, address);
+        }
+		public IActorRef GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
 		{
 			if (_maxConnectionsPerHosts == 0)
 			{
 				// Disable pooling
-				return CreateConnection(address, targetBroker, -1);
+				return CreateConnection(logicalAddress, physicalAddress, -1);
 			}
 
 			int randomKey = SignSafeMod(_random.Next(), _maxConnectionsPerHosts);
-			if(_pool.TryGetValue(address, out var cnx))
+			if(_pool.TryGetValue(logicalAddress, out var cnx))
             {
 				if (cnx.TryGetValue(randomKey, out var cn))
 					return cn;
-				var connection = CreateConnection(address, targetBroker, randomKey);
-				_pool[address][randomKey] = connection;
+				var connection = CreateConnection(logicalAddress, physicalAddress, randomKey);
+				_pool[logicalAddress][randomKey] = connection;
 				return connection;
             }
             else
 			{
-				var connection = CreateConnection(address, targetBroker, randomKey);
-				_pool.Add(address, new Dictionary<int, IActorRef> { { randomKey, connection } });
+				var connection = CreateConnection(logicalAddress, physicalAddress, randomKey);
+				_pool.Add(logicalAddress, new Dictionary<int, IActorRef> { { randomKey, connection } });
 				return connection;
 
 			}}
-		private IActorRef CreateConnection(DnsEndPoint address, string targetBroker, int connectionKey)
+		private IActorRef CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int connectionKey)
 		{
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug($"Connection for {address.Host} not found in cache");
+				_log.Debug($"Connection for {logicalAddress} not found in cache");
 			}
-			return Context.ActorOf(ClientCnx.Prop(_clientConfig, address, targetBroker), connectionKey.ToString());			
+			string targetBroker = string.Empty;
+
+			if (!logicalAddress.Equals(physicalAddress))
+				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
+
+			return _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, targetBroker), connectionKey.ToString());			
 		}
-		private void CleanupConnection(EndPoint address, int connectionKey)
+		public void CleanupConnection(EndPoint address, int connectionKey)
 		{
 			if (_pool.TryGetValue(address, out var map))
 			{
@@ -96,7 +102,18 @@ namespace SharpPulsar
 				map.Remove(connectionKey);
 			}
 		}
-		private int PoolSize
+		public void ReleaseConnection(IActorRef cnx)
+		{
+			if (_maxConnectionsPerHosts == 0)
+			{
+				if (_log.IsDebugEnabled)
+				{
+					_log.Debug("close connection due to pooling disabled.");
+				}
+				cnx.GracefulStop(TimeSpan.FromSeconds(5));
+			}
+		}
+		public int PoolSize
 		{
 			get
 			{

@@ -411,12 +411,12 @@ namespace SharpPulsar
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);
-						requester.Tell(new ClientExceptions(ex));
+						requester.Tell(new Failure { Exception = ex });
 					}
 					else
 					{
 						var ex = new PulsarClientException.LookupException("Empty lookup response");
-						requester.Tell(ex);
+						requester.Tell(new Failure { Exception = ex });
 					}
 				}
 				else
