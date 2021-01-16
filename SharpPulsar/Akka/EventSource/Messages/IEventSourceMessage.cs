@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Akka.InternalCommands.Consumer;
+﻿using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.Akka.EventSource.Messages
 {

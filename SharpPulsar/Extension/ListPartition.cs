@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
 

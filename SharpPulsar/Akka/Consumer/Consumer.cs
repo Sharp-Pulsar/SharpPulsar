@@ -1,6 +1,6 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Api.Transaction;
@@ -9,7 +9,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Builder;
@@ -28,7 +28,7 @@ using Akka.Event;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl.Crypto;
+using SharpPulsar.Crypto;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
@@ -1280,7 +1280,7 @@ namespace SharpPulsar.Akka.Consumer
             var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
             var request = Commands.NewGetSchema(requestId, topic, BytesSchemaVersion.Of(version));
             var payload = new Payload(request, requestId, "GetSchema");
-            var ask = _broker.Ask<SchemaResponse>(payload);
+            var ask = _broker.Ask<Messages.GetSchemaResponse>(payload);
             var schema = SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
         public void NewSubscribe()
@@ -1481,7 +1481,7 @@ namespace SharpPulsar.Akka.Consumer
                 }
 
             });
-            Receive<SchemaResponse>(s =>
+            Receive<Messages.GetSchemaResponse>(s =>
             {
                 var schema = new SchemaDataBuilder()
                     .SetData((sbyte[])(object)s.Schema)

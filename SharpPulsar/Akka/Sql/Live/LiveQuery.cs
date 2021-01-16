@@ -1,6 +1,6 @@
 ﻿using System;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using SharpPulsar.Akka.Sql.Client;
 using SharpPulsar.Akka.Sql.Message;
 

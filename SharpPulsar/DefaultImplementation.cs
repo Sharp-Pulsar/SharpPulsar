@@ -1,7 +1,4 @@
-﻿using SharpPulsar.Api;
-using SharpPulsar.Interfaces.Interceptor.Schema;
-using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Auth;
+﻿using SharpPulsar.Auth;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Impl.Schema.Generic;
 using System;
@@ -10,7 +7,7 @@ using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces.Interceptor;
-using SharpPulsar.Schema;
+using SharpPulsar.Schemas;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
 using System.Text;
@@ -243,7 +240,7 @@ namespace SharpPulsar
 		/// </summary>
 		/// <param name="kvSchemaInfo"> the key/value schema info </param>
 		/// <returns> the jsonified schema info </returns>
-		public static string JsonifyKeyValueSchemaInfo(KeyValue<SchemaInfo, SchemaInfo> kvSchemaInfo)
+		public static string JsonifyKeyValueSchemaInfo(KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo)
 		{
 			return SchemaUtils.JsonifyKeyValueSchemaInfo(kvSchemaInfo);
 		}

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.Json;
 using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 
 namespace SharpPulsar.Handlers
 {

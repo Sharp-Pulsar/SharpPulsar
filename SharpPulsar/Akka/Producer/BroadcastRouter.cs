@@ -1,6 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Routing;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 
 namespace SharpPulsar.Akka.Producer
 {

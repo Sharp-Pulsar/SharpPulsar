@@ -4,7 +4,7 @@ using System.Text;
 using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 using SharpPulsar.Utility;
 
 /// <summary>

@@ -8,7 +8,7 @@ using Nito.AsyncEx;
 using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Akka.Sql.Client;
 using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Common.Naming;

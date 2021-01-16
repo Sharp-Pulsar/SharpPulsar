@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;

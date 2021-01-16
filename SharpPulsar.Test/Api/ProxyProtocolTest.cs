@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
 using SharpPulsar.Akka;
-using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Handlers;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Auth;
 using SharpPulsar.Impl.Conf;
 using SharpPulsar.Impl.Schema;
 using Xunit;
 using Xunit.Abstractions;
-using AuthenticationFactory = SharpPulsar.Impl.Auth.AuthenticationFactory;
+using AuthenticationFactory = SharpPulsar.Auth.AuthenticationFactory;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

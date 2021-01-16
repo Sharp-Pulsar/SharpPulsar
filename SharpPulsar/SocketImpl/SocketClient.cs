@@ -1,4 +1,5 @@
 ﻿using Akka.Event;
+using SharpPulsar.Configuration;
 using SharpPulsar.Impl.Conf;
 using System;
 using System.Buffers;
@@ -28,29 +29,34 @@ namespace SharpPulsar.SocketImpl
         private readonly bool _encrypt;
         private readonly string _serviceUrl;
         private string _targetServerName;
-        private readonly Socket _socket;
 
-        private readonly Stream _networkstream;
+        public event Action OnConnect;
+        public event Action OnDisconnect;
 
-        private readonly PipeReader _pipeReader;
+        private Stream _networkstream;
 
-        private readonly PipeWriter _pipeWriter;
+        private PipeReader _pipeReader;
+
+        private PipeWriter _pipeWriter;
 
         private readonly TimeSpan heartbeatttimespan = TimeSpan.FromMilliseconds(800);
 
         private readonly ILoggingAdapter _logger;
 
-        private readonly Heartbeat _heartbeat;
+        private readonly Uri _server;
+
+        private bool _connected;
 
         private readonly string _connectonId = string.Empty;
 
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         public static ISocketClient CreateClient(ClientConfigurationData conf, Uri server, string hostName, ILoggingAdapter logger)
-        {
+        {            
             return new SocketClient(conf, server, hostName, logger);
         }
         internal SocketClient(ClientConfigurationData conf, Uri server, string hostName, ILoggingAdapter logger)
         {
+            _server = server;
             if (conf.ClientCertificates != null)
                 _clientCertificates = conf.ClientCertificates;
 
@@ -65,35 +71,27 @@ namespace SharpPulsar.SocketImpl
 
             _logger = logger;
 
-            var host = server.Host;
-
             _targetServerName = hostName;
+            //_heartbeat.Start();
 
-            var networkStream = GetStream(server);
+            //_connectonId = $"{_networkstream.}";
+
+        }
+        public void Connect()
+        {
+            var host = _server.Host;
+            var networkStream = GetStream(_server);
 
             if (_encrypt)
                 networkStream = EncryptStream(networkStream, host);
-
-            var addresses = Dns.GetHostAddresses(server.Host);
-            var endPoint = new IPEndPoint(addresses[0], server.Port);
-            _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-
-            _heartbeat = new Heartbeat(_socket, logger);
-
-            _heartbeat.OnDisconnect += HeartbeatProcess;
 
             _networkstream = networkStream;
 
             _pipeReader = PipeReader.Create(_networkstream);
 
             _pipeWriter = PipeWriter.Create(_networkstream);
-
-            _heartbeat.Start();
-
-            _connectonId = $"{_socket.RemoteEndPoint}";
-
+            OnConnect();
         }
-
         public string RemoteConnectionId
         {
             get
@@ -108,7 +106,7 @@ namespace SharpPulsar.SocketImpl
         }
 
 
-        public IObservable<ReadOnlySequence<byte>> RevicedObservable =>
+        public IObservable<ReadOnlySequence<byte>> ReceiveMessageObservable =>
                Observable.Create<ReadOnlySequence<byte>>((observer) => ReaderSchedule(observer, cancellation.Token));
 
 
@@ -171,10 +169,10 @@ namespace SharpPulsar.SocketImpl
         public void Dispose()
         {
             cancellation?.Cancel();
-            _heartbeat?.Dispose();
             _pipeReader?.Complete();
             _pipeWriter?.Complete();
-            ShutDownSocket(_socket);
+            _networkstream.Dispose();
+            OnDisconnect();
         }
 
         void ShutDownSocket(Socket socket)
@@ -216,6 +214,7 @@ namespace SharpPulsar.SocketImpl
                 if (!_encrypt)
                 {
                     tcpClient.Connect(endPoint.Host, endPoint.Port);
+                    
                     return tcpClient.GetStream();
                 }
 
@@ -347,5 +346,14 @@ namespace SharpPulsar.SocketImpl
             return result;
         }
 
+        public void Connected()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Disconnected()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

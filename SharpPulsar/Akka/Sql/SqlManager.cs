@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands;
+using SharpPulsar.Messages;
 using SharpPulsar.Akka.Sql.Live;
 
 namespace SharpPulsar.Akka.Sql

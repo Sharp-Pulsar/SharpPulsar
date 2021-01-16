@@ -2,9 +2,9 @@
 using SharpPulsar.Akka.Admin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.Function;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Consumer;
-using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
 

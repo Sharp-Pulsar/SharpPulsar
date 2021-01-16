@@ -2,8 +2,8 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Impl.Auth;
+using SharpPulsar.Messages;
+using SharpPulsar.Auth;
 using SharpPulsar.Impl.Schema;
 using Xunit;
 using Xunit.Abstractions;

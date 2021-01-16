@@ -4,8 +4,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Akka.InternalCommands.Producer;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Impl.Conf;
@@ -94,7 +94,7 @@ namespace SharpPulsar.Akka.Producer
                 Stash.UnstashAll();
             });
 
-            Receive<SchemaResponse>(s =>
+            Receive<Messages.GetSchemaResponse>(s =>
             {
                 var info = new SchemaInfo
                 {

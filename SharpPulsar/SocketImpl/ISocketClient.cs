@@ -7,7 +7,8 @@ namespace SharpPulsar.SocketImpl
     public interface ISocketClient: IDisposable
     {
         string RemoteConnectionId { get; }
-        IObservable<ReadOnlySequence<byte>> RevicedObservable { get; }
+        void Disconnected();
+        IObservable<ReadOnlySequence<byte>> ReceiveMessageObservable { get; }
 
         Task SendMessageAsync(byte[] message);
         Task SendMessageAsync(string message);

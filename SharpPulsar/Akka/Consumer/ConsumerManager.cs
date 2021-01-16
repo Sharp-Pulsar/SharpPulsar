@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Akka.Actor;
-using SharpPulsar.Akka.InternalCommands.Consumer;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;

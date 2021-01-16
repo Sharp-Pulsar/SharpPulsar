@@ -22,7 +22,7 @@ namespace SharpPulsar.Protocol.Schema
     using System;
     using System.Security.Cryptography;
 
-    //using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
+    //using SchemaInfo = SharpPulsar.Schemas.SchemaInfo;
 
     /// <summary>
     /// Schema hash wrapper with a HashCode inner type.
