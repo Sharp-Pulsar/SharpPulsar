@@ -52,8 +52,7 @@ namespace SharpPulsar.Transaction
 		private IActorRef _tcClient; //TransactionCoordinatorClientImpl
 		private IDictionary<IActorRef, int> _cumulativeAckConsumers;
 
-		private readonly List<CompletableFuture<MessageId>> _sendFutureList;
-		private readonly List<CompletableFuture<Void>> _ackFutureList;
+		private readonly List<IMessageId> _sendList;
 
 		internal Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
@@ -76,9 +75,23 @@ namespace SharpPulsar.Transaction
 				else
 					_log.Error($"Error while Asking for TC from Client Actor: {task.Exception}");
 			});
-
-			_sendFutureList = new List<CompletableFuture<MessageId>>();
-			_ackFutureList = new List<CompletableFuture<Void>>();
+			Receive<NextSequenceId>(_ =>
+			{
+				Sender.Tell(NextSequenceId());
+			});
+			Receive<Abort>(_ =>
+			{
+				Abort();
+			});
+			Receive<Commit>(_ =>
+			{
+				Commit();
+			});
+			Receive<RegisterSendOp>(s =>
+			{
+				RegisterSendOp(s.MessageId);
+			});
+			_sendList = new List<IMessageId>();
 		}
 		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
         {
@@ -99,12 +112,9 @@ namespace SharpPulsar.Transaction
 			}
 		}
 
-		public virtual void RegisterSendOp(CompletableFuture<MessageId> sendFuture)
+		private void RegisterSendOp(IMessageId send)
 		{
-			lock(this)
-			{
-				_sendFutureList.Add(sendFuture);
-			}
+			_sendList.Add(send);
 		}
 
 		// register the topics that will be modified by this transaction
@@ -136,39 +146,17 @@ namespace SharpPulsar.Transaction
 
 		private void Commit()
 		{
-			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendFutureList.Count);
-			CompletableFuture<Void> commitFuture = new CompletableFuture<Void>();
-			AllOpComplete().whenComplete((v, e) =>
+			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
+			foreach (var msgid in _sendList)
 			{
-			if(e != null)
-			{
-				Abort().whenComplete((vx, ex) => commitFuture.completeExceptionally(e));
+				sendMessageIdList.Add(msgid);
 			}
-			else
-			{
-				foreach(CompletableFuture<MessageId> future in _sendFutureList)
-				{
-					future.thenAccept(sendMessageIdList.add);
-				}
-				_tcClient.CommitAsync(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList).whenComplete((vx, ex) =>
-				{
-					if(ex != null)
-					{
-						commitFuture.completeExceptionally(ex);
-					}
-					else
-					{
-						commitFuture.complete(vx);
-					}
-				});
-			}
-			});
-			return commitFuture;
+			_tcClient.Tell(new Commit(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
 		}
 
-		public void Abort()
+		private void Abort()
 		{
-			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendFutureList.Count);
+			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
 			CompletableFuture<Void> abortFuture = new CompletableFuture<Void>();
 			AllOpComplete().whenComplete((v, e) =>
 			{

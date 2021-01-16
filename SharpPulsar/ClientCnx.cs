@@ -23,6 +23,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Entity;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Tls;
+using SharpPulsar.Messages.Requests;
 
 namespace SharpPulsar
 {
@@ -176,9 +177,9 @@ namespace SharpPulsar
 
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
-			_producers.ForEach(p => p.Value.Tell(new ConnectionClosed(this)));
-			_consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(this)));
-			_transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(this)));
+			_producers.ForEach(p => p.Value.Tell(new ConnectionClosed(Self)));
+			_consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(Self)));
+			_transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(Self)));
 
 			_pendingRequests.Clear();
 			_waitingLookupRequests.Clear();
@@ -544,7 +545,7 @@ namespace SharpPulsar
 			long producerId = (long)closeProducer.ProducerId;
 			if (_producers.TryGetValue(producerId, out var producer))
 			{
-				producer.Tell(new ConnectionClosed(this));
+				producer.Tell(new ConnectionClosed(Self));
 			}
 			else
 			{
@@ -559,7 +560,7 @@ namespace SharpPulsar
 			long consumerId = (long)closeConsumer.ConsumerId;
 			if (_consumers.TryGetValue(consumerId, out var consumer))
 			{
-				consumer.Tell(new ConnectionClosed(this));
+				consumer.Tell(new ConnectionClosed(Self));
 			}
 			else
 			{

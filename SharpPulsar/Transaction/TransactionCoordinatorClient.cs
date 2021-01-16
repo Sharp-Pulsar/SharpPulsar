@@ -50,55 +50,68 @@ namespace SharpPulsar.Transaction
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
 			_pulsarClient = pulsarClient;
-		}
-
-		public virtual void Start()
-		{
-			try
-			{
-				StartCoordination();
-			}
-			catch(Exception e)
-			{
-				_log.Error(TransactionCoordinatorClientException.Unwrap(e).ToString());
-			}
-		}
-
-		private void StartCoordination()
-		{
-			_state = TransactionCoordinatorClientState.Starting;
-			_pulsarClient.Ask<LookupDataResult>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign))
-				.ContinueWith(task =>
-			{
-                if (!task.IsFaulted)
-                {
-					var partitionMeta = task.Result;
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
-					}
-					if (partitionMeta.Partitions > 0)
-					{
-						_handlers = new List<IActorRef>(partitionMeta.Partitions);
-						for (int i = 0; i < partitionMeta.Partitions; i++)
-						{
-							var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-							_handlers[i] = handler;
-							_handlerMap.Add(i, handler);
-						}
-					}
-					else
-					{
-						_handlers = new List<IActorRef>(1); 
-						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-						_handlers[0] = handler;
-						_handlerMap.Add(0, handler);
-					}
-					_state = TransactionCoordinatorClientState.Ready;
-				}
-				
+			Receive<NewTxn>(n => {
+				var nt = NewTransaction(n);
+				Sender.Tell(nt);
 			});
+			Receive<AddPublishPartitionToTxn>(n => {
+				AddPublishPartitionToTxn(n);
+			});
+			Receive<SubscriptionToTxn>(n => {
+				AddSubscriptionToTxn(n);
+			});
+			Receive<Abort>(n => {
+				Abort(n);
+			});
+			Receive<Commit>(n => {
+				Commit(n);
+			});
+			Receive<StartTransactionCoordinatorClient>(_ => {
+				StartCoordinator();
+			});
+		}
 
+		private void StartCoordinator()
+		{
+            try 
+			{
+				_state = TransactionCoordinatorClientState.Starting;
+				_pulsarClient.Ask<LookupDataResult>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign))
+					.ContinueWith(task =>
+					{
+						if (!task.IsFaulted)
+						{
+							var partitionMeta = task.Result;
+							if (_log.IsDebugEnabled)
+							{
+								_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
+							}
+							if (partitionMeta.Partitions > 0)
+							{
+								_handlers = new List<IActorRef>(partitionMeta.Partitions);
+								for (int i = 0; i < partitionMeta.Partitions; i++)
+								{
+									var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+									_handlers[i] = handler;
+									_handlerMap.Add(i, handler);
+								}
+							}
+							else
+							{
+								_handlers = new List<IActorRef>(1);
+								var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+								_handlers[0] = handler;
+								_handlerMap.Add(0, handler);
+							}
+							_state = TransactionCoordinatorClientState.Ready;
+						}
+
+					});
+			}
+			catch(Exception ex)
+            {
+				_log.Error(TransactionCoordinatorClientException.Unwrap(ex).ToString());
+			}
 		}
 
 		private string GetTCAssignTopicName(int partition)
@@ -145,7 +158,7 @@ namespace SharpPulsar.Transaction
 			return txnid;
 		}
 
-		private void AddPublishPartitionToTxnAsync(AddPublishPartitionToTxn pub)
+		private void AddPublishPartitionToTxn(AddPublishPartitionToTxn pub)
 		{
 			if (!_handlerMap.TryGetValue(pub.TxnID.MostSigBits, out var handler))
 			{
