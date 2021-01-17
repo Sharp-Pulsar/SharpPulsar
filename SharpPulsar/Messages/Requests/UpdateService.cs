@@ -1,5 +1,4 @@
-﻿
-namespace SharpPulsar.Messages
+﻿namespace SharpPulsar.Messages.Requests
 {
     public sealed class UpdateService
     {

@@ -9,7 +9,7 @@ using System.Net;
 
 namespace SharpPulsar
 {
-    public class ConnectionPool
+    public class ConnectionPool:ReceiveActor
     {
 		private readonly Dictionary<EndPoint, Dictionary<int, IActorRef/*ClientCnx*/>> _pool;
 
@@ -17,16 +17,47 @@ namespace SharpPulsar
 		private readonly int _maxConnectionsPerHosts;
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
-		public ConnectionPool(ClientConfigurationData conf, ILoggingAdapter log, IActorContext context)
+		public ConnectionPool(ClientConfigurationData conf)
 		{
-			_context = context;
-			_log = log;
+			_context = Context;
+			_log = Context.GetLogger();
 			_clientConfig = conf;
 			_maxConnectionsPerHosts = conf.ConnectionsPerBroker;
 			//_isSniProxy = _clientConfig.UseTls && _clientConfig.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfig.ProxyServiceUrl);
 
 			_pool = new Dictionary<EndPoint, Dictionary<int, IActorRef>>();
+			Receive<GetConnection>(c => 
+			{
+				IActorRef connection = ActorRefs.Nobody;
+				if(c.LogicalEndPoint != null && c.PhusicalEndPoint == null)
+                {
+					connection = GetConnection(c.LogicalEndPoint);
+                }
+				else if(c.LogicalEndPoint != null && c.PhusicalEndPoint != null)
+					connection = GetConnection(c.LogicalEndPoint, c.PhusicalEndPoint);
+
+
+				Sender.Tell(new GetConnectionResponse(connection));
+
+			});
+			Receive<CleanupConnection>(c =>
+			{
+				CleanupConnection(c.Address, c.ConnectionKey);
+			});
+			Receive<ReleaseConnection>(c =>
+			{
+				ReleaseConnection(c.ClientCnx);
+			});
+			Receive<GetPoolSize>(c =>
+			{
+				Sender.Tell(new GetPoolSizeResponse(PoolSize));
+			});
 		}
+
+		public static Props Prop(ClientConfigurationData conf)
+        {
+			return Props.Create(() => new ConnectionPool(conf));
+        }
 		private static readonly Random _random = new Random();
 
 
@@ -50,11 +81,11 @@ namespace SharpPulsar
 		/// <param name="physicalAddress">
 		///            the real address where the TCP connection should be made </param>
 		/// <returns> a future that will produce the ClientCnx object </returns>
-		public IActorRef GetConnection(DnsEndPoint address)
+		private IActorRef GetConnection(DnsEndPoint address)
         {
 			return GetConnection(address, address);
         }
-		public IActorRef GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
+		private IActorRef GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
 		{
 			if (_maxConnectionsPerHosts == 0)
 			{
@@ -91,7 +122,7 @@ namespace SharpPulsar
 
 			return _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, targetBroker), connectionKey.ToString());			
 		}
-		public void CleanupConnection(EndPoint address, int connectionKey)
+		private void CleanupConnection(DnsEndPoint address, int connectionKey)
 		{
 			if (_pool.TryGetValue(address, out var map))
 			{
@@ -102,7 +133,8 @@ namespace SharpPulsar
 				map.Remove(connectionKey);
 			}
 		}
-		public void ReleaseConnection(IActorRef cnx)
+
+		private void ReleaseConnection(IActorRef cnx)
 		{
 			if (_maxConnectionsPerHosts == 0)
 			{
@@ -113,7 +145,7 @@ namespace SharpPulsar
 				cnx.GracefulStop(TimeSpan.FromSeconds(5));
 			}
 		}
-		public int PoolSize
+		private int PoolSize
 		{
 			get
 			{

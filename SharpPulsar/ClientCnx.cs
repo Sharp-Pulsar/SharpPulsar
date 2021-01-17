@@ -613,16 +613,15 @@ namespace SharpPulsar
 			Condition.CheckArgument(_state == State.Ready);
 
 			long requestId = (long)success.RequestId;
-			IList<string> topics = success.Topics;
 
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug($"Received get topics of namespace success response from server: {success.RequestId} - topics.size: {topics.Count}");
+				_log.Debug($"Received get topics of namespace success response from server: {success.RequestId} - topics.size: {success.Topics.Count}");
 			}
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
-				requester.Requester.Tell(new TopicsOfNamespace(topics));
+				requester.Requester.Tell(new GetTopicsOfNamespaceResponse(success));
 			}
 			else
 			{
