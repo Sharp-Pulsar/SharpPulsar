@@ -71,6 +71,22 @@ namespace SharpPulsar.Messages.Requests
             ReplyTo = replyTo;
         }
     }
+    public sealed class GetTopicsOfNamespaceRetry
+    {
+        public IActorRef ReplyTo { get; }
+        public NamespaceName Namespace { get; }
+        public Mode Mode { get; }
+        public long RemainingTime { get; }
+        public Backoff Backoff { get; }
+        public GetTopicsOfNamespaceRetry(NamespaceName @namespace, Backoff backoff, long remainingTime, Mode mode, IActorRef replyTo)
+        {
+            Namespace = @namespace;
+            Mode = mode;
+            ReplyTo = replyTo;
+            RemainingTime = remainingTime;
+            Backoff = backoff;
+        }
+    }
     public sealed class GetTopicsUnderNamespaceResponse
     {
         public ImmutableList<string> Topics { get; }

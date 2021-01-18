@@ -3,10 +3,7 @@ using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
-using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Model;
@@ -19,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 /// <summary>
@@ -41,8 +37,8 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 /// under the License.
 /// </summary>
 namespace SharpPulsar
-{ 
-	public class BinaryProtoLookupService:ReceiveActor, IWithUnboundedStash
+{
+	public class BinaryProtoLookupService : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly IActorRef _client;
 		private readonly ServiceNameResolver _serviceNameResolver;
@@ -53,15 +49,17 @@ namespace SharpPulsar
 		private readonly IActorRef _connectionPool;
 		private readonly ILoggingAdapter _log;
 		private IAdvancedScheduler _executor;
+		private IActorContext _context;
 
-		public BinaryProtoLookupService(IActorRef client, IActorRef connectionPool, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs, ILoggingAdapter log)
+		public BinaryProtoLookupService(IActorRef client, IActorRef connectionPool, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
 		{
+			_context = Context;
 			_executor = Context.System.Scheduler.Advanced;
-			_log = log;
+			_log = Context.GetLogger();
 			_client = client;
 			_useTls = useTls;
 			_maxLookupRedirects = maxLookupRedirects;
-			_serviceNameResolver = new PulsarServiceNameResolver(log);
+			_serviceNameResolver = new PulsarServiceNameResolver(_log);
 			_listenerName = listenerName;
 			_operationTimeoutMs = operationTimeoutMs;
 			_connectionPool = connectionPool;
@@ -138,7 +136,16 @@ namespace SharpPulsar
 						Become(() => GetPartitionedTopicMetadata(metadata.TopicName, r.Id, clientCnx, metadata.ReplyTo));
 						break;
 					case GetTopicsUnderNamespace @namespace:
-						Become(() => GetPartitionedTopicMetadata(@namespace.Namespace, @namespace.Mode, r.Id, clientCnx, @namespace.ReplyTo));
+						Become(() => GetTopicsUnderNamespace(@namespace, r.Id, clientCnx, @namespace.ReplyTo));
+						break;
+					case GetTopicsOfNamespaceRetry tr:
+						Become(() => GetTopicsUnderNamespace(r.Id, tr.Namespace, tr.Backoff, tr.RemainingTime, tr.Mode, clientCnx, tr.ReplyTo));
+						break;
+					case GetSchema s:
+						Become(() => GetSchema(s.TopicName, s.Version, r.Id, clientCnx, s.ReplyTo));
+						break;
+					default:
+						_log.Debug($"Unknown Request : {obj.GetType().FullName}");
 						break;
 
 				}
@@ -159,7 +166,7 @@ namespace SharpPulsar
 			Receive<LookupDataResult>(lookup => 
 			{
 
-				if (lookup?.Error != null)
+				if (Enum.IsDefined(typeof(ServerError), lookup.Error))
 				{
 					_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
 					if (_log.IsDebugEnabled)
@@ -222,7 +229,6 @@ namespace SharpPulsar
 			{
 				_connectionPool.Tell(new GetConnection(r.BrokerAddress));
 				Become(() => GetConnection(r));
-
 			});
 			ReceiveAny(a => Stash.Stash());
 		}
@@ -255,7 +261,7 @@ namespace SharpPulsar
 			clientCnx.Tell(payload);
 			Receive<LookupDataResult>(m =>
 			{
-				if (m?.Error != null)
+				if (Enum.IsDefined(typeof(ServerError), m.Error))
 				{
 					_log.Warning($"[{topicName}] failed to get Partitioned metadata : {m.Error}:{m.ErrorMessage}");
 					reply.Tell(new Failure { Exception = new Exception($"[{topicName}] failed to get Partitioned metadata. {m.Error}:{m.ErrorMessage}")});
@@ -282,7 +288,7 @@ namespace SharpPulsar
 			Receive<Messages.GetSchemaResponse>(s=> 
 			{
 				var err = s.Response.ErrorCode;
-				if(s.Response?.ErrorCode != null)
+				if(Enum.IsDefined(typeof(ServerError), err))
                 {
 					var e = $"{err}: {s.Response.ErrorMessage}";
 					_log.Error(e);
@@ -317,61 +323,85 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-        private void GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
+        private void GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx, IActorRef reply)
 		{
 			var opTimeoutMs = _operationTimeoutMs;
 			var backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-			GetTopicsUnderNamespace(_serviceNameResolver.ResolveHost(), @namespace, backoff, opTimeoutMs, topicsFuture, mode);
+			GetTopicsUnderNamespace(requestid, nsn.Namespace, backoff, opTimeoutMs, nsn.Mode, clientCnx, reply);			
 		}
 
-		private void GetTopicsUnderNamespace(long requestId, NamespaceName @namespace, Backoff backoff, long remainingTime, CompletableFuture<IList<string>> topicsFuture, Mode mode)
+		private void GetTopicsUnderNamespace(long requestId, NamespaceName @namespace, Backoff backoff, long remainingTime, Mode mode, IActorRef clientCnx, IActorRef replyTo)
 		{
-			_client.CnxPool.getConnection(socketAddress).thenAccept(clientCnx =>
-			{
 			var request = Commands.NewGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
-			clientCnx.newGetTopicsOfNamespace(request, requestId).whenComplete((r, t) =>
+			var payload = new Payload(request, requestId, "NewGetTopicsOfNamespaceRequest");
+			_context.SetReceiveTimeout(TimeSpan.FromMilliseconds(_operationTimeoutMs));
+			clientCnx.Tell(payload);
+			Receive<GetTopicsOfNamespaceResponse>(n => 
 			{
-				if(t != null)
+				_context.SetReceiveTimeout(null);
+				if (_log.IsDebugEnabled)
 				{
-					topicsFuture.completeExceptionally(t);
+					_log.Debug($"[namespace: {@namespace}] Success get topics list in request: {requestId}");
 				}
-				else
+				var result = new List<string>();
+				n.Response.Topics.ForEach(topic =>
 				{
-					if(_log.DebugEnabled)
+					var filtered = TopicName.Get(topic).PartitionedTopicName;
+					if (!result.Contains(filtered))
 					{
-						_log.debug("[namespace: {}] Success get topics list in request: {}", @namespace.ToString(), requestId);
+						result.Add(filtered);
 					}
-					IList<string> result = Lists.newArrayList();
-					r.forEach(topic =>
-					{
-						string filtered = TopicName.Get(topic).PartitionedTopicName;
-						if(!result.Contains(filtered))
-						{
-							result.Add(filtered);
-						}
-					});
-					topicsFuture.complete(result);
-				}
-				_client.CnxPool.releaseConnection(clientCnx);
+				});
+				replyTo.Tell(new GetTopicsUnderNamespaceResponse(result));
+				Become(Normal);
+				Stash.Unstash();
 			});
-			}).exceptionally((e) =>
+			Receive<GetTopicsOfNamespaceRetry>(r =>
 			{
-			long nextDelay = Math.Min(backoff.Next(), remainingTime.get());
-			if(nextDelay <= 0)
-			{
-				topicsFuture.completeExceptionally(new PulsarClientException.TimeoutException(format("Could not get topics of namespace %s within configured timeout", @namespace.ToString())));
-				return null;
-			}
-			((ScheduledExecutorService) _executor).schedule(() =>
-			{
-				_log.warn("[namespace: {}] Could not get connection while getTopicsUnderNamespace -- Will try again in {} ms", @namespace, nextDelay);
-				remainingTime.addAndGet(-nextDelay);
-				GetTopicsUnderNamespace(socketAddress, @namespace, backoff, remainingTime, topicsFuture, mode);
-			}, nextDelay, TimeUnit.MILLISECONDS);
-			return null;
-		});
-		}
+				_context.SetReceiveTimeout(null);
+				_connectionPool.Tell(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
+				Become(() => GetConnection(r));
 
-	}
+			});
+			Receive<ReceiveTimeout>(t =>
+			{
+				var ns = @namespace;
+				var bkOff = backoff;
+				var mde = mode;
+				var remaining = remainingTime;
+				var nextDelay = Math.Min(backoff.Next(), remaining);
+				var reply = replyTo;
+				if (nextDelay <= 0)
+				{
+					replyTo.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
+
+					_context.SetReceiveTimeout(null);
+				}
+                else
+                {
+					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
+					remaining -= nextDelay;
+					var retry = new GetTopicsOfNamespaceRetry(ns, bkOff, remaining, mode, reply);
+					_executor.ScheduleOnce(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)), () => 
+					{
+						var rt = retry;
+						var self = _context.Self;
+						_context.SetReceiveTimeout(TimeSpan.FromMilliseconds(_operationTimeoutMs));
+						self.Tell(rt);
+					});
+				}
+			});
+			ReceiveAny(a => Stash.Stash());
+		}
+        protected override void Unhandled(object message)
+        {
+			_log.Info($"Unhandled {message.GetType().FullName} received");
+            base.Unhandled(message);
+        }
+		public static Props Prop(IActorRef client, IActorRef connectionPool, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
+        {
+			return Props.Create(() => new BinaryProtoLookupService(client, connectionPool, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeoutMs));
+        }
+    }
 
 }

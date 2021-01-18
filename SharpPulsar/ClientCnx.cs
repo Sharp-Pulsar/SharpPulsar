@@ -102,7 +102,7 @@ namespace SharpPulsar
 					case "NewLookup":
 						NewLookup(p.Bytes, p.RequestId);
 						break;
-					case "NewGetTopicsOfNamespace":
+					case "NewGetTopicsOfNamespaceRequest":
 						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
 						break;
 					case "SendGetLastMessageId":
