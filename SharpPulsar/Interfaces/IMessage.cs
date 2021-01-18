@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Akka.Util;
 using SharpPulsar.Auth;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +25,7 @@ namespace SharpPulsar.Interfaces
 	/// <summary>
 	/// The message abstraction used in Pulsar.
 	/// </summary>
-	public interface IMessage
+	public interface IMessage<T>
 	{
 
 		/// <summary>
@@ -35,7 +36,7 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> an unmodifiable view of the properties map </returns>
-		IDictionary<string, string> Properties {get;}
+		IDictionary<string, string> Properties { get; }
 
 		/// <summary>
 		/// Check whether the message has a specific property attached.
@@ -60,13 +61,13 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> the byte array with the message payload </returns>
-		sbyte[] Data {get;}
+		sbyte[] Data { get; }
 
 		/// <summary>
-		/// Get the de-serialized value of the message, according the configured <seealso cref="ISchema"/>.
+		/// Get the de-serialized value of the message, according the configured <seealso cref="Schema"/>.
 		/// </summary>
 		/// <returns> the deserialized value of the message </returns>
-		object Value {get;}
+		T Value { get; }
 
 		/// <summary>
 		/// Get the unique message ID associated with this message.
@@ -80,14 +81,14 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> the message id null if this message was not received by this client instance </returns>
-		IMessageId MessageId {get; }
+		IMessageId MessageId { get; }
 
 		/// <summary>
 		/// Get the publish time of this message. The publish time is the timestamp that a client publish the message.
 		/// </summary>
 		/// <returns> publish time of this message. </returns>
 		/// <seealso cref= #getEventTime() </seealso>
-		long PublishTime {get;}
+		long PublishTime { get; }
 
 		/// <summary>
 		/// Get the event time associated with this message. It is typically set by the applications via
@@ -100,7 +101,7 @@ namespace SharpPulsar.Interfaces
 		/// <seealso cref= MessageBuilder#setEventTime(long)
 		/// @since 1.20.0 </seealso>
 		/// <returns> the message event time or 0 if event time wasn't set </returns>
-		long EventTime {get;}
+		long EventTime { get; }
 
 		/// <summary>
 		/// Get the sequence id associated with this message. It is typically set by the applications via
@@ -109,14 +110,14 @@ namespace SharpPulsar.Interfaces
 		/// <returns> sequence id associated with this message. </returns>
 		/// <seealso cref= MessageBuilder#setEventTime(long)
 		/// @since 1.22.0 </seealso>
-		long SequenceId {get;}
+		long SequenceId { get; }
 
 		/// <summary>
 		/// Get the producer name who produced this message.
 		/// </summary>
 		/// <returns> producer name who produced this message, null if producer name is not set.
 		/// @since 1.22.0 </returns>
-		string ProducerName {get;}
+		string ProducerName { get; }
 
 		/// <summary>
 		/// Check whether the message has a key.
@@ -129,7 +130,7 @@ namespace SharpPulsar.Interfaces
 		/// Get the key of the message.
 		/// </summary>
 		/// <returns> the key of the message </returns>
-		string Key {get;}
+		string Key { get; }
 
 		/// <summary>
 		/// Check whether the key has been base64 encoded.
@@ -141,7 +142,7 @@ namespace SharpPulsar.Interfaces
 		/// Get bytes in key. If the key has been base64 encoded, it is decoded before being returned.
 		/// Otherwise, if the key is a plain string, this method returns the UTF_8 encoded bytes of the string. </summary>
 		/// <returns> the key in byte[] form </returns>
-		sbyte[] KeyBytes {get;}
+		sbyte[] KeyBytes { get; }
 
 		/// <summary>
 		/// Check whether the message has a ordering key.
@@ -154,20 +155,20 @@ namespace SharpPulsar.Interfaces
 		/// Get the ordering key of the message.
 		/// </summary>
 		/// <returns> the ordering key of the message </returns>
-		sbyte[] OrderingKey {get;}
+		sbyte[] OrderingKey { get; }
 
 		/// <summary>
 		/// Get the topic the message was published to.
 		/// </summary>
 		/// <returns> the topic the message was published to </returns>
-		string TopicName {get;}
+		string TopicName { get; }
 
 		/// <summary>
 		/// <seealso cref="EncryptionContext"/> contains encryption and compression information in it using which application can
 		/// decrypt consumed message with encrypted-payload.
 		/// </summary>
 		/// <returns> the optiona encryption context </returns>
-		EncryptionContext EncryptionCtx {get;}
+		Option<EncryptionContext> EncryptionCtx { get; }
 
 		/// <summary>
 		/// Get message redelivery count, redelivery count maintain in pulsar broker. When client acknowledge message
@@ -180,13 +181,13 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> message redelivery count </returns>
-		int RedeliveryCount {get;}
+		int RedeliveryCount { get; }
 
 		/// <summary>
 		/// Get schema version of the message.
 		/// @since 2.4.0 </summary>
 		/// <returns> Schema version of the message if the message is produced with schema otherwise null. </returns>
-		sbyte[] SchemaVersion {get;}
+		sbyte[] SchemaVersion { get; }
 
 		/// <summary>
 		/// Check whether the message is replicated from other cluster.
@@ -194,16 +195,14 @@ namespace SharpPulsar.Interfaces
 		/// @since 2.4.0 </summary>
 		/// <returns> true if the message is replicated from other cluster.
 		///         false otherwise. </returns>
-		bool Replicated {get;}
+		bool Replicated { get; }
 
 		/// <summary>
 		/// Get name of cluster, from which the message is replicated.
 		/// 
 		/// @since 2.4.0 </summary>
 		/// <returns> the name of cluster, from which the message is replicated. </returns>
-		string ReplicatedFrom {get;}
-
-        T ToTypeOf<T>();
-    }
+		string ReplicatedFrom { get; }
+	}
 
 }

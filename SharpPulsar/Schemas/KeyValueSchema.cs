@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Exceptions;
+﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
@@ -91,9 +90,9 @@ namespace SharpPulsar.Schemas
 
 		private KeyValueSchema(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
-			this._keySchema = KeySchema;
-			this._valueSchema = ValueSchema;
-			this._keyValueEncodingType = KeyValueEncodingType;
+			_keySchema = KeySchema;
+			_valueSchema = ValueSchema;
+			_keyValueEncodingType = KeyValueEncodingType;
 			_schemaInfoProvider = new InfoSchemaInfoProvider(this);
 			// if either key schema or value schema requires fetching schema info,
 			// we don't need to configure the key/value schema info right now.
@@ -110,7 +109,7 @@ namespace SharpPulsar.Schemas
 
 			public InfoSchemaInfoProvider(KeyValueSchema<K, V> OuterInstance)
 			{
-				this._outerInstance = OuterInstance;
+				_outerInstance = OuterInstance;
 			}
 
 			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
@@ -159,7 +158,7 @@ namespace SharpPulsar.Schemas
 
 		public virtual KeyValue<K, V> Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
 		{
-			if (this._keyValueEncodingType == KeyValueEncodingType.SEPARATED)
+			if (_keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 			{
 				throw new SchemaSerializationException("This method cannot be used under this SEPARATED encoding type");
 			}
@@ -209,7 +208,7 @@ namespace SharpPulsar.Schemas
 		{
 			get
 			{
-				return this._schemaInfo;
+				return _schemaInfo;
 			}
 		}
 
@@ -217,7 +216,7 @@ namespace SharpPulsar.Schemas
 		{
 			set
 			{
-				this._schemaInfoProvider = value;
+				_schemaInfoProvider = value;
 			}
 		}
 
@@ -240,7 +239,7 @@ namespace SharpPulsar.Schemas
 			_valueSchema.ConfigureSchemaInfo(TopicName, "value", KvSchemaInfo.Value);
 			ConfigureKeyValueSchemaInfo();
 
-			if (null == this._schemaInfo)
+			if (null == _schemaInfo)
 			{
 				throw new Exception("No key schema info or value schema info : key = " + _keySchema.SchemaInfo + ", value = " + _valueSchema.SchemaInfo);
 			}
@@ -253,11 +252,11 @@ namespace SharpPulsar.Schemas
 
 		private void ConfigureKeyValueSchemaInfo()
 		{
-			this._schemaInfo = KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(_keySchema, _valueSchema, _keyValueEncodingType);
+			_schemaInfo = KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(_keySchema, _valueSchema, _keyValueEncodingType);
 
-			this._keySchema.SchemaInfoProvider = new KeySchemaInfoProvider(this);
+			_keySchema.SchemaInfoProvider = new KeySchemaInfoProvider(this);
 
-			this._valueSchema.SchemaInfoProvider = new ValueSchemaInfoProvider(this);
+			_valueSchema.SchemaInfoProvider = new ValueSchemaInfoProvider(this);
 		}
 		
         object ICloneable.Clone()
@@ -271,7 +270,7 @@ namespace SharpPulsar.Schemas
 
 			public KeySchemaInfoProvider(KeyValueSchema<K, V> OuterInstance)
 			{
-				this._outerInstance = OuterInstance;
+				_outerInstance = OuterInstance;
 			}
 
 			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
@@ -296,14 +295,17 @@ namespace SharpPulsar.Schemas
 				}
 			}
 		}
-
+		public KeyValueEncodingType KeyValueEncodingType
+        {
+			get => _keyValueEncodingType;
+        }
 		private class ValueSchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;
 
 			public ValueSchemaInfoProvider(KeyValueSchema<K, V> OuterInstance)
 			{
-				this._outerInstance = OuterInstance;
+				_outerInstance = OuterInstance;
 			}
 
 			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
