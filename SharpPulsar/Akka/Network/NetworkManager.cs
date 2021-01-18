@@ -6,6 +6,7 @@ using Akka.Actor;
 using SharpPulsar.Messages;
 using SharpPulsar.Impl;
 using SharpPulsar.Impl.Conf;
+using SharpPulsar.Messages.Requests;
 
 namespace SharpPulsar.Akka.Network
 {

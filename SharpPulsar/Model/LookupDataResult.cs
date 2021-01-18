@@ -10,10 +10,12 @@ namespace SharpPulsar.Model
 
 		public readonly string BrokerUrl;
 		public readonly string BrokerUrlTls;
+		public readonly string ErrorMessage;
 		public readonly int Partitions;
 		public readonly bool Authoritative;
 		public readonly bool ProxyThroughServiceUrl;
 		public readonly bool Redirect;
+		public readonly ServerError Error;
 
 		public LookupDataResult(CommandLookupTopicResponse result)
 		{
@@ -23,6 +25,8 @@ namespace SharpPulsar.Model
 			Redirect = result.Response == CommandLookupTopicResponse.LookupType.Redirect;
 			ProxyThroughServiceUrl = result.ProxyThroughServiceUrl;
 			Partitions = -1;
+			Error = result.Error;
+			ErrorMessage = result.Message;
 		}
 
 		public LookupDataResult(int partitions) : base()

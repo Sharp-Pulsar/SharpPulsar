@@ -25,16 +25,16 @@ namespace SharpPulsar.Common.Partition
 	{
 
 		/* Number of partitions for the topic */
-		public int Partitions;
+		public int Partitions { get; }
 
 		public PartitionedTopicMetadata()
 		{
-			this.Partitions = 0;
+			Partitions = 0;
 		}
 
 		public PartitionedTopicMetadata(int partitions)
 		{
-			this.Partitions = partitions;
+			Partitions = partitions;
 		}
 
 	}

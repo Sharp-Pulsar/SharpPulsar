@@ -169,35 +169,35 @@ namespace SharpPulsar.Shared
 		/// </summary>
 		public static readonly SchemaType AutoPublish = new SchemaType("AutoPublish", InnerEnum.AutoPublish, -4);
 
-		private static readonly List<SchemaType> valueList = new List<SchemaType>();
+		private static readonly List<SchemaType> _valueList = new List<SchemaType>();
 
 		static SchemaType()
 		{
-			valueList.Add(NONE);
-			valueList.Add(STRING);
-			valueList.Add(JSON);
-			valueList.Add(PROTOBUF);
-			valueList.Add(AVRO);
-			valueList.Add(BOOLEAN);
-			valueList.Add(INT8);
-			valueList.Add(INT16);
-			valueList.Add(INT32);
-			valueList.Add(INT64);
-			valueList.Add(FLOAT);
-			valueList.Add(DOUBLE);
-			valueList.Add(DATE);
-			valueList.Add(TIME);
-			valueList.Add(TIMESTAMP);
-			valueList.Add(KeyValue);
-			valueList.Add(INSTANT);
-			valueList.Add(LocalDate);
-			valueList.Add(LocalTime);
-			valueList.Add(LocalDateTime);
-			valueList.Add(ProtobufNative);
-			valueList.Add(BYTES);
-			valueList.Add(AUTO);
-			valueList.Add(AutoConsume);
-			valueList.Add(AutoPublish);
+			_valueList.Add(NONE);
+			_valueList.Add(STRING);
+			_valueList.Add(JSON);
+			_valueList.Add(PROTOBUF);
+			_valueList.Add(AVRO);
+			_valueList.Add(BOOLEAN);
+			_valueList.Add(INT8);
+			_valueList.Add(INT16);
+			_valueList.Add(INT32);
+			_valueList.Add(INT64);
+			_valueList.Add(FLOAT);
+			_valueList.Add(DOUBLE);
+			_valueList.Add(DATE);
+			_valueList.Add(TIME);
+			_valueList.Add(TIMESTAMP);
+			_valueList.Add(KeyValue);
+			_valueList.Add(INSTANT);
+			_valueList.Add(LocalDate);
+			_valueList.Add(LocalTime);
+			_valueList.Add(LocalDateTime);
+			_valueList.Add(ProtobufNative);
+			_valueList.Add(BYTES);
+			_valueList.Add(AUTO);
+			_valueList.Add(AutoConsume);
+			_valueList.Add(AutoPublish);
 		}
 
 		public enum InnerEnum
@@ -374,7 +374,7 @@ namespace SharpPulsar.Shared
 
 		public static SchemaType[] Values()
 		{
-			return valueList.ToArray();
+			return _valueList.ToArray();
 		}
 
 		public int Ordinal()
@@ -389,9 +389,9 @@ namespace SharpPulsar.Shared
 
 		public static SchemaType ValueOf(string name)
 		{
-			foreach (SchemaType enumInstance in SchemaType.valueList)
+			foreach (SchemaType enumInstance in _valueList)
 			{
-				if (enumInstance.Name == name)
+				if (enumInstance.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
 				{
 					return enumInstance;
 				}

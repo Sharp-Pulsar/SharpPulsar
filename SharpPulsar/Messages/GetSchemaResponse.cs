@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages
 {

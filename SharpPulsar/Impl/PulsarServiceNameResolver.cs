@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using DotNetty.Common.Internal;
 using Microsoft.Extensions.Logging;
+using Akka.Event;
+using System.Net;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,8 +32,14 @@ namespace SharpPulsar.Impl
 	public class PulsarServiceNameResolver : ServiceNameResolver
     {
 		private  int _currentIndex;
-		private volatile IList<Uri> _addressList;
+		private IList<Uri> _addressList;
         private ServiceUri _serviceUri;
+		private ILoggingAdapter _log;
+
+        public PulsarServiceNameResolver(ILoggingAdapter log)
+        {
+			_log = log;
+        }
 
         public IList<Uri> AddressList()
         {
@@ -78,7 +86,7 @@ namespace SharpPulsar.Impl
 			}
 			catch (Exception iae)
 			{
-				Log.LogWarning("Invalid service-url {} provided {}", serviceUrl, iae.Message, iae);
+				_log.Warning($"Invalid service-url {serviceUrl} provided {iae}");
 				throw;
 			}
 
@@ -94,7 +102,7 @@ namespace SharpPulsar.Impl
 				}
 				catch (UriFormatException e)
 				{
-					Log.LogError("Invalid host provided {}", hostUrl);
+					_log.Error($"Invalid host provided {hostUrl}");
 					throw;
 				}
 			}
@@ -107,7 +115,12 @@ namespace SharpPulsar.Impl
 		{
 			return numAddresses == 1 ? 0 : PlatformDependent.GetThreadLocalRandom().Next(numAddresses);
 		}
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(PulsarServiceNameResolver));
 	}
-
+	public static class UrlEx
+    {
+		public static DnsEndPoint ToDnsEndPoint(this Uri uri)
+        {
+			return new DnsEndPoint(uri.Host, uri.Port);
+        }
+    }
 }

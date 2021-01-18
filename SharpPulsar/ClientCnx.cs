@@ -24,6 +24,7 @@ using SharpPulsar.Common.Entity;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
+using System.Net;
 
 namespace SharpPulsar
 {
@@ -70,12 +71,13 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, Uri endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, Uri endPoint, int protocolVersion, string targetBroker = "")
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_remoteHostName = endPoint.Host;
 			_self = Self;
 			_clientConfigurationData = conf;
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
@@ -100,7 +102,7 @@ namespace SharpPulsar
 					case "NewLookup":
 						NewLookup(p.Bytes, p.RequestId);
 						break;
-					case "NewGetTopicsOfNamespace":
+					case "NewGetTopicsOfNamespaceRequest":
 						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
 						break;
 					case "SendGetLastMessageId":
@@ -140,11 +142,11 @@ namespace SharpPulsar
 				});
 			});
 		}
-		public static Props Prop(ClientConfigurationData conf, Uri endPoint, string targetBroker = "")
+		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
         {
 			return Props.Create(()=> new ClientCnx(conf, endPoint, targetBroker));
         }
-		public static Props Prop(ClientConfigurationData conf, Uri endPoint, int protocolVersion, string targetBroker = "")
+		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
         {
 			return Props.Create(()=> new ClientCnx(conf, endPoint, protocolVersion, targetBroker));
         }
@@ -409,12 +411,12 @@ namespace SharpPulsar
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);
-						requester.Tell(new ClientExceptions(ex));
+						requester.Tell(new Failure { Exception = ex });
 					}
 					else
 					{
 						var ex = new PulsarClientException.LookupException("Empty lookup response");
-						requester.Tell(ex);
+						requester.Tell(new Failure { Exception = ex });
 					}
 				}
 				else
@@ -611,16 +613,15 @@ namespace SharpPulsar
 			Condition.CheckArgument(_state == State.Ready);
 
 			long requestId = (long)success.RequestId;
-			IList<string> topics = success.Topics;
 
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug($"Received get topics of namespace success response from server: {success.RequestId} - topics.size: {topics.Count}");
+				_log.Debug($"Received get topics of namespace success response from server: {success.RequestId} - topics.size: {success.Topics.Count}");
 			}
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
-				requester.Requester.Tell(new TopicsOfNamespace(topics));
+				requester.Requester.Tell(new GetTopicsOfNamespaceResponse(success));
 			}
 			else
 			{
