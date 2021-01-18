@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Interfaces;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,16 +17,14 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
-	using ITopicMetadata = Api.ITopicMetadata;
-
-	public class TopicMetadataImpl : ITopicMetadata
+	public class TopicMetadata : ITopicMetadata
 	{
 
 		private readonly int _numPartitions;
 
-		public TopicMetadataImpl(int numPartitions)
+		public TopicMetadata(int numPartitions)
 		{
 			this._numPartitions = numPartitions;
 		}

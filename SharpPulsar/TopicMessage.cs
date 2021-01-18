@@ -20,23 +20,24 @@ using SharpPulsar.Auth;
 /// under the License.
 /// </summary>
 
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
-    using Api;
+    using global::Akka.Util;
+    using SharpPulsar.Interfaces;
 
-	public class TopicMessageImpl : IMessage
+    public class TopicMessage<T> : IMessage<T>
 	{
 
 		/// <summary>
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
-		public string TopicPartitionName;
+		private readonly string _topicPartitionName;
 
-		private readonly IMessage _msg;
+		private readonly IMessage<T> _msg;
 		private  TopicMessageId _messageId;
 
-		public TopicMessageImpl(string topicPartitionName, string topicName, IMessage msg)
+		public TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg)
 		{
-			TopicPartitionName = topicPartitionName;
+			_topicPartitionName = topicPartitionName;
 
 			_msg = msg;
 			_messageId = new TopicMessageId(topicPartitionName, topicName, msg.MessageId);
@@ -46,8 +47,17 @@ namespace SharpPulsar.Impl
 		/// Get the topic name without partition part of this message. </summary>
 		/// <returns> the name of the topic on which this message was published </returns>
 		public virtual string TopicName => _msg.TopicName;
-
-        /// <summary>
+		/// <summary>
+		/// Get the topic name which contains partition part for this message. </summary>
+		/// <returns> the topic name which contains Partition part </returns>
+		public virtual string TopicPartitionName
+		{
+			get
+			{
+				return _topicPartitionName;
+			}
+		}
+		/// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
 
@@ -98,9 +108,9 @@ namespace SharpPulsar.Impl
 
 		public virtual sbyte[] OrderingKey => _msg.OrderingKey;
 
-        public virtual object Value => _msg.Value;
+        public virtual T Value => _msg.Value;
 
-        public virtual EncryptionContext EncryptionCtx => _msg.EncryptionCtx;
+        public virtual Option<EncryptionContext> EncryptionCtx => _msg.EncryptionCtx;
 
         public virtual int RedeliveryCount => _msg.RedeliveryCount;
 
@@ -109,12 +119,9 @@ namespace SharpPulsar.Impl
         public virtual bool Replicated => _msg.Replicated;
 
         public virtual string ReplicatedFrom => _msg.ReplicatedFrom;
-        public T ToTypeOf<T>()
-        {
-            throw new System.NotImplementedException();
-        }
 
-        public virtual IMessage Message => _msg;
+        public virtual IMessage<T> Message => _msg;
+
     }
 
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using SharpPulsar.Api;
 using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
 /// <summary>
@@ -22,7 +23,7 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
 	/// <summary>
 	/// A MessageId implementation that contains a map of <partitionName, MessageId>.

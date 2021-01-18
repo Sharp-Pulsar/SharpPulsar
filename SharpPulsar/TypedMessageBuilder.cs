@@ -27,10 +27,12 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
     using Api;
-	public class TypedMessageBuilder : ITypedMessageBuilder
+    using SharpPulsar.Interfaces;
+
+    public class TypedMessageBuilder : ITypedMessageBuilder
 	{
         private string _topic;
 		private readonly string _producer;//topic
