@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using SharpPulsar.Api;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,12 +23,12 @@ using SharpPulsar.Api;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
-	public class Messages : IMessages
+	public class Messages<T> : IMessages<T>
 	{
 
-		private IList<IMessage> _messageList;
+		private IList<IMessage<T>> _messageList;
 
 		private readonly int _maxNumberOfMessages;
 		private readonly long _maxSizeOfMessages;
@@ -36,28 +38,33 @@ namespace SharpPulsar.Impl
 
 		public Messages(int maxNumberOfMessages, long maxSizeOfMessages)
 		{
-			this._maxNumberOfMessages = maxNumberOfMessages;
-			this._maxSizeOfMessages = maxSizeOfMessages;
-			_messageList = maxNumberOfMessages > 0 ? new List<IMessage>(maxNumberOfMessages) : new List<IMessage>();
+			_maxNumberOfMessages = maxNumberOfMessages;
+			_maxSizeOfMessages = maxSizeOfMessages;
+			_messageList = maxNumberOfMessages > 0 ? new List<IMessage<T>>(maxNumberOfMessages) : new List<IMessage<T>>();
 		}
 
-		public virtual bool CanAdd(IMessage message)
+		public virtual bool CanAdd(IMessage<T> message)
 		{
-			if (_maxNumberOfMessages <= 0 && _maxSizeOfMessages <= 0)
+			if (_maxNumberOfMessages > 0 && _currentNumberOfMessages + 1 > _maxNumberOfMessages)
 			{
-				return true;
+				return false;
 			}
-			return (_maxNumberOfMessages > 0 && _currentNumberOfMessages + 1 <= _maxNumberOfMessages) || (_maxSizeOfMessages > 0 && _currentSizeOfMessages + message.Data.Length <= _maxSizeOfMessages);
+
+			if (_maxSizeOfMessages > 0 && _currentSizeOfMessages + message.Data.Length > _maxSizeOfMessages)
+			{
+				return false;
+			}
+
+			return true;
 		}
 
-		public virtual void Add(IMessage message)
+		public virtual void Add(IMessage<T> message)
 		{
 			if (message == null)
 			{
 				return;
 			}
-			if(!CanAdd(message))
-                throw new ArgumentException("No more space to add messages.");
+			Condition.CheckArgument(CanAdd(message), "No more space to add messages.");
 			_currentNumberOfMessages++;
 			_currentSizeOfMessages += message.Data.Length;
 			_messageList.Add(message);
@@ -70,17 +77,17 @@ namespace SharpPulsar.Impl
 
 		public virtual void Clear()
 		{
-			this._currentNumberOfMessages = 0;
-			this._currentSizeOfMessages = 0;
-			this._messageList.Clear();
+			_currentNumberOfMessages = 0;
+			_currentSizeOfMessages = 0;
+			_messageList.Clear();
 		}
 
-		public IEnumerator<IMessage> Iterator()
+		public IEnumerator<IMessage<T>> Iterator()
 		{
 			return _messageList.GetEnumerator();
 		}
 
-        public IEnumerator<IMessage> GetEnumerator()
+        public IEnumerator<IMessage<T>> GetEnumerator()
         {
            return Iterator();
         }
@@ -89,6 +96,7 @@ namespace SharpPulsar.Impl
         {
             return GetEnumerator();
         }
+
     }
 
 }
