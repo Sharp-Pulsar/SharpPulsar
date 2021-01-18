@@ -55,14 +55,14 @@ namespace SharpPulsar
 
         }
 		// Constructor for out-going message
-		public static Message<T> Create(MessageMetadata msgMetadata, byte[] payload, ISchema<T> schema, string topic)
+		public static Message<T> Create(MessageMetadata msgMetadata, byte[] payload, ISchema<T> schema)
 		{
 			var msg = new Message<T>
 			{
 				_metadata = msgMetadata,
 				_properties = new Dictionary<string, string>(),
 				_messageId = null,
-				_topic = topic,
+				_topic = null,
 				_payload = payload,
 				_cnx = null,
 				_schema = schema

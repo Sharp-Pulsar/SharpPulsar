@@ -29,189 +29,224 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar
 {
-    using Api;
+    using BAMCIS.Util.Concurrent;
+    using global::Akka.Actor;
     using SharpPulsar.Interfaces;
+    using SharpPulsar.Messages.Transaction;
+    using SharpPulsar.Precondition;
+    using SharpPulsar.Schemas;
 
-    public class TypedMessageBuilder : ITypedMessageBuilder
+    [Serializable]
+	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
 	{
-        private string _topic;
-		private readonly string _producer;//topic
+		private readonly IActorRef _producer;//topic
 		private readonly MessageMetadata _metadata  = new MessageMetadata();
-		private readonly ISchema _schema;
+		private readonly ISchema<T> _schema;
 		private byte[] _content;
+		private readonly IActorRef _txn;
 
-        public TypedMessageBuilder(string producer, ISchema schema)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema) : this(producer, schema, null)
+		{
+		}
+
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, IActorRef txn)
 		{
 			_producer = producer;
 			_schema = schema;
-			_content = new byte[0]{};
+			_content = new byte[0] { };
+			_txn = txn;
 		}
 
 		private long BeforeSend()
 		{
-			/*
-			 if (_txn == null)
+			if (_txn == null)
 			{
 				return -1L;
 			}
-			_metadata.SetTxnidLeastBits(_txn.TxnIdLeastBits);
-			_metadata.SetTxnidMostBits(_txn.TxnIdMostBits);
-			var sequenceId = _txn.NextSequenceId();
-			_metadata.SetSequenceId(sequenceId);
+			var least = _txn.Ask<long>(GetTxnIdLeastBits.Instance).Result;
+			var most = _txn.Ask<long>(GetTxnIdMostBits.Instance).Result;
+			var sequence = _txn.Ask<long>(NextSequenceId.Instance).Result;
+			_metadata.TxnidLeastBits = (ulong)least;
+			_metadata.TxnidMostBits = (ulong)most;
+			long sequenceId = sequence;
+			_metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
-			 */
-			return -1L;
 		}
-
-        public ITypedMessageBuilder Topic(string topic)
-        {
-			if(string.IsNullOrWhiteSpace(topic))
-				throw new ArgumentException("Topic cannot be null");
-            _topic = topic;
-            return this;
-        }
-		public ITypedMessageBuilder Key(string key)
+		public virtual IMessageId Send()
+		{
+			var message = Message;
+			InternalSendResponse response;
+			if (_txn != null)
+			{
+				response = _producer.Ask<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T))).Result;
+				_txn.Tell(new RegisterSendOp(response.MessageId));
+			}
+			else
+			{
+				response = _producer.Ask<InternalSendResponse>(new InternalSend<T>(message, typeof(T))).Result;
+			}
+			return response.MessageId;
+		}
+		public virtual ITypedMessageBuilder<T> Key(string key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
-				throw new PulsarClientException.NotSupportedException("KeyValue not supported");
-				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
-				//checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				var kvSchema = (KeyValueSchema<object,object>)_schema;
+				Condition.CheckArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				if (string.IsNullOrWhiteSpace(key))
+				{
+					_metadata.NullPartitionKey = true;
+					return this;
+				}
 			}
 			_metadata.PartitionKey = key;
 			_metadata.PartitionKeyB64Encoded = false;
 			return this;
 		}
-
-		public ITypedMessageBuilder KeyBytes(sbyte[] key)
+		public virtual ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
-                throw new PulsarClientException.NotSupportedException("KeyValue not supported");
-				//KeyValueSchema kvSchema = (KeyValueSchema) _schema;
-				//checkArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				var kvSchema = (KeyValueSchema<object, object>)_schema;
+				Condition.CheckArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+				if (key == null)
+				{
+					_metadata.NullPartitionKey = true;
+					return this;
+				}
 			}
 			_metadata.PartitionKey = Convert.ToBase64String((byte[])(object)key);
 			_metadata.PartitionKeyB64Encoded = true;
 			return this;
 		}
-
-		public ITypedMessageBuilder OrderingKey(sbyte[] orderingKey)
+		public ITypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey)
 		{
 			_metadata.OrderingKey = (byte[])(object)orderingKey;
 			return this;
 		}
 
-		public ITypedMessageBuilder Value(object value)
+		public virtual ITypedMessageBuilder<T> Value(T value)
 		{
-
-			if(value == null)
-                throw new NullReferenceException("Need Non-Null content value");
+			if (value == null)
+			{
+				_metadata.NullValue = true;
+				return this;
+			}
 			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
-                throw new PulsarClientException.NotSupportedException("KeyValue not supported");
-				
+				var kvSchema = (KeyValueSchema<object,object>)_schema;
+				var kv = (KeyValue<object, object>)(object)value;
+				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
+				{
+					// set key as the message key
+					if (kv.Key != null)
+					{
+						_metadata.PartitionKey = Convert.ToBase64String((byte[])(object)kvSchema.KeySchema.Encode(kv.Key));
+						_metadata.PartitionKeyB64Encoded = true;
+					}
+					else
+					{
+						_metadata.NullPartitionKey = true;
+					}
+
+					// set value as the payload
+					if (kv.Value != null)
+					{
+						_content = (byte[])(object)kvSchema.ValueSchema.Encode(kv.Value);
+					}
+					else
+					{
+						_metadata.NullValue = true;
+					}
+					return this;
+				}
 			}
-
-            var data = (byte[])(object)_schema.Encode(value);
-            _content = data;
+			_content = (byte[])(object)_schema.Encode(value);
 			return this;
 		}
-
-		public  ITypedMessageBuilder Property(string name, string value)
+		public virtual ITypedMessageBuilder<T> Property(string name, string value)
 		{
-			if(ReferenceEquals(name, null))
-                throw new NullReferenceException("Need Non-Null name");
-			if(ReferenceEquals(value, null))
-                throw new NullReferenceException("Need Non-Null value for name: " + name);
-			_metadata.Properties.Add(new KeyValue{ Key = name, Value = value});
+			Condition.CheckArgument(!string.IsNullOrWhiteSpace(name), "Need Non-Null name");
+			Condition.CheckArgument(string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);
+			_metadata.Properties.Add(new KeyValue { Key = name, Value = value });
 			return this;
 		}
-
-		public ITypedMessageBuilder Properties(IDictionary<string, string> properties)
+		public virtual ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
 		{
-			foreach (var entry in HashMapHelper.SetOfKeyValuePairs(properties))
+			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
 			{
-				if(entry.Key == null)
-					throw new NullReferenceException("Need Non-Null name");
-				if(entry.Value == null)
-					throw new NullReferenceException("Need Non-Null value for name: " + entry.Key); ;
-				_metadata.Properties.Add(new KeyValue {Key = entry.Key, Value = entry.Value});
+				Condition.CheckArgument(entry.Key != null, "Need Non-Null key");
+				Condition.CheckArgument(entry.Value != null, "Need Non-Null value for key: " + entry.Key);
+				_metadata.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
 			}
 
 			return this;
 		}
 
-		public ITypedMessageBuilder EventTime(long timestamp)
+		public virtual ITypedMessageBuilder<T> EventTime(long timestamp)
 		{
-			if(timestamp <= 0)
-                throw new ArgumentException("Invalid timestamp : "+ timestamp);
+			Condition.CheckArgument(timestamp > 0, "Invalid timestamp : '%s'", timestamp);
 			_metadata.EventTime = (ulong)timestamp;
 			return this;
 		}
-        public ITypedMessageBuilder ProducerName(string producer)
-        {
-            _metadata.ProducerName = producer;
-            return this;
-        }
-		public ITypedMessageBuilder SequenceId(long sequenceId)
+
+		public virtual ITypedMessageBuilder<T> SequenceId(long sequenceId)
 		{
-			if(sequenceId < 0)
-				throw new ArgumentException();
+			Condition.CheckArgument(sequenceId >= 0);
 			_metadata.SequenceId = (ulong)sequenceId;
 			return this;
 		}
 
-		public ITypedMessageBuilder ReplicationClusters(IList<string> clusters)
+		public virtual ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
 		{
-			if(clusters == null)
-				throw new NullReferenceException();
-			_metadata.ReplicateToes.AddRange(clusters.ToList());
+			Condition.CheckNotNull(clusters);
+			_metadata.ReplicateToes.Clear();
+			_metadata.ReplicateToes.AddRange(clusters);
 			return this;
 		}
-
-		public ITypedMessageBuilder DisableReplication()
+		public virtual ITypedMessageBuilder<T> DisableReplication()
 		{
+			_metadata.ReplicateToes.Clear();
 			_metadata.ReplicateToes.Add("__local__");
 			return this;
 		}
-
-		public ITypedMessageBuilder DeliverAfter(long delay)
+		public virtual ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit)
 		{
-			return DeliverAt((long)(DateTimeHelper.CurrentUnixTimeMillis() + TimeSpan.FromSeconds(delay).TotalMilliseconds));
+			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMilliseconds(delay));
 		}
 
-		public ITypedMessageBuilder DeliverAt(long timestamp)
+		public virtual ITypedMessageBuilder<T> DeliverAt(long timestamp)
 		{
 			_metadata.DeliverAtTime = timestamp;
 			return this;
 		}
+		
 
-		public ITypedMessageBuilder LoadConf(IDictionary<string, object> config)
+		public ITypedMessageBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
 			config.ToList().ForEach(d =>
 			{
-			if (d.Key.Equals(TypedMessageBuilderFields.ConfKey, StringComparison.OrdinalIgnoreCase))
+			if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_KEY, StringComparison.OrdinalIgnoreCase))
 			{
 				Key(d.Value.ToString());
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfProperties, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_PROPERTIES, StringComparison.OrdinalIgnoreCase))
 			{
 				Properties((IDictionary<string, string>)d.Value);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfEventTime, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_EVENT_TIME, StringComparison.OrdinalIgnoreCase))
 			{
 				EventTime((long)d.Value);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfSequenceId, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_SEQUENCE_ID, StringComparison.OrdinalIgnoreCase))
 			{
 				SequenceId((long)d.Value);
             }
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfReplicationClusters, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_REPLICATION_CLUSTERS, StringComparison.OrdinalIgnoreCase))
 			{
 				ReplicationClusters((IList<string>)d.Value);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDisableReplication, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DISABLE_REPLICATION, StringComparison.OrdinalIgnoreCase))
 			{
 				var disableReplication = (bool)d.Value;
 				if (disableReplication)
@@ -219,31 +254,30 @@ namespace SharpPulsar
 					DisableReplication();
 				}
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAfterSeconds, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AFTER_SECONDS, StringComparison.OrdinalIgnoreCase))
 			{
-				DeliverAfter((long)d.Value);
+				DeliverAfter((long)d.Value, TimeUnit.SECONDS);
 			}
-			else if (d.Key.Equals(TypedMessageBuilderFields.ConfDeliveryAt, StringComparison.OrdinalIgnoreCase))
+			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AT, StringComparison.OrdinalIgnoreCase))
 			{
 				DeliverAt((long)d.Value);
 			}
             
-            /*else
+            else
 			{
 				throw new Exception("Invalid message config key '" + d.Key + "'");
-			}*/
+			}
 			});
 			return this;
 		}
 
-
-		public IMessage Message
+		public virtual IMessage<T> Message
 		{
 			get
 			{
 				BeforeSend();
-				return  Impl.Message.Create(_metadata, _content, _schema, _topic);
-            }
+				return Message<T>.Create(_metadata, _content, _schema);
+			}
 		}
 
 		public virtual long PublishTime => (long)_metadata.PublishTime;
@@ -253,7 +287,8 @@ namespace SharpPulsar
 			return !string.IsNullOrWhiteSpace(_metadata.PartitionKey);
 		}
 
-		public virtual string GetKey => _metadata.PartitionKey;
+
+        public virtual string GetKey => _metadata.PartitionKey;
     }
 
 }

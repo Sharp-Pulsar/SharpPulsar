@@ -79,6 +79,14 @@ namespace SharpPulsar.Transaction
 			{
 				Sender.Tell(NextSequenceId());
 			});
+			Receive<GetTxnIdLeastBits>(_ =>
+			{
+				Sender.Tell(_txnIdLeastBits);
+			});
+			Receive<GetTxnIdMostBits>(_ =>
+			{
+				Sender.Tell(_txnIdMostBits);
+			});
 			Receive<Abort>(_ =>
 			{
 				Abort();
