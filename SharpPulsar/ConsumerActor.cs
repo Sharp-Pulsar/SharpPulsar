@@ -18,6 +18,7 @@ using SharpPulsar.Transaction;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -82,7 +83,7 @@ namespace SharpPulsar
 
 		private readonly IMessageCrypto _msgCrypto;
 
-		private readonly IDictionary<string, string> _metadata;
+		private readonly ImmutableDictionary<string, string> _metadata;
 
 		private readonly bool _readCompacted;
 		private readonly bool _resetIncludeHead;
@@ -217,11 +218,11 @@ namespace SharpPulsar
 
 			if(conf.Properties.Empty)
 			{
-				_metadata = Collections.emptyMap();
+				_metadata = ImmutableDictionary.Create<string,string>();
 			}
 			else
 			{
-				_metadata = Collections.unmodifiableMap(new Dictionary<>(conf.Properties));
+				_metadata = new Dictionary<string,string>(conf.Properties).ToImmutableDictionary();
 			}
 
 			_connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(client.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(client.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(0, TimeUnit.MILLISECONDS).create(), this);
