@@ -35,6 +35,7 @@ namespace SharpPulsar
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
+    using System.Threading.Tasks;
 
     [Serializable]
 	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
@@ -63,9 +64,10 @@ namespace SharpPulsar
 			{
 				return -1L;
 			}
-			var least = _txn.Ask<long>(GetTxnIdLeastBits.Instance).Result;
-			var most = _txn.Ask<long>(GetTxnIdMostBits.Instance).Result;
-			var sequence = _txn.Ask<long>(NextSequenceId.Instance).Result;
+			//https://stackoverflow.com/questions/17248680/await-works-but-calling-task-result-hangs-deadlocks#answer-32429753
+			var least = Task.Run(()=> _txn.Ask<long>(GetTxnIdLeastBits.Instance)).Result;
+			var most = Task.Run(()=> _txn.Ask<long>(GetTxnIdMostBits.Instance)).Result;
+			var sequence = Task.Run(() => _txn.Ask<long>(NextSequenceId.Instance)).Result;
 			_metadata.TxnidLeastBits = (ulong)least;
 			_metadata.TxnidMostBits = (ulong)most;
 			long sequenceId = sequence;
@@ -78,12 +80,12 @@ namespace SharpPulsar
 			InternalSendResponse response;
 			if (_txn != null)
 			{
-				response = _producer.Ask<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T))).Result;
+				response = Task.Run(() => _producer.Ask<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T)))).Result;
 				_txn.Tell(new RegisterSendOp(response.MessageId));
 			}
 			else
 			{
-				response = _producer.Ask<InternalSendResponse>(new InternalSend<T>(message, typeof(T))).Result;
+				response = Task.Run(() => _producer.Ask<InternalSendResponse>(new InternalSend<T>(message, typeof(T)))).Result;
 			}
 			return response.MessageId;
 		}
