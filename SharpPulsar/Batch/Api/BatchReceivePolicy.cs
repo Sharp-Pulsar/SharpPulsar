@@ -21,7 +21,7 @@ namespace SharpPulsar.Batch.Api
 {
 
 	/// <summary>
-	/// Configuration for message batch receive <seealso cref="Consumer.batchReceive()"/> <seealso cref="Consumer.batchReceiveAsync()"/>.
+	/// Configuration for message batch receive <seealso cref="ConsumerActor.batchReceive()"/> <seealso cref="ConsumerActor.batchReceiveAsync()"/>.
 	/// 
 	/// <para>Batch receive policy can limit the number and bytes of messages in a single batch, and can specify a timeout
 	/// for waiting for enough messages for this batch.
@@ -33,9 +33,9 @@ namespace SharpPulsar.Batch.Api
 	/// </para>
 	/// <para>Examples:
 	/// 1.If set maxNumMessages = 10, maxSizeOfMessages = 1MB and without timeout, it
-	/// means <seealso cref="Consumer.batchReceive()"/> will always wait until there is enough messages.
+	/// means <seealso cref="ConsumerActor.batchReceive()"/> will always wait until there is enough messages.
 	/// 2.If set maxNumberOfMessages = 0, maxNumBytes = 0 and timeout = 100ms, it
-	/// means <seealso cref="Consumer.batchReceive()"/> will waiting for 100ms whether or not there is enough messages.
+	/// means <seealso cref="ConsumerActor.batchReceive()"/> will waiting for 100ms whether or not there is enough messages.
 	/// 
 	/// </para>
 	/// <para>Note:

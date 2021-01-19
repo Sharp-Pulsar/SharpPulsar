@@ -30,7 +30,7 @@ using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Api;
 using SharpPulsar.Handlers;
 using SharpPulsar.Auth;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using JsonSerializer = System.Text.Json.JsonSerializer;

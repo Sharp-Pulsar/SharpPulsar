@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Api;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,19 +23,19 @@ using SharpPulsar.Api;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
 	/// <summary>
 	/// A container that hold the list <seealso cref="IConsumerInterceptor{T}"/> and wraps calls to the chain
 	/// of custom interceptors.
 	/// </summary>
-	public class ConsumerInterceptors
+	public class ConsumerInterceptors<T> : IDisposable
     {
         private readonly ILoggingAdapter _log;
 
-		private readonly IList<IConsumerInterceptor> _interceptors;
+		private readonly IList<IConsumerInterceptor<T>> _interceptors;
 
-		public ConsumerInterceptors(ActorSystem system, IList<IConsumerInterceptor> interceptors)
+		public ConsumerInterceptors(ActorSystem system, IList<IConsumerInterceptor<T>> interceptors)
 		{
 			_interceptors = interceptors;
             _log = system.Log;
@@ -51,7 +53,7 @@ namespace SharpPulsar.Impl
 		/// <param name="consumer"> the consumer which contains the interceptors </param>
 		/// <param name="message"> message to be consume by the client. </param>
 		/// <returns> messages that are either modified by interceptors or same as messages passed to this method. </returns>
-		public virtual IMessage BeforeConsume(IActorRef consumer, IMessage message)
+		public virtual IMessage<T> BeforeConsume(IActorRef consumer, IMessage<T> message)
 		{
 			var interceptorMessage = message;
             if (_interceptors != null)
@@ -189,7 +191,21 @@ namespace SharpPulsar.Impl
                 }
 			}
 		}
+		public virtual void Dispose()
+		{
+			for (int i = 0, interceptorsSize = _interceptors.Count; i < interceptorsSize; i++)
+			{
+				try
+				{
+					_interceptors[i].Dispose();
+				}
+				catch (Exception e)
+				{
+					_log.Error("Fail to close consumer interceptor ", e);
+				}
+			}
+		}
 
-    }
+	}
 
 }

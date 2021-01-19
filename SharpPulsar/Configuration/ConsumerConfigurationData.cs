@@ -9,6 +9,8 @@ using SharpPulsar.Utility;
 using SharpPulsar.Utils;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
+using SharpPulsar.Impl;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,17 +30,17 @@ using SharpPulsar.Common;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Conf
+namespace SharpPulsar.Configuration
 {
-	public sealed class ConsumerConfigurationData
+	public sealed class ConsumerConfigurationData<T>
 	{
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
-		public List<IConsumerInterceptor> Interceptors { get; set; }
-		public CommandSubscribe.SubType SubscriptionType { get; set; } = CommandSubscribe.SubType.Exclusive;
-		public IMessageListener MessageListener { get; set; }
+		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
+		public SubType SubscriptionType { get; set; } = SubType.Exclusive;
+		public IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
         public bool UseTls { get; set; } = false;
@@ -69,6 +71,8 @@ namespace SharpPulsar.Impl.Conf
 
 		public int PatternAutoDiscoveryPeriod { get; set; } = 5;
 
+		private SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
+
 		public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
 		
@@ -77,6 +81,7 @@ namespace SharpPulsar.Impl.Conf
 		public bool AutoUpdatePartitions { get; set; } = true;
 
 		public bool ReplicateSubscriptionState { get; set; } = false;
+		public bool RetryEnable { get; set; } = false;
 
 		public bool ResetIncludeHead { get; set; } = false;
 

@@ -1,6 +1,6 @@
 ﻿using Akka.Event;
 using SharpPulsar.Configuration;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using System;
 using System.Buffers;
 using System.IO;

@@ -27,13 +27,14 @@ using Akka.Util.Internal;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Tracker
 {
 
-	public class NegativeAcksTracker:ReceiveActor
+	public class NegativeAcksTracker<T>:ReceiveActor
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages;
@@ -47,7 +48,7 @@ namespace SharpPulsar.Tracker
 		// Set a min delay to allow for grouping nacks within a single batch
 		private static readonly long MinNackDelayMs = 100;
 
-		public NegativeAcksTracker(ConsumerConfigurationData conf, IActorRef unAckedMessageTracker)
+		public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
         {
             _unAckedMessageTracker = unAckedMessageTracker;
 			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
@@ -56,9 +57,9 @@ namespace SharpPulsar.Tracker
             Receive<Trigger>(t => TriggerRedelivery());
         }
 
-        public static Props Prop(ConsumerConfigurationData conf, IActorRef unAckedMessageTracker)
+        public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
         {
-            return Props.Create(()=> new NegativeAcksTracker(conf, unAckedMessageTracker));
+            return Props.Create(()=> new NegativeAcksTracker<T>(conf, unAckedMessageTracker));
         }
 		private void TriggerRedelivery()
         {

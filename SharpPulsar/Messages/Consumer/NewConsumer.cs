@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Messages.Consumer
 {

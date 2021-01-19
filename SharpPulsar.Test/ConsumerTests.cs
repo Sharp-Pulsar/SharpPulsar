@@ -16,7 +16,7 @@ using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Handlers;
 using SharpPulsar.Auth;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
 using Xunit;

@@ -26,7 +26,7 @@ using SharpPulsar.Interfaces.Interceptor;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Conf
+namespace SharpPulsar.Configuration
 {
     public class ProducerConfigurationData
     {

@@ -9,7 +9,7 @@ using Nito.AsyncEx;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 

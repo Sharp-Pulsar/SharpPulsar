@@ -3,7 +3,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Akka.Producer;
 using SharpPulsar.Akka.Reader;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka
 {

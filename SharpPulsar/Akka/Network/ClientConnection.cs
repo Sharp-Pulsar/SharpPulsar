@@ -13,7 +13,7 @@ using SharpPulsar.Akka.Consumer;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using AuthData = SharpPulsar.Auth.AuthData;

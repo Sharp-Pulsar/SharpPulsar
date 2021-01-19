@@ -19,7 +19,7 @@ using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Client;
 using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Akka

@@ -2,7 +2,7 @@
 using Akka.Actor;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka.Reader
 {

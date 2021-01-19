@@ -9,7 +9,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Tracker.Messages;

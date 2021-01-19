@@ -37,7 +37,7 @@ namespace SharpPulsar.Interfaces
 	/// not propagated further.
 	/// </para>
 	/// </summary>
-	public interface IConsumerInterceptor
+	public interface IConsumerInterceptor<T>: IDisposable
 	{
 		/// <summary>
 		/// <para>This method is allowed to modify message, in which case the new message
@@ -73,7 +73,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="message"> the message to be consumed by the client. </param>
 		/// <returns> message that is either modified by the interceptor or same message
 		///         passed into the method. </returns>
-		IMessage BeforeConsume(IActorRef consumer, IMessage message);
+		IMessage<T> BeforeConsume(IActorRef consumer, IMessage<T> message);
 
 		/// <summary>
 		/// This is called consumer sends the acknowledgment to the broker.
@@ -97,7 +97,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="consumer"> the consumer which contains the interceptor </param>
 		/// <param name="messageId"> message to ack, null if acknowledge fail. </param>
 		/// <param name="exception"> the exception on acknowledge. </param>
-		void OnAcknowledgeCumulative(IActorRef consumer, IMessageId messageId, System.Exception exception);
+		void OnAcknowledgeCumulative(IActorRef consumer, IMessageId messageId, Exception exception);
 
 		/// <summary>
 		/// This method will be called when a redelivery from a negative acknowledge occurs.

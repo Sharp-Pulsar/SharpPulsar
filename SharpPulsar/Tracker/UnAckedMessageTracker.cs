@@ -28,6 +28,7 @@ using Akka.Util;
 using Akka.Util.Internal;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker

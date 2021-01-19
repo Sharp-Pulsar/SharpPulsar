@@ -8,7 +8,7 @@ using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;

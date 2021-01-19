@@ -19,19 +19,19 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl
+namespace SharpPulsar.Interfaces
 {
 
 	/// <summary>
 	/// Listener that notified when concerned topic partitions changed.
 	/// </summary>
-	public interface PartitionsChangedListener
+	public interface IPartitionsChangedListener
 	{
 		/// <summary>
 		/// Notified when topic partitions increased.
 		/// Passed in topics that have partitions increased.
 		/// </summary>
-		TaskCompletionSource<Task> OnTopicsExtended(ICollection<string> topicsExtended);
+		void OnTopicsExtended(ICollection<string> topicsExtended);
 	}
 
 }

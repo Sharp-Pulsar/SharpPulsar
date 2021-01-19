@@ -1,7 +1,7 @@
 ﻿using System;
 using Akka.Actor;
 using SharpPulsar.Messages;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka.Network
 {

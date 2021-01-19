@@ -89,10 +89,6 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 
 		// CHECKSTYLE.ON: ConstantName
-	}
-
-	public static class MessageIdFields
-	{
 		public static readonly IMessageId Earliest = DefaultImplementation.NewMessageId(-1, -1, -1, -1);
 		public static readonly IMessageId Latest = DefaultImplementation.NewMessageId(long.MaxValue, long.MaxValue, -1, -1);
 	}

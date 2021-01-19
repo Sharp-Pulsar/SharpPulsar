@@ -8,7 +8,7 @@ using App.Metrics.Concurrency;
 using DotNetty.Common.Utilities;
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Stats.Consumer.Api;
 
 /// <summary>

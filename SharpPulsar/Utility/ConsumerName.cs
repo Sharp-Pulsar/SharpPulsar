@@ -23,7 +23,7 @@ using System.Text;
 namespace SharpPulsar.Utility
 {
 
-	public static class ConsumerName
+	public class ConsumerName
 	{
 		public static string GenerateRandomName()
 		{

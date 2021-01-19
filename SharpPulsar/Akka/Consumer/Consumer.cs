@@ -10,7 +10,7 @@ using SharpPulsar.Common.Schema;
 using SharpPulsar.Extension;
 using SharpPulsar.Impl;
 using SharpPulsar.Auth;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Protocol.Proto;
