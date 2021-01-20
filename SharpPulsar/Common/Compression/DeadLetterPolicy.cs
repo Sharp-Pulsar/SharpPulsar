@@ -31,6 +31,11 @@ namespace SharpPulsar.Interfaces
         public int MaxRedeliverCount { get; set; }
 
         /// <summary>
+		/// Name of the retry topic where the failing messages will be sent.
+		/// </summary>
+		public string RetryLetterTopic { get; set; }
+
+        /// <summary>
         /// Name of the topic where the failing messages will be sent.
         /// </summary>
         public string DeadLetterTopic { get; set; }

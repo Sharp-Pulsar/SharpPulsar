@@ -63,6 +63,7 @@ namespace SharpPulsar.Configuration
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
 
         public bool BatchConsume { get; set; } = false;
+        public bool BatchIndexAckEnabled { get; set; } = false;
 		public long BatchConsumeTimeout { get; set; } = 30_000; //30 seconds
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
@@ -71,7 +72,7 @@ namespace SharpPulsar.Configuration
 
 		public int PatternAutoDiscoveryPeriod { get; set; } = 5;
 
-		private SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
+	    public SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
 
 		public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 

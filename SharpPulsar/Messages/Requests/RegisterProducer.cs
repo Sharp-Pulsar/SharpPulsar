@@ -20,6 +20,16 @@ namespace SharpPulsar.Messages.Requests
             ProducerId = producerId;
         }
     }
+    public sealed class SendRequestWithId
+    {
+        public byte[] Message { get; }
+        public long RequestId { get; }
+        public SendRequestWithId(byte[] message,  long requestid)
+        {
+            Message = message;
+            RequestId = requestid;
+        }
+    }
     public sealed class RegisterConsumer
     {
         public long ConsumerId { get; }
@@ -27,6 +37,14 @@ namespace SharpPulsar.Messages.Requests
         public RegisterConsumer(long consumerId, IActorRef consumer)
         {
             ConsumerId = consumerId;
+            Consumer = consumer;
+        }
+    }
+    public sealed class CleanupConsumer
+    {
+        public IActorRef Consumer { get; }
+        public CleanupConsumer(IActorRef consumer)
+        {
             Consumer = consumer;
         }
     }

@@ -8,6 +8,7 @@ using BAMCIS.Util.Concurrent;
 using State = SharpPulsar.HandlerState.State;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
+using SharpPulsar.Extension;
 
 namespace SharpPulsar
 {	
@@ -47,7 +48,7 @@ namespace SharpPulsar
 			});
 		}
 
-		protected internal void GrabCnx()
+		private void GrabCnx()
 		{
 			if (_clientCnx != null)
 			{
@@ -59,18 +60,18 @@ namespace SharpPulsar
 			{
 				// Ignore connection closed when we are shutting down
 				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
-				return;
+				_connection.Tell(new Failure { Exception = new Exception("Invalid State For Reconnection") });
 			}
 
 			try
 			{
-				_state.Client.Ask<IActorRef>(new GetConnection(_state.Topic)).ContinueWith(task => 
+				var cnx = _state.Client.AskFor<IActorRef>(new GetConnection(_state.Topic));
+				if(cnx == null)
 				{
-					if (task.IsFaulted)
-						HandleConnectionError(task.Exception);
-					else
-						_connection.Tell(new ConnectionOpened(task.Result));
-				});
+					HandleConnectionError(new NullReferenceException());
+				}
+				else
+					_connection.Tell(new ConnectionOpened(cnx));
 			}
 			catch (Exception t)
 			{
@@ -92,7 +93,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_connection.Tell(new PulsarClientException(exception));
+				_connection.Tell(new Failure { Exception = exception });
 			}
 
 			var state = _state.ConnectionState;
@@ -121,7 +122,7 @@ namespace SharpPulsar
 		public virtual void ConnectionClosed(IActorRef cnx)
 		{
 			LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
-			_state.Client.Ask(new ReleaseConnectionPool(cnx));
+			_state.Client.AskFor(new ReleaseConnectionPool(cnx));
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
 			{

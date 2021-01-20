@@ -18,13 +18,19 @@ namespace SharpPulsar.Messages.Transaction
     {
         public static NextSequenceId Instance = new NextSequenceId();
     }
-    public sealed class GetTxnIdLeastBits
+    public sealed class GetTxnIdBits
     {
-        public static GetTxnIdLeastBits Instance = new GetTxnIdLeastBits();
+        public static GetTxnIdBits Instance = new GetTxnIdBits();
     }
-    public sealed class GetTxnIdMostBits
+    public sealed class GetTxnIdBitsResponse
     {
-        public static GetTxnIdMostBits Instance = new GetTxnIdMostBits();
+        public long MostBits { get; }
+        public long LeastBits { get; }
+        public GetTxnIdBitsResponse(long mostBits, long leastBits)
+        {
+            MostBits = mostBits;
+            LeastBits = leastBits;
+        }
     }
     public sealed class StartTransactionCoordinatorClient
     {

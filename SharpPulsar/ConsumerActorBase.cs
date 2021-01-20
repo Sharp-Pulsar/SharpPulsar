@@ -58,13 +58,13 @@ namespace SharpPulsar
 		}
 		private readonly ILoggingAdapter _log;
 		private readonly string _subscription;
-		private readonly ConsumerConfigurationData<T> _conf;
+		protected internal readonly ConsumerConfigurationData<T> Conf;
 		private readonly string _consumerName;
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly IAdvancedScheduler ListenerExecutor;
-		internal readonly BlockingQueue<IMessage<T>> IncomingMessages;
-		protected internal ConcurrentDictionary<MessageId, MessageId[]> UnAckedChunckedMessageIdSequenceMap;
+		internal readonly BlockingCollection<IMessage<T>> IncomingMessages;
+		protected internal ConcurrentDictionary<IMessageId, IMessageId[]> UnAckedChunckedMessageIdSequenceMap;
 		protected internal readonly ConcurrentQueue<IMessage<T>> PendingReceives;
 
 		protected internal int MaxReceiverQueueSizeConflict;
@@ -82,13 +82,13 @@ namespace SharpPulsar
 			_log = Context.GetLogger();
 			MaxReceiverQueueSizeConflict = receiverQueueSize;
 			_subscription = conf.SubscriptionName;
-			_conf = conf;
+			Conf = conf;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 
-			IncomingMessages = new BlockingQueue<IMessage<T>>();
-			UnAckedChunckedMessageIdSequenceMap = new ConcurrentDictionary<MessageId, MessageId[]>();
+			IncomingMessages = new BlockingCollection<IMessage<T>>();
+			UnAckedChunckedMessageIdSequenceMap = new ConcurrentDictionary<IMessageId, IMessageId[]>();
 
 			ListenerExecutor = listenerExecutor;
 			PendingReceives = new ConcurrentQueue<IMessage<T>>();
@@ -125,23 +125,23 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual IMessage<T> Receive()
+		internal virtual void Receive()
 		{
 			if (Listener != null)
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
 			}
 			VerifyConsumerState();
-			return InternalReceive();
+			InternalReceive();
 		}
 
 		
-		protected internal abstract IMessage<T> InternalReceive();
+		protected internal abstract void InternalReceive();
 
 		
-		internal virtual IMessage<T> Receive(int timeout, TimeUnit unit)
+		internal virtual void Receive(int timeout, TimeUnit unit)
 		{
-			if (_conf.ReceiverQueueSize == 0)
+			if (Conf.ReceiverQueueSize == 0)
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
 			}
@@ -151,20 +151,20 @@ namespace SharpPulsar
 			}
 
 			VerifyConsumerState();
-			return InternalReceive(timeout, unit);
+			InternalReceive(timeout, unit);
 		}
 
-		protected internal abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
+		protected internal abstract void InternalReceive(int timeout, TimeUnit unit);
 
 		
-		internal virtual IMessages<T> BatchReceive()
+		internal virtual void BatchReceive()
 		{
 			VerifyBatchReceive();
 			VerifyConsumerState();
-			return InternalBatchReceive();
+			InternalBatchReceive();
 		}
 
-		internal virtual async Task<IMessages<T>> BatchReceiveAsync()
+		internal virtual async void BatchReceiveAsync()
 		{
 			var task = new TaskCompletionSource<IMessages<T>>();
 			try
@@ -211,9 +211,9 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal abstract IMessages<T> InternalBatchReceive();
+		protected internal abstract void InternalBatchReceive();
 
-		protected internal abstract Task<IMessages<T>> InternalBatchReceiveAsync();
+		protected internal abstract void InternalBatchReceiveAsync();
 
 		
 		internal virtual void Acknowledge<T1>(IMessage<T1> message)
@@ -270,7 +270,7 @@ namespace SharpPulsar
 		
 		internal virtual void ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
 		{
-			if (!_conf.RetryEnable)
+			if (!Conf.RetryEnable)
 			{
 				throw new PulsarClientException("reconsumeLater method not support!");
 			}
@@ -374,7 +374,7 @@ namespace SharpPulsar
 
 		internal virtual Task ReconsumeLaterAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
 		{
-			if (!_conf.RetryEnable)
+			if (!Conf.RetryEnable)
 			{
 				return FutureUtil.FailedFuture(new PulsarClientException("reconsumeLater method not support!"));
 			}
@@ -415,11 +415,11 @@ namespace SharpPulsar
 
 		internal virtual Task ReconsumeLaterCumulativeAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
 		{
-			if (!_conf.RetryEnable)
+			if (!Conf.RetryEnable)
 			{
 				return FutureUtil.FailedFuture(new PulsarClientException("reconsumeLater method not support!"));
 			}
-			if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
+			if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
 			{
 				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive subscription"));
 			}
@@ -449,7 +449,7 @@ namespace SharpPulsar
 
 		internal virtual Task AcknowledgeCumulativeAsync(IMessageId messageId, ITransaction txn)
 		{
-			if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
+			if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
 			{
 				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"));
 			}
@@ -519,22 +519,6 @@ namespace SharpPulsar
 			messages.ForEach(negativeAcknowledge);
 		}
 
-
-		internal virtual void Unsubscribe()
-		{
-			try
-			{
-				UnsubscribeAsync();
-			}
-			catch (Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
-		}
-
-		internal virtual Task UnsubscribeAsync();
-
-		
 		internal virtual void close()
 		{
 			try
@@ -578,7 +562,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				SubscriptionType type = (SubscriptionType)_conf.SubscriptionType;
+				SubscriptionType type = (SubscriptionType)Conf.SubscriptionType;
 				switch (type)
 				{
 					case SubscriptionType.Exclusive:
@@ -705,9 +689,10 @@ namespace SharpPulsar
 
 		protected internal virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
-			if (CanEnqueueMessage(message) && IncomingMessages.offer(message))
+			if (CanEnqueueMessage(message) && IncomingMessages.TryAdd(message))
 			{
-				IncomingMessagesSizeUpdater.addAndGet(this, message.Data == null ? 0 : message.Data.Length);
+				var size = message.Data == null ? 0 : message.Data.Length;
+				IncomingMessagesSize += size;
 			}
 			return HasEnoughMessagesForBatchReceive();
 		}
@@ -718,7 +703,7 @@ namespace SharpPulsar
 			{
 				return false;
 			}
-			return (BatchReceivePolicy.MaxNumMessages > 0 && IncomingMessages.size() >= BatchReceivePolicy.MaxNumMessages) || (BatchReceivePolicy.MaxNumBytes > 0 && IncomingMessagesSizeUpdater.get(this) >= BatchReceivePolicy.MaxNumBytes);
+			return (BatchReceivePolicy.MaxNumMessages > 0 && IncomingMessages.Count >= BatchReceivePolicy.MaxNumMessages) || (BatchReceivePolicy.MaxNumBytes > 0 && IncomingMessagesSize >= BatchReceivePolicy.MaxNumBytes);
 		}
 
 		private void VerifyConsumerState()
@@ -747,7 +732,7 @@ namespace SharpPulsar
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
 			}
-			if (_conf.ReceiverQueueSize == 0)
+			if (Conf.ReceiverQueueSize == 0)
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
 			}

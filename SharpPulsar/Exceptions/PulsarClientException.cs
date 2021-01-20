@@ -25,7 +25,7 @@ namespace SharpPulsar.Exceptions
 	/// <summary>
 	/// Base type of exception thrown by Pulsar client.
 	/// </summary>
-	public class PulsarClientException : IOException
+	public class PulsarClientException : Exception
 	{
 		private long _sequenceId = -1;
 		/// <summary>

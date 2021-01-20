@@ -32,12 +32,12 @@ namespace SharpPulsar
 		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
 		private volatile bool _waitingOnListenerForZeroQueueSize = false;
 
-		public ZeroQueueConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : base(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist)
+		public ZeroQueueConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : base(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration)
 		{
 		}
-		public static Props NewZeroQueueConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist)
+		public static Props NewZeroQueueConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration)
         {
-			return Props.Create(() => new ZeroQueueConsumer<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist));
+			return Props.Create(() => new ZeroQueueConsumer<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration));
         }
 		protected internal override Message<T> InternalReceive()
 		{
@@ -90,7 +90,7 @@ namespace SharpPulsar
 				do
 				{
 					message = IncomingMessages.take();
-					LastDequeuedMessageId = message.MessageId;
+					_lastDequeuedMessageId = message.MessageId;
 					ClientCnx msgCnx = ((MessageImpl<object>) message).Cnx;
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					lock(this)

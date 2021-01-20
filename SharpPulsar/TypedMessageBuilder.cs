@@ -64,12 +64,11 @@ namespace SharpPulsar
 			{
 				return -1L;
 			}
-			//https://stackoverflow.com/questions/17248680/await-works-but-calling-task-result-hangs-deadlocks#answer-32429753
-			var least = Task.Run(()=> _txn.Ask<long>(GetTxnIdLeastBits.Instance)).Result;
-			var most = Task.Run(()=> _txn.Ask<long>(GetTxnIdMostBits.Instance)).Result;
-			var sequence = Task.Run(() => _txn.Ask<long>(NextSequenceId.Instance)).Result;
-			_metadata.TxnidLeastBits = (ulong)least;
-			_metadata.TxnidMostBits = (ulong)most;
+			
+			var bits = _txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+			var sequence = _txn.AskFor<long>(NextSequenceId.Instance);
+			_metadata.TxnidLeastBits = (ulong)bits.LeastBits;
+			_metadata.TxnidMostBits = (ulong)bits.MostBits;
 			long sequenceId = sequence;
 			_metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
@@ -80,12 +79,12 @@ namespace SharpPulsar
 			InternalSendResponse response;
 			if (_txn != null)
 			{
-				response = Task.Run(() => _producer.Ask<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T)))).Result;
+				response = _producer.AskFor<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T)));
 				_txn.Tell(new RegisterSendOp(response.MessageId));
 			}
 			else
 			{
-				response = Task.Run(() => _producer.Ask<InternalSendResponse>(new InternalSend<T>(message, typeof(T)))).Result;
+				response =  _producer.AskFor<InternalSendResponse>(new InternalSend<T>(message, typeof(T)));
 			}
 			return response.MessageId;
 		}

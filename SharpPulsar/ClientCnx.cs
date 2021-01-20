@@ -140,6 +140,10 @@ namespace SharpPulsar
 				Receive<RegisterTransactionMetaStoreHandler>(h => {
 					RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
 				});
+				Receive<SendRequestWithId>(r => {
+					SendRequestWithId(r.Message, r.RequestId);
+					Sender.Tell(true);
+				});
 			});
 		}
 		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
