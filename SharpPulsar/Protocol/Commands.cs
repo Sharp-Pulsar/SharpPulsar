@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Protocol.Proto;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -608,10 +607,14 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
 		{
-			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, 0, 0);
+			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, -1L, -1);
 		}
-
-		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
+		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
+		{
+			return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError,
+					properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
+		}
+		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
 		{
             var ack = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = ackType};
 			
@@ -624,6 +627,16 @@ namespace SharpPulsar.Protocol
 			if (validationError != null)
 			{
 				ack.validation_error = (CommandAck.ValidationError) validationError;
+			}
+
+			if (batchSize >= 0)
+			{
+				messageIdData.BatchSize = batchSize;
+			}
+
+			if (requestId >= 0)
+			{
+				ack.RequestId = (ulong)requestId;
 			}
 			if (txnIdMostBits > 0)
 			{

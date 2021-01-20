@@ -20,6 +20,10 @@ namespace SharpPulsar.Messages.Requests
             ProducerId = producerId;
         }
     }
+    public sealed class RemoteEndpointProtocolVersion
+    {
+        public static RemoteEndpointProtocolVersion Instance = new RemoteEndpointProtocolVersion();
+    }
     public sealed class SendRequestWithId
     {
         public byte[] Message { get; }

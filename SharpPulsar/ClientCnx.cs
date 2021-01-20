@@ -144,6 +144,9 @@ namespace SharpPulsar
 					SendRequestWithId(r.Message, r.RequestId);
 					Sender.Tell(true);
 				});
+				Receive<RemoteEndpointProtocolVersion>(r => {
+					Sender.Tell(_protocolVersion);
+				});
 			});
 		}
 		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
