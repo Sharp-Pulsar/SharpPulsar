@@ -42,7 +42,7 @@ namespace SharpPulsar.Tracker
     /// <summary>
 	/// Group the acknowledgements for a certain time and then sends them out in a single protobuf command.
 	/// </summary>
-	public class PersistentAcknowledgmentsGroupingTracker : ReceiveActor
+	public class PersistentAcknowledgmentsGroupingTracker<T> : ReceiveActor
 	{
 
 		/// <summary>
@@ -94,7 +94,7 @@ namespace SharpPulsar.Tracker
             Receive<FlushAndClean>(_ => FlushAndClean());
             Receive<FlushPending>(_ => Flush());
         }
-        public static Props Prop(IActorRef broker, long consumerid, ConsumerConfigurationData conf)
+        public static Props Prop(IActorRef broker, long consumerid, ConsumerConfigurationData<T> conf)
         {
 			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker(broker, consumerid, conf));
         }

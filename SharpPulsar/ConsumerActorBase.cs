@@ -530,28 +530,6 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual Task CloseAsync()
-        {
-			return null;
-        }
-		
-		internal virtual IMessageId LastMessageId
-		{
-			get
-			{
-				try
-				{
-					return LastMessageIdAsync;
-				}
-				catch (Exception e)
-				{
-					throw PulsarClientException.Unwrap(e);
-				}
-			}
-		}
-
-		internal virtual Task<MessageId> LastMessageIdAsync { get; }
-
 		private bool IsCumulativeAcknowledgementAllowed(SubscriptionType type)
 		{
 			return SubscriptionType.Shared != type && SubscriptionType.KeyShared != type;
@@ -623,7 +601,7 @@ namespace SharpPulsar
 		/// </summary>
 		protected internal abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
 
-		internal override string ToString()
+		public override string ToString()
 		{
 			return "ConsumerBase{" + "subscription='" + _subscription + '\'' + ", consumerName='" + _consumerName + '\'' + ", topic='" + Topic + '\'' + '}';
 		}

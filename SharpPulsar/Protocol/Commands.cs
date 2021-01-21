@@ -397,11 +397,11 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewSeek(long consumerId, long requestId, long ledgerId, long entryId)
+		public static byte[] NewSeek(long consumerId, long requestId, long ledgerId, long entryId, long[] ackSet)
 		{
             var seek = new CommandSeek {ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId};
 
-            var messageId = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
+            var messageId = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId, AckSets = ackSet};
             seek.MessageId = messageId;
 			var res = Serializer.Serialize(seek.ToBaseCommand());
 			

@@ -1,7 +1,16 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Requests
 {
+    public sealed class CommandSuccessResponse
+    {
+        public CommandSuccess Success { get; }
+        public CommandSuccessResponse(CommandSuccess success)
+        {
+            Success = success;
+        }
+    }
     public sealed class RegisterProducer
     {
         public long ProducerId { get; }
