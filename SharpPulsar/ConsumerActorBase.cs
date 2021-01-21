@@ -48,7 +48,6 @@ namespace SharpPulsar
 		internal abstract void Seek(long timestamp);
 		internal abstract void Seek(IMessageId messageId);
 		internal abstract void RedeliverUnacknowledgedMessages();
-		internal abstract bool HasReachedEndOfTopic();
 		internal abstract IConsumerStats Stats { get; }
 
 		internal enum ConsumerType
@@ -63,7 +62,7 @@ namespace SharpPulsar
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly IAdvancedScheduler ListenerExecutor;
-		internal readonly BlockingCollection<IMessage<T>> IncomingMessages;
+		protected internal BlockingQueue<IMessage<T>> IncomingMessages;
 		protected internal ConcurrentDictionary<IMessageId, IMessageId[]> UnAckedChunckedMessageIdSequenceMap;
 		protected internal readonly ConcurrentQueue<IMessage<T>> PendingReceives;
 

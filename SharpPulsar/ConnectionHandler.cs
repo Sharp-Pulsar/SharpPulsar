@@ -50,6 +50,14 @@ namespace SharpPulsar
 			{
 				Sender.Tell(_clientCnx);
 			});
+			Receive<SetCnx>(s =>
+			{
+				ClientCnx = s.ClientCnx;
+			});
+			Receive<ConnectionClosed>(c =>
+			{
+				ConnectionClosed(c.ClientCnx);
+			});
 		}
 
 		private void GrabCnx()
@@ -107,7 +115,7 @@ namespace SharpPulsar
 			return;
 		}
 
-		protected internal virtual void ReconnectLater(Exception exception)
+		private void ReconnectLater(Exception exception)
 		{
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
@@ -121,7 +129,7 @@ namespace SharpPulsar
 			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(delayMs)), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), Nobody.Instance);
 		}
 
-		public virtual void ConnectionClosed(IActorRef cnx)
+		private void ConnectionClosed(IActorRef cnx)
 		{
 			LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
 			_state.Client.AskFor(new ReleaseConnectionPool(cnx));
@@ -139,7 +147,7 @@ namespace SharpPulsar
 			
 		}
 
-		protected internal virtual void ResetBackoff()
+		private void ResetBackoff()
 		{
 			_backoff.Reset();
 		}
@@ -152,12 +160,12 @@ namespace SharpPulsar
 			_cancelable?.Cancel();
             base.PostStop();
         }
-        public virtual IActorRef Cnx()
+        private IActorRef Cnx()
 		{
 			return _clientCnx;
 		}
 
-		protected internal IActorRef ClientCnx
+		private IActorRef ClientCnx
 		{
 			set
 			{
@@ -188,7 +196,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public long Epoch
+		private long Epoch
 		{
 			get
 			{

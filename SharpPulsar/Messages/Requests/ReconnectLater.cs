@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Akka.Actor;
+using System;
 
 namespace SharpPulsar.Messages.Requests
 {
@@ -10,6 +11,7 @@ namespace SharpPulsar.Messages.Requests
             Exception = exception;
         }
     } 
+    
     public sealed class ResetBackoff
     {
         public static ResetBackoff Instance = new ResetBackoff();
@@ -18,6 +20,14 @@ namespace SharpPulsar.Messages.Requests
     public sealed class GetCnx
     {
         public static GetCnx Instance = new GetCnx();
+    }
+    public sealed class SetCnx
+    {
+        public IActorRef ClientCnx { get; }
+        public SetCnx(IActorRef clientCnx)
+        {
+            ClientCnx = clientCnx;
+        }
     }
     public sealed class GrabCnx
     {

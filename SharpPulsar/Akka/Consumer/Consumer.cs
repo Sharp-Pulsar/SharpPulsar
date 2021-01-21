@@ -36,6 +36,7 @@ using SharpPulsar.Utils;
 using System.Collections.Concurrent;
 using Nito.AsyncEx;
 using SharpPulsar.Tracker.Messages;
+using SharpPulsar.Common.Enum;
 
 namespace SharpPulsar.Akka.Consumer
 {
@@ -47,7 +48,7 @@ namespace SharpPulsar.Akka.Consumer
         private readonly ClientConfigurationData _clientConfiguration;
         private IActorRef _broker;
         private readonly IDictionary<string, string> _metadata;
-        private readonly ConsumerConfigurationData _conf;
+        private readonly ConsumerConfigurationData<object> _conf;
         private readonly string _consumerName;
         private string _subscriptionName;
         private ISchema _schema;

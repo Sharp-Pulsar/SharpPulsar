@@ -72,6 +72,7 @@ namespace SharpPulsar
 
 		private readonly BlockingCollection<ReceiveResponse> _receiveResponseQueue;
 		private readonly BlockingCollection<BatchReceiveResponse> _batchReceiveResponseQueue;
+		private readonly BlockingCollection<object> _voidRequestResponseQueue;
 
 		private readonly ClientConfigurationData _clientConfigurationData;
 		private long _subscribeTimeout;
@@ -91,7 +92,7 @@ namespace SharpPulsar
 		private IActorRef _cnx;
 
 		private BatchMessageId _seekMessageId;
-		private readonly AtomicBoolean _duringSeek;
+		private bool _duringSeek;
 
 		private readonly BatchMessageId _initialStartMessageId;
 
@@ -139,7 +140,7 @@ namespace SharpPulsar
 
 		private readonly ConcurrentLongHashMap<OpForAckCallBack> _ackRequests;
 
-		private readonly AtomicReference<ClientCnx> _clientCnxUsedForConsumerRegistration = new AtomicReference<ClientCnx>();
+		private IActorRef _clientCnxUsedForConsumerRegistration;
 
 		public static Props NewConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData)
         {
@@ -2009,54 +2010,51 @@ namespace SharpPulsar
 		{
 			try
 			{
-				SeekAsync(timestamp).get();
+				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+				{
+					_log.Error($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
+					_voidRequestResponseQueue.Add(new Failure { Exception = new Exception($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}") });
+					return;
+				}
+
+				if (!Connected)
+				{
+					_log.Error($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
+					_voidRequestResponseQueue.Add(new Failure { Exception = new Exception($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}") });
+
+					return;
+				}
+
+				long requestId = _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				var seek = Commands.NewSeek(ConsumerId, requestId, timestamp);
+				var cnx = Cnx();
+
+				_log.Info($"[{Topic}][{Subscription}] Seek subscription to publish time {timestamp}");
+                try
+                {
+					cnx.AskFor(new SendRequestWithId(seek, requestId));
+					_log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to publish time {timestamp}");
+					_acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
+					_seekMessageId = new BatchMessageId((MessageId)IMessageId.Earliest);
+					_duringSeek = true;
+					_lastDequeuedMessageId = IMessageId.Earliest;
+					IncomingMessages = new BlockingQueue<IMessage<T>>();
+					IncomingMessagesSize = 0;
+					_voidRequestResponseQueue.Add(true);
+				}
+				catch(Exception ex)
+                {
+					_log.Error($"[{Topic}][{Subscription}] Failed to reset subscription: {ex}");
+					_voidRequestResponseQueue.Add(new Failure { Exception = PulsarClientException.Wrap(ex, $"Failed to seek the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}") });					
+				}
 			}
 			catch(Exception e)
 			{
-				throw PulsarClientException.Unwrap(e);
+				_voidRequestResponseQueue.Add(new Failure { Exception = PulsarClientException.Unwrap(e) });
 			}
 		}
 
-		internal override CompletableFuture<Void> SeekAsync(long timestamp)
-		{
-			if(State == State.Closing || State == State.Closed)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.AlreadyClosedException(string.Format("The consumer {0} was already closed when seeking the subscription {1} of the topic " + "{2} to the timestamp {3:D}", ConsumerNameConflict, SubscriptionConflict, _topicName.ToString(), timestamp)));
-			}
-
-			if(!Connected)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException(string.Format("The client is not connected to the broker when seeking the subscription {0} of the " + "topic {1} to the timestamp {2:D}", SubscriptionConflict, _topicName.ToString(), timestamp)));
-			}
-
-			CompletableFuture<Void> seekFuture = new CompletableFuture<Void>();
-
-			long requestId = ClientConflict.NewRequestId();
-			ByteBuf seek = Commands.NewSeek(ConsumerId, requestId, timestamp);
-			ClientCnx cnx = Cnx();
-
-			_log.info("[{}][{}] Seek subscription to publish time {}", Topic, SubscriptionConflict, timestamp);
-
-			cnx.SendRequestWithId(seek, requestId).thenRun(() =>
-			{
-			_log.info("[{}][{}] Successfully reset subscription to publish time {}", Topic, SubscriptionConflict, timestamp);
-			_acknowledgmentsGroupingTracker.FlushAndClean();
-			_seekMessageId = new BatchMessageIdImpl((MessageIdImpl) MessageId.earliest);
-			_duringSeek.set(true);
-			LastDequeuedMessageId = MessageId.earliest;
-			IncomingMessages.clear();
-			IncomingMessagesSizeUpdater.set(this, 0);
-			seekFuture.complete(null);
-			}).exceptionally(e =>
-			{
-			_log.error("[{}][{}] Failed to reset subscription: {}", Topic, SubscriptionConflict, e.Cause.Message);
-			seekFuture.completeExceptionally(PulsarClientException.Wrap(e.Cause, string.Format("Failed to seek the subscription {0} of the topic {1} to the timestamp {2:D}", SubscriptionConflict, _topicName.ToString(), timestamp)));
-			return null;
-		});
-			return seekFuture;
-		}
-
-		internal override CompletableFuture<Void> SeekAsync(MessageId messageId)
+		internal override CompletableFuture<Void> SeekAsync(IMessageId messageId)
 		{
 			if(State == State.Closing || State == State.Closed)
 			{
@@ -2215,13 +2213,13 @@ namespace SharpPulsar
 			return false;
 		}
 
-		internal override IMessageId LastMessageIdAsync
+		internal override IMessageId LastMessageId
 		{
 			get
 			{
-				if(State == State.Closing || State == State.Closed)
+				if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
-					return FutureUtil.FailedFuture(new PulsarClientException.AlreadyClosedException(string.Format("The consumer {0} was already closed when the subscription {1} of the topic {2} " + "getting the last message id", ConsumerNameConflict, SubscriptionConflict, _topicName.ToString())));
+					throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
 				}
     
 				var opTimeoutMs = _operationTimeoutMs;
@@ -2236,6 +2234,8 @@ namespace SharpPulsar
 
 		private IMessageId InternalGetLastMessageId(Backoff backoff, long remainingTime)
 		{
+			///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 
+			///retrying in times delay
 			var cnx = Cnx();
 			if(Connected && cnx != null)
 			{
@@ -2286,7 +2286,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private IMessageId GetMessageIdImpl<T1>(IMessage<T1> msg)
+		private IMessageId GetMessageId<T1>(IMessage<T1> msg)
 		{
 			var messageId = (MessageId) msg.MessageId;
 			if(messageId is BatchMessageId)
@@ -2314,28 +2314,48 @@ namespace SharpPulsar
 			EncryptionContext encryptionCtx = null;
 			if(msgMetadata.EncryptionKeys.Count > 0)
 			{
-				encryptionCtx = new EncryptionContext();
-				IDictionary<string, EncryptionContext.EncryptionKey> keys = msgMetadata.EncryptionKeys.ToDictionary(EncryptionKeys::getKey, e => new EncryptionContext.EncryptionKey(e.Value.toByteArray(), e.MetadataList != null ? e.MetadataList.ToDictionary(KeyValue::getKey, KeyValue::getValue) : null));
+				encryptionCtx = new EncryptionContext(); 
+				IDictionary<string, EncryptionContext.EncryptionKey> keys = new Dictionary<string, EncryptionContext.EncryptionKey>();
+				foreach (var kv in msgMetadata.EncryptionKeys)
+				{
+					var neC = new EncryptionContext.EncryptionKey
+					{
+						KeyValue = (sbyte[])(object)kv.Value,
+						Metadata = new Dictionary<string, string>()
+					};
+					foreach (var m in kv.Metadatas)
+					{
+						if (!neC.Metadata.ContainsKey(m.Key))
+						{
+							neC.Metadata.Add(m.Key, m.Value);
+						}
+					}
+
+					if (!keys.ContainsKey(kv.Key))
+					{
+						keys.Add(kv.Key, neC);
+					}
+				}
 				sbyte[] encParam = new sbyte[IMessageCrypto.IV_LEN];
-				msgMetadata.EncryptionParam.copyTo(encParam, 0);
-				int? batchSize = Optional.ofNullable(msgMetadata.HasNumMessagesInBatch() ? msgMetadata.NumMessagesInBatch : null);
+				msgMetadata.EncryptionParam.CopyTo(encParam, 0);
+				int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
 				encryptionCtx.Keys = keys;
 				encryptionCtx.Param = encParam;
 				encryptionCtx.Algorithm = msgMetadata.EncryptionAlgo;
-				encryptionCtx.CompressionType = CompressionCodecProvider.ConvertFromWireProtocol(msgMetadata.Compression);
-				encryptionCtx.UncompressedMessageSize = msgMetadata.UncompressedSize;
+				encryptionCtx.CompressionType = (int)msgMetadata.Compression;// CompressionCodecProvider.ConvertFromWireProtocol(msgMetadata.Compression);
+				encryptionCtx.UncompressedMessageSize = (int)msgMetadata.UncompressedSize;
 				encryptionCtx.BatchSize = batchSize;
 			}
-			return Optional.ofNullable(encryptionCtx);
+			return new Option<EncryptionContext>(encryptionCtx);
 		}
 
 		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			int messagesFromQueue = 0;
-			var peek = IncomingMessages.Take();
+			var peek = IncomingMessages.Take(_tokenSource.Token);
 			if(peek != null)
 			{
-				MessageId messageId = GetMessageIdImpl(peek);
+				var messageId = GetMessageId(peek);
 				if(!messageIds.Contains(messageId))
 				{
 					// first message is not expired, then no message is expired in queue.
@@ -2343,24 +2363,22 @@ namespace SharpPulsar
 				}
 
 				// try not to remove elements that are added while we remove
-				Message<T> message = IncomingMessages.poll();
-				while(message != null)
+				while(IncomingMessages.TryTake(out var message))
 				{
-					IncomingMessagesSizeUpdater.addAndGet(this, -message.Data.Length);
+					IncomingMessagesSize -= message.Data.Length;
 					messagesFromQueue++;
-					MessageIdImpl id = GetMessageIdImpl(message);
+					var id = GetMessageId(message);
 					if(!messageIds.Contains(id))
 					{
 						messageIds.Add(id);
 						break;
 					}
-					message = IncomingMessages.poll();
 				}
 			}
 			return messagesFromQueue;
 		}
 
-		internal virtual void SetTerminated()
+		private void SetTerminated()
 		{
 			_log.Info($"[{Subscription}] [{Topic}] [{ConsumerName}] Consumer has reached the end of topic");
 			_hasReachedEndOfTopic = true;
@@ -2371,46 +2389,48 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override bool HasReachedEndOfTopic()
+		private bool HasReachedEndOfTopic()
 		{
 			return _hasReachedEndOfTopic;
 		}
 
 
 		// wrapper for connection methods
-		internal virtual IActorRef Cnx()
+		private IActorRef Cnx()
 		{
 			return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 		}
 
-		internal virtual void ResetBackoff()
+		private void ResetBackoff()
 		{
 			_connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
 		}
 
-		internal virtual void ConnectionClosed(IActorRef cnx)
+		private void ConnectionClosed(IActorRef cnx)
 		{
 			_connectionHandler.Tell(new ConnectionClosed(cnx));
 		}
 
 
-		internal virtual ClientCnx ClientCnx
+		private IActorRef ClientCnx
 		{
 			get
 			{
-				return this._connectionHandler.Cnx();
+				return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 			}
 			set
 			{
 				if(value != null)
 				{
-					this._connectionHandler.ClientCnx = value;
-					value.RegisterConsumer(ConsumerId, this);
+					_connectionHandler.Tell(new SetCnx(value));
+					value.Tell(new RegisterConsumer(ConsumerId, Self));
 				}
-				ClientCnx previousClientCnx = _clientCnxUsedForConsumerRegistration.getAndSet(value);
+				var previousClientCnx = _clientCnxUsedForConsumerRegistration;
+				_clientCnxUsedForConsumerRegistration = value;
 				if(previousClientCnx != null && previousClientCnx != value)
 				{
-					previousClientCnx.RemoveConsumer(ConsumerId);
+					var previousName = int.Parse(previousClientCnx.Path.Name);
+					previousClientCnx.Tell(new RemoveConsumer(previousName));
 				}
 			}
 		}
