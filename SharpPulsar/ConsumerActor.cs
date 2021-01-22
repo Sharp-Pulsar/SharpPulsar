@@ -187,7 +187,7 @@ namespace SharpPulsar
 			_priorityLevel = conf.PriorityLevel;
 			_readCompacted = conf.ReadCompacted;
 			_subscriptionInitialPosition = conf.SubscriptionInitialPosition;
-			_negativeAcksTracker = new NegativeAcksTracker<T>(conf, Self);
+			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, Self));
 			_resetIncludeHead = conf.ResetIncludeHead;
 			_createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 			_maxPendingChuckedMessage = conf.MaxPendingChuckedMessage;
@@ -197,11 +197,11 @@ namespace SharpPulsar
 
 			if(clientConfiguration.StatsIntervalSeconds > 0)
 			{
-				StatsConflict = new ConsumerStatsRecorder(client, conf, this);
+				_stats = new ConsumerStatsRecorder<T>(client, conf, this);
 			}
 			else
 			{
-				StatsConflict = ConsumerStatsDisabled.Instance;
+				_stats = ConsumerStatsDisabled.Instance;
 			}
 
 			_duringSeek = new AtomicBoolean(false);
@@ -210,16 +210,16 @@ namespace SharpPulsar
 			{
 				if(conf.TickDurationMillis > 0)
 				{
-					_unAckedMessageTracker = new UnAckedMessageTracker(client, this, conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis));
+					_unAckedMessageTracker = Context.ActorOf(Tracker.UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis), Self), "UnAckedMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = new UnAckedMessageTracker(client, this, conf.AckTimeoutMillis);
+					_unAckedMessageTracker = Context.ActorOf(Tracker.UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, 0, Self), "UnAckedMessageTracker");
 				}
 			}
 			else
 			{
-				_unAckedMessageTracker = UnAckedMessageTracker.UNACKED_MESSAGE_TRACKER_DISABLED;
+				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
 			}
 
 			// Create msgCrypto if not created already
@@ -308,7 +308,6 @@ namespace SharpPulsar
 			}
 
 			_topicNameWithoutPartition = _topicName.PartitionedTopicName;
-			_ackRequests = new ConcurrentLongHashMap<OpForAckCallBack>(16, 1);
 
 			 GrabCnx();
 		}

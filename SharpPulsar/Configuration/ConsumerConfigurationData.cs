@@ -11,6 +11,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Impl;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
+using BAMCIS.Util.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,7 +47,7 @@ namespace SharpPulsar.Configuration
         public bool UseTls { get; set; } = false;
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public long AcknowledgementsGroupTimeMs { get; set; } = 100;
+		public long AcknowledgementsGroupTimeMicros { get; set; } = TimeUnit.MILLISECONDS.ToMicroseconds(100);
 
 		public long NegativeAckRedeliveryDelayMs { get; set; } = 30000;
 

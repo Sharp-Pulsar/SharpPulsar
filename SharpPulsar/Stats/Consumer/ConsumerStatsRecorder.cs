@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
 using SharpPulsar.Stats.Consumer.Api;
+using SharpPulsar.Interfaces;
+using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +34,7 @@ using SharpPulsar.Stats.Consumer.Api;
 /// </summary>
 namespace SharpPulsar.Stats.Consumer
 {
-	public class ConsumerStatsRecorder : IConsumerStatsRecorder
+	public class ConsumerStatsRecorder<T> : IConsumerStatsRecorder
 	{
 
 		private const long SerialVersionUid = 1L;
@@ -226,7 +229,12 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed.Add(stats.TotalAcksFailed);
 		}
 
-		public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
+        public void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
 
 		public virtual long NumBytesReceived => _numBytesReceived.GetValue();
 
@@ -249,6 +257,32 @@ namespace SharpPulsar.Stats.Consumer
 		public virtual long TotalAcksSent => _totalAcksSent.GetValue();
 
 		public virtual long TotalAcksFailed => _totalAcksFailed.GetValue();
+
+
+		public virtual int? MsgNumInReceiverQueue
+		{
+			get
+			{
+				if (_consumer is ConsumerBase)
+				{
+					return ((ConsumerBase<object>)_consumer).incomingMessages.size();
+				}
+				return null;
+			}
+		}
+
+		public virtual IDictionary<long, int> MsgNumInSubReceiverQueue
+		{
+			get
+			{
+				if (_consumer is MultiTopicsConsumerImpl)
+				{
+					IList<ConsumerImpl<object>> consumerList = ((MultiTopicsConsumerImpl)_consumer).Consumers;
+					return consumerList.ToDictionary((consumerImpl) => consumerImpl.consumerId, (consumerImpl) => consumerImpl.incomingMessages.size());
+				}
+				return null;
+			}
+		}
 
 	}
 

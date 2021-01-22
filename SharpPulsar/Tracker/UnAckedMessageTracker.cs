@@ -38,17 +38,17 @@ namespace SharpPulsar.Tracker
         internal readonly ConcurrentDictionary<IMessageId, SortedSet<IMessageId>> MessageIdPartitionMap;
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
-        private readonly IActorRef _parent;
+        private readonly IActorRef _consumer;
         private readonly long _tickDurationInMs;
         private readonly long _ackTimeoutMillis;
         private readonly IScheduler _scheduler;
         
-        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef parent)
+        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer)
         {
-            _scheduler = Context.System.Scheduler;
-            _parent = parent;
-            _log = Context.System.Log;
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
+            _scheduler = Context.System.Scheduler;
+            _consumer = consumer;
+            _log = Context.System.Log;
             _tickDurationInMs = tickDurationInMs;
             _ackTimeoutMillis = ackTimeoutMillis;
             MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, SortedSet<IMessageId>>();
@@ -108,7 +108,7 @@ namespace SharpPulsar.Tracker
                 TimePartitions.TryDequeue(out var headPartition);
                 if (headPartition?.Count > 0)
                 {
-                    _log.Warning($"[{_parent.Path.Name}] {headPartition.Count} messages have timed-out");
+                    _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
                     headPartition.ForEach(messageId =>
                     {
                         AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds);
@@ -124,8 +124,8 @@ namespace SharpPulsar.Tracker
             {
                 if (messageIds.Count > 0)
                 { 
-                    _parent.Tell(new AckTimeoutSend(messageIds));
-                    _parent.Tell(new RedeliverUnacknowledgedMessages(messageIds));
+                    _consumer.Tell(new AckTimeoutSend(messageIds));
+                    _consumer.Tell(new RedeliverUnacknowledgedMessages(messageIds));
                 }
                 _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
             }
@@ -136,7 +136,7 @@ namespace SharpPulsar.Tracker
             if (messageId is MessageId id)
             {
                 //use ask here
-                var chunkedMsgIds = _parent.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).GetAwaiter().GetResult();
+                var chunkedMsgIds = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).GetAwaiter().GetResult();
                 if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length> 0)
                 {
                     foreach (var msgId in chunkedMsgIds.MessageIds)
@@ -145,7 +145,7 @@ namespace SharpPulsar.Tracker
                     }
                 }
 
-                _parent.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, id));
+                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, id));
             }
         }
 
@@ -261,9 +261,9 @@ namespace SharpPulsar.Tracker
             Clear();
         }
 
-        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs, IActorRef parent)
+        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer)
         {
-            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, parent));
+            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer));
         }
     }
 
