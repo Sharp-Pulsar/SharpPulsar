@@ -133,7 +133,12 @@ namespace SharpPulsar
 					RegisterConsumer(m.ConsumerId, m.Consumer); 
 				});
 				Receive<RemoveProducer>(m => {
+					
 					RemoveProducer(m.ProducerId);
+				});
+				Receive<MaxMessageSize>(_ => {
+					
+					Sender.Tell(_maxMessageSize);
 				});
 				Receive<RemoveConsumer>(m => {
 					RemoveConsumer(m.ConsumerId); 
@@ -173,23 +178,20 @@ namespace SharpPulsar
 				_log.Info($"{_remoteHostName} Connected through proxy to target broker at {_proxyToTargetBrokerAddress}");
 			}
 			// Send CONNECT command
-			_socketClient.SendMessageAsync(NewConnectCommand()).ContinueWith(task => 
+			var task = _socketClient.Execute(NewConnectCommand());
+			if (task.IsCompletedSuccessfully)
 			{
-				if (task.IsCompletedSuccessfully)
+				if (_log.IsDebugEnabled)
 				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"Complete: {task.IsCompletedSuccessfully}");
-					}
-					_state = State.SentConnectFrame;
+					_log.Debug($"Complete: {task.IsCompletedSuccessfully}");
 				}
-				else
-				{
-					_log.Warning($"Error during handshake: {task.Exception}");
-					//ctx.close();
-				}
-
-			});
+				_state = State.SentConnectFrame;
+			}
+			else
+			{
+				_log.Warning($"Error during handshake: {task.Exception}");
+				//ctx.close();
+			}
 		}
 		private void OnDisconnected()
 		{
@@ -687,16 +689,16 @@ namespace SharpPulsar
 		}
 		private void SendRequest(byte[] requestMessage, long requestId)
 		{
-			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
-			_socketClient.SendMessageAsync(requestMessage).ContinueWith(task =>
+			if(requestId >= 0)
+			  _pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+			var task = _socketClient.Execute(requestMessage);
+			if (task.IsFaulted)
 			{
-				if (task.IsFaulted) 
-				{
-					_log.Warning($"Failed to send {requestId} to broker: {task.Exception}");
+				_log.Warning($"Failed to send {requestId} to broker: {task.Exception}");
+				if (requestId >= 0)
 					_pendingRequests.Remove(requestId);
-					//future.completeExceptionally(writeFuture.cause());
-				}			
-			});
+				//future.completeExceptionally(writeFuture.cause());
+			}
 		}
 
 		private void SendGetLastMessageId(byte[] request, long requestId)

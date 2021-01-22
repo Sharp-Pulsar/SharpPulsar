@@ -62,8 +62,8 @@ namespace SharpPulsar
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly IAdvancedScheduler ListenerExecutor;
-		protected internal BlockingQueue<IMessage<T>> IncomingMessages;
-		protected internal ConcurrentDictionary<IMessageId, IMessageId[]> UnAckedChunckedMessageIdSequenceMap;
+		protected internal BlockingCollection<IMessage<T>> IncomingMessages;
+		protected internal Dictionary<IMessageId, IMessageId[]> UnAckedChunckedMessageIdSequenceMap;
 		protected internal readonly ConcurrentQueue<IMessage<T>> PendingReceives;
 
 		protected internal int MaxReceiverQueueSizeConflict;
@@ -87,7 +87,7 @@ namespace SharpPulsar
 			ConsumerEventListener = conf.ConsumerEventListener;
 
 			IncomingMessages = new BlockingCollection<IMessage<T>>();
-			UnAckedChunckedMessageIdSequenceMap = new ConcurrentDictionary<IMessageId, IMessageId[]>();
+			UnAckedChunckedMessageIdSequenceMap = new Dictionary<IMessageId, IMessageId[]>();
 
 			ListenerExecutor = listenerExecutor;
 			PendingReceives = new ConcurrentQueue<IMessage<T>>();
@@ -153,7 +153,7 @@ namespace SharpPulsar
 			InternalReceive(timeout, unit);
 		}
 
-		protected internal abstract void InternalReceive(int timeout, TimeUnit unit);
+		protected internal abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
 
 		
 		internal virtual void BatchReceive()
@@ -666,7 +666,7 @@ namespace SharpPulsar
 
 		protected internal virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
-			if (CanEnqueueMessage(message) && IncomingMessages.TryAdd(message))
+			if (CanEnqueueMessage(message) && IncomingMessages.TryEnqueue(message))
 			{
 				var size = message.Data == null ? 0 : message.Data.Length;
 				IncomingMessagesSize += size;

@@ -11,6 +11,10 @@ namespace SharpPulsar.Messages.Requests
             Success = success;
         }
     }
+    public sealed class MaxMessageSize
+    {
+        public static MaxMessageSize Instance = new MaxMessageSize();
+    }
     public sealed class RegisterProducer
     {
         public long ProducerId { get; }

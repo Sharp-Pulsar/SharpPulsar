@@ -4,6 +4,7 @@ using System.Linq;
 using SharpPulsar.Messages;
 using SharpPulsar.Api;
 using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Extension
 {
