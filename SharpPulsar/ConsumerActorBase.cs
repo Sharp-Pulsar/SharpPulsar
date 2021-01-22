@@ -9,6 +9,8 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Utility;
 using System;
@@ -38,7 +40,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-	internal abstract class ConsumerActorBase<T> : ReceiveActor
+	public abstract class ConsumerActorBase<T> : ReceiveActor
 	{
 		internal abstract long LastDisconnectedTimestamp { get; }
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
@@ -64,25 +66,23 @@ namespace SharpPulsar
 		protected internal readonly IAdvancedScheduler ListenerExecutor;
 		protected internal BlockingCollection<IMessage<T>> IncomingMessages;
 		protected internal Dictionary<IMessageId, IMessageId[]> UnAckedChunckedMessageIdSequenceMap;
-		protected internal readonly ConcurrentQueue<IMessage<T>> PendingReceives;
 
-		protected internal int MaxReceiverQueueSizeConflict;
+		protected internal int MaxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
-		protected internal ConcurrentQueue<OpBatchReceive<T>> PendingBatchReceives;
 		protected internal long IncomingMessagesSize = 0;
 		protected internal ICancelable BatchReceiveTimeout = null;
 		protected internal HandlerState State;
 
 		protected internal ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
-			State = new HandlerState(client, topic, Context.System, "");
+			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
+			State = new HandlerState(client, topic, Context.System, _consumerName);
 			_log = Context.GetLogger();
-			MaxReceiverQueueSizeConflict = receiverQueueSize;
+			MaxReceiverQueueSize = receiverQueueSize;
 			_subscription = conf.SubscriptionName;
 			Conf = conf;
-			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 
@@ -90,16 +90,15 @@ namespace SharpPulsar
 			UnAckedChunckedMessageIdSequenceMap = new Dictionary<IMessageId, IMessageId[]>();
 
 			ListenerExecutor = listenerExecutor;
-			PendingReceives = new ConcurrentQueue<IMessage<T>>();
 			Schema = schema;
 			Interceptors = interceptors;
 			if (conf.BatchReceivePolicy != null)
 			{
 				BatchReceivePolicy userBatchReceivePolicy = conf.BatchReceivePolicy;
-				if (userBatchReceivePolicy.MaxNumMessages > MaxReceiverQueueSizeConflict)
+				if (userBatchReceivePolicy.MaxNumMessages > MaxReceiverQueueSize)
 				{
-					BatchReceivePolicy = new BatchReceivePolicy.Builder().MaxNumMessages(MaxReceiverQueueSizeConflict).MaxNumBytes(userBatchReceivePolicy.MaxNumBytes).Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(userBatchReceivePolicy.TimeoutMs)).Build();
-					_log.Warning($"BatchReceivePolicy maxNumMessages: {userBatchReceivePolicy.MaxNumMessages} is greater than maxReceiverQueueSize: {MaxReceiverQueueSizeConflict}, reset to maxReceiverQueueSize. batchReceivePolicy: {BatchReceivePolicy}");
+					BatchReceivePolicy = new BatchReceivePolicy.Builder().MaxNumMessages(MaxReceiverQueueSize).MaxNumBytes(userBatchReceivePolicy.MaxNumBytes).Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(userBatchReceivePolicy.TimeoutMs)).Build();
+					_log.Warning($"BatchReceivePolicy maxNumMessages: {userBatchReceivePolicy.MaxNumMessages} is greater than maxReceiverQueueSize: {MaxReceiverQueueSize}, reset to maxReceiverQueueSize. batchReceivePolicy: {BatchReceivePolicy}");
 				}
 				else if (userBatchReceivePolicy.MaxNumMessages <= 0 && userBatchReceivePolicy.MaxNumBytes <= 0)
 				{
@@ -118,7 +117,7 @@ namespace SharpPulsar
 
 			if (BatchReceivePolicy.TimeoutMs > 0)
 			{
-				BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
+				//BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
 				
 			}
 		}
@@ -135,7 +134,7 @@ namespace SharpPulsar
 		}
 
 		
-		protected internal abstract void InternalReceive();
+		protected internal abstract IMessage<T> InternalReceive();
 
 		
 		internal virtual void Receive(int timeout, TimeUnit unit)
@@ -163,58 +162,8 @@ namespace SharpPulsar
 			InternalBatchReceive();
 		}
 
-		internal virtual async void BatchReceiveAsync()
-		{
-			var task = new TaskCompletionSource<IMessages<T>>();
-			try
-			{
-				VerifyBatchReceive();
-				VerifyConsumerState();
-				return await InternalBatchReceiveAsync();
-			}
-			catch (PulsarClientException e)
-			{
-				task.SetException(e);
-				return await task.Task;
-			}
-		}
-
-		protected internal virtual void FailPendingReceives(ConcurrentQueue<IMessage<T>> pendingReceives)
-		{
-			while (!pendingReceives.IsEmpty)
-			{
-				if (!pendingReceives.TryDequeue(out var receive))
-				{
-					break;
-				}
-				/*if (!receiveFuture.Done)
-				{
-					receiveFuture.completeExceptionally(new PulsarClientException.AlreadyClosedException(string.Format("The consumer which subscribes the topic {0} with subscription name {1} " + "was already closed when cleaning and closing the consumers", Topic, _subscription)));
-				}*/
-			}
-		}
-
-		protected internal virtual void FailPendingBatchReceives(ConcurrentQueue<OpBatchReceive<T>> pendingBatchReceives)
-		{
-			while (!pendingBatchReceives.IsEmpty)
-			{
-				OpBatchReceive<T> opBatchReceive = pendingBatchReceives.poll();
-				if (opBatchReceive == null || opBatchReceive.Future == null)
-				{
-					break;
-				}
-				if (!opBatchReceive.Future.Done)
-				{
-					opBatchReceive.Future.completeExceptionally(new PulsarClientException.AlreadyClosedException(string.Format("The consumer which subscribes the topic {0} with subscription name {1} " + "was already closed when cleaning and closing the consumers", Topic, _subscription)));
-				}
-			}
-		}
-
 		protected internal abstract void InternalBatchReceive();
 
-		protected internal abstract void InternalBatchReceiveAsync();
-
-		
 		internal virtual void Acknowledge<T1>(IMessage<T1> message)
 		{
 			try
@@ -232,7 +181,7 @@ namespace SharpPulsar
 		{
 			try
 			{
-				AcknowledgeAsync(messageId);
+				Acknowledge(messageId, null);
 			}
 			catch (Exception e)
 			{
@@ -245,7 +194,7 @@ namespace SharpPulsar
 		{
 			try
 			{
-				AcknowledgeAsync(messageIdList);
+				DoAcknowledgeWithTxn(messageIdList, AckType.Individual, new Dictionary<string, long>(), null);
 			}
 			catch (Exception e)
 			{
@@ -258,7 +207,7 @@ namespace SharpPulsar
 		{
 			try
 			{
-				AcknowledgeAsync(messages);
+				messages.ForEach(x => Acknowledge(x));
 			}
 			catch (Exception e)
 			{
@@ -275,7 +224,7 @@ namespace SharpPulsar
 			}
 			try
 			{
-				ReconsumeLaterAsync(message, delayTime, unit);
+				DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime, unit);
 			}
 			catch (Exception e)
 			{
@@ -320,7 +269,7 @@ namespace SharpPulsar
 		{
 			try
 			{
-				AcknowledgeCumulativeAsync(messageId);
+				AcknowledgeCumulative(messageId, null); 
 			}
 			catch (Exception e)
 			{
@@ -333,7 +282,7 @@ namespace SharpPulsar
 		{
 			try
 			{
-				ReconsumeLaterCumulativeAsync(message, delayTime, unit).get();
+				DoReconsumeLater(message, AckType.Cumulative, new Dictionary<string, long>(), delayTime, unit);
 			}
 			catch (Exception e)
 			{
@@ -341,125 +290,44 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual Task AcknowledgeAsync<T1>(IMessage<T1> message)
+
+		internal virtual void ReconsumeLaterAsync<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
 		{
 			try
 			{
-				return AcknowledgeAsync(message.MessageId);
-			}
-			catch (System.NullReferenceException npe)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
-			}
-		}
-
-		internal virtual Task AcknowledgeAsync<T1>(IMessages<T1> messages)
-		{
-			try
-			{
-				messages.ForEach(x => AcknowledgeAsync(x));
-				return CompletableFuture.completedFuture(null);
-			}
-			catch (System.NullReferenceException npe)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
-			}
-		}
-
-		internal virtual Task AcknowledgeAsync(IList<IMessageId> messageIdList)
-		{
-			return DoAcknowledgeWithTxn(messageIdList, AckType.Individual, new Dictionary<string, long>(), null);
-		}
-
-		internal virtual Task ReconsumeLaterAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
-		{
-			if (!Conf.RetryEnable)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException("reconsumeLater method not support!"));
-			}
-			try
-			{
-				return DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime, unit);
-			}
-			catch (System.NullReferenceException npe)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
-			}
-		}
-
-		internal virtual CompletableFuture<Void> ReconsumeLaterAsync<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
-		{
-			try
-			{
-				messages.ForEach(message => ReconsumeLaterAsync(message, delayTime, unit));
-				return CompletableFuture.completedFuture(null);
+				messages.ForEach(message => ReconsumeLater(message, delayTime, unit));
 			}
 			catch (NullReferenceException npe)
 			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
+				throw new PulsarClientException.InvalidMessageException(npe.Message);
 			}
 		}
 
-		internal virtual Task AcknowledgeCumulativeAsync<T1>(IMessage<T1> message)
+		internal virtual void AcknowledgeCumulativeAsync<T1>(IMessage<T1> message)
 		{
 			try
 			{
-				return AcknowledgeCumulativeAsync(message.MessageId);
+				AcknowledgeCumulative(message.MessageId);
 			}
 			catch (System.NullReferenceException npe)
 			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidMessageException(npe.Message));
+				throw new PulsarClientException.InvalidMessageException(npe.Message);
 			}
 		}
 
-		internal virtual Task ReconsumeLaterCumulativeAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
+		internal virtual void Acknowledge(IMessageId messageId, IActorRef txn)
 		{
-			if (!Conf.RetryEnable)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException("reconsumeLater method not support!"));
-			}
-			if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive subscription"));
-			}
-			return DoReconsumeLater(message, AckType.Cumulative, new Dictionary<string, long>(), delayTime, unit);
+			DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), txn);
 		}
 
-		internal virtual Task AcknowledgeAsync(IMessageId messageId)
-		{
-			return AcknowledgeAsync(messageId, null);
-		}
-
-		internal virtual Task AcknowledgeAsync(IMessageId messageId, ITransaction txn)
-		{
-			TransactionImpl txnImpl = null;
-			if (null != txn)
-			{
-				checkArgument(txn is TransactionImpl);
-				txnImpl = (TransactionImpl)txn;
-			}
-			return DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), txnImpl);
-		}
-
-		internal virtual Task AcknowledgeCumulativeAsync(IMessageId messageId)
-		{
-			return AcknowledgeCumulativeAsync(messageId, null);
-		}
-
-		internal virtual Task AcknowledgeCumulativeAsync(IMessageId messageId, ITransaction txn)
+		internal virtual void AcknowledgeCumulative(IMessageId messageId, IActorRef txn)
 		{
 			if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
 			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription"));
+				throw new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription");
 			}
 
-			TransactionImpl txnImpl = null;
-			if (null != txn)
-			{
-				checkArgument(txn is TransactionImpl);
-				txnImpl = (TransactionImpl)txn;
-			}
-			return DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txnImpl);
+			DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txn);
 		}
 
 		internal virtual void NegativeAcknowledge<T1>(IMessage<T1> message)
@@ -467,72 +335,50 @@ namespace SharpPulsar
 			NegativeAcknowledge(message.MessageId);
 		}
 
-		protected internal virtual Task DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn)
+		protected internal virtual void DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
-			CompletableFuture<Void> ackFuture;
 			if (txn != null)
 			{
-				ackFuture = txn.RegisterAckedTopic(Topic, _subscription).thenCompose(ignored => DoAcknowledge(messageIdList, ackType, properties, txn));
-				txn.RegisterAckOp(ackFuture);
+				txn.Tell(new RegisterAckedTopic(Topic, _subscription));
+				DoAcknowledge(messageIdList, ackType, properties, txn);				
 			}
 			else
 			{
-				ackFuture = DoAcknowledge(messageIdList, ackType, properties, txn);
+				DoAcknowledge(messageIdList, ackType, properties, txn);
 			}
-			return ackFuture;
 		}
 
-		protected internal virtual Task DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn)
+		protected internal virtual void DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
-			CompletableFuture<Void> ackFuture;
-			if (txn != null && (this is ConsumerImpl))
+			if (txn != null)
 			{
 				// it is okay that we register acked topic after sending the acknowledgements. because
 				// the transactional ack will not be visiable for consumers until the transaction is
 				// committed
 				if (ackType == AckType.Cumulative)
 				{
-					txn.RegisterCumulativeAckConsumer((ConsumerImpl<object>)this);
+					txn.Tell(new RegisterCumulativeAckConsumer(Self));
 				}
 
-				ackFuture = txn.RegisterAckedTopic(Topic, _subscription).thenCompose(ignored => DoAcknowledge(messageId, ackType, properties, txn));
-				// register the ackFuture as part of the transaction
-				txn.RegisterAckOp(ackFuture);
-				return ackFuture;
+				txn.Tell(new RegisterAckedTopic(Topic, _subscription));				
 			}
-			else
-			{
-				ackFuture = DoAcknowledge(messageId, ackType, properties, txn);
-			}
-			return ackFuture;
+			DoAcknowledge(messageId, ackType, properties, txn);
 		}
 
-		protected internal abstract Task DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
+		protected internal abstract void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-		protected internal abstract Task DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, TransactionImpl txn);
+		protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-		protected internal abstract Task DoReconsumeLater<T1>(IMessage<T1> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit);
+		protected internal abstract void DoReconsumeLater<T1>(IMessage<T1> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit);
 
 		internal virtual void NegativeAcknowledge<T1>(IMessages<T1> messages)
 		{
-			messages.ForEach(negativeAcknowledge);
+			messages.ForEach(NegativeAcknowledge);
 		}
 
-		internal virtual void close()
+		private bool IsCumulativeAcknowledgementAllowed(SubType type)
 		{
-			try
-			{
-				CloseAsync();
-			}
-			catch (Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
-		}
-
-		private bool IsCumulativeAcknowledgementAllowed(SubscriptionType type)
-		{
-			return SubscriptionType.Shared != type && SubscriptionType.KeyShared != type;
+			return SubType.Shared != type && SubType.KeyShared != type;
 		}
 
 		protected internal virtual SubType SubType
@@ -553,10 +399,10 @@ namespace SharpPulsar
 
 					case SubscriptionType.KeyShared:
 						return SubType.KeyShared;
+					default:
+						return SubType.Exclusive;
 				}
 
-				// Should not happen since we cover all cases above
-				return null;
 			}
 		}
 
@@ -564,10 +410,6 @@ namespace SharpPulsar
 
 		internal abstract int NumMessagesInQueue();
 
-		internal virtual Task<IConsumer<T>> SubscribeFuture()
-		{
-			return SubscribeFutureConflict;
-		}
 
 		internal virtual string Topic
 		{
@@ -604,14 +446,6 @@ namespace SharpPulsar
 		public override string ToString()
 		{
 			return "ConsumerBase{" + "subscription='" + _subscription + '\'' + ", consumerName='" + _consumerName + '\'' + ", topic='" + Topic + '\'' + '}';
-		}
-
-		protected internal virtual int MaxReceiverQueueSize
-		{
-			set
-			{
-				MaxReceiverQueueSizeConflict = value;
-			}
 		}
 
 		protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
@@ -664,16 +498,6 @@ namespace SharpPulsar
 			return true;
 		}
 
-		protected internal virtual bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
-		{
-			if (CanEnqueueMessage(message) && IncomingMessages.TryEnqueue(message))
-			{
-				var size = message.Data == null ? 0 : message.Data.Length;
-				IncomingMessagesSize += size;
-			}
-			return HasEnoughMessagesForBatchReceive();
-		}
-
 		protected internal virtual bool HasEnoughMessagesForBatchReceive()
 		{
 			if (BatchReceivePolicy.MaxNumMessages <= 0 && BatchReceivePolicy.MaxNumBytes <= 0)
@@ -685,19 +509,19 @@ namespace SharpPulsar
 
 		private void VerifyConsumerState()
 		{
-			switch (State)
+			switch (State.ConnectionState)
 			{
-				case Ready:
-				case Connecting:
+				case HandlerState.State.Ready:
+				case HandlerState.State.Connecting:
 					break; // Ok
-					goto case Closing;
-				case Closing:
-				case Closed:
+					goto case HandlerState.State.Closing;
+				case HandlerState.State.Closing:
+				case HandlerState.State.Closed:
 					throw new PulsarClientException.AlreadyClosedException("Consumer already closed");
-				case Terminated:
+				case HandlerState.State.Terminated:
 					throw new PulsarClientException.AlreadyClosedException("Topic was terminated");
-				case Failed:
-				case Uninitialized:
+				case HandlerState.State.Failed:
+				case HandlerState.State.Uninitialized:
 					throw new PulsarClientException.NotConnectedException();
 				default:
 					break;
@@ -715,165 +539,7 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal sealed class OpBatchReceive<T>
-		{
-
-			internal readonly CompletableFuture<Messages<T>> Future;
-			internal readonly long CreatedAt;
-
-			internal OpBatchReceive(CompletableFuture<Messages<T>> future)
-			{
-				Future = future;
-				CreatedAt = System.nanoTime();
-			}
-
-			internal static OpBatchReceive<T> Of<T>(CompletableFuture<Messages<T>> future)
-			{
-				return new OpBatchReceive<T>(future);
-			}
-		}
-
-		protected internal virtual void NotifyPendingBatchReceivedCallBack()
-		{
-			OpBatchReceive<T> opBatchReceive = PollNextBatchReceive();
-			if (opBatchReceive == null)
-			{
-				return;
-			}
-			try
-			{
-				ReentrantLock.@lock();
-				NotifyPendingBatchReceivedCallBack(opBatchReceive);
-			}
-			finally
-			{
-				ReentrantLock.unlock();
-			}
-		}
-
-		private OpBatchReceive<T> PeekNextBatchReceive()
-		{
-			OpBatchReceive<T> opBatchReceive = null;
-			while (opBatchReceive == null)
-			{
-				opBatchReceive = PendingBatchReceives.peek();
-				// no entry available
-				if (opBatchReceive == null)
-				{
-					return null;
-				}
-				// remove entries where future is null or has been completed (cancel / timeout)
-				if (opBatchReceive.Future == null || opBatchReceive.Future.Done)
-				{
-					OpBatchReceive<T> removed = PendingBatchReceives.poll();
-					if (removed != opBatchReceive)
-					{
-						_log.error("Bug: Removed entry wasn't the expected one. expected={}, removed={}", opBatchReceive, removed);
-					}
-					opBatchReceive = null;
-				}
-			}
-			return opBatchReceive;
-		}
-
-
-		private OpBatchReceive<T> PollNextBatchReceive()
-		{
-			OpBatchReceive<T> opBatchReceive = null;
-			while (opBatchReceive == null)
-			{
-				opBatchReceive = PendingBatchReceives.poll();
-				// no entry available
-				if (opBatchReceive == null)
-				{
-					return null;
-				}
-				// skip entries where future is null or has been completed (cancel / timeout)
-				if (opBatchReceive.Future == null || opBatchReceive.Future.Done)
-				{
-					opBatchReceive = null;
-				}
-			}
-			return opBatchReceive;
-		}
-
-		protected internal void NotifyPendingBatchReceivedCallBack(OpBatchReceive<T> opBatchReceive)
-		{
-			MessagesImpl<T> messages = NewMessagesImpl;
-			Message<T> msgPeeked = IncomingMessages.peek();
-			while (msgPeeked != null && messages.CanAdd(msgPeeked))
-			{
-				Message<T> msg = IncomingMessages.poll();
-				if (msg != null)
-				{
-					MessageProcessed(msg);
-					Message<T> interceptMsg = BeforeConsume(msg);
-					messages.Add(interceptMsg);
-				}
-				msgPeeked = IncomingMessages.peek();
-			}
-			CompletePendingBatchReceive(opBatchReceive.Future, messages);
-		}
-
-		protected internal virtual void CompletePendingBatchReceive(CompletableFuture<Messages<T>> future, Messages<T> messages)
-		{
-			if (!future.complete(messages))
-			{
-				_log.warn("Race condition detected. batch receive future was already completed (cancelled={}) and messages were dropped. messages={}", future.Cancelled, messages);
-			}
-		}
-
-		protected internal abstract void MessageProcessed<T1>(IMessage<T1> msg);
-
-		private void PendingBatchReceiveTask()
-		{
-			if (BatchReceiveTimeout.IsCancellationRequested)
-			{
-				return;
-			}
-
-			long timeToWaitMs;
-
-			lock (this)
-			{
-				// If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-				{
-					return;
-				}
-				if (PendingBatchReceives == null)
-				{
-					PendingBatchReceives = new ConcurrentQueue<OpBatchReceive<T>>();
-				}
-				OpBatchReceive<T> firstOpBatchReceive = PeekNextBatchReceive();
-				timeToWaitMs = BatchReceivePolicy.TimeoutMs;
-
-				while (firstOpBatchReceive != null)
-				{
-					// If there is at least one batch receive, calculate the diff between the batch receive timeout
-					// and the elapsed time since the operation was created.
-					long diff = BatchReceivePolicy.TimeoutMs - TimeUnit.NANOSECONDS.ToMilliseconds(DateTime.Now.Ticks - firstOpBatchReceive.CreatedAt);
-					if (diff <= 0)
-					{
-						// The diff is less than or equal to zero, meaning that the batch receive has been timed out.
-						// complete the OpBatchReceive and continue to check the next OpBatchReceive in pendingBatchReceives.
-						OpBatchReceive<T> op = PollNextBatchReceive();
-						if (op != null)
-						{
-							CompleteOpBatchReceive(op);
-						}
-						firstOpBatchReceive = PeekNextBatchReceive();
-					}
-					else
-					{
-						// The diff is greater than zero, set the timeout to the diff value
-						timeToWaitMs = diff;
-						break;
-					}
-				}
-				BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(timeToWaitMs)), PendingBatchReceiveTask);
-			}
-		}
+	    protected internal abstract void MessageProcessed<T1>(IMessage<T1> msg);
 
 		protected internal virtual Messages<T> NewMessages
 		{
@@ -883,12 +549,6 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal virtual bool HasPendingBatchReceive()
-		{
-			return PendingBatchReceives != null && PeekNextBatchReceive() != null;
-		}
-
-		protected internal abstract void CompleteOpBatchReceive(OpBatchReceive<T> op);
 	}
 
 }

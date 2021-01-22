@@ -600,14 +600,6 @@ namespace SharpPulsar
 			return closeFuture;
 		}
 
-		private void FailPendingReceive()
-		{
-			if(ListenerExecutor != null && !ListenerExecutor.Shutdown)
-			{
-				FailPendingReceives(PendingReceives);
-				FailPendingBatchReceives(PendingBatchReceives);
-			}
-		}
 
 		public override bool Connected
 		{

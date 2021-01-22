@@ -27,6 +27,7 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Consumer;
+using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Api;
 using SharpPulsar.Tracker.Messages;
@@ -106,6 +107,8 @@ namespace SharpPulsar
 
 		private readonly long _startMessageRollbackDurationInSec;
 		private readonly IActorRef _client;
+
+		private readonly IConsumerStats _stats;
 
 		private volatile bool _hasReachedEndOfTopic;
 
@@ -314,6 +317,16 @@ namespace SharpPulsar
 			Receive<ConnectionOpened>(c => {
 				ConnectionOpened(c.ClientCnx);
 			});
+			Receive<ClearIncomingMessagesAndGetMessageNumber>(_ => 
+			{
+				var cleared = ClearIncomingMessagesAndGetMessageNumber();
+				Sender.Tell(cleared);
+			});
+			Receive<IncreaseAvailablePermits>(_ => 
+			{
+				var cnx = Cnx();
+				IncreaseAvailablePermits(cnx);
+			});
         }
 		internal virtual IActorRef UnAckedMessageTracker
 		{
@@ -438,7 +451,13 @@ namespace SharpPulsar
 					_batchReceiveResponseQueue.Add(new BatchReceiveResponse(error));
 			}
 		}
-
+		public override IConsumerStats Stats
+		{
+			get
+			{
+				return _stats;
+			}
+		}
 
 		internal virtual bool MarkAckForBatchMessage(BatchMessageId batchMessageId, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
@@ -486,7 +505,7 @@ namespace SharpPulsar
 			return false;
 		}
 
-		private void DoAcknowledge(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		protected internal override void DoAcknowledge(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			Condition.CheckArgument(messageId is MessageId);
 			if(State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
@@ -538,7 +557,7 @@ namespace SharpPulsar
 			SendAcknowledge(messageId, ackType, properties, txn);
 		}
 
-		private void DoAcknowledge(IList<IMessageId> messageIdList, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if(CommandAck.AckType.Cumulative.Equals(ackType))
 			{
@@ -582,7 +601,7 @@ namespace SharpPulsar
 			//return CompletableFuture.completedFuture(null);
 		}
 
-		private void DoReconsumeLater<T1>(IMessage<T1> message, CommandAck.AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+		protected internal override void DoReconsumeLater<T1>(IMessage<T1> message, CommandAck.AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
 		{
 			IMessageId messageId = message.MessageId;
 			if(messageId is TopicMessageId)
@@ -765,7 +784,7 @@ namespace SharpPulsar
 			//return CompletableFuture.completedFuture(null);
 		}
 
-		private void NegativeAcknowledge(IMessageId messageId)
+		internal override void NegativeAcknowledge(IMessageId messageId)
 		{
 			_negativeAcksTracker.Tell(new Add(messageId));
 
@@ -1008,22 +1027,6 @@ namespace SharpPulsar
 				BatchReceiveTimeout.Cancel();
 			}
 			StatsConflict.StatTimeout.ifPresent(Timeout.cancel);
-		}
-
-		private void FailPendingReceive()
-		{
-			try
-			{
-				if(ListenerExecutor != null && !ListenerExecutor.Shutdown)
-				{
-					FailPendingReceives(this.PendingReceives);
-					FailPendingBatchReceives(this.PendingBatchReceives);
-				}
-			}
-			finally
-			{
-				
-			}
 		}
 
 		internal virtual void ActiveConsumerChanged(bool isActive)
@@ -1444,26 +1447,23 @@ namespace SharpPulsar
 		/// 
 		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
 		/// </summary>
-		protected internal override void MessageProcessed<T1>(Message<T1> msg)
+		protected internal override void MessageProcessed<T1>(IMessage<T1> msg)
 		{
-			lock(this)
+			var currentCnx = Cnx();
+			IActorRef msgCnx = ((Message<T1>)msg).Cnx();
+			_lastDequeuedMessageId = msg.MessageId;
+
+			if (msgCnx != currentCnx)
 			{
-				ClientCnx currentCnx = Cnx();
-				ClientCnx msgCnx = ((MessageImpl<object>) msg).Cnx;
-				LastDequeuedMessageId = msg.MessageId;
-        
-				if(msgCnx != currentCnx)
-				{
-					// The processed message did belong to the old queue that was cleared after reconnection.
-					return;
-				}
-        
-				IncreaseAvailablePermits(currentCnx);
-				StatsConflict.UpdateNumMsgsReceived(msg);
-        
-				TrackMessage(msg);
-				IncomingMessagesSizeUpdater.addAndGet(this, msg.Data == null ? 0 : -msg.Data.Length);
+				// The processed message did belong to the old queue that was cleared after reconnection.
+				return;
 			}
+
+			IncreaseAvailablePermits(currentCnx);
+			Stats.UpdateNumMsgsReceived(msg);
+
+			TrackMessage(msg);
+			IncomingMessagesSize -= (msg.Data == null ? 0 : msg.Data.Length);
 		}
 
 		protected internal virtual void TrackMessage<T1>(IMessage<T1> msg)
@@ -1677,7 +1677,21 @@ namespace SharpPulsar
 				return _availablePermitsUpdater.get(this);
 			}
 		}
-
+		protected internal override IMessage<T> InternalReceive()
+		{
+			IMessage<T> message;
+			try
+			{
+				message = IncomingMessages.Take();
+				MessageProcessed(message);
+				return BeforeConsume(message);
+			}
+			catch (Exception e)
+			{
+				Stats.IncrementNumReceiveFailed();
+				throw PulsarClientException.Unwrap(e);
+			}
+		}
 		internal override int NumMessagesInQueue()
 		{
 			return IncomingMessages.Count;
