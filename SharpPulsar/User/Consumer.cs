@@ -1,4 +1,5 @@
-﻿using BAMCIS.Util.Concurrent;
+﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Stats.Consumer.Api;
@@ -11,10 +12,6 @@ namespace SharpPulsar.User
 {
     public class Consumer<T> : IConsumer<T>
     {
-        public Consumer()
-        {
-
-        }
         public string Topic => throw new NotImplementedException();
 
         public string Subscription => throw new NotImplementedException();
@@ -22,8 +19,6 @@ namespace SharpPulsar.User
         public IConsumerStats Stats => throw new NotImplementedException();
 
         public IMessageId LastMessageId => throw new NotImplementedException();
-
-        public Task<IMessageId> LastMessageIdAsync => throw new NotImplementedException();
 
         public bool Connected => throw new NotImplementedException();
 
@@ -51,31 +46,6 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task AcknowledgeAsync<T1>(IMessage<T1> message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AcknowledgeAsync(IMessageId messageId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AcknowledgeAsync(IMessageId messageId, ITransaction txn)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AcknowledgeAsync<T1>(IMessages<T1> messages)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AcknowledgeAsync(IList<IMessageId> messageIdList)
-        {
-            throw new NotImplementedException();
-        }
-
         public void AcknowledgeCumulative<T1>(IMessage<T1> message)
         {
             throw new NotImplementedException();
@@ -86,17 +56,7 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task AcknowledgeCumulativeAsync(MessageId messageId, ITransaction txn)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AcknowledgeCumulativeAsync<T1>(IMessage<T1> message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AcknowledgeCumulativeAsync(IMessageId messageId)
+        public Task AcknowledgeCumulativeAsync(IMessageId messageId, IActorRef txn)
         {
             throw new NotImplementedException();
         }
@@ -106,17 +66,7 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task<IMessages<T>> BatchReceiveAsync()
-        {
-            throw new NotImplementedException();
-        }
-
         public void Close()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task CloseAsync()
         {
             throw new NotImplementedException();
         }
@@ -161,11 +111,6 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task<IMessage<T>> ReceiveAsync()
-        {
-            throw new NotImplementedException();
-        }
-
         public void ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
         {
             throw new NotImplementedException();
@@ -176,22 +121,7 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task ReconsumeLaterAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ReconsumeLaterAsync<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
-        {
-            throw new NotImplementedException();
-        }
-
         public void ReconsumeLaterCumulative<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ReconsumeLaterCumulativeAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
         {
             throw new NotImplementedException();
         }
@@ -216,22 +146,7 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task SeekAsync(IMessageId messageId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SeekAsync(long timestamp)
-        {
-            throw new NotImplementedException();
-        }
-
         public void Unsubscribe()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UnsubscribeAsync()
         {
             throw new NotImplementedException();
         }

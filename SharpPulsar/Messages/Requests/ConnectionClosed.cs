@@ -20,6 +20,10 @@ namespace SharpPulsar.Messages.Requests
     {
         public static IncreaseAvailablePermits Instance = new IncreaseAvailablePermits();
     }
+    public sealed class ConnectionAlreadySet
+    {
+        public static ConnectionAlreadySet Instance = new ConnectionAlreadySet();
+    }
     public sealed class ConnectionOpened
     {
         public IActorRef ClientCnx { get; }

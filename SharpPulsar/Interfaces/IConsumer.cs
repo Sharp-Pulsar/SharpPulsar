@@ -1,4 +1,5 @@
-﻿using BAMCIS.Util.Concurrent;
+﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Stats.Consumer.Api;
 using System.Collections.Generic;
@@ -65,13 +66,6 @@ namespace SharpPulsar.Interfaces
 		void Unsubscribe();
 
 		/// <summary>
-		/// Asynchronously unsubscribe the consumer.
-		/// </summary>
-		/// <seealso cref= Consumer#unsubscribe() </seealso>
-		/// <returns> <seealso cref="CompletableFuture"/> to track the operation </returns>
-		Task UnsubscribeAsync();
-
-		/// <summary>
 		/// Receives a single message.
 		/// 
 		/// <para>This calls blocks until a message is available.
@@ -86,26 +80,6 @@ namespace SharpPulsar.Interfaces
 		///             
 		IMessage<T> Receive();
 
-		/// <summary>
-		/// Receive a single message
-		/// 
-		/// <para>Retrieves a message when it will be available and completes <seealso cref="CompletableFuture"/> with received message.
-		/// 
-		/// </para>
-		/// <para>{@code receiveAsync()} should be called subsequently once returned {@code CompletableFuture} gets complete
-		/// with received message. Else it creates <i> backlog of receive requests </i> in the application.
-		/// 
-		/// </para>
-		/// <para>The returned future can be cancelled before completion by calling {@code .cancel(false)}
-		/// (<seealso cref="CompletableFuture.cancel(bool)"/>) to remove it from the the backlog of receive requests. Another
-		/// choice for ensuring a proper clean up of the returned future is to use the CompletableFuture.orTimeout method
-		/// which is available on JDK9+. That would remove it from the backlog of receive requests if receiving exceeds
-		/// the timeout.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> <seealso cref="CompletableFuture"/><<seealso cref="Message"/>> will be completed when message is available </returns>
-		Task<IMessage<T>> ReceiveAsync();
 
 		/// <summary>
 		/// Receive a single message.
@@ -138,30 +112,6 @@ namespace SharpPulsar.Interfaces
 		/// 
 		IMessages<T> BatchReceive();
 
-		/// <summary>
-		/// Batch receiving messages.
-		/// <para>
-		/// Retrieves messages when has enough messages or wait timeout and
-		/// completes <seealso cref="CompletableFuture"/> with received messages.
-		/// </para>
-		/// <para>
-		/// {@code batchReceiveAsync()} should be called subsequently once returned {@code CompletableFuture} gets complete
-		/// with received messages. Else it creates <i> backlog of receive requests </i> in the application.
-		/// </para>
-		/// 
-		/// <para>The returned future can be cancelled before completion by calling {@code .cancel(false)}
-		/// (<seealso cref="CompletableFuture.cancel(bool)"/>) to remove it from the the backlog of receive requests. Another
-		/// choice for ensuring a proper clean up of the returned future is to use the CompletableFuture.orTimeout method
-		/// which is available on JDK9+. That would remove it from the backlog of receive requests if receiving exceeds
-		/// the timeout.
-		/// 
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> messages
-		/// @since 2.4.1 </returns>
-		/// <exception cref="PulsarClientException"> </exception>
-		Task<IMessages<T>> BatchReceiveAsync();
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message.
@@ -414,15 +364,14 @@ namespace SharpPulsar.Interfaces
 		/// <param name="txn"> <seealso cref="Transaction"/> the transaction to cumulative ack </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-		/// <exception cref="org.apache.pulsar.client.api.PulsarClientException.TransactionConflictException">
+		/// <exception cref="PulsarClientException.TransactionConflictException">
 		///             if the ack with messageId is less than the messageId in pending ack state or ack with transaction is
 		///             different from the transaction in pending ack. </exception>
-		/// <exception cref="org.apache.pulsar.client.api.PulsarClientException.NotAllowedException">
+		/// <exception cref="PulsarClientException.NotAllowedException">
 		///             broker don't support transaction </exception>
-		/// <returns> <seealso cref="CompletableFuture"/> the future of the ack result
 		/// 
 		/// @since 2.7.0 </returns>
-		Task AcknowledgeCumulativeAsync(MessageId messageId, ITransaction txn);
+		void AcknowledgeCumulative(IMessageId messageId, IActorRef txn);
 
 		/// <summary>
 		/// reconsumeLater the reception of all the messages in the stream up to (and including) the provided message.
@@ -437,133 +386,6 @@ namespace SharpPulsar.Interfaces
 		///             if the consumer was already closed </exception>
 		///             
 		void ReconsumeLaterCumulative<T1>(IMessage<T1> message, long delayTime, TimeUnit unit);
-
-		/// <summary>
-		/// Asynchronously acknowledge the consumption of a single message.
-		/// </summary>
-		/// <param name="message">
-		///            The {@code Message} to be acknowledged </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		/// 
-		Task AcknowledgeAsync<T1>(IMessage<T1> message);
-
-		/// <summary>
-		/// Asynchronously acknowledge the consumption of a single message.
-		/// </summary>
-		/// <param name="messageId">
-		///            The {@code MessageId} to be acknowledged </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		Task AcknowledgeAsync(IMessageId messageId);
-
-		/// <summary>
-		/// Asynchronously acknowledge the consumption of a single message, it will store in pending ack.
-		/// 
-		/// <para>After the transaction commit, the message will actually ack.
-		/// 
-		/// </para>
-		/// <para>After the transaction abort, the message will be redelivered.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="messageId"> <seealso cref="IMessageId"/> to be individual acknowledged </param>
-		/// <param name="txn"> <seealso cref="Transaction"/> the transaction to cumulative ack </param>
-		/// <exception cref="PulsarClientException.AlreadyClosedException">
-		///             if the consumer was already closed </exception>
-		/// <exception cref="org.apache.pulsar.client.api.PulsarClientException.TransactionConflictException">
-		///             if the ack with messageId has been acked by another transaction </exception>
-		/// <exception cref="org.apache.pulsar.client.api.PulsarClientException.NotAllowedException">
-		///             broker don't support transaction
-		///             don't find batch size in consumer pending ack </exception>
-		/// <returns> <seealso cref="CompletableFuture"/> the future of the ack result
-		/// 
-		/// @since 2.7.0 </returns>
-		Task AcknowledgeAsync(IMessageId messageId, ITransaction txn);
-
-		/// <summary>
-		/// Asynchronously acknowledge the consumption of <seealso cref="Messages"/>.
-		/// </summary>
-		/// <param name="messages">
-		///            The <seealso cref="Messages"/> to be acknowledged </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		
-		Task AcknowledgeAsync<T1>(IMessages<T1> messages);
-
-		/// <summary>
-		/// Asynchronously acknowledge the consumption of a list of message. </summary>
-		/// <param name="messageIdList">
-		/// @return </param>
-		Task AcknowledgeAsync(IList<IMessageId> messageIdList);
-
-		/// <summary>
-		/// Asynchronously reconsumeLater the consumption of a single message.
-		/// </summary>
-		/// <param name="message">
-		///            The {@code Message} to be reconsumeLater </param>
-		/// <param name="delayTime">
-		///            the amount of delay before the message will be delivered </param>
-		/// <param name="unit">
-		///            the time unit for the delay </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-
-		Task ReconsumeLaterAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit);
-
-		/// <summary>
-		/// Asynchronously reconsumeLater the consumption of <seealso cref="Messages"/>.
-		/// </summary>
-		/// <param name="messages">
-		///            The <seealso cref="Messages"/> to be reconsumeLater </param>
-		/// <param name="delayTime">
-		///            the amount of delay before the message will be delivered </param>
-		/// <param name="unit">
-		///            the time unit for the delay </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-
-		Task ReconsumeLaterAsync<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit);
-
-		/// <summary>
-		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
-		/// message.
-		/// 
-		/// <para>Cumulative acknowledge cannot be used when the consumer type is set to ConsumerShared.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="message">
-		///            The {@code Message} to be cumulatively acknowledged </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		/// 
-		Task AcknowledgeCumulativeAsync<T1>(IMessage<T1> message);
-
-		/// <summary>
-		/// Asynchronously Acknowledge the reception of all the messages in the stream up to (and including) the provided
-		/// message.
-		/// 
-		/// <para>Cumulative acknowledge cannot be used when the consumer type is set to ConsumerShared.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="messageId">
-		///            The {@code MessageId} to be cumulatively acknowledged </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		Task AcknowledgeCumulativeAsync(IMessageId messageId);
-
-		/// <summary>
-		/// Asynchronously ReconsumeLater the reception of all the messages in the stream up to (and including) the provided
-		/// message.
-		/// 
-		/// <para>Cumulative reconsumeLater cannot be used when the consumer type is set to ConsumerShared.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="message">
-		///            The {@code message} to be cumulatively reconsumeLater </param>
-		/// <param name="delayTime">
-		///            the amount of delay before the message will be delivered </param>
-		/// <param name="unit">
-		///            the time unit for the delay </param>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-
-		Task ReconsumeLaterCumulativeAsync<T1>(IMessage<T1> message, long delayTime, TimeUnit unit);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -588,12 +410,6 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// 
 		void Close();
-
-		/// <summary>
-		/// Asynchronously close the consumer and stop the broker to push more messages.
-		/// </summary>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		Task CloseAsync();
 
 		/// <summary>
 		/// Return true if the topic was terminated and this consumer has already consumed all the messages in the topic.
@@ -640,33 +456,6 @@ namespace SharpPulsar.Interfaces
 		///            
 		void Seek(long timestamp);
 
-		/// <summary>
-		/// Reset the subscription associated with this consumer to a specific message id.
-		/// 
-		/// <para>The message id can either be a specific message or represent the first or last messages in the topic.
-		/// <ul>
-		/// <li><code>MessageId.earliest</code> : Reset the subscription on the earliest message available in the topic
-		/// <li><code>MessageId.latest</code> : Reset the subscription on the latest message in the topic
-		/// </ul>
-		/// 
-		/// </para>
-		/// <para>Note: this operation can only be done on non-partitioned topics. For these, one can rather perform
-		/// the seek() on the individual partitions.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="messageId">
-		///            the message id where to reposition the subscription </param>
-		/// <returns> a future to track the completion of the seek operation </returns>
-		Task SeekAsync(IMessageId messageId);
-
-		/// <summary>
-		/// Reset the subscription associated with this consumer to a specific message publish time.
-		/// </summary>
-		/// <param name="timestamp">
-		///            the message publish time where to reposition the subscription </param>
-		/// <returns> a future to track the completion of the seek operation </returns>
-		Task SeekAsync(long timestamp);
 
 		/// <summary>
 		/// Get the last message id available available for consume.
@@ -674,12 +463,6 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the last message id. </returns>
 		/// 
 		IMessageId LastMessageId {get;}
-
-		/// <summary>
-		/// Get the last message id available available for consume.
-		/// </summary>
-		/// <returns> a future that can be used to track the completion of the operation. </returns>
-		Task<IMessageId> LastMessageIdAsync {get;}
 
 		/// <returns> Whether the consumer is connected to the broker </returns>
 		bool Connected {get;}

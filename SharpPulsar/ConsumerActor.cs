@@ -64,7 +64,7 @@ using System.Threading.Tasks;
 namespace SharpPulsar
 {
 
-	public class ConsumerActor<T> : ConsumerActorBase<T>
+    public partial class ConsumerActor<T> : ConsumerActorBase<T>, IWithUnboundedStash
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
@@ -311,11 +311,8 @@ namespace SharpPulsar
 
 			 GrabCnx();
 		}
-		private void SetupReceives()
-        {
-			Receive<ConnectionOpened>(c => {
-				ConnectionOpened(c.ClientCnx);
-			});
+		private void Ready()
+        {			
 			Receive<ClearIncomingMessagesAndGetMessageNumber>(_ => 
 			{
 				var cleared = ClearIncomingMessagesAndGetMessageNumber();
@@ -326,6 +323,7 @@ namespace SharpPulsar
 				var cnx = Cnx();
 				IncreaseAvailablePermits(cnx);
 			});
+			Stash.UnstashAll();
         }
 		internal virtual IActorRef UnAckedMessageTracker
 		{
@@ -904,6 +902,7 @@ namespace SharpPulsar
 			_log.Info($"[{Topic}][{Subscription}] Subscribed to topic on -- consumer: {ConsumerId}");
 
 			_availablePermits = 0;
+			Become(Ready);
 		}
 
 		/// <summary>
@@ -2272,9 +2271,25 @@ namespace SharpPulsar
 
 		internal virtual void GrabCnx()
 		{
-			_connectionHandler.Tell(new GrabCnx(""));
+			_connectionHandler.Tell(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
+			Become(Connection);
 		}
-
+		private void Connection()
+        {
+			Receive<ConnectionOpened>(c => {
+				ConnectionOpened(c.ClientCnx);
+			});
+			Receive<ConnectionFailed>(c => {
+				ConnectionFailed(c.Exception);
+			});
+			Receive<Failure>(c => {
+				_log.Error($"Connection to the server failed: {c.Exception}/{c.Timestamp}"); 
+			});
+			Receive<ConnectionAlreadySet>(_ => {
+				Become(Ready);
+			});
+			ReceiveAny(a => Stash.Stash());
+		}
 		internal virtual string TopicNameWithoutPartition
 		{
 			get
@@ -2283,34 +2298,7 @@ namespace SharpPulsar
 			}
 		}
 
-		internal class ChunkedMessageCtx
-		{
-
-			protected internal int TotalChunks = -1;
-			protected internal List<byte> ChunkedMsgBuffer;
-			protected internal int LastChunkedMessageId = -1;
-			protected internal MessageId[] ChunkedMessageIds;
-			protected internal long ReceivedTime = 0;
-
-			internal static ChunkedMessageCtx Get(int numChunksFromMsg, List<byte> chunkedMsgBuffer)
-			{
-                ChunkedMessageCtx ctx = new ChunkedMessageCtx
-                {
-                    TotalChunks = numChunksFromMsg,
-                    ChunkedMsgBuffer = chunkedMsgBuffer,
-                    ChunkedMessageIds = new MessageId[numChunksFromMsg],
-                    ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
-                };
-                return ctx;
-			}
-
-			internal virtual void Recycle()
-			{
-				TotalChunks = -1;
-				ChunkedMsgBuffer = null;
-				LastChunkedMessageId = -1;
-			}
-		}
+        public IStash Stash { get; set; }
 
 		private void RemoveOldestPendingChunkedMessage()
 		{

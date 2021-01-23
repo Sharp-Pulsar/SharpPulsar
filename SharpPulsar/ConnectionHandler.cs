@@ -69,6 +69,7 @@ namespace SharpPulsar
 			if (_clientCnx != null)
 			{
 				_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Client cnx already set, ignoring reconnection request");
+				_connection.Tell(ConnectionAlreadySet.Instance);
 				return;
 			}
 
@@ -76,16 +77,20 @@ namespace SharpPulsar
 			{
 				// Ignore connection closed when we are shutting down
 				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
-				_connection.Tell(new Failure { Exception = new Exception("Invalid State For Reconnection") });
+				_connection.Tell(new Failure { Exception = new Exception("Invalid State For Reconnection"), Timestamp = DateTime.UtcNow });
 			}
 
 			try
 			{
-				var cnx = _state.Client.AskFor<IActorRef>(new GetConnection(_state.Topic));
-				if(cnx == null)
-					HandleConnectionError(new NullReferenceException());
-				else
+				var obj = _state.Client.AskFor(new GetConnection(_state.Topic));
+				if(obj is IActorRef cnx)
 					_connection.Tell(new ConnectionOpened(cnx));
+				else
+                {
+					var ex = (Failure)obj;
+					HandleConnectionError(ex.Exception);
+				}
+					
 			}
 			catch (Exception t)
 			{
@@ -107,7 +112,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_connection.Tell(new Failure { Exception = exception });
+				_connection.Tell(new Failure { Exception = exception, Timestamp = DateTime.UtcNow });
 			}
 
 			var state = _state.ConnectionState;
