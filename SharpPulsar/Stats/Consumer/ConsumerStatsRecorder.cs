@@ -83,7 +83,7 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
+		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData<T> conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
         {
             _system = system;
             _log = system.Log;
@@ -107,7 +107,7 @@ namespace SharpPulsar.Stats.Consumer
 			Init(conf);
 		}
 
-		private void Init(ConsumerConfigurationData conf)
+		private void Init(ConsumerConfigurationData<T> conf)
 		{
             try
 			{
@@ -162,7 +162,7 @@ namespace SharpPulsar.Stats.Consumer
                 _statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
 			}
 		}
-		public void UpdateNumMsgsReceived(Message message)
+		public void UpdateNumMsgsReceived(IMessage<T> message)
 		{
 			if (message != null)
 			{
@@ -263,10 +263,10 @@ namespace SharpPulsar.Stats.Consumer
 		{
 			get
 			{
-				if (_consumer is ConsumerBase)
+				/*if (_consumer is ConsumerBase)
 				{
 					return ((ConsumerBase<object>)_consumer).incomingMessages.size();
-				}
+				}*/
 				return null;
 			}
 		}
@@ -275,15 +275,15 @@ namespace SharpPulsar.Stats.Consumer
 		{
 			get
 			{
-				if (_consumer is MultiTopicsConsumerImpl)
+				/*if (_consumer is MultiTopicsConsumerImpl)
 				{
 					IList<ConsumerImpl<object>> consumerList = ((MultiTopicsConsumerImpl)_consumer).Consumers;
 					return consumerList.ToDictionary((consumerImpl) => consumerImpl.consumerId, (consumerImpl) => consumerImpl.incomingMessages.size());
-				}
+				}*/
 				return null;
 			}
 		}
 
-	}
+    }
 
 }

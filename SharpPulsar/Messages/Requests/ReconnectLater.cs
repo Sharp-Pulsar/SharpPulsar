@@ -16,6 +16,10 @@ namespace SharpPulsar.Messages.Requests
     {
         public static ResetBackoff Instance = new ResetBackoff();
     }
+    public sealed class LastConnectionClosedTimestamp
+    {
+        public static LastConnectionClosedTimestamp Instance = new LastConnectionClosedTimestamp();
+    }
 
     public sealed class GetCnx
     {

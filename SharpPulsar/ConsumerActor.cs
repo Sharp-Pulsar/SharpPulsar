@@ -108,7 +108,7 @@ namespace SharpPulsar
 		private readonly long _startMessageRollbackDurationInSec;
 		private readonly IActorRef _client;
 
-		private readonly IConsumerStats _stats;
+		private readonly IConsumerStatsRecorder _stats;
 
 		private volatile bool _hasReachedEndOfTopic;
 
@@ -144,7 +144,7 @@ namespace SharpPulsar
 		// the topic) then it guards against broken chuncked message which was not fully published
 		private bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
-		private readonly List<string> _pendingChunckedMessageUuidQueue;
+		private readonly Queue<string> _pendingChunckedMessageUuidQueue;
 		private readonly ILoggingAdapter _log;
 
 		private readonly bool _createTopicIfDoesNotExist;
@@ -191,13 +191,13 @@ namespace SharpPulsar
 			_resetIncludeHead = conf.ResetIncludeHead;
 			_createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 			_maxPendingChuckedMessage = conf.MaxPendingChuckedMessage;
-			_pendingChunckedMessageUuidQueue = new List<string>();
+			_pendingChunckedMessageUuidQueue = new Queue<string>();
 			ExpireTimeOfIncompleteChunkedMessageMillis = conf.ExpireTimeOfIncompleteChunkedMessageMillis;
 			_autoAckOldestChunkedMessageOnQueueFull = conf.AutoAckOldestChunkedMessageOnQueueFull;
 
 			if(clientConfiguration.StatsIntervalSeconds > 0)
 			{
-				_stats = new ConsumerStatsRecorder<T>(client, conf, this);
+				_stats = new ConsumerStatsRecorder<T>(Context.System, conf, _topicName.ToString(), ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds);
 			}
 			else
 			{
@@ -391,7 +391,7 @@ namespace SharpPulsar
 				_client.Tell(new CleanupConsumer(Self));
 			}
 
-			Stats.StatTimeout.ifPresent(Timeout.cancel);
+			_stats.StatTimeout.Cancel();
 
 			State.ConnectionState = HandlerState.State.Closing;
 
@@ -442,7 +442,7 @@ namespace SharpPulsar
 				var error = PulsarClientException.Unwrap(e);
 				if (state != HandlerState.State.Closing && state != HandlerState.State.Closed)
 				{
-					Stats.IncrementNumBatchReceiveFailed();
+					_stats.IncrementNumBatchReceiveFailed();
 				}
 				if (_hasParentConsumer)
 					Sender.Tell(new BatchReceiveResponse(error));
@@ -450,7 +450,7 @@ namespace SharpPulsar
 					_batchReceiveResponseQueue.Add(new BatchReceiveResponse(error));
 			}
 		}
-		public override IConsumerStats Stats
+		internal override IConsumerStatsRecorder Stats
 		{
 			get
 			{
@@ -773,7 +773,8 @@ namespace SharpPulsar
 			else if(ackType == CommandAck.AckType.Cumulative)
 			{
 				OnAcknowledgeCumulative(messageId, null);
-				Stats.IncrementNumAcksSent(_unAckedMessageTracker.Tell(new RemoveMessagesTill(msgId)));
+				var removed = _unAckedMessageTracker.AskFor<int>(new RemoveMessagesTill(msgId));
+				_stats.IncrementNumAcksSent(removed);
 			}
 
 			_acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(msgId, ackType, properties, txnImpl));
@@ -799,7 +800,6 @@ namespace SharpPulsar
 				CloseConsumerTasks();
 				DeregisterFromClientCnx();
 				_client.Tell(new CleanupConsumer(Self));
-				FailPendingReceive();
 				ClearReceiverQueue();
 				return;
 			}
@@ -847,7 +847,7 @@ namespace SharpPulsar
 			}
 			// startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
 			long startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-			var request = Commands.NewSubscribe(Topic, Subscription, ConsumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, CommandSubscribe.InitialPosition.ValueOf(_subscriptionInitialPosition.Value), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+			var request = Commands.NewSubscribe(Topic, Subscription, ConsumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
 			
 			var result = cnx.AskFor(new SendRequestWithId(request, requestId));
 			if(result is CommandSuccessResponse)
@@ -1009,8 +1009,6 @@ namespace SharpPulsar
 			CloseConsumerTasks();
 			DeregisterFromClientCnx();
 			_client.Tell(new CleanupConsumer(Self));
-			// fail all pending-receive futures to notify application
-			FailPendingReceive();
 		}
 
 		private void CloseConsumerTasks()
@@ -1025,7 +1023,7 @@ namespace SharpPulsar
 			{
 				BatchReceiveTimeout.Cancel();
 			}
-			StatsConflict.StatTimeout.ifPresent(Timeout.cancel);
+			Stats.StatTimeout.Cancel();
 		}
 
 		internal virtual void ActiveConsumerChanged(bool isActive)
@@ -1191,7 +1189,7 @@ namespace SharpPulsar
 				{
 					RemoveOldestPendingChunkedMessage();
 				}
-				_pendingChunckedMessageUuidQueue.Add(msgMetadata.Uuid);
+				_pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
 			}
 
 			ChunkedMessageCtx chunkedMsgCtx = ChunkedMessagesMap[msgMetadata.Uuid];
@@ -1421,7 +1419,7 @@ namespace SharpPulsar
 		{
 			if (CanEnqueueMessage(message))
 			{
-				IncomingMessages.Enqueue(message);
+				IncomingMessages.Add(message);
 				IncomingMessagesSize += message.Data?.Length ?? 0;
 			}
 			return HasEnoughMessagesForBatchReceive();
@@ -1438,7 +1436,7 @@ namespace SharpPulsar
 
 		private bool IsSameEntry(MessageIdData messageId)
 		{
-			return _startMessageId != null && messageId.LedgerId == _startMessageId.LedgerId && messageId.EntryId == _startMessageId.EntryId;
+			return _startMessageId != null && messageId.ledgerId == (ulong)_startMessageId.LedgerId && messageId.entryId == (ulong)_startMessageId.EntryId;
 		}
 
 		/// <summary>
@@ -1511,14 +1509,15 @@ namespace SharpPulsar
 
 			while(available >= _receiverQueueRefillThreshold && !Paused)
 			{
-				if(_availablePermitsUpdater.compareAndSet(this, available, 0))
+				if (_availablePermits == available)
 				{
+					_availablePermits = 0;
 					SendFlowPermitsToBroker(currentCnx, available);
 					break;
 				}
 				else
 				{
-					available = _availablePermitsUpdater.get(this);
+					available = _availablePermits;
 				}
 			}
 		}
@@ -1546,7 +1545,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return _connectionHandler.LastConnectionClosedTimestamp;
+				return _connectionHandler.AskFor<long>(LastConnectionClosedTimestamp.Instance);
 			}
 		}
 
@@ -1645,11 +1644,11 @@ namespace SharpPulsar
 			Stats.IncrementNumReceiveFailed();
 		}
 
-		internal override string HandlerName
+		internal string HandlerName
 		{
 			get
 			{
-				return SubscriptionConflict;
+				return Subscription;
 			}
 		}
 
@@ -1657,7 +1656,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return ClientCnx != null && (State == State.Ready);
+				return ClientCnx != null && (State.ConnectionState == HandlerState.State.Ready);
 			}
 		}
 
@@ -1673,7 +1672,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return _availablePermitsUpdater.get(this);
+				return _availablePermits;
 			}
 		}
 		protected internal override IMessage<T> InternalReceive()
@@ -1896,7 +1895,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)messageId);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					IncomingMessages = new BlockingQueue<IMessage<T>>();
+					IncomingMessages = new BlockingCollection<IMessage<T>>();
 					IncomingMessagesSize = 0;
 					_seekRequestResponseQueue.Add(true);
 				}
@@ -1945,7 +1944,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)IMessageId.Earliest);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					IncomingMessages = new BlockingQueue<IMessage<T>>();
+					IncomingMessages = new BlockingCollection<IMessage<T>>();
 					IncomingMessagesSize = 0;
 					_voidRequestResponseQueue.Add(true);
 				}

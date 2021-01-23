@@ -46,6 +46,10 @@ namespace SharpPulsar
 			{
 				ResetBackoff();
 			});
+			Receive<LastConnectionClosedTimestamp>(_ =>
+			{
+				Sender.Tell(LastConnectionClosedTimestamp);
+			});
 			Receive<GetCnx>(_ =>
 			{
 				Sender.Tell(_clientCnx);

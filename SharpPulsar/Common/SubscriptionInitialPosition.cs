@@ -66,7 +66,7 @@ namespace SharpPulsar.Common
 
 		public SubscriptionInitialPosition(string name, InnerEnum innerEnum, int value)
 		{
-			this.Value = value;
+			Value = value;
 
 			_nameValue = name;
 			_ordinalValue = _nextOrdinal++;
@@ -75,12 +75,12 @@ namespace SharpPulsar.Common
 
 
 
-		public static IList<SubscriptionInitialPosition> values()
+		public static IList<SubscriptionInitialPosition> Values()
 		{
 			return ValueList;
 		}
 
-		public int ordinal()
+		public int Ordinal()
 		{
 			return _ordinalValue;
 		}
@@ -90,9 +90,9 @@ namespace SharpPulsar.Common
 			return _nameValue;
 		}
 
-		public static SubscriptionInitialPosition valueOf(string name)
+		public static SubscriptionInitialPosition ValueOf(string name)
 		{
-			foreach (SubscriptionInitialPosition enumInstance in SubscriptionInitialPosition.ValueList)
+			foreach (SubscriptionInitialPosition enumInstance in ValueList)
 			{
 				if (enumInstance._nameValue == name)
 				{

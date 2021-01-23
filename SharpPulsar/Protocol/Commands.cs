@@ -16,6 +16,7 @@ using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using Serializer = SharpPulsar.Akka.Network.Serializer;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;
+using SharpPulsar.Transaction;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -564,7 +565,44 @@ namespace SharpPulsar.Protocol
 			
 			return res.ToArray();
 		}
-        public static byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
+		public static byte[] NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, BitSet bitSet)> entries)
+		{
+            var ackBuilder = new CommandAck
+            {
+                ConsumerId = (ulong)consumerId,
+                ack_type = CommandAck.AckType.Individual,
+                TxnidLeastBits = (ulong)txnID.LeastSigBits,
+                TxnidMostBits = (ulong)txnID.MostSigBits
+            };
+            return NewMultiMessageAckCommon(ackBuilder, entries);
+		}
+		public static byte[] NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, BitSet bitSet)> entries)
+		{
+			int entriesCount = entries.Count;
+			for (int i = 0; i < entriesCount; i++)
+			{
+				long ledgerId = entries[i].ledger;
+				long entryId = entries[i].entry;
+				var bitSet = entries[i].bitSet;
+                var messageIdDataBuilder = new MessageIdData
+                {
+                    ledgerId = (ulong)ledgerId,
+                    entryId = (ulong)entryId
+                };
+                if (bitSet != null)
+				{
+					messageIdDataBuilder.AckSets = bitSet.ToLongArray();
+				}
+				var messageIdData = messageIdDataBuilder;
+				ackBuilder.MessageIds.Add(messageIdData);
+			}
+
+			var ack = ackBuilder;
+
+			var res = Serializer.Serialize(ack.ToBaseCommand());
+			return res.ToArray();
+		}
+		public static byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
         {
             var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = CommandAck.AckType.Individual};
 

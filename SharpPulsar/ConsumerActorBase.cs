@@ -50,7 +50,7 @@ namespace SharpPulsar
 		internal abstract void Seek(long timestamp);
 		internal abstract void Seek(IMessageId messageId);
 		internal abstract void RedeliverUnacknowledgedMessages();
-		internal abstract IConsumerStats Stats { get; }
+		internal abstract IConsumerStatsRecorder Stats { get; }
 
 		internal enum ConsumerType
 		{
