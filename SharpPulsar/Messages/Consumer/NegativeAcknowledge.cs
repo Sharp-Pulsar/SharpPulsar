@@ -49,19 +49,4 @@ namespace SharpPulsar.Messages.Consumer
             MessageId = messageId;
         }
     }
-    public sealed class NegativeAcknowledgeMessageIds
-    {
-        /// <summary>
-        /// Fulfils NegativeAcknowledge(IList<IMessageId> messageIdList)
-        /// This message does not return anything
-        /// but when the operation fails, the exception should be added to the BlockCollection<ClientException>
-        /// so that the front end can consume and be aware - in case of no exception add null
-        /// the front checks to see if it is null to know it was successfully
-        /// </summary>
-        public IList<IMessageId> MessageIds { get; }
-        public NegativeAcknowledgeMessageIds(IList<IMessageId> messageIds)
-        {
-            MessageIds = messageIds;
-        }
-    }
 }

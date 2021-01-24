@@ -1,4 +1,7 @@
-﻿namespace SharpPulsar.Messages.Consumer
+﻿using SharpPulsar.Interfaces;
+using System;
+
+namespace SharpPulsar.Messages.Consumer
 {
     public sealed class GetLastMessageId
     {
@@ -9,5 +12,23 @@
         /// </summary>
         /// 
         public static GetLastMessageId Instance = new GetLastMessageId();
+    }
+    public sealed class NullMessageId: IMessageId
+    {
+        public Exception Exception { get; }
+        public NullMessageId(Exception exception)
+        {
+            Exception = exception;
+        }
+
+        public int CompareTo(IMessageId other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public sbyte[] ToByteArray()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -29,7 +29,6 @@ namespace SharpPulsar
     using System.Linq;
     using Protocol;
     using global::Akka.Actor;
-    using SharpPulsar.Impl;
     using global::Akka.Util;
     using SharpPulsar.Precondition;
     using BAMCIS.Util.Concurrent;

@@ -56,7 +56,7 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Task AcknowledgeCumulativeAsync(IMessageId messageId, IActorRef txn)
+        public void AcknowledgeCumulative(IMessageId messageId, IActorRef txn)
         {
             throw new NotImplementedException();
         }

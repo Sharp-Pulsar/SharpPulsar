@@ -11,6 +11,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Utility;
 using System;
@@ -42,6 +43,8 @@ namespace SharpPulsar
 {
 	public abstract class ConsumerActorBase<T> : ReceiveActor
 	{
+
+		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
 		internal abstract long LastDisconnectedTimestamp { get; }
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
 		internal abstract void Resume();
@@ -75,8 +78,9 @@ namespace SharpPulsar
 		protected internal ICancelable BatchReceiveTimeout = null;
 		protected internal HandlerState State;
 
-		protected internal ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		protected internal ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
+			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			State = new HandlerState(client, topic, Context.System, _consumerName);
 			_log = Context.GetLogger();
@@ -123,21 +127,21 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void Receive()
+		internal virtual IMessage<T> Receive()
 		{
 			if (Listener != null)
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
 			}
 			VerifyConsumerState();
-			InternalReceive();
+			return InternalReceive();
 		}
 
 		
 		protected internal abstract IMessage<T> InternalReceive();
 
 		
-		internal virtual void Receive(int timeout, TimeUnit unit)
+		internal virtual IMessage<T> Receive(int timeout, TimeUnit unit)
 		{
 			if (Conf.ReceiverQueueSize == 0)
 			{
@@ -149,20 +153,20 @@ namespace SharpPulsar
 			}
 
 			VerifyConsumerState();
-			InternalReceive(timeout, unit);
+			return InternalReceive(timeout, unit);
 		}
 
 		protected internal abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
 
 		
-		internal virtual void BatchReceive()
+		internal virtual IMessages<T> BatchReceive()
 		{
 			VerifyBatchReceive();
 			VerifyConsumerState();
-			InternalBatchReceive();
+			return InternalBatchReceive();
 		}
 
-		protected internal abstract void InternalBatchReceive();
+		protected internal abstract IMessages<T> InternalBatchReceive();
 
 		internal virtual void Acknowledge<T1>(IMessage<T1> message)
 		{
@@ -170,7 +174,7 @@ namespace SharpPulsar
 			{
 				Acknowledge(message.MessageId);
 			}
-			catch (NullReferenceException npe)
+			catch (Exception npe)
 			{
 				throw new PulsarClientException.InvalidMessageException(npe.Message);
 			}

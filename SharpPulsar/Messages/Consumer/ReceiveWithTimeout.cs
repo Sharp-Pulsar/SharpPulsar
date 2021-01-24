@@ -1,4 +1,6 @@
 ﻿
+using BAMCIS.Util.Concurrent;
+
 namespace SharpPulsar.Messages.Consumer
 {
     public sealed class ReceiveWithTimeout
@@ -10,9 +12,11 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         /// 
         public int Timeout { get; }
-        public ReceiveWithTimeout(int timeout)
+        public TimeUnit TimeUnit { get; }
+        public ReceiveWithTimeout(int timeout, TimeUnit timeUnit)
         {
             Timeout = timeout;
+            TimeUnit = timeUnit;
         }
     }
 }

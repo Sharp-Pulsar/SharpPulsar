@@ -57,10 +57,10 @@ namespace SharpPulsar.Messages.Consumer
         /// so that the front end can consume and be aware - in case of no exception add null
         /// the front checks to see if it is null to know it was successfully
         /// </summary>
-        public IMessages<T> Message { get; }
-        public AcknowledgeMessages(IMessages<T> message)
+        public IMessages<T> Messages { get; }
+        public AcknowledgeMessages(IMessages<T> messages)
         {
-            Message = message;
+            Messages = messages;
         }
     }
 }
