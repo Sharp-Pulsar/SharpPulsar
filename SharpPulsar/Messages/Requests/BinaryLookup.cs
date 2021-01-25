@@ -37,16 +37,6 @@ namespace SharpPulsar.Messages.Requests
             Authoritative = authoritative;
         }
     }
-    public sealed class GetPartitionedTopicMetadata
-    {
-        public TopicName TopicName { get; }
-        public IActorRef ReplyTo { get; }
-        public GetPartitionedTopicMetadata(TopicName topicName, IActorRef replyTo)
-        {
-            TopicName = topicName;
-            ReplyTo = replyTo;
-        }
-    }
     public sealed class GetSchema
     {
         public IActorRef ReplyTo { get; }

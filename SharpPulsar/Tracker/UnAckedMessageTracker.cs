@@ -21,13 +21,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Akka.Actor;
 using Akka.Event;
-using Akka.Util;
 using Akka.Util.Internal;
-using SharpPulsar.Api;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Tracker.Messages;
 

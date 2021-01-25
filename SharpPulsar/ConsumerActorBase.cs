@@ -248,11 +248,11 @@ namespace SharpPulsar
 		{
 			try
 			{
-				ReconsumeLaterAsync(messages, delayTime, unit);
+				messages.ForEach(message => ReconsumeLater(message, delayTime, unit));
 			}
-			catch (Exception e)
+			catch (NullReferenceException npe)
 			{
-				throw PulsarClientException.Unwrap(e);
+				throw new PulsarClientException.InvalidMessageException(npe.Message);
 			}
 		}
 
@@ -294,30 +294,6 @@ namespace SharpPulsar
 			}
 		}
 
-
-		internal virtual void ReconsumeLaterAsync<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
-		{
-			try
-			{
-				messages.ForEach(message => ReconsumeLater(message, delayTime, unit));
-			}
-			catch (NullReferenceException npe)
-			{
-				throw new PulsarClientException.InvalidMessageException(npe.Message);
-			}
-		}
-
-		internal virtual void AcknowledgeCumulativeAsync<T1>(IMessage<T1> message)
-		{
-			try
-			{
-				AcknowledgeCumulative(message.MessageId);
-			}
-			catch (System.NullReferenceException npe)
-			{
-				throw new PulsarClientException.InvalidMessageException(npe.Message);
-			}
-		}
 
 		internal virtual void Acknowledge(IMessageId messageId, IActorRef txn)
 		{

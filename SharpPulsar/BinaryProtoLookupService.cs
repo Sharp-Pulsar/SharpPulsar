@@ -19,6 +19,7 @@ using System.Linq;
 using System.Net;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using System.Threading.Tasks;
+using SharpPulsar.Messages.Client;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

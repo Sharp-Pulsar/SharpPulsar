@@ -7,10 +7,10 @@ namespace SharpPulsar.Messages.Client
     }
     public sealed class NewRequestIdResponse
     {
-        public long RequestId { get; }
+        public long Id { get; }
         public NewRequestIdResponse(long requestid)
         {
-            RequestId = requestid;
+            Id = requestid;
         }
     }
 }

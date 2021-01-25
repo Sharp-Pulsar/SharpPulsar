@@ -466,15 +466,30 @@ namespace SharpPulsar
 			Receive<GetTopic>(m => {
 				Push(ConsumerQueue.Topic, _topicName.ToString());
 			});
+			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
+				UnAckedChunckedMessageIdSequenceMap.Clear();
+			});
 			Receive<HasReachedEndOfTopic>(_ => {
 				var hasReached = HasReachedEndOfTopic();
 				Push(ConsumerQueue.HasReachedEndOfTopic, hasReached);
+			});
+			Receive<GetAvailablePermits>(_ => {
+				var permits = AvailablePermits;
+				Sender.Tell(permits);
 			});
 			Receive<IsConnected>(_ => {
 				Push(ConsumerQueue.Connected, Connected);
 			});
 			Receive<Pause>(_ => {
 				Pause();
+			});
+			Receive<HasMessageAvailable>(_ => {
+				var has = HasMessageAvailable();
+				Sender.Tell(has);
+			});
+			Receive<GetNumMessagesInQueue>(_ => {
+				var num = NumMessagesInQueue();
+				Sender.Tell(num);
 			});
 			Receive<Resume>(_ => {
 				Resume();
@@ -490,6 +505,18 @@ namespace SharpPulsar
                 {
 					var nul = new NullMessageId(ex);
 					Push(ConsumerQueue.LastMessageId, nul);
+				}
+			});
+			Receive<AcknowledgeWithTxn>(m => 
+			{
+                try
+                {
+					DoAcknowledgeWithTxn(m.MessageIds, m.AckType, m.Properties, m.Txn);
+					Push(ConsumerQueue.AcknowledgeException, null);
+				}
+                catch (Exception ex)
+                {
+					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<GetStats>(m => 
@@ -553,6 +580,18 @@ namespace SharpPulsar
 					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
+			Receive<ReconsumeLaterWithProperties<T>>(m => 
+			{
+                try
+                {
+					DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x=> x.Key, x => x.Value), m.DelayTime, m.TimeUnit);
+					Push(ConsumerQueue.ReconsumeLaterException, null);
+				}
+                catch (Exception ex)
+                {
+					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+				}
+			});
 			Receive<ReconsumeLaterMessage<T>>(m => 
 			{
                 try
@@ -570,6 +609,18 @@ namespace SharpPulsar
                 try
                 {
 					RedeliverUnacknowledgedMessages();
+					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
+				}
+                catch (Exception ex)
+                {
+					Push(ConsumerQueue.RedeliverUnacknowledgedException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+				}
+			});
+			Receive<RedeliverUnacknowledgedMessageIds>(m => 
+			{
+                try
+                {
+					RedeliverUnacknowledgedMessages(m.MessageIds);
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
 				}
                 catch (Exception ex)

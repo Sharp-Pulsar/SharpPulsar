@@ -11,4 +11,13 @@ namespace SharpPulsar.Tracker.Messages
 
         public IMessageId MessageId { get; }
     }
+    public sealed class RemoveTopicMessages
+    {
+        public RemoveTopicMessages(string topic)
+        {
+            Topic = topic;
+        }
+
+        public string Topic { get; }
+    }
 }
