@@ -1,9 +1,13 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Precondition;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -37,78 +41,52 @@ namespace SharpPulsar
         {
 			return Props.Create(() => new ZeroQueueConsumer<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, consumerQueue));
         }
-		protected internal override Message<T> InternalReceive()
+		protected internal override IMessage<T> InternalReceive()
 		{
-			_zeroQueueLock.@lock();
-			try
-			{
-				Message<T> msg = FetchSingleMessageFromBroker();
-				TrackMessage(msg);
-				return BeforeConsume(msg);
-			}
-			finally
-			{
-				_zeroQueueLock.unlock();
-			}
+			var msg = FetchSingleMessageFromBroker();
+			TrackMessage(msg);
+			return BeforeConsume(msg);
 		}
 
-		protected internal override CompletableFuture<Message<T>> InternalReceiveAsync()
-		{
-			CompletableFuture<Message<T>> future = base.InternalReceiveAsync();
-			if(!future.Done)
-			{
-				// We expect the message to be not in the queue yet
-				IncreaseAvailablePermits(Cnx());
-			}
-
-			return future;
-		}
-
-		private Message<T> FetchSingleMessageFromBroker()
+		private IMessage<T> FetchSingleMessageFromBroker()
 		{
 			// Just being cautious
-			if(IncomingMessages.size() > 0)
+			if(IncomingMessages.Count > 0)
 			{
-				log.error("The incoming message queue should never be greater than 0 when Queue size is 0");
-				IncomingMessages.clear();
+				_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
+				IncomingMessages = new System.Collections.Concurrent.BlockingCollection<IMessage<T>>();
 			}
 
-			Message<T> message;
+			IMessage<T> message;
 			try
 			{
 				// if cnx is null or if the connection breaks the connectionOpened function will send the flow again
 				_waitingOnReceiveForZeroQueueSize = true;
-				lock(this)
+				if (Connected)
 				{
-					if(Connected)
-					{
-						IncreaseAvailablePermits(Cnx());
-					}
+					IncreaseAvailablePermits(Cnx());
 				}
 				do
 				{
-					message = IncomingMessages.take();
+					message = IncomingMessages.Take();
 					_lastDequeuedMessageId = message.MessageId;
-					ClientCnx msgCnx = ((MessageImpl<object>) message).Cnx;
+					var msgCnx = ((Message<T>) message).Cnx();
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
-					lock(this)
+					// if message received due to an old flow - discard it and wait for the message from the
+					// latest flow command
+					if (msgCnx == Cnx())
 					{
-						// if message received due to an old flow - discard it and wait for the message from the
-						// latest flow command
-						if(msgCnx == Cnx())
-						{
-							_waitingOnReceiveForZeroQueueSize = false;
-							break;
-						}
+						_waitingOnReceiveForZeroQueueSize = false;
+						break;
 					}
 				} while(true);
 
-				StatsConflict.UpdateNumMsgsReceived(message);
+				Stats.UpdateNumMsgsReceived(message);
 				return message;
 			}
-			catch(InterruptedException e)
+			catch(Exception e)
 			{
-				StatsConflict.IncrementNumReceiveFailed();
+				Stats.IncrementNumReceiveFailed();
 				throw PulsarClientException.Unwrap(e);
 			}
 			finally
@@ -116,11 +94,11 @@ namespace SharpPulsar
 				// Finally blocked is invoked in case the block on incomingMessages is interrupted
 				_waitingOnReceiveForZeroQueueSize = false;
 				// Clearing the queue in case there was a race with messageReceived
-				IncomingMessages.clear();
+				IncomingMessages = new System.Collections.Concurrent.BlockingCollection<IMessage<T>>();
 			}
 		}
 
-		protected internal override void ConsumerIsReconnectedToBroker(ClientCnx cnx, int currentQueueSize)
+		protected internal override void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
 		{
 			base.ConsumerIsReconnectedToBroker(cnx, currentQueueSize);
 
@@ -132,7 +110,7 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal override bool CanEnqueueMessage(Message<T> message)
+		protected internal override bool CanEnqueueMessage(IMessage<T> message)
 		{
 			if(Listener != null)
 			{
@@ -145,30 +123,32 @@ namespace SharpPulsar
 			}
 		}
 
-		private void TriggerZeroQueueSizeListener(in Message<T> message)
+		private void TriggerZeroQueueSizeListener(IMessage<T> message)
 		{
-			checkNotNull(Listener, "listener can't be null");
-			checkNotNull(message, "unqueued message can't be null");
+			Condition.CheckNotNull(Listener, "listener can't be null");
+			Condition.CheckNotNull(message, "unqueued message can't be null");
 
-			ListenerExecutor.execute(() =>
+			Task.Run(() =>
 			{
-			StatsConflict.UpdateNumMsgsReceived(message);
-			try
-			{
-				if(log.DebugEnabled)
+				var self = _self;
+				var log = _log;
+				Stats.UpdateNumMsgsReceived(message);
+				try
 				{
-					log.debug("[{}][{}] Calling message listener for unqueued message {}", Topic, SubscriptionConflict, message.MessageId);
+					if (log.IsDebugEnabled)
+					{
+						log.Debug($"[{Topic}][{Subscription}] Calling message listener for unqueued message {message.MessageId}");
+					}
+					_waitingOnListenerForZeroQueueSize = true;
+					TrackMessage(message);
+					Listener.Received(self, BeforeConsume(message));
 				}
-				_waitingOnListenerForZeroQueueSize = true;
-				TrackMessage(message);
-				Listener.Received(ZeroQueueConsumer.this, BeforeConsume(message));
-			}
-			catch(Exception t)
-			{
-				log.error("[{}][{}] Message listener error in processing unqueued message: {}", Topic, SubscriptionConflict, message.MessageId, t);
-			}
-			IncreaseAvailablePermits(Cnx());
-			_waitingOnListenerForZeroQueueSize = false;
+				catch (Exception t)
+				{
+					log.Error($"[{Topic}][{Subscription}] Message listener error in processing unqueued message: {message.MessageId} => {t}");
+				}
+				IncreaseAvailablePermits(Cnx());
+				_waitingOnListenerForZeroQueueSize = false;
 			});
 		}
 
@@ -177,15 +157,11 @@ namespace SharpPulsar
 			// Ignore since it was already triggered in the triggerZeroQueueSizeListener() call
 		}
 
-		internal override void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, ByteBuf uncompressedPayload, MessageIdData messageId, ClientCnx cnx)
+		internal override void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] uncompressedPayload, MessageIdData messageId, IActorRef cnx)
 		{
-			log.warn("Closing consumer [{}]-[{}] due to unsupported received batch-message with zero receiver queue size", SubscriptionConflict, ConsumerNameConflict);
+			_log.Warning($"Closing consumer [{Subscription}]-[{ConsumerName}] due to unsupported received batch-message with zero receiver queue size");
 			// close connection
-			CloseAsync().handle((ok, e) =>
-			{
-			NotifyPendingReceivedCallback(null, new PulsarClientException.InvalidMessageException(format("Unsupported Batch message with 0 size receiver queue for [%s]-[%s] ", SubscriptionConflict, ConsumerNameConflict)));
-			return null;
-			});
+			cnx.GracefulStop(TimeSpan.FromSeconds(1));
 		}
 	}
 

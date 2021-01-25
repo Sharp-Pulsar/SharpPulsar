@@ -75,7 +75,7 @@ namespace SharpPulsar
 
 		private int _availablePermits = 0;
 
-		private IMessageId _lastDequeuedMessageId = IMessageId.Earliest;
+		protected IMessageId _lastDequeuedMessageId = IMessageId.Earliest;
 		private IMessageId _lastMessageIdInBroker = IMessageId.Earliest;
 
 		private readonly ClientConfigurationData _clientConfigurationData;
@@ -140,9 +140,10 @@ namespace SharpPulsar
 		private bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
 		private readonly Queue<string> _pendingChunckedMessageUuidQueue;
-		private readonly ILoggingAdapter _log;
+		protected readonly ILoggingAdapter _log;
 
 		private readonly bool _createTopicIfDoesNotExist;
+		protected IActorRef _self;
 
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 
@@ -165,7 +166,7 @@ namespace SharpPulsar
 
 		public ConsumerActor(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
-
+			_self = Self;
 			_tokenSource = new CancellationTokenSource();
 			_log = Context.GetLogger();
 			_client = client;
@@ -2497,7 +2498,7 @@ namespace SharpPulsar
 		}
 
 		// wrapper for connection methods
-		private IActorRef Cnx()
+		protected IActorRef Cnx()
 		{
 			return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 		}
