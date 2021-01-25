@@ -3,7 +3,12 @@ using App.Metrics.Concurrency;
 using SharpPulsar.Batch;
 using SharpPulsar.Configuration;
 using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Precondition;
+using SharpPulsar.Queues;
+using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
+using SharpPulsar.Tracker;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -39,7 +44,7 @@ namespace SharpPulsar
 		private readonly ConcurrentDictionary<string, IActorRef> _consumers;
 
 		// Map <topic, numPartitions>, store partition number for each topic
-		protected internal readonly ConcurrentDictionary<string, int> TopicsConflict;
+		protected internal readonly ConcurrentDictionary<string, int> TopicsMap;
 
 		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
 		// shared incoming queue was full
@@ -63,50 +68,51 @@ namespace SharpPulsar
 
 		private volatile BatchMessageId _startMessageId = null;
 		private readonly long _startMessageRollbackDurationInSec;
+		private readonly ClientConfigurationData _clientConfiguration;
 
-		internal MultiTopicsConsumer(PulsarClientImpl client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : this(client, DummyTopicNamePrefix + ConsumerName.GenerateRandomName(), conf, listenerExecutor, subscribeFuture, schema, interceptors, createTopicIfDoesNotExist)
+		internal MultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, queue)
 		{
 		}
 
-		internal MultiTopicsConsumer(PulsarClientImpl client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, MessageId startMessageId, long startMessageRollbackDurationInSec) : this(client, DummyTopicNamePrefix + ConsumerName.GenerateRandomName(), conf, listenerExecutor, subscribeFuture, schema, interceptors, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec)
+		internal MultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, queue)
 		{
 		}
 
-		internal MultiTopicsConsumer(PulsarClientImpl client, string singleTopic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist) : this(client, singleTopic, conf, listenerExecutor, subscribeFuture, schema, interceptors, createTopicIfDoesNotExist, null, 0)
+		internal MultiTopicsConsumer(IActorRef client, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, singleTopic, conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, null, 0, clientConfiguration, queue)
 		{
 		}
 
-		internal MultiTopicsConsumer(PulsarClientImpl client, string singleTopic, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> subscribeFuture, Schema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, MessageId startMessageId, long startMessageRollbackDurationInSec) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, subscribeFuture, schema, interceptors)
+		internal MultiTopicsConsumer(IActorRef client, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
 		{
 
-			checkArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
+			Condition.CheckArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
+			_clientConfiguration = clientConfiguration;
+			TopicsMap = new ConcurrentDictionary<string, int>();
+			_consumers = new ConcurrentDictionary<string, IActorRef>();
+			_pausedConsumers = new ConcurrentQueue<IActorRef>();
+			_sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
+			AllTopicPartitionsNumber = new AtomicInteger(0);
+			_startMessageId = startMessageId != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
+			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 
-			this.TopicsConflict = new ConcurrentDictionary<string, int>();
-			this._consumers = new ConcurrentDictionary<string, ConsumerImpl<T>>();
-			this._pausedConsumers = new ConcurrentLinkedQueue<ConsumerImpl<T>>();
-			this._sharedQueueResumeThreshold = MaxReceiverQueueSizeConflict / 2;
-			this.AllTopicPartitionsNumber = new AtomicInteger(0);
-			this._startMessageId = startMessageId != null ? new BatchMessageIdImpl(MessageIdImpl.ConvertToMessageIdImpl(startMessageId)) : null;
-			this._startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
-
-			if(conf.AckTimeoutMillis != 0)
+			if (conf.AckTimeoutMillis != 0)
 			{
-				if(conf.TickDurationMillis > 0)
+				if (conf.TickDurationMillis > 0)
 				{
-					this._unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.AckTimeoutMillis, conf.TickDurationMillis);
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, conf.TickDurationMillis, Self), "UnAckedMessageTracker");
 				}
 				else
 				{
-					this._unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.AckTimeoutMillis);
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, 0, Self), "UnAckedMessageTracker");
 				}
 			}
 			else
 			{
-				this._unAckedMessageTracker = Org.Apache.Pulsar.Client.Impl.UnAckedMessageTracker.UNACKED_MESSAGE_TRACKER_DISABLED;
+				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
 			}
 
-			this._internalConfig = InternalConsumerConfig;
-			this._stats = client.Configuration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorderImpl(this) : null;
+			_internalConfig = InternalConsumerConfig;
+			_stats = _clientConfiguration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
 
 			// start track and auto subscribe partition increasement
 			if(conf.AutoUpdatePartitions)
@@ -115,7 +121,7 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout = client.Timer().newTimeout(_partitionsAutoUpdateTimerTask, conf.AutoUpdatePartitionsIntervalSeconds, TimeUnit.SECONDS);
 			}
 
-			if(conf.TopicNames.Empty)
+			if(conf.TopicNames.Count == 0)
 			{
 				State = State.Ready;
 				SubscribeFuture().complete(MultiTopicsConsumer.this);
@@ -520,7 +526,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public override void NegativeAcknowledge(MessageId messageId)
+		public override void NegativeAcknowledge(IMessageId messageId)
 		{
 			checkArgument(messageId is TopicMessageIdImpl);
 			TopicMessageIdImpl topicMessageId = (TopicMessageIdImpl) messageId;
@@ -1254,7 +1260,7 @@ namespace SharpPulsar
 
 			public TopicsPartitionChangedListener(MultiTopicsConsumer<T> outerInstance)
 			{
-				this._outerInstance = outerInstance;
+				_outerInstance = outerInstance;
 			}
 
 			// Check partitions changes of passed in topics, and subscribe new added partitions.

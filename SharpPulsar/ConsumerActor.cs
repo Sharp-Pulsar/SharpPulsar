@@ -200,7 +200,7 @@ namespace SharpPulsar
 				_stats = ConsumerStatsDisabled.Instance;
 			}
 
-			_duringSeek = new AtomicBoolean(false);
+			_duringSeek = false;
 
 			if(conf.AckTimeoutMillis != 0)
 			{

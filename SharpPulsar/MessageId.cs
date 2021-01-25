@@ -140,6 +140,22 @@ namespace SharpPulsar
 			return messageId;
 		}
 
+		public static MessageId ConvertToMessageId(IMessageId messageId)
+		{
+			if (messageId is BatchMessageId batch)
+			{
+				return batch;
+			}
+			else if (messageId is MessageId msgId )
+			{
+				return msgId;
+			}
+			else if (messageId is TopicMessageId topic)
+			{
+				return ConvertToMessageId(topic.InnerMessageId);
+			}
+			return null;
+		}
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
 		public virtual sbyte[] ToByteArray(int batchIndex)
 		{
