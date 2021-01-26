@@ -18,7 +18,11 @@ namespace SharpPulsar.Messages.Requests
     }
     public sealed class IncreaseAvailablePermits
     {
-        public static IncreaseAvailablePermits Instance = new IncreaseAvailablePermits();
+        public int Available { get; }
+        public IncreaseAvailablePermits(int available)
+        {
+            Available = available;
+        }
     }
     public sealed class ConnectionAlreadySet
     {

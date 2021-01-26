@@ -60,7 +60,7 @@ namespace SharpPulsar
 			PARTITIONED,
 			NonPartitioned
 		}
-		private readonly ILoggingAdapter _log;
+		protected readonly ILoggingAdapter _log;
 		private readonly string _subscription;
 		protected internal readonly ConsumerConfigurationData<T> Conf;
 		private readonly string _consumerName;
@@ -77,9 +77,11 @@ namespace SharpPulsar
 		protected internal long IncomingMessagesSize = 0;
 		protected internal ICancelable BatchReceiveTimeout = null;
 		protected internal HandlerState State;
+		private readonly string _topic;
 
 		protected internal ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
+			_topic = topic;
 			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			State = new HandlerState(client, topic, Context.System, _consumerName);
@@ -395,7 +397,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return Topic;
+				return _topic;
 			}
 		}
 

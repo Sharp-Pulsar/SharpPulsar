@@ -18,6 +18,7 @@ using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
+using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
@@ -314,10 +315,13 @@ namespace SharpPulsar
 				var cleared = ClearIncomingMessagesAndGetMessageNumber();
 				Sender.Tell(cleared);
 			});
-			Receive<IncreaseAvailablePermits>(_ => 
+			Receive<IncreaseAvailablePermits>(i => 
 			{
 				var cnx = Cnx();
-				IncreaseAvailablePermits(cnx);
+				if (i.Available > 0)
+					IncreaseAvailablePermits(cnx, i.Available);
+				else
+					IncreaseAvailablePermits(cnx);
 			});
 			Receive<BatchReceive>(_ => 
 			{

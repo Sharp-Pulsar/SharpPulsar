@@ -50,6 +50,16 @@ namespace SharpPulsar.Messages.Consumer
             MessageIds = messageIds;
         }
     }
+    public sealed class Subscribe
+    {
+        public string TopicName { get; }
+        public int NumberOfPartitions { get; }
+        public Subscribe(string topicName, int numberPartitions)
+        {
+            TopicName = topicName;
+            NumberOfPartitions = numberPartitions;
+        }
+    }
     public sealed class AcknowledgeWithTxn
     {
         /// <summary>
