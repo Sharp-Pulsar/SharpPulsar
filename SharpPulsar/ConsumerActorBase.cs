@@ -79,7 +79,11 @@ namespace SharpPulsar
 		protected internal HandlerState State;
 		private readonly string _topic;
 
-		protected internal ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
+        public ConsumerActorBase()
+        {
+
+        }
+		public ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
 			_topic = topic;
 			ConsumerQueue = consumerQueue;

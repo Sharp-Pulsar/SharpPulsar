@@ -60,6 +60,16 @@ namespace SharpPulsar.Messages.Consumer
             NumberOfPartitions = numberPartitions;
         }
     }
+    public sealed class SubscribeAndCreateTopicIfDoesNotExist
+    {
+        public string TopicName { get; }
+        public bool CreateTopicIfDoesNotExist { get; }
+        public SubscribeAndCreateTopicIfDoesNotExist(string topicName, bool createTopicIfDoesNotExist)
+        {
+            TopicName = topicName;
+            CreateTopicIfDoesNotExist = createTopicIfDoesNotExist;
+        }
+    }
     public sealed class AcknowledgeWithTxn
     {
         /// <summary>

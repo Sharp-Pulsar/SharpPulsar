@@ -51,14 +51,12 @@ namespace SharpPulsar.Messages.Requests
     }
     public sealed class GetTopicsUnderNamespace
     {
-        public IActorRef ReplyTo { get; }
         public NamespaceName Namespace { get; }
         public Mode Mode { get; }
-        public GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode, IActorRef replyTo)
+        public GetTopicsUnderNamespace(NamespaceName @namespace, Mode mode)
         {
             Namespace = @namespace;
             Mode = mode;
-            ReplyTo = replyTo;
         }
     }
     public sealed class GetTopicsOfNamespaceRetry

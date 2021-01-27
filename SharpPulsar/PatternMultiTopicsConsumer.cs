@@ -1,5 +1,18 @@
-﻿using System;
+﻿using Akka.Actor;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Precondition;
+using SharpPulsar.Queues;
+using SharpPulsar.Utils;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,53 +35,53 @@ using System.Collections.Generic;
 namespace SharpPulsar
 {
 
-	public class PatternMultiTopicsConsumer<T> : MultiTopicsConsumer<T>, TimerTask
+	public class PatternMultiTopicsConsumer<T> : MultiTopicsConsumer<T>
 	{
-		private readonly Pattern _topicsPattern;
+		private readonly Regex _topicsPattern;
 		private readonly TopicsChangedListener _topicsChangeListener;
 		private readonly Mode _subscriptionMode;
+		private readonly IActorRef _client;
 		protected internal NamespaceName NamespaceName;
-		private volatile Timeout _recheckPatternTimeout = null;
+		private ICancelable _recheckPatternTimeout = null;
+		private IActorContext _context;
+		private HashSet<string> _discoveredTopics;
+		private ISchema<T> _schema;
 
-		public PatternMultiTopicsConsumer(Pattern topicsPattern, PulsarClientImpl client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, CompletableFuture<Consumer<T>> subscribeFuture, Schema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors) : base(client, conf, listenerExecutor, subscribeFuture, schema, interceptors, false)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (client, true,conf, listenerExecutor, schema, interceptors, false, clientConfiguration, queue)
 		{
-			this._topicsPattern = topicsPattern;
-			this._subscriptionMode = subscriptionMode;
+			_schema = schema;
+			_discoveredTopics = new HashSet<string>();
+			_context = Context;
+			_topicsPattern = topicsPattern;
+			_subscriptionMode = subscriptionMode;
 
 			if(this.NamespaceName == null)
 			{
 				this.NamespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
-			checkArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(this.NamespaceName.ToString()));
+			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(this.NamespaceName.ToString()));
 
 			this._topicsChangeListener = new PatternTopicsChangedListener(this);
-			this._recheckPatternTimeout = client.Timer().newTimeout(this, Math.Max(1, conf.PatternAutoDiscoveryPeriod), TimeUnit.SECONDS);
+			_recheckPatternTimeout = client.Timer().newTimeout(this, Math.Max(1, conf.PatternAutoDiscoveryPeriod), TimeUnit.SECONDS);
 		}
 
-		public static NamespaceName GetNameSpaceFromPattern(Pattern pattern)
-		{
-			return TopicName.Get(pattern.pattern()).NamespaceObject;
-		}
 
-		public override void Run(Timeout timeout)
+		public override void Run()
 		{
-			if(timeout.Cancelled)
+			if(_recheckPatternTimeout.IsCancellationRequested)
 			{
 				return;
 			}
 
-			CompletableFuture<Void> recheckFuture = new CompletableFuture<Void>();
-			IList<CompletableFuture<Void>> futures = Lists.newArrayListWithExpectedSize(2);
-
-			ClientConflict.Lookup.getTopicsUnderNamespace(NamespaceName, _subscriptionMode).thenAccept(TopicsConflict =>
+			var topicsFound = _client.AskFor<GetTopicsOfNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode)).Response.Topics;
+			var topics = _context.GetChildren().ToList();
+			if (_log.IsDebugEnabled)
 			{
-			if(_log.DebugEnabled)
-			{
-				_log.debug("Get topics under namespace {}, topics.size: {}", NamespaceName.ToString(), TopicsConflict.Count);
-				TopicsConflict.forEach(topicName => _log.debug("Get topics under namespace {}, topic: {}", NamespaceName.ToString(), topicName));
+				_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
+				_discoveredTopics.ToList().ForEach(topicName => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {topicName}"));
 			}
-			IList<string> newTopics = PulsarClientImpl.TopicsPatternFilter(TopicsConflict, _topicsPattern);
-			IList<string> oldTopics = PatternMultiTopicsConsumer.this.Topics;
+			IList<string> newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
+			IList<string> oldTopics = _discoveredTopics.ToList();
 			futures.Add(_topicsChangeListener.OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics)));
 			futures.Add(_topicsChangeListener.OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics)));
 			FutureUtil.WaitForAll(futures).thenAccept(finalFuture => recheckFuture.complete(null)).exceptionally(ex =>
@@ -77,13 +90,11 @@ namespace SharpPulsar
 				recheckFuture.completeExceptionally(ex);
 				return null;
 			});
-			});
-
 			// schedule the next re-check task
 			this._recheckPatternTimeout = ClientConflict.Timer().newTimeout(PatternMultiTopicsConsumer.this, Math.Max(1, Conf.PatternAutoDiscoveryPeriod), TimeUnit.SECONDS);
 		}
 
-		public virtual Pattern Pattern
+		public virtual Regex Pattern
 		{
 			get
 			{
@@ -99,63 +110,53 @@ namespace SharpPulsar
 			CompletableFuture<Void> OnTopicsAdded(ICollection<string> addedTopics);
 		}
 
-		private class PatternTopicsChangedListener : TopicsChangedListener
+		private void OnTopicsRemoved(ICollection<string> removedTopics)
 		{
-			private readonly PatternMultiTopicsConsumer<T> _outerInstance;
-
-			public PatternTopicsChangedListener(PatternMultiTopicsConsumer<T> outerInstance)
+			if (removedTopics.Count == 0)
 			{
-				this._outerInstance = outerInstance;
+				return;
 			}
-
-			public virtual CompletableFuture<Void> OnTopicsRemoved(ICollection<string> removedTopics)
-			{
-				CompletableFuture<Void> removeFuture = new CompletableFuture<Void>();
-
-				if(removedTopics.Count == 0)
-				{
-					removeFuture.complete(null);
-					return removeFuture;
-				}
-
-				IList<CompletableFuture<Void>> futures = Lists.newArrayListWithExpectedSize(outerInstance.TopicsConflict.Count);
-				removedTopics.ForEach(outerInstance.Topic => futures.Add(outerInstance.RemoveConsumerAsync(outerInstance.Topic)));
-				FutureUtil.WaitForAll(futures).thenAccept(finalFuture => removeFuture.complete(null)).exceptionally(ex =>
-				{
-				_log.warn("[{}] Failed to subscribe topics: {}", outerInstance.Topic, ex.Message);
-				removeFuture.completeExceptionally(ex);
-				return null;
-				});
-				return removeFuture;
-			}
-
-			public virtual CompletableFuture<Void> OnTopicsAdded(ICollection<string> addedTopics)
-			{
-				CompletableFuture<Void> addFuture = new CompletableFuture<Void>();
-
-				if(addedTopics.Count == 0)
-				{
-					addFuture.complete(null);
-					return addFuture;
-				}
-
-				IList<CompletableFuture<Void>> futures = Lists.newArrayListWithExpectedSize(outerInstance.TopicsConflict.Count);
-				addedTopics.ForEach(outerInstance.Topic => futures.Add(outerInstance.SubscribeAsync(outerInstance.Topic, false)));
-				FutureUtil.WaitForAll(futures).thenAccept(finalFuture => addFuture.complete(null)).exceptionally(ex =>
-				{
-				_log.warn("[{}] Failed to unsubscribe topics: {}", outerInstance.Topic, ex.Message);
-				addFuture.completeExceptionally(ex);
-				return null;
-				});
-				return addFuture;
-			}
+			foreach(var t in removedTopics)
+            {
+				var name = t.ToAkkaNaming();
+				var child = _context.Child(name);
+				if (!child.IsNobody())
+					child.GracefulStop(TimeSpan.FromSeconds(2));
+            }
 		}
 
+		private void  OnTopicsAdded(ICollection<string> addedTopics)
+		{
+			if (addedTopics.Count == 0)
+			{				
+				return;
+			}
+			foreach(var t in addedTopics)
+            {
+				var name = t.ToAkkaNaming();
+				_context.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(_client, t, Conf, ListenerExecutor, false, _schema, Interceptors, clientConfiguration, ConsumerQueue, true), name);
+            }
+		}
+		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
+		{
+			return TopicName.Get(pattern.ToString()).NamespaceObject;
+		}
+		// get topics that match 'topicsPattern' from original topics list
+		// return result should contain only topic names, without partition part
+		private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
+		{
+			var pattern = topicsPattern.ToString().Contains("://") ? new Regex(Regex.Split(topicsPattern.ToString(), @"\:\/\/")[1]) : topicsPattern;
+
+			return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
+		}
 		// get topics, which are contained in list1, and not in list2
 		public static IList<string> TopicsListsMinus(IList<string> list1, IList<string> list2)
 		{
 			HashSet<string> s1 = new HashSet<string>(list1);
-			s1.RemoveAll(list2);
+            foreach (var l in list2)
+            {
+				s1.Remove(l);
+            }
 			return s1.ToList();
 		}
 

@@ -25,7 +25,7 @@ namespace SharpPulsar.Akka.Consumer
         private bool _initialized;
         private readonly Seek _seek;
         private readonly IActorRef _pulsarManager;
-        public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
+        public PatternMultiTopicsManager(ClientConfigurationData client, ConsumerConfigurationData<T> consumer, IActorRef network, Seek seek, IActorRef pulsarManager)
         {
             _pulsarManager = pulsarManager;
             _network = network;

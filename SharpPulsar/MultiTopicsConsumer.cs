@@ -88,7 +88,6 @@ namespace SharpPulsar
 		private readonly IActorRef _client;
 
 		private readonly IActorRef _self;
-
 		public MultiTopicsConsumer(IActorRef client, bool hasParentConsumer, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, hasParentConsumer, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, queue, 0)
 		{
 		}
@@ -103,6 +102,7 @@ namespace SharpPulsar
 
 		public MultiTopicsConsumer(IActorRef client, bool hasParentConsumer, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, int numberPartition, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
 		{
+			_client = client;
 			_hasParentConsumer = hasParentConsumer;
 			Condition.CheckArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
 			_self = Self;
@@ -138,7 +138,7 @@ namespace SharpPulsar
 			// start track and auto subscribe partition increasement
 			if(conf.AutoUpdatePartitions)
 			{
-				_partitionsAutoUpdateTimeout = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), () => SubscribeIncreasedTopicPartitions(Topic));
+				_partitionsAutoUpdateTimeout = _scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromMilliseconds(1000), TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), () => SubscribeIncreasedTopicPartitions(Topic));
 			}
 
 			if(conf.TopicNames.Count == 0)
@@ -169,14 +169,18 @@ namespace SharpPulsar
 						_log.Warning($"[{Topic}] Failed to subscribe topics: {t.Exception}");
 					}
 				});
-			}			
-			
+			}
+			Ready();
 		}
 		private void Ready()
 		{
 			Receive<Subscribe>(s =>
 			{
 				Subscribe(s.TopicName, s.NumberOfPartitions);
+			});
+			Receive<SubscribeAndCreateTopicIfDoesNotExist>(s =>
+			{
+				Subscribe(s.TopicName, s.CreateTopicIfDoesNotExist);
 			});
 			Receive<ReceiveMessageFrom>(r =>
 			{
@@ -491,11 +495,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<Unsubscribe>(_ =>
+			Receive<UnsubscribeTopic>(u =>
 			{
 				try
 				{
-					Unsubscribe(Topic);
+					Unsubscribe(u.Topic);
 					Push(ConsumerQueue.UnsubscribeException, null);
 				}
 				catch (Exception ex)
@@ -1137,8 +1141,13 @@ namespace SharpPulsar
 			return Props.Create(()=> new MultiTopicsConsumer<T>(client, hasParentConsumer, topicName, conf, listenerExecutor, schema, interceptors, true, clientConfiguration, queue, numPartitions));
 			
 		}
+		public static Props NewMultiTopicsConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf,IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue, bool hasParentConsumer = false)
+		{
+			return Props.Create(()=> new MultiTopicsConsumer<T>(client, hasParentConsumer, topic, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, clientConfiguration, queue, 0));
+			
+		}
 
-		internal virtual void Subscribe(string topicName, int numberPartitions)
+		internal void Subscribe(string topicName, int numberPartitions)
 		{
 			TopicName topicNameInstance = GetTopicName(topicName);
 			if(topicNameInstance == null)
