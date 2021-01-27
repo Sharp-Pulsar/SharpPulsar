@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Common.Naming;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace SharpPulsar.Messages.Client
@@ -17,6 +18,14 @@ namespace SharpPulsar.Messages.Client
         public GetPartitionsForTopic(string topicName)
         {
             TopicName = topicName;
+        }
+    }
+    public sealed class PartitionsForTopic
+    {
+        public ImmutableList<string> Topics { get; }
+        public PartitionsForTopic(IList<string> topics)
+        {
+            Topics = topics.ToImmutableList();
         }
     }
 }

@@ -12,6 +12,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Impl;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using BAMCIS.Util.Concurrent;
+using SharpPulsar.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -35,6 +36,13 @@ namespace SharpPulsar.Configuration
 {
 	public sealed class ConsumerConfigurationData<T>
 	{
+		private long _autoUpdatePartitionsIntervalSeconds;
+		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
+		{
+			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
+			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
+		}
+		public long AutoUpdatePartitionsIntervalSeconds { get => _autoUpdatePartitionsIntervalSeconds; }
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using SharpPulsar.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
@@ -32,11 +33,11 @@ namespace SharpPulsar
 	/// </summary>
 	public class MultiMessageId : IMessageId
 	{
-		private readonly IDictionary<string, IMessageId> _map;
+		public readonly ImmutableDictionary<string, IMessageId> Map;
 
 		public MultiMessageId(IDictionary<string, IMessageId> map)
 		{
-			this._map = map;
+			Map = map.ToImmutableDictionary();
 		}
 
 		// TODO: Add support for Serialization and Deserialization
@@ -48,7 +49,7 @@ namespace SharpPulsar
 
 		public override int GetHashCode()
 		{
-			return _map.GetHashCode();
+			return Map.GetHashCode();
 		}
 
 		// If all messageId in map are same Size, and all bigger/smaller than the other, return valid value.
@@ -60,20 +61,20 @@ namespace SharpPulsar
 			}
 
 			var other = (MultiMessageId) o;
-			var otherMap = other._map;
+			var otherMap = other.Map;
 
-			if ((_map == null || _map.Count == 0) && (otherMap == null || otherMap.Count == 0))
+			if ((Map == null || Map.Count == 0) && (otherMap == null || otherMap.Count == 0))
 			{
 				return 0;
 			}
 
-			if (otherMap == null || _map == null || otherMap.Count != _map.Count)
+			if (otherMap == null || Map == null || otherMap.Count != Map.Count)
 			{
 				throw new ArgumentException("Current Size and other Size not equals");
 			}
 
 			var result = 0;
-			foreach (var entry in HashMapHelper.SetOfKeyValuePairs(_map))
+			foreach (var entry in HashMapHelper.SetOfKeyValuePairs(Map))
 			{
 				var otherMessage = otherMap[entry.Key];
 				if (otherMessage == null)
