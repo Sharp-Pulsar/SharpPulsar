@@ -1,4 +1,17 @@
-﻿using SharpPulsar.Interfaces;
+﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Batch.Api;
+using SharpPulsar.Common;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Queues;
+using SharpPulsar.Utility;
+using System;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -19,24 +32,23 @@
 /// </summary>
 namespace SharpPulsar
 {
-	public class ReaderActor<T>
+	public class ReaderActor<T>: ReceiveActor
 	{
-		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = BatchReceivePolicy.Builder().Timeout(0, TimeUnit.MILLISECONDS).MaxNumMessages(1).Build();
-		private readonly ConsumerImpl<T> _consumer;
+		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
+		private readonly IActorRef _consumer;
 
-		public ReaderActor(PulsarClientImpl client, ReaderConfigurationData<T> readerConfiguration, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> consumerFuture, Schema<T> schema)
+		public ReaderActor(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
-
-			string subscription = "reader-" + DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 10);
-			if(StringUtils.isNotBlank(readerConfiguration.SubscriptionRolePrefix))
+			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 
 			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
-			consumerConfiguration.TopicNames.add(readerConfiguration.TopicName);
+			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 			consumerConfiguration.SubscriptionName = subscription;
-			consumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
+			consumerConfiguration.SubscriptionType = SubType.Exclusive;
 			consumerConfiguration.SubscriptionMode = SubscriptionMode.NonDurable;
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
@@ -57,8 +69,8 @@ namespace SharpPulsar
 
 			if(readerConfiguration.ReaderListener != null)
 			{
-				ReaderListener<T> readerListener = readerConfiguration.ReaderListener;
-				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, readerListener);
+				var readerListener = readerConfiguration.ReaderListener;
+				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(Self, readerListener);
 			}
 
 			consumerConfiguration.CryptoFailureAction = readerConfiguration.CryptoFailureAction;
@@ -73,28 +85,27 @@ namespace SharpPulsar
 			}
 
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-			_consumer = new ConsumerImpl<T>(client, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, consumerFuture, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
+			_consumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(client, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
 		}
 
-		private class MessageListenerAnonymousInnerClass : MessageListener<T>
+		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
-			private readonly ReaderActor<T> _outerInstance;
+			private readonly IActorRef _outerInstance;
 
-			private Org.Apache.Pulsar.Client.Api.IReaderListener<T> _readerListener;
+			private IReaderListener<T> _readerListener;
 
-			public MessageListenerAnonymousInnerClass(ReaderActor<T> outerInstance, Org.Apache.Pulsar.Client.Api.IReaderListener<T> readerListener)
+			public MessageListenerAnonymousInnerClass(IActorRef outerInstance, IReaderListener<T> readerListener)
 			{
-				this._outerInstance = outerInstance;
-				this._readerListener = readerListener;
-				_serialVersionUID = 1L;
+				_outerInstance = outerInstance;
+				_readerListener = readerListener;
 			}
 
 			private static readonly long _serialVersionUID;
 
-			public void Received(ConsumerActor<T> consumer, Message<T> msg)
+			public void Received(IActorRef consumer, IMessage<T> msg)
 			{
 				_readerListener.Received(_outerInstance, msg);
-				consumer.AcknowledgeCumulativeAsync(msg);
+				consumer.Tell(new AcknowledgeCumulativeMessage<T>(msg));
 			}
 
 			public void ReachedEndOfTopic(ConsumerActor<T> consumer)
@@ -111,7 +122,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual ConsumerImpl<T> Consumer
+		public virtual IActorRef Consumer
 		{
 			get
 			{
@@ -121,11 +132,15 @@ namespace SharpPulsar
 
 		public virtual bool HasReachedEndOfTopic()
 		{
-			return _consumer.HasReachedEndOfTopic();
+			//I dont need to do this cause the consumer will add the response to the consumer queue 
+			//which will be read at the user side - use tell here and forget about it, the queue will have the response
+			return _consumer.AskFor<bool>(Messages.Consumer.HasReachedEndOfTopic.Instance);
 		}
 
-		public virtual Message<T> ReadNext()
+		public virtual IMessage<T> ReadNext()
 		{
+			//I dont need to do this cause the consumer will add the response to the consumer queue 
+			//which will be read at the user side - use tell here and forget about it, the queue will have the response
 			Message<T> msg = _consumer.Receive();
 
 			// Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
@@ -134,54 +149,38 @@ namespace SharpPulsar
 			return msg;
 		}
 
-		public virtual Message<T> ReadNext(int timeout, TimeUnit unit)
+		public virtual IMessage<T> ReadNext(int timeout, TimeUnit unit)
 		{
+			//I dont need to do this cause the consumer will add the response to the consumer queue 
+			//which will be read at the user side - use tell here and forget about it, the queue will have the response
 			Message<T> msg = _consumer.Receive(timeout, unit);
 
 			if(msg != null)
 			{
+				//user should acknowledge message to this actor who will further send it to the consumer
 				_consumer.AcknowledgeCumulativeAsync(msg);
 			}
 			return msg;
 		}
-
-		public virtual CompletableFuture<Message<T>> ReadNextAsync()
-		{
-			CompletableFuture<Message<T>> receiveFuture = _consumer.ReceiveAsync();
-			receiveFuture.whenComplete((msg, t) =>
-			{
-			if(msg != null)
-			{
-				_consumer.acknowledgeCumulativeAsync(msg);
-			}
-			});
-			return receiveFuture;
-		}
-
-		public override void close()
-		{
-			_consumer.close();
-		}
-
-		public virtual CompletableFuture<Void> CloseAsync()
-		{
-			return _consumer.CloseAsync();
-		}
+        protected override void PostStop()
+        {
+			_consumer.GracefulStop(TimeSpan.FromSeconds(1));
+            base.PostStop();
+        }
 
 		public virtual bool HasMessageAvailable()
 		{
+			//I dont need to do this cause the consumer will add the response to the consumer queue 
+			//which will be read at the user side - use tell here and forget about it, the queue will have the response
 			return _consumer.HasMessageAvailable();
 		}
 
-		public virtual CompletableFuture<bool> HasMessageAvailableAsync()
-		{
-			return _consumer.HasMessageAvailableAsync();
-		}
 
 		public virtual bool Connected
 		{
 			get
-			{
+			{//I dont need to do this cause the consumer will add the response to the consumer queue 
+			 //which will be read at the user side - use tell here and forget about it, the queue will have the response
 				return _consumer.Connected;
 			}
 		}
@@ -196,15 +195,6 @@ namespace SharpPulsar
 			_consumer.Seek(timestamp);
 		}
 
-		public virtual CompletableFuture<Void> SeekAsync(MessageId messageId)
-		{
-			return _consumer.SeekAsync(messageId);
-		}
-
-		public virtual CompletableFuture<Void> SeekAsync(long timestamp)
-		{
-			return _consumer.SeekAsync(timestamp);
-		}
 	}
 
 }

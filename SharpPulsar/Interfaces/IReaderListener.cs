@@ -18,7 +18,7 @@ using SharpPulsar.Interfaces;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Api
+namespace SharpPulsar.Interfaces
 {
 
 	/// <summary>
