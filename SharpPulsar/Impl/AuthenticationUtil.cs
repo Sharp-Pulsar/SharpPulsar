@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Api;
 using SharpPulsar.Auth;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;

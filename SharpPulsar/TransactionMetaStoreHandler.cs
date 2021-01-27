@@ -5,7 +5,7 @@ using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;

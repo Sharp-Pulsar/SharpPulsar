@@ -12,6 +12,22 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
+    public sealed class ClearIncomingMessagesAndGetMessageNumber
+    {
+        public static ClearIncomingMessagesAndGetMessageNumber Instance = new ClearIncomingMessagesAndGetMessageNumber();
+    }
+    public sealed class IncreaseAvailablePermits
+    {
+        public int Available { get; }
+        public IncreaseAvailablePermits(int available)
+        {
+            Available = available;
+        }
+    }
+    public sealed class ConnectionAlreadySet
+    {
+        public static ConnectionAlreadySet Instance = new ConnectionAlreadySet();
+    }
     public sealed class ConnectionOpened
     {
         public IActorRef ClientCnx { get; }

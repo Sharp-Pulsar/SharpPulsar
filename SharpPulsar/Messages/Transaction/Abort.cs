@@ -15,6 +15,16 @@ namespace SharpPulsar.Messages.Transaction
             MessageIds = messageIds;
         }
     }
+    public sealed class RegisterAckedTopic
+    {
+        public string Topic { get; }
+        public string Subscription { get; }
+        public RegisterAckedTopic(string topic, string subscription)
+        {
+            Topic = topic;
+            Subscription = subscription;
+        }
+    }
     public sealed class Commit
     {
         public TxnID TxnID { get; }

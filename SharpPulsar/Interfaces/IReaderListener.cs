@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using Akka.Actor;
+using SharpPulsar.Interfaces;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,16 +18,13 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-
-using Akka.Actor;
-
-namespace SharpPulsar.Interfaces
+namespace Org.Apache.Pulsar.Client.Api
 {
 
 	/// <summary>
 	/// A listener that will be called in order for every message received.
 	/// </summary>
-	public interface IReaderListener
+	public interface IReaderListener<T>
 	{
 		/// <summary>
 		/// This method is called whenever a new message is received.
@@ -44,7 +43,7 @@ namespace SharpPulsar.Interfaces
 		///            the Reader object from where the message was received </param>
 		/// <param name="msg">
 		///            the message object </param>
-		void Received(IMessage msg);
+		void Received(IActorRef reader, IMessage<T> msg);
 
 		/// <summary>
 		/// Get the notification when a topic is terminated.

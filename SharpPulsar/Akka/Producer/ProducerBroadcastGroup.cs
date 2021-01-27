@@ -5,7 +5,7 @@ using Akka.Actor;
 using Akka.Routing;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka.Producer
 {

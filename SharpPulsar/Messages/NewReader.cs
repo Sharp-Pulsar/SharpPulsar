@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Messages
 {

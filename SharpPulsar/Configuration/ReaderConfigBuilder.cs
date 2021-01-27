@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Utility;
 using Range = SharpPulsar.Api.Range;
 

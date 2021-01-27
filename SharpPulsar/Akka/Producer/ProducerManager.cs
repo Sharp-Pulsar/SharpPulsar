@@ -8,7 +8,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Schema;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;

@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Protocol.Proto;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -17,6 +16,7 @@ using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using Serializer = SharpPulsar.Akka.Network.Serializer;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;
+using SharpPulsar.Transaction;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -398,11 +398,11 @@ namespace SharpPulsar.Protocol
 			return res.ToArray();
 		}
 
-		public static byte[] NewSeek(long consumerId, long requestId, long ledgerId, long entryId)
+		public static byte[] NewSeek(long consumerId, long requestId, long ledgerId, long entryId, long[] ackSet)
 		{
             var seek = new CommandSeek {ConsumerId = (ulong) consumerId, RequestId = (ulong) requestId};
 
-            var messageId = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId};
+            var messageId = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId, AckSets = ackSet};
             seek.MessageId = messageId;
 			var res = Serializer.Serialize(seek.ToBaseCommand());
 			
@@ -565,7 +565,44 @@ namespace SharpPulsar.Protocol
 			
 			return res.ToArray();
 		}
-        public static byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
+		public static byte[] NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, BitSet bitSet)> entries)
+		{
+            var ackBuilder = new CommandAck
+            {
+                ConsumerId = (ulong)consumerId,
+                ack_type = CommandAck.AckType.Individual,
+                TxnidLeastBits = (ulong)txnID.LeastSigBits,
+                TxnidMostBits = (ulong)txnID.MostSigBits
+            };
+            return NewMultiMessageAckCommon(ackBuilder, entries);
+		}
+		public static byte[] NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, BitSet bitSet)> entries)
+		{
+			int entriesCount = entries.Count;
+			for (int i = 0; i < entriesCount; i++)
+			{
+				long ledgerId = entries[i].ledger;
+				long entryId = entries[i].entry;
+				var bitSet = entries[i].bitSet;
+                var messageIdDataBuilder = new MessageIdData
+                {
+                    ledgerId = (ulong)ledgerId,
+                    entryId = (ulong)entryId
+                };
+                if (bitSet != null)
+				{
+					messageIdDataBuilder.AckSets = bitSet.ToLongArray();
+				}
+				var messageIdData = messageIdDataBuilder;
+				ackBuilder.MessageIds.Add(messageIdData);
+			}
+
+			var ack = ackBuilder;
+
+			var res = Serializer.Serialize(ack.ToBaseCommand());
+			return res.ToArray();
+		}
+		public static byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
         {
             var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = CommandAck.AckType.Individual};
 
@@ -608,10 +645,14 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties)
 		{
-			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, 0, 0);
+			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, -1L, -1);
 		}
-
-		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits)
+		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
+		{
+			return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError,
+					properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
+		}
+		public static byte[] NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId, int batchSize)
 		{
             var ack = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = ackType};
 			
@@ -624,6 +665,16 @@ namespace SharpPulsar.Protocol
 			if (validationError != null)
 			{
 				ack.validation_error = (CommandAck.ValidationError) validationError;
+			}
+
+			if (batchSize >= 0)
+			{
+				messageIdData.BatchSize = batchSize;
+			}
+
+			if (requestId >= 0)
+			{
+				ack.RequestId = (ulong)requestId;
 			}
 			if (txnIdMostBits > 0)
 			{

@@ -7,7 +7,7 @@ using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;

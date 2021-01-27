@@ -18,6 +18,7 @@
 /// </summary>
 
 using System;
+using Akka.Actor;
 using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.Interfaces
@@ -36,7 +37,7 @@ namespace SharpPulsar.Interfaces
 		///            the consumer that originated the event </param>
 		/// <param name="partitionId">
 		///            the id of the partition that became active </param>
-		void BecameActive(string consumer, int partitionId);
+		void BecameActive(IActorRef consumer, int partitionId);
 
 		/// <summary>
 		/// Notified when the consumer group is changed, and the consumer is still inactive or becomes inactive.
@@ -45,7 +46,7 @@ namespace SharpPulsar.Interfaces
 		///            the consumer that originated the event </param>
 		/// <param name="partitionId">
 		///            the id of the partition that became inactive </param>
-		void BecameInactive(string consumer, int partitionId);
+		void BecameInactive(IActorRef consumer, int partitionId);
 
         void Error(Exception ex);
         void Log(string log);

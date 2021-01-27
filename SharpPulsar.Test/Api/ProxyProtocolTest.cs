@@ -6,7 +6,7 @@ using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Handlers;
 using SharpPulsar.Auth;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Impl.Schema;
 using Xunit;
 using Xunit.Abstractions;

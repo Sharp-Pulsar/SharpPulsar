@@ -25,6 +25,7 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
+using SharpPulsar.Extension;
 
 namespace SharpPulsar
 {
@@ -132,13 +133,24 @@ namespace SharpPulsar
 					RegisterConsumer(m.ConsumerId, m.Consumer); 
 				});
 				Receive<RemoveProducer>(m => {
+					
 					RemoveProducer(m.ProducerId);
+				});
+				Receive<MaxMessageSize>(_ => {
+					
+					Sender.Tell(_maxMessageSize);
 				});
 				Receive<RemoveConsumer>(m => {
 					RemoveConsumer(m.ConsumerId); 
 				});
 				Receive<RegisterTransactionMetaStoreHandler>(h => {
 					RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
+				});
+				Receive<SendRequestWithId>(r => {
+					SendRequestWithId(r.Message, r.RequestId);
+				});
+				Receive<RemoteEndpointProtocolVersion>(r => {
+					Sender.Tell(_protocolVersion);
 				});
 			});
 		}
@@ -166,23 +178,20 @@ namespace SharpPulsar
 				_log.Info($"{_remoteHostName} Connected through proxy to target broker at {_proxyToTargetBrokerAddress}");
 			}
 			// Send CONNECT command
-			_socketClient.SendMessageAsync(NewConnectCommand()).ContinueWith(task => 
+			var task = _socketClient.Execute(NewConnectCommand());
+			if (task.IsCompletedSuccessfully)
 			{
-				if (task.IsCompletedSuccessfully)
+				if (_log.IsDebugEnabled)
 				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"Complete: {task.IsCompletedSuccessfully}");
-					}
-					_state = State.SentConnectFrame;
+					_log.Debug($"Complete: {task.IsCompletedSuccessfully}");
 				}
-				else
-				{
-					_log.Warning($"Error during handshake: {task.Exception}");
-					//ctx.close();
-				}
-
-			});
+				_state = State.SentConnectFrame;
+			}
+			else
+			{
+				_log.Warning($"Error during handshake: {task.Exception}");
+				//ctx.close();
+			}
 		}
 		private void OnDisconnected()
 		{
@@ -345,8 +354,12 @@ namespace SharpPulsar
 				_log.Debug($"Received success response from server: {success.RequestId}");
 			}
 			long requestId = (long)success.RequestId;
-			var req = _pendingRequests.Remove(requestId);
-			if (!req)
+			if(_pendingRequests.TryGetValue(requestId, out var req))
+            {
+				_pendingRequests.Remove(requestId);
+				req.Requester.Tell(new CommandSuccessResponse(success));
+			}
+			else
 			{
 				_log.Warning($"Received unknown request id from server: {success.RequestId}");
 			}
@@ -605,7 +618,8 @@ namespace SharpPulsar
 
 		private void NewGetTopicsOfNamespace(byte[] request, long requestId)
 		{
-			SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
+			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
+			Sender.Tell(done);
 		}
 
 		private void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
@@ -656,51 +670,53 @@ namespace SharpPulsar
 
 		private void SendRequestWithId(byte[] cmd, long requestId)
 		{
-			SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
+			var done = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
+			Sender.Tell(done);
 		}
 
-		private void SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
+		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
 		{
 			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
-			_socketClient.SendMessageAsync(requestMessage).ContinueWith(task =>
+			var task = _socketClient.Execute(requestMessage); 
+			if (task.IsFaulted)
 			{
-				if (task.IsFaulted) 
-				{
-					_log.Warning($"Failed to send {requestType.Description} to broker: {task.Exception}");
-					_pendingRequests.Remove(requestId);
-					//future.completeExceptionally(writeFuture.cause());
-				}			
-			});
+				_log.Warning($"Failed to send {requestType.Description} to broker: {task.Exception}");
+				_pendingRequests.Remove(requestId);
+				return false;
+			}
 			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
+			return true;
 		}
 		private void SendRequest(byte[] requestMessage, long requestId)
 		{
-			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
-			_socketClient.SendMessageAsync(requestMessage).ContinueWith(task =>
+			if(requestId >= 0)
+			  _pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+			var task = _socketClient.Execute(requestMessage);
+			if (task.IsFaulted)
 			{
-				if (task.IsFaulted) 
-				{
-					_log.Warning($"Failed to send {requestId} to broker: {task.Exception}");
+				_log.Warning($"Failed to send {requestId} to broker: {task.Exception}");
+				if (requestId >= 0)
 					_pendingRequests.Remove(requestId);
-					//future.completeExceptionally(writeFuture.cause());
-				}			
-			});
+				//future.completeExceptionally(writeFuture.cause());
+			}
 		}
 
 		private void SendGetLastMessageId(byte[] request, long requestId)
 		{
-			SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
+			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
+			Sender.Tell(done);
 		}
 
 		private void SendGetRawSchema(byte[] request, long requestId)
 		{
-			SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
+			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
+			Sender.Tell(done);
 		}
 
 		private void SendGetOrCreateSchema(byte[] request, long requestId)
 		{
-			SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
-			
+			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
+			Sender.Tell(done);
 		}
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse command)

@@ -1,11 +1,12 @@
 ﻿using Akka.Actor;
 using Akka.Event;
+using Akka.Util.Internal;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -79,9 +80,21 @@ namespace SharpPulsar.Transaction
 			{
 				Sender.Tell(NextSequenceId());
 			});
+			Receive<RegisterCumulativeAckConsumer>(r =>
+			{
+				RegisterCumulativeAckConsumer(r.Consumer);
+			});
+			Receive<GetTxnIdBits>(_ =>
+			{
+				Sender.Tell(new GetTxnIdBitsResponse(_txnIdMostBits, _txnIdLeastBits));
+			});
 			Receive<Abort>(_ =>
 			{
 				Abort();
+			});
+			Receive<RegisterAckedTopic>(r =>
+			{
+				RegisterAckedTopic(r.Topic, r.Subscription);
 			});
 			Receive<Commit>(_ =>
 			{
@@ -90,6 +103,10 @@ namespace SharpPulsar.Transaction
 			Receive<RegisterSendOp>(s =>
 			{
 				RegisterSendOp(s.MessageId);
+			});
+			Receive<RegisterProducedTopic>(p =>
+			{
+				RegisterProducedTopic(p.Topic);
 			});
 			_sendList = new List<IMessageId>();
 		}
@@ -127,14 +144,6 @@ namespace SharpPulsar.Transaction
 			}
 		}
 
-		public virtual void RegisterAckOp(CompletableFuture<Void> ackFuture)
-		{
-			lock(this)
-			{
-				_ackFutureList.Add(ackFuture);
-			}
-		}
-
 		private void RegisterCumulativeAckConsumer(IActorRef consumer)
 		{
 			if (_cumulativeAckConsumers == null)
@@ -157,48 +166,20 @@ namespace SharpPulsar.Transaction
 		private void Abort()
 		{
 			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
-			CompletableFuture<Void> abortFuture = new CompletableFuture<Void>();
-			AllOpComplete().whenComplete((v, e) =>
+			if (_cumulativeAckConsumers != null)
 			{
-					if(e != null)
-					{
-						log.error(e.Message);
-					}
-					foreach(CompletableFuture<MessageId> future in _sendFutureList)
-					{
-						future.thenAccept(sendMessageIdList.add);
-					}
-					if(_cumulativeAckConsumers != null)
-					{
-						_cumulativeAckConsumers.forEach((consumer, integer) => _cumulativeAckConsumers.putIfAbsent(consumer, consumer.clearIncomingMessagesAndGetMessageNumber()));
-					}
-					_tcClient.AbortAsync(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList).whenComplete((vx, ex) =>
-					{
-						if(_cumulativeAckConsumers != null)
-						{
-							_cumulativeAckConsumers.forEach(ConsumerImpl.increaseAvailablePermits);
-							_cumulativeAckConsumers.Clear();
-						}
-						if(ex != null)
-						{
-							abortFuture.completeExceptionally(ex);
-						}
-						else
-						{
-							abortFuture.complete(null);
-						}
-					});
-			});
-
-			return abortFuture;
-		}
-
-		private CompletableFuture<Void> AllOpComplete()
-		{
-			IList<CompletableFuture<object>> futureList = new List<CompletableFuture<object>>();
-			((List<CompletableFuture<object>>)futureList).AddRange(_sendFutureList);
-			((List<CompletableFuture<object>>)futureList).AddRange(_ackFutureList);
-			return CompletableFuture.allOf(((List<CompletableFuture<object>>)futureList).ToArray());
+				foreach(var c in _cumulativeAckConsumers)
+                {
+					var cleared = c.Key.AskFor<int>(ClearIncomingMessagesAndGetMessageNumber.Instance);
+					_cumulativeAckConsumers[c.Key] = cleared;
+                }
+			}
+			_tcClient.Tell(new Abort(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
+			if (_cumulativeAckConsumers != null)
+			{
+				_cumulativeAckConsumers.ForEach(x => x.Key.Tell(IncreaseAvailablePermits.Instance));
+				_cumulativeAckConsumers.Clear();
+			}
 		}
 
     }

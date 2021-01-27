@@ -173,6 +173,24 @@ namespace SharpPulsar.Batch
         }
 
         /// <summary>
+        /// Returns a new long array containing all the bits in this bit set.
+        /// 
+        /// <para>More precisely, if
+        /// <br>{@code long[] longs = s.toLongArray();}
+        /// <br>then {@code longs.Length == (s.Length()+63)/64} and
+        /// <br>{@code s.get(n) == ((longs[n/64] & (1L<<(n%64))) != 0)}
+        /// <br>for all {@code n < 64 * longs.Length}.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> a long array containing a little-endian representation
+        ///         of all the bits in this bit set
+        /// @since 1.7 </returns>
+        public virtual long[] ToLongArray()
+        {
+            return _bits;
+        }
+        /// <summary>
         /// Sets all bits in the set to false.
         /// </summary>
         public void Clear()

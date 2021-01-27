@@ -7,7 +7,7 @@ using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
 using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Utility;
 
 /// <summary>

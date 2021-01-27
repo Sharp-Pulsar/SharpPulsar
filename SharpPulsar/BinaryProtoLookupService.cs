@@ -12,11 +12,14 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
+using SharpPulsar.Extension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+using System.Threading.Tasks;
+using SharpPulsar.Messages.Client;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -38,9 +41,9 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 /// </summary>
 namespace SharpPulsar
 {
-	public class BinaryProtoLookupService : ReceiveActor, IWithUnboundedStash
+	public class BinaryProtoLookupService : ReceiveActor
 	{
-		private readonly IActorRef _client;
+		private readonly IActorRef _pulsarClient;
 		private readonly ServiceNameResolver _serviceNameResolver;
 		private readonly bool _useTls;
 		private readonly string _listenerName;
@@ -56,7 +59,7 @@ namespace SharpPulsar
 			_context = Context;
 			_executor = Context.System.Scheduler.Advanced;
 			_log = Context.GetLogger();
-			_client = client;
+			_pulsarClient = client;
 			_useTls = useTls;
 			_maxLookupRedirects = maxLookupRedirects;
 			_serviceNameResolver = new PulsarServiceNameResolver(_log);
@@ -64,13 +67,13 @@ namespace SharpPulsar
 			_operationTimeoutMs = operationTimeoutMs;
 			_connectionPool = connectionPool;
 			UpdateServiceUrl(serviceUrl);
-			Normal();
+			Receives();
 		}
 		private void UpdateServiceUrl(string serviceUrl)
 		{
 			_serviceNameResolver.UpdateServiceUrl(serviceUrl);
 		}
-		private void Normal()
+		private void Receives()
         {
 			Receive<UpdateService>(u =>
 			{
@@ -80,78 +83,37 @@ namespace SharpPulsar
 			Receive<GetBroker>(b => 
 			{
 				var pool = _connectionPool;
-				pool.Tell(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
-				Become(()=>GetConnection(b));			
+                var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
+				var pulsarClient = _pulsarClient;
+				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				GetBroker(b.TopicName, requestid, connection, b.ReplyTo);
 			});
-			Receive<GetPartitionedTopicMetadata>(p => 
+			Receive<GetPartitionedTopicMetadata>(p =>
 			{
 				var pool = _connectionPool;
-				pool.Tell(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
-				Become(() => GetConnection(p));
+				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
+				var pulsarClient = _pulsarClient;
+				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				GetPartitionedTopicMetadata(p.TopicName, requestid, connection);
 			});
 			Receive<GetSchema>(s => 
 			{
 				var pool = _connectionPool;
-				pool.Tell(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
-				Become(() => GetConnection(s));
+				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
+				var pulsarClient = _pulsarClient;
+				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				GetSchema(s.TopicName, s.Version, requestid, connection);
 			});
 			Receive<GetTopicsUnderNamespace>(t => 
 			{
 				var pool = _connectionPool;
-				pool.Tell(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
-				Become(() => GetConnection(t));
+				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
+				var pulsarClient = _pulsarClient;
+				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				GetTopicsUnderNamespace(t, requestid, connection);
 			});
 		}
-		private void GetConnection(object message)
-        {
-			Receive<GetConnectionResponse>(c => 
-			{
-				var client = _client;
-				client.Tell(NewRequestId.Instance);
-
-				var msg = message;
-				Become(()=> GetRequestId(msg, c.ClientCnx));
-			});
-			ReceiveAny(a => Stash.Stash());
-        }
-		private void GetRequestId(object message, IActorRef cnx)
-        {
-			Receive<NewRequestIdResponse>(r => 
-			{
-				var obj = message;
-				var clientCnx = cnx;
-				switch(obj)
-                {
-					case GetBroker broker:
-                        {
-							Become(() => GetBroker(broker.TopicName, r.Id, clientCnx, broker.ReplyTo));
-						}
-						break;
-					case GetBrokerRedirect broker:
-                        {
-							Become(() => GetBroker(broker.TopicName, r.Id, clientCnx, broker.ReplyTo, broker.RedirectCount, broker.BrokerAddress, broker.Authoritative));
-						}
-						break;
-					case GetPartitionedTopicMetadata metadata:
-						Become(() => GetPartitionedTopicMetadata(metadata.TopicName, r.Id, clientCnx, metadata.ReplyTo));
-						break;
-					case GetTopicsUnderNamespace @namespace:
-						Become(() => GetTopicsUnderNamespace(@namespace, r.Id, clientCnx, @namespace.ReplyTo));
-						break;
-					case GetTopicsOfNamespaceRetry tr:
-						Become(() => GetTopicsUnderNamespace(r.Id, tr.Namespace, tr.Backoff, tr.RemainingTime, tr.Mode, clientCnx, tr.ReplyTo));
-						break;
-					case GetSchema s:
-						Become(() => GetSchema(s.TopicName, s.Version, r.Id, clientCnx, s.ReplyTo));
-						break;
-					default:
-						_log.Debug($"Unknown Request : {obj.GetType().FullName}");
-						break;
-
-				}
-			});
-			ReceiveAny(a => Stash.Stash());
-		}
+		
 		/// <summary>
 		/// Calls broker binaryProto-lookup api to find broker-service address which can serve a given topic.
 		/// </summary>
@@ -161,156 +123,115 @@ namespace SharpPulsar
 		private void GetBroker(TopicName topicName, long requestId, IActorRef clientCnx, IActorRef replyTo, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
 		{
 			var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-			FindBroker(authoritative, topicName, redirectCount, requestId, clientCnx, replyTo);
-
-			Receive<LookupDataResult>(lookup => 
-			{
-
-				if (Enum.IsDefined(typeof(ServerError), lookup.Error))
-				{
-					_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
-					if (_log.IsDebugEnabled)
-					{
-						_log.Warning($"[{topicName}] Lookup response exception> {lookup.Error}:{lookup.ErrorMessage}");
-					}
-					replyTo.Tell(new Failure { Exception = new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}") });
-					Become(Normal);
-					Stash.Unstash();
-				}
-				else
-				{
-					Uri uri = null;
-					try
-					{
-						if (_useTls)
-						{
-							uri = new Uri(lookup.BrokerUrlTls);
-						}
-						else
-						{
-							string serviceUrl = lookup.BrokerUrl;
-							uri = new Uri(serviceUrl);
-						}
-						var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
-						if (lookup.Redirect)
-						{
-							var redirectBroker = new GetBrokerRedirect(topicName, replyTo, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
-							Self.Tell(redirectBroker);
-							return;
-						}
-						else
-						{
-							if (lookup.ProxyThroughServiceUrl)
-							{
-								var response = new GetBrokerResponse(responseBrokerAddress, socketAddress);
-								replyTo.Tell(response);
-							}
-							else
-							{
-								var response = new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
-								replyTo.Tell(response);
-							}
-						}
-					}
-					catch (Exception parseUrlException)
-					{
-						_log.Warning($"[{topicName}] invalid url {uri}");
-						replyTo.Tell(new Failure { Exception = parseUrlException });
-					}
-                    finally
-                    {
-						Become(Normal);
-						Stash.Unstash();
-					}
-				}
-
-			});
-			Receive<GetBrokerRedirect>(r => 
-			{
-				_connectionPool.Tell(new GetConnection(r.BrokerAddress));
-				Become(() => GetConnection(r));
-			});
-			ReceiveAny(a => Stash.Stash());
-		}
-
-		public void FindBroker(bool authoritative, TopicName topicName, int redirectCount, long requestId, IActorRef clientCnx, IActorRef replyTo)
-		{
-			if(_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
+			if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
 			{
 				var err = new Exception("LookupException: Too many redirects: " + _maxLookupRedirects);
 				_log.Error(err.ToString());
-				replyTo.Tell(new Failure { Exception = err});
-
-				Become(Normal);
-				Stash.Unstash();
+				Sender.Tell(new Failure { Exception = err });
 				return;
 			}
 			var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
 			var payload = new Payload(request, requestId, "NewLookup");
-			clientCnx.Tell(payload);
+			var lookup = clientCnx.AskFor<LookupDataResult>(payload);
+			if (Enum.IsDefined(typeof(ServerError), lookup.Error))
+			{
+				_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
+				if (_log.IsDebugEnabled)
+				{
+					_log.Warning($"[{topicName}] Lookup response exception> {lookup.Error}:{lookup.ErrorMessage}");
+				}
+				Sender.Tell(new Failure { Exception = new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}") });				
+			}
+			else
+			{
+				Uri uri = null;
+				try
+				{
+					if (_useTls)
+					{
+						uri = new Uri(lookup.BrokerUrlTls);
+					}
+					else
+					{
+						string serviceUrl = lookup.BrokerUrl;
+						uri = new Uri(serviceUrl);
+					}
+					var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
+					if (lookup.Redirect)
+					{
+						var pool = _connectionPool;
+						var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(responseBrokerAddress)).ClientCnx;
+						requestId = _pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+						GetBroker(topicName, requestId, connection, Sender, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
+					}
+					else
+					{
+						if (lookup.ProxyThroughServiceUrl)
+						{
+							var response = new GetBrokerResponse(responseBrokerAddress, socketAddress);
+							Sender.Tell(response);
+						}
+						else
+						{
+							var response = new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
+							Sender.Tell(response);
+						}
+					}
+				}
+				catch (Exception parseUrlException)
+				{
+					_log.Warning($"[{topicName}] invalid url {uri}");
+					Sender.Tell(new Failure { Exception = parseUrlException });
+				}
+			}
 		}
 
 		/// <summary>
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		private void GetPartitionedTopicMetadata(TopicName topicName, long requestId, IActorRef clientCnx, IActorRef reply)
+		private void GetPartitionedTopicMetadata(TopicName topicName, long requestId, IActorRef clientCnx)
 		{
 			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
 			var payload = new Payload(request, requestId, "NewPartitionMetadataRequest");
-			clientCnx.Tell(payload);
-			Receive<LookupDataResult>(m =>
+			var lookup = clientCnx.AskFor<LookupDataResult>(payload);
+			if (Enum.IsDefined(typeof(ServerError), lookup.Error))
 			{
-				if (Enum.IsDefined(typeof(ServerError), m.Error))
-				{
-					_log.Warning($"[{topicName}] failed to get Partitioned metadata : {m.Error}:{m.ErrorMessage}");
-					reply.Tell(new Failure { Exception = new Exception($"[{topicName}] failed to get Partitioned metadata. {m.Error}:{m.ErrorMessage}")});
-					return;
-				}
-				else
-				{
-					reply.Tell(new PartitionedTopicMetadata(m.Partitions));
-				}
-
-				Become(Normal);
-				Stash.Unstash();
-
-			});
-			ReceiveAny(a => Stash.Stash());
+				_log.Warning($"[{topicName}] failed to get Partitioned metadata : {lookup.Error}:{lookup.ErrorMessage}");
+				Sender.Tell(new Failure { Exception = new Exception($"[{topicName}] failed to get Partitioned metadata. {lookup.Error}:{lookup.ErrorMessage}") });
+				return;
+			}
+			else
+			{
+				Sender.Tell(new PartitionedTopicMetadata(lookup.Partitions));
+			}
 		}
 
 
-		private void GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx, IActorRef replyTo)
+		private void GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx)
 		{
 			var request = Commands.NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, requestId, "SendGetRawSchema");
-			clientCnx.Tell(payload);
-			Receive<Messages.GetSchemaResponse>(s=> 
+			var schemaResponse = clientCnx.AskFor<Messages.GetSchemaResponse>(payload);
+			var err = schemaResponse.Response.ErrorCode;
+			if (Enum.IsDefined(typeof(ServerError), err))
 			{
-				var err = s.Response.ErrorCode;
-				if(Enum.IsDefined(typeof(ServerError), err))
-                {
-					var e = $"{err}: {s.Response.ErrorMessage}";
-					_log.Error(e);
-					replyTo.Tell(new Failure { Exception = new Exception(e) });
-                }
-                else
-                {
-					var schema = s.Response.Schema;
-					var info = new SchemaInfo
-					{
-						Schema = (sbyte[])(object)schema.SchemaData,
-						Name = schema.Name,
-						Properties = schema.Properties.ToDictionary(k => k.Key, v => v.Value),
-						Type = SchemaType.ValueOf((int)schema.type)
-					};
-					replyTo.Tell(new GetSchemaInfoResponse(info));
-				}
-				Become(Normal);
-				Stash.Unstash();
-			});
-			ReceiveAny(a => Stash.Stash());
-
+				var e = $"{err}: {schemaResponse.Response.ErrorMessage}";
+				_log.Error(e);
+				Sender.Tell(new Failure { Exception = new Exception(e) });
+			}
+			else
+			{
+				var schema = schemaResponse.Response.Schema;
+				var info = new SchemaInfo
+				{
+					Schema = (sbyte[])(object)schema.SchemaData,
+					Name = schema.Name,
+					Properties = schema.Properties.ToDictionary(k => k.Key, v => v.Value),
+					Type = SchemaType.ValueOf((int)schema.type)
+				};
+				Sender.Tell(new GetSchemaInfoResponse(info));
+			}
 		}
 
 		public string ServiceUrl
@@ -321,30 +242,27 @@ namespace SharpPulsar
 			}
 		}
 
-        public IStash Stash { get; set; }
-
-        private void GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx, IActorRef reply)
+        private void GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx)
 		{
 			var opTimeoutMs = _operationTimeoutMs;
 			var backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-			GetTopicsUnderNamespace(requestid, nsn.Namespace, backoff, opTimeoutMs, nsn.Mode, clientCnx, reply);			
+			GetTopicsUnderNamespace(requestid, nsn.Namespace, backoff, opTimeoutMs, nsn.Mode, clientCnx);			
 		}
 
-		private void GetTopicsUnderNamespace(long requestId, NamespaceName @namespace, Backoff backoff, long remainingTime, Mode mode, IActorRef clientCnx, IActorRef replyTo)
+		private void GetTopicsUnderNamespace(long requestId, NamespaceName @namespace, Backoff backoff, long remainingTime, Mode mode, IActorRef clientCnx)
 		{
 			var request = Commands.NewGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
 			var payload = new Payload(request, requestId, "NewGetTopicsOfNamespaceRequest");
 			_context.SetReceiveTimeout(TimeSpan.FromMilliseconds(_operationTimeoutMs));
-			clientCnx.Tell(payload);
-			Receive<GetTopicsOfNamespaceResponse>(n => 
-			{
-				_context.SetReceiveTimeout(null);
+			var topics = clientCnx.AskFor(payload);
+			if(topics is GetTopicsOfNamespaceResponse t)
+            {
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"[namespace: {@namespace}] Success get topics list in request: {requestId}");
 				}
 				var result = new List<string>();
-				n.Response.Topics.ForEach(topic =>
+				t.Response.Topics.ForEach(topic =>
 				{
 					var filtered = TopicName.Get(topic).PartitionedTopicName;
 					if (!result.Contains(filtered))
@@ -352,46 +270,33 @@ namespace SharpPulsar
 						result.Add(filtered);
 					}
 				});
-				replyTo.Tell(new GetTopicsUnderNamespaceResponse(result));
-				Become(Normal);
-				Stash.Unstash();
-			});
-			Receive<GetTopicsOfNamespaceRetry>(r =>
-			{
+				Sender.Tell(new GetTopicsUnderNamespaceResponse(result));
 				_context.SetReceiveTimeout(null);
-				_connectionPool.Tell(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
-				Become(() => GetConnection(r));
-
-			});
-			Receive<ReceiveTimeout>(t =>
-			{
+			}	
+			else if(topics is ReceiveTimeout r)
+            {
 				var ns = @namespace;
 				var bkOff = backoff;
 				var mde = mode;
 				var remaining = remainingTime;
 				var nextDelay = Math.Min(backoff.Next(), remaining);
-				var reply = replyTo;
+				var reply = Sender;
 				if (nextDelay <= 0)
 				{
-					replyTo.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
+					reply.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
 
 					_context.SetReceiveTimeout(null);
 				}
-                else
-                {
+				else
+				{
 					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
 					remaining -= nextDelay;
-					var retry = new GetTopicsOfNamespaceRetry(ns, bkOff, remaining, mode, reply);
-					_executor.ScheduleOnce(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)), () => 
-					{
-						var rt = retry;
-						var self = _context.Self;
-						_context.SetReceiveTimeout(TimeSpan.FromMilliseconds(_operationTimeoutMs));
-						self.Tell(rt);
-					});
+					var task = Task.Run(() => Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay))));
+					var pulsarClient = _pulsarClient;
+					var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+					var cnx = clientCnx;
 				}
-			});
-			ReceiveAny(a => Stash.Stash());
+			}
 		}
         protected override void Unhandled(object message)
         {

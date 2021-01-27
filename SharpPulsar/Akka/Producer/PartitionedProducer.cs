@@ -7,7 +7,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka.Producer
 {

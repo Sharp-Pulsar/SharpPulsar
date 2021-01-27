@@ -14,9 +14,39 @@ namespace SharpPulsar.Messages.Transaction
             Coordinator = coord;
         }
     }
+    public sealed class RegisterProducedTopic
+    {
+        public string Topic { get; }
+        public RegisterProducedTopic(string topic)
+        {
+            Topic = topic;
+        }
+    }
+    public sealed class RegisterCumulativeAckConsumer
+    {
+        public IActorRef Consumer { get; }
+        public RegisterCumulativeAckConsumer(IActorRef consumer)
+        {
+            Consumer = consumer;
+        }
+    }
     public sealed class NextSequenceId
     {
         public static NextSequenceId Instance = new NextSequenceId();
+    }
+    public sealed class GetTxnIdBits
+    {
+        public static GetTxnIdBits Instance = new GetTxnIdBits();
+    }
+    public sealed class GetTxnIdBitsResponse
+    {
+        public long MostBits { get; }
+        public long LeastBits { get; }
+        public GetTxnIdBitsResponse(long mostBits, long leastBits)
+        {
+            MostBits = mostBits;
+            LeastBits = leastBits;
+        }
     }
     public sealed class StartTransactionCoordinatorClient
     {

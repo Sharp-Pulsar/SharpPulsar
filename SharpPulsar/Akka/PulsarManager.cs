@@ -14,7 +14,7 @@ using SharpPulsar.Akka.Network;
 using SharpPulsar.Akka.Sql;
 using SharpPulsar.Akka.Sql.Live;
 using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka
 {

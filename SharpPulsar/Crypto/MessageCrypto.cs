@@ -28,6 +28,7 @@ using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Security;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
 using SharpPulsar.Utility;

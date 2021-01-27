@@ -9,6 +9,10 @@ using SharpPulsar.Utility;
 using SharpPulsar.Utils;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
+using SharpPulsar.Impl;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,23 +32,30 @@ using SharpPulsar.Common;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Conf
+namespace SharpPulsar.Configuration
 {
-	public sealed class ConsumerConfigurationData
+	public sealed class ConsumerConfigurationData<T>
 	{
+		private long _autoUpdatePartitionsIntervalSeconds;
+		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
+		{
+			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
+			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
+		}
+		public long AutoUpdatePartitionsIntervalSeconds { get => _autoUpdatePartitionsIntervalSeconds; }
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
-		public List<IConsumerInterceptor> Interceptors { get; set; }
-		public CommandSubscribe.SubType SubscriptionType { get; set; } = CommandSubscribe.SubType.Exclusive;
-		public IMessageListener MessageListener { get; set; }
+		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
+		public SubType SubscriptionType { get; set; } = SubType.Exclusive;
+		public IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
         public bool UseTls { get; set; } = false;
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public long AcknowledgementsGroupTimeMs { get; set; } = 100;
+		public long AcknowledgementsGroupTimeMicros { get; set; } = TimeUnit.MILLISECONDS.ToMicroseconds(100);
 
 		public long NegativeAckRedeliveryDelayMs { get; set; } = 30000;
 
@@ -61,6 +72,7 @@ namespace SharpPulsar.Impl.Conf
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
 
         public bool BatchConsume { get; set; } = false;
+        public bool BatchIndexAckEnabled { get; set; } = false;
 		public long BatchConsumeTimeout { get; set; } = 30_000; //30 seconds
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
@@ -68,6 +80,8 @@ namespace SharpPulsar.Impl.Conf
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
 		public int PatternAutoDiscoveryPeriod { get; set; } = 5;
+
+	    public SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
 
 		public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
@@ -77,6 +91,7 @@ namespace SharpPulsar.Impl.Conf
 		public bool AutoUpdatePartitions { get; set; } = true;
 
 		public bool ReplicateSubscriptionState { get; set; } = false;
+		public bool RetryEnable { get; set; } = false;
 
 		public bool ResetIncludeHead { get; set; } = false;
 

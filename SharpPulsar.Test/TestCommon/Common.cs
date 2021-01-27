@@ -9,7 +9,7 @@ using SharpPulsar.Akka.Network;
 using SharpPulsar.Api;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Handlers;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Protocol.Proto;
 using Xunit.Abstractions;
 

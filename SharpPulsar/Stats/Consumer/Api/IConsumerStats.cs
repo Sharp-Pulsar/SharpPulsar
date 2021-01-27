@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Collections.Generic;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -70,6 +71,19 @@ namespace SharpPulsar.Stats.Consumer.Api
 
 		/// <returns> Total number of message acknowledgments failures on this consumer </returns>
 		long TotalAcksFailed { get; }
+
+		/// <summary>
+		/// Get the size of receiver queue.
+		/// @return
+		/// </summary>
+		int? MsgNumInReceiverQueue { get; }
+
+		/// <summary>
+		/// Get the receiver queue size of sub-consumers.
+		/// @return
+		/// </summary>
+		IDictionary<long, int> MsgNumInSubReceiverQueue { get; }
 	}
+
 
 }
