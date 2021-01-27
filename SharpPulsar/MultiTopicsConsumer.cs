@@ -350,6 +350,9 @@ namespace SharpPulsar
 			Receive<Pause>(_ => {
 				Pause();
 			});
+			Receive<RemoveTopicConsumer>(t => {
+				RemoveConsumer(t.Topic);
+			});
 			Receive<HasMessageAvailable>(_ => {
 				var has = HasMessageAvailable();
 				Sender.Tell(has);
@@ -1337,7 +1340,7 @@ namespace SharpPulsar
 		}
 
 		// Remove a consumer for a topic
-		public virtual void RemoveConsumerAsync(string topicName)
+		public virtual void RemoveConsumer(string topicName)
 		{
 			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 

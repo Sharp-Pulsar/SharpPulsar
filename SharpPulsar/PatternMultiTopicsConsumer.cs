@@ -1,9 +1,12 @@
 ﻿using Akka.Actor;
+using Akka.Event;
+using Akka.Util.Internal;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Queues;
@@ -35,38 +38,39 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 namespace SharpPulsar
 {
 
-	public class PatternMultiTopicsConsumer<T> : MultiTopicsConsumer<T>
+	public class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
 	{
 		private readonly Regex _topicsPattern;
-		private readonly TopicsChangedListener _topicsChangeListener;
 		private readonly Mode _subscriptionMode;
 		private readonly IActorRef _client;
 		protected internal NamespaceName NamespaceName;
 		private ICancelable _recheckPatternTimeout = null;
 		private IActorContext _context;
-		private HashSet<string> _discoveredTopics;
-		private ISchema<T> _schema;
+		private IActorRef _self;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef client, ConsumerConfigurationData<T> conf, ExecutorService listenerExecutor, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (client, true,conf, listenerExecutor, schema, interceptors, false, clientConfiguration, queue)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef client, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (client, true,conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
 		{
-			_schema = schema;
-			_discoveredTopics = new HashSet<string>();
+			_self = Self;
+			_client = client;
 			_context = Context;
 			_topicsPattern = topicsPattern;
 			_subscriptionMode = subscriptionMode;
 
-			if(this.NamespaceName == null)
+			if(NamespaceName == null)
 			{
-				this.NamespaceName = GetNameSpaceFromPattern(topicsPattern);
+				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
-			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(this.NamespaceName.ToString()));
+			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
 
-			this._topicsChangeListener = new PatternTopicsChangedListener(this);
-			_recheckPatternTimeout = client.Timer().newTimeout(this, Math.Max(1, conf.PatternAutoDiscoveryPeriod), TimeUnit.SECONDS);
+			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), TopicReChecker);
 		}
 
+		public static Props Prop(Regex topicsPattern, IActorRef client, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
+        {
+			return Props.Create(() => new PatternMultiTopicsConsumer<T>(topicsPattern, client, conf, schema, subscriptionMode, interceptors, clientConfiguration, queue));
+        }
 
-		public override void Run()
+		private void TopicReChecker()
 		{
 			if(_recheckPatternTimeout.IsCancellationRequested)
 			{
@@ -78,36 +82,23 @@ namespace SharpPulsar
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
-				_discoveredTopics.ToList().ForEach(topicName => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {topicName}"));
+				TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
 			}
 			IList<string> newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
-			IList<string> oldTopics = _discoveredTopics.ToList();
-			futures.Add(_topicsChangeListener.OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics)));
-			futures.Add(_topicsChangeListener.OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics)));
-			FutureUtil.WaitForAll(futures).thenAccept(finalFuture => recheckFuture.complete(null)).exceptionally(ex =>
-			{
-				_log.warn("[{}] Failed to recheck topics change: {}", Topic, ex.Message);
-				recheckFuture.completeExceptionally(ex);
-				return null;
-			});
+			IList<string> oldTopics = Topics;
+			OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
+			OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
 			// schedule the next re-check task
-			this._recheckPatternTimeout = ClientConflict.Timer().newTimeout(PatternMultiTopicsConsumer.this, Math.Max(1, Conf.PatternAutoDiscoveryPeriod), TimeUnit.SECONDS);
+			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), TopicReChecker);
+
 		}
 
 		public virtual Regex Pattern
 		{
 			get
 			{
-				return this._topicsPattern;
+				return _topicsPattern;
 			}
-		}
-
-		internal interface TopicsChangedListener
-		{
-			// unsubscribe and delete ConsumerImpl in the `consumers` map in `MultiTopicsConsumerImpl` based on added topics.
-			CompletableFuture<Void> OnTopicsRemoved(ICollection<string> removedTopics);
-			// subscribe and create a list of new ConsumerImpl, added them to the `consumers` map in `MultiTopicsConsumerImpl`.
-			CompletableFuture<Void> OnTopicsAdded(ICollection<string> addedTopics);
 		}
 
 		private void OnTopicsRemoved(ICollection<string> removedTopics)
@@ -118,10 +109,7 @@ namespace SharpPulsar
 			}
 			foreach(var t in removedTopics)
             {
-				var name = t.ToAkkaNaming();
-				var child = _context.Child(name);
-				if (!child.IsNobody())
-					child.GracefulStop(TimeSpan.FromSeconds(2));
+				_self.Tell(new RemoveTopicConsumer(t));
             }
 		}
 
@@ -133,8 +121,7 @@ namespace SharpPulsar
 			}
 			foreach(var t in addedTopics)
             {
-				var name = t.ToAkkaNaming();
-				_context.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(_client, t, Conf, ListenerExecutor, false, _schema, Interceptors, clientConfiguration, ConsumerQueue, true), name);
+				_self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
             }
 		}
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
@@ -159,26 +146,11 @@ namespace SharpPulsar
             }
 			return s1.ToList();
 		}
-
-		public override CompletableFuture<Void> CloseAsync()
-		{
-			Timeout timeout = _recheckPatternTimeout;
-			if(timeout != null)
-			{
-				timeout.cancel();
-				_recheckPatternTimeout = null;
-			}
-			return base.CloseAsync();
-		}
-
-		internal virtual Timeout RecheckPatternTimeout
-		{
-			get
-			{
-				return _recheckPatternTimeout;
-			}
-		}
-
+        protected override void PostStop()
+        {
+			_recheckPatternTimeout.Cancel();
+			base.PostStop();
+        }
 	}
 
 }

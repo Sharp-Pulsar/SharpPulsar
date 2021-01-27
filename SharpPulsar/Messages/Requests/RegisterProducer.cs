@@ -73,4 +73,12 @@ namespace SharpPulsar.Messages.Requests
             ConsumerId = consumerId;
         }
     }
+    public sealed class RemoveTopicConsumer
+    {
+        public string Topic { get; }
+        public RemoveTopicConsumer(string topic)
+        {
+            Topic = topic;
+        }
+    }
 }
