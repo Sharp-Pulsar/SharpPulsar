@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using SharpPulsar.Configuration;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -99,9 +100,6 @@ namespace SharpPulsar
 				return _multiTopicsConsumer.Topic;
 			}
 		}
-
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Message<T> readNext() throws org.apache.pulsar.client.api.PulsarClientException
 		public virtual Message<T> ReadNext()
 		{
 			Message<T> msg = _multiTopicsConsumer.Receive();
@@ -109,8 +107,6 @@ namespace SharpPulsar
 			return msg;
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public org.apache.pulsar.client.api.Message<T> readNext(int timeout, java.util.concurrent.TimeUnit unit) throws org.apache.pulsar.client.api.PulsarClientException
 		public virtual Message<T> ReadNext(int timeout, TimeUnit unit)
 		{
 			Message<T> msg = _multiTopicsConsumer.Receive(timeout, unit);
@@ -137,8 +133,6 @@ namespace SharpPulsar
 			return _multiTopicsConsumer.HasReachedEndOfTopic();
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public boolean hasMessageAvailable() throws org.apache.pulsar.client.api.PulsarClientException
 		public virtual bool HasMessageAvailable()
 		{
 			return _multiTopicsConsumer.HasMessageAvailable() || _multiTopicsConsumer.NumMessagesInQueue() > 0;
@@ -157,15 +151,11 @@ namespace SharpPulsar
 			}
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(org.apache.pulsar.client.api.MessageId messageId) throws org.apache.pulsar.client.api.PulsarClientException
 		public virtual void Seek(MessageId messageId)
 		{
 			_multiTopicsConsumer.Seek(messageId);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void seek(long timestamp) throws org.apache.pulsar.client.api.PulsarClientException
 		public virtual void Seek(long timestamp)
 		{
 			_multiTopicsConsumer.Seek(timestamp);
@@ -181,8 +171,6 @@ namespace SharpPulsar
 			return _multiTopicsConsumer.SeekAsync(timestamp);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override public void close() throws java.io.IOException
 		public override void close()
 		{
 			_multiTopicsConsumer.close();
