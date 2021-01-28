@@ -1,4 +1,15 @@
-﻿using SharpPulsar.Configuration;
+﻿using Akka.Actor;
+using SharpPulsar.Common;
+using SharpPulsar.Configuration;
+using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Reader;
+using SharpPulsar.Queues;
+using SharpPulsar.Utility;
+using System;
+using System.Linq;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -19,31 +30,31 @@
 /// </summary>
 namespace SharpPulsar
 {
-	public class MultiTopicsReader<T> : ReaderActor<T>
+	public class MultiTopicsReader<T> : ReceiveActor
 	{
 
-		private readonly MultiTopicsConsumer<T> _multiTopicsConsumer;
+		private readonly IActorRef _consumer;
 
-		public MultiTopicsReader(PulsarClientImpl client, ReaderConfigurationData<T> readerConfiguration, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> consumerFuture, Schema<T> schema)
+		public MultiTopicsReader(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
-			string subscription = "multiTopicsReader-" + DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 10);
-			if(StringUtils.isNotBlank(readerConfiguration.SubscriptionRolePrefix))
+			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
-			consumerConfiguration.TopicNames.add(readerConfiguration.TopicName);
+			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 			consumerConfiguration.SubscriptionName = subscription;
-			consumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
+			consumerConfiguration.SubscriptionType = SubType.Exclusive;
 			consumerConfiguration.SubscriptionMode = SubscriptionMode.NonDurable;
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
-			consumerConfiguration.TopicNames.add(readerConfiguration.TopicName);
+			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 
 			if(readerConfiguration.ReaderListener != null)
 			{
-				ReaderListener<T> readerListener = readerConfiguration.ReaderListener;
-				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, readerListener);
+				var readerListener = readerConfiguration.ReaderListener;
+				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(Self, readerListener);
 			}
 
 			if(readerConfiguration.ReaderName != null)
@@ -61,128 +72,71 @@ namespace SharpPulsar
 			}
 			if(readerConfiguration.KeyHashRanges != null)
 			{
-				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().Ranges(readerConfiguration.KeyHashRanges);
+				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_multiTopicsConsumer = new MultiTopicsConsumerImpl<T>(client, consumerConfiguration, listenerExecutor, consumerFuture, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec);
+			_consumer = Context.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(client, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
+			Receive<ReadNext>(_ => {
+				_consumer.Tell(Messages.Consumer.Receive.Instance);
+
+			});
+			Receive<ReadNextTimeout>(m => {
+				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
+
+			});
+			Receive<HasReachedEndOfTopic>(m => {
+				_consumer.Tell(m);
+
+			});
+			Receive<AcknowledgeCumulativeMessage<T>>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<HasMessageAvailable>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<GetTopic>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<IsConnected>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekMessageId>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekTimestamp>(m => {
+				_consumer.Tell(m);
+			});
 		}
 
-		private class MessageListenerAnonymousInnerClass : MessageListener<T>
+		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
-			private readonly MultiTopicsReader<T> _outerInstance;
+			private readonly IActorRef _outerInstance;
 
-			private ReaderListener<T> _readerListener;
+			private IReaderListener<T> _readerListener;
 
-			public MessageListenerAnonymousInnerClass(MultiTopicsReader<T> outerInstance, ReaderListener<T> readerListener)
+			public MessageListenerAnonymousInnerClass(IActorRef outerInstance, IReaderListener<T> readerListener)
 			{
-				this._outerInstance = outerInstance;
-				this._readerListener = readerListener;
-				_serialVersionUID = 1L;
+				_outerInstance = outerInstance;
+				_readerListener = readerListener;
 			}
 
-			private static readonly long _serialVersionUID;
-
-			public void Received(ConsumerActor<T> consumer, Message<T> msg)
+			public void Received(IActorRef consumer, IMessage<T> msg)
 			{
 				_readerListener.Received(_outerInstance, msg);
-				consumer.AcknowledgeCumulativeAsync(msg);
+				consumer.Tell(new AcknowledgeCumulativeMessage<T>(msg));
 			}
 
-			public void ReachedEndOfTopic(ConsumerActor<T> consumer)
+			public void ReachedEndOfTopic(IActorRef consumer)
 			{
 				_readerListener.ReachedEndOfTopic(_outerInstance);
 			}
 		}
 
-		public virtual string Topic
-		{
-			get
-			{
-				return _multiTopicsConsumer.Topic;
-			}
-		}
-		public virtual Message<T> ReadNext()
-		{
-			Message<T> msg = _multiTopicsConsumer.Receive();
-			_multiTopicsConsumer.TryAcknowledgeMessage(msg);
-			return msg;
-		}
+        protected override void PostStop()
+        {
+			_consumer.GracefulStop(TimeSpan.FromSeconds(5));
 
-		public virtual Message<T> ReadNext(int timeout, TimeUnit unit)
-		{
-			Message<T> msg = _multiTopicsConsumer.Receive(timeout, unit);
-			_multiTopicsConsumer.TryAcknowledgeMessage(msg);
-			return msg;
-		}
-
-		public virtual CompletableFuture<Message<T>> ReadNextAsync()
-		{
-			return _multiTopicsConsumer.ReceiveAsync().thenApply(msg =>
-			{
-			_multiTopicsConsumer.acknowledgeCumulativeAsync(msg);
-			return msg;
-			});
-		}
-
-		public virtual CompletableFuture<Void> CloseAsync()
-		{
-			return _multiTopicsConsumer.CloseAsync();
-		}
-
-		public virtual bool HasReachedEndOfTopic()
-		{
-			return _multiTopicsConsumer.HasReachedEndOfTopic();
-		}
-
-		public virtual bool HasMessageAvailable()
-		{
-			return _multiTopicsConsumer.HasMessageAvailable() || _multiTopicsConsumer.NumMessagesInQueue() > 0;
-		}
-
-		public virtual CompletableFuture<bool> HasMessageAvailableAsync()
-		{
-			return _multiTopicsConsumer.HasMessageAvailableAsync();
-		}
-
-		public virtual bool Connected
-		{
-			get
-			{
-				return _multiTopicsConsumer.Connected;
-			}
-		}
-
-		public virtual void Seek(MessageId messageId)
-		{
-			_multiTopicsConsumer.Seek(messageId);
-		}
-
-		public virtual void Seek(long timestamp)
-		{
-			_multiTopicsConsumer.Seek(timestamp);
-		}
-
-		public virtual CompletableFuture<Void> SeekAsync(MessageId messageId)
-		{
-			return _multiTopicsConsumer.SeekAsync(messageId);
-		}
-
-		public virtual CompletableFuture<Void> SeekAsync(long timestamp)
-		{
-			return _multiTopicsConsumer.SeekAsync(timestamp);
-		}
-
-		public override void close()
-		{
-			_multiTopicsConsumer.close();
-		}
-
-		public virtual MultiTopicsConsumer<T> MultiTopicsConsumer
-		{
-			get
-			{
-				return _multiTopicsConsumer;
-			}
-		}
-	}
+			base.PostStop();
+        }
+    }
 
 }

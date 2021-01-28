@@ -8,9 +8,11 @@ using SharpPulsar.Extension;
 using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Reader;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
+using System.Linq;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -81,11 +83,41 @@ namespace SharpPulsar
 
 			if(readerConfiguration.KeyHashRanges != null)
 			{
-				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().Ranges(readerConfiguration.KeyHashRanges);
+				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
 
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
 			_consumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(client, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
+			Receive<ReadNext>(_ => {
+				_consumer.Tell(Messages.Consumer.Receive.Instance);
+			
+			});
+			Receive<ReadNextTimeout>(m => {
+				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
+
+			});
+			Receive<HasReachedEndOfTopic>(m => {
+				_consumer.Tell(m);
+
+			});
+			Receive<AcknowledgeCumulativeMessage<T>> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<HasMessageAvailable> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<GetTopic> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<IsConnected> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekMessageId> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekTimestamp> (m => {
+				_consumer.Tell(m);
+			});
 		}
 
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
@@ -100,7 +132,6 @@ namespace SharpPulsar
 				_readerListener = readerListener;
 			}
 
-			private static readonly long _serialVersionUID;
 
 			public void Received(IActorRef consumer, IMessage<T> msg)
 			{
@@ -108,17 +139,9 @@ namespace SharpPulsar
 				consumer.Tell(new AcknowledgeCumulativeMessage<T>(msg));
 			}
 
-			public void ReachedEndOfTopic(ConsumerActor<T> consumer)
+			public void ReachedEndOfTopic(IActorRef consumer)
 			{
 				_readerListener.ReachedEndOfTopic(_outerInstance);
-			}
-		}
-
-		public virtual string Topic
-		{
-			get
-			{
-				return _consumer.Topic;
 			}
 		}
 
@@ -130,70 +153,12 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual bool HasReachedEndOfTopic()
-		{
-			//I dont need to do this cause the consumer will add the response to the consumer queue 
-			//which will be read at the user side - use tell here and forget about it, the queue will have the response
-			return _consumer.AskFor<bool>(Messages.Consumer.HasReachedEndOfTopic.Instance);
-		}
 
-		public virtual IMessage<T> ReadNext()
-		{
-			//I dont need to do this cause the consumer will add the response to the consumer queue 
-			//which will be read at the user side - use tell here and forget about it, the queue will have the response
-			Message<T> msg = _consumer.Receive();
-
-			// Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
-			// it will specify the subscription position anyway
-			_consumer.AcknowledgeCumulativeAsync(msg);
-			return msg;
-		}
-
-		public virtual IMessage<T> ReadNext(int timeout, TimeUnit unit)
-		{
-			//I dont need to do this cause the consumer will add the response to the consumer queue 
-			//which will be read at the user side - use tell here and forget about it, the queue will have the response
-			Message<T> msg = _consumer.Receive(timeout, unit);
-
-			if(msg != null)
-			{
-				//user should acknowledge message to this actor who will further send it to the consumer
-				_consumer.AcknowledgeCumulativeAsync(msg);
-			}
-			return msg;
-		}
         protected override void PostStop()
         {
 			_consumer.GracefulStop(TimeSpan.FromSeconds(1));
             base.PostStop();
         }
-
-		public virtual bool HasMessageAvailable()
-		{
-			//I dont need to do this cause the consumer will add the response to the consumer queue 
-			//which will be read at the user side - use tell here and forget about it, the queue will have the response
-			return _consumer.HasMessageAvailable();
-		}
-
-
-		public virtual bool Connected
-		{
-			get
-			{//I dont need to do this cause the consumer will add the response to the consumer queue 
-			 //which will be read at the user side - use tell here and forget about it, the queue will have the response
-				return _consumer.Connected;
-			}
-		}
-
-		public virtual void Seek(MessageId messageId)
-		{
-			_consumer.Seek(messageId);
-		}
-
-		public virtual void Seek(long timestamp)
-		{
-			_consumer.Seek(timestamp);
-		}
 
 	}
 
