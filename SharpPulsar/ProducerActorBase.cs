@@ -42,10 +42,14 @@ namespace SharpPulsar
 		protected internal readonly ConcurrentDictionary<SchemaHash, sbyte[]> SchemaCache;
 		protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
 		protected internal IActorRef Client;
+		protected internal readonly ClientConfigurationData ClientConfiguration;
+		protected internal readonly ProducerQueueCollection ProducerQueue;
 		private string _topic;
 
-		protected internal ProducerActorBase(IActorRef client, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ProducerQueueCollection queue)
+		public ProducerActorBase(IActorRef client, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection queue)
 		{
+			ClientConfiguration = configurationData;
+			ProducerQueue = queue;
 			Client = client;
 			_topic = topic;
 			Conf = conf;

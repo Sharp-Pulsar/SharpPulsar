@@ -1,9 +1,20 @@
-﻿using SharpPulsar.Batch.Api;
+﻿using Akka.Actor;
+using Akka.Event;
+using Akka.Util;
+using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Configuration;
+using SharpPulsar.Crypto;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Producer;
+using SharpPulsar.Queues;
+using SharpPulsar.Stats.Producer;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -33,15 +44,19 @@ namespace SharpPulsar
 		protected internal readonly long ProducerId;
 
 		// Variable is used through the atomic updater
-		private volatile long _msgIdGenerator;
-		private volatile Timeout _sendTimeout = null;
+		private long _msgIdGenerator;
+		private ICancelable _sendTimeout;
 		private long _createProducerTimeout;
 		private readonly IBatchMessageContainerBase _batchMessageContainer;
 		private CompletableFuture<MessageId> _lastSendFuture = CompletableFuture.completedFuture(null);
 
+		private readonly ICancelable _regenerateDataKeyCipherCancelable;
+
 		// Globally unique producer name
 		private string _producerName;
 		private bool _userProvidedProducerName = false;
+
+		private ILoggingAdapter _log;
 
 		private string _connectionId;
 		private string _connectedSince;
@@ -51,11 +66,9 @@ namespace SharpPulsar
 
 		private readonly CompressionCodec _compressor;
 
-		internal static readonly AtomicLongFieldUpdater<ProducerActor> LastSeqIdPublishedUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerActor), "lastSequenceIdPublished");
-		private volatile long _lastSequenceIdPublished;
+		private long _lastSequenceIdPublished;
 
-		internal static readonly AtomicLongFieldUpdater<ProducerActor> LastSeqIdPushedUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerActor), "lastSequenceIdPushed");
-		protected internal volatile long LastSequenceIdPushed;
+		protected internal long LastSequenceIdPushed;
 		private volatile bool _isLastSequenceIdPotentialDuplicated;
 
 		private readonly IMessageCrypto _msgCrypto;
@@ -64,41 +77,38 @@ namespace SharpPulsar
 
 		private readonly IDictionary<string, string> _metadata;
 
-		private Optional<sbyte[]> _schemaVersion = null;
+		private Option<sbyte[]> _schemaVersion = null;
 
 		private readonly ConnectionHandler _connectionHandler;
 
 		private ScheduledFuture<object> _batchTimerTask;
 
-		private static readonly AtomicLongFieldUpdater<ProducerActor> _msgIdGeneratorUpdater = AtomicLongFieldUpdater.newUpdater(typeof(ProducerActor), "msgIdGenerator");
-
-		public ProducerActor(PulsarClientImpl client, string topic, ProducerConfigurationData conf, CompletableFuture<Producer<T>> producerCreatedFuture, int partitionIndex, Schema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedFuture, schema, interceptors)
+		public ProducerActor(IActorRef client, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
-			this.ProducerId = client.NewProducerId();
-			this._producerName = conf.ProducerName;
-			if(StringUtils.isNotBlank(_producerName))
+			_log = Context.GetLogger();
+			ProducerId = client.AskFor<long>(NewProducerId.Instance);
+			_producerName = conf.ProducerName;
+			if(!string.IsNullOrWhiteSpace(_producerName))
 			{
-				this._userProvidedProducerName = true;
+				_userProvidedProducerName = true;
 			}
-			this._partitionIndex = partitionIndex;
+			_partitionIndex = partitionIndex;
 			this._pendingMessages = Queues.newArrayBlockingQueue(conf.MaxPendingMessages);
-			this._pendingCallbacks = Queues.newArrayBlockingQueue(conf.MaxPendingMessages);
-			this._semaphore = new Semaphore(conf.MaxPendingMessages, true);
 
-			this._compressor = CompressionCodecProvider.getCompressionCodec(conf.CompressionType);
+			_compressor = CompressionCodecProvider.GetCompressionCodec(conf.CompressionType);
 
-			if(conf.InitialSequenceId != null)
+			if (conf.InitialSequenceId != null)
 			{
-				long initialSequenceId = conf.InitialSequenceId;
-				this._lastSequenceIdPublished = initialSequenceId;
-				this.LastSequenceIdPushed = initialSequenceId;
-				this._msgIdGenerator = initialSequenceId + 1L;
+				long initialSequenceId = conf.InitialSequenceId.Value;
+				_lastSequenceIdPublished = initialSequenceId;
+				LastSequenceIdPushed = initialSequenceId;
+				_msgIdGenerator = initialSequenceId + 1L;
 			}
 			else
 			{
-				this._lastSequenceIdPublished = -1L;
-				this.LastSequenceIdPushed = -1L;
-				this._msgIdGenerator = 0L;
+				_lastSequenceIdPublished = -1L;
+				LastSequenceIdPushed = -1L;
+				_msgIdGenerator = 0L;
 			}
 
 			if(conf.EncryptionEnabled)
@@ -107,47 +117,44 @@ namespace SharpPulsar
 
 				if(conf.MessageCrypto != null)
 				{
-					this._msgCrypto = conf.MessageCrypto;
+					_msgCrypto = conf.MessageCrypto;
 				}
 				else
 				{
 					// default to use MessageCryptoBc;
-					MessageCrypto msgCryptoBc;
+					IMessageCrypto msgCryptoBc;
 					try
 					{
-						msgCryptoBc = new MessageCryptoBc(logCtx, true);
+						msgCryptoBc = new MessageCrypto(logCtx, true, _log);
 					}
 					catch(Exception e)
 					{
-						_log.error("MessageCryptoBc may not included in the jar in Producer. e:", e);
+						_log.Error($"MessageCryptoBc may not included in the jar in Producer: {e}");
 						msgCryptoBc = null;
 					}
-					this._msgCrypto = msgCryptoBc;
+					_msgCrypto = msgCryptoBc;
 				}
 			}
 			else
 			{
-				this._msgCrypto = null;
+				_msgCrypto = null;
 			}
 
-			if(this._msgCrypto != null)
+			if(_msgCrypto != null)
 			{
 				// Regenerate data key cipher at fixed interval
-				_keyGeneratorTask = client.EventLoopGroup().scheduleWithFixedDelay(() =>
+				_regenerateDataKeyCipherCancelable = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromHours(0), TimeSpan.FromHours(4), () =>
 				{
-				try
-				{
-					_msgCrypto.addPublicKeyCipher(conf.EncryptionKeys, conf.CryptoKeyReader);
-				}
-				catch(PulsarClientException.CryptoException e)
-				{
-					if(!producerCreatedFuture.Done)
+					try
 					{
-						_log.warn("[{}] [{}] [{}] Failed to add public key cipher.", topic, _producerName, ProducerId);
-						producerCreatedFuture.completeExceptionally(PulsarClientException.Wrap(e, string.Format("The producer {0} of the topic {1} " + "adds the public key cipher was failed", _producerName, topic)));
+						_msgCrypto.AddPublicKeyCipher(conf.EncryptionKeys, conf.CryptoKeyReader);
 					}
-				}
-				}, 0L, 4L, TimeUnit.HOURS);
+					catch (CryptoException e)
+					{
+						Context.System.Log.Warning($"[{Topic}] [{ProducerName}] [{ProducerId}] Failed to add public key cipher.");
+						Context.System.Log.Error(e.ToString());
+					}
+				});
 			}
 
 			if(conf.SendTimeoutMs > 0)
@@ -155,7 +162,7 @@ namespace SharpPulsar
 				_sendTimeout = client.Timer().newTimeout(this, conf.SendTimeoutMs, TimeUnit.MILLISECONDS);
 			}
 
-			this._createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + client.Configuration.OperationTimeoutMs;
+			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + client.Configuration.OperationTimeoutMs;
 			if(conf.BatchingEnabled)
 			{
 				BatcherBuilder containerBuilder = conf.BatcherBuilder;
@@ -163,20 +170,20 @@ namespace SharpPulsar
 				{
 					containerBuilder = BatcherBuilder.DEFAULT;
 				}
-				this._batchMessageContainer = (BatchMessageContainerBase)containerBuilder.Build();
-				this._batchMessageContainer.Producer = this;
+				_batchMessageContainer = (BatchMessageContainerBase)containerBuilder.Build();
+				_batchMessageContainer.Producer = this;
 			}
 			else
 			{
-				this._batchMessageContainer = null;
+				_batchMessageContainer = null;
 			}
-			if(client.Configuration.StatsIntervalSeconds > 0)
+			if(clientConfiguration.StatsIntervalSeconds > 0)
 			{
-				_stats = new ProducerStatsRecorderImpl(client, conf, this);
+				_stats = new ProducerStatsRecorder(client, conf, this);
 			}
 			else
 			{
-				_stats = ProducerStatsDisabled.INSTANCE;
+				_stats = ProducerStatsDisabled.Instance;
 			}
 
 			if(conf.Properties.Empty)
@@ -188,7 +195,7 @@ namespace SharpPulsar
 				_metadata = Collections.unmodifiableMap(new Dictionary<>(conf.Properties));
 			}
 
-			this._connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(client.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(client.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(Math.Max(100, conf.SendTimeoutMs - 100), TimeUnit.MILLISECONDS).create(), this);
+			_connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(client.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(client.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(Math.Max(100, conf.SendTimeoutMs - 100), TimeUnit.MILLISECONDS).create(), this);
 
 			GrabCnx();
 		}
@@ -257,9 +264,9 @@ namespace SharpPulsar
 
 			public SendCallbackAnonymousInnerClass(ProducerActor<T> outerInstance, CompletableFuture<MessageId> future, Org.Apache.Pulsar.Client.Impl.MessageImpl<T1> interceptorMessage)
 			{
-				this._outerInstance = outerInstance;
-				this._future = future;
-				this._interceptorMessage = interceptorMessage;
+				_outerInstance = outerInstance;
+				_future = future;
+				_interceptorMessage = interceptorMessage;
 				NextCallback = null;
 				NextMsg = null;
 				CreatedAt = System.nanoTime();
@@ -396,7 +403,7 @@ namespace SharpPulsar
 
 				// validate msg-size (For batching this will be check at the batch completion size)
 				int compressedSize = compressedPayload.readableBytes();
-				if(compressedSize > ClientCnx.MaxMessageSize && !this.Conf.ChunkingEnabled)
+				if(compressedSize > ClientCnx.MaxMessageSize && !Conf.ChunkingEnabled)
 				{
 					compressedPayload.release();
 					string compressedStr = (!BatchMessagingEnabled && Conf.CompressionType != CompressionType.NONE) ? "Compressed" : "";
@@ -857,7 +864,7 @@ namespace SharpPulsar
 
 			internal WriteInEventLoopCallback(Recycler.Handle<WriteInEventLoopCallback> recyclerHandle)
 			{
-				this.RecyclerHandle = recyclerHandle;
+				RecyclerHandle = recyclerHandle;
 			}
 
 			internal static readonly Recycler<WriteInEventLoopCallback> RECYCLER = new RecyclerAnonymousInnerClass();
@@ -1290,7 +1297,7 @@ namespace SharpPulsar
 			{
 				set
 				{
-					this.NumMessagesInBatchConflict = value;
+					NumMessagesInBatchConflict = value;
 				}
 			}
 
@@ -1298,7 +1305,7 @@ namespace SharpPulsar
 			{
 				set
 				{
-					this.BatchSizeByteConflict = value;
+					BatchSizeByteConflict = value;
 				}
 			}
 
@@ -1319,7 +1326,7 @@ namespace SharpPulsar
 
 			internal OpSendMsg(Recycler.Handle<OpSendMsg> recyclerHandle)
 			{
-				this.RecyclerHandle = recyclerHandle;
+				RecyclerHandle = recyclerHandle;
 			}
 
 			internal readonly Recycler.Handle<OpSendMsg> RecyclerHandle;
