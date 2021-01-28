@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
-using SharpPulsar.Api;
+using SharpPulsar.Common;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,16 +22,16 @@ using SharpPulsar.Api;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-    public sealed class ReaderConfigurationData
+    public sealed class ReaderConfigurationData<T>
 	{
         public IList<Range> KeyHashRanges { get; set; }
 		public IMessageId StartMessageId { get; set; }
 		public IConsumerEventListener EventListener { get; set; }
 		public long StartMessageFromRollbackDurationInSec { get; set; }
-        public ISchema Schema { get; set; }
+        public ISchema<T> Schema { get; set; }
 		public int ReceiverQueueSize { get; set; } = 1000;
 
-		public IReaderListener ReaderListener { get; set; }
+		public IReaderListener<T> ReaderListener { get; set; }
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;

@@ -1,4 +1,19 @@
-﻿using SharpPulsar.Interfaces;
+﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Batch.Api;
+using SharpPulsar.Common;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Reader;
+using SharpPulsar.Queues;
+using SharpPulsar.Utility;
+using System;
+using System.Linq;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -19,24 +34,23 @@
 /// </summary>
 namespace SharpPulsar
 {
-	public class ReaderActor<T>
+	public class ReaderActor<T>: ReceiveActor
 	{
-		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = BatchReceivePolicy.Builder().Timeout(0, TimeUnit.MILLISECONDS).MaxNumMessages(1).Build();
-		private readonly ConsumerImpl<T> _consumer;
+		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
+		private readonly IActorRef _consumer;
 
-		public ReaderActor(PulsarClientImpl client, ReaderConfigurationData<T> readerConfiguration, ExecutorService listenerExecutor, CompletableFuture<ConsumerActor<T>> consumerFuture, Schema<T> schema)
+		public ReaderActor(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
-
-			string subscription = "reader-" + DigestUtils.sha1Hex(System.Guid.randomUUID().ToString()).substring(0, 10);
-			if(StringUtils.isNotBlank(readerConfiguration.SubscriptionRolePrefix))
+			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 
 			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
-			consumerConfiguration.TopicNames.add(readerConfiguration.TopicName);
+			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 			consumerConfiguration.SubscriptionName = subscription;
-			consumerConfiguration.SubscriptionType = SubscriptionType.Exclusive;
+			consumerConfiguration.SubscriptionType = SubType.Exclusive;
 			consumerConfiguration.SubscriptionMode = SubscriptionMode.NonDurable;
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
@@ -57,8 +71,8 @@ namespace SharpPulsar
 
 			if(readerConfiguration.ReaderListener != null)
 			{
-				ReaderListener<T> readerListener = readerConfiguration.ReaderListener;
-				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(this, readerListener);
+				var readerListener = readerConfiguration.ReaderListener;
+				consumerConfiguration.MessageListener = new MessageListenerAnonymousInnerClass(Self, readerListener);
 			}
 
 			consumerConfiguration.CryptoFailureAction = readerConfiguration.CryptoFailureAction;
@@ -69,49 +83,69 @@ namespace SharpPulsar
 
 			if(readerConfiguration.KeyHashRanges != null)
 			{
-				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().Ranges(readerConfiguration.KeyHashRanges);
+				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
 
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-			_consumer = new ConsumerImpl<T>(client, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, consumerFuture, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true);
+			_consumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(client, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
+			Receive<ReadNext>(_ => {
+				_consumer.Tell(Messages.Consumer.Receive.Instance);
+			
+			});
+			Receive<ReadNextTimeout>(m => {
+				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
+
+			});
+			Receive<HasReachedEndOfTopic>(m => {
+				_consumer.Tell(m);
+
+			});
+			Receive<AcknowledgeCumulativeMessage<T>> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<HasMessageAvailable> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<GetTopic> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<IsConnected> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekMessageId> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekTimestamp> (m => {
+				_consumer.Tell(m);
+			});
 		}
 
-		private class MessageListenerAnonymousInnerClass : MessageListener<T>
+		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
-			private readonly ReaderActor<T> _outerInstance;
+			private readonly IActorRef _outerInstance;
 
-			private Org.Apache.Pulsar.Client.Api.IReaderListener<T> _readerListener;
+			private IReaderListener<T> _readerListener;
 
-			public MessageListenerAnonymousInnerClass(ReaderActor<T> outerInstance, Org.Apache.Pulsar.Client.Api.IReaderListener<T> readerListener)
+			public MessageListenerAnonymousInnerClass(IActorRef outerInstance, IReaderListener<T> readerListener)
 			{
-				this._outerInstance = outerInstance;
-				this._readerListener = readerListener;
-				_serialVersionUID = 1L;
+				_outerInstance = outerInstance;
+				_readerListener = readerListener;
 			}
 
-			private static readonly long _serialVersionUID;
 
-			public void Received(ConsumerActor<T> consumer, Message<T> msg)
+			public void Received(IActorRef consumer, IMessage<T> msg)
 			{
 				_readerListener.Received(_outerInstance, msg);
-				consumer.AcknowledgeCumulativeAsync(msg);
+				consumer.Tell(new AcknowledgeCumulativeMessage<T>(msg));
 			}
 
-			public void ReachedEndOfTopic(ConsumerActor<T> consumer)
+			public void ReachedEndOfTopic(IActorRef consumer)
 			{
 				_readerListener.ReachedEndOfTopic(_outerInstance);
 			}
 		}
 
-		public virtual string Topic
-		{
-			get
-			{
-				return _consumer.Topic;
-			}
-		}
-
-		public virtual ConsumerImpl<T> Consumer
+		public virtual IActorRef Consumer
 		{
 			get
 			{
@@ -119,92 +153,13 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual bool HasReachedEndOfTopic()
-		{
-			return _consumer.HasReachedEndOfTopic();
-		}
 
-		public virtual Message<T> ReadNext()
-		{
-			Message<T> msg = _consumer.Receive();
+        protected override void PostStop()
+        {
+			_consumer.GracefulStop(TimeSpan.FromSeconds(1));
+            base.PostStop();
+        }
 
-			// Acknowledge message immediately because the reader is based on non-durable subscription. When it reconnects,
-			// it will specify the subscription position anyway
-			_consumer.AcknowledgeCumulativeAsync(msg);
-			return msg;
-		}
-
-		public virtual Message<T> ReadNext(int timeout, TimeUnit unit)
-		{
-			Message<T> msg = _consumer.Receive(timeout, unit);
-
-			if(msg != null)
-			{
-				_consumer.AcknowledgeCumulativeAsync(msg);
-			}
-			return msg;
-		}
-
-		public virtual CompletableFuture<Message<T>> ReadNextAsync()
-		{
-			CompletableFuture<Message<T>> receiveFuture = _consumer.ReceiveAsync();
-			receiveFuture.whenComplete((msg, t) =>
-			{
-			if(msg != null)
-			{
-				_consumer.acknowledgeCumulativeAsync(msg);
-			}
-			});
-			return receiveFuture;
-		}
-
-		public override void close()
-		{
-			_consumer.close();
-		}
-
-		public virtual CompletableFuture<Void> CloseAsync()
-		{
-			return _consumer.CloseAsync();
-		}
-
-		public virtual bool HasMessageAvailable()
-		{
-			return _consumer.HasMessageAvailable();
-		}
-
-		public virtual CompletableFuture<bool> HasMessageAvailableAsync()
-		{
-			return _consumer.HasMessageAvailableAsync();
-		}
-
-		public virtual bool Connected
-		{
-			get
-			{
-				return _consumer.Connected;
-			}
-		}
-
-		public virtual void Seek(MessageId messageId)
-		{
-			_consumer.Seek(messageId);
-		}
-
-		public virtual void Seek(long timestamp)
-		{
-			_consumer.Seek(timestamp);
-		}
-
-		public virtual CompletableFuture<Void> SeekAsync(MessageId messageId)
-		{
-			return _consumer.SeekAsync(messageId);
-		}
-
-		public virtual CompletableFuture<Void> SeekAsync(long timestamp)
-		{
-			return _consumer.SeekAsync(timestamp);
-		}
 	}
 
 }
