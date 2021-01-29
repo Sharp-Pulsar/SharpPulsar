@@ -1,6 +1,8 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Configuration;
@@ -9,6 +11,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Producer;
 using System;
@@ -79,7 +82,7 @@ namespace SharpPulsar
 
 		private Option<sbyte[]> _schemaVersion = null;
 
-		private readonly ConnectionHandler _connectionHandler;
+		private readonly IActorRef _connectionHandler;
 
 		private ScheduledFuture<object> _batchTimerTask;
 
@@ -162,45 +165,67 @@ namespace SharpPulsar
 				_sendTimeout = client.Timer().newTimeout(this, conf.SendTimeoutMs, TimeUnit.MILLISECONDS);
 			}
 
-			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + client.Configuration.OperationTimeoutMs;
+			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.OperationTimeoutMs;
 			if(conf.BatchingEnabled)
 			{
-				BatcherBuilder containerBuilder = conf.BatcherBuilder;
+				var containerBuilder = conf.BatcherBuilder;
 				if(containerBuilder == null)
 				{
-					containerBuilder = BatcherBuilder.DEFAULT;
+					containerBuilder = IBatcherBuilder.Default(Context.System);
 				}
-				_batchMessageContainer = (BatchMessageContainerBase)containerBuilder.Build();
-				_batchMessageContainer.Producer = this;
+				_batchMessageContainer = (IBatchMessageContainerBase)containerBuilder.Build();
+				_batchMessageContainer.Producer = Self;
+				_batchMessageContainer.Container = new ProducerContainer(Self, Configuration, Configuration.MaxMessageSize, Context.System);
+
 			}
 			else
 			{
 				_batchMessageContainer = null;
 			}
-			if(clientConfiguration.StatsIntervalSeconds > 0)
+			if (clientConfiguration.StatsIntervalSeconds > 0)
 			{
-				_stats = new ProducerStatsRecorder(client, conf, this);
+				_stats = new ProducerStatsRecorder(Context.System, ProducerName, topic, Configuration.MaxPendingMessages);
 			}
 			else
 			{
-				_stats = ProducerStatsDisabled.Instance;
+				_stats = (IProducerStatsRecorder)ProducerStatsDisabled.Instance;
 			}
 
-			if(conf.Properties.Empty)
+			if (Configuration.Properties == null)
 			{
-				_metadata = Collections.emptyMap();
+				_metadata = new Dictionary<string, string>();
 			}
 			else
 			{
-				_metadata = Collections.unmodifiableMap(new Dictionary<>(conf.Properties));
+				_metadata = new SortedDictionary<string, string>(Configuration.Properties);
 			}
-
-			_connectionHandler = new ConnectionHandler(this, (new BackoffBuilder()).SetInitialTime(client.Configuration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(client.Configuration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).setMandatoryStop(Math.Max(100, conf.SendTimeoutMs - 100), TimeUnit.MILLISECONDS).create(), this);
+			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(State, new BackoffBuilder().SetInitialTime(clientConfiguration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(clientConfiguration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create(), Self));
 
 			GrabCnx();
 		}
 
-		public virtual ConnectionHandler ConnectionHandler
+		internal virtual void GrabCnx()
+		{
+			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {ProducerName}"));
+			Become(Connection);
+		}
+		private void Connection()
+		{
+			Receive<ConnectionOpened>(c => {
+				ConnectionOpened(c.ClientCnx);
+			});
+			Receive<ConnectionFailed>(c => {
+				ConnectionFailed(c.Exception);
+			});
+			Receive<Failure>(c => {
+				_log.Error($"Connection to the server failed: {c.Exception}/{c.Timestamp}");
+			});
+			Receive<ConnectionAlreadySet>(_ => {
+				Become(Ready);
+			});
+			ReceiveAny(a => Stash.Stash());
+		}
+		private IActorRef ConnectionHandler
 		{
 			get
 			{
@@ -218,13 +243,13 @@ namespace SharpPulsar
 
 		private bool IsMultiSchemaEnabled(bool autoEnable)
 		{
-			if(MultiSchemaMode != Auto)
+			if(_multiSchemaMode != MultiSchemaMode.Auto)
 			{
-				return MultiSchemaMode == Enabled;
+				return _multiSchemaMode == MultiSchemaMode.Enabled;
 			}
 			if(autoEnable)
 			{
-				MultiSchemaMode = Enabled;
+				_multiSchemaMode = MultiSchemaMode.Enabled;
 				return true;
 			}
 			return false;
@@ -238,14 +263,12 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override CompletableFuture<MessageId> InternalSendAsync<T1>(Message<T1> message)
+		private MessageId InternalSendAsync(IMessage<T> message)
 		{
-			CompletableFuture<MessageId> future = new CompletableFuture<MessageId>();
 
-
-			MessageImpl<object> interceptorMessage = (MessageImpl) BeforeSend(message);
+			var interceptorMessage = (Message<T>) BeforeSend(message);
 			//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
-			interceptorMessage.DataBuffer.retain();
+			interceptorMessage.Data.retain();
 			if(Interceptors != null)
 			{
 				interceptorMessage.Properties;
@@ -354,14 +377,9 @@ namespace SharpPulsar
 				}
 			}
 
-			public void AddCallback<T1>(MessageImpl<T1> msg, SendCallback scb)
-			{
-				NextMsg = msg;
-				NextCallback = scb;
-			}
 		}
 
-		internal override CompletableFuture<MessageId> InternalSendWithTxnAsync<T1>(Message<T1> message, Transaction txn)
+		private IMessageId InternalSendWithTxnAsync(IMessage<T> message, IActorRef txn)
 		{
 			if(txn == null)
 			{
@@ -645,31 +663,28 @@ namespace SharpPulsar
 			SchemaInfo schemaInfo = Optional.ofNullable(msg.Schema).map(Schema::getSchemaInfo).filter(si => si.Type.Value > 0).orElse(Schema.BYTES.SchemaInfo);
 			GetOrCreateSchemaAsync(cnx, schemaInfo).handle((v, ex) =>
 			{
-			if(ex != null)
-			{
-				Exception t = FutureUtil.UnwrapCompletionException(ex);
-				_log.warn("[{}] [{}] GetOrCreateSchema error", Topic, _producerName, t);
-				if(t is PulsarClientException.IncompatibleSchemaException)
-				{
-					msg.SchemaState = MessageImpl.SchemaState.Broken;
-					callback.SendComplete((PulsarClientException.IncompatibleSchemaException) t);
-				}
-			}
-			else
-			{
-				_log.warn("[{}] [{}] GetOrCreateSchema succeed", Topic, _producerName);
-				SchemaHash schemaHash = SchemaHash.Of(msg.Schema);
-				SchemaCache.PutIfAbsent(schemaHash, v);
-				msg.MessageBuilder.SchemaVersion = ByteString.copyFrom(v);
-				msg.SchemaState = MessageImpl.SchemaState.Ready;
-			}
-			cnx.Ctx().channel().eventLoop().execute(() =>
-			{
-				lock(ProducerActor.this)
-				{
-					RecoverProcessOpSendMsgFrom(cnx, msg);
-				}
-			});
+					if(ex != null)
+					{
+						Exception t = FutureUtil.UnwrapCompletionException(ex);
+						_log.warn("[{}] [{}] GetOrCreateSchema error", Topic, _producerName, t);
+						if(t is PulsarClientException.IncompatibleSchemaException)
+						{
+							msg.SchemaState = MessageImpl.SchemaState.Broken;
+							callback.SendComplete((PulsarClientException.IncompatibleSchemaException) t);
+						}
+					}
+					else
+					{
+						_log.warn("[{}] [{}] GetOrCreateSchema succeed", Topic, _producerName);
+						SchemaHash schemaHash = SchemaHash.Of(msg.Schema);
+						SchemaCache.PutIfAbsent(schemaHash, v);
+						msg.MessageBuilder.SchemaVersion = ByteString.copyFrom(v);
+						msg.SchemaState = MessageImpl.SchemaState.Ready;
+					}
+					cnx.Ctx().channel().eventLoop().execute(() =>
+					{
+						RecoverProcessOpSendMsgFrom(cnx, msg);
+					});
 			return null;
 			});
 		}
@@ -1341,7 +1356,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual void ConnectionOpened(in ClientCnx cnx)
+		public void ConnectionOpened(IActorRef cnx)
 		{
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
@@ -1423,14 +1438,11 @@ namespace SharpPulsar
 						{
 							_log.trace("[{}] [{}] Batching the messages from the batch container from timer thread", Topic, producerName);
 						}
-						lock(ProducerImpl.this)
+						if (State == State.Closing || State == State.Closed)
 						{
-							if(State == State.Closing || State == State.Closed)
-							{
-								return;
-							}
-							BatchMessageAndSend();
+							return;
 						}
+						BatchMessageAndSend();
 					}, 0, Conf.BatchingMaxPublishDelayMicros, TimeUnit.MICROSECONDS);
 				}
 				ResendMessages(cnx);

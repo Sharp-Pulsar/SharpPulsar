@@ -44,6 +44,7 @@ namespace SharpPulsar
 		protected internal IActorRef Client;
 		protected internal readonly ClientConfigurationData ClientConfiguration;
 		protected internal readonly ProducerQueueCollection ProducerQueue;
+		protected internal HandlerState State;
 		private string _topic;
 
 		public ProducerActorBase(IActorRef client, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection queue)
@@ -60,6 +61,8 @@ namespace SharpPulsar
 			{
 				_multiSchemaMode = MultiSchemaMode.Disabled;
 			}
+			State = new HandlerState(client, topic, Context.System, ProducerName);
+
 		}
 
 		public virtual IMessageId Send(T message)
