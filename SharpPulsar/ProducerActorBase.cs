@@ -6,6 +6,7 @@ using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Queues;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -39,7 +40,7 @@ namespace SharpPulsar
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ProducerInterceptors<T> Interceptors;
-		protected internal readonly ConcurrentDictionary<SchemaHash, sbyte[]> SchemaCache;
+		protected internal readonly Dictionary<SchemaHash, sbyte[]> SchemaCache;
 		protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
 		protected internal IActorRef Client;
 		protected internal readonly ClientConfigurationData ClientConfiguration;
@@ -56,7 +57,7 @@ namespace SharpPulsar
 			Conf = conf;
 			Schema = schema;
 			Interceptors = interceptors;
-			SchemaCache = new ConcurrentDictionary<SchemaHash, sbyte[]>();
+			SchemaCache = new Dictionary<SchemaHash, sbyte[]>();
 			if(!conf.MultiSchema)
 			{
 				_multiSchemaMode = MultiSchemaMode.Disabled;

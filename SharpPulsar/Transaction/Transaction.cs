@@ -65,17 +65,15 @@ namespace SharpPulsar.Transaction
 
 			_producedTopics = new HashSet<string>();
 			_ackedTopics = new HashSet<string>();
-			client.Ask<TcClient>(GetTcClient.Instance).ContinueWith(task => 
+			var obj = client.AskFor(GetTcClient.Instance);
+			if (obj is TcClient tcp)
 			{
-                if (!task.IsFaulted)
-                {
-					var actor = task.Result.TCClient;
-					_log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
-					_tcClient = actor;
-                }
-				else
-					_log.Error($"Error while Asking for TC from Client Actor: {task.Exception}");
-			});
+				var actor = tcp.TCClient;
+				_log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
+				_tcClient = actor;
+			}
+			else
+				_log.Error($"Error while Asking for TC from Client Actor: {obj.GetType().FullName}");
 			Receive<NextSequenceId>(_ =>
 			{
 				Sender.Tell(NextSequenceId());
@@ -177,7 +175,7 @@ namespace SharpPulsar.Transaction
 			_tcClient.Tell(new Abort(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
 			if (_cumulativeAckConsumers != null)
 			{
-				_cumulativeAckConsumers.ForEach(x => x.Key.Tell(IncreaseAvailablePermits.Instance));
+				_cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
 				_cumulativeAckConsumers.Clear();
 			}
 		}

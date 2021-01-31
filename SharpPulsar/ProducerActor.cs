@@ -5,14 +5,23 @@ using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
+using SharpPulsar.Common.Entity;
 using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Messages;
+using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
+using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Queues;
+using SharpPulsar.Schemas;
+using SharpPulsar.Shared;
 using SharpPulsar.Stats.Producer;
 using System;
 using System.Collections.Generic;
@@ -40,7 +49,7 @@ using static SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar
 {
 
-	public class ProducerActor<T> : ProducerActorBase<T>
+	public class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
 	{
 
 		// Producer id, used to identify a producer within a single connection
@@ -225,12 +234,175 @@ namespace SharpPulsar
 			});
 			ReceiveAny(a => Stash.Stash());
 		}
-		private IActorRef ConnectionHandler
+
+		private void ConnectionOpened(IActorRef cnx)
 		{
-			get
+			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
+			// producer, it will try to grab a new cnx
+			_connectionHandler.Tell(new SetCnx(cnx));
+			cnx.Tell(new RegisterProducer(ProducerId, Self));
+
+			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path}");
+
+			long requestId = Client.AskFor<long>(NewRequestId.Instance);
+
+			ISchemaInfo schemaInfo = null;
+			if (Schema != null)
 			{
-				return _connectionHandler;
+				if (Schema.SchemaInfo != null)
+				{
+					if (Schema.SchemaInfo.Type == SchemaType.JSON)
+					{
+						// for backwards compatibility purposes
+						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
+						// but now we have standardized on every schema to generate an Avro based schema
+						var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+						if (Commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
+						{
+							schemaInfo = Schema.SchemaInfo;
+						}
+						else if (Schema is JSONSchema<T> jsonSchema)
+						{
+							schemaInfo = jsonSchema.BackwardsCompatibleJsonSchemaInfo;
+						}
+						else
+						{
+							schemaInfo = Schema.SchemaInfo;
+						}
+					}
+					else if (Schema.SchemaInfo.Type == SchemaType.BYTES || Schema.SchemaInfo.Type == SchemaType.NONE)
+					{
+						// don't set schema info for Schema.BYTES
+						schemaInfo = null;
+					}
+					else
+					{
+						schemaInfo = Schema.SchemaInfo;
+					}
+				}
 			}
+			try
+            {
+				var epoch = _connectionHandler.AskFor<long>(GetEpoch.Instance);
+				var cmd = Commands.NewProducer(Topic, ProducerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
+				var payload = new Payload(cmd, requestId, "NewProducer");
+
+				var response = cnx.AskFor<ProducerResponse>(payload);
+
+				string producerName = response.ProducerName;
+				long lastSequenceId = response.LastSequenceId;
+
+				_schemaVersion = new Option<sbyte[]>((sbyte[])(object)response.SchemaVersion);
+
+				if (_schemaVersion.HasValue)
+					SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);
+				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+				{
+					cnx.Tell(new RemoveProducer(ProducerId));
+					cnx.GracefulStop(TimeSpan.FromSeconds(5));
+					return;
+				}
+				_connectionHandler.Tell(ResetBackoff.Instance);
+				_log.Info($"[{Topic}] [{producerName}] Created producer on cnx {cnx.Path}");
+				_connectionId = cnx.Ctx().channel().ToString();
+				_connectedSince = DateTime.Now.ToLongDateString();
+				if (string.IsNullOrWhiteSpace(_producerName))
+				{
+					_producerName = producerName;
+				}
+				if (_msgIdGenerator == 0 && Conf.InitialSequenceId == null)
+				{
+					_lastSequenceIdPublished = lastSequenceId;
+					_msgIdGenerator = lastSequenceId + 1;
+				}
+				if (BatchMessagingEnabled)
+				{
+					_batchTimerTask = cnx.Ctx().executor().scheduleAtFixedRate(() =>
+					{
+						if (_log.TraceEnabled)
+						{
+							_log.trace("[{}] [{}] Batching the messages from the batch container from timer thread", Topic, producerName);
+						}
+						if (State == State.Closing || State == State.Closed)
+						{
+							return;
+						}
+						BatchMessageAndSend();
+					}, 0, Conf.BatchingMaxPublishDelayMicros, TimeUnit.MICROSECONDS);
+				}
+				ResendMessages(cnx);
+			}
+			catch(Exception ex)
+            {
+				cnx.Tell(new RemoveProducer(ProducerId));
+				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+				{
+					cnx.GracefulStop(TimeSpan.FromSeconds(5));
+					return;
+				}
+				_log.Error($"[{Topic}] [{_producerName}] Failed to create producer: {ex}");
+				if (ex is TopicDoesNotExistException e)
+				{
+					_log.Error($"Failed to close producer on TopicDoesNotExistException: {Topic}");
+					ProducerQueue.CreateProducer.Add(new ClientExceptions(e));
+					return;
+				}
+				if (ex is ProducerBlockedQuotaExceededException)
+				{
+					_log.Warning($"[{Topic}] [{_producerName}] Topic backlog quota exceeded. Throwing Exception on producer.");
+					var pe = new ProducerBlockedQuotaExceededException($"The backlog quota of the topic {Topic} that the producer {_producerName} produces to is exceeded");
+					ProducerQueue.CreateProducer.Add(new ClientExceptions(pe));
+				}
+				else if (ex is ProducerBlockedQuotaExceededError pexe)
+				{
+					_log.Warning($"[{_producerName}] [{Topic}] Producer is blocked on creation because backlog exceeded on topic.");
+					ProducerQueue.CreateProducer.Add(new ClientExceptions(pexe));
+				}
+				if (ex is TopicTerminatedException tex)
+				{
+					State.ConnectionState = HandlerState.State.Terminated;
+					Client.Tell(new CleanupProducer(Self));
+				}
+				else if ((ex is PulsarClientException && IsRetriableError(ex) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
+				{
+					ReconnectLater(ex);
+				}
+				else
+				{
+					State.ConnectionState = HandlerState.State.Failed;
+					Client.Tell(new CleanupProducer(Self));
+					var timeout = _sendTimeout;
+					if (timeout != null)
+					{
+						timeout.cancel();
+						_sendTimeout = null;
+					}
+				}
+			}			
+		}
+
+		private void ConnectionFailed(PulsarClientException exception)
+	{
+		bool nonRetriableError = !IsRetriableError(exception);
+		bool producerTimeout = DateTimeHelper.CurrentUnixTimeMillis() > _createProducerTimeout;
+		if ((nonRetriableError || producerTimeout))
+		{
+			if (nonRetriableError)
+			{
+				_log.Info($"[{Topic}] Producer creation failed for producer {ProducerId} with unretriableError = {exception}");
+			}
+			else
+			{
+				_log.Info($"[{Topic}] Producer creation failed for producer {ProducerId} after producerTimeout");
+			}
+			State.ConnectionState = HandlerState.State.Failed;
+			Client.Tell(new CleanupProducer(Self));
+		}
+	}
+
+		private void ReconnectLater(Exception exception)
+		{
+			_connectionHandler.Tell(new ReconnectLater(exception));
 		}
 
 		private bool BatchMessagingEnabled
@@ -751,7 +923,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private bool CanAddToBatch<T1>(MessageImpl<T1> msg)
+        public IStash Stash { get; set; }
+
+        private bool CanAddToBatch<T1>(MessageImpl<T1> msg)
 		{
 			return msg.SchemaState == MessageImpl.SchemaState.Ready && BatchMessagingEnabled && !msg.MessageBuilder.hasDeliverAtTime();
 		}
@@ -961,7 +1135,7 @@ namespace SharpPulsar
 			cnx.RemoveProducer(ProducerId);
 			if(exception == null || !cnx.Ctx().channel().Active)
 			{
-				lock(ProducerActor.this)
+				lock(this)
 				{
 					_log.info("[{}] [{}] Closed Producer", Topic, _producerName);
 					State = State.Closed;
@@ -1344,194 +1518,7 @@ namespace SharpPulsar
 				RecyclerHandle = recyclerHandle;
 			}
 
-			internal readonly Recycler.Handle<OpSendMsg> RecyclerHandle;
-			internal static readonly Recycler<OpSendMsg> RECYCLER = new RecyclerAnonymousInnerClass();
-
-			private class RecyclerAnonymousInnerClass : Recycler<OpSendMsg>
-			{
-				protected internal override OpSendMsg NewObject(Recycler.Handle<OpSendMsg> handle)
-				{
-					return new OpSendMsg(handle);
-				}
-			}
 		}
-
-		public void ConnectionOpened(IActorRef cnx)
-		{
-			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
-			// producer, it will try to grab a new cnx
-			_connectionHandler.ClientCnx = cnx;
-			cnx.RegisterProducer(ProducerId, this);
-
-			_log.info("[{}] [{}] Creating producer on cnx {}", Topic, _producerName, cnx.Ctx().channel());
-
-			long requestId = ClientConflict.NewRequestId();
-
-			SchemaInfo schemaInfo = null;
-			if(Schema != null)
-			{
-				if(Schema.SchemaInfo != null)
-				{
-					if(Schema.SchemaInfo.Type == SchemaType.JSON)
-					{
-						// for backwards compatibility purposes
-						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
-						// but now we have standardized on every schema to generate an Avro based schema
-						if(Commands.PeerSupportJsonSchemaAvroFormat(cnx.RemoteEndpointProtocolVersion))
-						{
-							schemaInfo = Schema.SchemaInfo;
-						}
-						else if(Schema is JSONSchema)
-						{
-							JSONSchema jsonSchema = (JSONSchema) Schema;
-							schemaInfo = jsonSchema.BackwardsCompatibleJsonSchemaInfo;
-						}
-						else
-						{
-							schemaInfo = Schema.SchemaInfo;
-						}
-					}
-					else if(Schema.SchemaInfo.Type == SchemaType.BYTES || Schema.SchemaInfo.Type == SchemaType.NONE)
-					{
-						// don't set schema info for Schema.BYTES
-						schemaInfo = null;
-					}
-					else
-					{
-						schemaInfo = Schema.SchemaInfo;
-					}
-				}
-			}
-
-			cnx.SendRequestWithId(Commands.NewProducer(Topic, ProducerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, _connectionHandler.EpochConflict, _userProvidedProducerName), requestId).thenAccept(response =>
-			{
-			string producerName = response.ProducerName;
-			long lastSequenceId = response.LastSequenceId;
-			_schemaVersion = Optional.ofNullable(response.SchemaVersion);
-			_schemaVersion.ifPresent(v => SchemaCache.Put(SchemaHash.of(Schema), v));
-			lock(ProducerImpl.this)
-			{
-				if(State == State.Closing || State == State.Closed)
-				{
-					cnx.RemoveProducer(ProducerId);
-					cnx.Channel().close();
-					return;
-				}
-				ResetBackoff();
-				_log.info("[{}] [{}] Created producer on cnx {}", Topic, producerName, cnx.Ctx().channel());
-				_connectionId = cnx.Ctx().channel().ToString();
-				_connectedSince = DateFormatter.Now();
-				if(string.ReferenceEquals(this._producerName, null))
-				{
-					this._producerName = producerName;
-				}
-				if(this._msgIdGenerator == 0 && Conf.InitialSequenceId == null)
-				{
-					this._lastSequenceIdPublished = lastSequenceId;
-					this._msgIdGenerator = lastSequenceId + 1;
-				}
-				if(!ProducerCreatedFutureConflict.Done && BatchMessagingEnabled)
-				{
-					_batchTimerTask = cnx.Ctx().executor().scheduleAtFixedRate(() =>
-					{
-						if(_log.TraceEnabled)
-						{
-							_log.trace("[{}] [{}] Batching the messages from the batch container from timer thread", Topic, producerName);
-						}
-						if (State == State.Closing || State == State.Closed)
-						{
-							return;
-						}
-						BatchMessageAndSend();
-					}, 0, Conf.BatchingMaxPublishDelayMicros, TimeUnit.MICROSECONDS);
-				}
-				ResendMessages(cnx);
-			}
-			}).exceptionally((e) =>
-			{
-			Exception cause = e.Cause;
-			cnx.RemoveProducer(ProducerId);
-			if(State == State.Closing || State == State.Closed)
-			{
-				cnx.Channel().close();
-				return null;
-			}
-			_log.error("[{}] [{}] Failed to create producer: {}", Topic, _producerName, cause.Message);
-			if(cause is PulsarClientException.TopicDoesNotExistException)
-			{
-				CloseAsync().whenComplete((v, ex) =>
-				{
-					if(ex != null)
-					{
-						_log.error("Failed to close producer on TopicDoesNotExistException.", ex);
-					}
-					ProducerCreatedFutureConflict.completeExceptionally(cause);
-				});
-				return null;
-			}
-			if(cause is PulsarClientException.ProducerBlockedQuotaExceededException)
-			{
-				lock(this)
-				{
-					_log.warn("[{}] [{}] Topic backlog quota exceeded. Throwing Exception on producer.", Topic, _producerName);
-					if(_log.DebugEnabled)
-					{
-						_log.debug("[{}] [{}] Pending messages: {}", Topic, _producerName, _pendingMessages.size());
-					}
-					PulsarClientException bqe = new PulsarClientException.ProducerBlockedQuotaExceededException(format("The backlog quota of the topic %s that the producer %s produces to is exceeded", Topic, _producerName));
-					FailPendingMessages(Cnx(), bqe);
-				}
-			}
-			else if(cause is PulsarClientException.ProducerBlockedQuotaExceededError)
-			{
-				_log.warn("[{}] [{}] Producer is blocked on creation because backlog exceeded on topic.", _producerName, Topic);
-			}
-			if(cause is PulsarClientException.TopicTerminatedException)
-			{
-				State = State.Terminated;
-				FailPendingMessages(Cnx(), (PulsarClientException) cause);
-				ProducerCreatedFutureConflict.completeExceptionally(cause);
-				ClientConflict.CleanupProducer(this);
-			}
-			else if(ProducerCreatedFutureConflict.Done || (cause is PulsarClientException && PulsarClientException.IsRetriableError(cause) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
-			{
-				ReconnectLater(cause);
-			}
-			else
-			{
-				State = State.Failed;
-				ProducerCreatedFutureConflict.completeExceptionally(cause);
-				ClientConflict.CleanupProducer(this);
-				Timeout timeout = _sendTimeout;
-				if(timeout != null)
-				{
-					timeout.cancel();
-					_sendTimeout = null;
-				}
-			}
-			return null;
-		});
-		}
-
-		public virtual void ConnectionFailed(PulsarClientException exception)
-		{
-			bool nonRetriableError = !PulsarClientException.IsRetriableError(exception);
-			bool producerTimeout = DateTimeHelper.CurrentUnixTimeMillis() > _createProducerTimeout;
-			if((nonRetriableError || producerTimeout) && ProducerCreatedFutureConflict.completeExceptionally(exception))
-			{
-				if(nonRetriableError)
-				{
-					_log.info("[{}] Producer creation failed for producer {} with unretriableError = {}", Topic, ProducerId, exception);
-				}
-				else
-				{
-					_log.info("[{}] Producer creation failed for producer {} after producerTimeout", Topic, ProducerId);
-				}
-				State = State.Failed;
-				ClientConflict.CleanupProducer(this);
-			}
-		}
-
 		private void ResendMessages(ClientCnx cnx)
 		{
 			cnx.Ctx().channel().eventLoop().execute(() =>
@@ -1552,7 +1539,7 @@ namespace SharpPulsar
 					}
 					if(ChangeToReadyState())
 					{
-						ProducerCreatedFutureConflict.complete(ProducerImpl.this);
+						ProducerCreatedFutureConflict.complete(this);
 						return;
 					}
 					else
@@ -1729,7 +1716,7 @@ namespace SharpPulsar
 				// race condition since we also write the message on the socket from this thread
 				cnx.Ctx().channel().eventLoop().execute(() =>
 				{
-				lock(ProducerImpl.this)
+				lock(this)
 				{
 					FailPendingMessages(null, ex);
 				}
@@ -1755,7 +1742,7 @@ namespace SharpPulsar
 		public override CompletableFuture<Void> FlushAsync()
 		{
 			CompletableFuture<MessageId> lastSendFuture;
-			lock(ProducerImpl.this)
+			lock(this)
 			{
 				if(BatchMessagingEnabled)
 				{
@@ -1770,7 +1757,7 @@ namespace SharpPulsar
 		{
 			if(BatchMessagingEnabled)
 			{
-				lock(ProducerImpl.this)
+				lock(this)
 				{
 					BatchMessageAndSend();
 				}
@@ -2023,27 +2010,5 @@ namespace SharpPulsar
 			}
 		}
 
-
-		internal virtual void ReconnectLater(Exception exception)
-		{
-			this._connectionHandler.ReconnectLater(exception);
-		}
-
-		internal virtual void GrabCnx()
-		{
-			this._connectionHandler.GrabCnx();
-		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @VisibleForTesting Semaphore getSemaphore()
-		internal virtual Semaphore Semaphore
-		{
-			get
-			{
-				return _semaphore;
-			}
-		}
-
-		private static readonly Logger _log = LoggerFactory.getLogger(typeof(ProducerImpl));
 	}
 }

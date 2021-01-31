@@ -19,6 +19,7 @@
 namespace SharpPulsar.Protocol.Schema
 {
     using SharpPulsar.Api;
+    using SharpPulsar.Interfaces;
     using System;
     using System.Security.Cryptography;
 
@@ -39,7 +40,7 @@ namespace SharpPulsar.Protocol.Schema
 			this._hash = hash;
 		}
 
-		public static SchemaHash Of(ISchema schema)
+		public static SchemaHash Of<T>(ISchema<T> schema)
 		{
 			var schem = schema != null? schema.SchemaInfo.Schema: Array.Empty<sbyte>();
 			return Of(schem);
