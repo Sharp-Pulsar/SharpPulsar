@@ -42,7 +42,7 @@ namespace SharpPulsar.Batch.Api
 		/// <param name="msg"> the message want to add </param>
 		/// <returns> return true if the container have enough space for the specific message,
 		///         otherwise return false. </returns>
-		bool HaveEnoughSpace(Message msg);
+		bool HaveEnoughSpace(IMessage<T> msg);
 
 		/// <summary>
 		/// Check the batch message container has same schema with the message want to add.

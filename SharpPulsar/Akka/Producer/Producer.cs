@@ -3,13 +3,10 @@ using Org.BouncyCastle.Crypto;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Akka.Network;
-using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
-using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
@@ -25,16 +22,15 @@ using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Crypto;
-using IMessage = SharpPulsar.Api.IMessage;
 using SharpPulsar.Batch;
 using SharpPulsar.Stats.Producer;
 using SharpPulsar.Utils;
 using ProducerStatsDisabled = SharpPulsar.Impl.ProducerStatsDisabled;
-using SharpPulsar.Interfaces.Interceptor.Interceptor;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Akka.Producer
 {
-    public class Producer : ReceiveActor, IWithUnboundedStash
+    public class Producer<T> : ReceiveActor, IWithUnboundedStash
     {
         private IActorRef _broker;
         private readonly List<OpSendMsg> _pendingMessages;
@@ -739,7 +735,7 @@ namespace SharpPulsar.Akka.Producer
             _log.Info($"[{_topic}] [{ProducerName}] Re-Sending {messagesToResend} messages to server");
             RecoverProcessOpSendMsgFrom(null);
         }
-        private bool CanAddToBatch(Message msg)
+        private bool CanAddToBatch(Message<T> msg)
         {
             var schemaReady = msg.GetSchemaState() == Message.SchemaState.Ready;
             var hasDeliverAtTime = msg.Metadata.DeliverAtTime > 0;
@@ -776,7 +772,7 @@ namespace SharpPulsar.Akka.Producer
             }
         }
 
-        private void SendComplete(Message interceptorMessage, long createdAt, Exception e)
+        private void SendComplete(Message<T> interceptorMessage, long createdAt, Exception e)
         {
             try
             {
@@ -895,9 +891,9 @@ namespace SharpPulsar.Akka.Producer
         {
             return _multiSchemaEnabled;
         }
-        private void TryRegisterSchema(Message msg)
+        private void TryRegisterSchema(Message<T> msg)
         {
-            SchemaInfo schemaInfo;
+            ISchemaInfo schemaInfo;
             if (msg.Schema != null && msg.Schema.SchemaInfo.Type.Value > 0)
             {
                 schemaInfo = (SchemaInfo)msg.Schema.SchemaInfo;

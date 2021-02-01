@@ -1,13 +1,13 @@
 ﻿
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
+using SharpPulsar.Messages.Producer;
 using System.Collections.Concurrent;
 
 namespace SharpPulsar.Queues
 {
-    public class ProducerQueueCollection
+    public class ProducerQueueCollection<T>
     {
-        public BlockingCollection<IMessageId> MessageId { get; } = new BlockingCollection<IMessageId>();
-        public BlockingCollection<object> CreateProducer { get; } = new BlockingCollection<object>();
+        public BlockingCollection<SentMessage<T>> SentMessage { get; } = new BlockingCollection<SentMessage<T>>();
+        public BlockingCollection<ProducerCreation> Producer { get; } = new BlockingCollection<ProducerCreation>();
     }
 }
