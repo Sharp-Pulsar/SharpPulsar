@@ -4,7 +4,6 @@ using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Api;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 

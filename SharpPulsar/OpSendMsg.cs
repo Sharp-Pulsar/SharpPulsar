@@ -1,48 +1,47 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
 using SharpPulsar.Batch;
 
-namespace SharpPulsar.Impl
+namespace SharpPulsar
 {
-    public sealed class OpSendMsg
+    public sealed class OpSendMsg<T>
     {
-        internal Message Msg;
-        internal IList<Message> Msgs;
+        internal Message<T> Msg;
+        internal IList<Message<T>> Msgs;
         internal byte[] Cmd;
         internal long SequenceId;
         internal long CreatedAt;
         internal long HighestSequenceId;
-        
+
         internal int TotalChunks = 0;
         internal int ChunkId = -1;
 
-        internal static OpSendMsg Create(Message msg, byte[] cmd, long sequenceId)
+        internal static OpSendMsg<T> Create(Message<T> msg, byte[] cmd, long sequenceId)
         {
-            var op = new OpSendMsg
+            var op = new OpSendMsg<T>
             {
-                Msg = msg, 
-                Cmd = cmd, 
-                SequenceId = sequenceId, 
+                Msg = msg,
+                Cmd = cmd,
+                SequenceId = sequenceId,
                 CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
             };
             return op;
         }
 
-        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long sequenceId)
+        internal static OpSendMsg<T> Create(IList<Message<T>> msgs, byte[] cmd, long sequenceId)
         {
-            var op = new OpSendMsg
+            var op = new OpSendMsg<T>
             {
-                Msgs = msgs, 
-                Cmd = cmd, 
-                SequenceId = sequenceId, 
+                Msgs = msgs,
+                Cmd = cmd,
+                SequenceId = sequenceId,
                 CreatedAt = DateTimeHelper.CurrentUnixTimeMillis()
             };
             return op;
         }
 
-        internal static OpSendMsg Create(IList<Message> msgs, byte[] cmd, long lowestSequenceId, long highestSequenceId)
+        internal static OpSendMsg<T> Create(IList<Message<T>> msgs, byte[] cmd, long lowestSequenceId, long highestSequenceId)
         {
-            var op = new OpSendMsg
+            var op = new OpSendMsg<T>
             {
                 Msgs = msgs,
                 Cmd = cmd,
@@ -52,7 +51,7 @@ namespace SharpPulsar.Impl
             };
             return op;
         }
-        
+
         public int NumMessagesInBatch { get; set; } = 1;
 
         public long BatchSizeByte { get; set; } = 0;

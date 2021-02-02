@@ -4,7 +4,6 @@ using Akka.Actor;
 using SharpPulsar.Api;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Impl;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>

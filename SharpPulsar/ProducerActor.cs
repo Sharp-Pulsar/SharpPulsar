@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
+using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
@@ -54,7 +55,7 @@ using static SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar
 {
 
-	public class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
+    public class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
 	{
 
 		// Producer id, used to identify a producer within a single connection
@@ -65,7 +66,7 @@ namespace SharpPulsar
 		private ICancelable _sendTimeout;
 		private long _createProducerTimeout;
 		private readonly IBatchMessageContainerBase _batchMessageContainer;
-		private readonly List<OpSendMsg> _pendingMessages;
+		private readonly Queue<OpSendMsg<T>> _pendingMessages;
 		private CompletableFuture<MessageId> _lastSendFuture = CompletableFuture.completedFuture(null);
 
 		private readonly ICancelable _regenerateDataKeyCipherCancelable;
@@ -87,11 +88,11 @@ namespace SharpPulsar
 		private long _lastSequenceIdPublished;
 
 		protected internal long LastSequenceIdPushed;
-		private volatile bool _isLastSequenceIdPotentialDuplicated;
+		private bool _isLastSequenceIdPotentialDuplicated;
 
 		private readonly IMessageCrypto _msgCrypto;
 
-		private ScheduledFuture<object> _keyGeneratorTask = null;
+		private ICancelable _keyGeneratorTask = null;
 
 		private readonly IDictionary<string, string> _metadata;
 
@@ -99,7 +100,7 @@ namespace SharpPulsar
 
 		private readonly IActorRef _connectionHandler;
 
-		private ScheduledFuture<object> _batchTimerTask;
+		private ICancelable _batchTimerTask;
 
 		public ProducerActor(IActorRef client, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
@@ -445,10 +446,9 @@ namespace SharpPulsar
 		{
 
 			var interceptorMessage = (Message<T>) BeforeSend(message);
-			//Retain the buffer used by interceptors callback to get message. Buffer will release after complete interceptors.
-			interceptorMessage.Data.retain();
 			if(Interceptors != null)
 			{
+
 				interceptorMessage.Properties;
 			}
 			SendAsync(interceptorMessage, new SendCallbackAnonymousInnerClass(this, future, interceptorMessage));
@@ -565,7 +565,9 @@ namespace SharpPulsar
 			}
 			else
 			{
-				return ((TransactionImpl) txn).RegisterProducedTopic(Topic).thenCompose(ignored => InternalSendAsync(message));
+				var registered = txn.AskFor<bool>(new RegisterProducedTopic(Topic));
+				if(registered)
+					InternalSendAsync(message);
 			}
 		}
 
@@ -901,29 +903,14 @@ namespace SharpPulsar
 			return encryptedPayload;
 		}
 
-		protected internal virtual ByteBufPair SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, ByteBuf compressedPayload)
+		private byte[] SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
-			return Commands.NewSend(producerId, sequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
+			return Commands.NewSend(producerId, sequenceId, numMessages, msgMetadata, compressedPayload);
 		}
 
-		protected internal virtual ByteBufPair SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, ByteBuf compressedPayload)
+		private byte[] SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
-			return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, ChecksumType, msgMetadata, compressedPayload);
-		}
-
-		private Commands.ChecksumType ChecksumType
-		{
-			get
-			{
-				if(_connectionHandler.Cnx() == null || _connectionHandler.Cnx().RemoteEndpointProtocolVersion >= BrokerChecksumSupportedVersion())
-				{
-					return Commands.ChecksumType.Crc32c;
-				}
-				else
-				{
-					return Commands.ChecksumType.None;
-				}
-			}
+			return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, compressedPayload);
 		}
 
         public IStash Stash { get; set; }
@@ -1016,104 +1003,74 @@ namespace SharpPulsar
 			}
 
 		}
-
-		public override CompletableFuture<Void> CloseAsync()
-		{
-			State currentState = GetAndUpdateState(state =>
-			{
-			if(state == State.Closed)
-			{
-				return state;
-			}
-			return State.Closing;
-			});
-
-			if(currentState == State.Closed || currentState == State.Closing)
-			{
-				return CompletableFuture.completedFuture(null);
-			}
-
-			Timeout timeout = _sendTimeout;
-			if(timeout != null)
-			{
-				timeout.cancel();
+        protected override void PostStop()
+        {
+			if (_sendTimeout != null)
+            {
+				_sendTimeout.Cancel();
 				_sendTimeout = null;
 			}
 
-
-			ScheduledFuture<object> batchTimerTask = this._batchTimerTask;
-			if(batchTimerTask != null)
+			if (_batchTimerTask != null)
 			{
-				batchTimerTask.cancel(false);
-				this._batchTimerTask = null;
+				_batchTimerTask.Cancel();
+				_batchTimerTask = null;
 			}
-
-			if(_keyGeneratorTask != null && !_keyGeneratorTask.Cancelled)
+			if (_keyGeneratorTask != null && !_keyGeneratorTask.IsCancellationRequested)
 			{
-				_keyGeneratorTask.cancel(false);
+				_keyGeneratorTask.Cancel();
 			}
+			Close();
+			base.PostStop();
+        }
+        private void Close()
+		{
+			HandlerState.State currentState = State.GetAndUpdateState(State.ConnectionState == HandlerState.State.Closed ? HandlerState.State.Closed : HandlerState.State.Closing);
+
+			if(currentState == HandlerState.State.Closed || currentState == HandlerState.State.Closing)
+			{
+				return;
+			}
+					
 
 			_stats.CancelStatsTimeout();
 
-			ClientCnx cnx = Cnx();
-			if(cnx == null || currentState != State.Ready)
+			var cnx = Cnx();
+			if(cnx == null || currentState != HandlerState.State.Ready)
 			{
-				_log.info("[{}] [{}] Closed Producer (not connected)", Topic, _producerName);
-				lock(this)
+				_log.Info("[{}] [{}] Closed Producer (not connected)", Topic, _producerName);
+				State.ConnectionState = HandlerState.State.Closed;
+				Client.Tell(new CleanupProducer(Self));
+				var ex = new AlreadyClosedException($"The producer {_producerName} of the topic {Topic} was already closed when closing the producers");
+				_pendingMessages.ForEach(msg =>
 				{
-					State = State.Closed;
-					ClientConflict.CleanupProducer(this);
-					PulsarClientException ex = new PulsarClientException.AlreadyClosedException(format("The producer %s of the topic %s was already closed when closing the producers", _producerName, Topic));
-					_pendingMessages.forEach(msg =>
-					{
-					msg.callback.sendComplete(ex);
-					msg.cmd.release();
-					msg.recycle();
-					});
-					_pendingMessages.clear();
-				}
-
-				return CompletableFuture.completedFuture(null);
+					ProducerQueue.SentMessage.Add(SentMessage<T>.CreateError(msg, ex));
+					msg.Recycle();
+				});
+				_pendingMessages.Clear();
 			}
 
-			long requestId = ClientConflict.NewRequestId();
-			ByteBuf cmd = Commands.NewCloseProducer(ProducerId, requestId);
-
-			CompletableFuture<Void> closeFuture = new CompletableFuture<Void>();
-			cnx.SendRequestWithId(cmd, requestId).handle((v, exception) =>
+			var requestId = Client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var cmd = Commands.NewCloseProducer(ProducerId, requestId);
+			var response = cnx.AskFor(new SendRequestWithId(cmd, requestId));
+			if (!(response is Exception))
 			{
-			cnx.RemoveProducer(ProducerId);
-			if(exception == null || !cnx.Ctx().channel().Active)
-			{
-				lock(this)
+				_log.Info($"[{Topic}] [{_producerName}] Closed Producer", Topic, _producerName);
+				State.ConnectionState = HandlerState.State.Closed;
+				_pendingMessages.ForEach(msg =>
 				{
-					_log.info("[{}] [{}] Closed Producer", Topic, _producerName);
-					State = State.Closed;
-					_pendingMessages.forEach(msg =>
-					{
-						msg.cmd.release();
-						msg.recycle();
-					});
-					_pendingMessages.clear();
-				}
-				closeFuture.complete(null);
-				ClientConflict.CleanupProducer(this);
+					msg.Recycle();
+				});
+				_pendingMessages.Clear();
+				Client.Tell(new CleanupProducer(Self));
 			}
-			else
-			{
-				closeFuture.completeExceptionally(exception);
-			}
-			return null;
-			});
-
-			return closeFuture;
 		}
 
 		public override bool Connected
 		{
 			get
 			{
-				return _connectionHandler.Cnx() != null && (State == State.Ready);
+				return Cnx() != null && (State.ConnectionState == HandlerState.State.Ready);
 			}
 		}
 
@@ -1121,252 +1078,161 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return _connectionHandler.LastConnectionClosedTimestamp;
+				return _connectionHandler.AskFor<long>(LastConnectionClosedTimestamp.Instance);
 			}
 		}
 
-		public virtual bool Writable
-		{
-			get
-			{
-				ClientCnx cnx = _connectionHandler.Cnx();
-				return cnx != null && cnx.Channel().Writable;
-			}
-		}
 
-		public virtual void Terminated(ClientCnx cnx)
+		public virtual void Terminated(IActorRef cnx)
 		{
-			State previousState = GetAndUpdateState(state => (state == State.Closed ? State.Closed : State.Terminated));
-			if(previousState != State.Terminated && previousState != State.Closed)
+			HandlerState.State previousState = State.GetAndUpdateState(State.ConnectionState == HandlerState.State.Closed ? HandlerState.State.Closed : HandlerState.State.Terminated);
+			if(previousState != HandlerState.State.Terminated && previousState != HandlerState.State.Closed)
 			{
-				_log.info("[{}] [{}] The topic has been terminated", Topic, _producerName);
+				_log.Info($"[{Topic}] [{_producerName}] The topic has been terminated");
 				ClientCnx = null;
 
-				FailPendingMessages(cnx, new PulsarClientException.TopicTerminatedException(format("The topic %s that the producer %s produces to has been terminated", Topic, _producerName)));
+				FailPendingMessages(cnx, new TopicTerminatedException($"The topic {Topic} that the producer {_producerName} produces to has been terminated"));
 			}
 		}
-
-		internal virtual void AckReceived(ClientCnx cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
+		/// <summary>
+		/// This fails and clears the pending messages with the given exception. This method should be called from within the
+		/// ProducerImpl object mutex.
+		/// </summary>
+		private void FailPendingMessages(IActorRef cnx, PulsarClientException ex)
 		{
-			OpSendMsg op = null;
-			bool callback = false;
-			lock(this)
+			if (cnx == null)
 			{
-				op = _pendingMessages.peek();
-				if(op == null)
+				int releaseCount = 0;
+
+				bool batchMessagingEnabled = BatchMessagingEnabled;
+				_pendingMessages.ForEach(op =>
 				{
-					if(_log.DebugEnabled)
+					releaseCount += batchMessagingEnabled ? op.NumMessagesInBatch : 1;
+					try
 					{
-						_log.debug("[{}] [{}] Got ack for timed out msg {} - {}", Topic, _producerName, sequenceId, highestSequenceId);
+						ex.SequenceId = op.SequenceId;
+						if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
+						{
+							ProducerQueue.SentMessage.Add(new SentMessage<T>(ex));
+						}
 					}
-					return;
+					catch (Exception t)
+					{
+						_log.Warning($"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {op.SequenceId}:");
+					}
+					op.Recycle();
+				});
+
+				_pendingMessages.Clear();
+				if (batchMessagingEnabled)
+				{
+					FailPendingBatchMessages(ex);
 				}
 
-				if(sequenceId > op.SequenceId)
-				{
-					_log.warn("[{}] [{}] Got ack for msg. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, _producerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId, _pendingMessages.size());
-					// Force connection closing so that messages can be re-transmitted in a new connection
-					cnx.Channel().close();
-				}
-				else if(sequenceId < op.SequenceId)
-				{
-					// Ignoring the ack since it's referring to a message that has already timed out.
-					if(_log.DebugEnabled)
-					{
-						_log.debug("[{}] [{}] Got ack for timed out msg. expecting: {} - {} - got: {} - {}", Topic, _producerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId);
-					}
-				}
-				else
-				{
-					// Add check `sequenceId >= highestSequenceId` for backward compatibility.
-					if(sequenceId >= highestSequenceId || highestSequenceId == op.HighestSequenceId)
-					{
-						// Message was persisted correctly
-						if(_log.DebugEnabled)
-						{
-							_log.debug("[{}] [{}] Received ack for msg {} ", Topic, _producerName, sequenceId);
-						}
-						_pendingMessages.remove();
-						ReleaseSemaphoreForSendOp(op);
-						callback = true;
-						_pendingCallbacks.add(op);
-					}
-					else
-					{
-						_log.warn("[{}] [{}] Got ack for batch msg error. expecting: {} - {} - got: {} - {} - queue-size: {}", Topic, _producerName, op.SequenceId, op.HighestSequenceId, sequenceId, highestSequenceId, _pendingMessages.size());
-						// Force connection closing so that messages can be re-transmitted in a new connection
-						cnx.Channel().close();
-					}
-				}
 			}
-			if(callback)
+			else
 			{
-				op = _pendingCallbacks.poll();
-				if(op != null)
+				FailPendingMessages(null, ex);
+			}
+	}
+
+	/// <summary>
+	/// fail any pending batch messages that were enqueued, however batch was not closed out
+	/// 
+	/// </summary>
+	private void FailPendingBatchMessages(PulsarClientException ex)
+	{
+		if (_batchMessageContainer.Empty)
+		{
+			return;
+		}
+		int numMessagesInBatch = _batchMessageContainer.NumMessagesInBatch;
+		_batchMessageContainer.Discard(ex);
+	}
+	private void AckReceived(IActorRef cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
+		{
+			var op = _pendingMessages.Peek();
+			if (op == null)
+			{
+				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {sequenceId} - {highestSequenceId}";
+				if (_log.IsDebugEnabled)
 				{
-					OpSendMsg finalOp = op;
-					LastSeqIdPublishedUpdater.getAndUpdate(this, last => Math.Max(last, GetHighestSequenceId(finalOp)));
+					_log.Debug(msg);
+				}
+				ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
+				return;
+			}
+
+			if (sequenceId > op.SequenceId)
+			{
+				var msg = $"[{Topic}] [{_producerName}] Got ack for msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}";
+				_log.Warning(msg);
+				ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
+				// Force connection closing so that messages can be re-transmitted in a new connection
+				cnx.Tell(Messages.Consumer.Close.Instance);
+			}
+			else if (sequenceId < op.SequenceId)
+			{
+				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId}";
+				// Ignoring the ack since it's referring to a message that has already timed out.
+				if (_log.IsDebugEnabled)
+				{
+					_log.Debug(msg);
+				}
+				ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
+			}
+			else
+			{
+				// Add check `sequenceId >= highestSequenceId` for backward compatibility.
+				if (sequenceId >= highestSequenceId || highestSequenceId == op.HighestSequenceId)
+				{
+					if (_log.IsDebugEnabled)
+					{
+						_log.Debug($"[{Topic}] [{_producerName}] Received ack for msg {sequenceId} ");
+					}
+					var finalOp = _pendingMessages.Dequeue();
+					_lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(finalOp));
 					op.SetMessageId(ledgerId, entryId, _partitionIndex);
 					try
 					{
 						// if message is chunked then call callback only on last chunk
-						if(op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
+						if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
 						{
 							try
 							{
-
-								// Need to protect ourselves from any exception being thrown in the future handler from the
-								// application
-								op.Callback.SendComplete(null);
+								ProducerQueue.SentMessage.Add(SentMessage<T>.Create(op));
 							}
-							catch(Exception t)
+							catch (Exception t)
 							{
-								_log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, _producerName, sequenceId, t);
+								var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {sequenceId}";
+								_log.Warning($"{msg}: {t}");
+								ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
 							}
 						}
 					}
-					catch(Exception t)
+					catch (Exception t)
 					{
-						_log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, _producerName, sequenceId, t);
-					}
-					ReferenceCountUtil.safeRelease(op.Cmd);
-					op.Recycle();
-				}
-			}
-		}
-
-		private long GetHighestSequenceId(OpSendMsg op)
-		{
-			return Math.Max(op.HighestSequenceId, op.SequenceId);
-		}
-
-		private void ReleaseSemaphoreForSendOp(OpSendMsg op)
-		{
-			_semaphore.release(BatchMessagingEnabled ? op.NumMessagesInBatchConflict : 1);
-		}
-
-		private void CompleteCallbackAndReleaseSemaphore(SendCallback callback, Exception exception)
-		{
-			_semaphore.release();
-			callback.SendComplete(exception);
-		}
-
-		/// <summary>
-		/// Checks message checksum to retry if message was corrupted while sending to broker. Recomputes checksum of the
-		/// message header-payload again.
-		/// <ul>
-		/// <li><b>if matches with existing checksum</b>: it means message was corrupt while sending to broker. So, resend
-		/// message</li>
-		/// <li><b>if doesn't match with existing checksum</b>: it means message is already corrupt and can't retry again.
-		/// So, fail send-message by failing callback</li>
-		/// </ul>
-		/// </summary>
-		/// <param name="cnx"> </param>
-		/// <param name="sequenceId"> </param>
-		protected internal virtual void RecoverChecksumError(ClientCnx cnx, long sequenceId)
-		{
-			lock(this)
-			{
-				OpSendMsg op = _pendingMessages.peek();
-				if(op == null)
-				{
-					if(_log.DebugEnabled)
-					{
-						_log.debug("[{}] [{}] Got send failure for timed out msg {}", Topic, _producerName, sequenceId);
+						var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {sequenceId}";
+						_log.Warning($"{msg}:{t}");
+						ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
 					}
 				}
 				else
 				{
-					long expectedSequenceId = GetHighestSequenceId(op);
-					if(sequenceId == expectedSequenceId)
-					{
-						bool corrupted = !VerifyLocalBufferIsNotCorrupted(op);
-						if(corrupted)
-						{
-							// remove message from pendingMessages queue and fail callback
-							_pendingMessages.remove();
-							ReleaseSemaphoreForSendOp(op);
-							try
-							{
-								op.Callback.SendComplete(new PulsarClientException.ChecksumException(format("The checksum of the message which is produced by producer %s to the topic " + "%s is corrupted", _producerName, Topic)));
-							}
-							catch(Exception t)
-							{
-								_log.warn("[{}] [{}] Got exception while completing the callback for msg {}:", Topic, _producerName, sequenceId, t);
-							}
-							ReferenceCountUtil.safeRelease(op.Cmd);
-							op.Recycle();
-							return;
-						}
-						else
-						{
-							if(_log.DebugEnabled)
-							{
-								_log.debug("[{}] [{}] Message is not corrupted, retry send-message with sequenceId {}", Topic, _producerName, sequenceId);
-							}
-						}
-        
-					}
-					else
-					{
-						if(_log.DebugEnabled)
-						{
-							_log.debug("[{}] [{}] Corrupt message is already timed out {}", Topic, _producerName, sequenceId);
-						}
-					}
+					var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}";
+					_log.Warning(msg);
+					// Force connection closing so that messages can be re-transmitted in a new connection
+					cnx.Tell(Messages.Consumer.Close.Instance);
+					ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
 				}
-				// as msg is not corrupted : let producer resend pending-messages again including checksum failed message
-				ResendMessages(cnx);
 			}
 		}
 
-		/// <summary>
-		/// Computes checksum again and verifies it against existing checksum. If checksum doesn't match it means that
-		/// message is corrupt.
-		/// </summary>
-		/// <param name="op"> </param>
-		/// <returns> returns true only if message is not modified and computed-checksum is same as previous checksum else
-		///         return false that means that message is corrupted. Returns true if checksum is not present. </returns>
-		protected internal virtual bool VerifyLocalBufferIsNotCorrupted(OpSendMsg op)
+		private long GetHighestSequenceId(OpSendMsg<T> op)
 		{
-			ByteBufPair msg = op.Cmd;
-
-			if(msg != null)
-			{
-				ByteBuf headerFrame = msg.First;
-				headerFrame.markReaderIndex();
-				try
-				{
-					// skip bytes up to checksum index
-					headerFrame.skipBytes(4); // skip [total-size]
-					int cmdSize = (int) headerFrame.readUnsignedInt();
-					headerFrame.skipBytes(cmdSize);
-					// verify if checksum present
-					if(hasChecksum(headerFrame))
-					{
-						int checksum = readChecksum(headerFrame);
-						// msg.readerIndex is already at header-payload index, Recompute checksum for headers-payload
-						int metadataChecksum = computeChecksum(headerFrame);
-						long computedChecksum = resumeChecksum(metadataChecksum, msg.Second);
-						return checksum == computedChecksum;
-					}
-					else
-					{
-						_log.warn("[{}] [{}] checksum is not present into message with id {}", Topic, _producerName, op.SequenceId);
-					}
-				}
-				finally
-				{
-					headerFrame.resetReaderIndex();
-				}
-				return true;
-			}
-			else
-			{
-				_log.warn("[{}] Failed while casting {} into ByteBufPair", _producerName, (op.Cmd == null ? null : op.Cmd.GetType().FullName));
-				return false;
-			}
+			return Math.Max(op.HighestSequenceId, op.SequenceId);
 		}
+
 		private void ResendMessages()
 		{
 			var messagesToResend = _pendingMessages.Count;
@@ -1387,14 +1253,6 @@ namespace SharpPulsar
 			return (int)ProtocolVersion.V6;
 		}
 
-		internal override string HandlerName
-		{
-			get
-			{
-				return _producerName;
-			}
-		}
-
 		/// <summary>
 		/// Process sendTimeout events
 		/// </summary>
@@ -1410,12 +1268,12 @@ namespace SharpPulsar
 			lock(this)
 			{
 				// If it's closing/closed we need to ignore this timeout and not schedule next timeout.
-				if(State == State.Closing || State == State.Closed)
+				if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
 					return;
 				}
 
-				OpSendMsg firstMsg = _pendingMessages.peek();
+				OpSendMsg firstMsg = _pendingMessages.Peek();
 				if(firstMsg == null)
 				{
 					// If there are no pending messages, reset the timeout to the configured value.
@@ -1425,16 +1283,16 @@ namespace SharpPulsar
 				{
 					// If there is at least one message, calculate the diff between the message timeout and the elapsed
 					// time since first message was created.
-					long diff = Conf.SendTimeoutMs - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - firstMsg.CreatedAt);
+					long diff = Conf.SendTimeoutMs - TimeUnit.NANOSECONDS.ToMilliseconds(DateTime.Now.Ticks - firstMsg.CreatedAt);
 					if(diff <= 0)
 					{
 						// The diff is less than or equal to zero, meaning that the message has been timed out.
 						// Set the callback to timeout on every message, then clear the pending queue.
-						_log.info("[{}] [{}] Message send timed out. Failing {} messages", Topic, _producerName, _pendingMessages.size());
+						_log.Info("[{}] [{}] Message send timed out. Failing {} messages", Topic, _producerName, _pendingMessages.Count);
 
 						PulsarClientException te = new PulsarClientException.TimeoutException(format("The producer %s can not send message to the topic %s within given timeout", _producerName, Topic), firstMsg.SequenceId);
 						FailPendingMessages(Cnx(), te);
-						_stats.IncrementSendFailed(_pendingMessages.size());
+						_stats.IncrementSendFailed(_pendingMessages.Count);
 						// Since the pending queue is cleared now, set timer to expire after configured value.
 						timeToWaitMs = Conf.SendTimeoutMs;
 					}
@@ -1450,28 +1308,19 @@ namespace SharpPulsar
 		}
 
 
-		public override CompletableFuture<Void> FlushAsync()
+		private void Flush()
 		{
-			CompletableFuture<MessageId> lastSendFuture;
-			lock(this)
+			if (BatchMessagingEnabled)
 			{
-				if(BatchMessagingEnabled)
-				{
-					BatchMessageAndSend();
-				}
-				lastSendFuture = this._lastSendFuture;
+				BatchMessageAndSend();
 			}
-			return lastSendFuture.thenApply(ignored => null);
 		}
 
-		protected internal override void TriggerFlush()
+		private void TriggerFlush()
 		{
 			if(BatchMessagingEnabled)
 			{
-				lock(this)
-				{
-					BatchMessageAndSend();
-				}
+				BatchMessageAndSend();
 			}
 		}
 
@@ -1665,17 +1514,17 @@ namespace SharpPulsar
 		}
 
 		// wrapper for connection methods
-		internal virtual ClientCnx Cnx()
+		private IActorRef Cnx()
 		{
-			return this._connectionHandler.Cnx();
+			return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 		}
 
-		internal virtual void ConnectionClosed(ClientCnx cnx)
+		private void ConnectionClosed(IActorRef cnx)
 		{
-			this._connectionHandler.ConnectionClosed(cnx);
+			_connectionHandler.Tell(new ConnectionClosed(cnx));
 		}
 
-		internal virtual ClientCnx ClientCnx
+		internal virtual IActorRef ClientCnx
 		{
 			get
 			{
