@@ -65,14 +65,14 @@ namespace SharpPulsar.Batch.Api
 		/// </summary>
 		/// <returns> list of OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
-		IList<OpSendMsg> CreateOpSendMsgs();
+		IList<OpSendMsg<T>> CreateOpSendMsgs<T>();
 
 		/// <summary>
 		/// Create OpSendMsg, producer use OpSendMsg to send to the broker.
 		/// </summary>
 		/// <returns> OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
-		OpSendMsg CreateOpSendMsg();
+		OpSendMsg<T> CreateOpSendMsg<T>();
 	}
 
 }

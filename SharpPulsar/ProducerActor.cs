@@ -3,11 +3,14 @@ using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
+using DotNetty.Common.Utilities;
+using IdentityModel;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Entity;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
@@ -20,6 +23,7 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
+using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
@@ -66,7 +70,7 @@ namespace SharpPulsar
 		private ICancelable _sendTimeout;
 		private long _createProducerTimeout;
 		private readonly IBatchMessageContainerBase _batchMessageContainer;
-		private readonly Queue<OpSendMsg<T>> _pendingMessages;
+		private Queue<OpSendMsg<T>> _pendingMessages;
 		private CompletableFuture<MessageId> _lastSendFuture = CompletableFuture.completedFuture(null);
 
 		private readonly ICancelable _regenerateDataKeyCipherCancelable;
@@ -442,17 +446,16 @@ namespace SharpPulsar
 			}
 		}
 
-		private IMessageId Send(IMessage<T> message)
+		private IMessageId InternalSend(IMessage<T> message)
 		{
 
 			var interceptorMessage = (Message<T>) BeforeSend(message);
 			if(Interceptors != null)
 			{
 
-				interceptorMessage.Properties;
+				_ = interceptorMessage.Properties;
 			}
-			SendAsync(interceptorMessage, new SendCallbackAnonymousInnerClass(this, future, interceptorMessage));
-			return future;
+			return SendAsync(interceptorMessage);
 		}
 
 		/*private class SendCallbackAnonymousInnerClass : SendCallback
@@ -557,27 +560,28 @@ namespace SharpPulsar
 
 		}
 		*/
-		private IMessageId InternalSendWithTxnAsync(IMessage<T> message, IActorRef txn)
+		private IMessageId InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			if(txn == null)
 			{
-				return InternalSendAsync(message);
+				return InternalSend(message);
 			}
 			else
 			{
 				var registered = txn.AskFor<bool>(new RegisterProducedTopic(Topic));
 				if(registered)
-					InternalSendAsync(message);
+					return InternalSend(message);
+				return null;
 			}
 		}
 
-		public virtual void SendAsync(IMessage<T> message)
+		private IMessage<T> Send(IMessage<T> message)
 		{
 			Condition.CheckArgument(message is Message<T>);
 
 			if(!IsValidProducerState(message.SequenceId))
 			{
-				return;
+				return null;
 			}
 
 			var msg = (Message<T>) message;
@@ -663,41 +667,42 @@ namespace SharpPulsar
 			}
 		}
 
-		private void SerializeAndSendMessage<T1>(MessageImpl<T1> msg, MessageMetadata.Builder msgMetadataBuilder, ByteBuf payload, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, ByteBuf compressedPayload, int compressedPayloadSize, int uncompressedSize, SendCallback callback)
+		private void SerializeAndSendMessage(Message<T> msg, MessageMetadata msgMetadata, byte[] payload, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
 		{
-			ByteBuf chunkPayload = compressedPayload;
-			MessageMetadata.Builder chunkMsgMetadataBuilder = msgMetadataBuilder;
+			var chunkPayload = compressedPayload;
+			var chunkMsgMetadata = msgMetadata;
 			if(totalChunks > 1 && TopicName.Get(Topic).Persistent)
 			{
-				chunkPayload = compressedPayload.slice(readStartIndex, Math.Min(chunkMaxSizeInBytes, chunkPayload.readableBytes() - readStartIndex));
-				// don't retain last chunk payload and builder as it will be not needed for next chunk-iteration and it will
-				// be released once this chunk-message is sent
-				if(chunkId != totalChunks - 1)
+				chunkPayload = compressedPayload.Slice(readStartIndex, Math.Min(chunkMaxSizeInBytes, chunkPayload.Length - readStartIndex));
+				if (chunkId != totalChunks - 1)
 				{
-					chunkPayload.retain();
-					chunkMsgMetadataBuilder = msgMetadataBuilder.Clone();
+					chunkMsgMetadata = msgMetadata;
 				}
-				if(!string.ReferenceEquals(uuid, null))
+				if(!string.IsNullOrWhiteSpace(uuid))
 				{
-					chunkMsgMetadataBuilder.setUuid(uuid);
+					chunkMsgMetadata.Uuid = uuid;
 				}
-				chunkMsgMetadataBuilder.ChunkId = chunkId;
-				chunkMsgMetadataBuilder.NumChunksFromMsg = totalChunks;
-				chunkMsgMetadataBuilder.TotalChunkMsgSize = compressedPayloadSize;
+				chunkMsgMetadata.ChunkId = chunkId;
+				chunkMsgMetadata.NumChunksFromMsg = totalChunks;
+				chunkMsgMetadata.TotalChunkMsgSize = compressedPayloadSize;
 			}
-			if(!chunkMsgMetadataBuilder.HasPublishTime())
+			if(!HasPublishTime(chunkMsgMetadata.PublishTime))
 			{
-				chunkMsgMetadataBuilder.PublishTime = ClientConflict.ClientClock.millis();
+				chunkMsgMetadata.PublishTime = (ulong)ClientConfiguration.Clock.ToEpochTime();
 
-				checkArgument(!chunkMsgMetadataBuilder.HasProducerName());
-
-				chunkMsgMetadataBuilder.setProducerName(_producerName);
-
-				if(Conf.CompressionType != CompressionType.NONE)
+				if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
 				{
-					chunkMsgMetadataBuilder.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
+					_log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
+					chunkMsgMetadata.ProducerName = string.Empty;
 				}
-				chunkMsgMetadataBuilder.UncompressedSize = uncompressedSize;
+
+				chunkMsgMetadata.ProducerName = _producerName;
+
+				if(Conf.CompressionType != CompressionType.None)
+				{
+					chunkMsgMetadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
+				}
+				chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
 			}
 
 			if(CanAddToBatch(msg) && totalChunks <= 1)
@@ -711,13 +716,13 @@ namespace SharpPulsar
 						_isLastSequenceIdPotentialDuplicated = true;
 						if(sequenceId <= _lastSequenceIdPublished)
 						{
-							_log.warn("Message with sequence id {} is definitely a duplicate", sequenceId);
+							_log.Warning($"Message with sequence id {sequenceId} is definitely a duplicate");
 						}
 						else
 						{
-							_log.info("Message with sequence id {} might be a duplicate but cannot be determined at this time.", sequenceId);
+							_log.Info($"Message with sequence id {sequenceId} might be a duplicate but cannot be determined at this time.");
 						}
-						DoBatchSendAndAdd(msg, callback, payload);
+						DoBatchSendAndAdd(msg, payload);
 					}
 					else
 					{
@@ -725,16 +730,20 @@ namespace SharpPulsar
 						// and non-duplicated messages into a batch.
 						if(_isLastSequenceIdPotentialDuplicated)
 						{
-							DoBatchSendAndAdd(msg, callback, payload);
+							DoBatchSendAndAdd(msg, payload);
 						}
 						else
 						{
 							// handle boundary cases where message being added would exceed
 							// batch size and/or max message size
-							bool isBatchFull = _batchMessageContainer.Add(msg, callback);
-							_lastSendFuture = callback.Future;
-							payload.release();
-							if(isBatchFull)
+							bool isBatchFull = _batchMessageContainer.Add(msg, (a, e) =>
+							{
+								if (a != null)
+									_lastSequenceIdPublished = (long)a;
+								if (e != null)
+									SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), e);
+							});
+							if (isBatchFull)
 							{
 								BatchMessageAndSend();
 							}
@@ -744,47 +753,36 @@ namespace SharpPulsar
 				}
 				else
 				{
-					DoBatchSendAndAdd(msg, callback, payload);
+					DoBatchSendAndAdd(msg, payload);
 				}
 			}
 			else
 			{
-				ByteBuf encryptedPayload = EncryptMessage(chunkMsgMetadataBuilder, chunkPayload);
+				var encryptedPayload = EncryptMessage(chunkMsgMetadata, chunkPayload);
 
-				MessageMetadata msgMetadata = chunkMsgMetadataBuilder.Build();
+				msgMetadata = chunkMsgMetadata;
 				// When publishing during replication, we need to set the correct number of message in batch
 				// This is only used in tracking the publish rate stats
-				int numMessages = msg.MessageBuilder.hasNumMessagesInBatch() ? msg.MessageBuilder.NumMessagesInBatch : 1;
+				int numMessages = msg.Metadata.ShouldSerializeNumMessagesInBatch() ? msg.Metadata.NumMessagesInBatch : 1;
 
-				OpSendMsg op;
-				if(msg.SchemaState == MessageImpl.SchemaState.Ready)
+				OpSendMsg<T> op;
+				if(msg.GetSchemaState() == Message<T>.SchemaState.Ready)
 				{
-					ByteBufPair cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
-					op = OpSendMsg.Create(msg, cmd, sequenceId, callback);
-					chunkMsgMetadataBuilder.Recycle();
-					msgMetadata.Recycle();
+					var cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+					op = OpSendMsg<T>.Create(msg, cmd, sequenceId);
 				}
 				else
 				{
-					op = OpSendMsg.Create(msg, null, sequenceId, callback);
-
-					MessageMetadata.Builder tmpBuilder = chunkMsgMetadataBuilder;
-					op.RePopulate = () =>
-					{
-					MessageMetadata metadata = msgMetadataBuilder.Build();
-					op.Cmd = SendMessage(ProducerId, sequenceId, numMessages, metadata, encryptedPayload);
-					tmpBuilder.Recycle();
-					msgMetadata.Recycle();
-					};
+					op = OpSendMsg<T>.Create(msg, null, sequenceId);
+					op.Cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
 				}
 				op.NumMessagesInBatch = numMessages;
-				op.BatchSizeByte = encryptedPayload.readableBytes();
+				op.BatchSizeByte = encryptedPayload.Length;
 				if(totalChunks > 1)
 				{
 					op.TotalChunks = totalChunks;
 					op.ChunkId = chunkId;
 				}
-				_lastSendFuture = callback.Future;
 				ProcessOpSendMsg(op);
 			}
 		}
@@ -830,6 +828,7 @@ namespace SharpPulsar
 
 		private void TryRegisterSchema(IActorRef cnx, Message<T> msg)
 		{
+			
 			if(!State.ChangeToRegisteringSchemaState())
 			{
 				return;
@@ -934,7 +933,14 @@ namespace SharpPulsar
 			try
 			{
 				BatchMessageAndSend();
-				_batchMessageContainer.Add(msg, callback);
+
+				_batchMessageContainer.Add(msg, (a, e) =>
+				{
+					if (a != null)
+						_lastSequenceIdPublished = (long)a;
+					if (e != null)
+						SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), e);
+				});
 			}
 			finally
 			{
@@ -1335,17 +1341,17 @@ namespace SharpPulsar
 			{
 				try
 				{
-					IList<OpSendMsg> opSendMsgs;
+					IList<OpSendMsg<T>> opSendMsgs;
 					if(_batchMessageContainer.MultiBatches)
 					{
-						opSendMsgs = _batchMessageContainer.CreateOpSendMsgs();
+						opSendMsgs = _batchMessageContainer.CreateOpSendMsgs<T>();
 					}
 					else
 					{
-						opSendMsgs = new List<OpSendMsg> { _batchMessageContainer.CreateOpSendMsg() };
+						opSendMsgs = new List<OpSendMsg<T>> { _batchMessageContainer.CreateOpSendMsg<T>() };
 					}
 					_batchMessageContainer.Clear();
-					foreach(OpSendMsg opSendMsg in opSendMsgs)
+					foreach(var opSendMsg in opSendMsgs)
 					{
 						ProcessOpSendMsg(opSendMsg);
 					}
@@ -1356,7 +1362,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void ProcessOpSendMsg(OpSendMsg op)
+		private void ProcessOpSendMsg(OpSendMsg<T> op)
 		{
 			if (op == null)
 			{
@@ -1368,7 +1374,7 @@ namespace SharpPulsar
 				{
 					BatchMessageAndSend();
 				}
-				_pendingMessages.Add(op);
+				_pendingMessages.Enqueue(op);
 				if (op.Msg != null)
 				{
 					LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
@@ -1425,7 +1431,7 @@ namespace SharpPulsar
 		private void RecoverProcessOpSendMsgFrom(Message<T> from)
 		{
 			var pendingMessages = _pendingMessages;
-			OpSendMsg pendingRegisteringOp = null;
+			OpSendMsg<T> pendingRegisteringOp = null;
 			foreach (var op in pendingMessages)
 			{
 				if (from != null)
@@ -1450,7 +1456,7 @@ namespace SharpPulsar
 						}
 						else if (op.Msg.GetSchemaState() == Message<T>.SchemaState.Broken)
 						{
-							_pendingMessages.Remove(op);
+							_pendingMessages = new Queue<OpSendMsg<T>>(_pendingMessages.Where(x=> x != op));
 							op.Recycle();
 							continue;
 						}
@@ -1488,7 +1494,18 @@ namespace SharpPulsar
 				return Cnx() != null ? _connectionId : null;
 			}
 		}
-
+		private bool HasPublishTime(ulong seq)
+		{
+			if (seq > 0)
+				return true;
+			return false;
+		}
+		private bool HasEventTime(ulong seq)
+		{
+			if (seq > 0)
+				return true;
+			return false;
+		}
 		public virtual string ConnectedSince
 		{
 			get
@@ -1528,11 +1545,11 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return this._connectionHandler.Cnx();
+				return Cnx();
 			}
 			set
 			{
-				this._connectionHandler.ClientCnx = value;
+				_connectionHandler.Tell(new SetCnx(value)); 
 			}
 		}
 

@@ -76,12 +76,12 @@ namespace SharpPulsar
 			InternalSendResponse response;
 			if (_txn != null)
 			{
-				response = _producer.AskFor<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T)));
+				response = _producer.AskFor<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T), true));
 				_txn.Tell(new RegisterSendOp(response.MessageId));
 			}
 			else
 			{
-				response =  _producer.AskFor<InternalSendResponse>(new InternalSend<T>(message, typeof(T)));
+				response =  _producer.AskFor<InternalSendResponse>(new InternalSend<T>(message, typeof(T), true));
 			}
 			return response.MessageId;
 		}
