@@ -73,6 +73,13 @@ namespace SharpPulsar.Batch.Api
 		/// <returns> OpSendMsg </returns>
 		/// <exception cref="IOException"> </exception>
 		OpSendMsg<T> CreateOpSendMsg<T>();
+
+		/// <summary>
+		/// Check whether the added message belong to the same txn with batch message container.
+		/// </summary>
+		/// <param name="msg"> added message </param>
+		/// <returns> belong to the same txn or not </returns>
+		bool HasSameTxn<T>(Message<T> msg);
 	}
 
 }

@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Api;
-using SharpPulsar.Common.Enum;
+﻿using SharpPulsar.Protocol.Proto;
 using System.Collections.Generic;
 
 /// <summary>
@@ -40,11 +39,11 @@ namespace SharpPulsar.Common.Compression
 		{
 			Codecs = new Dictionary<Protocol.Proto.CompressionType, CompressionCodec>
 			{
-				[Protocol.Proto.CompressionType.None] = new CompressionCodecNone(),
-				[Protocol.Proto.CompressionType.Lz4] = new CompressionCodecLz4(),
-				[Protocol.Proto.CompressionType.Zlib] = new CompressionCodecZLib(),
-				[Protocol.Proto.CompressionType.Zstd] = new CompressionCodecZstd(),
-				[Protocol.Proto.CompressionType.Snappy] = new CompressionCodecSnappy()
+				[CompressionType.None] = new CompressionCodecNone(),
+				[CompressionType.Lz4] = new CompressionCodecLz4(),
+				[CompressionType.Zlib] = new CompressionCodecZLib(),
+				[CompressionType.Zstd] = new CompressionCodecZstd(),
+				[CompressionType.Snappy] = new CompressionCodecSnappy()
 			};
 		}
 
@@ -52,71 +51,36 @@ namespace SharpPulsar.Common.Compression
         {
             return Codecs[ConvertToWireProtocol(type)];
         }
-		public static CompressionCodec GetCompressionCodec(ICompressionType type)
+		public static CompressionCodec GetCompressionCodec(CompressionType type)
 		{
 			return Codecs[ConvertToWireProtocol(type)];
 		}
 
-		public static Protocol.Proto.CompressionType ConvertToWireProtocol(ICompressionType compressionType)
+		public static CompressionType ConvertToWireProtocol(CompressionType compressionType)
 		{
-			
-			switch (compressionType)
-			{
-			case ICompressionType.None:
-				return Protocol.Proto.CompressionType.None;
-			case ICompressionType.Lz4:
-				return Protocol.Proto.CompressionType.Lz4; 
-            case ICompressionType.Zlib:
-				return Protocol.Proto.CompressionType.Zlib;
-            case ICompressionType.Zstd:
-				return Protocol.Proto.CompressionType.Zstd;
-			case ICompressionType.Snappy:
-				return Protocol.Proto.CompressionType.Snappy;
-
-			default:
-				throw new System.Exception("Invalid compression type");
-			}
+			return compressionType;
 		}
-        public static Protocol.Proto.CompressionType ConvertToWireProtocol(int compressionType)
+        public static CompressionType ConvertToWireProtocol(int compressionType)
         {
 
             switch (compressionType)
             {
                 case 0:
-                    return Protocol.Proto.CompressionType.None;
+                    return CompressionType.None;
                 case 1:
-                    return Protocol.Proto.CompressionType.Lz4;
+                    return CompressionType.Lz4;
                 case 2:
-                    return Protocol.Proto.CompressionType.Zlib;
+                    return CompressionType.Zlib;
                 case 3:
-                    return Protocol.Proto.CompressionType.Zstd;
+                    return CompressionType.Zstd;
                 case 4:
-                    return Protocol.Proto.CompressionType.Snappy;
+                    return CompressionType.Snappy;
 
                 default:
                     throw new System.Exception("Invalid compression type");
             }
         }
 
-		public static CompressionType? ConvertFromWireProtocol(CompressionType compressionType)
-		{
-			switch (compressionType)
-			{
-				case CompressionType.NONE:
-					return CompressionType.NONE;
-				case CompressionType.LZ4:
-					return CompressionType.LZ4;
-				case CompressionType.ZLIB:
-					return CompressionType.ZLIB;
-				case CompressionType.ZSTD:
-					return CompressionType.ZSTD;
-				case CompressionType.SNAPPY:
-					return CompressionType.SNAPPY;
-
-				default:
-					throw new System.Exception("Invalid compression type");
-			}
-		}
 	}
 
 }

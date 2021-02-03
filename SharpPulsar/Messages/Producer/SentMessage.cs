@@ -28,6 +28,10 @@ namespace SharpPulsar.Messages.Producer
             else
                 return new SentMessage<T>(op.Msgs, exception);
         }
+        public static SentMessage<T> CreateError(Message<T> msg, Exception exception)
+        {
+             return new SentMessage<T>(msg, exception);
+        }
         public SentMessage(Message<T> message)
         {
             Message = message;

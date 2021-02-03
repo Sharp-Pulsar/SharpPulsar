@@ -32,7 +32,6 @@ namespace SharpPulsar
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
-    using System.Threading.Tasks;
 
     [Serializable]
 	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
