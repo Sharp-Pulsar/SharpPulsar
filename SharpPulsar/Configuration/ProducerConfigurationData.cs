@@ -47,8 +47,6 @@ namespace SharpPulsar.Configuration
         public int Partitions { get; set; } = 0;
 
 		private long _autoUpdatePartitionsIntervalSeconds = 60;
-		public ISchema Schema;
-        public List<IProducerInterceptor> Interceptors;
         public bool UseTls { get; set; } = false;
 		public long SendTimeoutMs { get; set; } = 30000;
         public MessageRoutingMode MessageRoutingMode { get; set; } = MessageRoutingMode.RoundRobinMode;
@@ -85,8 +83,12 @@ namespace SharpPulsar.Configuration
 		/// 
 		public virtual bool EncryptionEnabled => (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
 
-       
-
+		public virtual void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
+		{
+			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
+			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
+		}
+		public long AutoUpdatePartitionsIntervalSeconds => _autoUpdatePartitionsIntervalSeconds;
 		public  string ProducerName { get; set; }
 
 		public int MaxPendingMessages
