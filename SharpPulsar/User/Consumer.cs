@@ -1,30 +1,39 @@
 ﻿using Akka.Actor;
 using BAMCIS.Util.Concurrent;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpPulsar.User
 {
     public class Consumer<T> : IConsumer<T>
     {
-        public string Topic => throw new NotImplementedException();
+        //Either of three: Pattern, Multi, Single topic consumer
+        private readonly IActorRef _consumerActor;
+        private readonly ConsumerQueueCollections<T> _queue;
 
-        public string Subscription => throw new NotImplementedException();
+        public Consumer(IActorRef consumer)
+        {
+            _consumerActor = consumer;
+            _queue = new ConsumerQueueCollections<T>();
+        }
+        public string Topic => _consumerActor.AskFor<string>(GetTopic.Instance);
 
-        public IConsumerStats Stats => throw new NotImplementedException();
+        public string Subscription => _consumerActor.AskFor<string>(GetSubscription.Instance);
 
-        public IMessageId LastMessageId => throw new NotImplementedException();
+        public IConsumerStats Stats => _consumerActor.AskFor<IConsumerStats>(GetStats.Instance);
 
-        public bool Connected => throw new NotImplementedException();
+        public IMessageId LastMessageId => _consumerActor.AskFor<IMessageId>(GetLastMessageId.Instance);
 
-        public string ConsumerName => throw new NotImplementedException();
+        public bool Connected => _consumerActor.AskFor<bool>(IsConnected.Instance);
 
-        public long LastDisconnectedTimestamp => throw new NotImplementedException();
+        public string ConsumerName => _consumerActor.AskFor<string>(GetConsumerName.Instance);
+
+        public long LastDisconnectedTimestamp => _consumerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
 
         public void Acknowledge<T1>(IMessage<T1> message)
         {
