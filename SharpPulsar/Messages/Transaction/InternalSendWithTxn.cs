@@ -9,25 +9,21 @@ namespace SharpPulsar.Messages.Transaction
     {
         public IMessage<T> Message { get; }
         public IActorRef Txn { get; }
-        public Type Type { get; }
         public bool IsAsk { get; }
-        public InternalSendWithTxn(IMessage<T> message, IActorRef txn, Type type, bool isAsk = false)
+        public InternalSendWithTxn(IMessage<T> message, IActorRef txn, bool isAsk = false)
         {
             Message = message;
             Txn = txn;
-            Type = type;
             IsAsk = isAsk;
         }
     }
     public class InternalSend<T>
     {
         public IMessage<T> Message { get; }
-        public Type Type { get; }
         public bool IsAsk { get; }
-        public InternalSend(IMessage<T> message, Type type, bool isAsk = false)
+        public InternalSend(IMessage<T> message, bool isAsk = false)
         {
             Message = message;
-            Type = type;
             IsAsk = isAsk;
         }
     }

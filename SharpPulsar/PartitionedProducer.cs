@@ -1,5 +1,23 @@
-﻿using System;
+﻿using Akka.Actor;
+using Akka.Event;
+using Akka.Util;
+using Akka.Util.Internal;
+using SharpPulsar.Common;
+using SharpPulsar.Common.Entity;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Producer;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Precondition;
+using SharpPulsar.Queues;
+using SharpPulsar.Stats.Producer;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,13 +39,10 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar
 {
-	public class PartitionedProducer<T> : ProducerBase<T>
+	public class PartitionedProducer<T> : ProducerActorBase<T>
 	{
-
-		private static readonly Logger _log = LoggerFactory.getLogger(typeof(PartitionedProducer));
-
-		private IList<ProducerImpl<T>> _producers;
-		private MessageRouter _routerPolicy;
+		private IList<IActorRef> _producers;
+		private IMessageRouter _routerPolicy;
 		private readonly ProducerStatsRecorderImpl _stats;
 		private TopicMetadata _topicMetadata;
 
@@ -35,14 +50,15 @@ namespace SharpPulsar
 		private volatile Timeout _partitionsAutoUpdateTimeout = null;
 		internal TopicsPartitionChangedListener TopicsPartitionChangedListener;
 		internal CompletableFuture<Void> PartitionsAutoUpdateFuture = null;
+		private readonly ILoggingAdapter _log;
 
-		public PartitionedProducer(PulsarClientImpl client, string topic, ProducerConfigurationData conf, int numPartitions, CompletableFuture<Producer<T>> producerCreatedFuture, Schema<T> schema, ProducerInterceptors interceptors) : base(client, topic, conf, producerCreatedFuture, schema, interceptors)
+		public PartitionedProducer(IActorRef client, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
-			this._producers = Lists.newArrayListWithCapacity(numPartitions);
-			this._topicMetadata = new TopicMetadataImpl(numPartitions);
-			this._routerPolicy = MessageRouter;
-			_stats = client.Configuration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorderImpl() : null;
-
+			_producers = new List<IActorRef>(numPartitions);
+			_topicMetadata = new TopicMetadata(numPartitions);
+			_routerPolicy = MessageRouter;
+			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, ProducerName, topic, conf.MaxPendingMessages) : null;
+			_log = Context.GetLogger();
 			int maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
 			Start();
@@ -55,11 +71,11 @@ namespace SharpPulsar
 			}
 		}
 
-		private MessageRouter MessageRouter
+		private IMessageRouter MessageRouter
 		{
 			get
 			{
-				MessageRouter messageRouter;
+				IMessageRouter messageRouter;
     
 				MessageRoutingMode messageRouteMode = Conf.MessageRoutingMode;
     
@@ -102,82 +118,74 @@ namespace SharpPulsar
 
 		private void Start()
 		{
-			AtomicReference<Exception> createFail = new AtomicReference<Exception>();
-			AtomicInteger completed = new AtomicInteger();
+			Exception createFail = null;
+			int completed = 0;
 			for(int partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
-				string partitionName = TopicName.Get(Topic).getPartition(partitionIndex).ToString();
-				ProducerImpl<T> producer = new ProducerImpl<T>(ClientConflict, partitionName, Conf, new CompletableFuture<Producer<T>>(), partitionIndex, Schema, Interceptors);
+				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
+				var producer = Context.ActorOf(ProducerActor<T>.Prop(Client, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue);
 				_producers.Add(producer);
-				producer.ProducerCreatedFuture().handle((prod, createException) =>
-				{
-				if(createException != null)
-				{
-					State = State.Failed;
-					createFail.compareAndSet(null, createException);
+				var prod = ProducerQueue.Producer.Take();
+				if(prod.Errored)
+                {
+					State.ConnectionState = HandlerState.State.Failed;
+					createFail = prod.Exception;
 				}
-				if(completed.incrementAndGet() == _topicMetadata.NumPartitions())
+				if (++completed == _topicMetadata.NumPartitions())
 				{
-					if(createFail.get() == null)
+					if (createFail == null)
 					{
-						State = State.Ready;
-						_log.info("[{}] Created partitioned producer", Topic);
-						ProducerCreatedFuture().complete(PartitionedProducer.this);
+						State.ConnectionState = HandlerState.State.Ready;
+						_log.Info($"[{Topic}] Created partitioned producer");
+						ProducerQueue.PartitionedProducer.Add(new ProducerCreation(new ProducerResponse(ProducerName)));
 					}
 					else
 					{
-						_log.error("[{}] Could not create partitioned producer.", Topic, createFail.get().Cause);
-						CloseAsync().handle((ok, closeException) =>
-						{
-							ProducerCreatedFuture().completeExceptionally(createFail.get());
-							ClientConflict.CleanupProducer(this);
-							return null;
-						});
+						_log.Error($"[{Topic}] Could not create partitioned producer: {createFail}");
+						ProducerQueue.PartitionedProducer.Add(new ProducerCreation(createFail));
+						Client.Tell(new CleanupProducer(Self));
 					}
 				}
-				return null;
-				});
 			}
 
 		}
 
-		internal override CompletableFuture<MessageId> InternalSendAsync<T1>(Message<T1> message)
+		internal override SentMessage<T> InternalSend(IMessage<T> message)
 		{
-			return InternalSendWithTxnAsync(message, null);
+			return InternalSendWithTxn(message, null);
 		}
 
-		internal override CompletableFuture<MessageId> InternalSendWithTxnAsync<T1>(Message<T1> message, Transaction txn)
+		internal override SentMessage<T> InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
-			switch(State)
+			switch(State.ConnectionState)
 			{
-				case Ready:
-				case Connecting:
+				case HandlerState.State.Ready:
+				case HandlerState.State.Connecting:
 					break; // Ok
-					goto case Closing;
-				case Closing:
-				case Closed:
+					goto case HandlerState.State.Closing;
+				case HandlerState.State.Closing:
+				case HandlerState.State.Closed:
 					return FutureUtil.FailedFuture(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-				case Terminated:
+				case HandlerState.State.Terminated:
 					return FutureUtil.FailedFuture(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-				case Failed:
-				case Uninitialized:
+				case HandlerState.State.Failed:
+				case HandlerState.State.Uninitialized:
 					return FutureUtil.FailedFuture(new PulsarClientException.NotConnectedException());
 			}
 
 			int partition = _routerPolicy.ChoosePartition(message, _topicMetadata);
-			checkArgument(partition >= 0 && partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
-			return _producers[partition].InternalSendWithTxnAsync(message, txn);
+			Condition.CheckArgument(partition >= 0 && partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
+			return _producers[partition].AskFor<SentMessage<T>>(new InternalSendWithTxn<T>(message, txn));
 		}
 
-		public override CompletableFuture<Void> FlushAsync()
+		private void Flush()
 		{
-			IList<CompletableFuture<Void>> flushFutures = _producers.Select(ProducerImpl::flushAsync).ToList();
-			return CompletableFuture.allOf(((List<CompletableFuture<Void>>)flushFutures).ToArray());
+			 _producers.ForEach(x => x.Tell(Messages.Producer.Flush.Instance));
 		}
 
-		internal override void TriggerFlush()
+		private void TriggerFlush()
 		{
-			_producers.ForEach(ProducerImpl.triggerFlush);
+			_producers.ForEach(x => x.Tell(Messages.Producer.TriggerFlush.Instance));
 		}
 
 		public override bool Connected
@@ -185,7 +193,7 @@ namespace SharpPulsar
 			get
 			{
 				// returns false if any of the partition is not connected
-				return _producers.All(ProducerImpl::isConnected);
+				return _producers.All(x=> x.AskFor<bool>(IsConnected.Instance));
 			}
 		}
 
@@ -195,22 +203,22 @@ namespace SharpPulsar
 			{
 				long lastDisconnectedTimestamp = 0;
 
-				Optional<ProducerImpl<T>> p = _producers.Max(System.Collections.IComparer.comparingLong(ProducerImpl::getLastDisconnectedTimestamp));
-				if(p.Present)
+				var p = new Option<long>(_producers.Max(x => x.AskFor<long>(GetLastDisconnectedTimestamp.Instance)));
+				if(p.HasValue)
 				{
-					lastDisconnectedTimestamp = p.get().LastDisconnectedTimestamp;
+					lastDisconnectedTimestamp = p.Value;
 				}
 				return lastDisconnectedTimestamp;
 			}
 		}
 
-		public override CompletableFuture<Void> CloseAsync()
+		public override void Close()
 		{
-			if(State == State.Closing || State == State.Closed)
+			if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
 				return CompletableFuture.completedFuture(null);
 			}
-			State = State.Closing;
+			State.ConnectionState = HandlerState.State.Closing;
 
 			if(_partitionsAutoUpdateTimeout != null)
 			{
@@ -221,7 +229,7 @@ namespace SharpPulsar
 			AtomicReference<Exception> closeFail = new AtomicReference<Exception>();
 			AtomicInteger completed = new AtomicInteger(_topicMetadata.NumPartitions());
 			CompletableFuture<Void> closeFuture = new CompletableFuture<Void>();
-			foreach(Producer<T> producer in _producers)
+			foreach(var producer in _producers)
 			{
 				if(producer != null)
 				{
@@ -299,7 +307,7 @@ namespace SharpPulsar
 
 			public TopicsPartitionChangedListener(PartitionedProducer<T> outerInstance)
 			{
-				this._outerInstance = outerInstance;
+				_outerInstance = outerInstance;
 			}
 
 			// Check partitions changes of passed in topics, and add new topic partitions.

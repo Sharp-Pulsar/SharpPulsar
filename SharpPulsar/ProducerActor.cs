@@ -226,7 +226,10 @@ namespace SharpPulsar
 
 			GrabCnx();
 		}
-
+		public static Props Prop(IActorRef client, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
+        {
+			return Props.Create(() => new ProducerActor<T>(client, topic, conf, partitionIndex, schema, interceptors, clientConfiguration, queue));
+        }
 		internal virtual void GrabCnx()
 		{
 			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {ProducerName}"));
@@ -343,6 +346,7 @@ namespace SharpPulsar
 					});
 				}
 				ResendMessages();
+				ProducerQueue.Producer.Add(new ProducerCreation(response));
 			}
 			catch(Exception ex)
             {
@@ -350,6 +354,7 @@ namespace SharpPulsar
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
 					cnx.GracefulStop(TimeSpan.FromSeconds(5));
+					ProducerQueue.Producer.Add(new ProducerCreation(ex));
 					return;
 				}
 				_log.Error($"[{Topic}] [{_producerName}] Failed to create producer: {ex}");
@@ -374,6 +379,7 @@ namespace SharpPulsar
 				{
 					State.ConnectionState = HandlerState.State.Terminated;
 					Client.Tell(new CleanupProducer(Self));
+					ProducerQueue.Producer.Add(new ProducerCreation(tex));
 				}
 				else if ((ex is PulsarClientException && IsRetriableError(ex) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
 				{
@@ -383,6 +389,7 @@ namespace SharpPulsar
 				{
 					State.ConnectionState = HandlerState.State.Failed;
 					Client.Tell(new CleanupProducer(Self));
+					ProducerQueue.Producer.Add(new ProducerCreation(new Exception()));
 					var timeout = _sendTimeout;
 					if (timeout != null)
 					{
