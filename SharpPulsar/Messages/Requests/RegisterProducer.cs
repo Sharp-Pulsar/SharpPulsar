@@ -57,6 +57,14 @@ namespace SharpPulsar.Messages.Requests
             Consumer = consumer;
         }
     }
+    public sealed class CleanupProducer
+    {
+        public IActorRef Producer { get; }
+        public CleanupProducer(IActorRef producer)
+        {
+            Producer = producer;
+        }
+    }
     public sealed class CleanupConsumer
     {
         public IActorRef Consumer { get; }

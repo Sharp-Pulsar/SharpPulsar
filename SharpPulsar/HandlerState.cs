@@ -54,7 +54,7 @@ namespace SharpPulsar
             }
 		}
 
-		protected bool ChangeToRegisteringSchemaState()
+		protected internal bool ChangeToRegisteringSchemaState()
 		{
 			if(_state == State.Ready)
             {

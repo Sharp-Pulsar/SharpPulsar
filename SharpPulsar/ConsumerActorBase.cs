@@ -2,22 +2,17 @@
 using Akka.Event;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar.Akka;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
-using SharpPulsar.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
@@ -41,7 +36,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-	public abstract class ConsumerActorBase<T> : ReceiveActor
+    public abstract class ConsumerActorBase<T> : ReceiveActor
 	{
 
 		protected readonly ConsumerQueueCollections<T> ConsumerQueue;

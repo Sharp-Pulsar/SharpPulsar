@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpPulsar.User
 {
-    class PulsarClient
+    public class PulsarClient
     {
     }
 }

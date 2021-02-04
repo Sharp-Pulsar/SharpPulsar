@@ -5,9 +5,6 @@ using System.Linq;
 using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
-using SharpPulsar.Utility;
-using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
-using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -35,7 +32,6 @@ namespace SharpPulsar
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
-    using System.Threading.Tasks;
 
     [Serializable]
 	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
@@ -79,12 +75,12 @@ namespace SharpPulsar
 			InternalSendResponse response;
 			if (_txn != null)
 			{
-				response = _producer.AskFor<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T)));
+				response = _producer.AskFor<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T), true));
 				_txn.Tell(new RegisterSendOp(response.MessageId));
 			}
 			else
 			{
-				response =  _producer.AskFor<InternalSendResponse>(new InternalSend<T>(message, typeof(T)));
+				response =  _producer.AskFor<InternalSendResponse>(new InternalSend<T>(message, typeof(T), true));
 			}
 			return response.MessageId;
 		}

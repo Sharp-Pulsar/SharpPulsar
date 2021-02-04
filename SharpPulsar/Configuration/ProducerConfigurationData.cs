@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Utility;
-using SharpPulsar.Interfaces.Interceptor.Interceptor;
-using SharpPulsar.Interfaces.Interceptor;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Common;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Precondition;
+using SharpPulsar.Protocol.Proto;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +33,7 @@ namespace SharpPulsar.Configuration
     public class ProducerConfigurationData
     {
         public long BatchingMaxPublishDelayMillis { get; set; } = 1000;
-        public int BatchingPartitionSwitchFrequencyByPublishDelay { get; set; } = 10;
+        private int _batchingPartitionSwitchFrequencyByPublishDelay;
         public int BatchingMaxMessages { get; set; } = DefaultBatchingMaxMessages;
 		public int BatchingMaxBytes { get; set; } = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
         public bool BatchingEnabled { get; set; } = false;
@@ -43,8 +45,8 @@ namespace SharpPulsar.Configuration
         public int MaxMessageSize { get; set; } = 2 * 1024; //2kb
         public string TopicName { get; set; }
         public int Partitions { get; set; } = 0;
-        public ISchema Schema;
-        public List<IProducerInterceptor> Interceptors;
+
+		private long _autoUpdatePartitionsIntervalSeconds = 60;
         public bool UseTls { get; set; } = false;
 		public long SendTimeoutMs { get; set; } = 30000;
         public MessageRoutingMode MessageRoutingMode { get; set; } = MessageRoutingMode.RoundRobinMode;
@@ -62,7 +64,8 @@ namespace SharpPulsar.Configuration
 
 		public ISet<string> EncryptionKeys { get; set; } = new SortedSet<string>();
 
-		public ICompressionType CompressionType { get; set; } = ICompressionType.None;
+		public CompressionType CompressionType { get; set; } = CompressionType.None;
+		public long BatchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMicroseconds(1);
 
 		public long? InitialSequenceId { get; set; }
 
@@ -80,8 +83,12 @@ namespace SharpPulsar.Configuration
 		/// 
 		public virtual bool EncryptionEnabled => (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
 
-       
-
+		public virtual void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
+		{
+			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
+			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
+		}
+		public long AutoUpdatePartitionsIntervalSeconds => _autoUpdatePartitionsIntervalSeconds;
 		public  string ProducerName { get; set; }
 
 		public int MaxPendingMessages
@@ -104,7 +111,32 @@ namespace SharpPulsar.Configuration
 			}
 		}
 
+		public void SetBatchingMaxPublishDelayMicros(long batchDelay, TimeUnit timeUnit)
+		{
+			long delayInMs = timeUnit.ToMilliseconds(batchDelay);
+			Condition.CheckArgument(delayInMs >= 1, "configured value for batch delay must be at least 1ms");
+			BatchingMaxPublishDelayMicros = timeUnit.ToMicroseconds(batchDelay);
+		}
 
+		public int BatchingPartitionSwitchFrequencyByPublishDelay
+		{
+			set
+			{
+				Condition.CheckArgument(value >= 1, "configured value for partition switch frequency must be >= 1");
+				_batchingPartitionSwitchFrequencyByPublishDelay = value;
+			}
+		}
+
+		public long BatchingPartitionSwitchFrequencyIntervalMicros()
+		{
+			return _batchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
+		}
+
+		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
+		{
+			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
+			this._autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
+		}
 		public void SetSendTimeoutMs(long sendTimeoutMs)
 		{
 			if (sendTimeoutMs < 1)

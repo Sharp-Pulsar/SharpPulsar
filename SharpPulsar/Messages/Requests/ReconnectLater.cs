@@ -33,6 +33,10 @@ namespace SharpPulsar.Messages.Requests
             ClientCnx = clientCnx;
         }
     }
+    public sealed class GetEpoch
+    {
+        public static GetEpoch Instance = new GetEpoch();
+    }
     public sealed class GrabCnx
     {
         public string Message { get; }

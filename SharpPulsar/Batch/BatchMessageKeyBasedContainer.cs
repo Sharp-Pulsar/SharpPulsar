@@ -7,7 +7,6 @@ using DotNetty.Common.Utilities;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 

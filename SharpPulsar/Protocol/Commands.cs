@@ -46,7 +46,10 @@ namespace SharpPulsar.Protocol
 		public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
 
-		
+		public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
+		{
+			return peerVersion >= (int)ProtocolVersion.V13;
+		}
 		public static byte[] NewConnect(string authMethodName, string authData, string libVersion)
 		{
 			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, null, null, null, null);

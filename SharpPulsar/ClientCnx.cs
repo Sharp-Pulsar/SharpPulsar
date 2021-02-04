@@ -315,7 +315,7 @@ namespace SharpPulsar
 				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
 			}
 
-			_producers[producerId].Tell(new AckReceived(this, sequenceId, highestSequenceId, ledgerId, entryId));
+			_producers[producerId].Tell(new AckReceived(Self, sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
 		private void HandleMessage(CommandMessage msg, ReadOnlySequence<byte> frame, uint commandSize)

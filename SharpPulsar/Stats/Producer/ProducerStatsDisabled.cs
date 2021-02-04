@@ -26,7 +26,7 @@ namespace SharpPulsar.Stats.Producer
 	{
 		private const long SerialVersionUid = 1L;
 
-		internal static readonly IProducerStatsRecorder Instance = new ProducerStatsDisabled();
+		internal static readonly ProducerStatsDisabled Instance = new ProducerStatsDisabled();
 
 		public virtual void IncrementSendFailed()
 		{

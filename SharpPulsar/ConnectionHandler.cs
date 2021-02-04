@@ -42,6 +42,10 @@ namespace SharpPulsar
 			{
 				ReconnectLater(g.Exception);
 			});
+			Receive<GetEpoch>(g =>
+			{
+				Sender.Tell(_epoch);
+			});
 			Receive<ResetBackoff>(_ =>
 			{
 				ResetBackoff();
@@ -202,14 +206,6 @@ namespace SharpPulsar
 						return false;
 				}
 				return false;
-			}
-		}
-
-		private long Epoch
-		{
-			get
-			{
-				return _epoch;
 			}
 		}
 
