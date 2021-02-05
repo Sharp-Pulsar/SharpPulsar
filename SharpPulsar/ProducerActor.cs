@@ -251,7 +251,46 @@ namespace SharpPulsar
 			});
 			ReceiveAny(a => Stash.Stash());
 		}
-
+		private void Ready()
+        {
+			Receive<GetProducerName>(_ => Sender.Tell(_producerName));
+			Receive<GetLastSequenceId>(_ => Sender.Tell(_lastSequenceIdPublished));
+			Receive<GetTopic>(_ => Sender.Tell(Topic));
+			Receive<IsConnected>(_ => Sender.Tell(Connected));
+			Receive<GetStats>(_ => Sender.Tell(_stats));
+			Receive<GetLastDisconnectedTimestamp>(_ => Sender.Tell(LastDisconnectedTimestamp));
+			Receive<InternalSend<T>>(m => 
+			{
+                try
+                {
+					//get excepyion vai out
+					var msg = InternalSend(m.Message);
+					if(!m.IsDeadLetter)
+						ProducerQueue.SentMessage.Add(SentMessage<T>.Create(msg));
+				}
+                catch(Exception ex)
+                {
+					if (!m.IsDeadLetter)
+						ProducerQueue.SentMessage.Add(SentMessage<T>.CreateError(msg, ex));
+				}
+			});
+			Receive<InternalSendWithTxn<T>>(m =>
+			{
+				try
+				{
+					//get excepyion vai out
+					var msg = InternalSendWithTxn(m.Message, m.Txn);
+					m.Txn.Tell(new RegisterSendOp(msg));
+					if (!m.IsDeadLetter)
+						ProducerQueue.SentMessage.Add(SentMessage<T>.Create(msg));
+				}
+				catch (Exception ex)
+				{
+					if (!m.IsDeadLetter)
+						ProducerQueue.SentMessage.Add(SentMessage<T>.CreateError(msg, ex));
+				}
+			});
+		}
 		private void ConnectionOpened(IActorRef cnx)
 		{
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
@@ -454,7 +493,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private IMessageId InternalSend(IMessage<T> message)
+		internal override SentMessage<T> InternalSend(IMessage<T> message)
 		{
 
 			var interceptorMessage = (Message<T>) BeforeSend(message);
@@ -466,7 +505,7 @@ namespace SharpPulsar
 			return Send(interceptorMessage);
 		}
 
-		private IMessageId InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		internal override SentMessage<T> InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			if(txn == null)
 			{
@@ -1065,7 +1104,7 @@ namespace SharpPulsar
 				_log.Warning(msg);
 				ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
 				// Force connection closing so that messages can be re-transmitted in a new connection
-				cnx.Tell(Messages.Consumer.Close.Instance);
+				cnx.Tell(Messages.Requests.Close.Instance);
 			}
 			else if (sequenceId < op.SequenceId)
 			{
@@ -1118,7 +1157,7 @@ namespace SharpPulsar
 					var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}";
 					_log.Warning(msg);
 					// Force connection closing so that messages can be re-transmitted in a new connection
-					cnx.Tell(Messages.Consumer.Close.Instance);
+					cnx.Tell(Messages.Requests.Close.Instance);
 					ProducerQueue.SentMessage.Add(new SentMessage<T>(new Exception(msg)));
 				}
 			}

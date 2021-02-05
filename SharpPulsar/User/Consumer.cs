@@ -3,6 +3,7 @@ using BAMCIS.Util.Concurrent;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
@@ -16,10 +17,10 @@ namespace SharpPulsar.User
         private readonly IActorRef _consumerActor;
         private readonly ConsumerQueueCollections<T> _queue;
 
-        public Consumer(IActorRef consumer)
+        public Consumer(IActorRef consumer, ConsumerQueueCollections<T> queue)
         {
             _consumerActor = consumer;
-            _queue = new ConsumerQueueCollections<T>();
+            _queue = queue;
         }
         public string Topic => _consumerActor.AskFor<string>(GetTopic.Instance);
 

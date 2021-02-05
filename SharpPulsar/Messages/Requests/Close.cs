@@ -1,5 +1,4 @@
-﻿
-namespace SharpPulsar.Messages.Consumer
+﻿namespace SharpPulsar.Messages.Requests
 {
     public sealed class Close
     {

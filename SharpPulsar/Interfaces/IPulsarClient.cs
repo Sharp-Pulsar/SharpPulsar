@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Configuration;
+﻿using SharpPulsar.Akka.Configuration;
+using SharpPulsar.Configuration;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using System.Collections.Generic;
@@ -61,7 +62,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Producer<sbyte[]> NewProducer(ProducerConfigurationData conf);
+		Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -84,7 +85,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigurationData conf);
+		Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to

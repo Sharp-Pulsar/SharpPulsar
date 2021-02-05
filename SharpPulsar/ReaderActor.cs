@@ -9,6 +9,7 @@ using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
@@ -34,7 +35,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-	public class ReaderActor<T>: ReceiveActor
+    public class ReaderActor<T>: ReceiveActor
 	{
 		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
 		private readonly IActorRef _consumer;

@@ -1,7 +1,12 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Transaction;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -38,9 +43,9 @@ namespace SharpPulsar
 
 		public enum State
 		{
-			Open,
-			Closing,
-			Closed
+			Open = 0,
+			Closing = 1,
+			Closed = 2
 		}
 
 		private State _state;
@@ -58,7 +63,7 @@ namespace SharpPulsar
 
 		private IActorRef _tcClient;
 		
-		public PulsarClientActor(ClientConfigurationData conf, IAdvancedScheduler eventLoopGroup, IActorRef cnxPool)
+		public PulsarClientActor(ClientConfigurationData conf, IAdvancedScheduler eventLoopGroup, IActorRef cnxPool, IActorRef txnCoordinator)
 		{
 			if (conf == null || isBlank(conf.ServiceUrl) || eventLoopGroup == null)
 			{
@@ -78,24 +83,23 @@ namespace SharpPulsar
 
 			if (conf.EnableTransaction)
 			{
-				_tcClient = new TransactionCoordinatorClientImpl(this);
-				try
-				{
-					_tcClient.Start();
-				}
-				catch (Exception e)
-				{
-					_log.error("Start transactionCoordinatorClient error.", e);
-					throw new PulsarClientException(e);
-				}
+				_tcClient = Context.ActorOf(TransactionCoordinatorClient.Prop(Self, conf));
+				_tcClient.Tell(StartTransactionCoordinatorClient.Instance);
+				txnCoordinator = _tcClient;
 			}
 
-			_state.set(State.Open);
+			_state = State.Open;
+			Receive<AddProducer>(m => _producers.Add(m.Producer));
+			Receive<GetClientState>(_ => Sender.Tell((int)_state));
+			Receive<GetSchema>(s => {
+				var response = _lookup.AskFor(s);
+				Sender.Tell(response);
+			});
 		}
 
-		public static Props Prop(ClientConfigurationData conf, IAdvancedScheduler eventLoopGroup, IActorRef cnxPool)
+		public static Props Prop(ClientConfigurationData conf, IAdvancedScheduler eventLoopGroup, IActorRef cnxPool, IActorRef txnCoordinator)
         {
-			return Props.Create(() => new PulsarClientActor(conf, eventLoopGroup, cnxPool));
+			return Props.Create(() => new PulsarClientActor(conf, eventLoopGroup, cnxPool, txnCoordinator));
         }
 		private ClientConfigurationData Auth
 		{
@@ -124,33 +128,6 @@ namespace SharpPulsar
 				return _conf;
 			}
 		}
-
-		public virtual Clock ClientClock
-		{
-			get
-			{
-				return _clientClock;
-			}
-		}
-
-		public virtual AtomicReference<State> State
-		{
-			get
-			{
-				return _state;
-			}
-		}
-
-		public virtual ProducerBuilder<sbyte[]> NewProducer()
-		{
-			return new ProducerBuilderImpl<sbyte[]>(this, Schema.BYTES);
-		}
-
-		public virtual ProducerBuilder<T> NewProducer<T>(Schema<T> schema)
-		{
-			return new ProducerBuilderImpl<T>(this, schema);
-		}
-
 		public virtual ConsumerBuilder<sbyte[]> NewConsumer()
 		{
 			return new ConsumerBuilderImpl<sbyte[]>(this, Schema.BYTES);
@@ -171,96 +148,6 @@ namespace SharpPulsar
 			return new ReaderBuilderImpl<T>(this, schema);
 		}
 
-		public virtual CompletableFuture<Producer<sbyte[]>> CreateProducerAsync(ProducerConfigurationData conf)
-		{
-			return CreateProducerAsync(conf, Schema.BYTES, null);
-		}
-
-		public virtual CompletableFuture<Producer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, Schema<T> schema)
-		{
-			return CreateProducerAsync(conf, schema, null);
-		}
-
-		public virtual CompletableFuture<Producer<T>> CreateProducerAsync<T>(ProducerConfigurationData conf, Schema<T> schema, ProducerInterceptors interceptors)
-		{
-			if (conf == null)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException("Producer configuration undefined"));
-			}
-
-			if (schema is AutoConsumeSchema)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically"));
-			}
-
-			if (_state.get() != State.Open)
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.AlreadyClosedException("Client already closed : state = " + _state.get()));
-			}
-
-			string topic = conf.TopicName;
-
-			if (!TopicName.IsValid(topic))
-			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'"));
-			}
-
-			if (schema is AutoProduceBytesSchema)
-			{
-				AutoProduceBytesSchema autoProduceBytesSchema = (AutoProduceBytesSchema)schema;
-				if (autoProduceBytesSchema.schemaInitialized())
-				{
-					return CreateProducerAsync(topic, conf, schema, interceptors);
-				}
-				return _lookup.GetSchema(TopicName.Get(conf.TopicName)).thenCompose(schemaInfoOptional =>
-				{
-					if (schemaInfoOptional.Present)
-					{
-						autoProduceBytesSchema.Schema = Schema.getSchema(schemaInfoOptional.get());
-					}
-					else
-					{
-						autoProduceBytesSchema.Schema = Schema.BYTES;
-					}
-					return CreateProducerAsync(topic, conf, schema, interceptors);
-				});
-			}
-			else
-			{
-				return CreateProducerAsync(topic, conf, schema, interceptors);
-			}
-
-		}
-
-		private CompletableFuture<Producer<T>> CreateProducerAsync<T>(string topic, ProducerConfigurationData conf, Schema<T> schema, ProducerInterceptors interceptors)
-		{
-			CompletableFuture<Producer<T>> producerCreatedFuture = new CompletableFuture<Producer<T>>();
-
-			GetPartitionedTopicMetadata(topic).thenAccept(metadata =>
-			{
-				if (_log.DebugEnabled)
-				{
-					_log.debug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
-				}
-				ProducerBase<T> producer;
-				if (metadata.partitions > 0)
-				{
-					producer = new PartitionedProducerImpl<T>(PulsarClientImpl.this, topic, conf, metadata.partitions, producerCreatedFuture, schema, interceptors);
-				}
-				else
-				{
-					producer = new ProducerImpl<T>(PulsarClientImpl.this, topic, conf, producerCreatedFuture, -1, schema, interceptors);
-				}
-				_producers.Add(producer);
-			}).exceptionally(ex =>
-			{
-				_log.warn("[{}] Failed to get partitioned topic metadata: {}", topic, ex.Message);
-				producerCreatedFuture.completeExceptionally(ex);
-				return null;
-			});
-
-			return producerCreatedFuture;
-		}
 
 		public virtual CompletableFuture<Consumer<sbyte[]>> SubscribeAsync(ConsumerConfigurationData<sbyte[]> conf)
 		{

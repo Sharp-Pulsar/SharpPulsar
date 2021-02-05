@@ -104,10 +104,10 @@ namespace SharpPulsar
 			Receive<AddSubscriptionToTxnResponse>(p => {
 				HandleAddSubscriptionToTxnResponse(p.Response);
 			});
-			Receive<Abort>(a => {
+			Receive<AbortTxnID>(a => {
 				Abort(a.TxnID, a.MessageIds);
 			});
-			Receive<Commit>(c => {
+			Receive<CommitTxnID>(c => {
 				Commit(c.TxnID, c.MessageIds);
 			});
 			Receive<AddSubscriptionToTxn>(s => {

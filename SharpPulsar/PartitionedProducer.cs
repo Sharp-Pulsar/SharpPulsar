@@ -90,7 +90,10 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(TimeUnit.SECONDS.ToSeconds(conf.AutoUpdatePartitionsIntervalSeconds)), () => OnTopicsExtended(new List<string> { topic}));
 			}
 		}
-
+		public static Props Prop(IActorRef client, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
+        {
+			return Props.Create(()=> new PartitionedProducer<T>(client, topic, conf, numPartitions, schema, interceptors, clientConfiguration, queue));
+        }
 		public override string ProducerName
 		{
 			get

@@ -14,6 +14,7 @@ namespace SharpPulsar
         private readonly ClientConfigurationData _conf;
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
+        private readonly IActorRef _tcClient;
         public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             if (_instance == null)
@@ -80,19 +81,20 @@ namespace SharpPulsar
             }"
             );
             _actorSystem = ActorSystem.Create("Pulsar", config);
+            
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _actorSystem.Scheduler.Advanced, _cnxPool), "PulsarClient");
+            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _actorSystem.Scheduler.Advanced, _cnxPool, _tcClient), "PulsarClient");
         }
         private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             _actorSystem = actorSystem;
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _actorSystem.Scheduler.Advanced, _cnxPool), "PulsarClient");
+            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _actorSystem.Scheduler.Advanced, _cnxPool, _tcClient), "PulsarClient");
         }
         public PulsarClient NewClient() 
         {
-            return new PulsarClient(_client, _conf, _actorSystem);
+            return new PulsarClient(_client, _conf, _actorSystem, _tcClient);
         }
         public Admin NewAdmin() 
         {

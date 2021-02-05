@@ -46,7 +46,6 @@ namespace SharpPulsar.Schemas
 
 		public virtual ISchema<T> Schema
 		{
-            get => _schema;
             set
 			{
 				_schema = value;

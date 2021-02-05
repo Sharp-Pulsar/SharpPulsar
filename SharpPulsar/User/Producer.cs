@@ -1,5 +1,13 @@
-﻿using SharpPulsar.Interfaces;
+﻿using Akka.Actor;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Producer;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Precondition;
+using SharpPulsar.Queues;
 using System;
 
 
@@ -7,46 +15,67 @@ namespace SharpPulsar.User
 {
     public class Producer<T> : IProducer<T>
     {
-        public string Topic => throw new NotImplementedException();
+        //Either of three: Pattern, Multi, Single topic consumer
+        private readonly IActorRef _producerActor;
+        private readonly ProducerQueueCollection<T> _queue;
+        private readonly ISchema<T> _schema;
+        private readonly ProducerConfigurationData _conf;
 
-        public string ProducerName => throw new NotImplementedException();
+        public Producer(IActorRef producer, ProducerQueueCollection<T> queue, ISchema<T> schema, ProducerConfigurationData conf)
+        {
+            _producerActor = producer;
+            _queue = queue;
+            _schema = schema;
+            _conf = conf;
+        }
+        public string Topic => _producerActor.AskFor<string>(GetTopic.Instance);
 
-        public long LastSequenceId => throw new NotImplementedException();
+        public string ProducerName => _producerActor.AskFor<string>(GetProducerName.Instance);
 
-        public IProducerStats Stats => throw new NotImplementedException();
+        public long LastSequenceId => _producerActor.AskFor<long>(GetLastSequenceId.Instance);
+        
+        public IProducerStats Stats => _producerActor.AskFor<IProducerStats>(GetStats.Instance);
 
-        public bool Connected => throw new NotImplementedException();
+        public bool Connected => _producerActor.AskFor<bool>(IsConnected.Instance);
 
-        public long LastDisconnectedTimestamp => throw new NotImplementedException();
+        public long LastDisconnectedTimestamp => _producerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
 
         public void Close()
         {
-            throw new NotImplementedException();
+            _producerActor.GracefulStop(TimeSpan.FromSeconds(5));
         }
 
         public void Flush()
         {
-            throw new NotImplementedException();
+            _producerActor.Tell(Messages.Producer.Flush.Instance);
         }
 
         public ITypedMessageBuilder<T> NewMessage()
         {
-            throw new NotImplementedException();
+            return new TypedMessageBuilder<T>(_producerActor, _schema);
         }
 
         public ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema)
         {
-            throw new NotImplementedException();
+            Condition.CheckArgument(schema != null);
+            return new TypedMessageBuilder<V>(_producerActor, schema);
         }
 
-        public TypedMessageBuilder<T> NewMessage(ITransaction txn)
+        public TypedMessageBuilder<T> NewMessage(Transaction txn)
         {
-            throw new NotImplementedException();
+            // check the producer has proper settings to send transactional messages
+            if (_conf.SendTimeoutMs > 0)
+            {
+                throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
+            }
+
+            return new TypedMessageBuilder<T>(_producerActor, _schema, txn);
         }
 
-        public IMessageId Send(T message)
+        public SentMessage<T> Send(T message)
         {
-            throw new NotImplementedException();
+            NewMessage().Value(message).Send();
+            return _queue.SentMessage.Take();
         }
     }
 }

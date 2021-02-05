@@ -1042,7 +1042,7 @@ namespace SharpPulsar
 							TypedMessageBuilder<T> typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
 							typedMessageBuilderNew.Value(retryMessage.Value);
 							typedMessageBuilderNew.Properties(propertiesMap);
-							typedMessageBuilderNew.Send();
+							typedMessageBuilderNew.Send(true);
 							DoAcknowledge(messageId, ackType, properties, null);
 						}
 				   }
@@ -1059,7 +1059,7 @@ namespace SharpPulsar
 						{
 							typedMessageBuilderNew.Key(message.Key);
 						}
-						typedMessageBuilderNew.Send();
+						typedMessageBuilderNew.Send(true);
 						DoAcknowledge(messageId, ackType, properties, null);
 					}
 				}
@@ -2173,7 +2173,7 @@ namespace SharpPulsar
 							TypedMessageBuilder<T> typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
 							typedMessageBuilderNew.Value(message.Value);
 							typedMessageBuilderNew.Properties(message.Properties);
-							typedMessageBuilderNew.Send();
+							typedMessageBuilderNew.Send(true);
 						}
 						Acknowledge(messageId);
 						return true;

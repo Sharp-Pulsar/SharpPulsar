@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages.Producer;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -52,7 +53,7 @@ namespace SharpPulsar.Interfaces
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		IMessageId Send(T message);
+		SentMessage<T> Send(T message);
 
 		
 		/// <summary>
@@ -101,7 +102,7 @@ namespace SharpPulsar.Interfaces
 		/// <seealso cref= #newMessage()
 		/// 
 		/// @since 2.7.0 </seealso>
-		TypedMessageBuilder<T> NewMessage(ITransaction txn);
+		TypedMessageBuilder<T> NewMessage(User.Transaction txn);
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.
 		/// 

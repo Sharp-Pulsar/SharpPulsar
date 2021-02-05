@@ -37,7 +37,6 @@ namespace SharpPulsar
 		public abstract bool Connected {get;}
 		public abstract IProducerStats Stats {get;}
 		public abstract long LastSequenceId {get;}
-		public abstract IMessageId Send(sbyte[] message);
 		public abstract string ProducerName {get;}
 
 		protected internal readonly ProducerConfigurationData Conf;
@@ -67,33 +66,6 @@ namespace SharpPulsar
 			}
 			State = new HandlerState(client, topic, Context.System, ProducerName);
 
-		}
-
-		public virtual IMessageId Send(T message)
-		{
-			return NewMessage().Value(message).Send();
-		}
-
-		public virtual ITypedMessageBuilder<T> NewMessage()
-		{
-			return new TypedMessageBuilder<T>(Self, Schema);
-		}
-
-		public virtual ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema)
-		{
-			Condition.CheckArgument(schema != null);
-			return new TypedMessageBuilder<V>(Self, schema);
-		}
-
-		public virtual TypedMessageBuilder<T> NewMessage(IActorRef txn)
-		{
-			// check the producer has proper settings to send transactional messages
-			if(Conf.SendTimeoutMs > 0)
-			{
-				throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
-			}
-
-			return new TypedMessageBuilder<T>(Self, Schema, txn);
 		}
 
 		public virtual string Topic

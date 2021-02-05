@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using BAMCIS.Util.Concurrent;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
 /// <summary>
@@ -29,51 +30,37 @@ namespace SharpPulsar.Transaction
     public class TransactionBuilder : ITransactionBuilder
 	{
 
-		private readonly IActorContext _client;
+		private readonly ActorSystem _actorSystem;
 		private readonly IActorRef _transactionCoordinatorClient;
+		private readonly IActorRef _client;
 		private long _txnTimeoutMs = 60000; // 1 minute
 		private const long TxnRequestTimeoutMs = 1000 * 30; // 30 seconds
 		private ILoggingAdapter _log;
 
-		public TransactionBuilder(IActorContext client, IActorRef tcClient, ILoggingAdapter log)
+		public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
 		{
 			_log = log;
-			_client = client;
+			_actorSystem = actorSystem;
 			_transactionCoordinatorClient = tcClient;
+			_client = client;
 		}
 
 		public virtual ITransactionBuilder WithTransactionTimeout(long timeout, TimeUnit timeoutUnit)
 		{
-			this._txnTimeoutMs = timeoutUnit.ToMilliseconds(timeout);
+			_txnTimeoutMs = timeoutUnit.ToMilliseconds(timeout);
 			return this;
 		}
 
-		public virtual IActorRef Build()
+		public ITransaction Build()
 		{
 			// talk to TC to begin a transaction
 			//       the builder is responsible for locating the transaction coorindator (TC)
 			//       and start the transaction to get the transaction id.
 			//       After getting the transaction id, all the operations are handled by the
 			//       `Transaction`
-			IActorRef transaction = null;
-			_transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTransaction(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS))
-				.ContinueWith(task =>
-			{
-				if (!task.IsFaulted)
-                {
-					var txnID = task.Result.Response;
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"Success to new txn. txnID: {txnID}");
-					}
-					transaction = _client.ActorOf(Transaction.Prop(_client.Self, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
-				}
-                else
-                {
-					_log.Error($"New transaction error: {task.Exception}");
-				}
-			});
-			return transaction;
+			var txnID = _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTransaction(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS)).Response;
+			var transaction = _actorSystem.ActorOf(Transaction.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
+			return new User.Transaction(transaction);	
 		}
 	}
 

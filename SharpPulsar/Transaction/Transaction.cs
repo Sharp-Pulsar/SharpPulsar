@@ -158,7 +158,7 @@ namespace SharpPulsar.Transaction
 			{
 				sendMessageIdList.Add(msgid);
 			}
-			_tcClient.Tell(new Commit(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
+			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
 		}
 
 		private void Abort()
@@ -172,7 +172,7 @@ namespace SharpPulsar.Transaction
 					_cumulativeAckConsumers[c.Key] = cleared;
                 }
 			}
-			_tcClient.Tell(new Abort(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
+			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
 			if (_cumulativeAckConsumers != null)
 			{
 				_cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));

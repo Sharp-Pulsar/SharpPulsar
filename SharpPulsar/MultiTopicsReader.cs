@@ -5,6 +5,7 @@ using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
@@ -30,7 +31,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-	public class MultiTopicsReader<T> : ReceiveActor
+    public class MultiTopicsReader<T> : ReceiveActor
 	{
 
 		private readonly IActorRef _consumer;
