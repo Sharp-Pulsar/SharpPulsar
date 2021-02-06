@@ -128,15 +128,6 @@ namespace SharpPulsar
 				return _conf;
 			}
 		}
-		public virtual ConsumerBuilder<sbyte[]> NewConsumer()
-		{
-			return new ConsumerBuilderImpl<sbyte[]>(this, Schema.BYTES);
-		}
-
-		public virtual ConsumerBuilder<T> NewConsumer<T>(Schema<T> schema)
-		{
-			return new ConsumerBuilderImpl<T>(this, schema);
-		}
 
 		public virtual ReaderBuilder<sbyte[]> NewReader()
 		{
@@ -510,22 +501,8 @@ namespace SharpPulsar
 			}
 		}
 
-		private static Mode ConvertRegexSubscriptionMode(RegexSubscriptionMode regexSubscriptionMode)
-		{
-			switch (regexSubscriptionMode)
-			{
-				case RegexSubscriptionMode.PersistentOnly:
-					return Mode.PERSISTENT;
-				case RegexSubscriptionMode.NonPersistentOnly:
-					return Mode.NonPersistent;
-				case RegexSubscriptionMode.AllTopics:
-					return Mode.ALL;
-				default:
-					return null;
-			}
-		}
 
-		private SchemaInfoProvider NewSchemaProvider(string topicName)
+		private ISchemaInfoProvider NewSchemaProvider(string topicName)
 		{
 			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), this);
 		}
