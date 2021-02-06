@@ -7,7 +7,6 @@ using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka.EventSource.Pulsar

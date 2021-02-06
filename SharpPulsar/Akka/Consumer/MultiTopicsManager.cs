@@ -8,7 +8,6 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;
 

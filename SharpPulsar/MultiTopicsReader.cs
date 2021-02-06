@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;

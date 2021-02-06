@@ -14,7 +14,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;

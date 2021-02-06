@@ -32,7 +32,7 @@ namespace SharpPulsar.Interfaces
 	/// <para>All the operations on the consumer instance are thread safe.
 	/// </para>
 	/// </summary>
-	public interface IConsumer<T> : System.IDisposable
+	public interface IConsumer<T>
 	{
 
 		/// <summary>
@@ -110,7 +110,7 @@ namespace SharpPulsar.Interfaces
 		/// @since 2.4.1 </returns>
 		/// <exception cref="PulsarClientException"> </exception>
 		/// 
-		IMessages<T> BatchReceive();
+		IMessages<T> BatchReceive(int timeout = 5000);
 
 
 		/// <summary>
@@ -120,7 +120,7 @@ namespace SharpPulsar.Interfaces
 		///            The {@code Message} to be acknowledged </param>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
-		void Acknowledge<T1>(IMessage<T1> message);
+		void Acknowledge(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -139,7 +139,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 		///              
-		void Acknowledge<T1>(IMessages<T1> messages);
+		void Acknowledge(IMessages<T> messages);
 
 		/// <summary>
 		/// Acknowledge the consumption of a list of message. </summary>
@@ -180,7 +180,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="message">
 		///            The {@code Message} to be acknowledged </param>
 		///            
-		void NegativeAcknowledge<T1>(IMessage<T1> message);
+		void NegativeAcknowledge(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
@@ -237,7 +237,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="messages">
 		///            The {@code Message} to be acknowledged </param>
 		///            
-		void NegativeAcknowledge<T1>(IMessages<T1> messages);
+		void NegativeAcknowledge(IMessages<T> messages);
 
 		/// <summary>
 		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
@@ -273,7 +273,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 
-		void ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit);
+		void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit);
 
 		/// <summary>
 		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
@@ -287,7 +287,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 		///              
-		void ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit);
+		void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -308,7 +308,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 		///             
-		void AcknowledgeCumulative<T1>(IMessage<T1> message);
+		void AcknowledgeCumulative(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -371,7 +371,7 @@ namespace SharpPulsar.Interfaces
 		///             broker don't support transaction </exception>
 		/// 
 		/// @since 2.7.0 </returns>
-		void AcknowledgeCumulative(IMessageId messageId, IActorRef txn);
+		void AcknowledgeCumulative(IMessageId messageId, User.Transaction txn);
 
 		/// <summary>
 		/// reconsumeLater the reception of all the messages in the stream up to (and including) the provided message.
@@ -385,7 +385,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 		///             
-		void ReconsumeLaterCumulative<T1>(IMessage<T1> message, long delayTime, TimeUnit unit);
+		void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -418,7 +418,7 @@ namespace SharpPulsar.Interfaces
 		/// producers, rather the topic needs to be explicitly "terminated".
 		/// </para>
 		/// </summary>
-		bool HasReachedEndOfTopic();
+		bool? HasReachedEndOfTopic();
 
 		/// <summary>
 		/// Redelivers all the unacknowledged messages. In Failover mode, the request is ignored if the consumer is not

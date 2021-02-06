@@ -3,7 +3,6 @@ using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Akka.Consumer

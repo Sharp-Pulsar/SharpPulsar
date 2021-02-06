@@ -1,6 +1,9 @@
 ﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
 using SharpPulsar.Akka.Configuration;
+using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
@@ -8,16 +11,23 @@ using SharpPulsar.Impl.Schema;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Model;
 using SharpPulsar.Precondition;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Queues;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Transaction;
+using SharpPulsar.Utils;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.User
 {
@@ -52,17 +62,259 @@ namespace SharpPulsar.User
             throw new NotImplementedException();
         }
 
-        public Consumer<sbyte[]> NewConsumer(ConsumerConfigurationData<sbyte[]> conf)
+        public Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf)
         {
-            //create ConsumerActor first
-            throw new NotImplementedException();
+            return NewConsumer(ISchema<sbyte[]>.Bytes, conf);
         }
 
-        public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigurationData<T> conf)
+        public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> confBuilder)
         {
-            throw new NotImplementedException();
+            var conf = confBuilder.ConsumerConfigurationData;
+            if (conf.TopicNames.Count == 0 && conf.TopicsPattern == null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Topic name must be set on the consumer builder");
+            }
+
+            if (string.IsNullOrWhiteSpace(conf.SubscriptionName))
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Subscription name must be set on the consumer builder");
+            }
+
+            if (conf.KeySharedPolicy != null && conf.SubscriptionType != CommandSubscribe.SubType.KeyShared)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("KeySharedPolicy must set with KeyShared subscription");
+            }
+            if (conf.RetryEnable && conf.TopicNames.Count > 0)
+            {
+                TopicName topicFirst = TopicName.Get(conf.TopicNames.GetEnumerator().Current);
+                string retryLetterTopic = topicFirst.Namespace + "/" + conf.SubscriptionName + RetryMessageUtil.RetryGroupTopicSuffix;
+                string deadLetterTopic = topicFirst.Namespace + "/" + conf.SubscriptionName + RetryMessageUtil.DlqGroupTopicSuffix;
+                if (conf.DeadLetterPolicy == null)
+                {
+                    conf.DeadLetterPolicy = new DeadLetterPolicy
+                    {
+                        MaxRedeliverCount = RetryMessageUtil.MaxReconsumetimes,
+                        RetryLetterTopic = retryLetterTopic,
+                        DeadLetterTopic = deadLetterTopic
+                    };
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.RetryLetterTopic))
+                    {
+                        conf.DeadLetterPolicy.RetryLetterTopic = retryLetterTopic;
+                    }
+                    if (string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.DeadLetterTopic))
+                    {
+                        conf.DeadLetterPolicy.DeadLetterTopic = deadLetterTopic;
+                    }
+                }
+                conf.TopicNames.Add(conf.DeadLetterPolicy.RetryLetterTopic);
+            }
+            var interceptors = conf.Interceptors;
+            if (interceptors == null || interceptors.Count == 0)
+            {
+                return Subscribe(conf, schema, null);
+            }
+            else
+            {
+                return Subscribe(conf, schema, new ConsumerInterceptors<T>(_actorSystem, interceptors));
+            }
+        }
+        
+        private Consumer<T> Subscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        {
+            var state = _client.AskFor<int>(GetClientState.Instance);
+            if (state != 0)
+            {
+                throw new PulsarClientException.AlreadyClosedException("Client already closed");
+            }
+
+            if (conf == null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined");
+            }
+
+            foreach (string topic in conf.TopicNames)
+            {
+                if (!TopicName.IsValid(topic))
+                {
+                    throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(conf.SubscriptionName))
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Empty subscription name");
+            }
+
+            if (conf.ReadCompacted && (!conf.TopicNames.All(topic => TopicName.Get(topic).Domain == TopicDomain.Persistent) || (conf.SubscriptionType != SubType.Exclusive && conf.SubscriptionType != SubType.Failover)))
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive or failover persistent subscriptions");
+            }
+
+            if (conf.ConsumerEventListener != null && conf.SubscriptionType != SubType.Failover)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Active consumer listener is only supported for failover subscription");
+            }
+
+            if (conf.TopicsPattern != null)
+            {
+                // If use topicsPattern, we should not use topic(), and topics() method.
+                if (conf.TopicNames.Count == 0)
+                {
+                    throw new ArgumentException("Topic names list must be null when use topicsPattern");
+                }
+                return PatternTopicSubscribe(conf, schema, interceptors);
+            }
+            else if (conf.TopicNames.Count == 1)
+            {
+                return SingleTopicSubscribe(conf, schema, interceptors);
+            }
+            else
+            {
+                return MultiTopicSubscribe(conf, schema, interceptors);
+            }
         }
 
+        private Consumer<T> SingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        {
+            var schemaClone = _client.AskFor<PreProcessedSchema<T>>(new PreProcessSchemaBeforeSubscribe<T>(schema, conf.SingleTopic));
+            return DoSingleTopicSubscribeAsync(conf, schemaClone.Schema, interceptors);
+        }
+
+        private Consumer<T> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        {
+            var queue = new ConsumerQueueCollections<T>();
+            string topic = conf.SingleTopic;
+            try
+            {
+                var metadata = GetPartitionedTopicMetadata(topic);
+                if (_actorSystem.Log.IsDebugEnabled)
+                {
+                    _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
+                }
+                IActorRef consumer;
+                if (metadata.Partitions > 0)
+                {
+                    consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.CreatePartitionedConsumer(_client, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, _clientConfigurationData, queue));
+                    consumer.Tell(new Subscribe(topic, metadata.Partitions));
+                }
+                else
+                {
+                    int partitionIndex = TopicName.GetPartitionIndex(topic);
+                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.NewConsumer(_client, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
+                }
+                _client.Tell(new AddConsumer(consumer));
+                return new Consumer<T>(consumer, queue, schema, conf);
+            }
+            catch(Exception e)
+            {
+                _actorSystem.Log.Error($"[{topic}] Failed to get partitioned topic metadata: {e}");
+                throw;
+            }
+        }
+
+        private Consumer<T> MultiTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        {
+            var queue = new ConsumerQueueCollections<T>();
+            var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(_client, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
+            
+            _client.Tell(new AddConsumer(consumer));
+            return new Consumer<T>(consumer, queue, schema, conf);
+        }
+
+        private Consumer<T> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        {
+            var queue = new ConsumerQueueCollections<T>();
+            string regex = conf.TopicsPattern.ToString();
+            var subscriptionMode = ConvertRegexSubscriptionMode(conf.RegexSubscriptionMode);
+            TopicName destination = TopicName.Get(regex);
+            NamespaceName namespaceName = destination.NamespaceObject;
+            try
+            {
+               var topics = _client.AskFor<GetTopicsOfNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).Response.Topics;
+                if (_actorSystem.Log.IsDebugEnabled)
+                {
+                    _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
+                    topics.ForEach(topicName => _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
+                }
+                IList<string> topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
+                topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
+                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, _client, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
+
+                _client.Tell(new AddConsumer(consumer));
+                return new Consumer<T>(consumer, queue, schema, conf);
+            }
+            catch(Exception e)
+            {
+                _actorSystem.Log.Warning($"[{namespaceName}] Failed to get topics under namespace");
+                throw;
+            }
+        }
+        private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
+        {
+            var pattern = topicsPattern.ToString().Contains("://") ? new Regex(Regex.Split(topicsPattern.ToString(), @"\:\/\/")[1]) : topicsPattern;
+
+            return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
+        }
+        private Mode? ConvertRegexSubscriptionMode(RegexSubscriptionMode regexSubscriptionMode)
+        {
+            switch (regexSubscriptionMode)
+            {
+                case RegexSubscriptionMode.PersistentOnly:
+                    return Mode.Persistent;
+                case RegexSubscriptionMode.NonPersistentOnly:
+                    return Mode.NonPersistent;
+                case RegexSubscriptionMode.AllTopics:
+                    return Mode.All;
+                default:
+                    return null;
+            }
+        }
+        private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
+        {
+
+            var metadataFuture = new TaskCompletionSource<PartitionedTopicMetadata>();
+
+            try
+            {
+                TopicName topicName = TopicName.Get(topic);
+                var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
+                Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
+                GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, metadataFuture);
+            }
+            catch (ArgumentException e)
+            {
+                throw new PulsarClientException.InvalidConfigurationException(e.Message);
+            }
+            return metadataFuture.Task.Result;
+        }
+
+        private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
+        {
+            try
+            {
+                var o = _client.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+                future.SetResult(o);
+            }
+            catch(Exception e)
+            {
+                long nextDelay = Math.Min(backoff.Next(), remainingTime);
+                bool isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
+                if (nextDelay <= 0 || isLookupThrottling)
+                {
+                    future.SetException(e);
+                }
+                Task.Run(async()=> 
+                {
+                    _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
+                    remainingTime -= nextDelay;
+                    await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
+                    GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
+                });
+            }
+        }
         public Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder)
         {
             var conf = producerConfigBuilder.Build();
@@ -165,11 +417,11 @@ namespace SharpPulsar.User
                     {
                         if (sc.SchemaInfo != null)
                         {
-                            autoProduceBytesSchema.Schema = (ISchema<T>)(object)ISchema<T>.GetSchema(sc.SchemaInfo);
+                            autoProduceBytesSchema.Schema = (ISchema<T>)ISchema<T>.GetSchema(sc.SchemaInfo);
                         }
                         else
                         {
-                            autoProduceBytesSchema.Schema = (ISchema<T>)(object)ISchema<T>.Bytes;
+                            autoProduceBytesSchema.Schema = (ISchema<T>)ISchema<T>.Bytes;
                         }
                     }
                     return CreateProducer(topic, conf, schema, interceptors);

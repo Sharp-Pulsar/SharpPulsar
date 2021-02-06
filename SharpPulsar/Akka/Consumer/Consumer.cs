@@ -8,7 +8,6 @@ using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Schema;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl;
 using SharpPulsar.Auth;
 using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;

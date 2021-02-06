@@ -13,6 +13,7 @@ using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utils;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
+using BAMCIS.Util.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -34,71 +35,71 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-	public sealed class ConsumerConfigBuilder
+    public sealed class ConsumerConfigBuilder<T>
 	{
-		private ConsumerConfigurationData _conf = new ConsumerConfigurationData();
+		private ConsumerConfigurationData<T> _conf = new ConsumerConfigurationData<T>();
 
 		private  long _minAckTimeoutMillis = 1000;
 		private  long _minTickTimeMillis = 100;
 		private  long _defaultAckTimeoutMillisForDeadLetter = 30000L;
 
-        public ConsumerConfigurationData ConsumerConfigurationData 
+        public ConsumerConfigurationData<T> ConsumerConfigurationData 
         {
             get
             {
 				if (string.IsNullOrWhiteSpace(_conf.SubscriptionName))
 					throw new ArgumentException("Subscription Name is required!");
                 if (_conf.StartMessageId == null)
-                    _conf.StartMessageId = MessageIdFields.Latest;
+                    _conf.StartMessageId = IMessageId.Latest;
 				if (_conf.ConsumerEventListener == null || _conf.MessageListener == null)
 					throw new ArgumentException("ConsumerEventListener and MessageListener cannot be null");
                 return _conf;
             }
         }
-		public ConsumerConfigBuilder LoadConf(IDictionary<string, object> config)
+		public ConsumerConfigBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
-			_conf = (ConsumerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
+			_conf = (ConsumerConfigurationData<T>)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
         }
 
-        public ConsumerConfigBuilder MaxPendingChuckedMessage(int max)
+        public ConsumerConfigBuilder<T> MaxPendingChuckedMessage(int max)
         {
             _conf.MaxPendingChuckedMessage = max;
             return this;
         }
 
-        public ConsumerConfigBuilder ExpireTimeOfIncompleteChunkedMessageMillis(long expireTime)
+        public ConsumerConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessageMillis(long expireTime)
         {
             _conf.ExpireTimeOfIncompleteChunkedMessageMillis = expireTime;
             return this;
         }
 
-        public ConsumerConfigBuilder AutoAckOldestChunkedMessageOnQueueFull(bool autoAck)
+        public ConsumerConfigBuilder<T> AutoAckOldestChunkedMessageOnQueueFull(bool autoAck)
         {
             _conf.AutoAckOldestChunkedMessageOnQueueFull = autoAck;
             return this;
         }
-        private ConsumerConfigBuilder BatchConsume(bool batchConsume)
+        private ConsumerConfigBuilder<T> BatchConsume(bool batchConsume)
         {
             _conf.BatchConsume = batchConsume;
             return this;
         }
-        private ConsumerConfigBuilder BatchConsumeTimeout(long batchConsumeTimeoutMs)
+        private ConsumerConfigBuilder<T> BatchConsumeTimeout(long batchConsumeTimeoutMs)
         {
             _conf.BatchConsumeTimeout = batchConsumeTimeoutMs;
             return this;
         }
-		public ConsumerConfigBuilder SetConsumptionType(ConsumptionType type)
+		public ConsumerConfigBuilder<T> SetConsumptionType(ConsumptionType type)
         {
             _conf.ConsumptionType = type;
             return this;
         }
-		public ConsumerConfigBuilder ForceTopicCreation(bool force)
+		public ConsumerConfigBuilder<T> ForceTopicCreation(bool force)
         {
             _conf.ForceTopicCreation = force;
             return this;
         }
-		public ConsumerConfigBuilder Topic(params string[] topicNames)
+		public ConsumerConfigBuilder<T> Topic(params string[] topicNames)
 		{
 			if(topicNames == null || topicNames.Length < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
@@ -113,17 +114,17 @@ namespace SharpPulsar.Configuration
 			return this;
 		}
         
-		public ConsumerConfigBuilder StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
+		public ConsumerConfigBuilder<T> StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
         {
             _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
             return this;
         }
-		public ConsumerConfigBuilder StartMessageId(IMessageId startMessageId)
+		public ConsumerConfigBuilder<T> StartMessageId(IMessageId startMessageId)
         {
             _conf.StartMessageId = startMessageId;
             return this;
         }
-		public ConsumerConfigBuilder Topics(IList<string> topicNames)
+		public ConsumerConfigBuilder<T> Topics(IList<string> topicNames)
 		{
             if (topicNames == null || topicNames.Count < 1)
                 throw new ArgumentException("Passed in topicNames should not be null or empty.");
@@ -138,7 +139,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder TopicsPattern(Regex topicsPattern)
+		public ConsumerConfigBuilder<T> TopicsPattern(Regex topicsPattern)
 		{
 			if(_conf.TopicsPattern != null)
                 throw new ArgumentException("Pattern has already been set.");
@@ -146,7 +147,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder TopicsPattern(string topicsPattern)
+		public ConsumerConfigBuilder<T> TopicsPattern(string topicsPattern)
 		{
 			if(_conf.TopicsPattern != null)
                 throw new ArgumentException("Pattern has already been set.");
@@ -154,7 +155,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder SubscriptionName(string subscriptionName)
+		public ConsumerConfigBuilder<T> SubscriptionName(string subscriptionName)
 		{
 			if(string.IsNullOrWhiteSpace(subscriptionName))
                 throw new NullReferenceException("SubscriptionName cannot be blank");
@@ -162,58 +163,58 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder AckTimeout(long ackTimeoutMs)
+		public ConsumerConfigBuilder<T> AckTimeout(long ackTimeoutMs, TimeUnit timeUnit)
 		{
 			Condition.CheckArgument(ackTimeoutMs == 0 ||  ackTimeoutMs >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
-			_conf.AckTimeoutMillis = ackTimeoutMs;
+			_conf.AckTimeoutMillis = timeUnit.ToMilliseconds(ackTimeoutMs);
             return this;
 		}
 
-		public ConsumerConfigBuilder AckTimeoutTickTime(long tickTimeMs)
+		public ConsumerConfigBuilder<T> AckTimeoutTickTime(long tickTimeMs, TimeUnit timeUnit)
 		{
             Condition.CheckArgument(tickTimeMs < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
-			_conf.TickDurationMillis = tickTimeMs;
+			_conf.TickDurationMillis = timeUnit.ToMilliseconds(tickTimeMs);
             return this;
 		}
 
-		public ConsumerConfigBuilder NegativeAckRedeliveryDelay(long redeliveryDelayMs)
+		public ConsumerConfigBuilder<T> NegativeAckRedeliveryDelay(long redeliveryDelayMs, TimeUnit timeUnit)
         {
             Condition.CheckArgument(redeliveryDelayMs >= 0, "redeliveryDelay needs to be >= 0");
-            _conf.NegativeAckRedeliveryDelayMs = redeliveryDelayMs;
+            _conf.NegativeAckRedeliveryDelayMs = timeUnit.ToMilliseconds(redeliveryDelayMs);
             return this;
 		}
 
-		public ConsumerConfigBuilder SubscriptionType(CommandSubscribe.SubType subscriptionType)
+		public ConsumerConfigBuilder<T> SubscriptionType(CommandSubscribe.SubType subscriptionType)
 		{
 			_conf.SubscriptionType = subscriptionType;
             return this;
 		}
 
-		public ConsumerConfigBuilder MessageListener(IMessageListener messageListener)
+		public ConsumerConfigBuilder<T> MessageListener(IMessageListener<T> messageListener)
 		{
 			_conf.MessageListener = messageListener;
             return this;
 		}
 
-		public ConsumerConfigBuilder ConsumerEventListener(IConsumerEventListener consumerEventListener)
+		public ConsumerConfigBuilder<T> ConsumerEventListener(IConsumerEventListener consumerEventListener)
 		{
 			_conf.ConsumerEventListener = consumerEventListener;
             return this;
 		}
 
-		public ConsumerConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public ConsumerConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
             return this;
 		}
 
-		public ConsumerConfigBuilder CryptoFailureAction(ConsumerCryptoFailureAction? action)
+		public ConsumerConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction? action)
         {
             if (action != null) _conf.CryptoFailureAction = (ConsumerCryptoFailureAction) action;
 			return this;
 		}
 
-		public ConsumerConfigBuilder ReceiverQueueSize(int receiverQueueSize)
+		public ConsumerConfigBuilder<T> ReceiverQueueSize(int receiverQueueSize)
 		{
 			if(receiverQueueSize < 0)
                 throw new ArgumentException("receiverQueueSize needs to be >= 0");
@@ -221,14 +222,14 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder AcknowledgmentGroupTime(long delayMs)
+		public ConsumerConfigBuilder<T> AcknowledgmentGroupTime(long delayMs)
         {
             Condition.CheckArgument(delayMs >= 0, "acknowledgmentGroupTime needs to be >= 0");
-            _conf.AcknowledgementsGroupTimeMs = delayMs;
+            _conf.AcknowledgementsGroupTimeMicros = delayMs;
             return this;
 		}
 
-		public ConsumerConfigBuilder ConsumerName(string consumerName)
+		public ConsumerConfigBuilder<T> ConsumerName(string consumerName)
 		{
 			if(string.IsNullOrWhiteSpace(consumerName))
                 throw new ArgumentException("consumerName cannot be blank");
@@ -236,7 +237,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder PriorityLevel(int priorityLevel)
+		public ConsumerConfigBuilder<T> PriorityLevel(int priorityLevel)
 		{
 			if(priorityLevel < 0)
                 throw new ArgumentException("priorityLevel needs to be >= 0");
@@ -244,7 +245,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder Property(string key, string value)
+		public ConsumerConfigBuilder<T> Property(string key, string value)
         {
             if(string.IsNullOrWhiteSpace(key) && string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("property key/value cannot be blank");
@@ -252,7 +253,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder Properties(IDictionary<string, string> properties)
+		public ConsumerConfigBuilder<T> Properties(IDictionary<string, string> properties)
 		{
 			if(properties.Count == 0)
                 throw new ArgumentException("properties cannot be empty");
@@ -268,7 +269,7 @@ namespace SharpPulsar.Configuration
 			return this;
 		}
 
-		public ConsumerConfigBuilder MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
+		public ConsumerConfigBuilder<T> MaxTotalReceiverQueueSizeAcrossPartitions(int maxTotalReceiverQueueSizeAcrossPartitions)
 		{
 			if(maxTotalReceiverQueueSizeAcrossPartitions < 0)
                 throw new ArgumentException("maxTotalReceiverQueueSizeAcrossPartitions needs to be >= 0");
@@ -276,13 +277,13 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder ReadCompacted(bool readCompacted)
+		public ConsumerConfigBuilder<T> ReadCompacted(bool readCompacted)
 		{
 			_conf.ReadCompacted = readCompacted;
             return this;
 		}
 
-		public ConsumerConfigBuilder PatternAutoDiscoveryPeriod(int periodInSeconds)
+		public ConsumerConfigBuilder<T> PatternAutoDiscoveryPeriod(int periodInSeconds)
 		{
 			if(periodInSeconds< 0)
                 throw new ArgumentException("periodInMinutes needs to be >= 0");
@@ -290,36 +291,40 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
+		public ConsumerConfigBuilder<T> SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
 		{
 			_conf.SubscriptionInitialPosition = subscriptionInitialPosition;
             return this;
 		}
 
-		public ConsumerConfigBuilder SubscriptionTopicsMode(RegexSubscriptionMode mode)
+		public ConsumerConfigBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode mode)
 		{
 			_conf.RegexSubscriptionMode = mode;
             return this;
 		}
-
-		public ConsumerConfigBuilder ReplicateSubscriptionState(bool replicateSubscriptionState)
+		public ConsumerConfigBuilder<T> SubscriptionMode(SubscriptionMode subscriptionMode)
+		{
+			_conf.SubscriptionMode = subscriptionMode;
+			return this;
+		}
+		public ConsumerConfigBuilder<T> ReplicateSubscriptionState(bool replicateSubscriptionState)
 		{
 			_conf.ReplicateSubscriptionState = replicateSubscriptionState;
             return this;
 		}
 
-		public ConsumerConfigBuilder Intercept(params IConsumerInterceptor[] interceptors)
+		public ConsumerConfigBuilder<T> Intercept(params IConsumerInterceptor<T>[] interceptors)
 		{
 			if (_conf.Interceptors == null)
 			{
-                _conf.Interceptors = new List<IConsumerInterceptor>();
+                _conf.Interceptors = new List<IConsumerInterceptor<T>>();
 			}
 
-            _conf.Interceptors.AddRange(new List<IConsumerInterceptor>(interceptors));
+            _conf.Interceptors.AddRange(new List<IConsumerInterceptor<T>>(interceptors));
             return this;
 		}
 
-		public ConsumerConfigBuilder DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
+		public ConsumerConfigBuilder<T> DeadLetterPolicy(DeadLetterPolicy deadLetterPolicy)
 		{
 			if (deadLetterPolicy != null)
 			{
@@ -331,20 +336,40 @@ namespace SharpPulsar.Configuration
 			}
             return this;
 		}
+		public ConsumerConfigBuilder<T> EnableRetry(bool retryEnable)
+		{
+			_conf.RetryEnable = retryEnable;
+			return this;
+		}
+		public ConsumerConfigBuilder<T> EnableBatchIndexAcknowledgment(bool batchIndexAcknowledgmentEnabled)
+		{
+			_conf.BatchIndexAckEnabled = batchIndexAcknowledgmentEnabled;
+			return this;
+		}
 
-		public ConsumerConfigBuilder AutoUpdatePartitions(bool autoUpdate)
+		public ConsumerConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessage(long duration, TimeUnit unit)
+		{
+			_conf.ExpireTimeOfIncompleteChunkedMessageMillis = unit.ToMilliseconds(duration);
+			return null;
+		}
+		public ConsumerConfigBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeUnit unit)
+		{
+			_conf.SetAutoUpdatePartitionsIntervalSeconds(interval, unit);
+			return this;
+		}
+		public ConsumerConfigBuilder<T> AutoUpdatePartitions(bool autoUpdate)
 		{
 			_conf.AutoUpdatePartitions = autoUpdate;
             return this;
 		}
 
-		public ConsumerConfigBuilder StartMessageIdInclusive()
+		public ConsumerConfigBuilder<T> StartMessageIdInclusive()
 		{
 			_conf.ResetIncludeHead = true;
             return this;
 		}
 
-		public ConsumerConfigBuilder BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
+		public ConsumerConfigBuilder<T> BatchReceivePolicy(BatchReceivePolicy batchReceivePolicy)
 		{
 			if(batchReceivePolicy == null)
                 throw new ArgumentException("batchReceivePolicy must not be null.");
@@ -359,7 +384,7 @@ namespace SharpPulsar.Configuration
 		}
 
 
-        public ConsumerConfigBuilder KeySharedPolicy(KeySharedPolicy keySharedPolicy)
+        public ConsumerConfigBuilder<T> KeySharedPolicy(KeySharedPolicy keySharedPolicy)
 		{
 			keySharedPolicy.Validate();
 			_conf.KeySharedPolicy = keySharedPolicy;

@@ -107,7 +107,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Consumer<sbyte[]> NewConsumer(ConsumerConfigurationData<sbyte[]> conf);
+		Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf);
 
 		/// <summary>
 		/// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -135,7 +135,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigurationData<T> conf);
+		Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.

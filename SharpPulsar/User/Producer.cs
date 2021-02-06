@@ -15,7 +15,6 @@ namespace SharpPulsar.User
 {
     public class Producer<T> : IProducer<T>
     {
-        //Either of three: Pattern, Multi, Single topic consumer
         private readonly IActorRef _producerActor;
         private readonly ProducerQueueCollection<T> _queue;
         private readonly ISchema<T> _schema;
