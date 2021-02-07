@@ -87,8 +87,8 @@ namespace SharpPulsar
 			try
 			{
 				var obj = _state.Client.AskFor(new GetConnection(_state.Topic));
-				if(obj is IActorRef cnx)
-					_connection.Tell(new ConnectionOpened(cnx));
+				if(obj is GetConnectionResponse cnx)
+					_connection.Tell(new ConnectionOpened(cnx.ClientCnx));
 				else
                 {
 					var ex = (Failure)obj;

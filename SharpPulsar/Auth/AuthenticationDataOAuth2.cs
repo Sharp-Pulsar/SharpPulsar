@@ -6,6 +6,7 @@ using System.Text;
 using IdentityModel.Client;
 using SharpPulsar.Exceptions;
 using Nito.AsyncEx;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

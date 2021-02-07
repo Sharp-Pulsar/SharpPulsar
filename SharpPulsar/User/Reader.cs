@@ -1,5 +1,12 @@
-﻿using BAMCIS.Util.Concurrent;
+﻿using Akka.Actor;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Reader;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Queues;
 using System;
 using System.Threading.Tasks;
 
@@ -7,68 +14,76 @@ namespace SharpPulsar.User
 {
     public class Reader<T> : IReader<T>
     {
-        public string Topic => throw new NotImplementedException();
+        private readonly ISchema<T> _schema;
+        private readonly ReaderConfigurationData<T> _conf;
+        private readonly IActorRef _readerActor;
+        private readonly ConsumerQueueCollections<T> _queue;
 
-        public bool Connected => throw new NotImplementedException();
-
-        public ValueTask CloseAsync()
+        public Reader(IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ReaderConfigurationData<T> conf)
         {
-            throw new NotImplementedException();
+            _readerActor = consumer;
+            _queue = queue;
+            _schema = schema;
+            _conf = conf;
         }
+        public string Topic => _readerActor.AskFor<string>(GetTopic.Instance);
 
-        public void Dispose()
+        public bool Connected => _readerActor.AskFor<bool>(IsConnected.Instance);
+
+
+        public void Stop()
         {
-            throw new NotImplementedException();
+            _readerActor.GracefulStop(TimeSpan.FromSeconds(5));
         }
 
         public bool HasMessageAvailable()
         {
-            throw new NotImplementedException();
-        }
-
-        public ValueTask<bool> HasMessageAvailableAsync()
-        {
-            throw new NotImplementedException();
+            _readerActor.Tell(Messages.Consumer.HasMessageAvailable.Instance);
+            return _queue.HasMessageAvailable.Take();
         }
 
         public bool HasReachedEndOfTopic()
         {
-            throw new NotImplementedException();
+            _readerActor.Tell(Messages.Consumer.HasReachedEndOfTopic.Instance);
+            return _queue.HasReachedEndOfTopic.Take();
         }
 
         public IMessage<T> ReadNext()
         {
-            throw new NotImplementedException();
+            _readerActor.Tell(Messages.Reader.ReadNext.Instance);
+            if (_queue.Receive.TryTake(out var message, 1000))
+            {
+                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                return message;
+            }
+            return null;
         }
 
         public IMessage<T> ReadNext(int timeout, TimeUnit unit)
         {
-            throw new NotImplementedException();
+            _readerActor.Tell(new ReadNextTimeout(timeout, unit));
+            if (_queue.Receive.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
+            {
+                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                return message;
+            }                
+            return null;
         }
-
-        public ValueTask<IMessage<T>> ReadNextAsync()
-        {
-            throw new NotImplementedException();
-        }
-
         public void Seek(IMessageId messageId)
         {
-            throw new NotImplementedException();
+            _readerActor.Tell(new SeekMessageId(messageId));
+            if (_queue.SeekException.TryTake(out var msg, 1000))
+                if (msg.Exception != null)
+                    throw msg.Exception;
         }
 
         public void Seek(long timestamp)
         {
-            throw new NotImplementedException();
+            _readerActor.Tell(new SeekTimestamp(timestamp));
+            if (_queue.SeekException.TryTake(out var msg, 1000))
+                if (msg.Exception != null)
+                    throw msg.Exception;
         }
 
-        public Task SeekAsync(IMessageId messageId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SeekAsync(long timestamp)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

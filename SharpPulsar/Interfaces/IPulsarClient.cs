@@ -175,7 +175,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// @since 2.0.0 </returns>
-		Reader<sbyte[]> NewReader(ReaderConfigurationData<sbyte[]> conf);
+		Reader<sbyte[]> NewReader(ReaderConfigBuilder<sbyte[]> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
@@ -217,7 +217,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigurationData<T> conf);
+		Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
 
 		/// <summary>
 		/// Update the service URL this client is using.

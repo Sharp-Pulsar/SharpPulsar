@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Api;
+using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -97,12 +98,6 @@ namespace SharpPulsar.Auth
 		public void Start()
 		{
 			// noop
-		}
-
-		public ValueTask DisposeAsync()
-		{
-			Dispose();
-			return new ValueTask(Task.CompletedTask);
 		}
 
 		public void Dispose()

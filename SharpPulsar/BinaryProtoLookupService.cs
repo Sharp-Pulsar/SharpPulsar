@@ -75,9 +75,9 @@ namespace SharpPulsar
 		}
 		private void Receives()
         {
-			Receive<UpdateService>(u =>
+			Receive<UpdateServiceUrl>(u =>
 			{
-				UpdateServiceUrl(u.Service);
+				UpdateServiceUrl(u.ServiceUrl);
 
 			});
 			Receive<GetBroker>(b => 
@@ -86,7 +86,7 @@ namespace SharpPulsar
                 var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
 				var pulsarClient = _pulsarClient;
 				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				GetBroker(b.TopicName, requestid, connection, b.ReplyTo);
+				GetBroker(b.TopicName, requestid, connection, Sender);
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{

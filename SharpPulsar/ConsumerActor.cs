@@ -170,7 +170,7 @@ namespace SharpPulsar
 			_tokenSource = new CancellationTokenSource();
 			_log = Context.GetLogger();
 			_client = client;
-			ConsumerId = client.AskFor<long>(NewProducerId.Instance);
+			ConsumerId = client.AskFor<long>(NewConsumerId.Instance);
 			_subscriptionMode = conf.SubscriptionMode;
 			_startMessageId = startMessageId != null ? new BatchMessageId((MessageId) startMessageId) : null;
 			_initialStartMessageId = _startMessageId;
@@ -488,7 +488,7 @@ namespace SharpPulsar
 			});
 			Receive<HasMessageAvailable>(_ => {
 				var has = HasMessageAvailable();
-				Sender.Tell(has);
+				ConsumerQueue.HasMessageAvailable.Add(has);
 			});
 			Receive<GetNumMessagesInQueue>(_ => {
 				var num = NumMessagesInQueue();

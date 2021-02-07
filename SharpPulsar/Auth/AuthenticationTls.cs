@@ -1,4 +1,6 @@
 ﻿using SharpPulsar.Api;
+using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;

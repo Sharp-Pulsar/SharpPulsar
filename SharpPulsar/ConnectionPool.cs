@@ -1,6 +1,8 @@
 ﻿using Akka.Actor;
 using Akka.Event;
+using Akka.Util.Internal;
 using SharpPulsar.Configuration;
+using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
 using System;
 using System.Collections.Generic;
@@ -43,6 +45,10 @@ namespace SharpPulsar
 			Receive<CleanupConnection>(c =>
 			{
 				CleanupConnection(c.Address, c.ConnectionKey);
+			});
+			Receive<CloseAllConnections>(_ =>
+			{
+				CloseAllConnections();
 			});
 			Receive<ReleaseConnection>(c =>
 			{
@@ -133,7 +139,16 @@ namespace SharpPulsar
 				map.Remove(connectionKey);
 			}
 		}
-
+		private void CloseAllConnections()
+		{
+			_pool.Values.ForEach(map =>
+			{
+				map.Values.ForEach(c =>
+				{
+					c.GracefulStop(TimeSpan.FromSeconds(1));
+				});
+			});
+		}
 		private void ReleaseConnection(IActorRef cnx)
 		{
 			if (_maxConnectionsPerHosts == 0)

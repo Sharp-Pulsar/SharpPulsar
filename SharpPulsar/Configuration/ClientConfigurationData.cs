@@ -75,6 +75,8 @@ namespace SharpPulsar.Configuration
 		public string AuthPluginClassName { get; set; }
 		public string ListenerName { get; set; }
 
+		public IDictionary<string, string> AuthParamMap { get; set; }
+
 		public string AuthParams { get; set; }
         private bool _useTls;
         private string _serviceUrl;

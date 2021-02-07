@@ -2,9 +2,14 @@
 using Microsoft.Extensions.Logging;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Interfaces.ISchema;
+using Akka.Event;
+using Akka.Actor;
+using SharpPulsar.Extension;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Cache;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -33,17 +38,19 @@ namespace SharpPulsar.Impl.Schema.Generic
 	/// </summary>
 	public class MultiVersionSchemaInfoProvider : ISchemaInfoProvider
 	{
-
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger(typeof(MultiVersionSchemaInfoProvider));
+		private readonly ILoggingAdapter _log;
+		private readonly IActorRef _lookup;
 
 		private readonly TopicName _topicName;
 
-		private readonly ConcurrentDictionary<BytesSchemaVersion, ISchemaInfo> _cache = new ConcurrentDictionary<BytesSchemaVersion, ISchemaInfo>();
+		private readonly Cache<BytesSchemaVersion, ISchemaInfo> _cache = new Cache<BytesSchemaVersion, ISchemaInfo>(TimeSpan.FromMinutes(30), 1000);
 
 		
-		public MultiVersionSchemaInfoProvider(TopicName topicName)
+		public MultiVersionSchemaInfoProvider(TopicName topicName, ILoggingAdapter log, IActorRef lookup)
 		{
 			_topicName = topicName;
+			_log = log;
+			_lookup = lookup;
 		}
 
 		public ISchemaInfo GetSchemaByVersion(sbyte[] schemaVersion)
@@ -51,13 +58,13 @@ namespace SharpPulsar.Impl.Schema.Generic
 			try
             {
                 if (schemaVersion != null)
-                    return _cache[BytesSchemaVersion.Of(schemaVersion)];
+                    return _cache.Get(BytesSchemaVersion.Of(schemaVersion));
                 return null;
 
             }
-			catch (System.Exception e)
+			catch (Exception e)
 			{
-				Log.LogError("Can't get schema for topic {} schema version {}", _topicName.ToString(), StringHelper.NewString(schemaVersion), e);
+				_log.Error($"Can't get schema for topic {_topicName} schema version {StringHelper.NewString(schemaVersion)}: {e}");
 				return null; 
 			}
 		}
@@ -66,15 +73,15 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			get
 			{
-				//var lkup = PulsarClient.Lookup.GetSchema(_topicName);
-                //return new ValueTask<ISchemaInfo>(lkup.Result);
-                return null;
+				var sch = _lookup.AskFor<GetSchemaInfoResponse>(new GetSchema(_topicName)).SchemaInfo;
+				_cache.Put(BytesSchemaVersion.Of(sch.Schema), sch);
+				return sch;
             }
 		}
 
 		public virtual string TopicName => _topicName.LocalName;
 
-        private SchemaInfo LoadSchema(sbyte[] schemaVersion)
+        private ISchemaInfo LoadSchema(sbyte[] schemaVersion)
 		{
 			 return null;
 		}

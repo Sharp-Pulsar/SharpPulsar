@@ -249,7 +249,7 @@ namespace SharpPulsar.User
             catch(Exception e)
             {
                 _actorSystem.Log.Warning($"[{namespaceName}] Failed to get topics under namespace");
-                throw;
+                throw e;
             }
         }
         private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
@@ -342,16 +342,92 @@ namespace SharpPulsar.User
             }
         }
 
-        public Reader<sbyte[]> NewReader(ReaderConfigurationData<sbyte[]> conf)
+        public Reader<sbyte[]> NewReader(ReaderConfigBuilder<sbyte[]> conf)
         {
-            throw new NotImplementedException();
+            return NewReader(ISchema<object>.Bytes, conf);
         }
 
-        public Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigurationData<T> conf)
+        public Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
         {
-            throw new NotImplementedException();
+            var conf = confBuilder.ReaderConfigurationData;
+            if (conf.TopicName == null)
+            {
+                throw new ArgumentException("Topic name must be set on the reader builder");
+            }
+
+            if (conf.StartMessageId != null && conf.StartMessageFromRollbackDurationInSec > 0 || conf.StartMessageId == null && conf.StartMessageFromRollbackDurationInSec <= 0)
+            {
+                throw new ArgumentException("Start message id or start message from roll back must be specified but they cannot be specified at the same time");
+            }
+
+            if (conf.StartMessageFromRollbackDurationInSec > 0)
+            {
+                conf.StartMessageId = IMessageId.Earliest;
+            }
+
+            return CreateReader(conf, schema);
+        }
+        private Reader<T> CreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+        {
+            var schemaClone = _client.AskFor<PreProcessedSchema<T>>(new PreProcessSchemaBeforeSubscribe<T>(schema, conf.TopicName));
+            return DoCreateReader(conf, schemaClone.Schema);
         }
 
+        private Reader<T> DoCreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+        {
+            var state = _client.AskFor<int>(GetClientState.Instance);
+            if (state != 0)
+            { 
+                throw new PulsarClientException.AlreadyClosedException("Client already closed");
+            }
+
+            if (conf == null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined");
+            }
+
+            string topic = conf.TopicName;
+
+            if (!TopicName.IsValid(topic))
+            {
+                throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
+            }
+
+            if (conf.StartMessageId == null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Invalid startMessageId");
+            }
+
+            try
+            {
+                var queue = new ConsumerQueueCollections<T>();
+                var metadata = GetPartitionedTopicMetadata(topic);
+                if (_actorSystem.Log.IsDebugEnabled)
+                {
+                    _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
+                }
+                if (metadata.Partitions > 0 && MultiTopicsConsumer<T>.IsIllegalMultiTopicsMessageId(conf.StartMessageId))
+                {
+                    throw new PulsarClientException("The partitioned topic startMessageId is illegal");
+                }
+                IActorRef reader;
+                if (metadata.Partitions > 0)
+                {
+                    reader = _actorSystem.ActorOf(MultiTopicsReader<T>.Prop(_client, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));                    
+                }
+                else
+                {
+                    reader = _actorSystem.ActorOf(ReaderActor<T>.Prop(_client, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
+                }
+                _client.Tell(new AddConsumer(reader));
+                return new Reader<T>(reader, queue, schema, conf);
+            }
+            catch(Exception ex)
+            {
+                _actorSystem.Log.Warning($"[{topic}] Failed to get create topic reader: {ex}");
+                throw ex;
+            }
+        }
         public TransactionBuilder NewTransaction()
         {
             return new TransactionBuilder(_actorSystem, _client, _transactionCoordinatorClient, _actorSystem.Log);
@@ -364,7 +440,7 @@ namespace SharpPulsar.User
 
         public void UpdateServiceUrl(string serviceUrl)
         {
-            throw new NotImplementedException();
+            _client.Tell(new UpdateServiceUrl(serviceUrl));
         }
         #region private matters
         private Producer<sbyte[]> CreateProducer(ProducerConfigurationData conf)

@@ -106,7 +106,10 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-
+		public static Props Prop(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+        {
+			return Props.Create(() => new MultiTopicsReader<T>(client, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
+        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;

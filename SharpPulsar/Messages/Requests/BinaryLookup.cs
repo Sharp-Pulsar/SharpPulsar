@@ -13,12 +13,10 @@ namespace SharpPulsar.Messages.Requests
 {
     public sealed class GetBroker
     {
-        public IActorRef ReplyTo{ get; }
         public TopicName TopicName { get; }
-        public GetBroker(TopicName topicName, IActorRef replyTo)
+        public GetBroker(TopicName topicName)
         {
             TopicName = topicName;
-            ReplyTo = replyTo;
         }
     }
     public sealed class GetBrokerRedirect

@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Api;
+using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
 using static SharpPulsar.Exceptions.PulsarClientException;
