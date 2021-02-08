@@ -45,18 +45,10 @@ namespace SharpPulsar.User
             _actorSystem = actorSystem;
             _transactionCoordinatorClient = transactionCoordinatorClient;
         }
-        public bool Closed => throw new NotImplementedException();
-
-        public void Close()
+        public void ReloadLookUp()
         {
-            throw new NotImplementedException();
+            _client.Tell(Messages.Client.ReloadLookUp.Instance);
         }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
-
         public IList<string> GetPartitionsForTopic(string topic)
         {
             throw new NotImplementedException();
@@ -288,7 +280,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException(e.Message);
             }
-            return metadataFuture.Task.Result;
+            return Task.Run(() => metadataFuture.Task).Result; 
         }
 
         private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)

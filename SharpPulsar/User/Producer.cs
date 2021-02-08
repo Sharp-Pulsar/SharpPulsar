@@ -70,7 +70,7 @@ namespace SharpPulsar.User
 
             return new TypedMessageBuilder<T>(_producerActor, _schema, txn);
         }
-
+        internal IActorRef GetProducer => _producerActor;
         public SentMessage<T> Send(T message)
         {
             NewMessage().Value(message).Send();

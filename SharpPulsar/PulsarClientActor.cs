@@ -4,6 +4,7 @@ using BAMCIS.Util.Concurrent;
 using SharpPulsar.Auth;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
@@ -18,6 +19,7 @@ using SharpPulsar.Transaction;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -69,10 +71,8 @@ namespace SharpPulsar
 
 		private IActorRef _tcClient;
 		
-		public PulsarClientActor(ClientConfigurationData conf, IAdvancedScheduler eventLoopGroup, IActorRef cnxPool, IActorRef txnCoordinator)
+		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator)
 		{
-			
-			this._eventLoopGroup = eventLoopGroup;
 			Auth = conf;
 			_conf = conf;
 			_clientClock = conf.Clock;
@@ -96,6 +96,7 @@ namespace SharpPulsar
 			Receive<AddConsumer>(m => _consumers.Add(m.Consumer));
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
+			Receive<ReloadLookUp>(_ => ReloadLookUp());
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
 			Receive<GetConnection>(m => {
 				var cnx = GetConnection(m.Topic);
@@ -106,6 +107,10 @@ namespace SharpPulsar
 			Receive<GetSchema>(s => {
 				var response = _lookup.AskFor(s);
 				Sender.Tell(response);
+			});
+			Receive<GetPartitionsForTopic>(s => {
+				var topics = GetPartitionsForTopic(s.TopicName);
+				Sender.Tell(new PartitionsForTopic(topics));
 			});
 			Receive<PreProcessSchemaBeforeSubscribe<object>>(p=> {
                 try
@@ -121,13 +126,13 @@ namespace SharpPulsar
 			});
 		}
 
-		public static Props Prop(ClientConfigurationData conf, IAdvancedScheduler eventLoopGroup, IActorRef cnxPool, IActorRef txnCoordinator)
+		public static Props Prop(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator)
         {
-			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl) || eventLoopGroup == null)
+			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
 			}
-			return Props.Create(() => new PulsarClientActor(conf, eventLoopGroup, cnxPool, txnCoordinator));
+			return Props.Create(() => new PulsarClientActor(conf, cnxPool, txnCoordinator));
         }
 		private ClientConfigurationData Auth
 		{
@@ -160,8 +165,7 @@ namespace SharpPulsar
         {
 			_lookup.GracefulStop(TimeSpan.FromSeconds(1));
 			_cnxPool.GracefulStop(TimeSpan.FromSeconds(1));
-			_timer.stop();
-			_conf.Authentication.Dispose();
+			_conf.Authentication = null;
 			base.PostStop();
         }
 
@@ -180,13 +184,6 @@ namespace SharpPulsar
 			var broker = _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
 			var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			return connection;
-		}
-
-		/// <summary>
-		/// visible for pulsar-functions * </summary>
-		public virtual Timer Timer()
-		{
-			return _timer;
 		}
 
 		private long NewProducerId()
@@ -212,82 +209,77 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual void ReloadLookUp()
+		private void ReloadLookUp()
 		{
-			if (_conf.ServiceUrl.StartsWith("http"))
-			{
-				_lookup = new HttpLookupService(_conf, _eventLoopGroup);
-			}
-			else
-			{
-				_lookup = new BinaryProtoLookupService(this, _conf.ServiceUrl, _conf.ListenerName, _conf.UseTls, _externalExecutorProvider.Executor);
-			}
+			_lookup = Context.ActorOf(BinaryProtoLookupService.Prop(Self, _cnxPool, _conf.ServiceUrl, _conf.ListenerName, _conf.UseTls, _conf.MaxLookupRequest, _conf.OperationTimeoutMs));
+
 		}
 
-		public virtual CompletableFuture<int> GetNumberOfPartitions(string topic)
+		private int GetNumberOfPartitions(string topic)
 		{
-			return GetPartitionedTopicMetadata(topic).thenApply(metadata => metadata.partitions);
+			return GetPartitionedTopicMetadata(topic).Partitions;
 		}
 
-		public virtual CompletableFuture<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
+		private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
 		{
 
-			CompletableFuture<PartitionedTopicMetadata> metadataFuture = new CompletableFuture<PartitionedTopicMetadata>();
+			var metadataFuture = new TaskCompletionSource<PartitionedTopicMetadata>();
 
 			try
 			{
 				TopicName topicName = TopicName.Get(topic);
-				AtomicLong opTimeoutMs = new AtomicLong(_conf.OperationTimeoutMs);
-				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs.get() * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
+				var opTimeoutMs = _conf.OperationTimeoutMs;
+				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
 				GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, metadataFuture);
 			}
-			catch (System.ArgumentException e)
+			catch (ArgumentException e)
 			{
-				return FutureUtil.FailedFuture(new PulsarClientException.InvalidConfigurationException(e.Message));
+				throw new PulsarClientException.InvalidConfigurationException(e.Message);
 			}
-			return metadataFuture;
+			return Task.Run(() => metadataFuture.Task).Result;
 		}
-
-		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, AtomicLong remainingTime, CompletableFuture<PartitionedTopicMetadata> future)
+		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
 		{
-			_lookup.GetPartitionedTopicMetadata(topicName).thenAccept(future.complete).exceptionally(e =>
+			try
 			{
-				long nextDelay = Math.Min(backoff.Next(), remainingTime.get());
-				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Cause) || e.Cause is PulsarClientException.TooManyRequestsException || e.Cause is PulsarClientException.AuthenticationException;
+				var o = _lookup.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+				future.SetResult(o);
+			}
+			catch (Exception e)
+			{
+				long nextDelay = Math.Min(backoff.Next(), remainingTime);
+				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
 				if (nextDelay <= 0 || isLookupThrottling)
 				{
-					future.completeExceptionally(e);
-					return null;
+					future.SetException(e);
 				}
-			((ScheduledExecutorService)_externalExecutorProvider.Executor).schedule(() =>
-			{
-				_log.warn("[topic: {}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {} ms", topicName, nextDelay);
-				remainingTime.addAndGet(-nextDelay);
-				GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
-			}, nextDelay, TimeUnit.MILLISECONDS);
-				return null;
-			});
+				Task.Run(async () =>
+				{
+					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
+					remainingTime -= nextDelay;
+					await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
+					GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
+				});
+			}
 		}
 
 		private IList<string> GetPartitionsForTopic(string topic)
 		{
-			return GetPartitionedTopicMetadata(topic).thenApply(metadata =>
+			var metadata = GetPartitionedTopicMetadata(topic);
+			if (metadata.Partitions > 0)
 			{
-				if (metadata.partitions > 0)
+				TopicName topicName = TopicName.Get(topic);
+				IList<string> partitions = new List<string>(metadata.Partitions);
+				for (int i = 0; i < metadata.Partitions; i++)
 				{
-					TopicName topicName = TopicName.Get(topic);
-					IList<string> partitions = new List<string>(metadata.partitions);
-					for (int i = 0; i < metadata.partitions; i++)
-					{
-						partitions.Add(topicName.GetPartition(i).ToString());
-					}
-					return partitions;
+					partitions.Add(topicName.GetPartition(i).ToString());
 				}
-				else
-				{
-					return Collections.singletonList(topic);
-				}
-			});
+				return partitions;
+			}
+			else
+			{
+				return new List<string> { topic };
+			}
 		}
 
 

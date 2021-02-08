@@ -252,18 +252,6 @@ namespace SharpPulsar.Interfaces
 		/// @since 2.3.0 </returns>
 		IList<string> GetPartitionsForTopic(string topic);
 
-		/// <summary>
-		/// Close the PulsarClient and release all the resources.
-		/// 
-		/// <para>This operation will trigger a graceful close of all producer, consumer and reader instances that
-		/// this client has currently active. That implies that close will block and wait until all pending producer
-		/// send requests are persisted.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <exception cref="PulsarClientException">
-		///             if the close operation fails </exception>
-		void Close();
 
 		/// <summary>
 		/// Perform immediate shutdown of PulsarClient.
@@ -277,13 +265,6 @@ namespace SharpPulsar.Interfaces
 		///             if the forceful shutdown fails </exception>
 		void Shutdown();
 
-		/// <summary>
-		/// Return internal state of the client. Useful if you want to check that current client is valid. </summary>
-		/// <returns> true is the client has been closed </returns>
-		/// <seealso cref= #shutdown() </seealso>
-		/// <seealso cref= #close() </seealso>
-		/// <seealso cref= #closeAsync() </seealso>
-		bool Closed {get;}
 
 		/// <summary>
 		/// Create a transaction builder that can be used to configure

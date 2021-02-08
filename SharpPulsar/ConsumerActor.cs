@@ -4,6 +4,7 @@ using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Akka;
+using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Akka.Network;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
@@ -32,6 +33,7 @@ using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Transaction;
+using SharpPulsar.User;
 using SharpPulsar.Utils;
 using System;
 using System.Buffers;
@@ -968,7 +970,11 @@ namespace SharpPulsar
 				{
 					if(_retryLetterProducer == null)
 					{
-						_retryLetterProducer = _client.AskFor<IActorRef>(new NewProducerActor<T>(Schema, _deadLetterPolicy.RetryLetterTopic,false, false));
+						var client = new PulsarClient(_client, _clientConfigurationData, Context.System, null);
+						var builder = new ProducerConfigBuilder<T>();
+						builder.Topic(_deadLetterPolicy.RetryLetterTopic);
+						builder.EnableBatching(false);
+						_retryLetterProducer = client.NewProducer(Schema, builder).GetProducer;
 					}
 				}
 				catch(Exception e)
@@ -1026,7 +1032,11 @@ namespace SharpPulsar
 							{
 								if(_deadLetterProducer == null)
 								{
-									_deadLetterProducer = _client.AskFor<IActorRef>(new NewProducerActor<T>(Schema, _deadLetterPolicy.RetryLetterTopic, false, false)); ;
+									var client = new PulsarClient(_client, _clientConfigurationData, Context.System, null);
+									var builder = new ProducerConfigBuilder<T>();
+									builder.Topic(_deadLetterPolicy.DeadLetterTopic);
+									builder.EnableBatching(false);
+									_deadLetterProducer = client.NewProducer(Schema, builder).GetProducer;
 								}
 							}
 							catch(Exception e)
@@ -2156,7 +2166,11 @@ namespace SharpPulsar
 				{
 					try
 					{
-						_deadLetterProducer = _client.AskFor<IActorRef>(new NewProducerActor<T>(Schema, _deadLetterPolicy.DeadLetterTopic, false, false));
+						var client = new PulsarClient(_client, _clientConfigurationData, Context.System, null);
+						var builder = new ProducerConfigBuilder<T>();
+						builder.Topic(_deadLetterPolicy.DeadLetterTopic);
+						builder.EnableBatching(false);
+						_deadLetterProducer = client.NewProducer(Schema, builder).GetProducer;
 					}
 					catch(Exception e)
 					{
