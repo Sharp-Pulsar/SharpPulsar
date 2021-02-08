@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Akka.Network;
-using System;
+﻿using System;
 using System.Buffers;
 
 namespace SharpPulsar.Helpers

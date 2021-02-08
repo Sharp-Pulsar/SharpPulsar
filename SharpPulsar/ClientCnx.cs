@@ -323,7 +323,16 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received a message from the server: {msg}");
 			}
-			var message = new MessageReceived((long)msg.ConsumerId, new MessageIdReceived((long)msg.MessageId.ledgerId, (long)msg.MessageId.entryId, msg.MessageId.BatchIndex, msg.MessageId.Partition, msg.MessageId.AckSets), frame.Slice(commandSize + 4), (int)msg.RedeliveryCount, this);
+            MessageIdData id = new MessageIdData
+            {
+                AckSets = msg.AckSets,
+                ledgerId = msg.MessageId.ledgerId,
+                entryId = msg.MessageId.entryId,
+                Partition = msg.MessageId.Partition,
+                BatchSize = msg.MessageId.BatchSize,
+                BatchIndex = msg.MessageId.BatchIndex
+            };
+            var message = new MessageReceived(frame.Slice(commandSize + 4), id, (int)msg.RedeliveryCount);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);

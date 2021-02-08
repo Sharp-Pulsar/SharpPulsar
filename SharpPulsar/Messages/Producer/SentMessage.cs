@@ -21,6 +21,14 @@ namespace SharpPulsar.Messages.Producer
             else
                 return new SentMessage<T>(op.Msgs);
         }
+        public static SentMessage<T> Create(IList<OpSendMsg<T>> op)
+        {
+            return new SentMessage<T>(op.Select(x=> x.Msg).ToList());
+        }
+        public static SentMessage<T> Create(Message<T> message)
+        {
+            return new SentMessage<T>(message);
+        }
         public static SentMessage<T> CreateError(OpSendMsg<T> op, Exception exception)
         {            
             if (op.Msg != null)

@@ -461,6 +461,12 @@ namespace SharpPulsar
 			Receive<GetConsumerName>(m => {
 				Push(ConsumerQueue.ConsumerName, ConsumerName);
 			});
+			Receive<ActiveConsumerChanged>(m => {
+				ActiveConsumerChanged(m.IsActive);
+			});
+			Receive<MessageReceived>(m => {
+				MessageReceived(m.MessageId, m.RedeliveryCount, m.Data, _cnx);
+			});
 			Receive<GetSubscription>(m => {
 				Push(ConsumerQueue.Subscription, Subscription);
 			});
@@ -1386,10 +1392,10 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual void MessageReceived(MessageIdData messageId, int redeliveryCount, IList<long> ackSet, byte[] headersAndPayload, IActorRef cnx)
+		private void MessageReceived(MessageIdData messageId, int redeliveryCount, ReadOnlySequence<byte> data, IActorRef cnx)
 		{
-			var data = new ReadOnlySequence<byte>(headersAndPayload);
-			if(_log.IsDebugEnabled)
+			IList<long> ackSet = messageId.AckSets;
+			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
 			}
@@ -1404,7 +1410,7 @@ namespace SharpPulsar
 			MessageMetadata msgMetadata;
 			try
 			{
-				msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
+				msgMetadata = Commands.ParseMessageMetadata(data.ToArray());
 			}
 			catch(Exception)
 			{
