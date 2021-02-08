@@ -9,6 +9,7 @@ namespace PulsarAdmin.Models
     using Newtonsoft.Json;
     using System.Collections.Generic;
     using SharpPulsar.Api;
+    using SharpPulsar.Common;
 
     /// <summary>
     /// The configuration data for a cluster

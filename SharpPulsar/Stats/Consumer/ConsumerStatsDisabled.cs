@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using Akka.Actor;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Stats.Consumer.Api;
 
 /// <summary>
@@ -32,7 +34,7 @@ namespace SharpPulsar.Stats.Consumer
 
 		internal static readonly IConsumerStatsRecorder Instance = new ConsumerStatsDisabled();
 
-		public void UpdateNumMsgsReceived(Message message)
+		public void UpdateNumMsgsReceived<T>(Message<T> message)
 		{
 			// Do nothing
 		}
@@ -87,7 +89,11 @@ namespace SharpPulsar.Stats.Consumer
 
 		public virtual ICancelable StatTimeout => null;
 
-		public void Reset()
+        public int? MsgNumInReceiverQueue => throw new NotImplementedException();
+
+        public IDictionary<long, int> MsgNumInSubReceiverQueue => throw new NotImplementedException();
+
+        public void Reset()
 		{
 			// do nothing
 		}
@@ -96,6 +102,11 @@ namespace SharpPulsar.Stats.Consumer
 		{
 			// do nothing
 		}
-	}
+
+        public void UpdateNumMsgsReceived<T>(IMessage<T> message)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 }

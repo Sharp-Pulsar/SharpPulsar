@@ -1,5 +1,4 @@
-﻿
-namespace SharpPulsar.Akka.Sql.Message
+﻿namespace SharpPulsar.Sql.Message
 {
     public interface IQueryResponse
     {

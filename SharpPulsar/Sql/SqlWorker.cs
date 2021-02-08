@@ -1,12 +1,12 @@
 ﻿using System;
 using Akka.Actor;
 using SharpPulsar.Messages;
-using SharpPulsar.Akka.Sql.Client;
-using SharpPulsar.Akka.Sql.Message;
+using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
 
-namespace SharpPulsar.Akka.Sql
+namespace SharpPulsar.Sql
 {
-    public class SqlWorker: ReceiveActor
+    public class SqlWorker : ReceiveActor
     {
         public SqlWorker(IActorRef pulsarManager)
         {
@@ -20,7 +20,7 @@ namespace SharpPulsar.Akka.Sql
 
         protected override void Unhandled(object message)
         {
-            
+
         }
 
         private void Query(SqlSession query)

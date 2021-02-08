@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
 
-namespace SharpPulsar.Akka.Function
+namespace SharpPulsar.Function
 {
     public class FunctionManager : ReceiveActor
     {
@@ -13,7 +13,7 @@ namespace SharpPulsar.Akka.Function
                 Context.ActorOf(FunctionCoordinator.Prop(s, pulsarManager), an);
             }
 
-            Receive((InternalCommands.Function q) =>
+            Receive((Messages.Function q) =>
             {
                 var an = Regex.Replace(q.BrokerDestinationUrl, @"[^\w\d]", "");
                 var actor = Context.Child(an);

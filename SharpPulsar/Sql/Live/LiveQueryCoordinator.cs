@@ -2,7 +2,7 @@
 using Akka.Actor;
 using SharpPulsar.Messages;
 
-namespace SharpPulsar.Akka.Sql.Live
+namespace SharpPulsar.Sql.Live
 {
     public class LiveQueryCoordinator : ReceiveActor
     {
@@ -23,7 +23,7 @@ namespace SharpPulsar.Akka.Sql.Live
 
         public static Props Prop(IActorRef pulsar)
         {
-            return Props.Create(()=> new LiveQueryCoordinator(pulsar));
+            return Props.Create(() => new LiveQueryCoordinator(pulsar));
         }
     }
 }

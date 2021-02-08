@@ -1,5 +1,4 @@
-﻿
-namespace SharpPulsar.Akka.Function
+﻿namespace SharpPulsar.Function
 {
     public enum FunctionCommand
     {

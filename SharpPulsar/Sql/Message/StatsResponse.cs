@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using SharpPulsar.Presto;
+﻿using SharpPulsar.Presto;
 
-namespace SharpPulsar.Akka.Sql.Message
+namespace SharpPulsar.Sql.Message
 {
-    public class StatsResponse:IQueryResponse
+    public class StatsResponse : IQueryResponse
     {
         public StatsResponse(StatementStats stats)
         {

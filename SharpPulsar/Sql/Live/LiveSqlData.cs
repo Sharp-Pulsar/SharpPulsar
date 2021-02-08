@@ -1,6 +1,6 @@
-﻿using SharpPulsar.Akka.Sql.Message;
+﻿using SharpPulsar.Sql.Message;
 
-namespace SharpPulsar.Akka.Sql.Live
+namespace SharpPulsar.Sql.Live
 {
     public sealed class LiveSqlData
     {

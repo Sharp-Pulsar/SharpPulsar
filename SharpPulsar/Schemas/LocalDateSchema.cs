@@ -1,5 +1,4 @@
 ﻿using NodaTime;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;

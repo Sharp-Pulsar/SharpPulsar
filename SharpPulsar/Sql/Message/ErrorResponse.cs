@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using SharpPulsar.Presto;
 
-namespace SharpPulsar.Akka.Sql.Message
+namespace SharpPulsar.Sql.Message
 {
-    public class ErrorResponse: IQueryResponse
+    public class ErrorResponse : IQueryResponse
     {
         public ErrorResponse(QueryError error, List<PrestoWarning> warnings)
         {

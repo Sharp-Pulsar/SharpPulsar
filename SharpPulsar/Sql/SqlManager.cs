@@ -1,9 +1,9 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
 using SharpPulsar.Messages;
-using SharpPulsar.Akka.Sql.Live;
+using SharpPulsar.Sql.Live;
 
-namespace SharpPulsar.Akka.Sql
+namespace SharpPulsar.Sql
 {
     public class SqlManager : ReceiveActor, IWithUnboundedStash
     {
@@ -28,10 +28,10 @@ namespace SharpPulsar.Akka.Sql
 
             });
         }
-        
+
         protected override void Unhandled(object message)
         {
-            
+
         }
 
         public static Props Prop(IActorRef pulsarManager)

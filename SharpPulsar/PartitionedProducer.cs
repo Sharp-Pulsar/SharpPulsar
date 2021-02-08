@@ -16,13 +16,11 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Precondition;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Producer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -136,7 +134,7 @@ namespace SharpPulsar
 					{
 						State.ConnectionState = HandlerState.State.Ready;
 						_log.Info($"[{Topic}] Created partitioned producer");
-						ProducerQueue.PartitionedProducer.Add(new ProducerCreation(new ProducerResponse(ProducerName)));
+						ProducerQueue.PartitionedProducer.Add(prod);
 					}
 					else
 					{
@@ -226,23 +224,21 @@ namespace SharpPulsar
 			base.PostStop();
         }
 
-		public override IProducerStatsRecorder Stats
+		public override IProducerStats Stats
 		{
 			get
 			{
-				lock(this)
+				if (_stats == null)
 				{
-					if(_stats == null)
-					{
-						return null;
-					}
-					_stats.Reset();
-					for(int i = 0; i < _topicMetadata.NumPartitions(); i++)
-					{
-						_stats.UpdateCumulativeStats(_producers[i].Stats);
-					}
-					return _stats;
+					return null;
 				}
+				_stats.Reset();
+				for (int i = 0; i < _topicMetadata.NumPartitions(); i++)
+				{
+					var stats = _producers[i].AskFor<IProducerStats>(GetStats.Instance);
+					_stats.UpdateCumulativeStats(stats);
+				}
+				return _stats;
 			}
 		}
 

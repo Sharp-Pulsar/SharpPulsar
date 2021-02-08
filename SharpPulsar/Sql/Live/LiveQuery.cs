@@ -1,10 +1,10 @@
 ﻿using System;
 using Akka.Actor;
 using SharpPulsar.Messages;
-using SharpPulsar.Akka.Sql.Client;
-using SharpPulsar.Akka.Sql.Message;
+using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
 
-namespace SharpPulsar.Akka.Sql.Live
+namespace SharpPulsar.Sql.Live
 {
     public class LiveQuery : ReceiveActor
     {
@@ -53,13 +53,13 @@ namespace SharpPulsar.Akka.Sql.Live
             finally
             {
                 _executeCancelable = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_sql.Frequency), Execute);
-                
+
             }
             _runCount++;
         }
         protected override void Unhandled(object message)
         {
-            
+
         }
 
         protected override void PostStop()

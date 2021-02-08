@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 using static SharpPulsar.Exceptions.PulsarClientException;
 
 /// <summary>

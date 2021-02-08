@@ -21,23 +21,23 @@ using SharpPulsar.Presto.Facebook.Type;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace SharpPulsar.Akka.Sql.Client
+namespace SharpPulsar.Sql.Client
 {
 
-	public class Query
-	{
+    public class Query
+    {
         private readonly IStatementClient _client;
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _handler;
 
-		public Query(IStatementClient client, IActorRef handler, ILoggingAdapter log)
-		{
-			_client = Condition.RequireNonNull(client, "client is null");
+        public Query(IStatementClient client, IActorRef handler, ILoggingAdapter log)
+        {
+            _client = Condition.RequireNonNull(client, "client is null");
             _log = log;
             _handler = handler;
         }
 
-		public string SetCatalog => _client.SetCatalog;
+        public string SetCatalog => _client.SetCatalog;
 
         public string SetSchema => _client.SetSchema;
 
@@ -56,56 +56,56 @@ namespace SharpPulsar.Akka.Sql.Client
         public virtual bool ClearTransactionId => _client.ClearTransactionId;
 
         public bool MaterializeQueryOutput()
-		{
+        {
             ProcessInitialStatusUpdates();
 
-			// if running or finished
-			if (_client.Running || (_client.Finished && _client.FinalStatusInfo().Error == null))
-			{
-				IQueryStatusInfo results = _client.Running ? _client.CurrentStatusInfo() : _client.FinalStatusInfo();
-				if (results.UpdateType != null)
-				{
-					RenderUpdate(results);
-				}
-				else if (results.Columns == null)
-				{
-					_log.Error($"Query {results.Id} has no columns\n");
-					return false;
-				}
-				else
-				{
-					RenderResults(results.Columns.ToList());
-				}
-			}
-			_handler.Tell(new StatsResponse(_client.Stats));
-			Condition.CheckArgument(!_client.Running);
+            // if running or finished
+            if (_client.Running || _client.Finished && _client.FinalStatusInfo().Error == null)
+            {
+                IQueryStatusInfo results = _client.Running ? _client.CurrentStatusInfo() : _client.FinalStatusInfo();
+                if (results.UpdateType != null)
+                {
+                    RenderUpdate(results);
+                }
+                else if (results.Columns == null)
+                {
+                    _log.Error($"Query {results.Id} has no columns\n");
+                    return false;
+                }
+                else
+                {
+                    RenderResults(results.Columns.ToList());
+                }
+            }
+            _handler.Tell(new StatsResponse(_client.Stats));
+            Condition.CheckArgument(!_client.Running);
 
             // Print all warnings at the end of the query
-            _log.Debug(JsonSerializer.Serialize(_client.FinalStatusInfo().Warnings, new JsonSerializerOptions{WriteIndented = true}));
+            _log.Debug(JsonSerializer.Serialize(_client.FinalStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
 
-			if (_client.ClientAborted)
-			{
-				_log.Debug("Query aborted by user");
-				return false;
-			}
-			if (_client.ClientError)
-			{
-				_log.Debug("Query is gone (server restarted?)");
-				return false;
-			}
+            if (_client.ClientAborted)
+            {
+                _log.Debug("Query aborted by user");
+                return false;
+            }
+            if (_client.ClientError)
+            {
+                _log.Debug("Query is gone (server restarted?)");
+                return false;
+            }
 
-			if (_client.FinalStatusInfo().Error != null || _client.FinalStatusInfo().Warnings != null)
+            if (_client.FinalStatusInfo().Error != null || _client.FinalStatusInfo().Warnings != null)
             {
                 var error = _client.FinalStatusInfo().Error;
                 var warning = _client.FinalStatusInfo().Warnings;
-				_log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions{WriteIndented = true}));
-				
+                _log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions { WriteIndented = true }));
+
                 _handler.Tell(new ErrorResponse(error, warning?.ToList()));
                 return false;
-			}
+            }
 
-			return true;
-		}
+            return true;
+        }
 
         private void RenderResults(List<Column> columns)
         {
@@ -116,10 +116,10 @@ namespace SharpPulsar.Akka.Sql.Client
                 {
                     var currentData = cData.ToList();
                     for (var i = 0; i < currentData.Count; i++)
-					{
-						var data = new Dictionary<string, object>();
+                    {
+                        var data = new Dictionary<string, object>();
                         var metadata = new Dictionary<string, object>();
-						var value = currentData[i];
+                        var value = currentData[i];
                         for (var y = 0; y < value.Count; y++)
                         {
                             var col = columns[y].Name;
@@ -133,44 +133,44 @@ namespace SharpPulsar.Akka.Sql.Client
                             {
                                 data[col] = value[y];
                             }
-						}
-						_handler.Tell(new DataResponse(data, metadata));
-					}
-				}
+                        }
+                        _handler.Tell(new DataResponse(data, metadata));
+                    }
+                }
                 _client.Advance();
-			}
+            }
         }
-		private void ProcessInitialStatusUpdates()
-		{
-			while (_client.Running && (_client.CurrentData().Data == null))
-			{
-				_log.Debug(JsonSerializer.Serialize(_client.CurrentStatusInfo().Warnings, new JsonSerializerOptions{WriteIndented = true}));
-				_client.Advance();
-			}
-			IList<PrestoWarning> warnings;
-			if (_client.Running)
-			{
-				warnings = _client.CurrentStatusInfo().Warnings;
-			}
-			else
-			{
-				warnings = _client.FinalStatusInfo().Warnings;
-			}
-			_log.Debug(JsonSerializer.Serialize(warnings, new JsonSerializerOptions{WriteIndented = true}));
-		}
+        private void ProcessInitialStatusUpdates()
+        {
+            while (_client.Running && _client.CurrentData().Data == null)
+            {
+                _log.Debug(JsonSerializer.Serialize(_client.CurrentStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
+                _client.Advance();
+            }
+            IList<PrestoWarning> warnings;
+            if (_client.Running)
+            {
+                warnings = _client.CurrentStatusInfo().Warnings;
+            }
+            else
+            {
+                warnings = _client.FinalStatusInfo().Warnings;
+            }
+            _log.Debug(JsonSerializer.Serialize(warnings, new JsonSerializerOptions { WriteIndented = true }));
+        }
 
-		private void RenderUpdate(IQueryStatusInfo results)
-		{
-			string status = results.UpdateType;
-			if (results.UpdateCount != null)
-			{
-				long count = results.UpdateCount.Value;
-				var row = count != 1? "s" : string.Empty;
-				status += $": {count} row{row}";
-			}
-			_log.Info(status);
-		}
-		
-	}
+        private void RenderUpdate(IQueryStatusInfo results)
+        {
+            string status = results.UpdateType;
+            if (results.UpdateCount != null)
+            {
+                long count = results.UpdateCount.Value;
+                var row = count != 1 ? "s" : string.Empty;
+                status += $": {count} row{row}";
+            }
+            _log.Info(status);
+        }
+
+    }
 
 }

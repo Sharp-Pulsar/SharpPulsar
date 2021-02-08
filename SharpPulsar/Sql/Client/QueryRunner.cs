@@ -19,66 +19,66 @@ using Akka.Event;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto;
 
-namespace SharpPulsar.Akka.Sql.Client
+namespace SharpPulsar.Sql.Client
 {
 
-	public class QueryRunner
-	{
-		private ClientSession _session;
-		private readonly HttpClient _httpClient;
+    public class QueryRunner
+    {
+        private ClientSession _session;
+        private readonly HttpClient _httpClient;
 
-		public QueryRunner(ClientSession session, string accessToken, string user, string password)
-		{
-			_session = Condition.RequireNonNull(session, "session is null");
-			_httpClient = new HttpClient();
-			SetupBasicAuth(_httpClient, session, user, password);
-			SetupTokenAuth(_httpClient, session, accessToken);
-		}
+        public QueryRunner(ClientSession session, string accessToken, string user, string password)
+        {
+            _session = Condition.RequireNonNull(session, "session is null");
+            _httpClient = new HttpClient();
+            SetupBasicAuth(_httpClient, session, user, password);
+            SetupTokenAuth(_httpClient, session, accessToken);
+        }
 
-		public ClientSession Session
-		{
-			get => _session;
+        public ClientSession Session
+        {
+            get => _session;
             set => _session = Condition.RequireNonNull(value, "session is null");
         }
 
-		
+
         public Query StartQuery(string query, IActorRef output, ILoggingAdapter log)
-		{
-			return new Query(StartInternalQuery(_session, query), output, log);
-		}
+        {
+            return new Query(StartInternalQuery(_session, query), output, log);
+        }
 
-		public IStatementClient StartInternalQuery(string query)
-		{
-			return StartInternalQuery(ClientSession.StripTransactionId(_session), query);
-		}
+        public IStatementClient StartInternalQuery(string query)
+        {
+            return StartInternalQuery(ClientSession.StripTransactionId(_session), query);
+        }
 
-		private IStatementClient StartInternalQuery(ClientSession session, string query)
-		{
+        private IStatementClient StartInternalQuery(ClientSession session, string query)
+        {
             return StatementClientFactory.NewStatementClient(_httpClient, session, query);
-		}
+        }
 
-		public void Dispose()
-		{
-			_httpClient.Dispose();
-		}
+        public void Dispose()
+        {
+            _httpClient.Dispose();
+        }
 
-		private static void SetupBasicAuth(HttpClient client, ClientSession session, string user, string password)
-		{
-			if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(password))
-			{
+        private static void SetupBasicAuth(HttpClient client, ClientSession session, string user, string password)
+        {
+            if (!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(password))
+            {
                 Condition.CheckArgument(session.Server.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase), "Authentication using username/password requires HTTPS to be enabled");
-				client.BasicAuth(user, password);
-			}
-		}
+                client.BasicAuth(user, password);
+            }
+        }
 
-		private static void SetupTokenAuth(HttpClient client, ClientSession session, string accessToken)
-		{
-			if (!string.IsNullOrWhiteSpace(accessToken))
-			{
-				Condition.CheckArgument(session.Server.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase), "Authentication using an access token requires HTTPS to be enabled");
-				client.TokenAuth(accessToken);
-			}
-		}
-	}
+        private static void SetupTokenAuth(HttpClient client, ClientSession session, string accessToken)
+        {
+            if (!string.IsNullOrWhiteSpace(accessToken))
+            {
+                Condition.CheckArgument(session.Server.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase), "Authentication using an access token requires HTTPS to be enabled");
+                client.TokenAuth(accessToken);
+            }
+        }
+    }
 
 }

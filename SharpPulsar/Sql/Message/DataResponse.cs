@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace SharpPulsar.Akka.Sql.Message
+namespace SharpPulsar.Sql.Message
 {
-    public sealed class DataResponse: IQueryResponse
+    public sealed class DataResponse : IQueryResponse
     {
         public DataResponse(Dictionary<string, object> data, Dictionary<string, object> metadata)
         {

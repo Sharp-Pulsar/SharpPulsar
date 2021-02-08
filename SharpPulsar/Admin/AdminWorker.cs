@@ -18,7 +18,7 @@ namespace SharpPulsar.Admin
             _pulsarManager = pulsarManager;
             _adminRestapi = new PulsarAdminRESTAPI(server, new HttpClient(), true);
             //Receive((Action<InternalCommands.Admin>)this.Handle);
-            Receive<InternalCommands.Admin>(Handle);
+            Receive<Messages.Admin>(Handle);
         }
 
         protected override void Unhandled(object message)
@@ -26,7 +26,7 @@ namespace SharpPulsar.Admin
 
         }
 
-        private void Handle(InternalCommands.Admin admin)
+        private void Handle(Messages.Admin admin)
         {
             try
             {

@@ -1,5 +1,4 @@
 ﻿using AvroSchemaGenerator;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas.Reader;

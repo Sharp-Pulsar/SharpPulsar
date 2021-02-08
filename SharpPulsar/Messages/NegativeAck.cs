@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Api;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages
 {

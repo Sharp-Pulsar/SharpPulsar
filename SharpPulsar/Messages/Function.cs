@@ -1,5 +1,5 @@
 ﻿using System;
-using SharpPulsar.Akka.Function;
+using SharpPulsar.Function;
 
 namespace SharpPulsar.Messages
 {

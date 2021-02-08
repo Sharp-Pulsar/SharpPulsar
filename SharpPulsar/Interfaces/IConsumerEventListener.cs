@@ -19,7 +19,6 @@
 
 using System;
 using Akka.Actor;
-using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.Interfaces
 {
@@ -47,11 +46,6 @@ namespace SharpPulsar.Interfaces
 		/// <param name="partitionId">
 		///            the id of the partition that became inactive </param>
 		void BecameInactive(IActorRef consumer, int partitionId);
-
-        void Error(Exception ex);
-        void Log(string log);
-
-        void Created(CreatedConsumer createdConsumer);
     }
 
 }

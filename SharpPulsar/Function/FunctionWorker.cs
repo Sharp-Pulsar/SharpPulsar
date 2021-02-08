@@ -3,7 +3,7 @@ using System.Net.Http;
 using Akka.Actor;
 using SharpPulsar.Akka.Function.Api;
 
-namespace SharpPulsar.Akka.Function
+namespace SharpPulsar.Function
 {
     //https://www.splunk.com/en_us/blog/it/event-processing-design-patterns-with-pulsar-functions.html
     public class FunctionWorker : ReceiveActor
@@ -15,7 +15,7 @@ namespace SharpPulsar.Akka.Function
         {
             _pulsarManager = pulsarManager;
             _client = new PulsarFunctionsRESTAPIClient(server, new HttpClient());
-            Receive<InternalCommands.Function>(Handle);
+            Receive<Messages.Function>(Handle);
         }
 
         protected override void Unhandled(object message)
@@ -23,7 +23,7 @@ namespace SharpPulsar.Akka.Function
 
         }
 
-        private void Handle(InternalCommands.Function function)
+        private void Handle(Messages.Function function)
         {
             try
             {
@@ -33,47 +33,47 @@ namespace SharpPulsar.Akka.Function
                     case FunctionCommand.DeregisterFunction:
                         var tenant = function.Arguments[0].ToString();
                         var nspace = function.Arguments[1].ToString();
-                        var name =  function.Arguments[2].ToString();
+                        var name = function.Arguments[2].ToString();
                         _client.DeregisterFunctionAsync(tenant, nspace, name).GetAwaiter().GetResult();
                         function.Handler("DeregisterFunctionAsync");
                         break;
                     case FunctionCommand.GetFunctionInfo:
                         var tenant1 = function.Arguments[0].ToString();
                         var nspace1 = function.Arguments[1].ToString();
-                        var name1 =  function.Arguments[2].ToString();
+                        var name1 = function.Arguments[2].ToString();
                         response = _client.GetFunctionInfoAsync(tenant1, nspace1, name1).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionInstanceStats:
                         var tenant2 = function.Arguments[0].ToString();
                         var nspace2 = function.Arguments[1].ToString();
-                        var name2 =  function.Arguments[2].ToString();
+                        var name2 = function.Arguments[2].ToString();
                         var id = function.Arguments[3].ToString();
                         response = _client.GetFunctionInstanceStatsAsync(tenant2, nspace2, name2, id).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionInstanceStatus:
                         var tenant3 = function.Arguments[0].ToString();
                         var nspace3 = function.Arguments[1].ToString();
-                        var name3 =  function.Arguments[2].ToString();
+                        var name3 = function.Arguments[2].ToString();
                         var id1 = function.Arguments[3].ToString();
                         response = _client.GetFunctionInstanceStatusAsync(tenant3, nspace3, name3, id1).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionState:
                         var tenant4 = function.Arguments[0].ToString();
                         var nspace4 = function.Arguments[1].ToString();
-                        var name4 =  function.Arguments[2].ToString();
+                        var name4 = function.Arguments[2].ToString();
                         var key = function.Arguments[3].ToString();
                         response = _client.GetFunctionStateAsync(tenant4, nspace4, name4, key).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionStats:
                         var tenant5 = function.Arguments[0].ToString();
                         var nspace5 = function.Arguments[1].ToString();
-                        var name5 =  function.Arguments[2].ToString();
+                        var name5 = function.Arguments[2].ToString();
                         response = _client.GetFunctionStatsAsync(tenant5, nspace5, name5).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.GetFunctionStatus:
                         var tenant6 = function.Arguments[0].ToString();
                         var nspace6 = function.Arguments[1].ToString();
-                        var name6 =  function.Arguments[2].ToString();
+                        var name6 = function.Arguments[2].ToString();
                         response = _client.GetFunctionStatusAsync(tenant6, nspace6, name6).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.ListFunctions:
@@ -148,7 +148,7 @@ namespace SharpPulsar.Akka.Function
                         var topic = function.Arguments[3].ToString();
                         var value = function.Arguments[4].ToString();
                         var file1 = function.Arguments[5].ToString();
-                        response =_client.TriggerFunctionAsync(tenant16, nspace16, name15, topic, value, file1).GetAwaiter().GetResult();
+                        response = _client.TriggerFunctionAsync(tenant16, nspace16, name15, topic, value, file1).GetAwaiter().GetResult();
                         break;
                     case FunctionCommand.UpdateFunction:
                         var config1 = (FunctionConfig)function.Arguments[0];
@@ -172,7 +172,7 @@ namespace SharpPulsar.Akka.Function
                     function.Exception(e);
                     _pulsarManager.Tell(new FunctionResponse(e));
                 }
-               
+
             }
         }
         public static Props Prop(string server, IActorRef pulsarManager)

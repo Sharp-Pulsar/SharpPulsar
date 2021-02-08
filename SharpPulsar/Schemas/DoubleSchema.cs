@@ -1,8 +1,6 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Exceptions;
+﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
-using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 using System;
 using System.Linq;

@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using SharpPulsar.Api;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Producer
 {
-    public sealed class CreateProducerBroadcastGroup
+    public sealed class CreateProducerBroadcastGroup<T>
     {
-        public CreateProducerBroadcastGroup(ISchema schema, HashSet<ProducerConfigurationData> producerConfigurations, string title)
+        public CreateProducerBroadcastGroup(ISchema<T> schema, HashSet<ProducerConfigurationData> producerConfigurations, string title)
         {
             Schema = schema;
             ProducerConfigurations = producerConfigurations;
@@ -17,10 +17,10 @@ namespace SharpPulsar.Messages.Producer
         /// Group name/title
         /// </summary>
         public string Title { get; }
-        public ISchema Schema { get; }
+        public ISchema<T> Schema { get; }
         public HashSet<ProducerConfigurationData> ProducerConfigurations { get; }
     }
-    public sealed class NewProducerBroadcastGroup
+    public sealed class NewProducerBroadcastGroup<T>
     {
         /// <summary>
     /// Use case: publish single message to multiple topics!
@@ -30,7 +30,7 @@ namespace SharpPulsar.Messages.Producer
     /// <param name="configuration"></param>
     /// <param name="producerConfigurations"></param>
     /// <param name="title">Internally used by PulsarSharp to prevent duplication</param>
-        public NewProducerBroadcastGroup(ISchema schema, ClientConfigurationData configuration, ImmutableHashSet<ProducerConfigurationData> producerConfigurations, string title)
+        public NewProducerBroadcastGroup(ISchema<T> schema, ClientConfigurationData configuration, ImmutableHashSet<ProducerConfigurationData> producerConfigurations, string title)
         {
             Schema = schema;
             Configuration = configuration;
@@ -38,7 +38,7 @@ namespace SharpPulsar.Messages.Producer
             Title = title;
         }
         public string Title { get; }
-        public ISchema Schema { get; }
+        public ISchema<T> Schema { get; }
         public ClientConfigurationData Configuration { get; }
         public ImmutableHashSet<ProducerConfigurationData> ProducerConfigurations { get; }
     }

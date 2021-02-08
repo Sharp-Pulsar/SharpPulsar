@@ -108,11 +108,6 @@ namespace SharpPulsar
 			_schema = schema;
 		}
 
-        public static explicit operator Message<T>(Message<T> v)
-        {
-            throw new NotImplementedException();
-        }
-
         Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata,
 				SingleMessageMetadata singleMessageMetadata, byte[] payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema)

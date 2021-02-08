@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using SharpPulsar.Akka.Sql.Message;
+﻿using SharpPulsar.Sql.Message;
 
-namespace SharpPulsar.Akka.Sql
+namespace SharpPulsar.Sql
 {
     public sealed class SqlData
     {
