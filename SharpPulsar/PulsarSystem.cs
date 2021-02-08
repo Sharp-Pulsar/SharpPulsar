@@ -83,14 +83,14 @@ namespace SharpPulsar
             _actorSystem = ActorSystem.Create("Pulsar", config);
             
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _actorSystem.Scheduler.Advanced, _cnxPool, _tcClient), "PulsarClient");
+            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf,  _cnxPool, _tcClient), "PulsarClient");
         }
         private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             _actorSystem = actorSystem;
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _actorSystem.Scheduler.Advanced, _cnxPool, _tcClient), "PulsarClient");
+            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _cnxPool, _tcClient), "PulsarClient");
         }
         public PulsarClient NewClient() 
         {
@@ -101,6 +101,10 @@ namespace SharpPulsar
             return null;
         }
         public EventSource NewEventSource() 
+        {
+            return null;
+        }
+        public Sql NewSql() 
         {
             return null;
         }
