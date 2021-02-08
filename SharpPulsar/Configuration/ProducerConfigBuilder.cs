@@ -9,6 +9,10 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Utils;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Common;
+using SharpPulsar.Protocol.Proto;
+using BAMCIS.Util.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,27 +35,22 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 namespace SharpPulsar.Akka.Configuration
 {
 
-    public sealed class ProducerConfigBuilder
+    public class ProducerConfigBuilder<T>
 	{
 		private ProducerConfigurationData _conf = new ProducerConfigurationData();
+		private ISchema<T> _schema;
+		private List<IProducerInterceptor<T>> _interceptorList;
 
-        public ProducerConfigurationData ProducerConfigurationData
+		public virtual ProducerConfigurationData Build()
         {
-            get
-            {
-                if (_conf.Schema == null)
-                    throw new ArgumentException("Hey, we need the schema!");
-				if (_conf.ProducerEventListener == null)
-                    throw new ArgumentException("ProducerEventListener cannot be null");
-                return _conf;
-            }
+			return _conf;
         } 
-		public ProducerConfigBuilder LoadConf(IDictionary<string, object> config)
+		public ProducerConfigBuilder<T> LoadConf(IDictionary<string, object> config)
 		{
 			_conf = (ProducerConfigurationData)ConfigurationDataUtils.LoadData(config, _conf);
             return this;
         }
-        public ProducerConfigBuilder EventListener(IProducerEventListener listener)
+        public ProducerConfigBuilder<T> EventListener(IProducerEventListener listener)
         {
             if (listener == null)
                 throw new ArgumentException("listener is null");
@@ -63,14 +62,14 @@ namespace SharpPulsar.Akka.Configuration
 		/// </summary>
 		/// <param name="max"></param>
 		/// <returns></returns>
-        public ProducerConfigBuilder MaxMessageSize(int max)
+        public ProducerConfigBuilder<T> MaxMessageSize(int max)
         {
             if (max < 1)
                 throw new ArgumentException("max should be > 0");
             _conf.MaxMessageSize = max;
             return this;
         }
-		public ProducerConfigBuilder Topic(string topicName)
+		public ProducerConfigBuilder<T> Topic(string topicName)
 		{
 			if(string.IsNullOrWhiteSpace(topicName))
 				throw new ArgumentException("topicName cannot be blank or null");
@@ -78,82 +77,82 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ProducerConfigBuilder ProducerName(string producerName)
+		public ProducerConfigBuilder<T> ProducerName(string producerName)
 		{
 			_conf.ProducerName = producerName;
             return this;
 		}
-		public ProducerConfigBuilder EnableBatching(bool enableBatching)
+		public ProducerConfigBuilder<T> EnableBatching(bool enableBatching)
 		{
 			_conf.BatchingEnabled = enableBatching;
             return this;
 		}
-		public ProducerConfigBuilder BatchBuilder(IBatcherBuilder builder)
+		public ProducerConfigBuilder<T> BatchBuilder(IBatcherBuilder builder)
 		{
 			_conf.BatcherBuilder = builder;
             return this;
 		}
-		public ProducerConfigBuilder BatchingMaxPublishDelay(long batchingMaxPublishDelayMs)
+		public ProducerConfigBuilder<T> BatchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit)
         {
-            _conf.BatchingMaxPublishDelayMillis = (long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(batchingMaxPublishDelayMs);
-            return this;
+			_conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
+			return this;
 		}
 		
-		public ProducerConfigBuilder BatchingMaxMessages(int batchingMaxMessages)
+		public ProducerConfigBuilder<T> BatchingMaxMessages(int batchingMaxMessages)
         {
             _conf.BatchingMaxMessages = batchingMaxMessages;
             return this;
 		}
 
-		public ProducerConfigBuilder SendTimeout(long sendTimeoutMs)
+		public ProducerConfigBuilder<T> SendTimeout(long sendTimeoutMs)
 		{
 			_conf.SetSendTimeoutMs(sendTimeoutMs);
             return this;
 		}
 
-		public ProducerConfigBuilder MaxPendingMessages(int maxPendingMessages)
+		public ProducerConfigBuilder<T> MaxPendingMessages(int maxPendingMessages)
 		{
 			_conf.MaxPendingMessages = maxPendingMessages;
             return this;
 		}
 
-		public ProducerConfigBuilder MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
+		public ProducerConfigBuilder<T> MaxPendingMessagesAcrossPartitions(int maxPendingMessagesAcrossPartitions)
 		{
 			_conf.MaxPendingMessagesAcrossPartitions = maxPendingMessagesAcrossPartitions;
             return this;
 		}
 
-		public ProducerConfigBuilder EnableChunking(bool chunk)
+		public ProducerConfigBuilder<T> EnableChunking(bool chunk)
 		{
 			_conf.ChunkingEnabled = chunk;
             return this;
 		}
 
-		public ProducerConfigBuilder MessageRoutingMode(MessageRoutingMode messageRouteMode)
+		public ProducerConfigBuilder<T> MessageRoutingMode(MessageRoutingMode messageRouteMode)
 		{
 			_conf.MessageRoutingMode = messageRouteMode;
             return this;
 		}
 
-		public ProducerConfigBuilder CompressionType(ICompressionType compressionType)
+		public ProducerConfigBuilder<T> CompressionType(CompressionType compressionType)
 		{
 			_conf.CompressionType = compressionType;
             return this;
 		}
 
-		public ProducerConfigBuilder HashingScheme(HashingScheme hashingScheme)
+		public ProducerConfigBuilder<T> HashingScheme(HashingScheme hashingScheme)
 		{
 			_conf.HashingScheme = hashingScheme;
             return this;
 		}
 		
-		public ProducerConfigBuilder CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+		public ProducerConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
 		{
 			_conf.CryptoKeyReader = cryptoKeyReader;
             return this;
 		}
 
-		public ProducerConfigBuilder AddEncryptionKey(string key)
+		public ProducerConfigBuilder<T> AddEncryptionKey(string key)
 		{
 			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentException("Encryption key cannot be blank or null");
@@ -161,20 +160,20 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ProducerConfigBuilder CryptoFailureAction(ProducerCryptoFailureAction action)
+		public ProducerConfigBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction action)
 		{
 			_conf.CryptoFailureAction = action;
             return this;
 		}
 
 
-		public ProducerConfigBuilder InitialSequenceId(long initialSequenceId)
+		public ProducerConfigBuilder<T> InitialSequenceId(long initialSequenceId)
 		{
 			_conf.InitialSequenceId = initialSequenceId;
             return this;
 		}
 
-		public ProducerConfigBuilder Property(string key, string value)
+		public ProducerConfigBuilder<T> Property(string key, string value)
 		{
 			if(string.IsNullOrWhiteSpace(key))
 				throw new ArgumentException("property key cannot be blank or null");
@@ -184,7 +183,7 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-		public ProducerConfigBuilder Properties(IDictionary<string, string> properties)
+		public ProducerConfigBuilder<T> Properties(IDictionary<string, string> properties)
         {
             if (properties == null)
                 throw new ArgumentException("properties cannot be null");
@@ -203,37 +202,45 @@ namespace SharpPulsar.Akka.Configuration
             return this;
 		}
 
-        public ProducerConfigBuilder Schema<T>(ISchema<T> schema)
+        public ProducerConfigBuilder<T> Schema(ISchema<T> schema)
         {
 			if(schema == null)
 				throw new ArgumentException("Schema is null");
-            _conf.Schema = schema;
+            _schema = schema;
             return this;
 		}
-		public ProducerConfigBuilder Intercept(params IProducerInterceptor[] interceptors)
+		
+		public ProducerConfigBuilder<T> Intercept(params IProducerInterceptor<T>[] interceptors)
 		{
-			if (_conf.Interceptors == null)
+			if (_interceptorList == null)
 			{
-                _conf.Interceptors = new List<IProducerInterceptor>();
+				_interceptorList = new List<IProducerInterceptor<T>>();
 			}
-            _conf.Interceptors.AddRange(interceptors.ToArray());
-            return this;
-
+			_interceptorList.AddRange(interceptors);
+			return this;
 		}
-
-		public ProducerConfigBuilder AutoUpdatePartitions(bool autoUpdate)
+		public ProducerConfigBuilder<T> AutoUpdatePartitions(bool autoUpdate)
 		{
 			_conf.AutoUpdatePartitions = autoUpdate;
             return this;
 		}
+		public ProducerConfigBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeUnit unit)
+		{
+			_conf.SetAutoUpdatePartitionsIntervalSeconds(interval, unit);
+			return this;
+		}
 
-		public ProducerConfigBuilder EnableMultiSchema(bool multiSchema)
+		public List<IProducerInterceptor<T>> GetInterceptors =>_interceptorList;
+
+		public ISchema<T> GetSchema => _schema;
+
+		public ProducerConfigBuilder<T> EnableMultiSchema(bool multiSchema)
 		{
 			_conf.MultiSchema = multiSchema;
             return this;
 		}
 
-		private ProducerConfigBuilder SetMessageRoutingMode()
+		private ProducerConfigBuilder<T> SetMessageRoutingMode()
 		{
 			MessageRoutingMode(_conf.MessageRoutingMode);
 			return this;

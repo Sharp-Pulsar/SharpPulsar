@@ -18,6 +18,8 @@
 /// </summary>
 using System;
 using SharpPulsar.Api;
+using SharpPulsar.Common;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Auth
 {

@@ -1,4 +1,4 @@
-﻿namespace SharpPulsar.Impl
+﻿namespace SharpPulsar
 {
     public enum SubscriptionMode
     {

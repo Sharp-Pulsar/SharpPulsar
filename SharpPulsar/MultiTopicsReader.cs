@@ -1,10 +1,10 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
@@ -30,7 +30,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-	public class MultiTopicsReader<T> : ReceiveActor
+    public class MultiTopicsReader<T> : ReceiveActor
 	{
 
 		private readonly IActorRef _consumer;
@@ -106,7 +106,10 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-
+		public static Props Prop(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+        {
+			return Props.Create(() => new MultiTopicsReader<T>(client, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
+        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;

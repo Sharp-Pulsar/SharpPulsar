@@ -43,7 +43,7 @@ namespace SharpPulsar.Transaction
 		private long _epoch = 0L;
 		private ClientConfigurationData _clientConfigurationData;
 
-		private volatile TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
+		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
 		public TransactionCoordinatorClient(IActorRef pulsarClient, ClientConfigurationData conf)
 		{
@@ -60,10 +60,10 @@ namespace SharpPulsar.Transaction
 			Receive<SubscriptionToTxn>(n => {
 				AddSubscriptionToTxn(n);
 			});
-			Receive<Abort>(n => {
+			Receive<AbortTxnID>(n => {
 				Abort(n);
 			});
-			Receive<Commit>(n => {
+			Receive<CommitTxnID>(n => {
 				Commit(n);
 			});
 			Receive<StartTransactionCoordinatorClient>(_ => {
@@ -113,7 +113,10 @@ namespace SharpPulsar.Transaction
 				_log.Error(TransactionCoordinatorClientException.Unwrap(ex).ToString());
 			}
 		}
-
+		public static Props Prop(IActorRef pulsarClient, ClientConfigurationData conf)
+        {
+			return Props.Create(() => new TransactionCoordinatorClient(pulsarClient, conf));
+        }
 		private string GetTCAssignTopicName(int partition)
 		{
 			if(partition >= 0)
@@ -186,7 +189,7 @@ namespace SharpPulsar.Transaction
 			}
 		}
 
-		private void Commit(Commit commit)
+		private void Commit(CommitTxnID commit)
 		{
 			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
 			{
@@ -196,7 +199,7 @@ namespace SharpPulsar.Transaction
 				handler.Tell(commit);
 		}
 
-		private void Abort(Abort abort)
+		private void Abort(AbortTxnID abort)
 		{
 			if(!_handlerMap.TryGetValue(abort.TxnID.MostSigBits, out var handler))
 			{

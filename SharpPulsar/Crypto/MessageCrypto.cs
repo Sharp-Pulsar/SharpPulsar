@@ -27,6 +27,7 @@ using Akka.Event;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Security;
 using SharpPulsar.Api;
+using SharpPulsar.Cache;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
@@ -35,9 +36,9 @@ using SharpPulsar.Utility;
 
 namespace SharpPulsar.Crypto
 {
-	//https://pulsar.apache.org/docs/en/security-encryption/
-	//https://github.com/eaba/Bouncy-Castle-AES-GCM-Encryption/blob/master/EncryptionService.cs
-	public class MessageCrypto:IMessageCrypto
+    //https://pulsar.apache.org/docs/en/security-encryption/
+    //https://github.com/eaba/Bouncy-Castle-AES-GCM-Encryption/blob/master/EncryptionService.cs
+    public class MessageCrypto:IMessageCrypto
 	{
 
 		private readonly AesManaged _keyGenerator;
@@ -66,7 +67,7 @@ namespace SharpPulsar.Crypto
 			_logCtx = logCtx;
             _log = log;
             _encryptedDataKeyMap = new ConcurrentDictionary<string, EncryptionKeyInfo>();
-			_dataKeyCache =  new Cache<string, byte[]>(4); //four hours
+			_dataKeyCache =  new Cache<string, byte[]>(TimeSpan.FromHours(4)); //four hours
 
 			try
 			{
@@ -195,7 +196,9 @@ namespace SharpPulsar.Crypto
 								Value = m.Value
 							});
 						});
-						msgMetadata.EncryptionKeys.Add(new EncryptionKeys { Key = keyName, Value = (byte[])(object)keyInfo.Key, Metadatas = new List<KeyValue>(kvList) });
+						var encKey = new EncryptionKeys { Key = keyName, Value = (byte[])(object)keyInfo.Key};
+						encKey.Metadatas.AddRange(kvList);
+						msgMetadata.EncryptionKeys.Add(encKey);
 					}
 					else
 					{

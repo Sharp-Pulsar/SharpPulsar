@@ -9,7 +9,6 @@ using SharpPulsar.Utility;
 using SharpPulsar.Utils;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
-using SharpPulsar.Impl;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Precondition;
@@ -34,7 +33,7 @@ using SharpPulsar.Precondition;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-	public sealed class ConsumerConfigurationData<T>
+    public sealed class ConsumerConfigurationData<T>
 	{
 		private long _autoUpdatePartitionsIntervalSeconds;
 		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)

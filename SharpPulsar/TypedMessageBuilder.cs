@@ -40,13 +40,13 @@ namespace SharpPulsar
 		private readonly MessageMetadata _metadata  = new MessageMetadata();
 		private readonly ISchema<T> _schema;
 		private byte[] _content;
-		private readonly IActorRef _txn;
+		private readonly User.Transaction _txn;
 
 		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema) : this(producer, schema, null)
 		{
 		}
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, IActorRef txn)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn)
 		{
 			_producer = producer;
 			_schema = schema;
@@ -61,28 +61,25 @@ namespace SharpPulsar
 				return -1L;
 			}
 			
-			var bits = _txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-			var sequence = _txn.AskFor<long>(NextSequenceId.Instance);
+			var bits = _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+			var sequence = _txn.Txn.AskFor<long>(NextSequenceId.Instance);
 			_metadata.TxnidLeastBits = (ulong)bits.LeastBits;
 			_metadata.TxnidMostBits = (ulong)bits.MostBits;
 			long sequenceId = sequence;
 			_metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
-		public virtual IMessageId Send()
+		public void Send(bool isDeadLetter = false)
 		{
 			var message = Message;
-			InternalSendResponse response;
 			if (_txn != null)
 			{
-				response = _producer.AskFor<InternalSendResponse>(new InternalSendWithTxn<T>(message, _txn, typeof(T), true));
-				_txn.Tell(new RegisterSendOp(response.MessageId));
+				_producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter));
 			}
 			else
 			{
-				response =  _producer.AskFor<InternalSendResponse>(new InternalSend<T>(message, typeof(T), true));
+				_producer.Tell(new InternalSend<T>(message, isDeadLetter));
 			}
-			return response.MessageId;
 		}
 		public virtual ITypedMessageBuilder<T> Key(string key)
 		{

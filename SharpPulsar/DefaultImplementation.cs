@@ -13,6 +13,7 @@ using SharpPulsar.Interfaces;
 using System.Text;
 using NodaTime;
 using SharpPulsar.Shared;
+using SharpPulsar.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

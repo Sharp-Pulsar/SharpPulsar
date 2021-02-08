@@ -5,15 +5,19 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.Messages.Transaction
 {
-    public sealed class Abort
+    public sealed class AbortTxnID
     {
         public TxnID TxnID { get; }
         public IList<IMessageId> MessageIds { get; }
-        public Abort(TxnID txnID, IList<IMessageId> messageIds)
+        public AbortTxnID(TxnID txnID, IList<IMessageId> messageIds)
         {
             TxnID = txnID;
             MessageIds = messageIds;
         }
+    }
+    public sealed class Abort
+    {
+        public static Abort Instance = new Abort();
     }
     public sealed class RegisterAckedTopic
     {
@@ -25,14 +29,18 @@ namespace SharpPulsar.Messages.Transaction
             Subscription = subscription;
         }
     }
-    public sealed class Commit
+    public sealed class CommitTxnID
     {
         public TxnID TxnID { get; }
         public IList<IMessageId> MessageIds { get; }
-        public Commit(TxnID txnID, IList<IMessageId> messageIds)
+        public CommitTxnID(TxnID txnID, IList<IMessageId> messageIds)
         {
             TxnID = txnID;
             MessageIds = messageIds;
         }
+    }
+    public sealed class Commit
+    {
+        public static Commit Instance = new Commit();
     }
 }

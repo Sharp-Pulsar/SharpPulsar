@@ -1,12 +1,12 @@
 ﻿using Avro;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Crypto;
 using SharpPulsar.Protocol.Schema;
 using System;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Cache;
 
 namespace SharpPulsar.Schemas.Reader
 {

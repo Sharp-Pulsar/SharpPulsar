@@ -5,10 +5,10 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
@@ -34,7 +34,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-	public class ReaderActor<T>: ReceiveActor
+    public class ReaderActor<T>: ReceiveActor
 	{
 		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
 		private readonly IActorRef _consumer;
@@ -119,7 +119,10 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-
+		public static Props Prop(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+        {
+			return Props.Create(() => new ReaderActor<T>(client, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
+        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;

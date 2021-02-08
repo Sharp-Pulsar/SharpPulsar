@@ -30,13 +30,13 @@ namespace SharpPulsar.Interfaces.Transaction
 		/// Commit the transaction.
 		/// </summary>
 		/// <returns> the future represents the commit result. </returns>
-		ValueTask Commit();
+		void Commit();
 
 		/// <summary>
 		/// Abort the transaction.
 		/// </summary>
 		/// <returns> the future represents the abort result. </returns>
-		ValueTask Abort();
+		void Abort();
 
 	}
 

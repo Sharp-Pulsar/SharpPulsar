@@ -22,6 +22,7 @@ namespace SharpPulsar.Queues
         public BlockingCollection<string> Topic { get; } = new BlockingCollection<string>();
         public BlockingCollection<long> LastDisconnectedTimestamp { get; } = new BlockingCollection<long>();
         public BlockingCollection<bool> HasReachedEndOfTopic { get; } = new BlockingCollection<bool>();
+        public BlockingCollection<bool> HasMessageAvailable { get; } = new BlockingCollection<bool>();
         public BlockingCollection<bool> Connected { get; } = new BlockingCollection<bool>();
         public BlockingCollection<IMessageId> LastMessageId = new BlockingCollection<IMessageId>();
         public BlockingCollection<IConsumerStats> Stats = new BlockingCollection<IConsumerStats>();

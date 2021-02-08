@@ -24,7 +24,7 @@ namespace SharpPulsar.Interfaces
 	/// <summary>
 	/// A Reader can be used to scan through all the messages currently available in a topic.
 	/// </summary>
-	public interface IReader<T> : System.IDisposable
+	public interface IReader<T>
 	{
 
 		/// <returns> the topic from which this reader is reading from </returns>
@@ -52,39 +52,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException"> </exception>
 		IMessage<T> ReadNext(int timeout, TimeUnit unit);
 
-		/// <summary>
-		/// Read asynchronously the next message in the topic.
-		/// 
-		/// <para>{@code readNextAsync()} should be called subsequently once returned {@code CompletableFuture} gets complete
-		/// with received message. Else it creates <i> backlog of receive requests </i> in the application.
-		/// 
-		/// </para>
-		/// <para>The returned future can be cancelled before completion by calling {@code .cancel(false)}
-		/// (<seealso cref="CompletableFuture.cancel(bool)"/>) to remove it from the the backlog of receive requests. Another
-		/// choice for ensuring a proper clean up of the returned future is to use the CompletableFuture.orTimeout method
-		/// which is available on JDK9+. That would remove it from the backlog of receive requests if receiving exceeds
-		/// the timeout.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a future that will yield a message (when it's available) or <seealso cref="PulsarClientException"/> if the reader
-		///         is already closed. </returns>
-		ValueTask<IMessage<T>> ReadNextAsync();
-
-		/// <summary>
-		/// Asynchronously close the reader and stop the broker to push more messages.
-		/// </summary>
-		/// <returns> a future that can be used to track the completion of the operation </returns>
-		ValueTask CloseAsync();
-
-		/// <summary>
-		/// Return true if the topic was terminated and this reader has reached the end of the topic.
-		/// 
-		/// <para>Note that this only applies to a "terminated" topic (where the topic is "sealed" and no
-		/// more messages can be published) and not just that the reader is simply caught up with
-		/// the publishers. Use <seealso cref="hasMessageAvailable()"/> to check for for that.
-		/// </para>
-		/// </summary>
+		
 		bool HasReachedEndOfTopic();
 
 		/// <summary>
@@ -113,17 +81,6 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException"> if there was any error in the operation </exception>
 		bool HasMessageAvailable();
 
-		/// <summary>
-		/// Asynchronously check if there is any message available to read from the current position.
-		/// 
-		/// <para>This check can be used by an application to scan through a topic and stop when the reader reaches the current
-		/// last published message.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a future that will yield true if the are messages available to be read, false otherwise, or a
-		///         <seealso cref="PulsarClientException"/> if there was any error in the operation </returns>
-		ValueTask<bool> HasMessageAvailableAsync();
 
 		/// <returns> Whether the reader is connected to the broker </returns>
 		bool Connected {get;}
@@ -156,38 +113,6 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="timestamp"> the message publish time where to reposition the reader </param>
 		void Seek(long timestamp);
-
-		/// <summary>
-		/// Reset the subscription associated with this reader to a specific message id.
-		/// 
-		/// <para>The message id can either be a specific message or represent the first or last messages in the topic.
-		/// <ul>
-		/// <li><code>MessageId.earliest</code> : Reset the reader on the earliest message available in the topic
-		/// <li><code>MessageId.latest</code> : Reset the reader on the latest message in the topic
-		/// </ul>
-		/// 
-		/// </para>
-		/// <para>Note: this operation can only be done on non-partitioned topics. For these, one can rather perform
-		/// the seek() on the individual partitions.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="messageId"> the message id where to position the reader </param>
-		/// <returns> a future to track the completion of the seek operation </returns>
-		Task SeekAsync(IMessageId messageId);
-
-		/// <summary>
-		/// Reset the subscription associated with this reader to a specific message publish time.
-		/// 
-		/// <para>Note: this operation can only be done on non-partitioned topics. For these, one can rather perform
-		/// the seek() on the individual partitions.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="timestamp">
-		///            the message publish time where to position the reader </param>
-		/// <returns> a future to track the completion of the seek operation </returns>
-		Task SeekAsync(long timestamp);
 	}
 
 }

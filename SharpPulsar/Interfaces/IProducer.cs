@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages.Producer;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -52,43 +53,16 @@ namespace SharpPulsar.Interfaces
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		IMessageId Send(T message);
+		SentMessage<T> Send(T message);
 
-		/// <summary>
-		/// Send a message asynchronously.
-		/// 
-		/// <para>When the producer queue is full, by default this method will complete the future with an exception
-		/// <seealso cref="PulsarClientException.ProducerQueueIsFullError"/>
-		/// 
-		/// </para>
-		/// <para>See <seealso cref="ProducerBuilder.maxPendingMessages(int)"/> to configure the producer queue size and
-		/// <seealso cref="ProducerBuilder.blockIfQueueFull(bool)"/> to change the blocking behavior.
-		/// 
-		/// </para>
-		/// <para>Use <seealso cref="newMessage()"/> to specify more properties than just the value on the message to be sent.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="message">
-		///            a byte array with the payload of the message </param>
-		/// <returns> a future that can be used to track when the message will have been safely persisted </returns>
-		CompletableFuture<MessageId> SendAsync(T message);
-
+		
 		/// <summary>
 		/// Flush all the messages buffered in the client and wait until all messages have been successfully persisted.
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		/// @since 2.1.0 </exception>
-		/// <seealso cref= #flushAsync() </seealso>
 		void Flush();
 
-		/// <summary>
-		/// Flush all the messages buffered in the client and wait until all messages have been successfully persisted.
-		/// </summary>
-		/// <returns> a future that can be used to track when all the messages have been safely persisted.
-		/// @since 2.1.0 </returns>
-		/// <seealso cref= #flush() </seealso>
-		CompletableFuture<Void> FlushAsync();
 
 		/// <summary>
 		/// Create a new message builder.
@@ -128,7 +102,7 @@ namespace SharpPulsar.Interfaces
 		/// <seealso cref= #newMessage()
 		/// 
 		/// @since 2.7.0 </seealso>
-		TypedMessageBuilder<T> NewMessage(ITransaction txn);
+		TypedMessageBuilder<T> NewMessage(User.Transaction txn);
 		/// <summary>
 		/// Get the last sequence id that was published by this producer.
 		/// 
@@ -159,7 +133,7 @@ namespace SharpPulsar.Interfaces
 		/// </ul>
 		/// </summary>
 		/// <returns> statistic for the producer or null if ProducerStatsRecorderImpl is disabled. </returns>
-		ProducerStats Stats {get;}
+		IProducerStats Stats {get;}
 
 		/// <summary>
 		/// Close the producer and releases resources allocated.
@@ -172,17 +146,6 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
 		void Close();
-
-		/// <summary>
-		/// Close the producer and releases resources allocated.
-		/// 
-		/// <para>No more writes will be accepted from this producer. Waits until all pending write request are persisted.
-		/// In case of errors, pending writes will not be retried.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a future that can used to track when the producer has been closed </returns>
-		CompletableFuture<Void> CloseAsync();
 
 		/// <returns> Whether the producer is currently connected to the broker </returns>
 		bool Connected {get;}

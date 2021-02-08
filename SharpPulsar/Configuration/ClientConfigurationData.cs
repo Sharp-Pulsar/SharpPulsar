@@ -41,7 +41,8 @@ namespace SharpPulsar.Configuration
 
 		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.ToNanoseconds(60);
 		public string TlsTrustStoreType { get; set; } = "PKCS12";
-        public string TlsTrustStorePath { get; set; } = null;
+		public bool EnableTransaction { get; set; } = false;
+		public string TlsTrustStorePath { get; set; } = null;
         private string TlsTrustStorePassword { get; set; } = null;
         private ISet<string> TlsCiphers { get; set; } = new HashSet<string>();
         private ISet<string>TlsProtocols { get; set; } = new HashSet<string>();
@@ -73,6 +74,8 @@ namespace SharpPulsar.Configuration
         public ServiceUrlProvider ServiceUrlProvider { get; set; }
 		public string AuthPluginClassName { get; set; }
 		public string ListenerName { get; set; }
+
+		public IDictionary<string, string> AuthParamMap { get; set; }
 
 		public string AuthParams { get; set; }
         private bool _useTls;

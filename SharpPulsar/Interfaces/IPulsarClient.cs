@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using SharpPulsar.Akka.Configuration;
+using SharpPulsar.Configuration;
+using SharpPulsar.Transaction;
+using SharpPulsar.User;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -37,19 +41,8 @@ namespace SharpPulsar.Interfaces
 	/// }</pre>
 	/// </para>
 	/// </summary>
-	public interface IPulsarClient : System.IDisposable
+	public interface IPulsarClient
 	{
-
-		/// <summary>
-		/// Get a new builder instance that can used to configure and build a <seealso cref="PulsarClient"/> instance.
-		/// </summary>
-		/// <returns> the <seealso cref="IClientBuilder"/>
-		/// 
-		/// @since 2.0.0 </returns>
-		static IClientBuilder Builder()
-		{
-			return DefaultImplementation.NewClientBuilder();
-		}
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -69,7 +62,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IProducerBuilder<sbyte[]> NewProducer();
+		Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -92,7 +85,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		IProducerBuilder<T> newProducer<T>(Schema<T> schema);
+		Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
@@ -114,7 +107,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ConsumerBuilder<sbyte[]> NewConsumer();
+		Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf);
 
 		/// <summary>
 		/// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -142,7 +135,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ConsumerBuilder<T> newConsumer<T>(Schema<T> schema);
+		Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
@@ -182,7 +175,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<sbyte[]> NewReader();
+		Reader<sbyte[]> NewReader(ReaderConfigBuilder<sbyte[]> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
@@ -191,10 +184,10 @@ namespace SharpPulsar.Interfaces
 		/// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageId)"/> that can either
 		/// be:
 		/// <ul>
-		/// <li><seealso cref="MessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
-		/// <li><seealso cref="MessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
+		/// <li><seealso cref="IMessageId.Earliest"/>: Start reading from the earliest message available in the topic</li>
+		/// <li><seealso cref="IMessageId.Latest"/>: Start reading from end of the topic. The first message read will be the one
 		/// published <b>*after*</b> the creation of the builder</li>
-		/// <li><seealso cref="MessageId"/>: Position the reader on a particular message. The first message read will be the one
+		/// <li><seealso cref="IMessageId"/>: Position the reader on a particular message. The first message read will be the one
 		/// immediately <b>*after*</b> the specified message</li>
 		/// </ul>
 		/// 
@@ -224,7 +217,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		ReaderBuilder<T> newReader<T>(Schema<T> schema);
+		Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
 
 		/// <summary>
 		/// Update the service URL this client is using.
@@ -238,8 +231,6 @@ namespace SharpPulsar.Interfaces
 		///            the new service URL this client should connect to </param>
 		/// <exception cref="PulsarClientException">
 		///             in case the serviceUrl is not valid </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void updateServiceUrl(String serviceUrl) throws PulsarClientException;
 		void UpdateServiceUrl(string serviceUrl);
 
 		/// <summary>
@@ -259,35 +250,8 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a future that will yield a list of the topic partitions or <seealso cref="PulsarClientException"/> if there was any
 		///         error in the operation.
 		/// @since 2.3.0 </returns>
-		CompletableFuture<IList<string>> GetPartitionsForTopic(string topic);
+		IList<string> GetPartitionsForTopic(string topic);
 
-		/// <summary>
-		/// Close the PulsarClient and release all the resources.
-		/// 
-		/// <para>This operation will trigger a graceful close of all producer, consumer and reader instances that
-		/// this client has currently active. That implies that close will block and wait until all pending producer
-		/// send requests are persisted.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <exception cref="PulsarClientException">
-		///             if the close operation fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: @Override void close() throws PulsarClientException;
-		void Close();
-
-		/// <summary>
-		/// Asynchronously close the PulsarClient and release all the resources.
-		/// 
-		/// <para>This operation will trigger a graceful close of all producer, consumer and reader instances that
-		/// this client has currently active. That implies that close and wait, asynchronously, until all pending producer
-		/// send requests are persisted.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <exception cref="PulsarClientException">
-		///             if the close operation fails </exception>
-		CompletableFuture<Void> CloseAsync();
 
 		/// <summary>
 		/// Perform immediate shutdown of PulsarClient.
@@ -299,17 +263,8 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <exception cref="PulsarClientException">
 		///             if the forceful shutdown fails </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: void shutdown() throws PulsarClientException;
 		void Shutdown();
 
-		/// <summary>
-		/// Return internal state of the client. Useful if you want to check that current client is valid. </summary>
-		/// <returns> true is the client has been closed </returns>
-		/// <seealso cref= #shutdown() </seealso>
-		/// <seealso cref= #close() </seealso>
-		/// <seealso cref= #closeAsync() </seealso>
-		bool Closed {get;}
 
 		/// <summary>
 		/// Create a transaction builder that can be used to configure

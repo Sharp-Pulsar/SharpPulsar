@@ -88,19 +88,19 @@ namespace SharpPulsar
 		private readonly IActorRef _client;
 
 		private readonly IActorRef _self;
-		public MultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, queue, 0)
+		public MultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, queue)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, 0, clientConfiguration, queue)
+		public MultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, queue)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef client, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue, int numPartitions) : this(client, singleTopic, conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, null, 0, numPartitions, clientConfiguration, queue)
+		public MultiTopicsConsumer(IActorRef client, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, singleTopic, conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, null, 0, clientConfiguration, queue)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef client, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, int numberPartition, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
+		public MultiTopicsConsumer(IActorRef client, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
 		{
 			_client = client;
 			Condition.CheckArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
@@ -143,7 +143,6 @@ namespace SharpPulsar
 			if(conf.TopicNames.Count == 0)
 			{
 				State.ConnectionState = HandlerState.State.Ready;
-				Self.Tell(new Subscribe(singleTopic, numberPartition));
 			}
             else
             {
@@ -1131,7 +1130,7 @@ namespace SharpPulsar
 
 		// create consumer for a single topic with already known partitions.
 		// first create a consumer with no topic, then do subscription for already know partitionedTopic.
-		public static Props CreatePartitionedConsumer(IActorRef client, ConsumerConfigurationData<T> conf,IAdvancedScheduler listenerExecutor, int numPartitions, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
+		public static Props CreatePartitionedConsumer(IActorRef client, ConsumerConfigurationData<T> conf,IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
 		{
 			Condition.CheckArgument(conf.TopicNames.Count == 1, "Should have only 1 topic for partitioned consumer");
 
@@ -1140,17 +1139,22 @@ namespace SharpPulsar
 			string topicName = cloneConf.SingleTopic;
 			cloneConf.TopicNames.Remove(topicName);
 
-			return Props.Create(()=> new MultiTopicsConsumer<T>(client, topicName, conf, listenerExecutor, schema, interceptors, true, clientConfiguration, queue, numPartitions));
+			return Props.Create(()=> new MultiTopicsConsumer<T>(client, topicName, conf, listenerExecutor, schema, interceptors, true, clientConfiguration, queue));
 			
 		}
 		public static Props NewMultiTopicsConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf,IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
 		{
-			return Props.Create(()=> new MultiTopicsConsumer<T>(client, topic, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, clientConfiguration, queue, 0));
+			return Props.Create(()=> new MultiTopicsConsumer<T>(client, topic, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, clientConfiguration, queue));
 			
 		}
 		public static Props NewMultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
 		{
 			return Props.Create(()=> new MultiTopicsConsumer<T>(client, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, queue));
+			
+		}
+		public static Props NewMultiTopicsConsumer(IActorRef client, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
+		{
+			return Props.Create(()=> new MultiTopicsConsumer<T>(client, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, clientConfiguration, queue));
 			
 		}
 
@@ -1177,21 +1181,11 @@ namespace SharpPulsar
 
 		private void SubscribeTopicPartitions(string topicName, int numPartitions, bool createIfDoesNotExist)
 		{
-			_client.Ask(new PreProcessSchemaBeforeSubscribe<T>(Schema, topicName)).ContinueWith(t =>
-			{
-
-				if (!t.IsFaulted)
-				{
-					if(t.Result is PreProcessedSchema<T> schema)
-						DoSubscribeTopicPartitions(schema.Schema, topicName, numPartitions, createIfDoesNotExist);
-					else
-						_log.Debug($"[PreProcessSchemaBeforeSubscribe] Received:{t.Result.GetType().FullName}");
-				}
-				else
-				{
-					_log.Error(t.Exception.ToString());
-				}
-			});
+			var t =_client.AskFor(new PreProcessSchemaBeforeSubscribe<T>(Schema, topicName));
+			if (t is PreProcessedSchema<T> schema)
+				DoSubscribeTopicPartitions(schema.Schema, topicName, numPartitions, createIfDoesNotExist);
+			else
+				_log.Debug($"[PreProcessSchemaBeforeSubscribe] Received:{t.GetType().FullName}");
 		}
 
 		private void DoSubscribeTopicPartitions(ISchema<T> schema, string topicName, int numPartitions, bool createIfDoesNotExist)

@@ -6,7 +6,6 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;

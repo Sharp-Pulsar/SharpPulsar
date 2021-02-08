@@ -54,7 +54,7 @@ namespace SharpPulsar.Configuration
 
 		public ProducerCryptoFailureAction CryptoFailureAction { get; set; } = ProducerCryptoFailureAction.Fail;
         public IMessageRouter CustomMessageRouter { get; set; } = null;
-        public bool ChunkingEnabled { get; set; } = false;
+		public bool ChunkingEnabled { get; set; } = false;
 
 		[JsonIgnore]
 		public IBatcherBuilder BatcherBuilder { get; set; }
@@ -132,11 +132,6 @@ namespace SharpPulsar.Configuration
 			return _batchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
 		}
 
-		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
-		{
-			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
-			this._autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
-		}
 		public void SetSendTimeoutMs(long sendTimeoutMs)
 		{
 			if (sendTimeoutMs < 1)

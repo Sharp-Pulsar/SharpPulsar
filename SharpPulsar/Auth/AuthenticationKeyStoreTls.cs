@@ -22,7 +22,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Api;
+using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Auth
 {

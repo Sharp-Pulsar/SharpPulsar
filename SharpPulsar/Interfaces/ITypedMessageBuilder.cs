@@ -54,7 +54,7 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
-		IMessageId Send();
+		void Send(bool isDeadLetter = false);
 
 		
 

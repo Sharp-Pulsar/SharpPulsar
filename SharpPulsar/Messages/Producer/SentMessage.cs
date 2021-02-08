@@ -74,10 +74,6 @@ namespace SharpPulsar.Messages.Producer
             Exception = exception;
         }
     }
-    public sealed class Flush
-    {
-        public static Flush Instance = new Flush();
-    }
     public sealed class TriggerFlush
     {
         public static TriggerFlush Instance = new TriggerFlush();
