@@ -6,10 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.14" />
+    <PackageReference Include="akka" Version="1.4.16" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
     <PackageReference Include="Nito.AsyncEx.Tasks" Version="5.1.0" />
-    <PackageReference Include="system.text.json" Version="5.0.0" />
+    <PackageReference Include="system.text.json" Version="5.0.1" />
   </ItemGroup>
 
   <ItemGroup>
