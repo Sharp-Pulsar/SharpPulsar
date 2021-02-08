@@ -19,21 +19,18 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageIconUrl />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Admin\**" />
     <Compile Remove="Akka\**" />
     <Compile Remove="EventSource\**" />
     <Compile Remove="Function\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
     <Compile Remove="Sql\**" />
-    <EmbeddedResource Remove="Admin\**" />
     <EmbeddedResource Remove="Akka\**" />
     <EmbeddedResource Remove="EventSource\**" />
     <EmbeddedResource Remove="Function\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
     <EmbeddedResource Remove="Sql\**" />
-    <None Remove="Admin\**" />
     <None Remove="Akka\**" />
     <None Remove="EventSource\**" />
     <None Remove="Function\**" />

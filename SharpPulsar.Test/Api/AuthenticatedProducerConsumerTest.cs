@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 using PulsarAdmin.Models;
-using SharpPulsar.Akka.Admin;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Api;
@@ -13,6 +12,7 @@ using SharpPulsar.Auth;
 using SharpPulsar.Impl.Schema;
 using Xunit;
 using Xunit.Abstractions;
+using SharpPulsar.Admin;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -4,13 +4,13 @@ using System.Collections.Immutable;
 using System.IO;
 using App.Metrics.Concurrency;
 using PulsarAdmin.Models;
-using SharpPulsar.Akka.Admin;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Auth;
 using SharpPulsar.Impl.Schema;
 using Xunit;
 using Xunit.Abstractions;
+using SharpPulsar.Admin;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

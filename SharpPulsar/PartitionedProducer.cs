@@ -49,7 +49,7 @@ namespace SharpPulsar
 		private IList<IActorRef> _producers;
 		private IMessageRouter _routerPolicy;
 		private readonly IActorRef _router;
-		private readonly ProducerStatsRecorderImpl _stats;
+		private readonly ProducerStatsRecorder _stats;
 		private TopicMetadata _topicMetadata;
 
 		// timeout related to auto check and subscribe partition increasement
@@ -120,7 +120,7 @@ namespace SharpPulsar
 			for(int partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = Context.ActorOf(ProducerActor<T>.Prop(Client, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue);
+				var producer = Context.ActorOf(ProducerActor<T>.Prop(Client, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
 				_producers.Add(producer);
 				var routee = Routee.FromActorRef(producer);
 				_router.Tell(new AddRoutee(routee));
@@ -246,7 +246,7 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override string HandlerName
+		internal string HandlerName
 		{
 			get
 			{

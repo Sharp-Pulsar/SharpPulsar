@@ -6,10 +6,10 @@ using PulsarAdmin;
 using PulsarAdmin.Models;
 using SharpPulsar.Akka.Admin.Api.Models;
 
-namespace SharpPulsar.Akka.Admin
+namespace SharpPulsar.Admin
 {
     //todo: getPartitionedStatsInternal, getPartitionedStats, getManagedLedgerInfo investigate return types
-    public class AdminWorker:ReceiveActor
+    public class AdminWorker : ReceiveActor
     {
         private readonly PulsarAdminRESTAPI _adminRestapi;
         private readonly IActorRef _pulsarManager;
@@ -23,7 +23,7 @@ namespace SharpPulsar.Akka.Admin
 
         protected override void Unhandled(object message)
         {
-            
+
         }
 
         private void Handle(InternalCommands.Admin admin)
@@ -59,7 +59,7 @@ namespace SharpPulsar.Akka.Admin
                         response = _adminRestapi.GetBrokerResourceAvailability(admin.Arguments[0].ToString(), admin.Arguments[1].ToString());
                         break;
                     case AdminCommands.GetLoadReport:
-                        response =_adminRestapi.GetLoadReport();
+                        response = _adminRestapi.GetLoadReport();
                         break;
                     case AdminCommands.GetMBeans:
                         response = _adminRestapi.GetMBeans();
@@ -115,13 +115,13 @@ namespace SharpPulsar.Akka.Admin
                         break;
                     case AdminCommands.UpdateCluster:
                         var clter = admin.Arguments[0].ToString();
-                        var clusterData = (ClusterData) admin.Arguments[1];
+                        var clusterData = (ClusterData)admin.Arguments[1];
                         _adminRestapi.UpdateCluster(clter, clusterData);
                         admin.Handler("UpdateCluster");
                         break;
                     case AdminCommands.CreateCluster:
                         var clt = admin.Arguments[0].ToString();
-                        var clustData = (ClusterData) admin.Arguments[1];
+                        var clustData = (ClusterData)admin.Arguments[1];
                         _adminRestapi.CreateCluster(clt, clustData);
                         admin.Handler("CreateCluster");
                         break;
@@ -142,7 +142,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetFailureDomain:
                         var dcltr = admin.Arguments[0].ToString();
                         var domainN = admin.Arguments[1].ToString();
-                        var body = (FailureDomain) admin.Arguments[2];
+                        var body = (FailureDomain)admin.Arguments[2];
                         _adminRestapi.SetFailureDomain(dcltr, domainN, body);
                         admin.Handler("SetFailureDomain");
                         break;
@@ -173,7 +173,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetNamespaceIsolationPolicy:
                         var clusname = admin.Arguments[0].ToString();
                         var policyName = admin.Arguments[1].ToString();
-                        var nbody = (NamespaceIsolationData) admin.Arguments[2];
+                        var nbody = (NamespaceIsolationData)admin.Arguments[2];
                         _adminRestapi.SetNamespaceIsolationPolicy(clusname, policyName, nbody);
                         admin.Handler("SetNamespaceIsolationPolicy");
                         break;
@@ -189,7 +189,7 @@ namespace SharpPulsar.Akka.Admin
                         break;
                     case AdminCommands.SetPeerClusterNames:
                         var cName = admin.Arguments[0].ToString();
-                        var cBody = (IList<string>) admin.Arguments[1];
+                        var cBody = (IList<string>)admin.Arguments[1];
                         _adminRestapi.SetPeerClusterNames(cName, cBody);
                         admin.Handler("SetPeerClusterNames");
                         break;
@@ -222,7 +222,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.CreateNamespace:
                         var tena = admin.Arguments[0].ToString();
                         var nsp = admin.Arguments[1].ToString();
-                        var poly = (Policies) admin.Arguments[2];
+                        var poly = (Policies)admin.Arguments[2];
                         _adminRestapi.CreateNamespace(tena, nsp, poly);
                         admin.Handler("CreateNamespace");
                         break;
@@ -300,7 +300,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.ModifyDeduplication:
                         var tenant8 = admin.Arguments[0].ToString();
                         var nspace8 = admin.Arguments[1].ToString();
-                        var enable = (bool) admin.Arguments[2];
+                        var enable = (bool)admin.Arguments[2];
                         _adminRestapi.ModifyDeduplication(tenant8, nspace8, enable);
                         admin.Handler("ModifyDeduplication");
                         break;
@@ -343,7 +343,7 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.SetMaxConsumersPerSubscription:
                         var tenant15 = admin.Arguments[0].ToString();
                         var nspace15 = admin.Arguments[1].ToString();
-                        var maxCS = (int) admin.Arguments[2];
+                        var maxCS = (int)admin.Arguments[2];
                         _adminRestapi.SetMaxConsumersPerSubscription(tenant15, nspace15, maxCS);
                         admin.Handler("SetMaxConsumersPerSubscription");
                         break;
@@ -357,10 +357,10 @@ namespace SharpPulsar.Akka.Admin
                         var nspace16 = admin.Arguments[1].ToString();
                         response = _adminRestapi.GetMaxConsumersPerTopic(tenant16, nspace16);
                         break;
-                    case AdminCommands.SetMaxConsumersPerTopic: 
+                    case AdminCommands.SetMaxConsumersPerTopic:
                         var tenant17 = admin.Arguments[0].ToString();
                         var nspace17 = admin.Arguments[1].ToString();
-                        var maxCT = (int) admin.Arguments[2];
+                        var maxCT = (int)admin.Arguments[2];
                         _adminRestapi.SetMaxConsumersPerTopic(tenant17, nspace17, maxCT);
                         admin.Handler("SetMaxConsumersPerTopic");
                         break;
@@ -630,7 +630,7 @@ namespace SharpPulsar.Akka.Admin
                         var sub4 = admin.Arguments[2].ToString();
                         var bndle6 = admin.Arguments[3].ToString();
                         var auth10 = (bool)admin.Arguments[4];
-                        _adminRestapi.UnsubscribeNamespaceBundle(tenant58, nspace58,sub4, bndle6, auth10);
+                        _adminRestapi.UnsubscribeNamespaceBundle(tenant58, nspace58, sub4, bndle6, auth10);
                         admin.Handler("UnsubscribeNamespaceBundle");
                         break;
                     case AdminCommands.GetList:
@@ -1301,13 +1301,13 @@ namespace SharpPulsar.Akka.Admin
                     case AdminCommands.GetOffloadPolicies:
                         var tenant110 = admin.Arguments[0].ToString();
                         var ns110 = admin.Arguments[1].ToString();
-                        response =_adminRestapi.GetOffloadPolicies(tenant110, ns110);
+                        response = _adminRestapi.GetOffloadPolicies(tenant110, ns110);
                         break;
                     case AdminCommands.GetProxyConnectionStats:
-                        response =_adminRestapi.GetProxyConnectionsStats();
+                        response = _adminRestapi.GetProxyConnectionsStats();
                         break;
                     case AdminCommands.GetProxyTopicStats:
-                        response =_adminRestapi.GetProxyTopicsStats();
+                        response = _adminRestapi.GetProxyTopicsStats();
                         break;
                     case AdminCommands.GetMessageById:
                         var gmsgT = admin.Arguments[0].ToString();
@@ -1316,7 +1316,7 @@ namespace SharpPulsar.Akka.Admin
                         var gmsgL = (long)admin.Arguments[3];
                         var gmsgE = (long)admin.Arguments[4];
                         var gmsgI = (bool)admin.Arguments[5];
-                        response =_adminRestapi.GetMessageById(gmsgT, gmsgN, gmsgTo, gmsgL, gmsgE, gmsgI);
+                        response = _adminRestapi.GetMessageById(gmsgT, gmsgN, gmsgTo, gmsgL, gmsgE, gmsgI);
                         break;
                 }
                 _pulsarManager.Tell(new AdminResponse(response));

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Common;
+using SharpPulsar.User;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -145,7 +148,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="authentication">
 		///            an instance of the <seealso cref="Authentication"/> provider already constructed </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder Authentication(Authentication authentication);
+		IClientBuilder Authentication(IAuthentication authentication);
 
 		/// <summary>
 		/// Configure the authentication provider to use in the Pulsar client instance.
@@ -460,7 +463,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="clock"> the clock used by the pulsar client to retrieve time information </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder Clock(Clock clock);
+		IClientBuilder Clock(DateTime clock);
 
 		/// <summary>
 		/// Proxy-service url when client would like to connect to broker via proxy. Client can choose type of proxy-routing

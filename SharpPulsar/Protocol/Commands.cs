@@ -9,14 +9,12 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
-using SharpPulsar.Akka.Network;
-using SharpPulsar.Api;
 using SharpPulsar.Protocol.Extension;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
-using Serializer = SharpPulsar.Akka.Network.Serializer;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;
 using SharpPulsar.Transaction;
+using SharpPulsar.Helpers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

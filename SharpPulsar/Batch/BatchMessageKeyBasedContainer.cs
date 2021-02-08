@@ -5,6 +5,7 @@ using Akka.Actor;
 using Akka.Event;
 using DotNetty.Common.Utilities;
 using SharpPulsar.Api;
+using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol;
@@ -50,14 +51,14 @@ namespace SharpPulsar.Batch
         {
             _log = system.Log;
         }
-		public override bool Add(Message msg, Action<object, Exception> callback)
+		public override bool Add<T>(Message<T> msg, Action<object, Exception> callback)
 		{
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
 			}
 			NumMessagesInBatch++;
-			CurrentBatchSize += msg.Payload.Length;
+			CurrentBatchSize += msg.Data.Length;
 			var key = GetKey(msg);
 			var part = _batches[key];
 			if (part == null)
@@ -104,7 +105,7 @@ namespace SharpPulsar.Batch
 
 		public override bool MultiBatches => true;
 
-        private OpSendMsg CreateOpSendMsg(KeyedBatch keyedBatch)
+        private OpSendMsg<T> CreateOpSendMsg<T>(KeyedBatch keyedBatch)
 		{
             var encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
             if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
@@ -132,7 +133,7 @@ namespace SharpPulsar.Batch
 			long currentBatchSizeBytes = 0;
 			foreach (var message in keyedBatch.Messages)
 			{
-				currentBatchSizeBytes += message.Payload.Length;
+				currentBatchSizeBytes += message.Data.Length;
 			}
 
             keyedBatch.MessageMetadata.ProducerName = Container.ProducerName;
@@ -140,21 +141,21 @@ namespace SharpPulsar.Batch
 			keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
 			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
-			var op = OpSendMsg.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId);
+			var op = OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId);
 
 			op.NumMessagesInBatch = numMessagesInBatch;
 			op.BatchSizeByte = currentBatchSizeBytes;
 			return op;
 		}
 
-		public override IList<OpSendMsg> CreateOpSendMsgs()
+		public override IList<OpSendMsg<T>> CreateOpSendMsgs<T>()
 		{
-			IList<OpSendMsg> result = new List<OpSendMsg>();
+			IList<OpSendMsg<T>> result = new List<OpSendMsg<T>>();
 			var list = new List<KeyedBatch>(_batches.Values);
 			list.Sort(((o1, o2) => o1.SequenceId.CompareTo(o2.SequenceId)));
 			foreach (var keyedBatch in list)
 			{
-				var op = CreateOpSendMsg(keyedBatch);
+				var op = CreateOpSendMsg<T>(keyedBatch);
 				if (op != null)
 				{
 					result.Add(op);
@@ -163,7 +164,7 @@ namespace SharpPulsar.Batch
 			return result;
 		}
 
-		public override bool HasSameSchema(Message msg)
+		public override bool HasSameSchema<T>(Message<T> msg)
 		{
 			var key = GetKey(msg);
 			var part = _batches[key];
@@ -178,7 +179,7 @@ namespace SharpPulsar.Batch
 			return Equals(msg.SchemaVersion, part.MessageMetadata.SchemaVersion);
 		}
 
-		private string GetKey(Message msg)
+		private string GetKey<T>(Message<T> msg)
 		{
 			if (msg.HasOrderingKey())
 			{
@@ -193,7 +194,7 @@ namespace SharpPulsar.Batch
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
 			internal List<byte> BatchedMessageMetadataAndPayload;
-			internal IList<Message> Messages = new List<Message>();
+			internal IList<Message<object>> Messages = new List<Message<object>>();
 			internal Action<object, Exception> PreviousCallback = null;
 			internal CompressionType CompressionType;
 			internal CompressionCodec Compressor;
@@ -211,7 +212,7 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload));
+						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, (byte[])(object)msg.Data));
 						
 					}
 					var uncompressedSize = BatchedMessageMetadataAndPayload.Count;
@@ -230,7 +231,7 @@ namespace SharpPulsar.Batch
 				}
 			}
 
-			public virtual void AddMsg(Message msg, Action<object, Exception> callback)
+			public virtual void AddMsg<T>(Message<T> msg, Action<object, Exception> callback)
 			{
 				if (Messages.Count == 0)
 				{
@@ -247,12 +248,12 @@ namespace SharpPulsar.Batch
 					{
 						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
 					}
-					BatchedMessageMetadataAndPayload.AddRange(msg.Payload);
+					BatchedMessageMetadataAndPayload.AddRange((byte[])(object)msg.Data);
 					FirstCallback = callback;
 				}
 ;
                 PreviousCallback = callback;
-				Messages.Add(msg);
+				Messages.Add((Message<object>)(object)msg);
 			}
 
 			public virtual void Discard(Exception ex)
@@ -271,7 +272,7 @@ namespace SharpPulsar.Batch
 
 			public virtual void Clear()
 			{
-				Messages =  new List<Message>();
+				Messages =  new List<Message<object>>();
 				FirstCallback = null;
 				PreviousCallback = null;
 				MessageMetadata = new MessageMetadata();

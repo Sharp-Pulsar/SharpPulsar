@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using PulsarAdmin.Models;
+using SharpPulsar.Admin;
 using SharpPulsar.Akka;
-using SharpPulsar.Akka.Admin;
 using SharpPulsar.Messages;
 using Xunit;
 using Xunit.Abstractions;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Api;
+using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
@@ -44,7 +45,7 @@ namespace SharpPulsar.Batch
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private List<byte> _batchedMessageMetadataAndPayload;
-		private IList<Message> _messages = new List<Message>();
+		private IList<Message<object>> _messages = new List<Message<object>>();
 		private Action<object, Exception> _previousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
 		private Action<object, Exception> _firstCallback;
@@ -54,7 +55,7 @@ namespace SharpPulsar.Batch
         {
             _log = system.Log;
         }
-		public override bool Add(Message msg, Action<object, Exception> callback)
+		public override bool Add<T>(Message<T> msg, Action<object, Exception> callback)
 		{
 
 			if (_log.IsDebugEnabled)
@@ -73,8 +74,8 @@ namespace SharpPulsar.Batch
 			}
 
             _previousCallback = callback;
-			CurrentBatchSize += msg.Payload.Length;
-			_messages.Add(msg);
+			CurrentBatchSize += msg.Data.Length;
+			_messages.Add((Message<object>)(object)msg);
 
 			if (_lowestSequenceId == -1L)
 			{
@@ -98,7 +99,7 @@ namespace SharpPulsar.Batch
 					var msgMetadata = msg.Metadata;
 					try
 					{
-						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload));
+						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, (byte[])(object)msg.Data));
 					}
 					catch (Exception)
 					{
@@ -134,7 +135,7 @@ namespace SharpPulsar.Batch
 
 		public override void Clear()
 		{
-			_messages = new List<Message>();
+			_messages = new List<Message<object>>();
 			_firstCallback = null;
 			_previousCallback = null;
 			_messageMetadata = new MessageMetadata();
@@ -163,7 +164,7 @@ namespace SharpPulsar.Batch
 
 		public override bool MultiBatches => false;
 
-		public override OpSendMsg CreateOpSendMsg()
+		public override OpSendMsg<T> CreateOpSendMsg<T>()
 		{
 			var encryptedPayload = CompressedBatchMetadataAndPayload;
             if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
@@ -192,7 +193,7 @@ namespace SharpPulsar.Batch
 			_messageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
-			var op = OpSendMsg.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
+			var op = OpSendMsg<T>.Create((List<Message<T>>)_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
 
 			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSize;
@@ -200,7 +201,7 @@ namespace SharpPulsar.Batch
 			return op;
 		}
 
-		public override bool HasSameSchema(Message msg)
+		public override bool HasSameSchema<T>(Message<T> msg)
 		{
 			if (NumMessagesInBatch == 0)
 			{

@@ -36,8 +36,8 @@ namespace SharpPulsar.Batch
 		public abstract void Discard(Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
-		public abstract bool HasSameSchema<T>(IMessage<T> msg);
-		public abstract bool Add<T>(IMessage<T> msg, Action<object, Exception> callback);
+		public abstract bool HasSameSchema<T>(Message<T> msg);
+		public abstract bool Add<T>(Message<T> msg, Action<object, Exception> callback);
 
 		private string _topicName;
 		private string _producerName;
@@ -56,7 +56,7 @@ namespace SharpPulsar.Batch
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		private int _maxBatchSize = InitialBatchBufferSize;
 
-		public virtual bool HaveEnoughSpace<T>(IMessage<T> msg)
+		public virtual bool HaveEnoughSpace<T>(Message<T> msg)
 		{
 			var messageSize = msg.Data.Length;
 			return ((_maxBytesInBatch <= 0 && (messageSize + _currentBatchSizeBytes) <= _producerContainer.MaxMessageSize) || (_maxBytesInBatch > 0 && (messageSize + _currentBatchSizeBytes) <= _maxBytesInBatch)) && (_maxNumMessagesInBatch <= 0 || _numMessagesInBatch < _maxNumMessagesInBatch);

@@ -2,9 +2,9 @@
 using Akka.Routing;
 using SharpPulsar.Messages;
 
-namespace SharpPulsar.Akka.Admin
+namespace SharpPulsar.Admin
 {
-    public class AdminCoordinator:ReceiveActor
+    public class AdminCoordinator : ReceiveActor
     {
         public AdminCoordinator(string server, IActorRef pulsarManager)
         {

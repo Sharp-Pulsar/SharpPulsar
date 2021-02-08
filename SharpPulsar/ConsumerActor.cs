@@ -3,9 +3,7 @@ using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Akka.Network;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
@@ -21,7 +19,6 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
@@ -143,7 +140,6 @@ namespace SharpPulsar
 		private bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
 		private readonly Queue<string> _pendingChunckedMessageUuidQueue;
-		protected readonly ILoggingAdapter _log;
 
 		private readonly bool _createTopicIfDoesNotExist;
 		protected IActorRef _self;
@@ -171,7 +167,6 @@ namespace SharpPulsar
 		{
 			_self = Self;
 			_tokenSource = new CancellationTokenSource();
-			_log = Context.GetLogger();
 			_client = client;
 			ConsumerId = client.AskFor<long>(NewConsumerId.Instance);
 			_subscriptionMode = conf.SubscriptionMode;

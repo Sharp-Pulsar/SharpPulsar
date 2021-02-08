@@ -1,10 +1,9 @@
 ﻿using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Messages;
 
-namespace SharpPulsar.Akka.Admin
+namespace SharpPulsar.Admin
 {
-    public class AdminManager:ReceiveActor
+    public class AdminManager : ReceiveActor
     {
         public AdminManager(AdminConfiguration configuration, IActorRef pulsarManager)
         {

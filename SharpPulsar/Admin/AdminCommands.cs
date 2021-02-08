@@ -1,5 +1,4 @@
-﻿
-namespace SharpPulsar.Akka.Admin
+﻿namespace SharpPulsar.Admin
 {
     public enum AdminCommands
     {
