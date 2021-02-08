@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace SharpPulsar.Akka.Network
+namespace SharpPulsar.Helpers
 {
     [StructLayout(LayoutKind.Explicit)]
     public struct UIntUnion

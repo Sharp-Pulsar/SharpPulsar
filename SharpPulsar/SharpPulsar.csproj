@@ -19,12 +19,27 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageIconUrl />
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Admin\**" />
+    <Compile Remove="Akka\**" />
+    <Compile Remove="EventSource\**" />
+    <Compile Remove="Function\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
+    <Compile Remove="Sql\**" />
+    <EmbeddedResource Remove="Admin\**" />
+    <EmbeddedResource Remove="Akka\**" />
+    <EmbeddedResource Remove="EventSource\**" />
+    <EmbeddedResource Remove="Function\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
+    <EmbeddedResource Remove="Sql\**" />
+    <None Remove="Admin\**" />
+    <None Remove="Akka\**" />
+    <None Remove="EventSource\**" />
+    <None Remove="Function\**" />
     <None Remove="Protocol\Circe\**" />
     <None Remove="Protocol\Proto\Partial\**" />
+    <None Remove="Sql\**" />
     <None Include="SharpPulsar.jpg">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
@@ -79,21 +94,6 @@ Logs to logs.log</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Akka\Function\Api\Swagger.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Swagger.json</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Akka\Admin\Api\code-model-v1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Akka\Function\Api\Swagger.json">
-      <Generator>NSwagCodeGenerator</Generator>
-      <LastGenOutput>Swagger.cs</LastGenOutput>
-    </None>
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

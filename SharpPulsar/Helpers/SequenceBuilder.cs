@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpPulsar.Akka.Network
+namespace SharpPulsar.Helpers
 {
     public sealed class SequenceBuilder<T> where T : notnull
     {
@@ -19,7 +19,7 @@ namespace SharpPulsar.Akka.Network
 
         public SequenceBuilder<T> Prepend(ReadOnlySequence<T> sequence)
         {
-            LinkedListNode<ReadOnlyMemory<T>>? index = null;
+            LinkedListNode<ReadOnlyMemory<T>> index = null;
 
             foreach (var memory in sequence)
             {
@@ -53,8 +53,8 @@ namespace SharpPulsar.Akka.Network
             if (_elements.Count == 0)
                 return new ReadOnlySequence<T>();
 
-            Segment? start = null;
-            Segment? current = null;
+            Segment start = null;
+            Segment current = null;
 
             foreach (var element in _elements)
             {

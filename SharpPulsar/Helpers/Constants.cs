@@ -1,4 +1,4 @@
-﻿namespace SharpPulsar.Akka
+﻿namespace SharpPulsar.Helpers
 {
     public static class Constants
     {

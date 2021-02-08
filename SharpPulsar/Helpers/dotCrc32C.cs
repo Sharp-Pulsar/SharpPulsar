@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-namespace SharpPulsar.Akka.Network
+namespace SharpPulsar.Helpers
 {
     public static class DotCrc32C
     {
@@ -19,9 +19,9 @@ namespace SharpPulsar.Akka.Network
                 {
                     for (var k = 0; k < 8; k++)
                     {
-                        entry = (entry & 1) == 1 ? Generator ^ (entry >> 1) : (entry >> 1);
+                        entry = (entry & 1) == 1 ? Generator ^ entry >> 1 : entry >> 1;
                     }
-                    Lookup[(j * 256) + i] = entry;
+                    Lookup[j * 256 + i] = entry;
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace SharpPulsar.Akka.Network
                     var offSetBase = offset * 256;
 
                     if (offset > 11)
-                        block[offset] = Lookup[offSetBase + ((byte)(checksum >> (8 * (15 - offset))) ^ currentByte)];
+                        block[offset] = Lookup[offSetBase + ((byte)(checksum >> 8 * (15 - offset)) ^ currentByte)];
                     else
                         block[offset] = Lookup[offSetBase + currentByte];
 

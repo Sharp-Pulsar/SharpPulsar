@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
+using SharpPulsar.Helpers;
 using SharpPulsar.Protocol.Proto;
 
-namespace SharpPulsar.Akka.Network
+namespace SharpPulsar.Helpers
 {
     public static class Serializer
     {

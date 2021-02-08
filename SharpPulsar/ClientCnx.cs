@@ -26,6 +26,7 @@ using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.Extension;
+using SharpPulsar.Helpers;
 
 namespace SharpPulsar
 {

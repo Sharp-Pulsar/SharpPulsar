@@ -1,7 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Akka.Network;
+using System;
 using System.Buffers;
 
-namespace SharpPulsar.Akka.Network
+namespace SharpPulsar.Helpers
 {
     public static class ReadOnlySequenceExtensions
     {
@@ -32,7 +33,7 @@ namespace SharpPulsar.Akka.Network
 
         public static uint ReadUInt32(this ReadOnlySequence<byte> sequence, long start, bool isBigEndian)
         {
-            if (sequence.Length < (4 + start))
+            if (sequence.Length < 4 + start)
                 throw new ArgumentOutOfRangeException(nameof(start), start, "Sequence must be at least 4 bytes long from 'start' to end");
 
             var reverse = isBigEndian != BitConverter.IsLittleEndian;
