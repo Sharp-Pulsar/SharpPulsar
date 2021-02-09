@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Util;
-using SharpPulsar.Impl;
-using SharpPulsar.Pulsar;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

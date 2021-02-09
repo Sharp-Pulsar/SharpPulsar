@@ -96,7 +96,11 @@ namespace SharpPulsar
         {
             return new PulsarClient(_client, _conf, _actorSystem, _tcClient);
         }
-        public Admin NewAdmin() 
+        public User.Admin Admin() 
+        {
+            return null;
+        }
+        public User.Function Function() 
         {
             return null;
         }
@@ -104,7 +108,7 @@ namespace SharpPulsar
         {
             return null;
         }
-        public Sql NewSql() 
+        public User.Sql NewSql() 
         {
             return null;
         }

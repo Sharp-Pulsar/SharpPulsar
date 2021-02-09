@@ -1,12 +1,11 @@
 ﻿using System;
-using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class StartReplayTopic
+    public sealed class StartReplayTopic<T>
     {
-        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
+        internal StartReplayTopic(ClientConfigurationData clientConfigurationData, ReaderConfigurationData<T> readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
         {
             ClientConfigurationData = clientConfigurationData;
             ReaderConfigurationData = readerConfigurationData;
@@ -19,7 +18,7 @@ namespace SharpPulsar.Messages.Consumer
             AdminUrl = adminUrl;
         }
         public ClientConfigurationData ClientConfigurationData {get;}
-        public ReaderConfigurationData ReaderConfigurationData { get; }
+        public ReaderConfigurationData<T> ReaderConfigurationData { get; }
         public long From { get; }
         public long To { get; }
         public long Max { get; }
@@ -28,9 +27,9 @@ namespace SharpPulsar.Messages.Consumer
         public string AdminUrl { get; }
         public SourceType Source { get; }
     }
-    public sealed class ReplayTopic
+    public sealed class ReplayTopic<T>
     {
-        public ReplayTopic(ReaderConfigurationData readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
+        public ReplayTopic(ReaderConfigurationData<T> readerConfigurationData, string adminUrl, long @from, long to, long max, Tag tag, bool tagged, SourceType source)
         {
             ReaderConfigurationData = readerConfigurationData;
             From = @from;
@@ -41,7 +40,7 @@ namespace SharpPulsar.Messages.Consumer
             Source = source;
             AdminUrl = adminUrl;
         }
-        public ReaderConfigurationData ReaderConfigurationData { get; }
+        public ReaderConfigurationData<T> ReaderConfigurationData { get; }
         public long From { get; }
         public long To { get; }
         public long Max { get; }

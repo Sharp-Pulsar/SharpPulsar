@@ -178,7 +178,7 @@ namespace SharpPulsar
 			return _clientCnx;
 		}
 
-		private IActorRef ClientCnx
+		public IActorRef ClientCnx
 		{
 			set
 			{

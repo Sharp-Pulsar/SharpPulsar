@@ -16,6 +16,8 @@ using SharpPulsar.Transaction;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using SharpPulsar.Messages.Client;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -43,7 +45,7 @@ namespace SharpPulsar
 	public class TransactionMetaStoreHandler : ReceiveActor
 	{
 		private readonly long _transactionCoordinatorId;
-		private ConnectionHandler _connectionHandler;
+		private IActorRef _connectionHandler;
 		private HandlerState _state;
 		private ActorSystem _system;
 		private readonly Dictionary<long, (byte[] Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (byte[] Command, IActorRef ReplyTo)>();
@@ -80,8 +82,8 @@ namespace SharpPulsar
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			_blockIfReachMaxPendingOps = true;
 			_requestTimeout = _scheduler.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(conf.OperationTimeoutMs)), RunRequestTime);
-			_connectionHandler = new ConnectionHandler(_state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self);
-			_connectionHandler.GrabCnx();
+			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
+			_connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
 			Receive<NewTxn>(t => 
 			{
 				NewTransaction(t.Timeout, t.TimeUnit);
@@ -139,7 +141,7 @@ namespace SharpPulsar
 		private void HandleConnectionOpened(IActorRef cnx)
 		{
 			_system.Log.Info("Transaction meta handler with transaction coordinator id {} connection opened.", _transactionCoordinatorId);
-			_connectionHandler.ClientCnx = cnx;
+			_connectionHandler.Tell(new SetCnx(cnx));
 			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, Self));
 			if(!_state.ChangeToReadyState())
 			{
@@ -153,18 +155,11 @@ namespace SharpPulsar
 			{
 				_system.Log.Debug("New transaction with timeout in ms {}", unit.ToMilliseconds(timeout));
 			}
-			long? requestId = null;
-			_pulsarClient.Ask<long>(NewRequestId.Instance).ContinueWith(task => {
-
-				requestId = task.Result;
-			});
-            if (requestId.HasValue)
-            {
-				_pendingRequests.Add(requestId.Value, (new byte[] { (byte)timeout }, Sender));
-				var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId.Value, unit.ToMilliseconds(timeout));
-				_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId.Value));
-				Cnx().Tell(new Payload(cmd, requestId.Value, "NewTxn"));
-			}
+			var requestId = _pulsarClient.AskFor<long>(NewRequestId.Instance);
+			_pendingRequests.Add(requestId, (new byte[] { (byte)timeout }, Sender));
+			var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, unit.ToMilliseconds(timeout));
+			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
+			Cnx().Tell(new Payload(cmd, requestId, "NewTxn"));
 		}
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse response)
@@ -430,12 +425,12 @@ namespace SharpPulsar
 
 		private IActorRef Cnx()
 		{
-			return _connectionHandler.Cnx();
+			return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 		}
 
 		private void HandleConnectionClosed(IActorRef cnx)
 		{
-			_connectionHandler.ConnectionClosed(cnx);
+			_connectionHandler.Tell(new ConnectionClosed(cnx));
 		}
 		private void HandleConnectionFailed(PulsarClientException ex)
 		{

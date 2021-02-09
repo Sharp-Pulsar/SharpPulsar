@@ -48,7 +48,7 @@ namespace SharpPulsar.Interfaces
 		///             if a producer with the same "producer name" is already connected to the topic </exception>
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
-		Producer<T> Create();
+		IProducer<T> Create();
 
 		/// <summary>
 		/// Finalize the creation of the <seealso cref="Producer"/> instance in asynchronous mode.
@@ -62,7 +62,7 @@ namespace SharpPulsar.Interfaces
 		///             if a producer with the same "producer name" is already connected to the topic </exception>
 		/// <exception cref="PulsarClientException">
 		///             if the producer creation fails </exception>
-		Producer<T> CreateAsync();
+		IProducer<T> CreateAsync();
 
 		/// <summary>
 		/// Load the configuration from provided <tt>config</tt> map.
@@ -298,7 +298,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="messageRouter"> </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> MessageRouter(MessageRouter messageRouter);
+		IProducerBuilder<T> MessageRouter(IMessageRouter messageRouter);
 
 		/// <summary>
 		/// Control whether automatic batching of messages is enabled for the producer. <i>default: enabled</i>
@@ -515,7 +515,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="interceptors">
 		///            the list of interceptors to intercept the producer created by this builder. </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> Intercept(params IProducerInterceptor[] interceptors);
+		IProducerBuilder<T> Intercept(params IProducerInterceptor<T>[] interceptors);
 
 		/// <summary>
 		/// If enabled, partitioned producer will automatically discover new partitions at runtime. This is only applied on

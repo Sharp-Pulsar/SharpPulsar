@@ -1,11 +1,9 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Extension;
+﻿using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

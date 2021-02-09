@@ -1,6 +1,6 @@
 ﻿
 using System.Text;
-using SharpPulsar.Api;
+
 using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
 

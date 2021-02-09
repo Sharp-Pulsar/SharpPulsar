@@ -107,7 +107,8 @@ namespace SharpPulsar
 			}
 			_schema = schema;
 		}
-		Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata,
+
+        Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata,
 				SingleMessageMetadata singleMessageMetadata, byte[] payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema)
 		{

@@ -34,7 +34,7 @@ namespace SharpPulsar.Schemas.Reader
 
 		public JsonReader(ObjectMapper objectMapper)
 		{
-			this._objectMapper = objectMapper;
+			_objectMapper = objectMapper;
 		}
 
 		public  T Read(sbyte[] bytes, int offset, int length)

@@ -1,5 +1,5 @@
 ﻿
-using SharpPulsar.Api;
+
 using SharpPulsar.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;

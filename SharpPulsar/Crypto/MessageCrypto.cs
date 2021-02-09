@@ -26,7 +26,7 @@ using System.Security.Cryptography;
 using Akka.Event;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Security;
-using SharpPulsar.Api;
+
 using SharpPulsar.Cache;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;

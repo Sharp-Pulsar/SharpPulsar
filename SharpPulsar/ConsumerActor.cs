@@ -3,9 +3,7 @@ using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar.Akka;
 using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Akka.Network;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
@@ -15,12 +13,12 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
+using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
@@ -142,7 +140,6 @@ namespace SharpPulsar
 		private bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
 		private readonly Queue<string> _pendingChunckedMessageUuidQueue;
-		protected readonly ILoggingAdapter _log;
 
 		private readonly bool _createTopicIfDoesNotExist;
 		protected IActorRef _self;
@@ -170,7 +167,6 @@ namespace SharpPulsar
 		{
 			_self = Self;
 			_tokenSource = new CancellationTokenSource();
-			_log = Context.GetLogger();
 			_client = client;
 			ConsumerId = client.AskFor<long>(NewConsumerId.Instance);
 			_subscriptionMode = conf.SubscriptionMode;
@@ -464,6 +460,12 @@ namespace SharpPulsar
 			});
 			Receive<GetConsumerName>(m => {
 				Push(ConsumerQueue.ConsumerName, ConsumerName);
+			});
+			Receive<ActiveConsumerChanged>(m => {
+				ActiveConsumerChanged(m.IsActive);
+			});
+			Receive<MessageReceived>(m => {
+				MessageReceived(m.MessageId, m.RedeliveryCount, m.Data, _cnx);
 			});
 			Receive<GetSubscription>(m => {
 				Push(ConsumerQueue.Subscription, Subscription);
@@ -1390,10 +1392,10 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual void MessageReceived(MessageIdData messageId, int redeliveryCount, IList<long> ackSet, byte[] headersAndPayload, IActorRef cnx)
+		private void MessageReceived(MessageIdData messageId, int redeliveryCount, ReadOnlySequence<byte> data, IActorRef cnx)
 		{
-			var data = new ReadOnlySequence<byte>(headersAndPayload);
-			if(_log.IsDebugEnabled)
+			IList<long> ackSet = messageId.AckSets;
+			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
 			}
@@ -1408,7 +1410,7 @@ namespace SharpPulsar
 			MessageMetadata msgMetadata;
 			try
 			{
-				msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
+				msgMetadata = Commands.ParseMessageMetadata(data.ToArray());
 			}
 			catch(Exception)
 			{

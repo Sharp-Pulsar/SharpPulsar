@@ -1,10 +1,8 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Exceptions;
+﻿using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
-using System.Diagnostics.CodeAnalysis;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file

@@ -78,7 +78,7 @@ namespace SharpPulsar.Common
 
 			public KeySharedPolicySticky()
 			{
-				_keySharedMode = Api.KeySharedMode.Sticky;
+				_keySharedMode = Common.KeySharedMode.Sticky;
 				_ranges = new List<Range>();
 			}
 
@@ -123,7 +123,7 @@ namespace SharpPulsar.Common
 
 			public KeySharedPolicyAutoSplit()
 			{
-				_keySharedMode =Api.KeySharedMode.AutoSplit;
+				_keySharedMode = Common.KeySharedMode.AutoSplit;
 			}
 
 			public override void Validate()

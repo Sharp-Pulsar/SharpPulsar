@@ -4,7 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
-using SharpPulsar.Common.Schema;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>
@@ -39,7 +39,7 @@ namespace SharpPulsar.Interfaces
 	/// </ul>
 	/// 
 	/// </summary>
-	public interface ILookupService : IDisposable
+	public interface ILookupService
 	{
 
 		/// <summary>
@@ -68,7 +68,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="topicName"> topic-name </param>
 		/// <returns> SchemaInfo </returns>
-		ValueTask<SchemaInfo> GetSchema(TopicName topicName);
+		ValueTask<ISchemaInfo> GetSchema(TopicName topicName);
 
 		/// <summary>
 		/// Returns specific version SchemaInfo <seealso cref="SchemaInfo"/> for a given topic.
@@ -76,7 +76,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="topicName"> topic-name </param>
 		/// <param name="version"> schema info version </param>
 		/// <returns> SchemaInfo </returns>
-		ValueTask<SchemaInfo> GetSchema(TopicName topicName, sbyte[] version);
+		ValueTask<ISchemaInfo> GetSchema(TopicName topicName, sbyte[] version);
 
 		/// <summary>
 		/// Returns broker-service lookup api url.

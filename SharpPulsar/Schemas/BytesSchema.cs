@@ -18,7 +18,6 @@
 /// </summary>
 
 using System;
-using SharpPulsar.Common.Schema;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 

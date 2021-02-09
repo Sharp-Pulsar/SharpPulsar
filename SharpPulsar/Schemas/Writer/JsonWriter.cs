@@ -31,9 +31,9 @@ namespace SharpPulsar.Schemas.Writer
 
 		private readonly ObjectMapper _objectMapper;
 
-		public JsonWriter()
+		public JsonWriter(ObjectMapper objectMapper)
 		{
-			_objectMapper = new ObjectMapper();
+			_objectMapper = objectMapper;
 		}
 
 		public sbyte[] Write(T message)

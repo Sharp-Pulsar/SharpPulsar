@@ -266,12 +266,12 @@ namespace SharpPulsar
 					//get excepyion vai out
 					var msg = InternalSend(m.Message);
 					if(!m.IsDeadLetter)
-						ProducerQueue.SentMessage.Add(SentMessage<T>.Create(msg));
+						ProducerQueue.SentMessage.Add(msg);
 				}
                 catch(Exception ex)
                 {
 					if (!m.IsDeadLetter)
-						ProducerQueue.SentMessage.Add(SentMessage<T>.CreateError(msg, ex));
+						ProducerQueue.SentMessage.Add(new SentMessage<T>(ex));
 				}
 			});
 			Receive<InternalSendWithTxn<T>>(m =>
@@ -280,14 +280,14 @@ namespace SharpPulsar
 				{
 					//get excepyion vai out
 					var msg = InternalSendWithTxn(m.Message, m.Txn);
-					m.Txn.Tell(new RegisterSendOp(msg));
+					m.Txn.Tell(new RegisterSendOp(msg.Message.MessageId));
 					if (!m.IsDeadLetter)
-						ProducerQueue.SentMessage.Add(SentMessage<T>.Create(msg));
+						ProducerQueue.SentMessage.Add(msg);
 				}
 				catch (Exception ex)
 				{
 					if (!m.IsDeadLetter)
-						ProducerQueue.SentMessage.Add(SentMessage<T>.CreateError(msg, ex));
+						ProducerQueue.SentMessage.Add(new SentMessage<T>(ex));
 				}
 			});
 		}
@@ -381,7 +381,8 @@ namespace SharpPulsar
 						{
 							return;
 						}
-						BatchMessageAndSend();
+						var sent = BatchMessageAndSend();
+						ProducerQueue.SentMessage.Add(sent);
 					});
 				}
 				ResendMessages();
@@ -581,37 +582,32 @@ namespace SharpPulsar
 				long sequenceId = _msgIdGenerator;
 				msgMetadata.SequenceId = (ulong)sequenceId;
 				_msgIdGenerator++;
-				/*if (msgMetadata.SequenceId <= 0)
-				{
-					sequenceId = _msgIdGenerator++;// Updater.getAndIncrement(this);
-					msgMetadata.SequenceId = (ulong)sequenceId;
-				}
-				else
-				{
-					sequenceId = (long)msgMetadata.SequenceId;
-				}*/
+				SentMessage<T> sent = null;
 				string uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
 				for (int chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
-					SerializeAndSendMessage(msg, msgMetadata, (byte[])(object)payload, sequenceId, uuid, chunkId, (int)totalChunks, readStartIndex, (int)maxMessageSize, (byte[])(object)compressedPayload, compressedPayload.Length, uncompressedSize);
+					sent = SerializeAndSendMessage(msg, msgMetadata, (byte[])(object)payload, sequenceId, uuid, chunkId, (int)totalChunks, readStartIndex, (int)maxMessageSize, (byte[])(object)compressedPayload, compressedPayload.Length, uncompressedSize);
 					readStartIndex = (int)((chunkId + 1) * maxMessageSize);
 				}
+				return sent;
 			}
 			catch (PulsarClientException e)
 			{
 				e.SequenceId = msg.SequenceId;
 				SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), e);
+				return new SentMessage<T>(e);
 			}
 			catch (Exception t)
 			{
 				SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), t);
+				return new SentMessage<T>(t);
 			}
 		}
 		private bool CanEnqueueRequest(long sequenceId)
 		{
 			return true;
 		}
-		private void SerializeAndSendMessage(Message<T> msg, MessageMetadata msgMetadata, byte[] payload, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
+		private SentMessage<T> SerializeAndSendMessage(Message<T> msg, MessageMetadata msgMetadata, byte[] payload, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
 		{
 			var chunkPayload = compressedPayload;
 			var chunkMsgMetadata = msgMetadata;
@@ -666,7 +662,7 @@ namespace SharpPulsar
 						{
 							_log.Info($"Message with sequence id {sequenceId} might be a duplicate but cannot be determined at this time.");
 						}
-						DoBatchSendAndAdd(msg, payload);
+						return DoBatchSendAndAdd(msg, payload);
 					}
 					else
 					{
@@ -674,7 +670,7 @@ namespace SharpPulsar
 						// and non-duplicated messages into a batch.
 						if(_isLastSequenceIdPotentialDuplicated)
 						{
-							DoBatchSendAndAdd(msg, payload);
+							return DoBatchSendAndAdd(msg, payload);
 						}
 						else
 						{
@@ -689,15 +685,16 @@ namespace SharpPulsar
 							});
 							if (isBatchFull)
 							{
-								BatchMessageAndSend();
+								return BatchMessageAndSend();
 							}
 						}
 						_isLastSequenceIdPotentialDuplicated = false;
+						return new SentMessage<T>(new InvalidOperationException("Previous message belongs to a batch"));
 					}
 				}
 				else
 				{
-					DoBatchSendAndAdd(msg, payload);
+					return DoBatchSendAndAdd(msg, payload);
 				}
 			}
 			else
@@ -727,7 +724,7 @@ namespace SharpPulsar
 					op.TotalChunks = totalChunks;
 					op.ChunkId = chunkId;
 				}
-				ProcessOpSendMsg(op);
+				return ProcessOpSendMsg(op);
 			}
 		}
 
@@ -880,7 +877,7 @@ namespace SharpPulsar
 			return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg)) && _batchMessageContainer.HasSameTxn(msg);
 		}
 
-		private void DoBatchSendAndAdd(Message<T> msg, byte[] payload)
+		private SentMessage<T> DoBatchSendAndAdd(Message<T> msg, byte[] payload)
 		{
 			if(_log.IsDebugEnabled)
 			{
@@ -888,7 +885,7 @@ namespace SharpPulsar
 			}
 			try
 			{
-				BatchMessageAndSend();
+				var sent = BatchMessageAndSend();
 
 				_batchMessageContainer.Add(msg, (a, e) =>
 				{
@@ -897,11 +894,12 @@ namespace SharpPulsar
 					if (e != null)
 						SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), e);
 				});
+				return sent;
 			}
-			finally
-			{
-				
-			}
+			catch(Exception ex)
+            {
+				return new SentMessage<T>(ex);
+            }
 		}
 
 		private bool IsValidProducerState(long sequenceId)
@@ -1256,7 +1254,7 @@ namespace SharpPulsar
 		}
 
 		// must acquire semaphore before enqueuing
-		private void BatchMessageAndSend()
+		private SentMessage<T> BatchMessageAndSend()
 		{
 			if(_log.IsDebugEnabled)
 			{
@@ -1280,24 +1278,24 @@ namespace SharpPulsar
 					{
 						ProcessOpSendMsg(opSendMsg);
 					}
+					return SentMessage<T>.Create(opSendMsgs);
 				}
 				catch(Exception t)
 				{
 					_log.Warning($"[{Topic}] [{_producerName}] error while create opSendMsg by batch message container: {t}");
+					return new SentMessage<T>(t);
 				}
 			}
+			return new SentMessage<T>(new InvalidOperationException("No message was in batch"));
 		}
-		private void ProcessOpSendMsg(OpSendMsg<T> op)
+		private SentMessage<T> ProcessOpSendMsg(OpSendMsg<T> op)
 		{
-			if (op == null)
-			{
-				return;
-			}
 			try
 			{
+				SentMessage<T> sent = null;
 				if (op.Msg != null && BatchMessagingEnabled)
 				{
-					BatchMessageAndSend();
+					sent = BatchMessageAndSend();
 				}
 				_pendingMessages.Enqueue(op);
 				if (op.Msg != null)
@@ -1309,7 +1307,6 @@ namespace SharpPulsar
 					if (op.Msg != null && op.Msg.GetSchemaState() == Message<T>.SchemaState.None)
 					{
 						TryRegisterSchema(ClientCnx, op.Msg);
-						return;
 					}
 
 					_stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
@@ -1323,11 +1320,13 @@ namespace SharpPulsar
 						_log.Debug($"[{Topic}] [{_producerName}] Connection is not ready -- sequenceId {op.SequenceId}");
 					}
 				}
+				return new SentMessage<T>(new NullReferenceException());
 			}
 			catch (Exception t)
 			{
 				_log.Warning($"[{Topic}] [{ProducerName}] error while closing out batch -- {t}");
 				SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), new PulsarClientException(t.ToString(), op.SequenceId));
+				return new SentMessage<T>(t);
 			}
 		}
 		private void SendComplete(Message<T> interceptorMessage, long createdAt, Exception e)
@@ -1470,5 +1469,6 @@ namespace SharpPulsar
 			}
 		}
 
-	}
+        public override IProducerStats Stats => _stats;
+    }
 }
