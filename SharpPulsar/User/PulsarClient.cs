@@ -60,8 +60,14 @@ namespace SharpPulsar.User
         }
 
         public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> confBuilder)
-        {
+        {            
             var conf = confBuilder.ConsumerConfigurationData;
+            // DLQ only supports non-ordered subscriptions, don't enable DLQ on Key_Shared subType since it require message ordering for given key.
+            if (conf.SubscriptionType == SubType.KeyShared && !string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.DeadLetterTopic))
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Deadletter topic on Key_Shared " +
+                        "subscription type is not supported.");
+            }
             if (conf.TopicNames.Count == 0 && conf.TopicsPattern == null)
             {
                 throw new PulsarClientException.InvalidConfigurationException("Topic name must be set on the consumer builder");
