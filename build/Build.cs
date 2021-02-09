@@ -18,10 +18,10 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions("ci",
-    GitHubActionsImage.WindowsLatest,
+    GitHubActionsImage.WindowsLatest, GitHubActionsImage.Ubuntu1804,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev", "beta/*" },
-    OnPullRequestBranches = new[] { "beta" },
+    OnPullRequestBranches = new[] { "dev" },
     InvokedTargets = new[] { nameof(Compile) })]
 class Build : NukeBuild
 {
@@ -29,7 +29,7 @@ class Build : NukeBuild
     ///   - JetBrains ReSharper        https://nuke.build/resharper
     ///   - JetBrains Rider            https://nuke.build/rider
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
-    ///   - Microsoft VSCode           https://nuke.build/vscode
+    ///   - Microsoft VSCode           https://nuke.build/vscode 
 
     public static int Main () => Execute<Build>(x => x.Compile);
 
@@ -65,9 +65,9 @@ class Build : NukeBuild
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
-                .SetAssemblyVersion(GitVersion.AssemblySemVer)
-                .SetFileVersion(GitVersion.AssemblySemFileVer)
-                .SetInformationalVersion(GitVersion.InformationalVersion)
+                //.SetAssemblyVersion(GitVersion.AssemblySemVer)
+                //.SetFileVersion(GitVersion.AssemblySemFileVer)
+                //.SetInformationalVersion(GitVersion.InformationalVersion)
                 .EnableNoRestore());
         });
 
