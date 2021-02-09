@@ -42,7 +42,7 @@ namespace SharpPulsar.Schema
 
 		public virtual ISchema<IGenericRecord> Schema
 		{
-			set => this._schema = value;
+			set => _schema = value;
         }
 
 		private void EnsureSchemaInitialized()
@@ -78,7 +78,7 @@ namespace SharpPulsar.Schema
 			{
 				if (_schema == null)
 				{
-					this._schemaInfoProvider = value;
+					_schemaInfoProvider = value;
 				}
 				else
 				{
@@ -96,8 +96,8 @@ namespace SharpPulsar.Schema
 
 		public  void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
 		{
-			this._topicName = topicName;
-			this._componentName = componentName;
+			_topicName = topicName;
+			_componentName = componentName;
             if (schemaInfo == null) return;
             var genericSchema = GenerateSchema(schemaInfo);
             Schema = genericSchema;
@@ -108,7 +108,7 @@ namespace SharpPulsar.Schema
 		{
 			if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
 			{
-				throw new System.Exception("Currently auto consume only works for topics with avro or json schemas");
+				throw new Exception("Currently auto consume only works for topics with avro or json schemas");
 			}
 			// when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
 			// to decode the messages.
@@ -168,13 +168,12 @@ namespace SharpPulsar.Schema
 				case SchemaType.InnerEnum.LocalDateTime:
 					return LocalDateTimeSchema.Of();
 				case SchemaType.InnerEnum.JSON:
-					return GenericJsonSchema.of(schemaInfo);
 				case SchemaType.InnerEnum.AVRO:
-					return GenericAvroSchema.of(schemaInfo);
+					return GenericAvroSchema.Of(schemaInfo);
 				case SchemaType.InnerEnum.KeyValue:
 					KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
-					var keySchema = GetSchema(kvSchemaInfo.Key);
-					var valueSchema = GetSchema(kvSchemaInfo.Value);
+					var keySchema = (ISchema<object>)GetSchema(kvSchemaInfo.Key);
+					var valueSchema = (ISchema<object>)GetSchema(kvSchemaInfo.Value);
 					return KeyValueSchema<object, object>.Of(keySchema, valueSchema);
 				default:
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");

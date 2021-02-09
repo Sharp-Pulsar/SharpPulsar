@@ -62,7 +62,7 @@ namespace SharpPulsar.Schemas
 		}
 
 
-		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema)
+		public static ISchema<KeyValue<K, V>> Of(ISchema<K> KeySchema, ISchema<V> ValueSchema)
 		{
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
 		}
