@@ -20,14 +20,14 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 [GitHubActions("windows",
     GitHubActionsImage.WindowsLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "master", "dev", "beta/*" },
-    OnPullRequestBranches = new[] { "dev" },
+    OnPushBranches = new[] { "master", "dev" },
+    OnPullRequestBranches = new[] { "master", "dev" },
     InvokedTargets = new[] { nameof(Compile) })]
 [GitHubActions("linux",
-    GitHubActionsImage.Ubuntu1804,
+    GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "master", "dev", "beta/*" },
-    OnPullRequestBranches = new[] { "dev" },
+    OnPushBranches = new[] { "master", "dev" },
+    OnPullRequestBranches = new[] { "master", "dev" },
     InvokedTargets = new[] { nameof(Compile) })]
 class Build : NukeBuild
 {

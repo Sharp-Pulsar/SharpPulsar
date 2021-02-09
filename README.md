@@ -1,3 +1,6 @@
+[![Windows](https://github.com/eaba/SharpPulsar/workflows/windows/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3Awindows)
+[![Ubuntu](https://github.com/eaba/SharpPulsar/workflows/linux/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3Alinux)
+
 # SharpPulsar
 SharpPulsar is [Apache Pulsar](https://github.com/apache/pulsar) Client built using [Akka.net](https://github.com/akkadotnet/akka.net). 
 
