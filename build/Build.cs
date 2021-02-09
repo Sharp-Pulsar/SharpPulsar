@@ -22,7 +22,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev", "beta/*" },
     OnPullRequestBranches = new[] { "beta" },
-    InvokedTargets = new[] { nameof(GitHubActions) })]
+    InvokedTargets = new[] { nameof(Compile) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
