@@ -13,7 +13,7 @@ namespace SharpPulsar.Admin
                 Context.ActorOf(AdminCoordinator.Prop(s, pulsarManager), an);
             }
 
-            Receive((InternalCommands.Admin q) =>
+            Receive((Messages.Admin q) =>
             {
                 var an = Regex.Replace(q.BrokerDestinationUrl, @"[^\w\d]", "");
                 var actor = Context.Child(an);

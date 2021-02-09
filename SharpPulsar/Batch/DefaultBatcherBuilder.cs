@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,24 +18,26 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common
+
+using Akka.Actor;
+using SharpPulsar.Batch.Api;
+
+namespace SharpPulsar.Batch
 {
-	/// <summary>
-	/// A field in a record, consisting of a field name, index, and
-	/// <seealso cref="ISchema"/> for the field value.
-	/// </summary>
-	public class Field
-	{
+    public class DefaultBatcherBuilder : IBatcherBuilder
+    {
+        private ActorSystem _system;
 
-		/// <summary>
-		/// The field name.
-		/// </summary>
-		public string Name;
-		/// <summary>
-		/// The index of the field within the record.
-		/// </summary>
-		public int Index;
+        public DefaultBatcherBuilder(ActorSystem system)
+        {
+            _system = system;
+        }
 
-	}
+        public IBatchMessageContainer Build()
+        {
+            return new BatchMessageContainer(_system);
+        }
+
+    }
 
 }

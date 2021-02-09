@@ -6,7 +6,7 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
-using SharpPulsar.Api;
+
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Utility;

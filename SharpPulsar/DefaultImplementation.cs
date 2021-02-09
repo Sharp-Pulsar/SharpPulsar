@@ -14,6 +14,7 @@ using System.Text;
 using NodaTime;
 using SharpPulsar.Shared;
 using SharpPulsar.Schema;
+using SharpPulsar.Schemas.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -189,9 +190,9 @@ namespace SharpPulsar
 			return (ISchema<object>)AutoConsumeSchema.GetSchema((SchemaInfo)schemaInfo);
 		}
 
-		public static IGenericSchema<IGenericRecord> GetGenericSchema(ISchemaInfo schemaInfo)
+		public static GenericSchema GetGenericSchema(ISchemaInfo schemaInfo)
 		{
-			return GenericSchemaImpl.Of((SchemaInfo)schemaInfo);
+			return GenericSchema.Of((SchemaInfo)schemaInfo);
 		}
 
 		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema)

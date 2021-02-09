@@ -4,6 +4,7 @@ using System.Text;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Interfaces.Schema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
 /// <summary>

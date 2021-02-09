@@ -18,7 +18,7 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-    using SharpPulsar.Api;
+    
     using SharpPulsar.Interfaces;
     using System;
     using System.Security.Cryptography;

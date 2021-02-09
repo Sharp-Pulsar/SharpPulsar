@@ -3,10 +3,10 @@ using System.Linq;
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
-using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto;
 using SharpPulsar.Presto.Facebook.Type;
+using SharpPulsar.Sql.Message;
 
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");

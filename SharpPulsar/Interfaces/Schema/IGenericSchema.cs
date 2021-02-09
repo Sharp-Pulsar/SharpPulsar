@@ -20,7 +20,7 @@
 /// </summary>
 namespace SharpPulsar.Interfaces.ISchema
 {
-    using SharpPulsar.Common;
+	using SharpPulsar.Interfaces.Schema;
     using System;
 
     /// <summary>

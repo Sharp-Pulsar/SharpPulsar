@@ -38,7 +38,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// </summary>
 		/// <param name="fieldName"> name of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		IFieldSchemaBuilder Field(string fieldName);
+		//IFieldSchemaBuilder Field(string fieldName);
 
 		/// <summary>
 		/// Add a field with the given name and genericSchema to the record.
@@ -46,7 +46,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// <param name="fieldName"> name of the field </param>
 		/// <param name="genericSchema"> schema of the field </param>
 		/// <returns> field schema builder to build the field. </returns>
-		IFieldSchemaBuilder Field(string fieldName, IGenericSchema<IGenericRecord> genericSchema);
+		//IFieldSchemaBuilder Field(string fieldName, IGenericSchema<IGenericRecord> genericSchema);
 
 		/// <summary>
 		/// Add doc to the record schema.
@@ -59,7 +59,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// Build the schema info.
 		/// </summary>
 		/// <returns> the schema info. </returns>
-		SchemaInfo Build(SchemaType schemaType);
+		ISchemaInfo Build(SchemaType schemaType);
 
 	}
 

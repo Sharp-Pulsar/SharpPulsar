@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using SharpPulsar.Api;
+
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;

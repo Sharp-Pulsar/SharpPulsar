@@ -16,24 +16,30 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Entity
+namespace SharpPulsar.Interfaces.Schema
 {
-	/// <summary>
-	/// A field in a record, consisting of a field name, index, and
-	/// <seealso cref="Schema"/> for the field value.
-	/// </summary>
-	public class Field
-	{
+    /// <summary>
+    /// A field in a record, consisting of a field name, index, and
+    /// <seealso cref="Schema"/> for the field value.
+    /// </summary>
+    public class Field
+    {
 
-		/// <summary>
-		/// The field name.
-		/// </summary>
-		public string Name { get; set; }
-		/// <summary>
-		/// The index of the field within the record.
-		/// </summary>
-		public int Index { get; set; }
-
-	}
+        /// <summary>
+        /// The field name.
+        /// </summary>
+        private readonly string _name;
+        /// <summary>
+        /// The index of the field within the record.
+        /// </summary>
+        private readonly int _index;
+        public Field(string name, int index)
+        {
+            _name = name;
+            _index = index;            
+        }
+        public string Name => _name;
+        public int Index => _index;
+    }
 
 }

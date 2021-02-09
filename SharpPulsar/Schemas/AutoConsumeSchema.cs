@@ -4,6 +4,7 @@ using SharpPulsar.Shared;
 using SharpPulsar.Schemas;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Schemas.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -111,7 +112,7 @@ namespace SharpPulsar.Schema
 			}
 			// when using `AutoConsumeSchema`, we use the schema associated with the messages as schema reader
 			// to decode the messages.
-			return GenericSchemaImpl.Of(schemaInfo, false);
+			return GenericSchema.Of(schemaInfo, false);
 		}
 		public ISchema<IGenericRecord> Clone()
 		{

@@ -4,7 +4,7 @@ using System.Linq;
 using Akka.Actor;
 using Akka.Event;
 using DotNetty.Common.Utilities;
-using SharpPulsar.Api;
+
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;

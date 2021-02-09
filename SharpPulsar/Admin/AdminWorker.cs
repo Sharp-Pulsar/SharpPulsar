@@ -17,7 +17,7 @@ namespace SharpPulsar.Admin
         {
             _pulsarManager = pulsarManager;
             _adminRestapi = new PulsarAdminRESTAPI(server, new HttpClient(), true);
-            //Receive((Action<InternalCommands.Admin>)this.Handle);
+            //Receive((Action<Messages.Admin>)this.Handle);
             Receive<Messages.Admin>(Handle);
         }
 

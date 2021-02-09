@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Api;
-using SharpPulsar.Impl;
+﻿
 using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -27,15 +26,15 @@ using PulsarClientException = SharpPulsar.Exceptions.PulsarClientException;
 /// </summary>
 namespace SharpPulsar.Auth
 {
-	
-	/// 
-	/// <summary>
-	/// This plugin requires these parameters
-	/// 
-	/// tlsCertFile: A file path for a client certificate. tlsKeyFile: A file path for a client private key.
-	/// 
-	/// </summary>
-	public class AuthenticationTls : IAuthentication, IEncodedAuthenticationParameterSupport
+
+    /// 
+    /// <summary>
+    /// This plugin requires these parameters
+    /// 
+    /// tlsCertFile: A file path for a client certificate. tlsKeyFile: A file path for a client private key.
+    /// 
+    /// </summary>
+    public class AuthenticationTls : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private const long SerialVersionUid = 1L;

@@ -5,14 +5,11 @@ using System.Text;
 using System.Text.Json;
 using PulsarAdmin.Models;
 using SharpPulsar.Messages;
-using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Api;
-using SharpPulsar.Impl;
 using SharpPulsar.Auth;
-using SharpPulsar.Impl.Schema;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Admin;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

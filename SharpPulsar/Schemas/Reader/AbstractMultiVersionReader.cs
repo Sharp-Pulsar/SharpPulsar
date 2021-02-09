@@ -14,7 +14,7 @@ namespace SharpPulsar.Schemas.Reader
     {
 		protected internal readonly ISchemaReader<T> providerSchemaReader;
 		protected internal ISchemaInfoProvider schemaInfoProvider;
-		Cache<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new Cache<BytesSchemaVersion, ISchemaReader<T>>(30);
+		Cache<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new Cache<BytesSchemaVersion, ISchemaReader<T>>(TimeSpan.FromMinutes(30));
 		
 		public AbstractMultiVersionReader(ISchemaReader<T> providerSchemaReader)
 		{

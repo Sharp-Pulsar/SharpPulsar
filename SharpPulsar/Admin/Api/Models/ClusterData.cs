@@ -8,7 +8,6 @@ namespace PulsarAdmin.Models
 {
     using Newtonsoft.Json;
     using System.Collections.Generic;
-    using SharpPulsar.Api;
     using SharpPulsar.Common;
 
     /// <summary>

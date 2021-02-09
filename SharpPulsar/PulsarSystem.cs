@@ -108,7 +108,7 @@ namespace SharpPulsar
         {
             return null;
         }
-        public Sql NewSql() 
+        public User.Sql NewSql() 
         {
             return null;
         }

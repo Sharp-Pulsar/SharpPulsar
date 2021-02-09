@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-using SharpPulsar.Api;
+
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Utils

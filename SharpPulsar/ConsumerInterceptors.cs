@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Event;
-using SharpPulsar.Api;
+
 using SharpPulsar.Interfaces;
 
 /// <summary>

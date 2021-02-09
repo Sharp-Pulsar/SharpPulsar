@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using SharpPulsar.Api;
+
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;

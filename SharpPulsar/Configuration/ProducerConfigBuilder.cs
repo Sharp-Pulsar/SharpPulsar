@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Messages;
-using SharpPulsar.Api;
+
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Extension;
 using SharpPulsar.Configuration;

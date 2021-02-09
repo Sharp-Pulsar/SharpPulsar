@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Api;
+﻿
 using System;
 using System.IO;
 using System.Net.Http;
