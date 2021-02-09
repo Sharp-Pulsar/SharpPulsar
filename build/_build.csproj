@@ -14,4 +14,12 @@
     <PackageDownload Include="GitVersion.Tool" Version="[5.5.1]" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="..\.github\workflows\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\ci.yml" />
+  </ItemGroup>
+
 </Project>
