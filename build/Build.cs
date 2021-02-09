@@ -1,5 +1,9 @@
 using System;
+using System.Collections;
+using System.IO;
 using System.Linq;
+using System.Xml.Linq;
+using System.Xml.XPath;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
@@ -10,6 +14,7 @@ using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
@@ -22,13 +27,13 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(Compile) })]
+    InvokedTargets = new[] { nameof(Test) })]
 [GitHubActions("linux",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(Compile) })]
+    InvokedTargets = new[] { nameof(Test) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -76,5 +81,58 @@ class Build : NukeBuild
                 //.SetInformationalVersion(GitVersion.InformationalVersion)
                 .EnableNoRestore());
         });
+    Target Test => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            var testProjects = GlobFiles(Solution.Directory / "test", "*.csproj");
+            var testRun = 1;
+            foreach (var testProject in testProjects)
+            {
+                var projectDirectory = Path.GetDirectoryName(testProject);
+                string testFile = OutputDirectory / $"test_{testRun++}.testresults";
+                // This is so that the global dotnet is used instead of the one that comes with NUKE
+                var dotnetPath = ToolPathResolver.GetPathExecutable("dotnet");
 
+                ProcessTasks.StartProcess(dotnetPath, "xunit " +
+                                         "-nobuild " +
+                                         $"-xml {testFile.DoubleQuoteIfNeeded()}",
+                        workingDirectory: projectDirectory)
+                    // AssertWairForExit() instead of AssertZeroExitCode()
+                    // because we want to continue all tests even if some fail
+                    .AssertWaitForExit();
+            }
+
+            PrependFrameworkToTestresults();
+        });
+    void PrependFrameworkToTestresults()
+    {
+        var testResults = GlobFiles(OutputDirectory, "*.testresults");
+        foreach (var testResultFile in testResults)
+        {
+            var frameworkName = GetFrameworkNameFromFilename(testResultFile);
+            var xDoc = XDocument.Load(testResultFile);
+
+            foreach (var testType in ((IEnumerable)xDoc.XPathEvaluate("//test/@type")).OfType<XAttribute>())
+            {
+                testType.Value = frameworkName + "+" + testType.Value;
+            }
+
+            foreach (var testName in ((IEnumerable)xDoc.XPathEvaluate("//test/@name")).OfType<XAttribute>())
+            {
+                testName.Value = frameworkName + "+" + testName.Value;
+            }
+
+            xDoc.Save(testResultFile);
+        }
+    }
+
+    string GetFrameworkNameFromFilename(string filename)
+    {
+        var name = Path.GetFileName(filename);
+        name = name.Substring(0, name.Length - ".testresults".Length);
+        var startIndex = name.LastIndexOf('-');
+        name = name.Substring(startIndex + 1);
+        return name;
+    }
 }
