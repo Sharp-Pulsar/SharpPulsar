@@ -18,10 +18,10 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions("ci",
-    GitHubActionsImage.WindowsLatest,
+    GitHubActionsImage.WindowsLatest, GitHubActionsImage.Ubuntu1804,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev", "beta/*" },
-    OnPullRequestBranches = new[] { "beta" },
+    OnPullRequestBranches = new[] { "dev" },
     InvokedTargets = new[] { nameof(Compile) })]
 class Build : NukeBuild
 {
