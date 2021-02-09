@@ -17,8 +17,14 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
-[GitHubActions("ci",
-    GitHubActionsImage.WindowsLatest, GitHubActionsImage.Ubuntu1804,
+[GitHubActions("windows",
+    GitHubActionsImage.WindowsLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "master", "dev", "beta/*" },
+    OnPullRequestBranches = new[] { "dev" },
+    InvokedTargets = new[] { nameof(Compile) })]
+[GitHubActions("linux",
+    GitHubActionsImage.Ubuntu1804,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev", "beta/*" },
     OnPullRequestBranches = new[] { "dev" },
