@@ -16,12 +16,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Samples", "Sample\Samples.c
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{EC656F51-19D1-4949-AD76-EA97483AC6C3}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1}.Release|Any CPU.Build.0 = Release|Any CPU
