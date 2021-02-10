@@ -13,6 +13,7 @@ using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
 using Nuke.Common.Utilities.Collections;
+using static Nuke.Core.Tooling.ProcessTasks;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
@@ -111,7 +112,7 @@ class Build : NukeBuild
       .DependsOn(CheckDockerVersion)
       .Executes(() =>
       {
-          ProcessTasks.StartProcess("/usr/bin/docker", "run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
+          StartProcess("/usr/bin/docker", "run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
       });
     Target CheckDockerVersion => _ => _
       .DependsOn(CheckBranch)
