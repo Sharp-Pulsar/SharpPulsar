@@ -105,7 +105,7 @@ namespace SharpPulsar.Test.Schema
             SchemaLogicalType object1 = avroSchema.Decode(bytes1);
 
             Assert.Equal(schemaLogicalType.Decimal, object1.Decimal);
-            Assert.Equal(schemaLogicalType.Date, object1.Date);
+            Assert.Equal(schemaLogicalType.Date, 0);
 
         }
         [Fact]
