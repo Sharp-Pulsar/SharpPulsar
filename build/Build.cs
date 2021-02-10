@@ -120,7 +120,7 @@ class Build : NukeBuild
           .SetMount("source=pulsardata,target=/pulsar/data")
           .SetMount("source=pulsarconf,target=/pulsar/conf")
           .SetImage("apachepulsar/pulsar:2.7.0")
-          .SetCommand("/usr/bin/pulsar standalone")
+          .SetCommand("/usr/pulsar/bin/pulsar standalone")
           );
       });
     Target CheckDockerVersion => _ => _
