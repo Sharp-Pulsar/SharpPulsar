@@ -111,7 +111,7 @@ class Build : NukeBuild
                                          "-nobuild " +
                                          $"-xml {testFile.DoubleQuoteIfNeeded()}",
                         workingDirectory: projectDirectory)
-                    // AssertWairForExit() instead of AssertZeroExitCode()
+                    //AssertWairForExit() instead of AssertZeroExitCode()
                     // because we want to continue all tests even if some fail
                     .AssertWaitForExit();
             }
