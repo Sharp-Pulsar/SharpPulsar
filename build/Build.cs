@@ -29,8 +29,14 @@ using static Nuke.Common.Tools.Xunit.XunitTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(Test) })]
+    InvokedTargets = new[] { nameof(Compile) })]
 [GitHubActions("linux",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "master", "dev" },
+    OnPullRequestBranches = new[] { "master", "dev" },
+    InvokedTargets = new[] { nameof(Compile) })]
+[GitHubActions("Tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
@@ -107,13 +113,17 @@ class Build : NukeBuild
                 // This is so that the global dotnet is used instead of the one that comes with NUKE
                 var dotnetPath = ToolPathResolver.GetPathExecutable("dotnet");
 
-                ProcessTasks.StartProcess(dotnetPath, "test " +
+                using var p = ProcessTasks.StartProcess(dotnetPath, "test " +
                                          "-nobuild " +
                                          $"-xml {testFile.DoubleQuoteIfNeeded()}",
-                        workingDirectory: projectDirectory)
-                    //AssertWairForExit() instead of AssertZeroExitCode()
-                    // because we want to continue all tests even if some fail
-                    .AssertWaitForExit();
+                        workingDirectory: projectDirectory).AssertWaitForExit();
+                foreach(var o in p.Output)
+                {
+                    if (o.Type == OutputType.Err)
+                        ControlFlow.Assert(o.Type == OutputType.Std, o.Text);
+                    else
+                        Logger.Info(o.Text);
+                }
             }
 
             PrependFrameworkToTestresults();
