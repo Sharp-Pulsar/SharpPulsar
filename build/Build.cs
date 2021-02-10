@@ -8,6 +8,7 @@ using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
+using Nuke.Common.Tools.Docker;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
@@ -80,6 +81,7 @@ class Build : NukeBuild
         });
     Target Test => _ => _
         .DependsOn(Compile)
+        .DependsOn(StartPulsar)
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Test";
@@ -104,7 +106,46 @@ class Build : NukeBuild
                     .EnableNoBuild()
                     .SetNoRestore(InvokedTargets.Contains(Restore)));
             }
-        }); 
+        });
+    Target StartPulsar => _ => _
+      .DependsOn(CheckDockerVersion)
+      .Executes(() =>
+      {
+          DockerTasks.DockerRun(b =>
+          b
+          .SetDetach(true)
+          .SetName("pulsar_test")
+          .SetPublish("6650:6650")
+          .SetPublish("8080:8080")
+          .SetMount("source=pulsardata,target=/pulsar/data")
+          .SetMount("source=pulsarconf,target=/pulsar/conf")
+          .SetImage("apachepulsar/pulsar:2.7.0")
+          .SetArgs("bin/pulsar standalone")
+          );
+      });
+    Target CheckDockerVersion => _ => _
+      .DependsOn(CheckBranch)
+        .Executes(() =>
+        {
+            DockerTasks.DockerVersion();
+        });
+
+    Target CheckBranch => _ => _
+       .Executes(() =>
+       {
+           Information(GitRepository.Branch);
+       });
+    Target StopPulsar => _ => _
+    .After(Test)
+    .AssuredAfterFailure()
+    .Executes(() =>
+    {
+
+        DockerTasks.DockerRm(b => b
+          .SetContainers("pulsar_test")
+          .SetForce(true));
+
+    });
     static void Information(string info)
     {
         Logger.Info(info);
