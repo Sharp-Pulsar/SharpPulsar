@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Nuke.Common;
@@ -17,7 +15,7 @@ using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
-
+//https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions("Build",
