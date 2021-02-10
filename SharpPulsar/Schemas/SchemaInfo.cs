@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Common;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
@@ -53,7 +54,7 @@ namespace SharpPulsar.Schemas
 					    KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(this);
 					    return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
 					default:
-						return Convert.ToBase64String((byte[])(object)Schema);
+						return Convert.ToBase64String(Schema.ToBytes());
 				}
 			}
 		}

@@ -34,6 +34,7 @@ namespace SharpPulsar
     using BAMCIS.Util.Concurrent;
     using SharpPulsar.Shared;
     using SharpPulsar.Schemas;
+    using SharpPulsar.Extension;
 
     public class Message<T> : IMessage<T>
 	{
@@ -278,7 +279,7 @@ namespace SharpPulsar
 					return null;
 				}
 
-				sbyte[] data = (sbyte[])(object)_payload;
+				sbyte[] data = _payload.ToSBytes();
 				return data;
 			}
 		}
@@ -295,7 +296,7 @@ namespace SharpPulsar
 			{
 				if (Metadata != null && Metadata.SchemaVersion.Length > 0)
 				{
-					return (sbyte[])(object)Metadata.SchemaVersion;
+					return Metadata.SchemaVersion.ToSBytes();
 				}
 				else
 				{
@@ -472,10 +473,10 @@ namespace SharpPulsar
 				Condition.CheckNotNull(Metadata);
 				if (HasBase64EncodedKey())
 				{
-					return (sbyte[])(object)Convert.FromBase64String(Key);
+					return Convert.FromBase64String(Key).ToSBytes();
 				}
 
-                return (sbyte[])(object)Encoding.UTF8.GetBytes(Key);
+                return Encoding.UTF8.GetBytes(Key).ToSBytes();
             }
 		}
 
@@ -490,7 +491,7 @@ namespace SharpPulsar
 			get
 			{
 				Condition.CheckNotNull(Metadata);
-				return (sbyte[])(object)Metadata.OrderingKey;
+				return Metadata.OrderingKey.ToSBytes();
 			}
 		}
 

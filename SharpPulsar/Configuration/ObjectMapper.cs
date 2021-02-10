@@ -40,7 +40,11 @@ namespace SharpPulsar.Configuration
 
         public byte[] WriteValueAsBytes(object @object)
         {
-            return JsonSerializer.SerializeToUtf8Bytes(@object, Options());
+			using var ms = new MemoryStream();
+			IFormatter br = new BinaryFormatter();
+			br.Serialize(ms, @object);
+			var bytes = ms.ToArray();
+			return bytes;
         }
 		public ObjectMapper WithOutAttribute(object @object)
 		{

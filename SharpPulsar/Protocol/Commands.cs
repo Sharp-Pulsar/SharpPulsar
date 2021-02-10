@@ -15,6 +15,7 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;
 using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -767,7 +768,7 @@ namespace SharpPulsar.Protocol
             var schema = new CommandGetSchema {RequestId = (ulong) requestId, Topic = topic};
             if (version != null)
 			{
-				schema.SchemaVersion = (byte[])(object)version.Bytes();
+				schema.SchemaVersion = version.Bytes().ToBytes();
 			}
 			
 			var res = Serializer.Serialize(schema.ToBaseCommand());

@@ -4,6 +4,8 @@
 //	This class is used to convert some aspects of the Java String class.
 //-------------------------------------------------------------------------------------------
 
+using SharpPulsar.Extension;
+
 namespace SharpPulsar.Common
 {
     public static class StringHelper
@@ -61,7 +63,7 @@ namespace SharpPulsar.Common
         }
         public static string NewString(sbyte[] bytes, int index, int count)
         {
-            return System.Text.Encoding.UTF8.GetString((byte[])(object)bytes, index, count);
+            return System.Text.Encoding.UTF8.GetString(bytes.ToBytes(), index, count);
         }
         public static string NewString(sbyte[] bytes, string encoding)
         {
@@ -69,7 +71,7 @@ namespace SharpPulsar.Common
         }
         public static string NewString(sbyte[] bytes, int index, int count, string encoding)
         {
-            return System.Text.Encoding.GetEncoding(encoding).GetString((byte[])(object)bytes, index, count);
+            return System.Text.Encoding.GetEncoding(encoding).GetString(bytes.ToBytes(), index, count);
         }
 
         //--------------------------------------------------------------------------------
@@ -90,7 +92,7 @@ namespace SharpPulsar.Common
         private static sbyte[] GetSBytesForEncoding(System.Text.Encoding encoding, string s)
         {
             var sbytes = new sbyte[encoding.GetByteCount(s)];
-            encoding.GetBytes(s, 0, s.Length, (byte[])(object)sbytes, 0);
+            encoding.GetBytes(s, 0, s.Length, sbytes.ToBytes(), 0);
             return sbytes;
         }
 

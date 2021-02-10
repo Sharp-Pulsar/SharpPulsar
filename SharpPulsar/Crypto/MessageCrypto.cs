@@ -29,6 +29,7 @@ using Org.BouncyCastle.Security;
 
 using SharpPulsar.Cache;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;
@@ -127,8 +128,8 @@ namespace SharpPulsar.Crypto
 
 			// Read the public key and its info using callback
 			var keyInfo = keyReader.GetPublicKey(keyName, null);
-			var encryptedKey = CryptoHelper.Encrypt(_dataKey, (byte[])(object)keyInfo.Key);
-			var eki = new EncryptionKeyInfo((sbyte[])(object)encryptedKey, keyInfo.Metadata);
+			var encryptedKey = CryptoHelper.Encrypt(_dataKey, keyInfo.Key.ToBytes());
+			var eki = new EncryptionKeyInfo(encryptedKey.ToSBytes(), keyInfo.Metadata);
 			_encryptedDataKeyMap[keyName] = eki;
 		}
 		/*
@@ -196,13 +197,13 @@ namespace SharpPulsar.Crypto
 								Value = m.Value
 							});
 						});
-						var encKey = new EncryptionKeys { Key = keyName, Value = (byte[])(object)keyInfo.Key};
+						var encKey = new EncryptionKeys { Key = keyName, Value = keyInfo.Key.ToBytes()};
 						encKey.Metadatas.AddRange(kvList);
 						msgMetadata.EncryptionKeys.Add(encKey);
 					}
 					else
 					{
-						msgMetadata.EncryptionKeys.Add(new EncryptionKeys { Key = keyName, Value = (byte[])(object)keyInfo.Key });
+						msgMetadata.EncryptionKeys.Add(new EncryptionKeys { Key = keyName, Value = keyInfo.Key.ToBytes() });
 					}
 				}
 				else
@@ -251,7 +252,7 @@ namespace SharpPulsar.Crypto
 			{
 
 				// Decrypt data key using private key
-				dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, (byte[])(object)keyInfo.Key);
+				dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, keyInfo.Key.ToBytes());
 				keyDigest = Convert.ToBase64String(_hash.ComputeHash(encryptedDataKey));
 
 			}

@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interfaces.ISchema;
+﻿using SharpPulsar.Extension;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
@@ -108,7 +109,7 @@ namespace SharpPulsar.Schemas
 			}
 			else
 			{
-				return (sbyte[])(object)_encoding.GetBytes(message);
+				return _encoding.GetBytes(message).ToSBytes();
 			}
 		}
 
@@ -120,7 +121,7 @@ namespace SharpPulsar.Schemas
 			}
 			else
 			{
-				return _encoding.GetString((byte[])(object)bytes);
+				return _encoding.GetString(bytes.ToBytes());
 			}
 		}
 

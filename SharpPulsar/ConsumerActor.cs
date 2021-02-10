@@ -2493,7 +2493,7 @@ namespace SharpPulsar
 				{
 					var neC = new EncryptionContext.EncryptionKey
 					{
-						KeyValue = (sbyte[])(object)kv.Value,
+						KeyValue = kv.Value.ToSBytes(),
 						Metadata = new Dictionary<string, string>()
 					};
 					foreach (var m in kv.Metadatas)

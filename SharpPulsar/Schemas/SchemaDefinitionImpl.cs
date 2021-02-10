@@ -59,14 +59,14 @@ namespace SharpPulsar.Schemas
 
 		public SchemaDefinitionImpl(Type pojo, string jsonDef, bool alwaysAllowNull, IDictionary<string, string> properties, bool supportSchemaVersioning, bool jsr310ConversionEnabled, ISchemaReader<T> reader, ISchemaWriter<T> writer)
 		{
-			this._alwaysAllowNull = alwaysAllowNull;
-			this._properties = properties;
-			this._jsonDef = jsonDef;
-			this._pojo = pojo;
-			this._supportSchemaVersioning = supportSchemaVersioning;
-			this._jsr310ConversionEnabled = jsr310ConversionEnabled;
-			this._reader = reader;
-			this._writer = writer;
+			_alwaysAllowNull = alwaysAllowNull;
+			_properties = properties;
+			_jsonDef = jsonDef;
+			_pojo = pojo;
+			_supportSchemaVersioning = supportSchemaVersioning;
+			_jsr310ConversionEnabled = jsr310ConversionEnabled;
+			_reader = reader;
+			_writer = writer;
 		}
 
 		/// <summary>

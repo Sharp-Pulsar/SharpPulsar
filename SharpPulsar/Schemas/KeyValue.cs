@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interfaces;
+﻿using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -60,9 +61,9 @@ namespace SharpPulsar.Schemas
 			var keyBytes = keyWriter.Encode(key);
 			var valueBytes = valueWriter.Encode(value);
 			var byteBuffer = ByteBuffer.Allocate(4 + keyBytes.Length + 4 + valueBytes.Length);
-			byteBuffer.PutInt(keyBytes.Length).Put((byte[])(object)keyBytes, 0, keyBytes.Length).PutInt(valueBytes.Length).Put((byte[])(object)valueBytes, 0, valueBytes.Length);
+			byteBuffer.PutInt(keyBytes.Length).Put(keyBytes.ToBytes(), 0, keyBytes.Length).PutInt(valueBytes.Length).Put(valueBytes.ToBytes(), 0, valueBytes.Length);
 
-			return (sbyte[])(object)byteBuffer.ToArray();
+			return byteBuffer.ToArray().ToSBytes();
 		}
 
 		/// <summary>
@@ -73,14 +74,14 @@ namespace SharpPulsar.Schemas
 		/// <returns> the decoded key/value pair </returns>
 		public static KeyValue<TK, TV> Decode(sbyte[] data, KeyValueDecoder<TK, TV> decoder)
 		{
-			var byteBuffer = ByteBuffer.Allocate(data.Length).Wrap((byte[])(object)data);
+			var byteBuffer = ByteBuffer.Allocate(data.Length).Wrap(data.ToBytes());
 			var keyLength = byteBuffer.GetInt();
 			var keyBytes = new sbyte[keyLength];
-			byteBuffer.Get((byte[])(object)keyBytes, 0, keyLength);
+			byteBuffer.Get(keyBytes.ToBytes(), 0, keyLength);
 
 			var valueLength = byteBuffer.GetInt();
 			var valueBytes = new sbyte[valueLength];
-			byteBuffer.Get((byte[])(object)valueBytes, 0, valueLength);
+			byteBuffer.Get(valueBytes.ToBytes(), 0, valueLength);
 
 			return decoder(keyBytes, valueBytes);
 		}

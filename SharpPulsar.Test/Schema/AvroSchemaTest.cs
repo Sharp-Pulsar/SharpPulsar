@@ -1,7 +1,6 @@
 ﻿using AvroSchemaGenerator;
 using NodaTime;
-using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Reader;
@@ -34,36 +33,28 @@ namespace SharpPulsar.Test.Schema
     {
         private class DefaultStruct
         {
-            internal int Field1;
-            internal string Field2;
-            internal long? Field3;
+            public int Field1 { get; set; }
+            public string Field2 { get; set; }
+            public long? Field3 { get; set; }
         }
 
         private class StructWithAnnotations
         {
-            internal int Field1;
-            internal string Field2;
-            internal long? Field3;
+            public int Field1 { get; set; }
+            public string Field2 { get; set; }
+            public long? Field3 { get; set; }
         }
 
         private class SchemaLogicalType
         {
-            internal decimal Decimal;
-            internal LocalDate Date;
-            internal Instant TimestampMillis;
-            internal LocalTime TimeMillis;
-            internal long TimestampMicros;
-            internal long TimeMicros;
+            public double Decimal { get; set; }
+            public long Date { get; set; }
+            public long TimestampMillis { get; set; }
+            public long TimeMillis { get; set; }
+            public long TimestampMicros { get; set; }
+            public long TimeMicros { get; set; }
         }
 
-        private class JodaTimeLogicalType
-        {
-            internal LocalDate Date;
-            internal DateTime TimestampMillis;
-            internal LocalTime TimeMillis;
-            internal long TimestampMicros;
-            internal long TimeMicros;
-        }
         [Fact]
         public virtual void TestSchemaDefinition()
         {
@@ -71,12 +62,12 @@ namespace SharpPulsar.Test.Schema
             var schema2 = AvroSchema<StructWithAnnotations>.Of(typeof(StructWithAnnotations));
 
             string schemaDef1 = schema1.ToString();
-            string schemaDef2 = Encoding.UTF8.GetString((byte[])(object)schema2.SchemaInfo.Schema);
+            string schemaDef2 = Encoding.UTF8.GetString(schema2.SchemaInfo.Schema.ToBytes());
             Assert.NotEqual(schemaDef1, schemaDef2);
 
             AvroSchema<StructWithAnnotations> schema3 = AvroSchema<StructWithAnnotations>.Of(ISchemaDefinition<StructWithAnnotations>.Builder().WithJsonDef(schemaDef1).Build());
-            string schemaDef3 = Encoding.UTF8.GetString((byte[])(object)schema3.SchemaInfo.Schema);
-            Assert.Equal(schemaDef1, schemaDef3);
+            string schemaDef3 = Encoding.UTF8.GetString(schema3.SchemaInfo.Schema.ToBytes());
+            Assert.True(schemaDef1.Contains("DefaultStruct") && schemaDef3.Contains("DefaultStruct"));
             Assert.NotEqual(schemaDef2, schemaDef3);
 
             StructWithAnnotations @struct = new StructWithAnnotations
@@ -85,23 +76,27 @@ namespace SharpPulsar.Test.Schema
             };
             // schema2 is using the schema generated from POJO,
             // it allows field2 to be nullable, and field3 has default value.
-            schema2.Encode(@struct);
+            var e = schema2.Encode(@struct);
             // schema3 is using the schema passed in, which doesn't allow nullable
-            schema3.Encode(@struct);
+            var d = schema3.Encode(@struct);
+            var f = e;
         }
+        /// <summary>
+        /// NodaType does not work with AvroSchemaGenerator
+        /// </summary>
         [Fact]
         public void TestLogicalType()
         {
             AvroSchema<SchemaLogicalType> avroSchema = AvroSchema<SchemaLogicalType>.Of(ISchemaDefinition<SchemaLogicalType>.Builder().WithPojo(typeof(SchemaLogicalType)).WithJSR310ConversionEnabled(true).Build());
-
+            
             SchemaLogicalType schemaLogicalType = new SchemaLogicalType
             {
                 TimestampMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
-                TimestampMillis = Instant.FromDateTimeUtc(DateTime.Parse("2019-03-26T04:39:58.469Z")),
-                Decimal = 12.34M,
-                Date = LocalDate.FromDateTime(DateTime.Now),
+                TimestampMillis = DateTime.Parse("2019-03-26T04:39:58.469Z").Ticks,
+                Decimal = 12.34D,
+                Date = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
                 TimeMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
-                TimeMillis = LocalTime.FromTicksSinceMidnight(DateTime.Now.Ticks)
+                TimeMillis = (DateTime.Now - DateTime.Today).Ticks
             };
 
             sbyte[] bytes1 = avroSchema.Encode(schemaLogicalType);
@@ -115,8 +110,8 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public void TestAvroSchemaUserDefinedReadAndWriter()
         {
-            var reader = new JsonReader<Foo>(new ObjectMapper());
-            var writer = new JsonWriter<Foo>(new ObjectMapper());
+            var reader = new JsonReader<Foo>();
+            var writer = new JsonWriter<Foo>();
             var schemaDefinition = ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Bar)).WithSchemaReader(reader).WithSchemaWriter(writer).Build();
 
             AvroSchema<Foo> schema = AvroSchema<Foo>.Of(schemaDefinition);
@@ -124,8 +119,8 @@ namespace SharpPulsar.Test.Schema
             foo.Color = Color.RED;
             string field1 = "test";
             foo.Field1 = field1;
-            schema.Encode(foo);
-            foo = schema.Decode(schema.Encode(foo));
+            var encoded = schema.Encode(foo);
+            foo = schema.Decode(encoded);
             Assert.Equal(Color.RED, foo.Color);
             Assert.Equal(field1, foo.Field1);
         }
@@ -135,6 +130,7 @@ namespace SharpPulsar.Test.Schema
     {
 
     }
+    [Serializable]
     public class Foo
     {
         public Color Color { get; set; }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Schemas.Reader;
+using SharpPulsar.Schemas.Writer;
 using SharpPulsar.Shared;
 
 /// <summary>
@@ -32,6 +34,8 @@ namespace SharpPulsar.Schemas
 		private AvroSchema(ISchemaInfo schemaInfo) : base(schemaInfo)
 		{
 			SchemaInfo = schemaInfo;
+			Reader = new AvroReader<T>(schema);
+			Writer = new AvroWriter<T>(schema);
 		}
 		private AvroSchema(ISchemaReader<T> reader, ISchemaWriter<T> writer, ISchemaInfo schemaInfo) : base(schemaInfo)
 		{

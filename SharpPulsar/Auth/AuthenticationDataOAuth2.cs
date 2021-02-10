@@ -7,6 +7,7 @@ using IdentityModel.Client;
 using SharpPulsar.Exceptions;
 using Nito.AsyncEx;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -88,7 +89,7 @@ namespace SharpPulsar.Auth
 
                     ClientId = _clientId,
                     ClientSecret = _clientSecret,
-                    Token = Encoding.UTF8.GetString((byte[])(object)data.Bytes)
+                    Token = Encoding.UTF8.GetString(data.Bytes.ToBytes())
                 });
                 var result = SynchronizationContextSwitcher.NoContext(async () => await resultTask).Result;
                 if (result.IsError)
@@ -98,13 +99,13 @@ namespace SharpPulsar.Auth
 
                 if (result.IsActive)
                 {
-                    var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
+                    var bytes = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : "")).ToSBytes();
                     return new AuthData(bytes);
                 }
 
                 throw new PulsarClientException("token is not active");
             }
-            var bytesAuth = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
+            var bytesAuth = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : "")).ToSBytes();
             return new AuthData(bytesAuth);
         }
     }

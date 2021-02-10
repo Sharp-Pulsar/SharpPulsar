@@ -5,6 +5,7 @@ using Akka.Event;
 
 using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 
@@ -99,7 +100,7 @@ namespace SharpPulsar.Batch
 					var msgMetadata = msg.Metadata;
 					try
 					{
-						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, (byte[])(object)msg.Data));
+						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Data.ToBytes()));
 					}
 					catch (Exception)
 					{

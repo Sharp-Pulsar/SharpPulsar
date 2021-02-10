@@ -20,6 +20,7 @@
 using System;
 using System.IO;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
@@ -39,7 +40,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 		{
 			try
 			{
-				return (sbyte[])(Array)_objectMapper.WriteValueAsBytes((message));
+				return _objectMapper.WriteValueAsBytes(message).ToSBytes();
 			}
 			catch (IOException ioe)
 			{

@@ -264,7 +264,7 @@ namespace SharpPulsar
 			{
 				var assemblyName = Assembly.GetCallingAssembly().GetName();
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
-				var auth = new Protocol.Proto.AuthData { auth_data = ((byte[])(object)authData.Bytes) };
+				var auth = new Protocol.Proto.AuthData { auth_data = (authData.Bytes.ToBytes()) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
@@ -975,7 +975,7 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(_authentication.AuthMethodName.ToLower() == "sts" ? null : new Auth.AuthData(Auth.AuthData.InitAuthData));
 			var assemblyName = Assembly.GetCallingAssembly().GetName();
-			var auth = new Protocol.Proto.AuthData { auth_data = ((byte[])(object)authData.Bytes) };
+			var auth = new Protocol.Proto.AuthData { auth_data = (authData.Bytes.ToBytes()) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
 			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);

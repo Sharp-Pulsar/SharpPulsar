@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using SharpPulsar.Extension;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,7 +27,7 @@ namespace SharpPulsar.Auth
 	public class AuthData
 	{
 		
-		public static sbyte[] InitAuthData = (sbyte[])(object)Encoding.UTF8.GetBytes("PulsarAuthInit");
+		public static sbyte[] InitAuthData = Encoding.UTF8.GetBytes("PulsarAuthInit").ToSBytes();
 
 		public sbyte[] Bytes;
 

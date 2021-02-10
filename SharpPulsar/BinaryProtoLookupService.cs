@@ -225,7 +225,7 @@ namespace SharpPulsar
 				var schema = schemaResponse.Response.Schema;
 				var info = new SchemaInfo
 				{
-					Schema = (sbyte[])(object)schema.SchemaData,
+					Schema = schema.SchemaData.ToSBytes(),
 					Name = schema.Name,
 					Properties = schema.Properties.ToDictionary(k => k.Key, v => v.Value),
 					Type = SchemaType.ValueOf((int)schema.type)

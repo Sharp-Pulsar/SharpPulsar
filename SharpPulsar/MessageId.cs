@@ -4,6 +4,7 @@ using Google.Protobuf;
 
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
@@ -83,7 +84,7 @@ namespace SharpPulsar
 		{
 			if(data == null)
 				throw new ArgumentException();
-			var inputStream = new CodedInputStream((byte[])(object)data);
+			var inputStream = new CodedInputStream(data.ToBytes());
 			var builder = new MessageIdData();
 
             MessageIdData idData = builder;
@@ -169,7 +170,7 @@ namespace SharpPulsar
 			{
 				builder.BatchIndex = (batchIndex);
 			}
-			return (sbyte[])(object)builder.ToByteArrays();
+			return builder.ToByteArrays().ToSBytes();
 		}
 
 		public sbyte[] ToByteArray()

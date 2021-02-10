@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 
@@ -22,7 +23,7 @@ namespace SharpPulsar.Schemas
 
 		public AvroBaseStructSchema(ISchemaInfo schemaInfo) : base(schemaInfo)
 		{
-			schema = SchemaUtils.ParseAvroSchema(Encoding.UTF8.GetString((byte[])(object)schemaInfo.Schema));
+			schema = SchemaUtils.ParseAvroSchema(Encoding.UTF8.GetString(schemaInfo.Schema.ToBytes()));
 		}
 
 

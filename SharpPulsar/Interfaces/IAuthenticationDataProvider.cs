@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using SharpPulsar.Auth;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -99,7 +100,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		virtual AuthData Authenticate(AuthData auth)
 		{
-            var bytes = (sbyte[])(object)Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
+            var bytes = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : "")).ToSBytes();
 			return new AuthData(bytes);
         }
 	}

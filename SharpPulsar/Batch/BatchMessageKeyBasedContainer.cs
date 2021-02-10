@@ -8,6 +8,7 @@ using DotNetty.Common.Utilities;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 
@@ -183,7 +184,7 @@ namespace SharpPulsar.Batch
 		{
 			if (msg.HasOrderingKey())
 			{
-				return Convert.ToBase64String((byte[])(object)msg.OrderingKey);
+				return Convert.ToBase64String(msg.OrderingKey.ToBytes());
 			}
 			return msg.Key;
 		}
@@ -212,7 +213,7 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, (byte[])(object)msg.Data));
+						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Data.ToBytes()));
 						
 					}
 					var uncompressedSize = BatchedMessageMetadataAndPayload.Count;
@@ -246,9 +247,9 @@ namespace SharpPulsar.Batch
 					}
 					if (msg.HasOrderingKey())
 					{
-						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
+						MessageMetadata.OrderingKey = msg.OrderingKey.ToBytes();
 					}
-					BatchedMessageMetadataAndPayload.AddRange((byte[])(object)msg.Data);
+					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToBytes());
 					FirstCallback = callback;
 				}
 ;
