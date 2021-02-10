@@ -2,8 +2,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
-using System.Xml.XPath;
+using System.Runtime.InteropServices;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
@@ -11,16 +10,13 @@ using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
-using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
-using static Nuke.Common.Tools.Xunit.XunitTasks;
 
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
@@ -88,74 +84,35 @@ class Build : NukeBuild
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration));
         });
-    Target xUnitTests => _ => _
-       .DependsOn(Compile)
-       .Executes(() =>
-       {
-           var assembly = (AbsolutePath)GlobFiles(TestSourceDirectory, "/SharpPulsar.Test.dll").First();
-           var workingDirectory = assembly.Parent;
-
-           Xunit2(v => v
-                 .SetFramework("net5.0")
-                 .AddTargetAssemblies(assembly)
-                 .SetResultReport(Xunit2ResultFormat.Xml, ArtifactsDirectory / "tests" / "results.xml"));
-       });
     Target Test => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var testProjects = Solution.GetProjects("*.Test");
-            var testRun = 1;
-            foreach (var testProject in testProjects)
+            var projectName = "SharpPulsar.Test";
+            var project = Solution.GetProject(projectName).NotNull("project != null");
+            Information($"Running tests from {projectName}");
+            foreach (var fw in project.GetTargetFrameworks())
             {
-                var projectDirectory = Path.GetDirectoryName(testProject);
-                string testFile = OutputDirectory / $"test_{testRun++}.testresults";
-                // This is so that the global dotnet is used instead of the one that comes with NUKE
-                var dotnetPath = ToolPathResolver.GetPathExecutable("dotnet");
-
-                using var p = ProcessTasks.StartProcess(dotnetPath, "test " +
-                                         "-nobuild " +
-                                         $"-xml {testFile.DoubleQuoteIfNeeded()}",
-                        workingDirectory: projectDirectory).AssertWaitForExit();
-                foreach(var o in p.Output)
+                if (fw.StartsWith("net4")
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
                 {
-                    if (o.Type == OutputType.Err)
-                        ControlFlow.Assert(o.Type == OutputType.Std, o.Text);
-                    else
-                        Logger.Info(o.Text);
+                    Information($"Skipping {projectName} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                    continue;
                 }
-            }
 
-            PrependFrameworkToTestresults();
-        });
-    void PrependFrameworkToTestresults()
+                Information($"Running for {projectName} ({fw}) ...");
+
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
+                    .EnableNoBuild()
+                    .EnableNoRestore());
+            }
+        }); 
+    static void Information(string info)
     {
-        var testResults = GlobFiles(OutputDirectory, "*.testresults");
-        foreach (var testResultFile in testResults)
-        {
-            var frameworkName = GetFrameworkNameFromFilename(testResultFile);
-            var xDoc = XDocument.Load(testResultFile);
-
-            foreach (var testType in ((IEnumerable)xDoc.XPathEvaluate("//test/@type")).OfType<XAttribute>())
-            {
-                testType.Value = frameworkName + "+" + testType.Value;
-            }
-
-            foreach (var testName in ((IEnumerable)xDoc.XPathEvaluate("//test/@name")).OfType<XAttribute>())
-            {
-                testName.Value = frameworkName + "+" + testName.Value;
-            }
-
-            xDoc.Save(testResultFile);
-        }
-    }
-
-    string GetFrameworkNameFromFilename(string filename)
-    {
-        var name = Path.GetFileName(filename);
-        name = name.Substring(0, name.Length - ".testresults".Length);
-        var startIndex = name.LastIndexOf('-');
-        name = name.Substring(startIndex + 1);
-        return name;
+        Logger.Info(info);
     }
 }

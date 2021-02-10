@@ -9,12 +9,12 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_linux --host GitHubActions
+#         nuke --generate-configuration GitHubActions_Tests --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: linux
+name: Tests
 
 on:
   push:
@@ -32,5 +32,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Run './build.cmd Compile'
-        run: ./build.cmd Compile
+      - name: Run './build.cmd Test'
+        run: ./build.cmd Test
