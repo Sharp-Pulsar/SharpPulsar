@@ -89,7 +89,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Test";
-            var project = Solution.GetProject(projectName).NotNull("project != null");
+            var project = Solution.GetProjects("*.Test").First();
             Information($"Running tests from {projectName}");
             foreach (var fw in project.GetTargetFrameworks())
             {
