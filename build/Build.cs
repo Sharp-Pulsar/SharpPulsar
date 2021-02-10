@@ -14,11 +14,13 @@ using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
+using Nuke.Common.Tools.Xunit;
 using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using static Nuke.Common.Tools.Xunit.XunitTasks;
 
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
@@ -27,13 +29,13 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(Test) })]
+    InvokedTargets = new[] { nameof(xUnitTests) })]
 [GitHubActions("linux",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(Test) })]
+    InvokedTargets = new[] { nameof(xUnitTests) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -53,6 +55,8 @@ class Build : NukeBuild
 
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath OutputDirectory => RootDirectory / "output";
+    AbsolutePath TestSourceDirectory => RootDirectory / "SharpPulsar.Test";
+    AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
     Target Clean => _ => _
         .Before(Restore)
@@ -75,17 +79,26 @@ class Build : NukeBuild
         {
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
-                .SetConfiguration(Configuration)
-                //.SetAssemblyVersion(GitVersion.AssemblySemVer)
-                //.SetFileVersion(GitVersion.AssemblySemFileVer)
-                //.SetInformationalVersion(GitVersion.InformationalVersion)
-                .EnableNoRestore());
+                .SetNoRestore(InvokedTargets.Contains(Restore))
+                .SetConfiguration(Configuration));
         });
+    Target xUnitTests => _ => _
+       .DependsOn(Compile)
+       .Executes(() =>
+       {
+           var assembly = (AbsolutePath)GlobFiles(TestSourceDirectory, "/SharpPulsar.Test.dll").First();
+           var workingDirectory = assembly.Parent;
+
+           Xunit2(v => v
+                 .SetFramework("net5.0")
+                 .AddTargetAssemblies(assembly)
+                 .SetResultReport(Xunit2ResultFormat.Xml, ArtifactsDirectory / "tests" / "results.xml"));
+       });
     Target Test => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var testProjects = GlobFiles(Solution.Directory / "test", "*.csproj");
+            var testProjects = Solution.GetProjects("*.Test");
             var testRun = 1;
             foreach (var testProject in testProjects)
             {
