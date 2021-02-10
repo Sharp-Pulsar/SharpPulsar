@@ -111,17 +111,7 @@ class Build : NukeBuild
       .DependsOn(CheckDockerVersion)
       .Executes(() =>
       {
-          DockerTasks.DockerRun(b =>
-          b
-          .SetDetach(true)
-          .SetName("pulsar_test")
-          .SetPublish("6650:6650")
-          .SetPublish("8080:8080")
-          .SetMount("source=pulsardata,target=/pulsar/data")
-          .SetMount("source=pulsarconf,target=/pulsar/conf")
-          .SetImage("apachepulsar/pulsar:2.7.0")
-          .SetCommand("/usr/pulsar/bin/pulsar standalone")
-          );
+          ProcessTasks.StartProcess("/usr/bin/docker", "run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
       });
     Target CheckDockerVersion => _ => _
       .DependsOn(CheckBranch)
