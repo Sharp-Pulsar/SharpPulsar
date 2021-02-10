@@ -111,11 +111,9 @@ class Build : NukeBuild
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
       .Executes(() =>
-      {
-         var dockerPath = ToolPathResolver.GetPathExecutable("docker");
-         Information(dockerPath);
-         using var outputs = StartProcess(dockerPath, "run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
-         foreach(var p in outputs)
+       {
+         using var outputs = StartProcess("docker","run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
+         foreach(var p in outputs.Output)
             Information(p.Text);
        });
     Target CheckDockerVersion => _ => _
