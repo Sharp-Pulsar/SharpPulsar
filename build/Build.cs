@@ -29,13 +29,13 @@ using static Nuke.Common.Tools.Xunit.XunitTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(xUnitTests) })]
+    InvokedTargets = new[] { nameof(Test) })]
 [GitHubActions("linux",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
-    InvokedTargets = new[] { nameof(xUnitTests) })]
+    InvokedTargets = new[] { nameof(Test) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -107,7 +107,7 @@ class Build : NukeBuild
                 // This is so that the global dotnet is used instead of the one that comes with NUKE
                 var dotnetPath = ToolPathResolver.GetPathExecutable("dotnet");
 
-                ProcessTasks.StartProcess(dotnetPath, "xunit " +
+                ProcessTasks.StartProcess(dotnetPath, "xunit2 " +
                                          "-nobuild " +
                                          $"-xml {testFile.DoubleQuoteIfNeeded()}",
                         workingDirectory: projectDirectory)
