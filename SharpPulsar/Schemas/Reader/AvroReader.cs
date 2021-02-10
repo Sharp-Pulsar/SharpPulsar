@@ -9,33 +9,33 @@ namespace SharpPulsar.Schemas.Reader
 {
     public class AvroReader<T> : ISchemaReader<T>
     {
-        private SpecificDatumReader<T> _reader;
-        private ClassCache _classCache;
-        private ReflectDefaultReader _defaultReader;
+
+        private readonly Avro.Schema _schema;
+        private ReflectReader<T> _reader;
+
 
         public AvroReader(Avro.Schema avroSchema)
         {
-            _classCache = new ClassCache();
-            _reader = new SpecificDatumReader<T>(avroSchema, avroSchema);
-            _defaultReader = new ReflectDefaultReader(typeof(T), avroSchema, avroSchema, _classCache);
+            _schema = avroSchema;
+            _reader = new ReflectReader<T>(_schema, _schema);
         }
 
         public AvroReader(Avro.Schema writeSchema, Avro.Schema readSchema)
         {
-            _classCache = new ClassCache();
-            _reader = new SpecificDatumReader<T>(writeSchema, readSchema);
-            _defaultReader = new ReflectDefaultReader(typeof(T), writeSchema, readSchema, _classCache);
+            _reader = new ReflectReader<T>(writeSchema, readSchema);
         }
 
         public T Read(Stream stream)
         {
-            return (T)_defaultReader.Read(default(object), new BinaryDecoder(stream));
+            stream.Seek(0, SeekOrigin.Begin);
+            return _reader.Read(new BinaryDecoder(stream));
         }
 
         public T Read(sbyte[] bytes, int offset, int length)
         {
             using var stream = new MemoryStream(bytes.ToBytes());
-            return (T)_defaultReader.Read(default(object), new BinaryDecoder(stream));
+            stream.Seek(offset, SeekOrigin.Begin);
+            return _reader.Read(new BinaryDecoder(stream));
         }
     }
 }

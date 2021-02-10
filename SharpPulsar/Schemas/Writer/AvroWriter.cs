@@ -25,8 +25,7 @@ namespace SharpPulsar.Schemas.Writer
 		{
             var ms = new MemoryStream();
             Encoder e = new BinaryEncoder(ms);
-            var w = new ReflectWriter<T>(_schema);
-            w.Write(message, e);
+            _writer.Write(message, e);
             ms.Flush();
             ms.Position = 0;
             var b = ms.ToArray();
