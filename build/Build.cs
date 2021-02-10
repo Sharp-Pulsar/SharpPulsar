@@ -107,7 +107,7 @@ class Build : NukeBuild
                 // This is so that the global dotnet is used instead of the one that comes with NUKE
                 var dotnetPath = ToolPathResolver.GetPathExecutable("dotnet");
 
-                ProcessTasks.StartProcess(dotnetPath, "xunit2 " +
+                ProcessTasks.StartProcess(dotnetPath, "test " +
                                          "-nobuild " +
                                          $"-xml {testFile.DoubleQuoteIfNeeded()}",
                         workingDirectory: projectDirectory)
