@@ -123,7 +123,7 @@ class Build : NukeBuild
           );
 
           DockerTasks.DockerExec(e =>
-          e.SetContainer(container.First().Text)
+          e.SetContainer(container.Last().Text)
           .SetCommand("bin/sh")
           .SetArgs("bin/pulsar standalone"));
       });
