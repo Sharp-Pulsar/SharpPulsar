@@ -1,5 +1,5 @@
-[![Windows](https://github.com/eaba/SharpPulsar/workflows/windows/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3Awindows)
-[![Ubuntu](https://github.com/eaba/SharpPulsar/workflows/linux/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3Alinux)
+[![Build](https://github.com/eaba/SharpPulsar/workflows/Build/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3ABuild)
+[![Tests](https://github.com/eaba/SharpPulsar/workflows/Tests/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3ATests)
 
 # SharpPulsar
 SharpPulsar is [Apache Pulsar](https://github.com/apache/pulsar) Client built using [Akka.net](https://github.com/akkadotnet/akka.net). 
