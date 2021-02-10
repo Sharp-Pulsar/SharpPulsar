@@ -115,7 +115,12 @@ class Build : NukeBuild
           b
           .SetDetach(true)
           .SetName("pulsar_test")
-          .SetArgs("-it -p 6650:6650 -p 8080:8080 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf apachepulsar/pulsar:2.7.0 bin/pulsar standalone")
+          .SetPublish("6650:6650")
+          .SetPublish("8080:8080")
+          .SetMount("source=pulsardata,target=/pulsar/data")
+          .SetMount("source=pulsarconf,target=/pulsar/conf")
+          .SetImage("apachepulsar/pulsar:2.7.0")
+          .SetCommand("bin/pulsar standalone")
           );
       });
     Target CheckDockerVersion => _ => _
