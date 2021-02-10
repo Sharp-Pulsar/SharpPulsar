@@ -108,7 +108,7 @@ class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .EnableNoBuild()
-                    .EnableNoRestore());
+                    .SetNoRestore(InvokedTargets.Contains(Restore)));
             }
         }); 
     static void Information(string info)
