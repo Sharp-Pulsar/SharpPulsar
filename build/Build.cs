@@ -117,7 +117,7 @@ class Build : NukeBuild
               Information(p.Text);*/
            DockerTasks.DockerRun(b =>
             b
-            //.SetDetach(true)
+            .SetDetach(true)
             .SetName("pulsar_test")
             .SetPublish("6650:6650", "8080:8080")
             .SetMount("source=pulsardata,target=/pulsar/data")
