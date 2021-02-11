@@ -52,14 +52,14 @@ namespace SharpPulsar.Schemas
 
 	   public override sbyte[] Encode(DateTime message)
 	   {
-		  long date = new DateTimeOffset(message).ToUnixTimeSeconds().LongToBigEndian();
+		  long date = message.ConvertToMsTimestamp().LongToBigEndian();
 		  return BitConverter.GetBytes(date).ToSBytes();
 	   }
 
 		public override DateTime Decode(sbyte[] bytes)
 		{
 			var decode = BitConverter.ToInt64(bytes.ToBytes(), 0).LongFromBigEndian();
-			return new DateTime(decode);
+			return decode.ConvertToDateTime();
 		}
 
 	   public override ISchemaInfo SchemaInfo

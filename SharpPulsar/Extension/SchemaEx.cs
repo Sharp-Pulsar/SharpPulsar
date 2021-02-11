@@ -1,12 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Text;
 
 namespace SharpPulsar.Extension
 {
     public static class SchemaEx
     {
+        private static DateTime UTCEPOCH = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public static long ConvertToMsTimestamp(this DateTime dateTime)
+        {
+            var elapsed = dateTime - UTCEPOCH;
+            var ms = (long)elapsed.TotalMilliseconds;
+            return ms;
+        }
+        public static DateTime ConvertToDateTime(this long msTimestamp)
+        {
+            var dt = UTCEPOCH.AddMilliseconds(msTimestamp);
+            return dt;
+        }
         public static long LongToBigEndian(this long num)
         {
             return IPAddress.HostToNetworkOrder(num);
@@ -29,15 +39,22 @@ namespace SharpPulsar.Extension
         }
         public static sbyte[] ToSBytes(this byte[] bytes)
         {
-            return (sbyte[])(object)bytes;
+            return (sbyte[])(Array)bytes;
         }
         public static byte[] ToBytes(this sbyte[] bytes)
         {
-            return (byte[])(object)bytes;
+            return (byte[])(Array)bytes;
         }
         public static short Int16FromBigEndian(this short num)
         {
             return IPAddress.HostToNetworkOrder(num);
+        }
+        public static byte[] ToByteArray(object[] tempObjectArray)
+        {
+            byte[] byteArray = new byte[tempObjectArray.Length];
+            for (int index = 0; index < tempObjectArray.Length; index++)
+                byteArray[index] = (byte)tempObjectArray[index];
+            return byteArray;
         }
     }
 }

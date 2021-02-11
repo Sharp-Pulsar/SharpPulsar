@@ -63,14 +63,13 @@ namespace SharpPulsar.Schemas
 		public override sbyte[] Encode(double message)
 		{
 			return BitConverter.GetBytes(message).Reverse().ToArray().ToSBytes();
-			//return new sbyte[] { (sbyte)((long)((ulong)bits >> 56)), (sbyte)((long)((ulong)bits >> 48)), (sbyte)((long)((ulong)bits >> 40)), (sbyte)((long)((ulong)bits >> 32)), (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
 		}
 
 		public override double Decode(sbyte[] bytes)
 		{
 			var val = bytes.Reverse().ToArray().ToBytes();
 			Validate(bytes);
-			return BitConverter.ToDouble(val, 8);
+			return BitConverter.ToDouble(val, 0);
 		}
 
 		public override ISchemaInfo SchemaInfo

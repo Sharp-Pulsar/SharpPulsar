@@ -67,7 +67,7 @@ namespace SharpPulsar.Schemas
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
 		}
 
-		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		public static ISchema<KeyValue<K, V>> Of(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
@@ -137,7 +137,7 @@ namespace SharpPulsar.Schemas
 		// encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
 		public virtual sbyte[] Encode(KeyValue<K, V> Message)
 		{
-			if (_keyValueEncodingType != null && _keyValueEncodingType == KeyValueEncodingType.INLINE)
+			if (_keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
 				return KeyValue<K, V>.Encode(Message.Key, _keySchema, Message.Value, _valueSchema);
 			}

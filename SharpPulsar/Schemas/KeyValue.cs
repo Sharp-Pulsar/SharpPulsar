@@ -2,6 +2,7 @@
 using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace SharpPulsar.Schemas
@@ -58,12 +59,18 @@ namespace SharpPulsar.Schemas
 		/// <returns> the encoded bytes array </returns>
 		public static sbyte[] Encode(TK key, ISchema<TK> keyWriter, TV value, ISchema<TV> valueWriter)
 		{
-			var keyBytes = keyWriter.Encode(key);
-			var valueBytes = valueWriter.Encode(value);
-			var byteBuffer = ByteBuffer.Allocate(4 + keyBytes.Length + 4 + valueBytes.Length);
-			byteBuffer.PutInt(keyBytes.Length).Put(keyBytes.ToBytes(), 0, keyBytes.Length).PutInt(valueBytes.Length).Put(valueBytes.ToBytes(), 0, valueBytes.Length);
+			var keyBytes = keyWriter.Encode(key).ToBytes();
+			var valueBytes = valueWriter.Encode(value).ToBytes();
 
-			return byteBuffer.ToArray().ToSBytes();
+			var result = new byte[4 + keyBytes.Length + 4 + valueBytes.Length];
+			using var stream = new MemoryStream(result);
+			using var binaryWriter = new BinaryWriter(stream);
+			binaryWriter.Write(keyBytes.Length.IntToBigEndian());
+			binaryWriter.Write(keyBytes);
+			binaryWriter.Write(valueBytes.Length.IntToBigEndian());
+			binaryWriter.Write(valueBytes);
+			
+			return result.ToSBytes();
 		}
 
 		/// <summary>
@@ -74,15 +81,14 @@ namespace SharpPulsar.Schemas
 		/// <returns> the decoded key/value pair </returns>
 		public static KeyValue<TK, TV> Decode(sbyte[] data, KeyValueDecoder<TK, TV> decoder)
 		{
-			var byteBuffer = ByteBuffer.Allocate(data.Length).Wrap(data.ToBytes());
-			var keyLength = byteBuffer.GetInt();
-			var keyBytes = new sbyte[keyLength];
-			byteBuffer.Get(keyBytes.ToBytes(), 0, keyLength);
+			using var stream = new MemoryStream(data.ToBytes());
+			using var binaryReader = new BinaryReader(stream);
 
-			var valueLength = byteBuffer.GetInt();
-			var valueBytes = new sbyte[valueLength];
-			byteBuffer.Get(valueBytes.ToBytes(), 0, valueLength);
+			var keyLength = binaryReader.ReadInt32().IntFromBigEndian();
+			sbyte[] keyBytes = binaryReader.ReadBytes(keyLength).ToSBytes();
 
+			var valueLength = binaryReader.ReadInt32().IntFromBigEndian();
+			sbyte[] valueBytes = binaryReader.ReadBytes(valueLength).ToSBytes(); 
 			return decoder(keyBytes, valueBytes);
 		}
 	}

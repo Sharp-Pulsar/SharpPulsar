@@ -45,7 +45,7 @@ namespace SharpPulsar.Test.Schema
             public long? Field3 { get; set; }
         }
 
-        private class SchemaLogicalType
+        private class SchemaLogicalType: IEquatable<SchemaLogicalType>
         {
             public double Decimal { get; set; }
             public long Date { get; set; }
@@ -53,6 +53,14 @@ namespace SharpPulsar.Test.Schema
             public long TimeMillis { get; set; }
             public long TimestampMicros { get; set; }
             public long TimeMicros { get; set; }
+
+            public bool Equals(SchemaLogicalType other)
+            {
+                if (Decimal == other.Decimal && Date == other.Date && TimestampMillis == other.TimestampMillis
+                    && TimeMillis == other.TimeMillis && TimestampMicros == other.TimestampMicros && TimeMicros == other.TimeMicros)
+                    return true;
+                return false;
+            }
         }
 
         [Fact]
@@ -76,10 +84,9 @@ namespace SharpPulsar.Test.Schema
             };
             // schema2 is using the schema generated from POJO,
             // it allows field2 to be nullable, and field3 has default value.
-            var e = schema2.Encode(@struct);
+            schema2.Encode(@struct);
             // schema3 is using the schema passed in, which doesn't allow nullable
-            var d = schema3.Encode(@struct);
-            var f = e;
+            schema3.Encode(@struct);
         }
         /// <summary>
         /// NodaType does not work with AvroSchemaGenerator
@@ -104,8 +111,7 @@ namespace SharpPulsar.Test.Schema
 
             SchemaLogicalType object1 = avroSchema.Decode(bytes1);
 
-            Assert.Equal(schemaLogicalType.Decimal, object1.Decimal);
-            Assert.Equal(schemaLogicalType.Date, object1.Date);
+            Assert.True(schemaLogicalType.Equals(object1));
 
         }
         [Fact]
@@ -127,17 +133,37 @@ namespace SharpPulsar.Test.Schema
         }
 
     }
-    public class Bar
+    [Serializable]
+    public class Bar: IEquatable<Bar>
     {
+        public bool Field1 { get; set; }
 
+        public bool Equals(Bar other)
+        {
+            if (Field1 == other.Field1)
+                return true;
+            return false;
+        }
     }
     [Serializable]
-    public class Foo
+    public class Foo: IEquatable<Foo>
     {
         public Color Color { get; set; }
         public string Field1 { get; set; }
+        public string Field2 { get; set; }
+        public string Field3 { get; set; }
+        public Bar Field4 { get; set; }
+        public string Field5 { get; set; }
 
+        public bool Equals(Foo other)
+        {
+            if (Field1 == other.Field1 && Field2 == other.Field2 && Field3 == other.Field3 
+                && Field4?.Field1 == other.Field4?.Field1 && Field5 == other.Field5)
+                return true;
+            return false;
+        }
     }
+    [Serializable]
     public enum Color
     {
         RED,

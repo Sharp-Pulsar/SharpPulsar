@@ -31,6 +31,7 @@ namespace SharpPulsar.Schemas
 
 	   private static readonly LocalDateSchema _instance;
 	   private static readonly ISchemaInfo _schemaInfo;
+		private static DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
 	   static LocalDateSchema()
 	   {
@@ -49,11 +50,11 @@ namespace SharpPulsar.Schemas
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(LocalDate message)
-	   {
-		  long epochDay = new DateTimeOffset(message.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
-		  return LongSchema.Of().Encode(epochDay);
-	   }
+		public override sbyte[] Encode(LocalDate message)
+		{
+			long epochDay = (long)(message.ToDateTimeUnspecified() - _epoch).TotalMilliseconds;
+			return LongSchema.Of().Encode(epochDay);
+		}
 
 	   public override LocalDate Decode(sbyte[] bytes)
 	   {

@@ -3,6 +3,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -77,15 +78,13 @@ namespace SharpPulsar.Schemas
 		{
 			Condition.CheckArgument(SchemaType.KeyValue == schemaInfo.Type, "Not a KeyValue schema");
 
-			var encodingTypeStr = schemaInfo.Properties[KV_ENCODING_TYPE];
-			if (string.IsNullOrWhiteSpace(encodingTypeStr))
+			if (!schemaInfo.Properties.TryGetValue(KV_ENCODING_TYPE, out var encodingTypeStr))
 			{
 				return KeyValueEncodingType.INLINE;
 			}
 			else
 			{
-				//return KeyValueEncodingType.ValueOf(encodingTypeStr);
-				return KeyValueEncodingType.SEPARATED;
+				return (KeyValueEncodingType)Enum.Parse(typeof(KeyValueEncodingType), encodingTypeStr);
 			}
 		}
 
@@ -182,8 +181,7 @@ namespace SharpPulsar.Schemas
 			var schemaName = parentSchemaProps.GetOrDefault(schemaNameProperty, "");
 			var schemaType = SchemaType.ValueOf(parentSchemaProps.GetOrDefault(schemaTypeProperty, SchemaType.BYTES.Name));
 			IDictionary<string, string> schemaProps;
-			var schemaPropsStr = parentSchemaProps[schemaPropsProperty];
-			if (string.IsNullOrWhiteSpace(schemaPropsStr))
+			if (!parentSchemaProps.TryGetValue(schemaPropsProperty, out var schemaPropsStr))
 			{
 				schemaProps = new Dictionary<string, string>();
 			}
