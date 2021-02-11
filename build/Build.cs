@@ -110,6 +110,7 @@ class Build : NukeBuild
         });
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
+      .Triggers(StopPulsar)
       .Executes(() =>
        {
            /*using var outputs = StartProcess("docker","run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
@@ -139,7 +140,6 @@ class Build : NukeBuild
            Information(GitRepository.Branch);
        });
     Target StopPulsar => _ => _
-    .After(Test)
     .AssuredAfterFailure()
     .Executes(() =>
     {
