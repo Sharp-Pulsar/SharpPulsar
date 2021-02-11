@@ -26,6 +26,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
+    
     InvokedTargets = new[] { nameof(Compile) })]
 
 [GitHubActions("Tests",
@@ -83,6 +84,7 @@ class Build : NukeBuild
     Target Test => _ => _
         .DependsOn(Compile)
         .DependsOn(StartPulsar)
+        .Triggers(StopPulsar)
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Test";
@@ -110,7 +112,6 @@ class Build : NukeBuild
         });
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
-      .Triggers(StopPulsar)
       .Executes(() =>
        {
            /*using var outputs = StartProcess("docker","run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
