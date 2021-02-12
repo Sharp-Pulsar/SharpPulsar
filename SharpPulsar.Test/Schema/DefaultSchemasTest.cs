@@ -3,8 +3,10 @@ using SharpPulsar.Extension;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
+using System;
 using System.Text;
 using Xunit;
+using Xunit.Abstractions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,11 +33,13 @@ namespace SharpPulsar.Test.Schema
     {
         private PulsarSystem _system;
         private PulsarClient _client;
+        private readonly ITestOutputHelper _output;
 
         private const string TestTopic = "test-topic";
 
-        public DefaultSchemasTest()
+        public DefaultSchemasTest(ITestOutputHelper output)
         {
+            _output = output;
             var client = new ClientConfigurationData
             {
                 ServiceUrl = "pulsar://127.0.0.1:54545"
@@ -46,11 +50,18 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestConsumerInstantiation()
         {
-            var consumer = new ConsumerConfigBuilder<string>();
-            consumer.Topic(TestTopic);
-            consumer.SubscriptionName("test-sub");
-            var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
-            Assert.NotNull(stringConsumerBuilder);
+            try
+            {
+                var consumer = new ConsumerConfigBuilder<string>();
+                consumer.Topic(TestTopic);
+                consumer.SubscriptionName("test-sub");
+                var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
+                Assert.NotNull(stringConsumerBuilder);
+            }
+            catch(Exception ex)
+            {
+                _output.WriteLine(ex.ToString());
+            }
         }
         [Fact(Skip = "Not ready")]
         public virtual void TestProducerInstantiation()
