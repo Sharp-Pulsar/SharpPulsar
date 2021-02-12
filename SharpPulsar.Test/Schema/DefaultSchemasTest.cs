@@ -106,10 +106,6 @@ namespace SharpPulsar.Test.Schema
                 Assert.Equal(expected, actual);
             }
         }
-        ~DefaultSchemasTest()
-        {
-            _client.Shutdown();
-        }
     }
 
 }
