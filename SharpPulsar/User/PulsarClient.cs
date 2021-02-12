@@ -1,14 +1,15 @@
 ﻿using Akka.Actor;
+using Akka.Event;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar.Akka.Configuration;
+using SharpPulsar.Cache;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl.Schema;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
@@ -19,6 +20,7 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Queues;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas;
+using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Transaction;
 using SharpPulsar.Utils;
 using System;
@@ -37,23 +39,81 @@ namespace SharpPulsar.User
         private readonly IActorRef _transactionCoordinatorClient;
         private readonly ClientConfigurationData _clientConfigurationData;
         private readonly ActorSystem _actorSystem;
+        private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
+        private ILoggingAdapter _log;
+        private IActorRef _cnxPool;
+        private IActorRef _lookup;
+        private IActorRef _generator;
 
-        public PulsarClient(IActorRef client, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
+        public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
         {
+            _generator = idGenerator;
             _client = client;
             _clientConfigurationData = clientConfiguration;
             _actorSystem = actorSystem;
             _transactionCoordinatorClient = transactionCoordinatorClient;
+            _log = actorSystem.Log;
+            _lookup = lookup;
+            _cnxPool = cnxPool;
         }
+
         public void ReloadLookUp()
         {
-            _client.Tell(Messages.Client.ReloadLookUp.Instance);
+            _actorSystem.Stop(_lookup);
+            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup.Tell(new SetClient(_client));
         }
+
         public IList<string> GetPartitionsForTopic(string topic)
         {
             throw new NotImplementedException();
         }
+        private ISchemaInfoProvider NewSchemaProvider(string topicName)
+        {
+            return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _actorSystem.Log, _lookup);
+        }
 
+
+        private ISchema<T> PreProcessSchemaBeforeSubscribe<T>(ISchema<T> schema, string topicName)
+        {
+            if (schema != null && schema.SupportSchemaVersioning())
+            {
+                ISchemaInfoProvider schemaInfoProvider;
+                try
+                {
+                    schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
+                    if (schemaInfoProvider == null)
+                        _schemaProviderLoadingCache.Put(topicName, NewSchemaProvider(topicName));
+                }
+                catch (Exception e)
+                {
+                    _log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
+                    throw e;
+                }
+                schema = schema.Clone();
+                if (schema.RequireFetchingSchemaInfo())
+                {
+                    var finalSchema = schema;
+                    var schemaInfo = schemaInfoProvider.LatestSchema;
+                    if (null == schemaInfo)
+                    {
+                        if (!(finalSchema is AutoConsumeSchema))
+                        {
+                            throw new PulsarClientException.NotFoundException("No latest schema found for topic " + topicName);
+                        }
+                    }
+                    _log.Info($"Configuring schema for topic {topicName} : {schemaInfo}");
+                    finalSchema.ConfigureSchemaInfo(topicName, "topic", schemaInfo);
+                    finalSchema.SchemaInfoProvider = schemaInfoProvider;
+                    return finalSchema;
+                }
+                else
+                {
+                    schema.SchemaInfoProvider = schemaInfoProvider;
+                }
+            }
+            return schema;
+        }
         public Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf)
         {
             return NewConsumer(ISchema<sbyte[]>.Bytes, conf);
@@ -177,8 +237,8 @@ namespace SharpPulsar.User
 
         private Consumer<T> SingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
-            var schemaClone = _client.AskFor<PreProcessedSchema<T>>(new PreProcessSchemaBeforeSubscribe<T>(schema, conf.SingleTopic));
-            return DoSingleTopicSubscribeAsync(conf, schemaClone.Schema, interceptors);
+            var schemaClone = PreProcessSchemaBeforeSubscribe(schema, conf.SingleTopic);
+            return DoSingleTopicSubscribeAsync(conf, schemaClone, interceptors);
         }
 
         private Consumer<T> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
@@ -195,13 +255,13 @@ namespace SharpPulsar.User
                 IActorRef consumer;
                 if (metadata.Partitions > 0)
                 {
-                    consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.CreatePartitionedConsumer(_client, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, _clientConfigurationData, queue));
+                    consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.CreatePartitionedConsumer(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, _clientConfigurationData, queue));
                     consumer.Tell(new Subscribe(topic, metadata.Partitions));
                 }
                 else
                 {
                     int partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.NewConsumer(_client, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
+                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.NewConsumer(_client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(consumer));
                 return new Consumer<T>(consumer, queue, schema, conf);
@@ -216,7 +276,7 @@ namespace SharpPulsar.User
         private Consumer<T> MultiTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
             var queue = new ConsumerQueueCollections<T>();
-            var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(_client, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
+            var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
             
             _client.Tell(new AddConsumer(consumer));
             return new Consumer<T>(consumer, queue, schema, conf);
@@ -239,7 +299,7 @@ namespace SharpPulsar.User
                 }
                 IList<string> topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
                 topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
-                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, _client, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
+                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
 
                 _client.Tell(new AddConsumer(consumer));
                 return new Consumer<T>(consumer, queue, schema, conf);
@@ -411,11 +471,11 @@ namespace SharpPulsar.User
                 IActorRef reader;
                 if (metadata.Partitions > 0)
                 {
-                    reader = _actorSystem.ActorOf(MultiTopicsReader<T>.Prop(_client, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));                    
+                    reader = _actorSystem.ActorOf(MultiTopicsReader<T>.Prop(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));                    
                 }
                 else
                 {
-                    reader = _actorSystem.ActorOf(ReaderActor<T>.Prop(_client, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
+                    reader = _actorSystem.ActorOf(ReaderActor<T>.Prop(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(reader));
                 return new Reader<T>(reader, queue, schema, conf);
@@ -511,7 +571,7 @@ namespace SharpPulsar.User
         private Producer<T> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {
             var queue = new ProducerQueueCollection<T>();
-            var metadata = _client.AskFor<LookupDataResult>(new GetPartitionedTopicMetadata(TopicName.Get(topic)));
+            var metadata = _client.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(TopicName.Get(topic)));
             if (_actorSystem.Log.IsDebugEnabled)
             {
                 _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
@@ -519,17 +579,17 @@ namespace SharpPulsar.User
             IActorRef producer;
             if (metadata.Partitions > 0)
             {
-                producer = _actorSystem.ActorOf(PartitionedProducer<T>.Prop(_client, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, queue));
+                producer = _actorSystem.ActorOf(PartitionedProducer<T>.Prop(_client, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, queue));
             }
             else
             {
-                producer = _actorSystem.ActorOf(ProducerActor<T>.Prop(_client, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue));
+                producer = _actorSystem.ActorOf(ProducerActor<T>.Prop(_client, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue));
             }
             _client.Tell(new AddProducer(producer));
             //Improve with trytake for partitioned topic too
-            var created = queue.Producer.Take();
-            if (created.Errored)
-                throw created.Exception;
+            //var created = queue.Producer.Take();
+            //if (created.Errored)
+                //throw created.Exception;
 
             return new Producer<T>(producer, queue, schema, conf);
         }

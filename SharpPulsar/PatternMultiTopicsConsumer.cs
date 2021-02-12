@@ -47,9 +47,11 @@ namespace SharpPulsar
 		private ICancelable _recheckPatternTimeout = null;
 		private IActorContext _context;
 		private IActorRef _self;
+		private IActorRef _generator;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef client, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (client, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
 		{
+			_generator = idGenerator;
 			_self = Self;
 			_client = client;
 			_context = Context;
@@ -65,9 +67,9 @@ namespace SharpPulsar
 			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), TopicReChecker);
 		}
 
-		public static Props Prop(Regex topicsPattern, IActorRef client, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
+		public static Props Prop(Regex topicsPattern, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
         {
-			return Props.Create(() => new PatternMultiTopicsConsumer<T>(topicsPattern, client, conf, schema, subscriptionMode, interceptors, clientConfiguration, queue));
+			return Props.Create(() => new PatternMultiTopicsConsumer<T>(topicsPattern, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, interceptors, clientConfiguration, queue));
         }
 
 		private void TopicReChecker()

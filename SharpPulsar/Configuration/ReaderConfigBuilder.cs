@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using Range = SharpPulsar.Common.Range;
 
@@ -24,24 +23,24 @@ using Range = SharpPulsar.Common.Range;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Akka.Configuration
+namespace SharpPulsar.Configuration
 {
     public sealed class ReaderConfigBuilder<T>
-	{
+    {
         private ReaderConfigurationData<T> _conf = new ReaderConfigurationData<T>();
 
         public ReaderConfigurationData<T> ReaderConfigurationData
         {
             get
             {
-				if(_conf.EventListener == null)
-					throw new ArgumentException("IConsumerEventListener is not implemented. It cannot be null");
-				if (_conf.Schema == null)
+                if (_conf.EventListener == null)
+                    throw new ArgumentException("IConsumerEventListener is not implemented. It cannot be null");
+                if (_conf.Schema == null)
                     throw new ArgumentException("Hey, we need the schema!");
-				if (_conf.StartMessageId == null)
+                if (_conf.StartMessageId == null)
                     _conf.StartMessageId = IMessageId.Latest;
-				if(_conf.ReaderListener == null)
-					throw new ArgumentException("Reader Listener Cannot be null");
+                if (_conf.ReaderListener == null)
+                    throw new ArgumentException("Reader Listener Cannot be null");
                 return _conf;
             }
         }
@@ -50,11 +49,11 @@ namespace SharpPulsar.Akka.Configuration
             _conf.EventListener = consumerEventListener;
             return this;
         }
-		public ReaderConfigBuilder<T> LoadConf(IDictionary<string, object> config)
-		{
-			var startMessageId = _conf.StartMessageId;
-			_conf = (ReaderConfigurationData<T>)ConfigurationDataUtils.LoadData(config, _conf);
-			_conf.StartMessageId = startMessageId;
+        public ReaderConfigBuilder<T> LoadConf(IDictionary<string, object> config)
+        {
+            var startMessageId = _conf.StartMessageId;
+            _conf = (ReaderConfigurationData<T>)ConfigurationDataUtils.LoadData(config, _conf);
+            _conf.StartMessageId = startMessageId;
             return this;
         }
         public ReaderConfigBuilder<T> KeyHashRange(params Range[] ranges)
@@ -80,17 +79,17 @@ namespace SharpPulsar.Akka.Configuration
             return this;
         }
 
-		public ReaderConfigBuilder<T> Topic(string topicName)
-		{
-			_conf.TopicName = topicName.Trim();
+        public ReaderConfigBuilder<T> Topic(string topicName)
+        {
+            _conf.TopicName = topicName.Trim();
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
-		{
+        public ReaderConfigBuilder<T> StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
+        {
             _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
             return this;
-		}
+        }
         public ReaderConfigBuilder<T> StartMessageId(IMessageId id)
         {
             _conf.StartMessageId = id;
@@ -98,66 +97,66 @@ namespace SharpPulsar.Akka.Configuration
             return this;
         }
 
-		public ReaderConfigBuilder<T> StartMessageFromRollbackDuration(int rollbackDurationSecs)
-		{
-			_conf.StartMessageFromRollbackDurationInSec = rollbackDurationSecs;
+        public ReaderConfigBuilder<T> StartMessageFromRollbackDuration(int rollbackDurationSecs)
+        {
+            _conf.StartMessageFromRollbackDurationInSec = rollbackDurationSecs;
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> StartMessageIdInclusive()
-		{
-			_conf.ResetIncludeHead = true;
+        public ReaderConfigBuilder<T> StartMessageIdInclusive()
+        {
+            _conf.ResetIncludeHead = true;
             return this;
-		}
+        }
 
-		public  ReaderConfigBuilder<T> ReaderListener(IReaderListener<T> readerListener)
-		{
-			_conf.ReaderListener = readerListener;
+        public ReaderConfigBuilder<T> ReaderListener(IReaderListener<T> readerListener)
+        {
+            _conf.ReaderListener = readerListener;
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
-		{
-			_conf.CryptoKeyReader = cryptoKeyReader;
+        public ReaderConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+        {
+            _conf.CryptoKeyReader = cryptoKeyReader;
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
-		{
-			_conf.CryptoFailureAction = action;
+        public ReaderConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+        {
+            _conf.CryptoFailureAction = action;
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> ReceiverQueueSize(int receiverQueueSize)
-		{
-			_conf.ReceiverQueueSize = receiverQueueSize;
+        public ReaderConfigBuilder<T> ReceiverQueueSize(int receiverQueueSize)
+        {
+            _conf.ReceiverQueueSize = receiverQueueSize;
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> ReaderName(string readerName)
-		{
-			_conf.ReaderName = readerName;
+        public ReaderConfigBuilder<T> ReaderName(string readerName)
+        {
+            _conf.ReaderName = readerName;
             return this;
-		}
+        }
 
-		public  ReaderConfigBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
-		{
-			_conf.SubscriptionRolePrefix = subscriptionRolePrefix;
+        public ReaderConfigBuilder<T> SubscriptionRolePrefix(string subscriptionRolePrefix)
+        {
+            _conf.SubscriptionRolePrefix = subscriptionRolePrefix;
             return this;
-		}
+        }
 
-		public ReaderConfigBuilder<T> ReadCompacted(bool readCompacted)
-		{
-			_conf.ReadCompacted = readCompacted;
+        public ReaderConfigBuilder<T> ReadCompacted(bool readCompacted)
+        {
+            _conf.ReadCompacted = readCompacted;
             return this;
-		}
-		public ReaderConfigBuilder<T> Schema(ISchema<T> schema)
-		{
-			if(schema == null)
-				throw new ArgumentException("Schema is null");
+        }
+        public ReaderConfigBuilder<T> Schema(ISchema<T> schema)
+        {
+            if (schema == null)
+                throw new ArgumentException("Schema is null");
             _conf.Schema = schema;
             return this;
-		}
+        }
     }
 
 }

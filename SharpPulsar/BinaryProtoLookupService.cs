@@ -43,23 +43,24 @@ namespace SharpPulsar
 {
 	public class BinaryProtoLookupService : ReceiveActor
 	{
-		private readonly IActorRef _pulsarClient;
+		private IActorRef _pulsarClient;
 		private readonly ServiceNameResolver _serviceNameResolver;
 		private readonly bool _useTls;
 		private readonly string _listenerName;
 		private readonly int _maxLookupRedirects;
 		private readonly long _operationTimeoutMs;
 		private readonly IActorRef _connectionPool;
+		private readonly IActorRef _generator;
 		private readonly ILoggingAdapter _log;
 		private IAdvancedScheduler _executor;
 		private IActorContext _context;
 
-		public BinaryProtoLookupService(IActorRef client, IActorRef connectionPool, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
+		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
 		{
+			_generator = idGenerator;
 			_context = Context;
 			_executor = Context.System.Scheduler.Advanced;
 			_log = Context.GetLogger();
-			_pulsarClient = client;
 			_useTls = useTls;
 			_maxLookupRedirects = maxLookupRedirects;
 			_serviceNameResolver = new PulsarServiceNameResolver(_log);
@@ -75,6 +76,11 @@ namespace SharpPulsar
 		}
 		private void Receives()
         {
+			Receive<SetClient>(c =>
+			{
+				_pulsarClient = c.Client;
+
+			});
 			Receive<UpdateServiceUrl>(u =>
 			{
 				UpdateServiceUrl(u.ServiceUrl);
@@ -84,32 +90,28 @@ namespace SharpPulsar
 			{
 				var pool = _connectionPool;
                 var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var pulsarClient = _pulsarClient;
-				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetBroker(b.TopicName, requestid, connection, Sender);
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{
 				var pool = _connectionPool;
 				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var pulsarClient = _pulsarClient;
-				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetPartitionedTopicMetadata(p.TopicName, requestid, connection);
 			});
 			Receive<GetSchema>(s => 
 			{
 				var pool = _connectionPool;
 				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var pulsarClient = _pulsarClient;
-				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetSchema(s.TopicName, s.Version, requestid, connection);
 			});
 			Receive<GetTopicsUnderNamespace>(t => 
 			{
 				var pool = _connectionPool;
 				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var pulsarClient = _pulsarClient;
-				var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetTopicsUnderNamespace(t, requestid, connection);
 			});
 		}
@@ -195,10 +197,10 @@ namespace SharpPulsar
 			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
 			var payload = new Payload(request, requestId, "NewPartitionMetadataRequest");
 			var lookup = clientCnx.AskFor<LookupDataResult>(payload);
-			if (Enum.IsDefined(typeof(ServerError), lookup.Error))
+			if (Enum.IsDefined(typeof(ServerError), lookup.Error) && lookup.ErrorMessage != null)
 			{
 				_log.Warning($"[{topicName}] failed to get Partitioned metadata : {lookup.Error}:{lookup.ErrorMessage}");
-				Sender.Tell(new Failure { Exception = new Exception($"[{topicName}] failed to get Partitioned metadata. {lookup.Error}:{lookup.ErrorMessage}") });
+				Sender.Tell(new PartitionedTopicMetadata(0));
 				return;
 			}
 			else
@@ -292,8 +294,7 @@ namespace SharpPulsar
 					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
 					remaining -= nextDelay;
 					var task = Task.Run(() => Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay))));
-					var pulsarClient = _pulsarClient;
-					var requestid = pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+					var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 					var cnx = clientCnx;
 				}
 			}
@@ -303,9 +304,9 @@ namespace SharpPulsar
 			_log.Info($"Unhandled {message.GetType().FullName} received");
             base.Unhandled(message);
         }
-		public static Props Prop(IActorRef client, IActorRef connectionPool, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
+		public static Props Prop(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
         {
-			return Props.Create(() => new BinaryProtoLookupService(client, connectionPool, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeoutMs));
+			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeoutMs));
         }
     }
 

@@ -113,9 +113,7 @@ class Build : NukeBuild
       .DependsOn(CheckDockerVersion)
       .Executes(() =>
        {
-           /*using var outputs = StartProcess("docker","run -it -p 6650:6650  --mount source=pulsarconf,target=/pulsar/conf --name pulsar_test --publish 8080:8080 apachepulsar/pulsar:2.7.0 bin/pulsar standalone");
-           foreach(var p in outputs.Output)
-              Information(p.Text);*/
+
            DockerTasks.DockerRun(b =>
             b
             .SetDetach(true)

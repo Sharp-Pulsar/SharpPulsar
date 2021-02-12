@@ -60,32 +60,25 @@ namespace SharpPulsar
 		private State _state;
 		private readonly ISet<IActorRef> _producers;
 		private readonly ISet<IActorRef> _consumers;
-
-		private long _producerIdGenerator = 0L;
-		private long _consumerIdGenerator = 0L;
-		private long _requestIdGenerator = 0L;
-		private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
-
-
 		private readonly DateTime _clientClock;
 
 		private IActorRef _tcClient;
 		
-		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator)
+		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
 		{
+			_log = Context.GetLogger();
 			Auth = conf;
 			_conf = conf;
 			_clientClock = conf.Clock;
 			conf.Authentication.Start();
 			_cnxPool = cnxPool;
-			_lookup = Context.ActorOf(BinaryProtoLookupService.Prop(Self, cnxPool, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs));
-
+			_lookup = lookup;
 			_producers = new HashSet<IActorRef>();
 			_consumers = new HashSet<IActorRef>();
 
 			if (conf.EnableTransaction)
 			{
-				_tcClient = Context.ActorOf(TransactionCoordinatorClient.Prop(Self, conf));
+				_tcClient = Context.ActorOf(TransactionCoordinatorClient.Prop(Self, idGenerator, conf));
 				_tcClient.Tell(StartTransactionCoordinatorClient.Instance);
 				txnCoordinator = _tcClient;
 			}
@@ -96,43 +89,33 @@ namespace SharpPulsar
 			Receive<AddConsumer>(m => _consumers.Add(m.Consumer));
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
-			Receive<ReloadLookUp>(_ => ReloadLookUp());
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
 			Receive<GetConnection>(m => {
 				var cnx = GetConnection(m.Topic);
+				Sender.Tell(cnx);
 			});
-			Receive<NewRequestId>(_ => Sender.Tell(new NewRequestIdResponse(NewRequestId())));
-			Receive<Messages.Consumer.NewConsumerId>(_ => Sender.Tell(NewConsumerId()));
-			Receive<Messages.Producer.NewProducerId>(_ => Sender.Tell(NewProducerId()));
 			Receive<GetSchema>(s => {
 				var response = _lookup.AskFor(s);
 				Sender.Tell(response);
+			});
+			Receive<GetPartitionedTopicMetadata>(p => 
+			{
+				var partition = GetPartitionedTopicMetadata(p.TopicName.ToString());
+				Sender.Tell(partition);
 			});
 			Receive<GetPartitionsForTopic>(s => {
 				var topics = GetPartitionsForTopic(s.TopicName);
 				Sender.Tell(new PartitionsForTopic(topics));
 			});
-			Receive<PreProcessSchemaBeforeSubscribe<object>>(p=> {
-                try
-                {
-					var schema = PreProcessSchemaBeforeSubscribe(p.Schema, p.TopicName);
-					Sender.Tell(new PreProcessedSchema<object>(schema));
-				}
-				catch(Exception ex)
-                {
-					_log.Error(ex.ToString());
-					Sender.Tell(ex);
-                }
-			});
 		}
 
-		public static Props Prop(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator)
+		public static Props Prop(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
         {
 			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
 			}
-			return Props.Create(() => new PulsarClientActor(conf, cnxPool, txnCoordinator));
+			return Props.Create(() => new PulsarClientActor(conf, cnxPool, txnCoordinator, lookup, idGenerator));
         }
 		private ClientConfigurationData Auth
 		{
@@ -186,20 +169,6 @@ namespace SharpPulsar
 			return connection;
 		}
 
-		private long NewProducerId()
-		{
-			return _producerIdGenerator++;
-		}
-
-		private long NewConsumerId()
-		{
-			return _consumerIdGenerator++;
-		}
-
-		private long NewRequestId()
-		{
-			return _requestIdGenerator++;
-		}
 
 		private IActorRef CnxPool
 		{
@@ -207,12 +176,6 @@ namespace SharpPulsar
 			{
 				return _cnxPool;
 			}
-		}
-
-		private void ReloadLookUp()
-		{
-			_lookup = Context.ActorOf(BinaryProtoLookupService.Prop(Self, _cnxPool, _conf.ServiceUrl, _conf.ListenerName, _conf.UseTls, _conf.MaxLookupRequest, _conf.OperationTimeoutMs));
-
 		}
 
 		private int GetNumberOfPartitions(string topic)
@@ -236,7 +199,14 @@ namespace SharpPulsar
 			{
 				throw new PulsarClientException.InvalidConfigurationException(e.Message);
 			}
-			return Task.Run(() => metadataFuture.Task).Result;
+			if(metadataFuture.Task.Status == TaskStatus.Faulted)
+				return new PartitionedTopicMetadata(0);
+
+			var pmetadata = metadataFuture.Task.Result;
+			if (pmetadata is PartitionedTopicMetadata p)
+				return p;
+
+			return new PartitionedTopicMetadata(0);
 		}
 		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
 		{
@@ -252,6 +222,7 @@ namespace SharpPulsar
 				if (nextDelay <= 0 || isLookupThrottling)
 				{
 					future.SetException(e);
+					future.SetResult(null);
 				}
 				Task.Run(async () =>
 				{
@@ -298,53 +269,7 @@ namespace SharpPulsar
 				return _consumers.Count;
 			}
 		}
-
-
-		private ISchemaInfoProvider NewSchemaProvider(string topicName)
-		{
-			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
-		}
-
-		private ISchema<object> PreProcessSchemaBeforeSubscribe(ISchema<object> schema, string topicName)
-		{
-			if (schema != null && schema.SupportSchemaVersioning())
-			{
-				ISchemaInfoProvider schemaInfoProvider;
-				try
-				{
-					schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
-					if (schemaInfoProvider == null)
-						_schemaProviderLoadingCache.Put(topicName, NewSchemaProvider(topicName));
-				}
-				catch (Exception e)
-				{
-					_log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
-					throw e;
-				}
-				schema = schema.Clone();
-				if (schema.RequireFetchingSchemaInfo())
-				{
-					var finalSchema = schema;
-					var schemaInfo = schemaInfoProvider.LatestSchema;
-					if (null == schemaInfo)
-					{
-						if (!(finalSchema is AutoConsumeSchema))
-						{
-							throw new PulsarClientException.NotFoundException("No latest schema found for topic " + topicName);
-						}
-					}
-					_log.Info($"Configuring schema for topic {topicName} : {schemaInfo}");
-					finalSchema.ConfigureSchemaInfo(topicName, "topic", schemaInfo);
-					finalSchema.SchemaInfoProvider = schemaInfoProvider;
-					return finalSchema;
-				}
-				else
-				{
-					schema.SchemaInfoProvider = schemaInfoProvider;
-				}
-			}
-			return schema;
-		}
+		
 
 	}
 

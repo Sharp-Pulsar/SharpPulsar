@@ -72,6 +72,7 @@ namespace SharpPulsar
 		private long _createProducerTimeout;
 		private readonly IBatchMessageContainerBase _batchMessageContainer;
 		private Queue<OpSendMsg<T>> _pendingMessages;
+		private IActorRef _generator;
 
 		private readonly ICancelable _regenerateDataKeyCipherCancelable;
 
@@ -108,11 +109,12 @@ namespace SharpPulsar
 
 		private readonly IScheduler _scheduler;
 
-		public ProducerActor(IActorRef client, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
+		public ProducerActor(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
+			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
 			_log = Context.GetLogger();
-			ProducerId = client.AskFor<long>(NewProducerId.Instance);
+			ProducerId = _generator.AskFor<long>(NewProducerId.Instance);
 			_producerName = conf.ProducerName;
 			if(!string.IsNullOrWhiteSpace(_producerName))
 			{
@@ -226,9 +228,9 @@ namespace SharpPulsar
 
 			GrabCnx();
 		}
-		public static Props Prop(IActorRef client, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
+		public static Props Prop(IActorRef client, IActorRef idgenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
         {
-			return Props.Create(() => new ProducerActor<T>(client, topic, conf, partitionIndex, schema, interceptors, clientConfiguration, queue));
+			return Props.Create(() => new ProducerActor<T>(client, idgenerator, topic, conf, partitionIndex, schema, interceptors, clientConfiguration, queue));
         }
 		internal virtual void GrabCnx()
 		{
@@ -300,7 +302,7 @@ namespace SharpPulsar
 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path}");
 
-			long requestId = Client.AskFor<long>(NewRequestId.Instance);
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 
 			ISchemaInfo schemaInfo = null;
 			if (Schema != null)
@@ -821,13 +823,11 @@ namespace SharpPulsar
 			{
 				throw new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {protocolVersion}. The producer is {_producerName}, topic is {Topic}");
 			}
-			long requestId = Client.AskFor<long>(NewRequestId.Instance);
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var request = Commands.NewGetOrCreateSchema(requestId, Topic, schemaInfo);
 			var payload = new Payload(request, requestId, "SendGetOrCreateSchema");
 			_log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
 			return cnx.AskFor(payload);
-			//return cnx.AskFor<GetOrCreateSchemaResponse>(payload);
-			//return (sbyte[])(object)sch.Response.SchemaVersion;
 		}
 
 		private byte[] EncryptMessage(MessageMetadata msgMetadata, byte[] compressedPayload)
@@ -983,7 +983,7 @@ namespace SharpPulsar
 				_pendingMessages.Clear();
 			}
 
-			var requestId = Client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var cmd = Commands.NewCloseProducer(ProducerId, requestId);
 			var response = cnx.AskFor(new SendRequestWithId(cmd, requestId));
 			if (!(response is Exception))

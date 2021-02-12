@@ -1,5 +1,9 @@
-﻿using SharpPulsar.User;
+﻿using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Schemas;
+using SharpPulsar.User;
 using System.Text;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,51 +27,75 @@ namespace SharpPulsar.Test.Schema
 {
     public class DefaultSchemasTest
     {
+        private PulsarSystem _system;
         private PulsarClient _client;
 
-        private const string TestTopic = "persistent://sample/standalone/ns1/test-topic";
+        private const string TestTopic = "test-topic";
 
-        public virtual void Setup()
+        public DefaultSchemasTest()
         {
-            _client = PulsarClient.builder().serviceUrl("pulsar://localhost:6650").build();
+            var client = new ClientConfigurationData
+            {
+                ServiceUrl = "pulsar://localhost:6650"
+            };
+            _system = PulsarSystem.GetInstance(client);
+            _client = _system.NewClient();
         }
-
+        [Fact]
         public virtual void TestConsumerInstantiation()
         {
-            ConsumerBuilder<string> stringConsumerBuilder = _client.NewConsumer(new StringSchema()).Topic(TestTopic);
-            Assert.assertNotNull(stringConsumerBuilder);
+            var consumer = new ConsumerConfigBuilder<string>();
+            consumer.Topic(TestTopic);
+            consumer.SubscriptionName("test-sub");
+            var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
+            Assert.NotNull(stringConsumerBuilder);
         }
-
+        [Fact(Skip = "Not ready")]
         public virtual void TestProducerInstantiation()
         {
-            ProducerBuilder<string> stringProducerBuilder = _client.NewProducer(new StringSchema()).Topic(TestTopic);
-            Assert.assertNotNull(stringProducerBuilder);
+            var producer = new ProducerConfigBuilder<string>();
+            producer.Topic(TestTopic);
+            var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
+            Assert.NotNull(stringProducerBuilder);
         }
-
+        [Fact(Skip = "Not ready")]
         public virtual void TestReaderInstantiation()
         {
-            ReaderBuilder<string> stringReaderBuilder = _client.NewReader(new StringSchema()).Topic(TestTopic);
-            Assert.assertNotNull(stringReaderBuilder);
+            var reader = new ReaderConfigBuilder<string>();
+            reader.Topic(TestTopic);
+            var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
+            Assert.NotNull(stringReaderBuilder);
         }
 
-        
+        [Fact]
         public virtual void TestStringSchema()
         {
             string testString = "hello world";
-            sbyte[] testBytes = testString.GetBytes(Encoding.UTF8);
+            sbyte[] testBytes = Encoding.UTF8.GetBytes(testString).ToSBytes();
             StringSchema stringSchema = new StringSchema();
-            assertEquals(testString, stringSchema.Decode(testBytes));
-            assertEquals(stringSchema.Encode(testString), testBytes);
+            Assert.Equal(testString, stringSchema.Decode(testBytes));
+            var act = stringSchema.Encode(testString);
+            for (var i = 0; i < testBytes.Length; i++)
+            {
+                var expected = testBytes[i];
+                var actual = act[i];
+                Assert.Equal(expected, actual);
+            }
 
-            sbyte[] bytes2 = testString.GetBytes(StandardCharsets.UTF_16);
-            StringSchema stringSchemaUtf16 = new StringSchema(StandardCharsets.UTF_16);
-            assertEquals(testString, stringSchemaUtf16.Decode(bytes2));
-            assertEquals(stringSchemaUtf16.Encode(testString), bytes2);
+            sbyte[] bytes2 = Encoding.Unicode.GetBytes(testString).ToSBytes();
+            StringSchema stringSchemaUtf16 = new StringSchema(Encoding.Unicode);
+            Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
+            var act2 = stringSchemaUtf16.Encode(testString);
+            for (var i = 0; i < bytes2.Length; i++)
+            {
+                var expected = bytes2[i];
+                var actual = act2[i];
+                Assert.Equal(expected, actual);
+            }
         }
-
-        public virtual void TearDown()
+        ~DefaultSchemasTest()
         {
-            _client.Dispose();
+            _client.Shutdown();
         }
     }
 

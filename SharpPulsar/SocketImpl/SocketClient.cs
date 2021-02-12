@@ -1,6 +1,7 @@
 ﻿using Akka.Event;
 using SharpPulsar.Configuration;
 using SharpPulsar.Configuration;
+using SharpPulsar.Helpers;
 using System;
 using System.Buffers;
 using System.IO;
@@ -112,14 +113,14 @@ namespace SharpPulsar.SocketImpl
 
         IDisposable ReaderSchedule(IObserver<ReadOnlySequence<byte>> observer, CancellationToken cancellationToken = default)
         {
-            return NewThreadScheduler.Default.Schedule(async () =>
+            return NewThreadScheduler.Default.Schedule(() =>
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     try
                     {
 
-                        var readresult = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                        var readresult = Task.Run(async() => await _pipeReader.ReadAsync(cancellationToken)).Result;
 
                         var buffer = readresult.Buffer;
 
@@ -127,20 +128,25 @@ namespace SharpPulsar.SocketImpl
                         {
                             continue;
                         }
-
-                        while (ContainsLine(ref buffer, out ReadOnlySequence<byte> line))
+                        while (true)
                         {
-                            ProcessLine(line, observer);
+                            if (buffer.Length < 4)
+                                break;
 
+                            var frameSize = buffer.ReadUInt32(0, true);
+                            var totalSize = frameSize + 4;
+                            if (buffer.Length < totalSize)
+                                break;
+
+                            var data = new ReadOnlySequence<byte>(buffer.Slice(4, frameSize).ToArray());
+                            observer.OnNext(data);
+
+                            buffer = buffer.Slice(totalSize);
                         }
-                        //Move the pointer to the head position of the next data.
-                        _pipeReader.AdvanceTo(buffer.Start, buffer.End);
-
-
-                        if (readresult.IsCompleted)
-                        {
+                        if (readresult.IsCompleted) 
                             break;
-                        }
+
+                        _pipeReader.AdvanceTo(buffer.Start);
 
                     }
                     catch

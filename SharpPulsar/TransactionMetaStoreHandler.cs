@@ -1,11 +1,8 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
@@ -48,6 +45,7 @@ namespace SharpPulsar
 		private IActorRef _connectionHandler;
 		private HandlerState _state;
 		private ActorSystem _system;
+		private IActorRef _generator;
 		private readonly Dictionary<long, (byte[] Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (byte[] Command, IActorRef ReplyTo)>();
 		private readonly ConcurrentQueue<RequestTime> _timeoutQueue;
 
@@ -71,8 +69,9 @@ namespace SharpPulsar
 		private readonly ClientConfigurationData _conf;
 		private IAdvancedScheduler _scheduler;
 
-		public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef pulsarClient, string topic, ClientConfigurationData conf)
+		public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef pulsarClient, IActorRef idGenerator, string topic, ClientConfigurationData conf)
 		{
+			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler.Advanced;
 			_conf = conf;
 			_pulsarClient = pulsarClient;
@@ -126,9 +125,9 @@ namespace SharpPulsar
 			});
 
 		}
-		public static Props Prop(long transactionCoordinatorId, IActorRef pulsarClient, string topic, ClientConfigurationData conf)
+		public static Props Prop(long transactionCoordinatorId, IActorRef pulsarClient, IActorRef idGenerator, string topic, ClientConfigurationData conf)
         {
-			return Props.Create(()=> new TransactionMetaStoreHandler(transactionCoordinatorId, pulsarClient, topic, conf));
+			return Props.Create(()=> new TransactionMetaStoreHandler(transactionCoordinatorId, pulsarClient, idGenerator, topic, conf));
         }
 		public virtual void ConnectionFailed(PulsarClientException exception)
 		{
@@ -155,7 +154,7 @@ namespace SharpPulsar
 			{
 				_system.Log.Debug("New transaction with timeout in ms {}", unit.ToMilliseconds(timeout));
 			}
-			var requestId = _pulsarClient.AskFor<long>(NewRequestId.Instance);
+			var requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			_pendingRequests.Add(requestId, (new byte[] { (byte)timeout }, Sender));
 			var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, unit.ToMilliseconds(timeout));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
@@ -197,13 +196,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
-			long requestId = 0L;
-			_state.Client.Ask<long>(NewRequestId.Instance).ContinueWith(task => 
-			{
-				if (!task.IsFaulted)
-					requestId = task.Result;
-			
-			});
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var cmd = Commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
 			_pendingRequests.Add(requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
@@ -240,11 +233,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Add subscription {} to txn {}.", subscriptionList, txnID);
 			}
-			long requestId = 0L;
-			_state.Client.Ask<long>(NewRequestId.Instance).ContinueWith(task =>
-			{
-				requestId = task.Result;
-			});
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var cmd = Commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
 			_pendingRequests.Add(requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
@@ -281,11 +270,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Commit txn {}", txnID);
 			}
-			long requestId = 0L;
-			_state.Client.Ask<long>(NewRequestId.Instance).ContinueWith(task =>
-			{
-				requestId = task.Result;
-			});
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var messageIdDataList = new List<MessageIdData>();
 			foreach(MessageId messageId in sendMessageIdList)
 			{
@@ -309,11 +294,7 @@ namespace SharpPulsar
 				_log.Debug("Abort txn {}", txnID);
 			}
 
-			long requestId = 0L;
-			_state.Client.Ask<long>(NewRequestId.Instance).ContinueWith(task =>
-			{
-				requestId = task.Result;
-			});
+			long requestId =_generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 
 			IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
 			foreach(IMessageId messageId in sendMessageIdList)

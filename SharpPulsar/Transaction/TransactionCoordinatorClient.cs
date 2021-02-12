@@ -42,11 +42,13 @@ namespace SharpPulsar.Transaction
 		private ILoggingAdapter _log;
 		private long _epoch = 0L;
 		private ClientConfigurationData _clientConfigurationData;
+		private IActorRef _generator;
 
 		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		public TransactionCoordinatorClient(IActorRef pulsarClient, ClientConfigurationData conf)
+		public TransactionCoordinatorClient(IActorRef pulsarClient, IActorRef idGenerator, ClientConfigurationData conf)
 		{
+			_generator = idGenerator;
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
 			_pulsarClient = pulsarClient;
@@ -91,7 +93,7 @@ namespace SharpPulsar.Transaction
 								_handlers = new List<IActorRef>(partitionMeta.Partitions);
 								for (int i = 0; i < partitionMeta.Partitions; i++)
 								{
-									var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+									var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
 									_handlers[i] = handler;
 									_handlerMap.Add(i, handler);
 								}
@@ -99,7 +101,7 @@ namespace SharpPulsar.Transaction
 							else
 							{
 								_handlers = new List<IActorRef>(1);
-								var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+								var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
 								_handlers[0] = handler;
 								_handlerMap.Add(0, handler);
 							}
@@ -113,9 +115,9 @@ namespace SharpPulsar.Transaction
 				_log.Error(TransactionCoordinatorClientException.Unwrap(ex).ToString());
 			}
 		}
-		public static Props Prop(IActorRef pulsarClient, ClientConfigurationData conf)
+		public static Props Prop(IActorRef pulsarClient, IActorRef idGenerator, ClientConfigurationData conf)
         {
-			return Props.Create(() => new TransactionCoordinatorClient(pulsarClient, conf));
+			return Props.Create(() => new TransactionCoordinatorClient(pulsarClient, idGenerator, conf));
         }
 		private string GetTCAssignTopicName(int partition)
 		{

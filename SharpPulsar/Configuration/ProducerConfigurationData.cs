@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;

@@ -2,6 +2,7 @@
 using Akka.Configuration;
 using NLog;
 using SharpPulsar.Configuration;
+using SharpPulsar.Messages.Client;
 using SharpPulsar.User;
 
 namespace SharpPulsar
@@ -15,6 +16,8 @@ namespace SharpPulsar
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
         private readonly IActorRef _tcClient;
+        private readonly IActorRef _lookup;
+        private readonly IActorRef _generator;
         public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             if (_instance == null)
@@ -83,18 +86,24 @@ namespace SharpPulsar
             _actorSystem = ActorSystem.Create("Pulsar", config);
             
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf,  _cnxPool, _tcClient), "PulsarClient");
+            _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf,  _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
+            _lookup.Tell(new SetClient(_client));
         }
         private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
         {
             _actorSystem = actorSystem;
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _cnxPool, _tcClient), "PulsarClient");
+            _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
+            _lookup.Tell(new SetClient(_client));
         }
         public PulsarClient NewClient() 
         {
-            return new PulsarClient(_client, _conf, _actorSystem, _tcClient);
+            return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
         }
         public User.Admin Admin() 
         {

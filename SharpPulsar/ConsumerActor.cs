@@ -3,7 +3,6 @@ using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
@@ -94,6 +93,8 @@ namespace SharpPulsar
 		private BatchMessageId _startMessageId;
 
 		private IActorRef _cnx;
+		private IActorRef _lookup;
+		private IActorRef _cnxPool;
 
 		private BatchMessageId _seekMessageId;
 		private bool _duringSeek;
@@ -114,8 +115,11 @@ namespace SharpPulsar
 		private readonly bool _readCompacted;
 		private readonly bool _resetIncludeHead;
 
+		private ActorSystem _actorSystem;
+
 		private readonly SubscriptionInitialPosition _subscriptionInitialPosition;
 		private readonly IActorRef _connectionHandler;
+		private readonly IActorRef _generator;
 
 		private readonly TopicName _topicName;
 		private readonly string _topicNameWithoutPartition;
@@ -146,25 +150,28 @@ namespace SharpPulsar
 
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 
-		public static Props NewConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public static Props NewConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
         {
-			return Props.Create(() => new ConsumerActor<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
+			return Props.Create(() => new ConsumerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
         }
 		
-		public static Props NewConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public static Props NewConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
 			if(conf.ReceiverQueueSize == 0)
 			{
-				return ZeroQueueConsumer<T>.NewZeroQueueConsumer(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue);
+				return ZeroQueueConsumer<T>.NewZeroQueueConsumer(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue);
 			}
 			else
 			{
-				return Props.Create(() => new ConsumerActor<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
+				return Props.Create(() => new ConsumerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
 			}
 		}
 
-		public ConsumerActor(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
+		public ConsumerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
+			_cnxPool = cnxPool;
+			_actorSystem = Context.System;
+			_lookup = lookup;
 			_self = Self;
 			_tokenSource = new CancellationTokenSource();
 			_client = client;
@@ -692,7 +699,7 @@ namespace SharpPulsar
 				if (Connected)
 				{
 					State.ConnectionState = HandlerState.State.Closing;
-					var requestId =  _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+					var requestId =  _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 					var unsubscribe = Commands.NewUnsubscribe(ConsumerId, requestId);
 				    var cnx = _connectionHandler;
 					var send = new SendRequestWithId(unsubscribe, requestId);
@@ -743,7 +750,7 @@ namespace SharpPulsar
 
 			CloseConsumerTasks();
 
-			long requestId = _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var cnx = Cnx();
 			if (null == cnx)
 			{
@@ -972,7 +979,7 @@ namespace SharpPulsar
 				{
 					if(_retryLetterProducer == null)
 					{
-						var client = new PulsarClient(_client, _clientConfigurationData, Context.System, null);
+						var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
 						var builder = new ProducerConfigBuilder<T>();
 						builder.Topic(_deadLetterPolicy.RetryLetterTopic);
 						builder.EnableBatching(false);
@@ -1034,7 +1041,7 @@ namespace SharpPulsar
 							{
 								if(_deadLetterProducer == null)
 								{
-									var client = new PulsarClient(_client, _clientConfigurationData, Context.System, null);
+									var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
 									var builder = new ProducerConfigBuilder<T>();
 									builder.Topic(_deadLetterPolicy.DeadLetterTopic);
 									builder.EnableBatching(false);
@@ -1155,7 +1162,7 @@ namespace SharpPulsar
 
 			_log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {Cnx().Path.Name}, consumerId {ConsumerId}");
 
-			long requestId = _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 
 			int currentSize; 
 			currentSize = IncomingMessages.Count;
@@ -2168,7 +2175,7 @@ namespace SharpPulsar
 				{
 					try
 					{
-						var client = new PulsarClient(_client, _clientConfigurationData, Context.System, null);
+						var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
 						var builder = new ProducerConfigBuilder<T>();
 						builder.Topic(_deadLetterPolicy.DeadLetterTopic);
 						builder.EnableBatching(false);
@@ -2218,7 +2225,7 @@ namespace SharpPulsar
 					
 				}
 
-				long requestId = _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				byte[] seek = null;
 				if (messageId is BatchMessageId msgId)
 				{
@@ -2281,7 +2288,7 @@ namespace SharpPulsar
 					throw new Exception($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
 				}
 
-				long requestId = _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				var seek = Commands.NewSeek(ConsumerId, requestId, timestamp);
 				var cnx = Cnx();
 
@@ -2414,7 +2421,7 @@ namespace SharpPulsar
 					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolversion:D}. The consumer is {ConsumerName}, topic {_topicName}, subscription {Subscription}"));
 				}
 
-				long requestId = cnx.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				var getLastIdCmd = Commands.NewGetLastMessageId(ConsumerId, requestId);
 				_log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
 				var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
@@ -2730,7 +2737,7 @@ namespace SharpPulsar
 			long ledgerId;
 			long entryId;
 			byte[] cmd;
-			long requestId = _client.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			if(messageId is BatchMessageId batchMessageId)
 			{
 				var bitSet = BitSet.Create();

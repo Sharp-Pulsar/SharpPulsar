@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using System.Collections.Generic;
@@ -25,23 +24,23 @@ using System.Collections.Generic;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// Class that provides a client interface to Pulsar.
-	/// 
-	/// <para>Client instances are thread-safe and can be reused for managing multiple <seealso cref="Producer"/>, <seealso cref="Consumer"/> and
-	/// <seealso cref="Reader"/> instances.
-	/// 
-	/// </para>
-	/// <para>Example of constructing a client:
-	/// 
-	/// <pre>{@code
-	/// PulsarClient client = PulsarClient.builder()
-	///                              .serviceUrl("pulsar://broker:6650")
-	///                              .build();
-	/// }</pre>
-	/// </para>
-	/// </summary>
-	public interface IPulsarClient
+    /// <summary>
+    /// Class that provides a client interface to Pulsar.
+    /// 
+    /// <para>Client instances are thread-safe and can be reused for managing multiple <seealso cref="Producer"/>, <seealso cref="Consumer"/> and
+    /// <seealso cref="Reader"/> instances.
+    /// 
+    /// </para>
+    /// <para>Example of constructing a client:
+    /// 
+    /// <pre>{@code
+    /// PulsarClient client = PulsarClient.builder()
+    ///                              .serviceUrl("pulsar://broker:6650")
+    ///                              .build();
+    /// }</pre>
+    /// </para>
+    /// </summary>
+    public interface IPulsarClient
 	{
 
 		/// <summary>

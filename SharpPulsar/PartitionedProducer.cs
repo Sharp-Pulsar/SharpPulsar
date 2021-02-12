@@ -47,6 +47,7 @@ namespace SharpPulsar
 		private IList<IActorRef> _producers;
 		private IMessageRouter _routerPolicy;
 		private readonly IActorRef _router;
+		private readonly IActorRef _generator;
 		private readonly ProducerStatsRecorder _stats;
 		private TopicMetadata _topicMetadata;
 
@@ -55,8 +56,9 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 
-		public PartitionedProducer(IActorRef client, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
+		public PartitionedProducer(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
+			_generator = idGenerator;
 			_context = Context;
 			_producers = new List<IActorRef>(numPartitions);
 			_topicMetadata = new TopicMetadata(numPartitions);
@@ -88,9 +90,9 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(TimeUnit.SECONDS.ToSeconds(conf.AutoUpdatePartitionsIntervalSeconds)), () => OnTopicsExtended(new List<string> { topic}));
 			}
 		}
-		public static Props Prop(IActorRef client, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
+		public static Props Prop(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
         {
-			return Props.Create(()=> new PartitionedProducer<T>(client, topic, conf, numPartitions, schema, interceptors, clientConfiguration, queue));
+			return Props.Create(()=> new PartitionedProducer<T>(client, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, queue));
         }
 		public override string ProducerName
 		{
@@ -118,7 +120,7 @@ namespace SharpPulsar
 			for(int partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = Context.ActorOf(ProducerActor<T>.Prop(Client, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
+				var producer = Context.ActorOf(ProducerActor<T>.Prop(Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
 				_producers.Add(producer);
 				var routee = Routee.FromActorRef(producer);
 				_router.Tell(new AddRoutee(routee));
@@ -272,7 +274,7 @@ namespace SharpPulsar
 				foreach (var partitionName in newPartitions)
 				{
 					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					var producer = _context.ActorOf(ProducerActor<T>.Prop(Client, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
+					var producer = _context.ActorOf(ProducerActor<T>.Prop(Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
 					_producers.Add(producer);
 					var routee = Routee.FromActorRef(producer);
 					_router.Tell(new AddRoutee(routee));

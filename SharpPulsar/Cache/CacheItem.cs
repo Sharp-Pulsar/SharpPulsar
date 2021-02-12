@@ -8,7 +8,7 @@ namespace SharpPulsar.Cache
         public CacheItem(T value)
         {
             Value = value;
-            Size = Marshal.SizeOf(value);
+            Size = null;
         }
         public T Value { get; }
         internal DateTimeOffset AccessedTime { get; set; }

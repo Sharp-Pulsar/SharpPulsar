@@ -47,12 +47,8 @@ namespace SharpPulsar.Configuration
         {
             get
             {
-				if (string.IsNullOrWhiteSpace(_conf.SubscriptionName))
-					throw new ArgumentException("Subscription Name is required!");
                 if (_conf.StartMessageId == null)
                     _conf.StartMessageId = IMessageId.Latest;
-				if (_conf.ConsumerEventListener == null || _conf.MessageListener == null)
-					throw new ArgumentException("ConsumerEventListener and MessageListener cannot be null");
                 return _conf;
             }
         }

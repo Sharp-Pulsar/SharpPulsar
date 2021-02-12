@@ -77,6 +77,7 @@ namespace SharpPulsar
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_log = Context.GetLogger();
 			_remoteHostName = endPoint.Host;
 			_self = Self;
 			_clientConfigurationData = conf;
@@ -86,7 +87,6 @@ namespace SharpPulsar
 			_socketClient = (SocketClient)SocketClient.CreateClient(conf, endPoint, endPoint.Host, Context.System.Log);
 			_socketClient.OnConnect += OnConnected;
 			_socketClient.OnDisconnect += OnDisconnected;
-			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>>();
 			_authentication = conf.Authentication;
@@ -96,7 +96,8 @@ namespace SharpPulsar
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
 			_socketClient.Connect();
-			Receive<Payload>(p => { 
+			Receive<Payload>(p => 
+			{ 
 				switch(p.Command)
                 {
 					case "NewLookup":
@@ -125,32 +126,33 @@ namespace SharpPulsar
 						break;
 
 				}
-				Receive<RegisterProducer>(m => {
-					RegisterProducer(m.ProducerId, m.Producer);
-				});
-				Receive<RegisterConsumer>(m => {
-					RegisterConsumer(m.ConsumerId, m.Consumer); 
-				});
-				Receive<RemoveProducer>(m => {
-					
-					RemoveProducer(m.ProducerId);
-				});
-				Receive<MaxMessageSize>(_ => {
-					
-					Sender.Tell(_maxMessageSize);
-				});
-				Receive<RemoveConsumer>(m => {
-					RemoveConsumer(m.ConsumerId); 
-				});
-				Receive<RegisterTransactionMetaStoreHandler>(h => {
-					RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
-				});
-				Receive<SendRequestWithId>(r => {
-					SendRequestWithId(r.Message, r.RequestId);
-				});
-				Receive<RemoteEndpointProtocolVersion>(r => {
-					Sender.Tell(_protocolVersion);
-				});
+			});
+
+			Receive<RegisterProducer>(m => {
+				RegisterProducer(m.ProducerId, m.Producer);
+			});
+			Receive<RegisterConsumer>(m => {
+				RegisterConsumer(m.ConsumerId, m.Consumer);
+			});
+			Receive<RemoveProducer>(m => {
+
+				RemoveProducer(m.ProducerId);
+			});
+			Receive<MaxMessageSize>(_ => {
+
+				Sender.Tell(_maxMessageSize);
+			});
+			Receive<RemoveConsumer>(m => {
+				RemoveConsumer(m.ConsumerId);
+			});
+			Receive<RegisterTransactionMetaStoreHandler>(h => {
+				RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
+			});
+			Receive<SendRequestWithId>(r => {
+				SendRequestWithId(r.Message, r.RequestId);
+			});
+			Receive<RemoteEndpointProtocolVersion>(r => {
+				Sender.Tell(_protocolVersion);
 			});
 		}
 		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
@@ -178,7 +180,7 @@ namespace SharpPulsar
 			}
 			// Send CONNECT command
 			var task = _socketClient.Execute(NewConnectCommand());
-			if (task.IsCompletedSuccessfully)
+			if (!task.IsFaulted)
 			{
 				if (_log.IsDebugEnabled)
 				{
@@ -191,6 +193,7 @@ namespace SharpPulsar
 				_log.Warning($"Error during handshake: {task.Exception}");
 				//ctx.close();
 			}
+			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
 		}
 		private void OnDisconnected()
 		{
@@ -246,7 +249,6 @@ namespace SharpPulsar
 					_log.Debug($"{connected.MaxMessageSize} Connection has max message size setting");
 				}
 				_maxMessageSize = connected.MaxMessageSize;
-				//Ctx.pipeline().replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(connected.MaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
 			}
 			if (_log.IsDebugEnabled)
 			{
@@ -805,7 +807,8 @@ namespace SharpPulsar
 		private void OnCommandReceived(ReadOnlySequence<byte> frame)
         {
 			var commandSize = frame.ReadUInt32(0, true);
-			var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
+			var data = frame.Slice(4, commandSize);
+			var cmd = Serializer.Deserialize(data);
 			var t = cmd.type;
 			switch (cmd.type)
 			{
