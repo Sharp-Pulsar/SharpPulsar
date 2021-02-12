@@ -34,3 +34,10 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run './build.cmd Test'
         run: ./build.cmd Test
+  windows-latest:
+    name: windows-latest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run './build.cmd Test'
+        run: ./build.cmd Test
