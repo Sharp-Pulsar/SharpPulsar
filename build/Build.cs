@@ -30,6 +30,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [GitHubActions("Tests",
     GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.WindowsLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
