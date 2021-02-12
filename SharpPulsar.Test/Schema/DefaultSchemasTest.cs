@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Schema
         {
             var client = new ClientConfigurationData
             {
-                ServiceUrl = "pulsar://localhost:6650"
+                ServiceUrl = "pulsar://127.0.0.1:6650"
             };
             _system = PulsarSystem.GetInstance(client);
             _client = _system.NewClient();
