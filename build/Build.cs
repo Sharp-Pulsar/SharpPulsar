@@ -82,8 +82,6 @@ class Build : NukeBuild
         });
     Target Test => _ => _
         .DependsOn(Compile)
-        .DependsOn(StartPulsar)
-        .Triggers(StopPulsar)
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Test";

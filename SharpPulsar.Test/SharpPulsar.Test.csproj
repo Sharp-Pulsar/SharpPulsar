@@ -33,4 +33,13 @@
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="docker-compose-standalone-tests.yml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="haproxy.cfg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

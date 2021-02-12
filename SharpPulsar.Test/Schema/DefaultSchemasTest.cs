@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Schemas;
+using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System.Text;
 using Xunit;
@@ -25,6 +26,7 @@ using Xunit;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
+    [Collection(nameof(PulsarStandaloneClusterTest))]
     public class DefaultSchemasTest
     {
         private PulsarSystem _system;
@@ -36,7 +38,7 @@ namespace SharpPulsar.Test.Schema
         {
             var client = new ClientConfigurationData
             {
-                ServiceUrl = "pulsar://127.0.0.1:6650"
+                ServiceUrl = "pulsar://127.0.0.1:54545"
             };
             _system = PulsarSystem.GetInstance(client);
             _client = _system.NewClient();
