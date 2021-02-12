@@ -63,23 +63,6 @@ namespace SharpPulsar.Test.Schema
                 _output.WriteLine(ex.ToString());
             }
         }
-        [Fact(Skip = "Not ready")]
-        public virtual void TestProducerInstantiation()
-        {
-            var producer = new ProducerConfigBuilder<string>();
-            producer.Topic(TestTopic);
-            var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
-            Assert.NotNull(stringProducerBuilder);
-        }
-        [Fact(Skip = "Not ready")]
-        public virtual void TestReaderInstantiation()
-        {
-            var reader = new ReaderConfigBuilder<string>();
-            reader.Topic(TestTopic);
-            var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
-            Assert.NotNull(stringReaderBuilder);
-        }
-
     }
 
 }
