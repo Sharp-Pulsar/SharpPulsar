@@ -23,6 +23,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
+    [Collection("SchemaSpec")]
     public class InstantSchemaTest
     {
         private readonly ITestOutputHelper _testOutputHelper;

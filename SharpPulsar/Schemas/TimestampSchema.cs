@@ -6,7 +6,11 @@ using System;
 
 namespace SharpPulsar.Schemas
 {
-    public class TimestampSchema : AbstractSchema<DateTimeOffset>
+	/// <summary>
+	/// Encodes DateTimeOffset.ToUnixTimeMilliseconds
+	/// Decodes DateTimeOffset.FromUnixTimeMilliseconds
+	/// </summary>
+	public class TimestampSchema : AbstractSchema<DateTimeOffset>
     {
 		private static readonly TimestampSchema _instance;
 		private static readonly ISchemaInfo _schemaInfo;
@@ -30,7 +34,7 @@ namespace SharpPulsar.Schemas
 
 		public override sbyte[] Encode(DateTimeOffset message)
 		{
-			long time = message.ToUnixTimeSeconds().LongToBigEndian();
+			long time = message.ToUnixTimeMilliseconds().LongToBigEndian();
 			return BitConverter.GetBytes(time).ToSBytes();
 		}
 

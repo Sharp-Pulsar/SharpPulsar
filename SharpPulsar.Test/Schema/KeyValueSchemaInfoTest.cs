@@ -26,7 +26,7 @@ using Xunit;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
-
+    [Collection("SchemaSpec")]
     /// <summary>
     /// Unit test <seealso cref="KeyValueSchemaInfoTest"/>.
     /// </summary>

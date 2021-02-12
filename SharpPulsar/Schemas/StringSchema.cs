@@ -47,7 +47,8 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "String",
 				Type = SchemaType.STRING,
-				Schema = new sbyte[0]
+				Schema = new sbyte[0],
+				Properties = new Dictionary<string, string>()
 			};
 			DefaultSchemaInfo = info;
 
@@ -59,8 +60,7 @@ namespace SharpPulsar.Schemas
 			if(SchemaType.STRING != schemaInfo.Type)
 				throw new ArgumentException("Not a string schema");
 
-			string charsetName = schemaInfo.Properties[CHARSET_KEY];
-			if (null == charsetName)
+			if (!schemaInfo.Properties.TryGetValue(CHARSET_KEY, out var charsetName))
 			{
 				return UTF8;
 			}

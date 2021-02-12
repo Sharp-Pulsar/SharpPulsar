@@ -28,6 +28,7 @@ using SharpPulsar.Extension;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
+    [Collection("SchemaSpec")]
     public class KeyValueSchemaTest
     {
         [Fact]

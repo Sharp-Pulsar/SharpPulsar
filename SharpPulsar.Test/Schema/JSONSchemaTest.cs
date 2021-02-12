@@ -26,6 +26,7 @@ using Xunit;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
+    [Collection("SchemaSpec")]
     public class JSONSchemaTest
     {
         [Fact]

@@ -1,7 +1,5 @@
 ﻿using SharpPulsar.Schemas;
-using SharpPulsar.Extension;
 using System;
-using System.Linq;
 using Xunit;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,23 +22,16 @@ using Xunit;
 namespace SharpPulsar.Test.Schema
 {
     [Collection("SchemaSpec")]
-    public class DoubleSchemaTest
+    public class TimeSchemaTest
     {
-        [Fact]
-        public virtual void TestSchemaEncode()
-        {
-            DoubleSchema schema = DoubleSchema.Of();
-            double data = 12345678.1234D;
-            sbyte[] expected = BitConverter.GetBytes(data).Reverse().ToArray().ToSBytes();
-            Assert.Equal(expected, schema.Encode(data));
-        }
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            DoubleSchema schema = DoubleSchema.Of();
-            double dbl = 1234578.8754321D;
-            sbyte[] bytes = schema.Encode(dbl);
-            Assert.Equal(dbl, schema.Decode(bytes));
+            TimeSchema schema = TimeSchema.Of();
+            TimeSpan time = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis());
+            var encoded = schema.Encode(time);
+            var decoded = schema.Decode(encoded);
+            Assert.Equal(time, decoded);
         }
 
     }

@@ -29,6 +29,7 @@ using Xunit;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
+    [Collection("SchemaSpec")]
     public class AvroSchemaTest
     {
         private class DefaultStruct
