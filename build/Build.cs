@@ -46,8 +46,7 @@ class Build : NukeBuild
     public static int Main () => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
-    //readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
-    readonly Configuration Configuration = Configuration.Debug;
+    readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
@@ -101,12 +100,13 @@ class Build : NukeBuild
 
                 Information($"Running for {projectName} ({fw}) ...");
 
-                DotNetTest(c => c
+                var o = DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
-                    .EnableNoBuild()
                     .SetNoRestore(InvokedTargets.Contains(Restore)));
+                foreach (var op in o)
+                    Information(op.Text);
             }
         });
     Target StartPulsar => _ => _

@@ -63,14 +63,7 @@ namespace SharpPulsar.Test.Schema
                 _output.WriteLine(ex.ToString());
             }
         }
-        [Fact]
-        public virtual void TestProducerInstantiation()
-        {
-            var producer = new ProducerConfigBuilder<string>();
-            producer.Topic(TestTopic);
-            var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
-            Assert.NotNull(stringProducerBuilder);
-        }
+
     }
 
 }
