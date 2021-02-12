@@ -156,6 +156,32 @@ namespace SharpPulsar.Test.Schema
             Assert.Equal(decodedString, myString);
         }
 
+        [Fact]
+        public virtual void TestStringSchema()
+        {
+            string testString = "hello world";
+            sbyte[] testBytes = Encoding.UTF8.GetBytes(testString).ToSBytes();
+            StringSchema stringSchema = new StringSchema();
+            Assert.Equal(testString, stringSchema.Decode(testBytes));
+            var act = stringSchema.Encode(testString);
+            for (var i = 0; i < testBytes.Length; i++)
+            {
+                var expected = testBytes[i];
+                var actual = act[i];
+                Assert.Equal(expected, actual);
+            }
+
+            sbyte[] bytes2 = Encoding.Unicode.GetBytes(testString).ToSBytes();
+            StringSchema stringSchemaUtf16 = new StringSchema(Encoding.Unicode);
+            Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
+            var act2 = stringSchemaUtf16.Encode(testString);
+            for (var i = 0; i < bytes2.Length; i++)
+            {
+                var expected = bytes2[i];
+                var actual = act2[i];
+                Assert.Equal(expected, actual);
+            }
+        }
     }
 
 }
