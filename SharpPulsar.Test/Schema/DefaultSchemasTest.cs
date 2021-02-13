@@ -64,7 +64,7 @@ namespace SharpPulsar.Test.Schema
                 _output.WriteLine(ex.ToString());
             }
         }
-        [Fact (Skip = "Not Ready")]
+        [Fact]
         public virtual void TestProducerInstantiation()
         {
             var producer = new ProducerConfigBuilder<string>();

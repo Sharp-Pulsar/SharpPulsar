@@ -25,7 +25,7 @@ namespace SharpPulsar
 		private ICancelable _cancelable;
 		private readonly IActorContext _actorContext;
 
-		internal ConnectionHandler(HandlerState state, Backoff backoff, IActorRef connection)
+		public ConnectionHandler(HandlerState state, Backoff backoff, IActorRef connection)
 		{
 			_state = state;
 			_connection = connection;

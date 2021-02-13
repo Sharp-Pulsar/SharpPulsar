@@ -72,7 +72,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return Topic;
+				return _topic;
 			}
 		}
 
@@ -105,10 +105,6 @@ namespace SharpPulsar
 			}
 		}
 
-		public override string ToString()
-		{
-			return "ProducerBase{" + "topic='" + Topic + '\'' + '}';
-		}
 
 		public enum MultiSchemaMode
 		{

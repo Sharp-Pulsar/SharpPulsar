@@ -587,9 +587,9 @@ namespace SharpPulsar.User
             }
             _client.Tell(new AddProducer(producer));
             //Improve with trytake for partitioned topic too
-            //var created = queue.Producer.Take();
-            //if (created.Errored)
-                //throw created.Exception;
+            var created = queue.Producer.Take();
+            if (created.Errored)
+                throw created.Exception;
 
             return new Producer<T>(producer, queue, schema, conf);
         }

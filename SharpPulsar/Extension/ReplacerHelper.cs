@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace SharpPulsar.Utils
+namespace SharpPulsar.Extension
 {
     public static class ReplacerHelper
     {

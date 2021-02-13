@@ -88,10 +88,15 @@ namespace SharpPulsar
 			});
 			Receive<GetBroker>(b => 
 			{
+				var task = new TaskCompletionSource<GetBrokerResponse>();
 				var pool = _connectionPool;
                 var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
 				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				GetBroker(b.TopicName, requestid, connection, Sender);
+				GetBroker(b.TopicName, requestid, connection, task);
+				if (task.Task.IsFaulted)
+					Sender.Tell(new Failure { Exception = task.Task.Exception });
+				else
+					Sender.Tell(task.Task.Result);
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{
@@ -122,27 +127,27 @@ namespace SharpPulsar
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		private void GetBroker(TopicName topicName, long requestId, IActorRef clientCnx, IActorRef replyTo, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
+		private void GetBroker(TopicName topicName, long requestId, IActorRef clientCnx, TaskCompletionSource<GetBrokerResponse> task, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
 		{
 			var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
 			if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
 			{
 				var err = new Exception("LookupException: Too many redirects: " + _maxLookupRedirects);
 				_log.Error(err.ToString());
-				Sender.Tell(new Failure { Exception = err });
+				task.SetException(err);
 				return;
 			}
 			var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
 			var payload = new Payload(request, requestId, "NewLookup");
 			var lookup = clientCnx.AskFor<LookupDataResult>(payload);
-			if (Enum.IsDefined(typeof(ServerError), lookup.Error))
+			if (Enum.IsDefined(typeof(ServerError), lookup.Error) && !string.IsNullOrWhiteSpace(lookup.ErrorMessage))
 			{
 				_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
 				if (_log.IsDebugEnabled)
 				{
 					_log.Warning($"[{topicName}] Lookup response exception> {lookup.Error}:{lookup.ErrorMessage}");
 				}
-				Sender.Tell(new Failure { Exception = new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}") });				
+				task.SetException(new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}"));	
 			}
 			else
 			{
@@ -164,26 +169,26 @@ namespace SharpPulsar
 						var pool = _connectionPool;
 						var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(responseBrokerAddress)).ClientCnx;
 						requestId = _pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-						GetBroker(topicName, requestId, connection, Sender, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
+						GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
 					}
 					else
 					{
 						if (lookup.ProxyThroughServiceUrl)
 						{
 							var response = new GetBrokerResponse(responseBrokerAddress, socketAddress);
-							Sender.Tell(response);
+							task.SetResult(response);
 						}
 						else
 						{
 							var response = new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
-							Sender.Tell(response);
+							task.SetResult(response);
 						}
 					}
 				}
 				catch (Exception parseUrlException)
 				{
 					_log.Warning($"[{topicName}] invalid url {uri}");
-					Sender.Tell(new Failure { Exception = parseUrlException });
+					task.SetException(parseUrlException);
 				}
 			}
 		}

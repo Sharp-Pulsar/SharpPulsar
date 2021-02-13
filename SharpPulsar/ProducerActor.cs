@@ -298,9 +298,8 @@ namespace SharpPulsar
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
 			_connectionHandler.Tell(new SetCnx(cnx));
-			cnx.Tell(new RegisterProducer(ProducerId, Self));
-
-			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path}");
+			cnx.Tell(new RegisterProducer(ProducerId, Self)); 
+			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
 
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 
@@ -1203,8 +1202,7 @@ namespace SharpPulsar
 				return;
 			}
 
-			var firstMsg = _pendingMessages.Peek();
-			if (firstMsg == null)
+			if (!_pendingMessages.TryPeek(out var firstMsg))
 			{
 				// If there are no pending messages, reset the timeout to the configured value.
 				timeToWaitMs = Conf.SendTimeoutMs;

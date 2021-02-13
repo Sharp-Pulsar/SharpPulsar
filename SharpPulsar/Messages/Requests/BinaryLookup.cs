@@ -21,15 +21,13 @@ namespace SharpPulsar.Messages.Requests
     }
     public sealed class GetBrokerRedirect
     {
-        public IActorRef ReplyTo{ get; }
         public TopicName TopicName { get; }
         public int RedirectCount { get; }
         public DnsEndPoint BrokerAddress { get; }
         public bool Authoritative { get; }
-        public GetBrokerRedirect(TopicName topicName, IActorRef replyTo, int redirectCount, DnsEndPoint brokerAddress, bool authoritative)
+        public GetBrokerRedirect(TopicName topicName, int redirectCount, DnsEndPoint brokerAddress, bool authoritative)
         {
             TopicName = topicName;
-            ReplyTo = replyTo;
             RedirectCount = redirectCount;
             BrokerAddress = brokerAddress;
             Authoritative = authoritative;
