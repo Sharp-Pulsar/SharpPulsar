@@ -18,6 +18,7 @@ namespace SharpPulsar.Queues
         public BlockingCollection<ClientExceptions> SeekException { get; } = new BlockingCollection<ClientExceptions>();
         public BlockingCollection<ClientExceptions> AcknowledgeCumulativeException { get; } = new BlockingCollection<ClientExceptions>();
         public BlockingCollection<string> ConsumerName { get; } = new BlockingCollection<string>();
+        public BlockingCollection<ClientExceptions> ConsumerCreation { get; } = new BlockingCollection<ClientExceptions>();
         public BlockingCollection<string> Subscription { get; } = new BlockingCollection<string>();
         public BlockingCollection<string> Topic { get; } = new BlockingCollection<string>();
         public BlockingCollection<long> LastDisconnectedTimestamp { get; } = new BlockingCollection<long>();

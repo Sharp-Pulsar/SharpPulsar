@@ -556,13 +556,15 @@ namespace SharpPulsar
 
 			_log.Warning($"Received error from server: {error.Message}");
 			long requestId = (long)error.RequestId;
-			if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
-			{
-				_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
-			}			
+					
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
-				if (error.Error == ServerError.AuthenticationError)
+				if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
+				{
+					_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
+					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
+				}
+				else if(error.Error == ServerError.AuthenticationError)
 				{
 					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException(error.Message)));
 					_log.Error("Failed to authenticate the client");

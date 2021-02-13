@@ -105,7 +105,7 @@ namespace SharpPulsar.Configuration
             SubscriptionInitialPosition.Earliest;
 		public Regex TopicsPattern { get; set; }
 
-		public SortedDictionary<string, string> Properties { get; set; }
+		public SortedDictionary<string, string> Properties { get; set; } = new SortedDictionary<string, string>();
 
 		public string ConsumerName { get; set; }
 

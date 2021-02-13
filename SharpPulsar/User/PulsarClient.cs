@@ -238,10 +238,10 @@ namespace SharpPulsar.User
         private Consumer<T> SingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
             var schemaClone = PreProcessSchemaBeforeSubscribe(schema, conf.SingleTopic);
-            return DoSingleTopicSubscribeAsync(conf, schemaClone, interceptors);
+            return DoSingleTopicSubscribe(conf, schemaClone, interceptors);
         }
 
-        private Consumer<T> DoSingleTopicSubscribeAsync<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        private Consumer<T> DoSingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
             var queue = new ConsumerQueueCollections<T>();
             string topic = conf.SingleTopic;
@@ -264,6 +264,10 @@ namespace SharpPulsar.User
                     consumer = _actorSystem.ActorOf(ConsumerActor<T>.NewConsumer(_client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(consumer));
+                var c = queue.ConsumerCreation.Take();
+                if (c != null)
+                    throw c.Exception;
+
                 return new Consumer<T>(consumer, queue, schema, conf);
             }
             catch(Exception e)
@@ -478,6 +482,11 @@ namespace SharpPulsar.User
                     reader = _actorSystem.ActorOf(ReaderActor<T>.Prop(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(reader));
+
+                var c = queue.ConsumerCreation.Take();
+                if (c != null)
+                    throw c.Exception;
+
                 return new Reader<T>(reader, queue, schema, conf);
             }
             catch(Exception ex)

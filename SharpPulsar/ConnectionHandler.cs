@@ -124,8 +124,6 @@ namespace SharpPulsar
 			{
 				ReconnectLater(exception);
 			}
-
-			return;
 		}
 
 		private void ReconnectLater(Exception exception)
