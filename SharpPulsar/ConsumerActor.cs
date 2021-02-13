@@ -169,13 +169,14 @@ namespace SharpPulsar
 
 		public ConsumerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
+			_topicName = TopicName.Get(topic);
 			_cnxPool = cnxPool;
 			_actorSystem = Context.System;
 			_lookup = lookup;
 			_self = Self;
 			_tokenSource = new CancellationTokenSource();
 			_client = client;
-			ConsumerId = client.AskFor<long>(NewConsumerId.Instance);
+			ConsumerId = idGenerator.AskFor<long>(NewConsumerId.Instance);
 			_subscriptionMode = conf.SubscriptionMode;
 			_startMessageId = startMessageId != null ? new BatchMessageId((MessageId) startMessageId) : null;
 			_initialStartMessageId = _startMessageId;
@@ -261,8 +262,7 @@ namespace SharpPulsar
 			}
 
 			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(State, new BackoffBuilder().SetInitialTime(clientConfiguration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(clientConfiguration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create(), Self));
-
-			_topicName = TopicName.Get(topic);
+						
 			if(_topicName.Persistent)
 			{
 				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(client, ConsumerId, conf));

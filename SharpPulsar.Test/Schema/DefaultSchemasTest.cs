@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
@@ -72,11 +73,12 @@ namespace SharpPulsar.Test.Schema
             var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
         }
-        [Fact(Skip = "Not ready")]
+        [Fact]
         public virtual void TestReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
             reader.Topic(TestTopic);
+            reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
         }

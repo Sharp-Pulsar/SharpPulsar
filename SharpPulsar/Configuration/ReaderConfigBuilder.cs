@@ -33,14 +33,6 @@ namespace SharpPulsar.Configuration
         {
             get
             {
-                if (_conf.EventListener == null)
-                    throw new ArgumentException("IConsumerEventListener is not implemented. It cannot be null");
-                if (_conf.Schema == null)
-                    throw new ArgumentException("Hey, we need the schema!");
-                if (_conf.StartMessageId == null)
-                    _conf.StartMessageId = IMessageId.Latest;
-                if (_conf.ReaderListener == null)
-                    throw new ArgumentException("Reader Listener Cannot be null");
                 return _conf;
             }
         }

@@ -427,8 +427,8 @@ namespace SharpPulsar.User
         }
         private Reader<T> CreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
-            var schemaClone = _client.AskFor<PreProcessedSchema<T>>(new PreProcessSchemaBeforeSubscribe<T>(schema, conf.TopicName));
-            return DoCreateReader(conf, schemaClone.Schema);
+            var schemaClone = PreProcessSchemaBeforeSubscribe(schema, conf.TopicName);
+            return DoCreateReader(conf, schemaClone);
         }
 
         private Reader<T> DoCreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
