@@ -29,8 +29,8 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     InvokedTargets = new[] { nameof(Compile) })]
 
 [GitHubActions("Tests",
-    GitHubActionsImage.UbuntuLatest,
     GitHubActionsImage.WindowsLatest,
+    GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
@@ -83,6 +83,8 @@ class Build : NukeBuild
         });
     Target Test => _ => _
         .DependsOn(Compile)
+        //.DependsOn(StartPulsar)
+        //.Triggers(StopPulsar)
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Test";
@@ -100,13 +102,13 @@ class Build : NukeBuild
 
                 Information($"Running for {projectName} ({fw}) ...");
 
-                var o = DotNetTest(c => c
+                DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
+                    .SetLogger("trx;verbosity=detailed")
+                    .EnableNoBuild()
                     .SetNoRestore(InvokedTargets.Contains(Restore)));
-                foreach (var op in o)
-                    Information(op.Text);
             }
         });
     Target StartPulsar => _ => _
@@ -122,7 +124,7 @@ class Build : NukeBuild
             .SetPublish("6650:6650", "8080:8080")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
-            .SetImage("apachepulsar/pulsar:2.7.0")
+            .SetImage("apachepulsar/pulsar-all:2.7.0")
             .SetCommand("bin/pulsar")
             .SetArgs("standalone"));
        });

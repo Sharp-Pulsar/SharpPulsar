@@ -27,17 +27,37 @@ on:
       - dev
 
 jobs:
-  ubuntu-latest:
-    name: ubuntu-latest
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Run './build.cmd Test'
-        run: ./build.cmd Test
   windows-latest:
     name: windows-latest
     runs-on: windows-latest
     steps:
+      - name: Setup dotnet 2
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '2.2.x'
+
+      - name: Setup dotnet 3
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x'
+
+      - uses: actions/checkout@v1
+      - name: Run './build.cmd Test'
+        run: ./build.cmd Test
+  ubuntu-latest:
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup dotnet 2
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '2.2.x'
+
+      - name: Setup dotnet 3
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x'
+
       - uses: actions/checkout@v1
       - name: Run './build.cmd Test'
         run: ./build.cmd Test

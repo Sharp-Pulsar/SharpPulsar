@@ -77,8 +77,6 @@ namespace SharpPulsar.Test.Fixtures
             processStartInfo.Environment["COMPUTERNAME"] = Environment.MachineName;
 
             var process = Process.Start(processStartInfo);
-            string output = process.StandardOutput.ReadToEnd();
-            Console.Error.WriteLine(output);
             if (process is null)
                 throw new Exception("Process.Start returned null");
 
