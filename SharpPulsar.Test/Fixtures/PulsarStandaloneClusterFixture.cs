@@ -26,7 +26,7 @@ namespace SharpPulsar.Test.Fixtures
         {
             TakeDownPulsar(); // clean-up if anything was left running from previous run
 
-            RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up --exit-code-from tests -d");
+            RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
 
             var waitTries = 10;
 

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Nuke.Common;
 using Nuke.Common.CI;
+using Nuke.Common.CI.AzurePipelines;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
 using Nuke.Common.Git;
@@ -102,11 +103,10 @@ class Build : NukeBuild
 
                 Information($"Running for {projectName} ({fw}) ...");
 
-                DotNetTest(c => c
+                DotNetRun(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
-                    .SetLogger("trx;verbosity=detailed")
                     .EnableNoBuild()
                     .SetNoRestore(InvokedTargets.Contains(Restore)));
             }
