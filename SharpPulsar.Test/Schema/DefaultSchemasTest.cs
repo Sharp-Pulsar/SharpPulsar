@@ -28,7 +28,8 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
-    [Collection(nameof(PulsarStandaloneClusterTest))]
+    //[Collection(nameof(PulsarStandaloneClusterTest))]
+    [Collection("DefaultSchemasTest")]
     public class DefaultSchemasTest
     {
         private PulsarSystem _system;
