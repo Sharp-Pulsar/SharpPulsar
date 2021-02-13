@@ -26,7 +26,7 @@ namespace SharpPulsar.Test.Fixtures
         {
             TakeDownPulsar(); // clean-up if anything was left running from previous run
 
-            RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
+            RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up --exit-code-from tests -d");
 
             var waitTries = 10;
 
@@ -68,7 +68,8 @@ namespace SharpPulsar.Test.Fixtures
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = name,
-                Arguments = arguments
+                Arguments = arguments,
+                RedirectStandardOutput = true,
             };
 
             processStartInfo.Environment["TAG"] = "test";
@@ -76,6 +77,8 @@ namespace SharpPulsar.Test.Fixtures
             processStartInfo.Environment["COMPUTERNAME"] = Environment.MachineName;
 
             var process = Process.Start(processStartInfo);
+            string output = process.StandardOutput.ReadToEnd();
+            Console.Error.WriteLine(output);
             if (process is null)
                 throw new Exception("Process.Start returned null");
 
