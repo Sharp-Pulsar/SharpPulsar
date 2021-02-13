@@ -91,10 +91,25 @@ class Build : NukeBuild
             var projectName = "SharpPulsar.Test";
             var project = Solution.GetProjects("*.Test").First();
             Information($"Running tests from {projectName}");
-            DotNetRun(c => c
+
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                if (fw.StartsWith("net4")
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
+                {
+                    Information($"Skipping {projectName} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                    continue;
+                }
+
+                Information($"Running for {projectName} ({fw}) ...");
+
+                DotNetRun(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
                     .EnableNoBuild());
+            }
         });
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
