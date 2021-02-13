@@ -104,7 +104,7 @@ class Build : NukeBuild
 
                 Information($"Running for {projectName} ({fw}) ...");
 
-                DotNetRun(c => c
+                DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
