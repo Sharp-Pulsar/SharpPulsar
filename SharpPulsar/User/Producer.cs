@@ -76,5 +76,12 @@ namespace SharpPulsar.User
             NewMessage().Value(message).Send();
             return _queue.SentMessage.Take();
         }
+        public SentMessage<T> SendReceipt()
+        {
+            /*if (_queue.SentMessage.TryTake(out var sent, TimeSpan.FromSeconds(5)))
+                return sent;
+            return null;*/
+            return _queue.SentMessage.Take();
+        }
     }
 }

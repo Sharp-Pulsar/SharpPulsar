@@ -233,6 +233,7 @@ namespace SharpPulsar.Protocol
 				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
 				// to parse metadata
 				//SkipChecksumIfPresent(buffer);
+				buffer.Skip(2);
                 var bufferbytes = buffer;
                 return bufferbytes.FromByteArray<MessageMetadata>();
 			}

@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Api\KeySharedSubscriptionTest.cs" />
+    <Compile Remove="Api\TlsProducerConsumerTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Resources\authentication\tls\broker-cert.pem" />
     <None Remove="Resources\authentication\tls\broker-key.pem" />
     <None Remove="Resources\authentication\tls\cacert.pem" />
@@ -24,6 +29,7 @@
     <PackageReference Include="Akka.TestKit.Xunit2" Version="1.4.16" />
     <PackageReference Include="Castle.Core" Version="4.4.1" />
     <PackageReference Include="FakeItEasy" Version="6.2.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
@@ -50,6 +56,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="docker-compose-standalone-tests.yml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

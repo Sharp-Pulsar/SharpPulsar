@@ -2,9 +2,11 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Impl.Auth;
-using SharpPulsar.Impl.Schema;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,70 +30,74 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
-    [Collection("ConsumerRedeliveryTest")]
-	public class ConsumerRedeliveryTest : ProducerConsumerBase
-	{
+    [Collection(nameof(PulsarTests))]
+    public class ConsumerRedeliveryTest
+    {
         private readonly ITestOutputHelper _output;
-        private readonly TestCommon.Common _common;
+        private readonly PulsarSystem _system;
+        private readonly PulsarClient _client;
 
-        public ConsumerRedeliveryTest(ITestOutputHelper output)
+        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarSystemFixture fixture)
         {
             _output = output;
             _output = output;
-            _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime:60000, brokerService: "pulsar+ssl://52.177.137.243:6651", enableTls: true);
-		}
-		
-        [Fact]
-		public void TestUnAckMessageRedeliveryWithReceive()
-		{
-			var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive", "sub-TestUnAckMessageRedeliveryWithReceive", ackTimeout: 30000, forceTopic: true, acknowledgmentGroupTime:0));
+            _system = fixture.System;
+            _client = _system.NewClient();
+        }
 
-            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, "TestUnAckMessageRedeliveryWithReceive"));
-            
+        [Fact]
+        public void TestUnAckMessageRedeliveryWithReceive()
+        {
+            var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
+            var builder = new ConsumerConfigBuilder<sbyte[]>();
+            builder.Topic(topic);
+            builder.SubscriptionName("sub-TestUnAckMessageRedeliveryWithReceive");
+            builder.AckTimeout(30000, TimeUnit.MILLISECONDS);
+            builder.ForceTopicCreation(true);
+            builder.AcknowledgmentGroupTime(0);
+            var consumer = _client.NewConsumer(builder);
+
+            var pBuilder = new ProducerConfigBuilder<sbyte[]>();
+            pBuilder.Topic(topic);
+            var producer = _client.NewProducer(pBuilder);
+
             const int messageCount = 10;
-            
-			for (var i = 0; i < messageCount; i++)
-			{
-				var send = new Send(Encoding.UTF8.GetBytes("my-message-" + i));
-				var receipt = _common.PulsarSystem.Send(send, producer.Producer);
-                _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions{WriteIndented = true}));
-			}
+
+            for (var i = 0; i < messageCount; i++)
+            {
+                var receipt = producer.Send(Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes());
+                _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
+            }
 
             var messageReceived = 0;
-            
-            var messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, 0, customHander:(m) =>
+            for (var i = 0; i < messageCount; i++)
             {
-                var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
-                return receivedMessage;
-            });
-            foreach (var message in messages)
-            {
-                _output.WriteLine($"Received message: [{message}]");
-				Assert.NotNull(message);
+                var m = consumer.Receive();
+                var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)m.Data);
+                _output.WriteLine($"Received message: [{receivedMessage}]");
+                Assert.NotNull(receivedMessage);
                 messageReceived++;
-                // Don't ack message, wait for ack timeout.
-			}
+            }
 			
-			Assert.Equal(10,messageReceived);
+			Assert.Equal(10, messageReceived);
             Thread.Sleep(31000);
 
-            messages = _common.PulsarSystem.Messages("TestUnAckMessageRedeliveryWithReceive", false, 0, customHander: (m) =>
+
+            for (var i = 0; i < messageCount; i++)
             {
-                var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
-                _common.PulsarSystem.Acknowledge(m);
-                return receivedMessage;
-            });
-            foreach (var message in messages)
+                var receipt = producer.Send(Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes());
+                _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
+            }
+
+            for (var i = 0; i < messageCount; i++)
             {
-                _output.WriteLine($"Received message: [{message}]");
-                Assert.NotNull(message);
+                var m = consumer.Receive();
+                var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)m.Data);
+                _output.WriteLine($"Received message: [{receivedMessage}]");
+                Assert.NotNull(receivedMessage);
                 messageReceived++;
-			}
+            }
             Assert.Equal(20, messageReceived);
-			_common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
         }
 
 	}

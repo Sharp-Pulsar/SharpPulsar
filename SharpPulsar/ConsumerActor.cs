@@ -1368,8 +1368,9 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
 			}
-
-			if(!data.IsValid())
+			var startsWith = data.StartsWithMagicNumber();
+			var hascheckum = data.HasValidCheckSum();
+			if(!(startsWith && hascheckum))
 			{
 				// discard message with checksum error
 				DiscardCorruptedMessage(messageId, cnx, CommandAck.ValidationError.ChecksumMismatch);

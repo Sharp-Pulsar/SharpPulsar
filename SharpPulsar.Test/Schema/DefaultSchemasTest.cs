@@ -29,8 +29,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Schema
 {
-    //[Collection(nameof(PulsarStandaloneClusterTest))]
-    [Collection("DefaultSchemasTest")]
+    [Collection(nameof(PulsarTests))]
     public class DefaultSchemasTest
     {
         private PulsarSystem _system;
@@ -39,31 +38,20 @@ namespace SharpPulsar.Test.Schema
 
         private const string TestTopic = "test-topic";
 
-        public DefaultSchemasTest(ITestOutputHelper output)
+        public DefaultSchemasTest(ITestOutputHelper output, PulsarSystemFixture fixture)
         {
+            _system = fixture.System;
             _output = output;
-            var client = new ClientConfigurationData
-            {
-                ServiceUrl = "pulsar://127.0.0.1:6650"
-            };
-            _system = PulsarSystem.GetInstance(client);
             _client = _system.NewClient();
         }
         [Fact]
         public virtual void TestConsumerInstantiation()
         {
-            try
-            {
-                var consumer = new ConsumerConfigBuilder<string>();
-                consumer.Topic(TestTopic);
-                consumer.SubscriptionName("test-sub");
-                var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
-                Assert.NotNull(stringConsumerBuilder);
-            }
-            catch(Exception ex)
-            {
-                _output.WriteLine(ex.ToString());
-            }
+            var consumer = new ConsumerConfigBuilder<string>();
+            consumer.Topic(TestTopic);
+            consumer.SubscriptionName("test-sub");
+            var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
+            Assert.NotNull(stringConsumerBuilder);
         }
         [Fact]
         public virtual void TestProducerInstantiation()

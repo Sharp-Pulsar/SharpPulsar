@@ -1,4 +1,10 @@
-﻿using System;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
+using SharpPulsar.Schemas;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
@@ -25,64 +31,66 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
-	[Collection("BytesKeyTest")]
-    public class BytesKeyTest : ProducerConsumerBase
+    [Collection(nameof(PulsarTests))]
+    public class BytesKeyTest
 	{
         private readonly ITestOutputHelper _output;
-        private TestCommon.Common _common;
+        private readonly PulsarSystem _system;
+        private readonly PulsarClient _client;
 
-        public BytesKeyTest(ITestOutputHelper output)
+        public BytesKeyTest(ITestOutputHelper output, PulsarSystemFixture fixture)
         {
             _output = output;
-			_common = new TestCommon.Common(output);
-			_common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.177.137.243:6651");
-            //ProducerBaseSetup(_common.PulsarSystem, output);
+            _system = fixture.System;
+            _client = _system.NewClient();
         }
-
-		private void ByteKeysTest(bool batching)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+		public void ByteKeysTest(bool batching)
 		{
-			Random r = new Random(0);
+            var topic = "persistent://public/default/my-topic-keys=3";
 
-            var producer = _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), "persistent://public/default/my-topic-keys", "ByteKeysTest", batchMessageDelayMs: batching ? 5000 : 0, batchingMaxMessages: batching ? 5 : 0));
 
+            Random r = new Random(0);
             byte[] byteKey = new byte[1000];
             r.NextBytes(byteKey);
-            var config = new Dictionary<string, object> { { "KeyBytes", byteKey } };
-            var send = new Send(Encoding.UTF8.GetBytes("TestMessage"), config.ToImmutableDictionary());
-            var receipt =  _common.PulsarSystem.Send(send, producer.Producer);
 
-            var consumer = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), "persistent://public/default/my-topic-keys", "ByteKeysTest", "ByteKeysTest-subscriber"));
-            
-            var messages = _common.PulsarSystem.Messages("ByteKeysTest", false, customHander: (m) =>
+            var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
+            producerBuilder.Topic(topic);
+            if (batching)
             {
-                var receivedMessage = Encoding.UTF8.GetString((byte[])(object)m.Message.Data);
-
-                Assert.Equal(byteKey, (byte[])(object)m.Message.KeyBytes);
-                Assert.True(m.Message.HasBase64EncodedKey());
-				return receivedMessage;
-            });
-            foreach (var message in messages)
-            {
-                _output.WriteLine($"Received message: [{message}]");
-                Assert.Equal("TestMessage", message);
-                break;
+                producerBuilder.EnableBatching(true);
+                producerBuilder.BatchingMaxPublishDelay(5000, TimeUnit.MILLISECONDS);
+                producerBuilder.BatchingMaxMessages(5);
             }
-		}
+            var producer = _client.NewProducer(producerBuilder);
 
-		[Fact]
-		public void TestBytesKeyBatch()
-		{
-			ByteKeysTest(true);
-			_common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
+            var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
+            consumerBuilder.Topic(topic);
+            consumerBuilder.SubscriptionName("ByteKeysTest-subscriber");
+            var consumer = _client.NewConsumer(consumerBuilder);
+
+
+            var msg = producer.NewMessage();
+            msg = msg.KeyBytes(byteKey.ToSBytes());
+            msg = msg.Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } });
+            msg = msg.Value(Encoding.UTF8.GetBytes("TestMessage").ToSBytes());
+
+            //two ways:
+            //msg.Send() = pull sendreceipt in a different way like in the background, good when batching is enabled
+            //producer.Send(Encoding.UTF8.GetBytes("TestMessage").ToSBytes()); waits for the sentrecepit
+
+            msg.Send();
+            var sent = producer.SendReceipt();
+
+            var message = consumer.Receive();
+            Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
+            Assert.True(message.HasBase64EncodedKey());
+            var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal("TestMessage", receivedMessage);
         }
-		[Fact]
-		public void TestBytesKeyNoBatch()
-		{
-			ByteKeysTest(false);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
-		}
 	}
 
 }

@@ -9,6 +9,7 @@ using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace SharpPulsar.User
 {
@@ -151,7 +152,7 @@ namespace SharpPulsar.User
         public IMessage<T> Receive()
         {
             _consumerActor.Tell(Messages.Consumer.Receive.Instance);
-            if (_queue.Receive.TryTake(out var message, 1000))
+            if (_queue.Receive.TryTake(out var message, 150000))
                 return message;
             return null;
         }
@@ -215,6 +216,71 @@ namespace SharpPulsar.User
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg.Exception != null)
                     throw msg.Exception;
+        }
+
+        /// <summary>
+        /// Consume messages from queue. ConsumptionType has to be set to Queue.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="topic"></param>
+        /// <param name="autoAck"></param>
+        /// <param name="takeCount"></param>
+        /// <param name="customProcess"></param>
+        /// <returns></returns>
+        public IEnumerable<T> ReceiveFunc(bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<IMessage<T>, T> customHander = null, CancellationToken token = default)
+        {
+            //no end
+            if (takeCount == -1)
+            {
+                for (var i = 0; i > takeCount; i++)
+                {
+                    if (_queue.Receive.TryTake(out var m, receiveTimeout, token))
+                    {
+                        yield return ProcessMessage(m, autoAck, customHander);
+                    }
+                }
+            }
+            else if (takeCount > 0)//end at takeCount
+            {
+                for (var i = 0; i < takeCount; i++)
+                {
+                    if (_queue.Receive.TryTake(out var m, receiveTimeout, token))
+                    {
+                        yield return ProcessMessage(m, autoAck, customHander);
+                    }
+                    else
+                    {
+                        //we need to go back since no message was received within the timeout
+                        i--;
+                    }
+                }
+            }
+            else
+            {
+                //drain the current messages
+                while (true)
+                {
+                    if (_queue.Receive.TryTake(out var m, receiveTimeout, token))
+                    {
+                        yield return ProcessMessage(m, autoAck, customHander);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        private T ProcessMessage(IMessage<T> m, bool autoAck, Func<IMessage<T>, T> customHander = null)
+        {
+            var received = customHander == null ? m.Value : customHander(m);
+            if (autoAck)
+            {
+                Acknowledge(m);
+            }
+
+            return received;
         }
 
         public void Unsubscribe()

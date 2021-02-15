@@ -213,7 +213,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_stats = (IProducerStatsRecorder)ProducerStatsDisabled.Instance;
+				_stats = ProducerStatsDisabled.Instance;
 			}
 
 			if (Configuration.Properties == null)
@@ -251,7 +251,10 @@ namespace SharpPulsar
 			Receive<ConnectionAlreadySet>(_ => {
 				Become(Ready);
 			});
-			ReceiveAny(a => Stash.Stash());
+			ReceiveAny(a => {
+				var message = a;
+				Stash.Stash();
+			});
 		}
 		private void Ready()
         {
@@ -297,6 +300,7 @@ namespace SharpPulsar
 		{
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
+			ClientCnx = cnx;
 			_connectionHandler.Tell(new SetCnx(cnx));
 			cnx.Tell(new RegisterProducer(ProducerId, Self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
@@ -386,8 +390,7 @@ namespace SharpPulsar
 						ProducerQueue.SentMessage.Add(sent);
 					});
 				}
-				ResendMessages();
-				ProducerQueue.Producer.Add(new ProducerCreation(response));
+				ResendMessages(response);
 			}
 			catch(Exception ex)
             {
@@ -525,7 +528,7 @@ namespace SharpPulsar
 		private SentMessage<T> Send(IMessage<T> message)
 		{
 			Condition.CheckArgument(message is Message<T>);
-			var maxMessageSize = ClientCnx.AskFor<long>(MaxMessageSize.Instance);
+			var maxMessageSize = ClientCnx.AskFor<int>(MaxMessageSize.Instance);
 			if (!IsValidProducerState(message.SequenceId))
 			{
 				return null;
@@ -905,25 +908,25 @@ namespace SharpPulsar
 		{
 			switch(State.ConnectionState)
 			{
-			case HandlerState.State.Ready:
-				// OK
-			case HandlerState.State.Connecting:
-				// We are OK to queue the messages on the client, it will be sent to the broker once we get the connection
-			case HandlerState.State.RegisteringSchema:
-				// registering schema
-				return true;
-			case HandlerState.State.Closing:
-			case HandlerState.State.Closed:
-				ProducerQueue.SentMessage.Add(new SentMessage<T>(new AlreadyClosedException("Producer already closed", sequenceId)));
-				return false;
-			case HandlerState.State.Terminated:
-					ProducerQueue.SentMessage.Add(new SentMessage<T>(new TopicTerminatedException("Topic was terminated", sequenceId)));
-				return false;
-			case HandlerState.State.Failed:
-			case HandlerState.State.Uninitialized:
-			default:
-					ProducerQueue.SentMessage.Add(new SentMessage<T>(new NotConnectedException(sequenceId)));
-				return false;
+				case HandlerState.State.Ready:
+					// OK
+				case HandlerState.State.Connecting:
+					// We are OK to queue the messages on the client, it will be sent to the broker once we get the connection
+				case HandlerState.State.RegisteringSchema:
+					// registering schema
+					return true;
+				case HandlerState.State.Closing:
+				case HandlerState.State.Closed:
+					ProducerQueue.SentMessage.Add(new SentMessage<T>(new AlreadyClosedException("Producer already closed", sequenceId)));
+					return false;
+				case HandlerState.State.Terminated:
+						ProducerQueue.SentMessage.Add(new SentMessage<T>(new TopicTerminatedException("Topic was terminated", sequenceId)));
+					return false;
+				case HandlerState.State.Failed:
+				case HandlerState.State.Uninitialized:
+				default:
+						ProducerQueue.SentMessage.Add(new SentMessage<T>(new NotConnectedException(sequenceId)));
+					return false;
 			}
 		}
 		private void SendCommand(OpSendMsg<T> op, IActorRef cnx)
@@ -1165,7 +1168,7 @@ namespace SharpPulsar
 			return Math.Max(op.HighestSequenceId, op.SequenceId);
 		}
 
-		private void ResendMessages()
+		private void ResendMessages(ProducerResponse response)
 		{
 			var messagesToResend = _pendingMessages.Count;
 			if (messagesToResend == 0)
@@ -1173,6 +1176,13 @@ namespace SharpPulsar
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"[{Topic}] [{ProducerName}] No pending messages to resend {messagesToResend}");
+				}
+
+				if (State.ChangeToReadyState())
+				{
+					ProducerQueue.Producer.Add(new ProducerCreation(response));
+					Become(Ready);
+					return;
 				}
 				return;
 			}

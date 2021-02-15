@@ -4,6 +4,7 @@ using NLog;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.User;
+using System.Threading.Tasks;
 
 namespace SharpPulsar
 {
@@ -18,7 +19,7 @@ namespace SharpPulsar
         private readonly IActorRef _tcClient;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
-        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
         {
             if (_instance == null)
             {
@@ -32,7 +33,7 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(ClientConfigurationData conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
+        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
         {
             if (_instance == null)
             {
@@ -46,8 +47,11 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        private PulsarSystem(ClientConfigurationData conf, NLog.Config.LoggingConfiguration loggingConfiguration)
+        private PulsarSystem(PulsarClientConfigBuilder confBuilder, NLog.Config.LoggingConfiguration loggingConfiguration)
         {
+
+            _conf = confBuilder.ClientConfigurationData;
+            var conf = _conf;
             var nlog = new NLog.Config.LoggingConfiguration();
             var logfile = new NLog.Targets
                 .FileTarget("logFile")
@@ -91,8 +95,10 @@ namespace SharpPulsar
             _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf,  _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
         }
-        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
+        private PulsarSystem(ActorSystem actorSystem, PulsarClientConfigBuilder confBuilder)
         {
+            _conf = confBuilder.ClientConfigurationData;
+            var conf = _conf;
             _actorSystem = actorSystem;
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
@@ -120,6 +126,10 @@ namespace SharpPulsar
         public User.Sql NewSql() 
         {
             return null;
+        }
+        public async Task Shutdown()
+        {
+            await _actorSystem.Terminate();
         }
     }
 }

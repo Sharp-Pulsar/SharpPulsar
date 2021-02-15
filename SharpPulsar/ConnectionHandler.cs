@@ -60,7 +60,7 @@ namespace SharpPulsar
 			});
 			Receive<SetCnx>(s =>
 			{
-				ClientCnx = s.ClientCnx;
+				_clientCnx = s.ClientCnx;
 			});
 			Receive<ConnectionClosed>(c =>
 			{
@@ -171,18 +171,6 @@ namespace SharpPulsar
 			_cancelable?.Cancel();
             base.PostStop();
         }
-        private IActorRef Cnx()
-		{
-			return _clientCnx;
-		}
-
-		public IActorRef ClientCnx
-		{
-			set
-			{
-				_clientCnx = value;
-			}
-		}
 
 		private bool ValidStateForReconnection
 		{

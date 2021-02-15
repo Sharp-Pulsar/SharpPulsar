@@ -39,6 +39,10 @@ namespace SharpPulsar.Configuration
 		/// </summary>
 		public long InitialBackoffIntervalNanos = TimeUnit.MILLISECONDS.ToNanoseconds(100);
 
+		public int ConnectionTimeoutMs { get; set; }
+		public string WebUrl { get; set; }
+		public int MaxLookupRedirects { get; set; }
+
 		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.ToNanoseconds(60);
 		public string TlsTrustStoreType { get; set; } = "PKCS12";
 		public bool EnableTransaction { get; set; } = false;
@@ -71,7 +75,7 @@ namespace SharpPulsar.Configuration
 			set => _authentication = value;
         }
 
-        public ServiceUrlProvider ServiceUrlProvider { get; set; }
+        public IServiceUrlProvider ServiceUrlProvider { get; set; }
 		public string AuthPluginClassName { get; set; }
 		public string ListenerName { get; set; }
 

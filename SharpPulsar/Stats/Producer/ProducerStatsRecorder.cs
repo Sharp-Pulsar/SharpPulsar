@@ -9,7 +9,6 @@ using App.Metrics.Concurrency;
 
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Utility;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -20,7 +20,7 @@
 using System;
 using Xunit;
 using Xunit.Abstractions;
-using Range = SharpPulsar.Api.Range;
+using Range = SharpPulsar.Common.Range;
 
 namespace SharpPulsar.Test.Api
 {

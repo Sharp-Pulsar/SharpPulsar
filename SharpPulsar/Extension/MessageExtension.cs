@@ -15,13 +15,13 @@ namespace SharpPulsar.Extension
         public static ReadOnlySequence<byte> ExtractData(this ReadOnlySequence<byte> data, uint metadataSize)
             => data.Slice(Constants.MetadataOffset + metadataSize);
 
-        public static bool IsValid(this ReadOnlySequence<byte> data)
-            => StartsWithMagicNumber(data) && HasValidCheckSum(data);
+        //public static bool IsValid(this ReadOnlySequence<byte> data)
+           // => StartsWithMagicNumber(data) && HasValidCheckSum(data);
 
-        private static bool StartsWithMagicNumber(ReadOnlySequence<byte> input)
+        public static bool StartsWithMagicNumber(this ReadOnlySequence<byte> input)
             => input.StartsWith(Constants.MagicNumber);
 
-        private static bool HasValidCheckSum(ReadOnlySequence<byte> input)
+        public static bool HasValidCheckSum(this ReadOnlySequence<byte> input)
             => input.ReadUInt32(Constants.MagicNumber.Length, true) == DotCrc32C.Calculate(input.Slice(Constants.MetadataSizeOffset));
     }
 }
