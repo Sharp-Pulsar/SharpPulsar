@@ -42,7 +42,7 @@ namespace SharpPulsar.Batch
 	/// batched into multiple batch messages:
 	/// [(k1, v1), (k1, v2), (k1, v3)], [(k2, v1), (k2, v2), (k2, v3)], [(k3, v1), (k3, v2), (k3, v3)]
 	/// </summary>
-	public class BatchMessageKeyBasedContainer : AbstractBatchMessageContainer
+	public class BatchMessageKeyBasedContainer<T> : AbstractBatchMessageContainer<T>
 	{
 
 		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
@@ -52,7 +52,7 @@ namespace SharpPulsar.Batch
         {
             _log = system.Log;
         }
-		public override bool Add<T>(Message<T> msg, Action<object, Exception> callback)
+		public override bool Add(Message<T> msg, Action<object, Exception> callback)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -72,6 +72,14 @@ namespace SharpPulsar.Batch
 				part.TopicName = TopicName;
 				part.ProducerName = ProducerName;
 				if (!_batches.ContainsKey(key)) _batches.Add(key, part);
+				if (msg.Metadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
+				{
+					CurrentTxnidMostBits = (long)msg.Metadata.TxnidMostBits;
+				}
+				if (msg.Metadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
+				{
+					CurrentTxnidLeastBits = (long)msg.Metadata.TxnidLeastBits;
+				}
 			}
 			else
 			{
@@ -106,7 +114,7 @@ namespace SharpPulsar.Batch
 
 		public override bool MultiBatches => true;
 
-        private OpSendMsg<T> CreateOpSendMsg<T>(KeyedBatch keyedBatch)
+        private OpSendMsg<T> CreateOpSendMsg(KeyedBatch keyedBatch)
 		{
             var encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
             if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
@@ -140,6 +148,15 @@ namespace SharpPulsar.Batch
             keyedBatch.MessageMetadata.ProducerName = Container.ProducerName;
             keyedBatch.MessageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
+
+			if (CurrentTxnidMostBits != -1)
+			{
+				keyedBatch.MessageMetadata.TxnidMostBits = (ulong)CurrentTxnidMostBits;
+			}
+			if (CurrentTxnidLeastBits != -1)
+			{
+				keyedBatch.MessageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
+			}
 			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
 			var op = OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId);
@@ -149,14 +166,14 @@ namespace SharpPulsar.Batch
 			return op;
 		}
 
-		public override IList<OpSendMsg<T>> CreateOpSendMsgs<T>()
+		public override IList<OpSendMsg<T>> CreateOpSendMsgs()
 		{
 			IList<OpSendMsg<T>> result = new List<OpSendMsg<T>>();
 			var list = new List<KeyedBatch>(_batches.Values);
 			list.Sort(((o1, o2) => o1.SequenceId.CompareTo(o2.SequenceId)));
 			foreach (var keyedBatch in list)
 			{
-				var op = CreateOpSendMsg<T>(keyedBatch);
+				var op = CreateOpSendMsg(keyedBatch);
 				if (op != null)
 				{
 					result.Add(op);
@@ -165,7 +182,7 @@ namespace SharpPulsar.Batch
 			return result;
 		}
 
-		public override bool HasSameSchema<T>(Message<T> msg)
+		public override bool HasSameSchema(Message<T> msg)
 		{
 			var key = GetKey(msg);
 			var part = _batches[key];

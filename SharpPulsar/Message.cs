@@ -35,6 +35,7 @@ namespace SharpPulsar
     using SharpPulsar.Shared;
     using SharpPulsar.Schemas;
     using SharpPulsar.Extension;
+    using System.Buffers;
 
     public class Message<T> : IMessage<T>
 	{
@@ -206,7 +207,7 @@ namespace SharpPulsar
 		}
 		public static Message<byte[]> Deserialize(byte[] headersAndPayload) 
 		{			
-			var msgMetadata = Commands.ParseMessageMetadata(headersAndPayload);
+			var msgMetadata = Commands.ParseMessageMetadata(new ReadOnlySequence<byte>(headersAndPayload));
             Message<byte[]> msg = new Message<byte[]>
             {
                 Metadata = msgMetadata,

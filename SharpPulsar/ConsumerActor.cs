@@ -3,6 +3,7 @@ using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
+using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
@@ -38,6 +39,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -346,7 +348,8 @@ namespace SharpPulsar
 			{
                 try
                 {
-					var message = Receive();
+					VerifyConsumerState();
+					var message = InternalReceive();
 					Push(ConsumerQueue.Receive, message);
 				}
                 catch(Exception ex)
@@ -473,7 +476,7 @@ namespace SharpPulsar
 				ActiveConsumerChanged(m.IsActive);
 			});
 			Receive<MessageReceived>(m => {
-				MessageReceived(m.MessageId, m.RedeliveryCount, m.Data, _cnx);
+				MessageReceived(m, _cnx);
 			});
 			Receive<GetSubscription>(m => {
 				Push(ConsumerQueue.Subscription, Subscription);
@@ -1361,15 +1364,19 @@ namespace SharpPulsar
 			}
 		}
 
-		private void MessageReceived(MessageIdData messageId, int redeliveryCount, ReadOnlySequence<byte> data, IActorRef cnx)
+		private void MessageReceived(MessageReceived received, IActorRef cnx)
 		{
+			var messageId = received.MessageId;
+			var data = new ReadOnlySequence<byte>(received.Payload);
+			var redeliveryCount = received.RedeliveryCount;
 			IList<long> ackSet = messageId.AckSets;
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
 			}
-			var startsWith = data.StartsWithMagicNumber();
-			var hascheckum = data.HasValidCheckSum();
+			var mn = (short)0x0e01;
+			var startsWith = received.MagicNumber == mn;
+			var hascheckum = received.CheckSum;
 			if(!(startsWith && hascheckum))
 			{
 				// discard message with checksum error
@@ -1377,17 +1384,7 @@ namespace SharpPulsar
 				return;
 			}
 
-			MessageMetadata msgMetadata;
-			try
-			{
-				msgMetadata = Commands.ParseMessageMetadata(data.ToArray());
-			}
-			catch(Exception)
-			{
-				DiscardCorruptedMessage(messageId, cnx, CommandAck.ValidationError.ChecksumMismatch);
-				return;
-			}
-
+			MessageMetadata msgMetadata = received.Metadata;
 			int numMessages = msgMetadata.NumMessagesInBatch;
 		
 			bool isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
@@ -1464,7 +1461,7 @@ namespace SharpPulsar
 				}
 				finally
 				{
-					
+					EnqueueMessageAndCheckBatchReceive(message);
 				}
 			}
 			else
@@ -1628,7 +1625,6 @@ namespace SharpPulsar
 		internal virtual void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
 		{
 			int batchSize = msgMetadata.NumMessagesInBatch;
-			var uncompressedPayload = new ReadOnlySequence<byte>(payload);
 			// create ack tracker for entry aka batch
 			var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 			IList<IMessage<T>> possibleToDeadLetter = null;
@@ -1643,22 +1639,19 @@ namespace SharpPulsar
 			{
 				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
 			}
-
+			using var stream = new MemoryStream(payload);
+			using var binaryReader = new BinaryReader(stream);
 			int skippedMessages = 0;
 			try
 			{
-				long index = 0;
 				for (int i = 0; i < batchSize; ++i)
 				{
-					var singleMetadataSize = uncompressedPayload.ReadUInt32(index, true);
-					index += 4;
 					if (_log.IsDebugEnabled)
 					{
 						_log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {i} in batch");
 					}
-					var singleMessageMetadata = Serializer.Deserialize<SingleMessageMetadata>(uncompressedPayload.Slice(index, singleMetadataSize));
-					index += singleMetadataSize;
-					var singleMessagePayload = uncompressedPayload.Slice(index, singleMessageMetadata.PayloadSize);
+					var singleMessageMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+					var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
 					if (IsSameEntry(messageId) && IsPriorBatchIndex(i))
 					{
 						// If we are receiving a batch message, we need to discard messages that were prior
@@ -1706,7 +1699,6 @@ namespace SharpPulsar
 							NotifyPendingBatchReceivedCallBack();
 						}*/
 					}
-					index += (uint)singleMessageMetadata.PayloadSize;
 				}
 				if(ackBitSet != null)
 				{
@@ -1927,7 +1919,7 @@ namespace SharpPulsar
 			var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
 			var uncompressedSize = (int)msgMetadata.UncompressedSize;
 			var payloadSize = payload.Length;
-			var maxMessageSize = currentCnx.AskFor<long>(MaxMessageSize.Instance);
+			var maxMessageSize = currentCnx.AskFor<int>(MaxMessageSize.Instance);
 			if (checkMaxMessageSize && payloadSize > maxMessageSize)
 			{
 				// payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
@@ -2600,26 +2592,23 @@ namespace SharpPulsar
 				int currentSize;
 				bool isDurable = _subscriptionMode == SubscriptionMode.Durable;
 				currentSize = IncomingMessages.Count;
-				if (result is CommandSuccessResponse)
+				if (State.ChangeToReadyState())
 				{
-					if (State.ChangeToReadyState())
-					{
-						ConsumerIsReconnectedToBroker(_cnx, currentSize);
-					}
-					else
-					{
-						State.ConnectionState = HandlerState.State.Closed;
-						DeregisterFromClientCnx();
-						_client.Tell(new CleanupConsumer(Self));
-						_cnx.GracefulStop(TimeSpan.FromSeconds(1));
-						ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is closed")));
-						return;
-					}
-					ResetBackoff();
-					if (!(_hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
-					{
-						IncreaseAvailablePermits(_cnx, Conf.ReceiverQueueSize);
-					}
+					ConsumerIsReconnectedToBroker(_cnx, currentSize);
+				}
+				else
+				{
+					State.ConnectionState = HandlerState.State.Closed;
+					DeregisterFromClientCnx();
+					_client.Tell(new CleanupConsumer(Self));
+					_cnx.GracefulStop(TimeSpan.FromSeconds(1));
+					ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is closed")));
+					return;
+				}
+				ResetBackoff();
+				if (!(_hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
+				{
+					IncreaseAvailablePermits(_cnx, Conf.ReceiverQueueSize);
 				}
 				ConsumerQueue.ConsumerCreation.Add(null);
 			});

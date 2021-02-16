@@ -70,7 +70,7 @@ namespace SharpPulsar
 		private long _msgIdGenerator;
 		private ICancelable _sendTimeout;
 		private long _createProducerTimeout;
-		private readonly IBatchMessageContainerBase _batchMessageContainer;
+		private readonly IBatchMessageContainerBase<T> _batchMessageContainer;
 		private Queue<OpSendMsg<T>> _pendingMessages;
 		private IActorRef _generator;
 
@@ -198,10 +198,8 @@ namespace SharpPulsar
 				{
 					containerBuilder = IBatcherBuilder.Default(Context.System);
 				}
-				_batchMessageContainer = (IBatchMessageContainerBase)containerBuilder.Build();
+				_batchMessageContainer = (IBatchMessageContainerBase<T>)containerBuilder.Build<T>();
 				_batchMessageContainer.Producer = Self;
-				_batchMessageContainer.Container = new ProducerContainer(Self, Configuration, Configuration.MaxMessageSize, Context.System);
-
 			}
 			else
 			{
@@ -302,6 +300,13 @@ namespace SharpPulsar
 			// producer, it will try to grab a new cnx
 			ClientCnx = cnx;
 			_connectionHandler.Tell(new SetCnx(cnx));
+
+			if(_batchMessageContainer != null)
+            {
+				var maxMessageSize = cnx.AskFor<int>(MaxMessageSize.Instance);
+				_batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System);
+			}
+
 			cnx.Tell(new RegisterProducer(ProducerId, Self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
 
@@ -535,7 +540,7 @@ namespace SharpPulsar
 			}
 
 			var msg = (Message<T>) message;
-			MessageMetadata msgMetadata = new MessageMetadata();
+			MessageMetadata msgMetadata = msg.Metadata;
 			var payload = msg.Data;
 
 			// If compression is enabled, we are compressing, otherwise it will simply use the same buffer
@@ -1275,11 +1280,11 @@ namespace SharpPulsar
 					IList<OpSendMsg<T>> opSendMsgs;
 					if(_batchMessageContainer.MultiBatches)
 					{
-						opSendMsgs = _batchMessageContainer.CreateOpSendMsgs<T>();
+						opSendMsgs = _batchMessageContainer.CreateOpSendMsgs();
 					}
 					else
 					{
-						opSendMsgs = new List<OpSendMsg<T>> { _batchMessageContainer.CreateOpSendMsg<T>() };
+						opSendMsgs = new List<OpSendMsg<T>> { _batchMessageContainer.CreateOpSendMsg() };
 					}
 					_batchMessageContainer.Clear();
 					foreach(var opSendMsg in opSendMsgs)

@@ -39,7 +39,7 @@ namespace SharpPulsar
 		// LookupRequests that waiting in client side.
 		private readonly LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>> _waitingLookupRequests;
 
-		private readonly Dictionary<long, IActorRef> _producers = new Dictionary<long, IActorRef>();
+		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
 		
 		private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
 		private readonly Dictionary<long, IActorRef> _transactionMetaStoreHandlers = new Dictionary<long, IActorRef>();
@@ -315,11 +315,11 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
 			}
-
-			_producers[producerId].Tell(new AckReceived(Self, sequenceId, highestSequenceId, ledgerId, entryId));
+			if(_producers.TryGetValue(producerId, out var producer))
+				producer.Tell(new AckReceived(Self, sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
-		private void HandleMessage(CommandMessage msg, ReadOnlySequence<byte> frame, uint commandSize)
+		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -334,7 +334,7 @@ namespace SharpPulsar
                 BatchSize = msg.MessageId.BatchSize,
                 BatchIndex = msg.MessageId.BatchIndex
             };
-            var message = new MessageReceived(frame.Slice(commandSize + 4), id, (int)msg.RedeliveryCount);
+            var message = new MessageReceived(metadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
@@ -806,12 +806,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private void OnCommandReceived(ReadOnlySequence<byte> frame)
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber) args)
         {
-			var commandSize = frame.ReadUInt32(0, true);
-			var data = frame.Slice(4, commandSize);
-			var cmd = Serializer.Deserialize(data);
-			var t = cmd.type;
+			var cmd = args.command;
 			switch (cmd.type)
 			{
 				case BaseCommand.Type.AuthChallenge:
@@ -820,7 +817,7 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
-					HandleMessage(msg, frame, commandSize);
+					HandleMessage(msg, args.metadata, args.payload, args.checkSum, args.magicNumber);
 					break;
 				case BaseCommand.Type.GetLastMessageIdResponse:
 					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);
@@ -937,7 +934,7 @@ namespace SharpPulsar
 		}
 		private void RegisterProducer(long producerId, IActorRef producer)
 		{
-			_producers.Add(producerId, producer);
+			_producers.TryAdd(producerId, producer);
 		}
 		private void RegisterTransactionMetaStoreHandler(long transactionMetaStoreId, IActorRef handler)
 		{
@@ -945,7 +942,7 @@ namespace SharpPulsar
 		}
 		private void RemoveProducer(long producerId)
 		{
-			_producers.Remove(producerId);
+			_producers.TryRemove(producerId, out var r);
 		}
 
 		private void RemoveConsumer(long consumerId)

@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Akka.Actor;
 using Akka.Event;
-
+using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
@@ -38,7 +39,7 @@ namespace SharpPulsar.Batch
 	/// batched into single batch message:
 	/// [(k1, v1), (k2, v1), (k3, v1), (k1, v2), (k2, v2), (k3, v2), (k1, v3), (k2, v3), (k3, v3)]
 	/// </summary>
-	public class BatchMessageContainer : AbstractBatchMessageContainer
+	public class BatchMessageContainer<T> : AbstractBatchMessageContainer<T>
 	{
 
 		private MessageMetadata _messageMetadata = new MessageMetadata();
@@ -46,7 +47,7 @@ namespace SharpPulsar.Batch
 		private long _lowestSequenceId = -1L;
 		private long _highestSequenceId = -1L;
 		private List<byte> _batchedMessageMetadataAndPayload;
-		private IList<Message<object>> _messages = new List<Message<object>>();
+		private IList<Message<T>> _messages = new List<Message<T>>();
 		private Action<object, Exception> _previousCallback = null;
 		// keep track of callbacks for individual messages being published in a batch
 		private Action<object, Exception> _firstCallback;
@@ -56,7 +57,7 @@ namespace SharpPulsar.Batch
         {
             _log = system.Log;
         }
-		public override bool Add<T>(Message<T> msg, Action<object, Exception> callback)
+		public override bool Add(Message<T> msg, Action<object, Exception> callback)
 		{
 
 			if (_log.IsDebugEnabled)
@@ -71,12 +72,20 @@ namespace SharpPulsar.Batch
 				_messageMetadata.SequenceId = (ulong)msg.SequenceId;
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
 				_firstCallback = callback;
-				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize)); 
+				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
+				if(msg.Metadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
+				{
+					CurrentTxnidMostBits = (long)msg.Metadata.TxnidMostBits;
+				}
+				if (msg.Metadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
+				{
+					CurrentTxnidLeastBits = (long)msg.Metadata.TxnidLeastBits;
+				}
 			}
 
             _previousCallback = callback;
 			CurrentBatchSize += msg.Data.Length;
-			_messages.Add((Message<object>)(object)msg);
+			_messages.Add(msg);
 
 			if (_lowestSequenceId == -1L)
 			{
@@ -93,31 +102,25 @@ namespace SharpPulsar.Batch
 		{
 			get
 			{
-    
+				var stream = Helpers.Serializer.MemoryManager.GetStream();
+				var messageWriter = new BinaryWriter(stream);
+
 				for (int i = 0, n = _messages.Count; i < n; i++)
-				{
-					var msg = _messages[i];
-					var msgMetadata = msg.Metadata;
+				{					
 					try
 					{
-						_batchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Data.ToBytes()));
+						var msg = _messages[i];
+						var msgMetadata = msg.Metadata;
+						Serializer.SerializeWithLengthPrefix(stream, msgMetadata, PrefixStyle.Fixed32BigEndian);
+						messageWriter.Write(msg.Data.ToBytes());
 					}
-					catch (Exception)
+					catch (Exception ex)
 					{
-						// serializing batch message can corrupt the index of message and batch-message. Reset the index so,
-						// next iteration doesn't send corrupt message to broker.
-						/*for (int j = 0; j <= i; j++)
-						{
-							var previousMsg = _messages[j];
-						}*/
-						throw;
+						throw ex;
 					}
 				}
-				// Recycle messages only once they serialized successfully in batch
-				/*foreach (var msg in _messages)
-				{
-					msg;
-				}*/
+				_batchedMessageMetadataAndPayload.AddRange(stream.ToArray());
+
 				var uncompressedSize = _batchedMessageMetadataAndPayload.ToArray().Length;
 				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload.ToArray());
 				_batchedMessageMetadataAndPayload = new List<byte>();
@@ -136,7 +139,7 @@ namespace SharpPulsar.Batch
 
 		public override void Clear()
 		{
-			_messages = new List<Message<object>>();
+			_messages = new List<Message<T>>();
 			_firstCallback = null;
 			_previousCallback = null;
 			_messageMetadata = new MessageMetadata();
@@ -145,6 +148,8 @@ namespace SharpPulsar.Batch
 			_lowestSequenceId = -1L;
 			_highestSequenceId = -1L;
 			_batchedMessageMetadataAndPayload = null;
+			CurrentTxnidMostBits = -1L;
+			CurrentTxnidLeastBits = -1L;
 		}
 
 		public override bool Empty => _messages.Count == 0;
@@ -165,7 +170,7 @@ namespace SharpPulsar.Batch
 
 		public override bool MultiBatches => false;
 
-		public override OpSendMsg<T> CreateOpSendMsg<T>()
+		public override OpSendMsg<T> CreateOpSendMsg()
 		{
 			var encryptedPayload = CompressedBatchMetadataAndPayload;
             if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
@@ -192,6 +197,14 @@ namespace SharpPulsar.Batch
 			_messageMetadata.HighestSequenceId = (ulong)_highestSequenceId;
             _messageMetadata.ProducerName = Container.ProducerName;
 			_messageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
+			if (CurrentTxnidMostBits != -1)
+			{
+				_messageMetadata.TxnidMostBits = (ulong)CurrentTxnidMostBits;
+			}
+			if (CurrentTxnidLeastBits != -1)
+			{
+				_messageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
+			}
 			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
 			var op = OpSendMsg<T>.Create((List<Message<T>>)_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
@@ -202,7 +215,7 @@ namespace SharpPulsar.Batch
 			return op;
 		}
 
-		public override bool HasSameSchema<T>(Message<T> msg)
+		public override bool HasSameSchema(Message<T> msg)
 		{
 			if (NumMessagesInBatch == 0)
 			{

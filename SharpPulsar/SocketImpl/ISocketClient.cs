@@ -1,5 +1,5 @@
-﻿using System;
-using System.Buffers;
+﻿using SharpPulsar.Protocol.Proto;
+using System;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.SocketImpl
@@ -8,7 +8,7 @@ namespace SharpPulsar.SocketImpl
     {
         string RemoteConnectionId { get; }
         void Disconnected();
-        IObservable<ReadOnlySequence<byte>> ReceiveMessageObservable { get; }
+        IObservable<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)> ReceiveMessageObservable { get; }
 
         Task SendMessageAsync(byte[] message);
         Task SendMessageAsync(string message);

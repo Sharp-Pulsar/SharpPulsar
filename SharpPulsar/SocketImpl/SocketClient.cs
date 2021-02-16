@@ -1,7 +1,11 @@
 ﻿using Akka.Event;
+using ProtoBuf;
+using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Helpers;
+using SharpPulsar.Protocol.Proto;
 using System;
 using System.Buffers;
 using System.IO;
@@ -107,51 +111,63 @@ namespace SharpPulsar.SocketImpl
         }
 
 
-        public IObservable<ReadOnlySequence<byte>> ReceiveMessageObservable =>
-               Observable.Create<ReadOnlySequence<byte>>((observer) => ReaderSchedule(observer, cancellation.Token));
+        public IObservable<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)> ReceiveMessageObservable =>
+               Observable.Create<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
 
 
-        IDisposable ReaderSchedule(IObserver<ReadOnlySequence<byte>> observer, CancellationToken cancellationToken = default)
+        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)> observer, CancellationToken cancellationToken = default)
         {
-            return NewThreadScheduler.Default.Schedule(() =>
+            return NewThreadScheduler.Default.Schedule(async() =>
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    try
+                    var readresult = await _pipeReader.ReadAsync(cancellationToken);
+
+                    var buffer = readresult.Buffer;
+                    var length = (int)buffer.Length;
+                    if (length >= 8)
                     {
-
-                        var readresult = Task.Run(async() => await _pipeReader.ReadAsync(cancellationToken)).Result;
-
-                        var buffer = readresult.Buffer;
-
-                        if (buffer.Length <= 0)
+                        var array = ArrayPool<byte>.Shared.Rent(length);
+                        try
                         {
-                            continue;
+                            buffer.CopyTo(array);
+                            using var stream = new MemoryStream(array);
+                            using var reader = new BinaryReader(stream);
+                            var totalength = reader.ReadInt32().IntFromBigEndian();
+                            var frameLength = totalength + 4;
+                            if (length >= frameLength)
+                            {
+                                var command = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
+                                var consumed = buffer.GetPosition(frameLength);
+                                if(command.type == BaseCommand.Type.Message)
+                                {
+                                    var magicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                    var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
+                                    var metadataPointer = stream.Position;
+                                    var metadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                    var payloadPointer = stream.Position;
+                                    var metadataLength = (int)(payloadPointer - metadataPointer);
+                                    var payloadLength = frameLength - (int)payloadPointer;
+                                    var payload = reader.ReadBytes(payloadLength);
+                                    stream.Seek(metadataPointer, SeekOrigin.Begin);
+                                    var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
+                                    observer.OnNext((command, metadata, payload, messageCheckSum == calculatedCheckSum, magicNumber));
+                                    //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
+                                }
+                                else
+                                {
+                                    observer.OnNext((command, null, null, false, 0));
+                                }
+                                if (readresult.IsCompleted)
+                                    _pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                                else
+                                    _pipeReader.AdvanceTo(consumed);
+                            }
                         }
-                        while (true)
+                        finally
                         {
-                            if (buffer.Length < 4)
-                                break;
-
-                            var frameSize = buffer.ReadUInt32(0, true);
-                            var totalSize = frameSize + 4;
-                            if (buffer.Length < totalSize)
-                                break;
-
-                            var data = new ReadOnlySequence<byte>(buffer.Slice(4, frameSize).ToArray());
-                            observer.OnNext(data);
-
-                            buffer = buffer.Slice(totalSize);
+                            ArrayPool<byte>.Shared.Return(array);
                         }
-                        if (readresult.IsCompleted) 
-                            break;
-
-                        _pipeReader.AdvanceTo(buffer.Start);
-
-                    }
-                    catch
-                    {
-                        break;
                     }
                 }
 
@@ -186,27 +202,6 @@ namespace SharpPulsar.SocketImpl
             socket.Shutdown(SocketShutdown.Both);
             socket.Close(1000);
             _logger.Info("Shutting down socket client....");
-        }
-        static bool ContainsLine(ref ReadOnlySequence<byte> buffer, out ReadOnlySequence<byte> line)
-        {
-            SequencePosition? position = buffer.PositionOf((byte)'\n');
-
-            if (position == null)
-            {
-                line = default;
-                return false;
-            }
-
-
-            line = buffer.Slice(0, position.Value);
-            buffer = buffer.Slice(buffer.GetPosition(1, position.Value));
-            return true;
-        }
-
-
-        static void ProcessLine(in ReadOnlySequence<byte> buffer, IObserver<ReadOnlySequence<byte>> observer)
-        {
-            observer.OnNext(buffer);
         }
         private Stream GetStream(DnsEndPoint endPoint)
         {
@@ -364,5 +359,6 @@ namespace SharpPulsar.SocketImpl
         {
             throw new NotImplementedException();
         }
+
     }
 }

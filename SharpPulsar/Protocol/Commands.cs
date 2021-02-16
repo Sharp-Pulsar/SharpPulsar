@@ -226,15 +226,12 @@ namespace SharpPulsar.Protocol
 			}
 		}
 		
-		public static MessageMetadata ParseMessageMetadata(byte[] buffer)
+		public static MessageMetadata ParseMessageMetadata(ReadOnlySequence<byte> buffer)
 		{
 			try
 			{
-				// initially reader-index may point to start_of_checksum : increment reader-index to start_of_metadata
-				// to parse metadata
 				//SkipChecksumIfPresent(buffer);
-				buffer.Skip(2);
-                var bufferbytes = buffer;
+				var bufferbytes = buffer.ToArray();
                 return bufferbytes.FromByteArray<MessageMetadata>();
 			}
 			catch (IOException e)
@@ -274,7 +271,7 @@ namespace SharpPulsar.Protocol
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
             var res = Serializer.Serialize(send.ToBaseCommand(), messageData, new ReadOnlySequence<byte>(payload));
-			return res.ToArray();
+			return res;
 		}
 
 		public static byte[] NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData, byte[] payload)
@@ -302,7 +299,7 @@ namespace SharpPulsar.Protocol
                 send.IsChunk = true;
             }
 			var res = Serializer.Serialize(send.ToBaseCommand(), messageData, new ReadOnlySequence<byte>(payload));
-			return res.ToArray();
+			return res;
 		}
 
 		public static byte[] NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
@@ -977,7 +974,7 @@ namespace SharpPulsar.Protocol
 			try
 			{
 				// save the reader index and restore after parsing
-				var metadata = ParseMessageMetadata(metadataAndPayload);
+				var metadata = ParseMessageMetadata(new ReadOnlySequence<byte>(metadataAndPayload));
                 return metadata;
 			}
 			catch (System.Exception T)

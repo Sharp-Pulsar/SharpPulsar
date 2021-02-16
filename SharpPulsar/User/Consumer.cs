@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
@@ -151,6 +152,10 @@ namespace SharpPulsar.User
 
         public IMessage<T> Receive()
         {
+            if (_conf.MessageListener != null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
             _consumerActor.Tell(Messages.Consumer.Receive.Instance);
             if (_queue.Receive.TryTake(out var message, 150000))
                 return message;
@@ -159,6 +164,15 @@ namespace SharpPulsar.User
 
         public IMessage<T> Receive(int timeout, TimeUnit unit)
         {
+
+            if (_conf.ReceiverQueueSize == 0)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
+            }
+            if (_conf.MessageListener != null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
             _consumerActor.Tell(Messages.Consumer.Receive.Instance);
             if (_queue.Receive.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
                 return message;

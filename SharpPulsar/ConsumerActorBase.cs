@@ -129,11 +129,7 @@ namespace SharpPulsar
 
 		
 		internal virtual IMessage<T> Receive()
-		{
-			if (Listener != null)
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-			}
+		{			
 			VerifyConsumerState();
 			return InternalReceive();
 		}
@@ -144,15 +140,6 @@ namespace SharpPulsar
 		
 		internal virtual IMessage<T> Receive(int timeout, TimeUnit unit)
 		{
-			if (Conf.ReceiverQueueSize == 0)
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
-			}
-			if (Listener != null)
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-			}
-
 			VerifyConsumerState();
 			return InternalReceive(timeout, unit);
 		}
@@ -488,7 +475,7 @@ namespace SharpPulsar
 			return (BatchReceivePolicy.MaxNumMessages > 0 && IncomingMessages.Count >= BatchReceivePolicy.MaxNumMessages) || (BatchReceivePolicy.MaxNumBytes > 0 && IncomingMessagesSize >= BatchReceivePolicy.MaxNumBytes);
 		}
 
-		private void VerifyConsumerState()
+		protected internal void VerifyConsumerState()
 		{
 			switch (State.ConnectionState)
 			{

@@ -105,7 +105,7 @@ namespace SharpPulsar.Stats.Consumer
 
         public void UpdateNumMsgsReceived<T>(IMessage<T> message)
         {
-            throw new NotImplementedException();
+            // do nothing
         }
     }
 
