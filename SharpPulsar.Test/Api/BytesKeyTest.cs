@@ -44,10 +44,9 @@ namespace SharpPulsar.Test.Api
             _system = fixture.System;
             _client = _system.NewClient();
         }
-        [Theory]
-        [InlineData(true)]
-        //[InlineData(false)]
-		public void ByteKeysTest(bool batching)
+        [Fact]
+
+		public void ByteKeysTest()
 		{
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
 
@@ -58,12 +57,6 @@ namespace SharpPulsar.Test.Api
 
             var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
             producerBuilder.Topic(topic);
-            if (batching)
-            {
-                producerBuilder.EnableBatching(true);
-                producerBuilder.BatchingMaxPublishDelay(5000, TimeUnit.MILLISECONDS);
-                producerBuilder.BatchingMaxMessages(5);
-            }
             var producer = _client.NewProducer(producerBuilder);
 
             var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
@@ -71,22 +64,46 @@ namespace SharpPulsar.Test.Api
             consumerBuilder.SubscriptionName("ByteKeysTest-subscriber");
             var consumer = _client.NewConsumer(consumerBuilder);
 
-            if(batching)
-            {
-                for(var i = 0; i < 5; i++)
-                {
+            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
+               .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+               .Value(Encoding.UTF8.GetBytes("TestMessage").ToSBytes())
+               .Send();
 
-                    producer.NewMessage().KeyBytes(byteKey.ToSBytes())
-                    .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                    .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}").ToSBytes())
-                    .Send();
-                }
-            }
-            else
+            var message = consumer.Receive();
+            Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
+            Assert.True(message.HasBase64EncodedKey());
+            var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal("TestMessage", receivedMessage);
+        }
+        [Fact]
+		public void ByteKeysTestBatch()
+		{
+            var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
+
+
+            Random r = new Random(0);
+            byte[] byteKey = new byte[1000];
+            r.NextBytes(byteKey);
+
+            var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
+            producerBuilder.Topic(topic);
+            producerBuilder.EnableBatching(true);
+            producerBuilder.BatchingMaxPublishDelay(5000, TimeUnit.MILLISECONDS);
+            producerBuilder.BatchingMaxMessages(5);
+            var producer = _client.NewProducer(producerBuilder);
+
+            var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
+            consumerBuilder.Topic(topic);
+            consumerBuilder.SubscriptionName("ByteKeysTest-subscriber");
+            var consumer = _client.NewConsumer(consumerBuilder);
+
+            for (var i = 0; i < 5; i++)
             {
+
                 producer.NewMessage().KeyBytes(byteKey.ToSBytes())
                 .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes("TestMessage").ToSBytes())
+                .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}").ToSBytes())
                 .Send();
             }
 
@@ -94,27 +111,14 @@ namespace SharpPulsar.Test.Api
             //msg.Send() = pull sendreceipt in a different way like in the background, good when batching is enabled
             //producer.Send(Encoding.UTF8.GetBytes("TestMessage").ToSBytes()); waits for the sentrecepit
 
-            var sent = producer.SendReceipt();
-            if(batching)
-            {
-                for(var i = 0; i < 5; i++)
-                {
-                    var message = consumer.Receive();
-                    Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
-                    Assert.True(message.HasBase64EncodedKey());
-                    var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
-                    _output.WriteLine($"Received message: [{receivedMessage}]");
-                    Assert.Equal($"TestMessage-{i}", receivedMessage);
-                }
-            }
-            else
+            for (var i = 0; i < 5; i++)
             {
                 var message = consumer.Receive();
                 Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
                 Assert.True(message.HasBase64EncodedKey());
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
-                Assert.Equal("TestMessage", receivedMessage);
+                Assert.Equal($"TestMessage-{i}", receivedMessage);
             }
         }
 	}
