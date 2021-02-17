@@ -46,7 +46,7 @@ namespace SharpPulsar.Test.Api
         }
         [Theory]
         [InlineData(true)]
-        [InlineData(false)]
+        //[InlineData(false)]
 		public void ByteKeysTest(bool batching)
 		{
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
