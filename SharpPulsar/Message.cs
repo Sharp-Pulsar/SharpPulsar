@@ -144,30 +144,30 @@ namespace SharpPulsar
 				Properties = new Dictionary<string, string>();
 			}
 
-			if (!string.IsNullOrWhiteSpace(singleMessageMetadata.PartitionKey))
+			if (singleMessageMetadata.ShouldSerializePartitionKey())
 			{
 				Metadata.PartitionKeyB64Encoded = singleMessageMetadata.PartitionKeyB64Encoded;
 				Metadata.PartitionKey = singleMessageMetadata.PartitionKey;
 			}
-			else if (!string.IsNullOrWhiteSpace(msgMetadata.PartitionKey))
+			else if (msgMetadata.ShouldSerializePartitionKey())
 			{
 				Metadata.PartitionKey = string.Empty;
 				Metadata.PartitionKeyB64Encoded = false;
 			}
-			if (singleMessageMetadata.OrderingKey.Length > 0)
+			if (singleMessageMetadata.ShouldSerializeOrderingKey())
 			{
 				Metadata.OrderingKey = singleMessageMetadata.OrderingKey;
 			}
-			else if (msgMetadata.OrderingKey.Length > 0)
+			else if (msgMetadata.ShouldSerializeOrderingKey())
 			{
 				Metadata.OrderingKey = new byte[0] {};
 			}
-			if (singleMessageMetadata.EventTime > 0)
+			if (singleMessageMetadata.ShouldSerializeEventTime())
 			{
 				Metadata.EventTime = singleMessageMetadata.EventTime;
 			}
 
-			if (singleMessageMetadata.SequenceId > 0)
+			if (singleMessageMetadata.ShouldSerializeSequenceId())
 			{
 				Metadata.SequenceId = singleMessageMetadata.SequenceId;
 			}

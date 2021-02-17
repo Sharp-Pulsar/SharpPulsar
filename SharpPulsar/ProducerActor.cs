@@ -15,7 +15,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
@@ -258,6 +257,9 @@ namespace SharpPulsar
 		}
 		private void Ready()
         {
+			Receive<AckReceived>(a => {
+				AckReceived(ClientCnx, a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
+			});
 			Receive<GetProducerName>(_ => Sender.Tell(_producerName));
 			Receive<GetLastSequenceId>(_ => Sender.Tell(_lastSequenceIdPublished));
 			Receive<GetTopic>(_ => Sender.Tell(Topic));
@@ -370,6 +372,7 @@ namespace SharpPulsar
 					cnx.GracefulStop(TimeSpan.FromSeconds(5));
 					return;
 				}
+				_batchMessageContainer.Container.ProducerName = producerName;
 				_connectionHandler.Tell(ResetBackoff.Instance);
 				_log.Info($"[{Topic}] [{producerName}] Created producer on cnx {cnx.Path}");
 				_connectionId = cnx.Path.ToString();
@@ -597,8 +600,8 @@ namespace SharpPulsar
 				string uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
 				for (int chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
-					sent = SerializeAndSendMessage(msg, msgMetadata, payload.ToBytes(), sequenceId, uuid, chunkId, (int)totalChunks, readStartIndex, (int)maxMessageSize, compressedPayload.ToBytes(), compressedPayload.Length, uncompressedSize);
-					readStartIndex = (int)((chunkId + 1) * maxMessageSize);
+					sent = SerializeAndSendMessage(msg, msgMetadata, payload.ToBytes(), sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload.ToBytes(), compressedPayload.Length, uncompressedSize);
+					readStartIndex = ((chunkId + 1) * maxMessageSize);
 				}
 				return sent;
 			}
@@ -1092,9 +1095,8 @@ namespace SharpPulsar
 		_batchMessageContainer.Discard(ex);
 	}
 	private void AckReceived(IActorRef cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
-		{
-			var op = _pendingMessages.Peek();
-			if (op == null)
+	{
+			if (!_pendingMessages.TryPeek(out var op))
 			{
 				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {sequenceId} - {highestSequenceId}";
 				if (_log.IsDebugEnabled)

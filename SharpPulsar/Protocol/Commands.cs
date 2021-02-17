@@ -243,12 +243,12 @@ namespace SharpPulsar.Protocol
 
 		public static byte[] NewSend(long producerId, long sequenceId, int numMessaegs, MessageMetadata messageMetadata, byte[] payload)
 		{
-			return NewSend(producerId, sequenceId, numMessaegs, 0, 0, messageMetadata, payload);
+			return NewSend(producerId, sequenceId, numMessaegs, messageMetadata.ShouldSerializeTxnidLeastBits() ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.ShouldSerializeTxnidMostBits() ? (long)messageMetadata.TxnidMostBits : -1, messageMetadata, payload);
 		}
 
 		public static byte[] NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessaegs, MessageMetadata messageMetadata, byte[] payload)
 		{
-			return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, 0, 0, messageMetadata, payload);
+			return NewSend(producerId, lowestSequenceId, highestSequenceId, numMessaegs, messageMetadata.ShouldSerializeTxnidLeastBits() ? (long)messageMetadata.TxnidLeastBits : -1, messageMetadata.ShouldSerializeTxnidMostBits() ? (long)messageMetadata.TxnidMostBits : -1, messageMetadata, payload);
 		}
 
 		public static byte[] NewSend(long producerId, long sequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData, byte[] payload)
@@ -907,7 +907,7 @@ namespace SharpPulsar.Protocol
 			return (long)builder.SequenceId;
 		}
 
-		public static SingleMessageMetadata SingleMessageMetadat(MessageMetadata msg, int payloadSize)
+		public static SingleMessageMetadata SingleMessageMetadat(MessageMetadata msg, int payloadSize, long sequenceId)
 		{
 
 			// build single message meta-data
@@ -934,10 +934,23 @@ namespace SharpPulsar.Protocol
 			}
 
             singleMessageMetadata.EventTime = msg.EventTime;
-            singleMessageMetadata.SequenceId = msg.SequenceId;
+            singleMessageMetadata.SequenceId = (ulong)sequenceId;
 			return singleMessageMetadata;
 		}
-		
+		public static byte[] SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadataBuilder, byte[] payload)
+		{
+			singleMessageMetadataBuilder.PayloadSize = payload.Length;
+			var metadataBytes = Serializer.GetBytes(singleMessageMetadataBuilder);
+            var metadataSizeBytes = Serializer.ToBigEndianBytes((uint)metadataBytes.Length);
+            try
+            {
+                return new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload).Build().ToArray();
+            }
+            catch (IOException e)
+            {
+                throw new Exception(e.Message, e);
+            }
+		}
 		public static int CurrentProtocolVersion
 		{
 			get

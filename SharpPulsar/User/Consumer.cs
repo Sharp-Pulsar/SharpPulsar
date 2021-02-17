@@ -4,6 +4,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
@@ -156,10 +157,16 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            _consumerActor.Tell(Messages.Consumer.Receive.Instance);
-            if (_queue.Receive.TryTake(out var message, 150000))
-                return message;
-            return null;
+            
+            IMessage<T> message = null;
+            while(message == null || (message is NullMessage<T>))
+            {
+                if (!_queue.Receive.TryTake(out message, 100))
+                {
+                    _consumerActor.Tell(Messages.Consumer.Receive.Instance);
+                }
+            }
+            return message;
         }
 
         public IMessage<T> Receive(int timeout, TimeUnit unit)

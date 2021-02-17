@@ -78,10 +78,15 @@ namespace SharpPulsar.User
         }
         public SentMessage<T> SendReceipt()
         {
-            /*if (_queue.SentMessage.TryTake(out var sent, TimeSpan.FromSeconds(5)))
-                return sent;
-            return null;*/
-            return _queue.SentMessage.Take();
+            SentMessage<T> sent = null;
+            while (sent == null || (sent.Errored && sent.Exception is NullReferenceException))
+            {
+                if (_queue.SentMessage.TryTake(out sent, TimeSpan.FromSeconds(5)))
+                {
+
+                }
+            }
+            return sent;
         }
     }
 }

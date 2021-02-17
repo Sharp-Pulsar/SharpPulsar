@@ -111,7 +111,7 @@ namespace SharpPulsar.Batch
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, msg.Data.Length), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToBytes());
 					}
 					catch (Exception ex)
@@ -193,8 +193,11 @@ namespace SharpPulsar.Batch
 				return null;
 			}
 			_messageMetadata.NumMessagesInBatch = NumMessagesInBatch;
+			_messageMetadata.SequenceId = (ulong)_messages[0].SequenceId;
 			_messageMetadata.HighestSequenceId = (ulong)_highestSequenceId;
-            _messageMetadata.ProducerName = Container.ProducerName;
+			_messageMetadata.PartitionKey = _messages[0].Key;
+			_messageMetadata.OrderingKey = _messages[0].OrderingKey.ToBytes();
+			_messageMetadata.ProducerName = Container.ProducerName;
 			_messageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			if (CurrentTxnidMostBits != -1)
 			{
@@ -204,9 +207,9 @@ namespace SharpPulsar.Batch
 			{
 				_messageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
+			var cmd = Commands.NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
-			var op = OpSendMsg<T>.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
+			var op = OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId);
 
 			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSize;

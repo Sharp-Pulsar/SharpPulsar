@@ -45,11 +45,11 @@ namespace SharpPulsar.Test.Api
             _client = _system.NewClient();
         }
         [Theory]
-        //[InlineData(true)]
+        [InlineData(true)]
         [InlineData(false)]
 		public void ByteKeysTest(bool batching)
 		{
-            var topic = "persistent://public/default/my-topic-keys8783099ttytnkol";
+            var topic = "persistent://public/default/my-topic-keyabanonu26";
 
 
             Random r = new Random(0);
@@ -73,7 +73,7 @@ namespace SharpPulsar.Test.Api
 
             if(batching)
             {
-                for(var i = 0; i < 7; i++)
+                for(var i = 0; i < 5; i++)
                 {
 
                     producer.NewMessage().KeyBytes(byteKey.ToSBytes())
@@ -97,7 +97,7 @@ namespace SharpPulsar.Test.Api
             var sent = producer.SendReceipt();
             if(batching)
             {
-                for(var i = 0; i < 6; i++)
+                for(var i = 0; i < 5; i++)
                 {
                     var message = consumer.Receive();
                     Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
