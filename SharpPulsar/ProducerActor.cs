@@ -104,6 +104,7 @@ namespace SharpPulsar
 		private Option<sbyte[]> _schemaVersion = null;
 
 		private readonly IActorRef _connectionHandler;
+		private readonly IActorRef _self;
 
 		private ICancelable _batchTimerTask;
 
@@ -111,6 +112,7 @@ namespace SharpPulsar
 
 		public ProducerActor(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
+			_self = Self;
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
 			_log = Context.GetLogger();
@@ -307,7 +309,7 @@ namespace SharpPulsar
 				_batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System);
 			}
 
-			cnx.Tell(new RegisterProducer(ProducerId, Self)); 
+			cnx.Tell(new RegisterProducer(ProducerId, _self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
 
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
