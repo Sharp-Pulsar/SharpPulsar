@@ -45,7 +45,7 @@ namespace SharpPulsar.Test.Api
             _client = _system.NewClient();
         }
 
-        [Fact (Skip = "")]
+        [Fact (Skip = "Not ready")]
         public void TestUnAckMessageRedeliveryWithReceive()
         {
             var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";

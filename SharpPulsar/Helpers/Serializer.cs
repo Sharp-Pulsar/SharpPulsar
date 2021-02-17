@@ -13,18 +13,7 @@ namespace SharpPulsar.Helpers
     public static class Serializer
     {
         public static RecyclableMemoryStreamManager MemoryManager = new RecyclableMemoryStreamManager();
-        public static BaseCommand Deserialize(ReadOnlySequence<byte> sequence)
-        {
-            using var ms = new MemoryStream(sequence.ToArray());
-            var o = ProtoBuf.Serializer.Deserialize<BaseCommand>(ms);
-            return o;
-        }
-        public static T Deserialize<T>(ReadOnlySequence<byte> sequence)
-        {
-            using var ms = new MemoryStream(sequence.ToArray());
-            var o = ProtoBuf.Serializer.Deserialize<T>(ms);
-            return o;
-        }
+        
         public static ReadOnlySequence<byte> Serialize(BaseCommand command)
         {
             var stream = MemoryManager.GetStream();

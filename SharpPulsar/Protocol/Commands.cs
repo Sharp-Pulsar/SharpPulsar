@@ -907,26 +907,14 @@ namespace SharpPulsar.Protocol
 			return (long)builder.SequenceId;
 		}
 
-		public static byte[] SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadataBuilder, byte[] payload)
-		{
-			singleMessageMetadataBuilder.PayloadSize = payload.Length;
-			var metadataBytes = Serializer.GetBytes(singleMessageMetadataBuilder);
-            var metadataSizeBytes = Serializer.ToBigEndianBytes((uint)metadataBytes.Length);
-            try
-            {
-                return new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload).Build().ToArray();
-            }
-            catch (IOException e)
-            {
-                throw new Exception(e.Message, e);
-            }
-		}
-
-		public static byte[] SerializeSingleMessageInBatchWithPayload(MessageMetadata msg, byte[] payload)
+		public static SingleMessageMetadata SingleMessageMetadat(MessageMetadata msg, int payloadSize)
 		{
 
 			// build single message meta-data
-			var singleMessageMetadata = new SingleMessageMetadata();
+			var singleMessageMetadata = new SingleMessageMetadata 
+			{
+				PayloadSize = payloadSize
+			};
 			if (!string.IsNullOrWhiteSpace(msg.PartitionKey))
 			{
 				singleMessageMetadata.PartitionKey = msg.PartitionKey;
@@ -936,6 +924,10 @@ namespace SharpPulsar.Protocol
 			{
 				singleMessageMetadata.OrderingKey = msg.OrderingKey;
 			}
+			if (msg.EventTime > 0)
+			{
+				singleMessageMetadata.EventTime = msg.EventTime;
+			}
 			if (msg.Properties.Count > 0)
 			{
 				singleMessageMetadata.Properties.AddRange(msg.Properties.ToList().Select(x => new KeyValue(){Key = x.Key, Value = x.Value}));
@@ -943,47 +935,9 @@ namespace SharpPulsar.Protocol
 
             singleMessageMetadata.EventTime = msg.EventTime;
             singleMessageMetadata.SequenceId = msg.SequenceId;
-
-			try
-			{
-				var ser =  SerializeSingleMessageInBatchWithPayload(singleMessageMetadata, payload);
-                return ser;
-            }
-			finally
-			{
-				//singleMessageMetadata.Recycle();
-			}
+			return singleMessageMetadata;
 		}
 		
-		public static int GetNumberOfMessagesInBatch(byte[] metadataAndPayload, string subscription, long consumerId)
-		{
-			var msgMetadata = PeekMessageMetadata(metadataAndPayload, subscription, consumerId);
-			if (msgMetadata == null)
-			{
-				return -1;
-			}
-			else
-			{
-				var numMessagesInBatch = msgMetadata.NumMessagesInBatch;
-				return numMessagesInBatch;
-			}
-		}
-
-		public static MessageMetadata PeekMessageMetadata(byte[] metadataAndPayload, string subscription, long consumerId)
-		{
-			try
-			{
-				// save the reader index and restore after parsing
-				var metadata = ParseMessageMetadata(new ReadOnlySequence<byte>(metadataAndPayload));
-                return metadata;
-			}
-			catch (System.Exception T)
-			{
-				//log.error("[{}] [{}] Failed to parse message metadata", Subscription, ConsumerId, T);
-				return null;
-			}
-		}
-
 		public static int CurrentProtocolVersion
 		{
 			get

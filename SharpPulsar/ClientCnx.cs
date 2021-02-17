@@ -119,7 +119,7 @@ namespace SharpPulsar
 					case "NewAddPartitionToTxn":
 					case "NewTxn":
 					case "NewEndTxn":
-						_socketClient.SendMessageAsync(p.Bytes);
+						_socketClient.SendMessage(p.Bytes);
 						break;
 					default:
 						SendRequest(p.Bytes, p.RequestId);
@@ -274,12 +274,7 @@ namespace SharpPulsar
 				{
 					_log.Debug($"Mutual auth {_authentication.AuthMethodName}");
 				}
-				_socketClient.SendMessageAsync(request).ContinueWith(task => {
-                    if (task.IsFaulted)
-                    {
-						_log.Warning($"Failed to send request for mutual auth to broker: {task.Exception}");
-					}
-				});
+				_socketClient.SendMessage(request);
 				if (_state == State.SentConnectFrame)
 				{
 					_state = State.Connecting;
@@ -459,7 +454,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
 			}
-			_socketClient.SendMessageAsync(_pong);
+			_socketClient.SendMessage(_pong);
 		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
@@ -618,14 +613,15 @@ namespace SharpPulsar
 		private void NewLookup(byte[] request, long requestId)
 		{
 			AddPendingLookupRequests(requestId, new ReadOnlySequence<byte>(request));
-			_socketClient.SendMessageAsync(request).ContinueWith(task => {
+			_socketClient.SendMessage(request);
+			/*.ContinueWith(task => {
 				if (task.IsFaulted)
 				{
 					_log.Warning($"Failed to send request {requestId} to broker: {task.Exception.Message}");
 					if (RemovePendingLookupRequest(requestId, out var requester))
 						requester.Tell(new ClientExceptions(PulsarClientException.Unwrap(task.Exception)));
 				}
-			});
+			});*/
 		}
 
 		private void NewGetTopicsOfNamespace(byte[] request, long requestId)

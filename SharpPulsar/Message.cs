@@ -205,20 +205,6 @@ namespace SharpPulsar
 			_redeliveryCount = 0;
 			Metadata = msgMetadata;
 		}
-		public static Message<byte[]> Deserialize(byte[] headersAndPayload) 
-		{			
-			var msgMetadata = Commands.ParseMessageMetadata(new ReadOnlySequence<byte>(headersAndPayload));
-            Message<byte[]> msg = new Message<byte[]>
-            {
-                Metadata = msgMetadata,
-                _properties = new Dictionary<string, string>(),
-                _messageId = null,
-                _topic = string.Empty,
-                _payload = headersAndPayload,
-                _cnx = null
-            };
-            return msg;
-		}
 		public virtual string ReplicatedFrom
 		{
 			set

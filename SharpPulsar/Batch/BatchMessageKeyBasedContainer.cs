@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Akka.Actor;
 using Akka.Event;
 using DotNetty.Common.Utilities;
-
+using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
@@ -227,12 +228,15 @@ namespace SharpPulsar.Batch
 			{
 				get
 				{
+					var stream = Helpers.Serializer.MemoryManager.GetStream();
+					var messageWriter = new BinaryWriter(stream);
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Data.ToBytes()));
-						
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, msg.Data.Length), PrefixStyle.Fixed32BigEndian);
+						messageWriter.Write(msg.Data.ToBytes());
 					}
+					BatchedMessageMetadataAndPayload.AddRange(stream.ToArray());
 					var uncompressedSize = BatchedMessageMetadataAndPayload.Count;
 					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload.ToArray());
 					BatchedMessageMetadataAndPayload = null;

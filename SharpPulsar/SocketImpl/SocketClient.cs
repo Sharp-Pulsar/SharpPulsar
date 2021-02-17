@@ -177,16 +177,12 @@ namespace SharpPulsar.SocketImpl
             });
         }
 
-        public Task SendMessageAsync(byte[] message)
+        public void SendMessage(byte[] message)
         {
-            return _pipeWriter.SendMessageAsync(message).AsTask();
+            var sequence = new ReadOnlySequence<byte>(message);
+            foreach (var seq in sequence)
+                _ = Task.Run(async() => await _networkstream.WriteAsync(seq));
         }
-
-        public Task SendMessageAsync(string message)
-        {
-            return _pipeWriter.SendAsync(message.ToMessageBuffer()).AsTask();
-        }
-
 
         public void Dispose()
         {

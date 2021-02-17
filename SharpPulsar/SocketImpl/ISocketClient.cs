@@ -10,7 +10,6 @@ namespace SharpPulsar.SocketImpl
         void Disconnected();
         IObservable<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)> ReceiveMessageObservable { get; }
 
-        Task SendMessageAsync(byte[] message);
-        Task SendMessageAsync(string message);
+        void SendMessage(byte[] message);
     }
 }

@@ -111,7 +111,7 @@ namespace SharpPulsar.Batch
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, msgMetadata, PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, msg.Data.Length), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToBytes());
 					}
 					catch (Exception ex)
@@ -119,11 +119,10 @@ namespace SharpPulsar.Batch
 						throw ex;
 					}
 				}
-				_batchedMessageMetadataAndPayload.AddRange(stream.ToArray());
+				var batchedMessageMetadataAndPayload = stream.ToArray();
 
-				var uncompressedSize = _batchedMessageMetadataAndPayload.ToArray().Length;
-				var compressedPayload = Compressor.Encode(_batchedMessageMetadataAndPayload.ToArray());
-				_batchedMessageMetadataAndPayload = new List<byte>();
+				var uncompressedSize = batchedMessageMetadataAndPayload.Length;
+				var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
 				if (CompressionType != CompressionType.None)
 				{
 					_messageMetadata.Compression = CompressionType;
@@ -207,7 +206,7 @@ namespace SharpPulsar.Batch
 			}
 			var cmd = Commands.NewSend(Container.ProducerId, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
-			var op = OpSendMsg<T>.Create((List<Message<T>>)_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
+			var op = OpSendMsg<T>.Create(_messages, cmd, (long)_messageMetadata.SequenceId, (long)_messageMetadata.HighestSequenceId);
 
 			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSize;

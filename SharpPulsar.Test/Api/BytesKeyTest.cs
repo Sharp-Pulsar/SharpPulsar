@@ -49,7 +49,7 @@ namespace SharpPulsar.Test.Api
         [InlineData(false)]
 		public void ByteKeysTest(bool batching)
 		{
-            var topic = "persistent://public/default/my-topic-keys8783u";
+            var topic = "persistent://public/default/my-topic-keys8783099ttytnkol";
 
 
             Random r = new Random(0);
@@ -61,7 +61,7 @@ namespace SharpPulsar.Test.Api
             if (batching)
             {
                 producerBuilder.EnableBatching(true);
-                producerBuilder.BatchingMaxPublishDelay(30000, TimeUnit.MILLISECONDS);
+                producerBuilder.BatchingMaxPublishDelay(1200000, TimeUnit.MILLISECONDS);
                 producerBuilder.BatchingMaxMessages(5);
             }
             var producer = _client.NewProducer(producerBuilder);
