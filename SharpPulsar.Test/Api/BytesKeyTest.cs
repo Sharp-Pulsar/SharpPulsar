@@ -49,7 +49,7 @@ namespace SharpPulsar.Test.Api
         [InlineData(false)]
 		public void ByteKeysTest(bool batching)
 		{
-            var topic = "persistent://public/default/my-topic-keyabanonu26";
+            var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
 
 
             Random r = new Random(0);

@@ -372,7 +372,8 @@ namespace SharpPulsar
 					cnx.GracefulStop(TimeSpan.FromSeconds(5));
 					return;
 				}
-				_batchMessageContainer.Container.ProducerName = producerName;
+				if(_batchMessageContainer != null)
+					_batchMessageContainer.Container.ProducerName = producerName;
 				_connectionHandler.Tell(ResetBackoff.Instance);
 				_log.Info($"[{Topic}] [{producerName}] Created producer on cnx {cnx.Path}");
 				_connectionId = cnx.Path.ToString();
