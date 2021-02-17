@@ -1991,7 +1991,7 @@ namespace SharpPulsar
 			IMessage<T> message;
 			try
 			{
-				if(IncomingMessages.TryTake(out message, 1000))
+				if(IncomingMessages.TryTake(out message, TimeSpan.FromMilliseconds(50)))
                 {
 					MessageProcessed(message);
 					return BeforeConsume(message);

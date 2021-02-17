@@ -61,7 +61,7 @@ namespace SharpPulsar.Test.Api
             if (batching)
             {
                 producerBuilder.EnableBatching(true);
-                producerBuilder.BatchingMaxPublishDelay(1200000, TimeUnit.MILLISECONDS);
+                producerBuilder.BatchingMaxPublishDelay(5000, TimeUnit.MILLISECONDS);
                 producerBuilder.BatchingMaxMessages(5);
             }
             var producer = _client.NewProducer(producerBuilder);

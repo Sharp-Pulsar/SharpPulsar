@@ -161,7 +161,7 @@ namespace SharpPulsar.User
             IMessage<T> message = null;
             while(message == null || (message is NullMessage<T>))
             {
-                if (!_queue.Receive.TryTake(out message, 100))
+                if (!_queue.Receive.TryTake(out message, TimeSpan.FromMilliseconds(100)))
                 {
                     _consumerActor.Tell(Messages.Consumer.Receive.Instance);
                 }
