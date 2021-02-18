@@ -110,7 +110,7 @@ namespace SharpPulsar.Interfaces
 		/// @since 2.4.1 </returns>
 		/// <exception cref="PulsarClientException"> </exception>
 		/// 
-		IMessages<T> BatchReceive(int timeout = 5000);
+		IMessages<T> BatchReceive();
 
 
 		/// <summary>

@@ -321,6 +321,14 @@ namespace SharpPulsar
 			{
 				var cleared = ClearIncomingMessagesAndGetMessageNumber();
 				Sender.Tell(cleared);
+			});				
+			Receive<GetHandlerState>(_ => 
+			{
+				Sender.Tell(new HandlerStateResponse(State.ConnectionState));
+			});			
+			Receive<GetIncomingMessageSize>(_ => 
+			{
+				Sender.Tell(IncomingMessagesSize);
 			});
 			Receive<IncreaseAvailablePermits>(i => 
 			{
@@ -329,52 +337,6 @@ namespace SharpPulsar
 					IncreaseAvailablePermits(cnx, i.Available);
 				else
 					IncreaseAvailablePermits(cnx);
-			});
-			Receive<BatchReceive>(_ => 
-			{
-                try
-                {
-					var message = BatchReceive();
-					Push(ConsumerQueue.BatchReceive, message);
-				}
-                catch(Exception ex)
-                {
-					var nul = new NullMessages<T>(ex);
-					Push(ConsumerQueue.BatchReceive, nul);
-				}
-
-			});
-			Receive<Messages.Consumer.Receive>(_ => 
-			{
-                try
-                {
-					VerifyConsumerState();
-					var message = InternalReceive();
-					Push(ConsumerQueue.Receive, message);
-				}
-                catch(Exception ex)
-                {
-					var nul = new NullMessage<T>(ex);
-					Push(ConsumerQueue.Receive, nul);
-				}
-
-			});
-			Receive<ReceiveWithTimeout>(t => 
-			{
-                try
-                {
-					var message = Receive(t.Timeout, t.TimeUnit);
-					if (message == null)
-						message = new NullMessage<T>(new NullReferenceException("We did not receive a message within the given timeout"));
-
-					Push(ConsumerQueue.Receive, message);
-				}
-                catch(Exception ex)
-                {
-					var nul = new NullMessage<T>(ex);
-					Push(ConsumerQueue.Receive, nul);
-				}
-
 			});
 			Receive<AcknowledgeMessage<T>>(m => {
                 try
@@ -494,6 +456,9 @@ namespace SharpPulsar
 			Receive<GetAvailablePermits>(_ => {
 				var permits = AvailablePermits;
 				Sender.Tell(permits);
+			});
+			Receive<MessageProcessed<T>>(m => {
+				MessageProcessed(m.Message);
 			});
 			Receive<IsConnected>(_ => {
 				Push(ConsumerQueue.Connected, Connected);
@@ -773,34 +738,6 @@ namespace SharpPulsar
 
 			base.PostStop();
         }
-		protected internal override IMessages<T> InternalBatchReceive()
-		{
-			try
-			{
-				var messages = NewMessages;
-				if (HasEnoughMessagesForBatchReceive())
-				{
-					IMessage<T> msg = IncomingMessages.Take(_tokenSource.Token);
-					while (IncomingMessages.TryTake(out msg) && messages.CanAdd(msg))
-					{
-						MessageProcessed(msg);
-						IMessage<T> interceptMsg = BeforeConsume(msg);
-						messages.Add(interceptMsg);
-					}
-				}
-				return messages;
-			}
-			catch(Exception e) 
-			{
-				HandlerState.State state = State.ConnectionState;
-				var error = PulsarClientException.Unwrap(e);
-				if (state != HandlerState.State.Closing && state != HandlerState.State.Closed)
-				{
-					_stats.IncrementNumBatchReceiveFailed();
-				}
-				throw error;
-			}
-		}
 		internal override IConsumerStatsRecorder Stats
 		{
 			get
@@ -1567,7 +1504,7 @@ namespace SharpPulsar
 				{
 					try
 					{
-						IMessage<T> msg = InternalReceive(0, TimeUnit.MILLISECONDS);
+						IMessage<T> msg = IncomingMessages.Take();
 						if(msg == null)
 						{
 							if(_log.IsDebugEnabled)
@@ -1597,31 +1534,6 @@ namespace SharpPulsar
 				}
 			});
 		}
-		protected internal override IMessage<T> InternalReceive(int timeout, TimeUnit unit)
-		{
-            try
-            {
-                if (!IncomingMessages.TryTake(out IMessage<T> message, (int)unit.ToMilliseconds(timeout), _tokenSource.Token))
-                {
-                    return null;
-                }
-                MessageProcessed(message);
-                return BeforeConsume(message);
-            }
-            catch (Exception e)
-            {
-                HandlerState.State state = State.ConnectionState;
-                if (state != HandlerState.State.Closing && state != HandlerState.State.Closed)
-                {
-                    Stats.IncrementNumReceiveFailed();
-                    throw PulsarClientException.Unwrap(e);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
 		internal virtual void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
 		{
 			int batchSize = msgMetadata.NumMessagesInBatch;
@@ -1691,14 +1603,7 @@ namespace SharpPulsar
 					{
 						possibleToDeadLetter.Add(message);
 					}
-					if (EnqueueMessageAndCheckBatchReceive(message))
-					{
-						//Due to the way actor works, there will not be any need for pending receives
-						/*if (HasPendingBatchReceive())
-						{
-							NotifyPendingBatchReceivedCallBack();
-						}*/
-					}
+					_ = EnqueueMessageAndCheckBatchReceive(message);
 				}
 				if(ackBitSet != null)
 				{
@@ -1730,10 +1635,9 @@ namespace SharpPulsar
 		{
 			if (CanEnqueueMessage(message))
 			{
-				IncomingMessages.Add(message);
-				IncomingMessagesSize += message.Data?.Length ?? 0;
+				Push(message);
 			}
-			return HasEnoughMessagesForBatchReceive();
+			return true;
 		}
 		private bool IsPriorEntryIndex(long idx)
 		{
@@ -1755,10 +1659,10 @@ namespace SharpPulsar
 		/// 
 		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
 		/// </summary>
-		protected internal override void MessageProcessed<T1>(IMessage<T1> msg)
+		private void MessageProcessed(IMessage<T> msg)
 		{
 			var currentCnx = Cnx();
-			IActorRef msgCnx = ((Message<T1>)msg).Cnx();
+			IActorRef msgCnx = ((Message<T>)msg).Cnx();
 			_lastDequeuedMessageId = msg.MessageId;
 
 			if (msgCnx != currentCnx)
@@ -1984,24 +1888,6 @@ namespace SharpPulsar
 			get
 			{
 				return _availablePermits;
-			}
-		}
-		protected internal override IMessage<T> InternalReceive()
-		{
-			IMessage<T> message;
-			try
-			{
-				if(IncomingMessages.TryTake(out message, TimeSpan.FromMilliseconds(50)))
-                {
-					MessageProcessed(message);
-					return BeforeConsume(message);
-				}
-				return new NullMessage<T>(new Exception());
-			}
-			catch (Exception e)
-			{
-				Stats.IncrementNumReceiveFailed();
-				throw PulsarClientException.Unwrap(e);
 			}
 		}
 		internal override int NumMessagesInQueue()
@@ -2501,8 +2387,9 @@ namespace SharpPulsar
 				}
 
 				// try not to remove elements that are added while we remove
-				while(IncomingMessages.TryTake(out var message))
+				while(IncomingMessages.Count > 0)
 				{
+					var message = IncomingMessages.Take();
 					IncomingMessagesSize -= message.Data.Length;
 					messagesFromQueue++;
 					var id = GetMessageId(message);
@@ -2745,6 +2632,13 @@ namespace SharpPulsar
 			}
 			chunkedMsgCtx.Recycle();
 			_pendingChunckedMessageCount--;
+		}
+		private void Push(IMessage<T> obj)
+        {
+			if (_hasParentConsumer)
+				Sender.Tell(new ReceivedMessage<T>(obj));
+			else
+				IncomingMessages.Add(obj);
 		}
 		private void Push<T1>(BlockingCollection<T1> queue, T1 obj)
         {

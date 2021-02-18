@@ -268,7 +268,7 @@ namespace SharpPulsar.User
                 if (c != null)
                     throw c.Exception;
 
-                return new Consumer<T>(consumer, queue, schema, conf);
+                return new Consumer<T>(consumer, queue, schema, conf, interceptors);
             }
             catch(Exception e)
             {
@@ -283,11 +283,12 @@ namespace SharpPulsar.User
             var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
             
             _client.Tell(new AddConsumer(consumer));
-            return new Consumer<T>(consumer, queue, schema, conf);
+            return new Consumer<T>(consumer, queue, schema, conf, interceptors);
         }
 
         private Consumer<T> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
+
             var queue = new ConsumerQueueCollections<T>();
             string regex = conf.TopicsPattern.ToString();
             var subscriptionMode = ConvertRegexSubscriptionMode(conf.RegexSubscriptionMode);
@@ -306,7 +307,7 @@ namespace SharpPulsar.User
                 var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
 
                 _client.Tell(new AddConsumer(consumer));
-                return new Consumer<T>(consumer, queue, schema, conf);
+                return new Consumer<T>(consumer, queue, schema, conf, interceptors);
             }
             catch(Exception e)
             {

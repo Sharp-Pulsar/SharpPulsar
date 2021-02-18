@@ -70,7 +70,12 @@ namespace SharpPulsar.Test.Api
                .Send();
 
             var message = consumer.Receive();
-            Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
+            while(message == null)
+            {
+                message = consumer.Receive();
+            }
+
+            Assert.Equal(byteKey, message.KeyBytes.ToBytes());
             Assert.True(message.HasBase64EncodedKey());
             var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
@@ -114,6 +119,10 @@ namespace SharpPulsar.Test.Api
             for (var i = 0; i < 5; i++)
             {
                 var message = consumer.Receive();
+                while (message == null)
+                {
+                    message = consumer.Receive();
+                }
                 Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
                 Assert.True(message.HasBase64EncodedKey());
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);

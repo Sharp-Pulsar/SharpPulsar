@@ -41,12 +41,6 @@ namespace SharpPulsar
         {
 			return Props.Create(() => new ZeroQueueConsumer<T>(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, consumerQueue));
         }
-		protected internal override IMessage<T> InternalReceive()
-		{
-			var msg = FetchSingleMessageFromBroker();
-			TrackMessage(msg);
-			return BeforeConsume(msg);
-		}
 
 		private IMessage<T> FetchSingleMessageFromBroker()
 		{
@@ -141,7 +135,7 @@ namespace SharpPulsar
 					}
 					_waitingOnListenerForZeroQueueSize = true;
 					TrackMessage(message);
-					Listener.Received(self, BeforeConsume(message));
+					Listener.Received(self, message);
 				}
 				catch (Exception t)
 				{

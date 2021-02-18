@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
@@ -8,7 +9,6 @@ using SharpPulsar.Messages.Reader;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using System;
-using System.Threading.Tasks;
 
 namespace SharpPulsar.User
 {
@@ -50,24 +50,50 @@ namespace SharpPulsar.User
 
         public IMessage<T> ReadNext()
         {
-            _readerActor.Tell(Messages.Reader.ReadNext.Instance);
-            if (_queue.Receive.TryTake(out var message, 1000))
+            VerifyConsumerState();
+            if (_queue.IncomingMessages.TryTake(out var m))
+            {
+                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(m));
+                return m;
+            }                
+
+            return null;
+        }
+        public IMessage<T> ReadNext(int timeout, TimeUnit unit)
+        {
+            VerifyConsumerState();
+            if (_conf.ReceiverQueueSize == 0)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
+            }
+            if (_queue.IncomingMessages.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
             {
                 _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                _readerActor.Tell(new MessageProcessed<T>(message));
                 return message;
             }
             return null;
         }
-
-        public IMessage<T> ReadNext(int timeout, TimeUnit unit)
+        protected internal void VerifyConsumerState()
         {
-            _readerActor.Tell(new ReadNextTimeout(timeout, unit));
-            if (_queue.Receive.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
+            var state = _readerActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).State;
+            switch (state)
             {
-                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                return message;
-            }                
-            return null;
+                case HandlerState.State.Ready:
+                case HandlerState.State.Connecting:
+                    break; // Ok
+                    goto case HandlerState.State.Closing;
+                case HandlerState.State.Closing:
+                case HandlerState.State.Closed:
+                    throw new PulsarClientException.AlreadyClosedException("Consumer already closed");
+                case HandlerState.State.Terminated:
+                    throw new PulsarClientException.AlreadyClosedException("Topic was terminated");
+                case HandlerState.State.Failed:
+                case HandlerState.State.Uninitialized:
+                    throw new PulsarClientException.NotConnectedException();
+                default:
+                    break;
+            }
         }
         public void Seek(IMessageId messageId)
         {

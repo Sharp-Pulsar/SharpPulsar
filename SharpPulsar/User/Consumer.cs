@@ -4,7 +4,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
@@ -22,9 +21,15 @@ namespace SharpPulsar.User
         private readonly ConsumerConfigurationData<T> _conf;
         private readonly IActorRef _consumerActor;
         private readonly ConsumerQueueCollections<T> _queue;
+        private readonly ConsumerInterceptors<T> _interceptors;
+        private readonly CancellationTokenSource _tokenSource;
+        private IMessageListener<T> _listener;
 
-        public Consumer(IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ConsumerConfigurationData<T> conf)
+        public Consumer(IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ConsumerConfigurationData<T> conf, ConsumerInterceptors<T> interceptors)
         {
+            _listener = conf.MessageListener;
+            _tokenSource = new CancellationTokenSource();
+            _interceptors = interceptors;
             _consumerActor = consumer;
             _queue = queue;
             _schema = schema;
@@ -67,7 +72,17 @@ namespace SharpPulsar.User
                 if (msg.Exception != null)
                     throw msg.Exception;
         }
-
+        /*private void StartListener()
+        {
+            var t9 = Task.Factory.StartNew(ConsumeFromQueue, _tokenSource.Token);
+        }
+        private void ConsumeFromQueue()
+        {
+            while(_queue.IncomingMessages.TryTake(out var message))
+            {
+                _listener.Received(_consumerActor, message);
+            }
+        }*/
         public void Acknowledge(IList<IMessageId> messageIds)
         {
             _consumerActor.Tell(new AcknowledgeMessageIds(messageIds));
@@ -98,14 +113,6 @@ namespace SharpPulsar.User
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg.Exception != null)
                     throw msg.Exception;
-        }
-
-        public IMessages<T> BatchReceive(int timeout = 5000)
-        {
-            _consumerActor.Tell(Messages.Consumer.BatchReceive.Instance);
-            if (_queue.BatchReceive.TryTake(out var messages, 5000))
-                return messages;
-            return null;
         }
 
         public void Close()
@@ -151,27 +158,10 @@ namespace SharpPulsar.User
             _consumerActor.Tell(Messages.Consumer.Pause.Instance);
         }
 
-        public IMessage<T> Receive()
-        {
-            if (_conf.MessageListener != null)
-            {
-                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-            }
-            
-            IMessage<T> message = null;
-            while(message == null || (message is NullMessage<T>))
-            {
-                if (!_queue.Receive.TryTake(out message, TimeSpan.FromMilliseconds(100)))
-                {
-                    _consumerActor.Tell(Messages.Consumer.Receive.Instance);
-                }
-            }
-            return message;
-        }
 
         public IMessage<T> Receive(int timeout, TimeUnit unit)
         {
-
+            VerifyConsumerState();
             if (_conf.ReceiverQueueSize == 0)
             {
                 throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
@@ -180,12 +170,110 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            _consumerActor.Tell(Messages.Consumer.Receive.Instance);
-            if (_queue.Receive.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
-                return message;
+            if (_queue.IncomingMessages.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
+            {
+                _consumerActor.Tell(new MessageProcessed<T>(message));
+                IMessage<T> interceptMsg = BeforeConsume(message);
+                return interceptMsg;
+            }
             return null;
         }
 
+        protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
+        {
+            if (_interceptors != null)
+            {
+                return _interceptors.BeforeConsume(_consumerActor, message);
+            }
+            else
+            {
+                return message;
+            }
+        }
+        public IMessage<T> Receive()
+        {
+            VerifyConsumerState();
+            if (_conf.MessageListener != null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
+            if (_queue.IncomingMessages.TryTake(out var m)) 
+                return m;
+
+            return null;
+        }
+        /// <summary>
+        /// batch receive messages
+        /// </summary>crea
+        /// <code>
+        /// if(HasMessage("{consumerName}", out var count))
+        /// {
+        ///     var messages = BatchReceive("{consumerName}", count);
+        /// }
+        /// </code>
+        /// <param name="consumerName"></param>
+        /// <param name="batchSize"></param>
+        /// <param name="receiveTimeout"></param> 
+        /// <returns></returns>
+        public IMessages<T> BatchReceive()
+        {
+            VerifyBatchReceive();
+            VerifyConsumerState();
+            var messages = new Messages<T>(_conf.BatchReceivePolicy.MaxNumMessages, _conf.BatchReceivePolicy.MaxNumBytes);
+
+            if (HasEnoughMessagesForBatchReceive())
+            {
+                while (_queue.IncomingMessages.TryTake(out var msg) && messages.CanAdd(msg))
+                {
+                    _consumerActor.Tell(new MessageProcessed<T>(msg));
+                    IMessage<T> interceptMsg = BeforeConsume(msg);
+                    messages.Add(interceptMsg);
+                }
+            }
+            return messages;
+        }
+
+        protected internal void VerifyConsumerState()
+        {
+            var state = _consumerActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).State;
+            switch (state)
+            {
+                case HandlerState.State.Ready:
+                case HandlerState.State.Connecting:
+                    break; // Ok
+                    goto case HandlerState.State.Closing;
+                case HandlerState.State.Closing:
+                case HandlerState.State.Closed:
+                    throw new PulsarClientException.AlreadyClosedException("Consumer already closed");
+                case HandlerState.State.Terminated:
+                    throw new PulsarClientException.AlreadyClosedException("Topic was terminated");
+                case HandlerState.State.Failed:
+                case HandlerState.State.Uninitialized:
+                    throw new PulsarClientException.NotConnectedException();
+                default:
+                    break;
+            }
+        }
+        private void VerifyBatchReceive()
+        {
+            if (_conf.MessageListener != null)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
+            }
+            if (_conf.ReceiverQueueSize == 0)
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
+            }
+        }
+        private bool HasEnoughMessagesForBatchReceive()
+        {
+            var mesageSize = _consumerActor.AskFor<long>(GetIncomingMessageSize.Instance);
+            if (_conf.BatchReceivePolicy.MaxNumMessages <= 0 && _conf.BatchReceivePolicy.MaxNumBytes <= 0)
+            {
+                return false;
+            }
+            return (_conf.BatchReceivePolicy.MaxNumMessages > 0 && _queue.IncomingMessages.Count >= _conf.BatchReceivePolicy.MaxNumMessages) || (_conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= _conf.BatchReceivePolicy.MaxNumBytes);
+        }
         public void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit)
         {
             _consumerActor.Tell(new ReconsumeLaterMessage<T>(message, delayTime, unit));
@@ -255,7 +343,7 @@ namespace SharpPulsar.User
             {
                 for (var i = 0; i > takeCount; i++)
                 {
-                    if (_queue.Receive.TryTake(out var m, receiveTimeout, token))
+                    if (_queue.IncomingMessages.TryTake(out var m, receiveTimeout, token))
                     {
                         yield return ProcessMessage(m, autoAck, customHander);
                     }
@@ -265,7 +353,7 @@ namespace SharpPulsar.User
             {
                 for (var i = 0; i < takeCount; i++)
                 {
-                    if (_queue.Receive.TryTake(out var m, receiveTimeout, token))
+                    if (_queue.IncomingMessages.TryTake(out var m, receiveTimeout, token))
                     {
                         yield return ProcessMessage(m, autoAck, customHander);
                     }
@@ -281,7 +369,7 @@ namespace SharpPulsar.User
                 //drain the current messages
                 while (true)
                 {
-                    if (_queue.Receive.TryTake(out var m, receiveTimeout, token))
+                    if (_queue.IncomingMessages.TryTake(out var m, receiveTimeout, token))
                     {
                         yield return ProcessMessage(m, autoAck, customHander);
                     }

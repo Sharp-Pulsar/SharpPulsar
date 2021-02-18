@@ -8,8 +8,7 @@ namespace SharpPulsar.Queues
 {
     public class ConsumerQueueCollections<T>
     {
-        public BlockingCollection<IMessage<T>> Receive { get; } = new BlockingCollection<IMessage<T>>();
-        public BlockingCollection<IMessages<T>> BatchReceive { get; } = new BlockingCollection<IMessages<T>>();
+        public BlockingCollection<IMessage<T>> IncomingMessages { get; } = new BlockingCollection<IMessage<T>>();
         public BlockingCollection<ClientExceptions> AcknowledgeException { get; } = new BlockingCollection<ClientExceptions>();
         public BlockingCollection<ClientExceptions> NegativeAcknowledgeException { get; } = new BlockingCollection<ClientExceptions>();
         public BlockingCollection<ClientExceptions> ReconsumeLaterException { get; } = new BlockingCollection<ClientExceptions>();

@@ -7,7 +7,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Reader;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
@@ -90,17 +89,14 @@ namespace SharpPulsar
 
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
 			_consumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
-			Receive<ReadNext>(_ => {
-				_consumer.Tell(Messages.Consumer.Receive.Instance);
-			
-			});
-			Receive<ReadNextTimeout>(m => {
-				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
 
+			Receive<GetHandlerState>(m =>
+			{
+				var state = _consumer.AskFor<HandlerStateResponse>(m);
+				Sender.Tell(state);
 			});
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);
-
 			});
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
 				_consumer.Tell(m);

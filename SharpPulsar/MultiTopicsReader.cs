@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;
@@ -77,17 +78,15 @@ namespace SharpPulsar
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
 			_consumer = Context.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
-			Receive<ReadNext>(_ => {
-				_consumer.Tell(Messages.Consumer.Receive.Instance);
 
-			});
-			Receive<ReadNextTimeout>(m => {
-				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
 
+			Receive<GetHandlerState>(m =>
+			{
+				var state = _consumer.AskFor<HandlerStateResponse>(m);
+				Sender.Tell(state);
 			});
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);
-
 			});
 			Receive<AcknowledgeCumulativeMessage<T>>(m => {
 				_consumer.Tell(m);

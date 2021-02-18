@@ -69,7 +69,7 @@ namespace SharpPulsar
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ConsumerInterceptors<T> Interceptors;
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
-		protected internal long IncomingMessagesSize = 0;
+		protected internal long IncomingMessagesSize = 0L;
 		protected internal ICancelable BatchReceiveTimeout = null;
 		protected internal HandlerState State;
 		private readonly string _topic;
@@ -91,7 +91,7 @@ namespace SharpPulsar
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 
-			IncomingMessages = new BlockingCollection<IMessage<T>>();
+			IncomingMessages = ConsumerQueue.IncomingMessages;
 			UnAckedChunckedMessageIdSequenceMap = new Dictionary<IMessageId, IMessageId[]>();
 
 			ListenerExecutor = listenerExecutor;
@@ -126,35 +126,7 @@ namespace SharpPulsar
 				
 			}
 		}
-
 		
-		internal virtual IMessage<T> Receive()
-		{			
-			VerifyConsumerState();
-			return InternalReceive();
-		}
-
-		
-		protected internal abstract IMessage<T> InternalReceive();
-
-		
-		internal virtual IMessage<T> Receive(int timeout, TimeUnit unit)
-		{
-			VerifyConsumerState();
-			return InternalReceive(timeout, unit);
-		}
-
-		protected internal abstract IMessage<T> InternalReceive(int timeout, TimeUnit unit);
-
-		
-		internal virtual IMessages<T> BatchReceive()
-		{
-			VerifyBatchReceive();
-			VerifyConsumerState();
-			return InternalBatchReceive();
-		}
-
-		protected internal abstract IMessages<T> InternalBatchReceive();
 
 		internal virtual void Acknowledge<T1>(IMessage<T1> message)
 		{
@@ -416,17 +388,6 @@ namespace SharpPulsar
 			return "ConsumerBase{" + "subscription='" + _subscription + '\'' + ", consumerName='" + _consumerName + '\'' + ", topic='" + Topic + '\'' + '}';
 		}
 
-		protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
-		{
-			if (Interceptors != null)
-			{
-				return Interceptors.BeforeConsume(Self, message);
-			}
-			else
-			{
-				return message;
-			}
-		}
 
 		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
 		{
@@ -465,49 +426,6 @@ namespace SharpPulsar
 			// Default behavior, can be overridden in subclasses
 			return true;
 		}
-
-		protected internal virtual bool HasEnoughMessagesForBatchReceive()
-		{
-			if (BatchReceivePolicy.MaxNumMessages <= 0 && BatchReceivePolicy.MaxNumBytes <= 0)
-			{
-				return false;
-			}
-			return (BatchReceivePolicy.MaxNumMessages > 0 && IncomingMessages.Count >= BatchReceivePolicy.MaxNumMessages) || (BatchReceivePolicy.MaxNumBytes > 0 && IncomingMessagesSize >= BatchReceivePolicy.MaxNumBytes);
-		}
-
-		protected internal void VerifyConsumerState()
-		{
-			switch (State.ConnectionState)
-			{
-				case HandlerState.State.Ready:
-				case HandlerState.State.Connecting:
-					break; // Ok
-					goto case HandlerState.State.Closing;
-				case HandlerState.State.Closing:
-				case HandlerState.State.Closed:
-					throw new PulsarClientException.AlreadyClosedException("Consumer already closed");
-				case HandlerState.State.Terminated:
-					throw new PulsarClientException.AlreadyClosedException("Topic was terminated");
-				case HandlerState.State.Failed:
-				case HandlerState.State.Uninitialized:
-					throw new PulsarClientException.NotConnectedException();
-				default:
-					break;
-			}
-		}
-		private void VerifyBatchReceive()
-		{
-			if (Listener != null)
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-			}
-			if (Conf.ReceiverQueueSize == 0)
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
-			}
-		}
-
-	    protected internal abstract void MessageProcessed<T1>(IMessage<T1> msg);
 
 		protected internal virtual Messages<T> NewMessages
 		{
