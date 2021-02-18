@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -68,12 +70,8 @@ namespace SharpPulsar.Test.Api
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage").ToSBytes())
                .Send();
-
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             var message = consumer.Receive();
-            while(message == null)
-            {
-                message = consumer.Receive();
-            }
 
             Assert.Equal(byteKey, message.KeyBytes.ToBytes());
             Assert.True(message.HasBase64EncodedKey());
@@ -116,13 +114,10 @@ namespace SharpPulsar.Test.Api
             //msg.Send() = pull sendreceipt in a different way like in the background, good when batching is enabled
             //producer.Send(Encoding.UTF8.GetBytes("TestMessage").ToSBytes()); waits for the sentrecepit
 
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {
                 var message = consumer.Receive();
-                while (message == null)
-                {
-                    message = consumer.Receive();
-                }
                 Assert.Equal(byteKey, (byte[])(object)message.KeyBytes);
                 Assert.True(message.HasBase64EncodedKey());
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
