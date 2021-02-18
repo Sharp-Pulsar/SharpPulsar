@@ -1,27 +1,71 @@
-﻿version: '3.5'
+﻿# base on https://github.com/apache/pulsar/tree/master/tests/compose
+# wait-for-it.sh from https://github.com/vishnubob/wait-for-it
+
+version: '2.1'
 
 services:
-
   pulsar:
-    container_name: pulsar-stresstests
+    hostname: standalone
     image: 'apachepulsar/pulsar-all:2.7.0'
     ports:
-      - '54546:8080'
-      - '54545:6650'
+      - '6650:6650'
+      - '2181:2181'
+      - '8080:8080'
     environment:
       PULSAR_MEM: " -Xms1g -Xmx1g -XX:MaxDirectMemorySize=2g"
-    command: |
-      /bin/bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone --no-functions-worker"
+      PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled: "true"
+      PULSAR_PREFIX_nettyMaxFrameSizeBytes: 5253120
+      PULSAR_PREFIX_transactionCoordinatorEnabled: "true"
+      
+    command: >
+      bash -c "bin/set_python_version.sh &&
+               bin/apply-config-from-env.py conf/standalone.conf &&
+               bin/pulsar standalone"
 
-  loadbalancer:
-    container_name: loadbalancer
-    image: 'haproxy:2.2.9'
-    ports:
-      - '8888:8888'
-      - '6666:6666'
-      - '9999:9999'
+  init:
+    image: apachepulsar/pulsar-all:2.7.0
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-    depends_on:
-      - pulsar
+      - ./bash/wait-for-it.sh:/pulsar/bin/wait-for-it.sh
+      - ./bash/init-standalone.sh:/pulsar/bin/init-standalone.sh
+    command: bin/wait-for-it.sh standalone:8080 -t 120 -- bin/wait-for-it.sh standalone:2181 -t 120 -- bin/init-standalone.sh
+    environment:
+      webServiceUrl: http://standalone:8080/
+
+  standaloneTls:
+    hostname: standaloneTls
+    image: apachepulsar/pulsar-all:2.7.0
+    ports:
+      - "6651:6651"
+    command: >
+      bash -c "bin/set_python_version.sh &&
+               bin/apply-config-from-env.py conf/standalone.conf &&
+               bin/pulsar standalone -nfw"
+    environment:
+      PULSAR_PREFIX_brokerServicePortTls: 6651
+      PULSAR_PREFIX_webServicePortTls: 8443
+      PULSAR_PREFIX_tlsCertificateFilePath: /pulsar/ssl/broker.cert.pem
+      PULSAR_PREFIX_tlsKeyFilePath: /pulsar/ssl/broker.key-pk8.pem
+      PULSAR_PREFIX_tlsTrustCertsFilePath: /pulsar/ssl/ca.cert.pem
+      PULSAR_PREFIX_maxMessageSize: 10500000
+      PULSAR_PREFIX_nettyMaxFrameSizeBytes: 10500000
+      superUserRoles: admin
+      brokerClientAuthenticationPlugin: org.apache.pulsar.client.impl.auth.AuthenticationTls
+      brokerClientAuthenticationParameters: tlsCertFile:/pulsar/ssl/admin.cert.pem,tlsKeyFile:/pulsar/ssl/admin.key-pk8.pem
+      authenticationEnabled: "true"
+      authenticationProviders: org.apache.pulsar.broker.authentication.AuthenticationProviderTls
+      authorizationEnabled: "true"
+      authorizationProvider: org.apache.pulsar.broker.authorization.PulsarAuthorizationProvider
+      clientAuthenticationPlugin: org.apache.pulsar.client.impl.auth.AuthenticationTls
+      clientAuthenticationParameters: tlsCertFile:/pulsar/ssl/admin.cert.pem,tlsKeyFile:/pulsar/ssl/admin.key-pk8.pem
+
+  initTls:
+    image: apachepulsar/pulsar-all:2.7.0
+    volumes:
+      - ./bash/wait-for-it.sh:/pulsar/bin/wait-for-it.sh
+      - ./bash/init-standalone-tls.sh:/pulsar/bin/init-standalone-tls.sh
+    command: bin/wait-for-it.sh standaloneTls:8443 -t 120 -- bin/init-standalone-tls.sh
+    environment:
+      webServiceUrl: https://standaloneTls:8443/
+      authPlugin: org.apache.pulsar.client.impl.auth.AuthenticationTls
+      authParams: tlsCertFile:/pulsar/ssl/admin.cert.pem,tlsKeyFile:/pulsar/ssl/admin.key-pk8.pem
+      tlsTrustCertsFilePath: /pulsar/ssl/ca.cert.pem

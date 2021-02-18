@@ -46,7 +46,7 @@ namespace SharpPulsar.Test.Api
             _system = fixture.System;
             _client = _system.NewClient();
         }
-        [Fact(Skip = "Skip")]
+        [Fact]
 
         public void ByteKeysTest()
 		{
@@ -70,7 +70,7 @@ namespace SharpPulsar.Test.Api
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage").ToSBytes())
                .Send();
-            Thread.Sleep(TimeSpan.FromSeconds(10));
+            Thread.Sleep(TimeSpan.FromSeconds(20));
             var message = consumer.Receive();
 
             Assert.Equal(byteKey, message.KeyBytes.ToBytes());
@@ -79,7 +79,22 @@ namespace SharpPulsar.Test.Api
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
         }
-        [Fact (Skip = "Skip")]
+	}
+   
+    [Collection(nameof(PulsarTests))]
+    public class ByteKeysTestBatchTest
+    {
+        private readonly ITestOutputHelper _output;
+        private readonly PulsarSystem _system;
+        private readonly PulsarClient _client;
+
+        public ByteKeysTestBatchTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        {
+            _output = output;
+            _system = fixture.System;
+            _client = _system.NewClient();
+        }
+        [Fact]
 		public void ByteKeysTestBatch()
 		{
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
@@ -114,7 +129,7 @@ namespace SharpPulsar.Test.Api
             //msg.Send() = pull sendreceipt in a different way like in the background, good when batching is enabled
             //producer.Send(Encoding.UTF8.GetBytes("TestMessage").ToSBytes()); waits for the sentrecepit
 
-            Thread.Sleep(TimeSpan.FromSeconds(10));
+            Thread.Sleep(TimeSpan.FromSeconds(20));
             for (var i = 0; i < 5; i++)
             {
                 var message = consumer.Receive();

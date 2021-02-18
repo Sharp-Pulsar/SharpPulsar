@@ -53,6 +53,9 @@
     <Resource Include="Resources\authentication\tls\cacert.pem" />
     <Resource Include="Resources\authentication\tls\client-cert.pem" />
     <Resource Include="Resources\authentication\tls\client-key.pem" />
+    <Resource Include="bash\init-standalone-tls.sh" />
+    <Resource Include="bash\init-standalone.sh" />
+    <Resource Include="bash\wait-for-it.sh" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,9 +63,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="docker-compose-standalone-tests.yml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="haproxy.cfg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Resources\authentication\basic\.htpasswd">
@@ -162,6 +162,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Resources\logback.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="bash\init-standalone-tls.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="bash\init-standalone.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="bash\wait-for-it.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
