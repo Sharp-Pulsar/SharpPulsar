@@ -40,7 +40,7 @@ namespace SharpPulsar.Test.Api
         private readonly PulsarSystem _system;
         private readonly PulsarClient _client;
 
-        public BytesKeyTest(ITestOutputHelper output, PulsarSystemFixture fixture)
+        public BytesKeyTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _output = output;
             _system = fixture.System;

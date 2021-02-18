@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Schema
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
 
-        public ProducerInstantiation(ITestOutputHelper output, PulsarSystemFixture fixture)
+        public ProducerInstantiation(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _system = fixture.System;
             _output = output;
@@ -59,7 +59,7 @@ namespace SharpPulsar.Test.Schema
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
 
-        public ConsumerInstantiation(ITestOutputHelper output, PulsarSystemFixture fixture)
+        public ConsumerInstantiation(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _system = fixture.System;
             _output = output;
@@ -83,7 +83,7 @@ namespace SharpPulsar.Test.Schema
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
 
-        public ReaderInstantiation(ITestOutputHelper output, PulsarSystemFixture fixture)
+        public ReaderInstantiation(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _system = fixture.System;
             _output = output;
