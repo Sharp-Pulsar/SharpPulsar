@@ -531,6 +531,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically");
             }
+            
             var state = _client.AskFor<int>(GetClientState.Instance);
             if (state != 0)
             {
@@ -581,7 +582,7 @@ namespace SharpPulsar.User
         private Producer<T> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {
             var queue = new ProducerQueueCollection<T>();
-            var metadata = _client.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(TopicName.Get(topic)));
+            var metadata = GetPartitionedTopicMetadata(topic);
             if (_actorSystem.Log.IsDebugEnabled)
             {
                 _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");

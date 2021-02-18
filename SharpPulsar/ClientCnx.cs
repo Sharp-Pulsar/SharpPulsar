@@ -395,7 +395,6 @@ namespace SharpPulsar
 		private void HandleProducerSuccess(CommandProducerSuccess success)
 		{
 			Condition.CheckArgument(_state == State.Ready);
-
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"Received producer success response from server: {success.RequestId} - producer-name: {success.ProducerName}");

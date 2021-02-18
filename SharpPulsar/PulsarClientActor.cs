@@ -199,10 +199,11 @@ namespace SharpPulsar
 			{
 				throw new PulsarClientException.InvalidConfigurationException(e.Message);
 			}
-			if(metadataFuture.Task.Status == TaskStatus.Faulted)
+			var result = Task.Run(() => metadataFuture.Task);
+			if (result.IsFaulted)
 				return new PartitionedTopicMetadata(0);
 
-			var pmetadata = metadataFuture.Task.Result;
+			var pmetadata = result.Result;
 			if (pmetadata is PartitionedTopicMetadata p)
 				return p;
 

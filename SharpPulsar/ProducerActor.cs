@@ -401,6 +401,7 @@ namespace SharpPulsar
 						ProducerQueue.SentMessage.Add(sent);
 					});
 				}
+
 				ResendMessages(response);
 			}
 			catch(Exception ex)

@@ -3,7 +3,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Nuke.Common;
 using Nuke.Common.CI;
-using Nuke.Common.CI.AzurePipelines;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
 using Nuke.Common.Git;
@@ -83,8 +82,8 @@ class Build : NukeBuild
         });
     Target Test => _ => _
         .DependsOn(Compile)
-        .DependsOn(StartPulsar)
-        .Triggers(StopPulsar)
+        //.DependsOn(StartPulsar)
+        //.Triggers(StopPulsar)
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Test";
@@ -107,6 +106,7 @@ class Build : NukeBuild
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
                     .EnableNoBuild());
             }
         });
@@ -119,7 +119,7 @@ class Build : NukeBuild
             b
             .SetDetach(true)
             .SetInteractive(true)
-            .SetName("pulsar_test")
+            .SetName("pulsar_test_2")
             .SetPublish("6650:6650", "8080:8080")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
@@ -145,7 +145,7 @@ class Build : NukeBuild
     {
 
         DockerTasks.DockerRm(b => b
-          .SetContainers("pulsar_test")
+          .SetContainers("pulsar_test_2")
           .SetForce(true));
 
     });

@@ -30,15 +30,36 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Schema
 {
     [Collection(nameof(PulsarTests))]
-    public class DefaultSchemasTest
+    public class ProducerInstantiation
     {
         private PulsarSystem _system;
         private PulsarClient _client;
         private readonly ITestOutputHelper _output;
 
-        private const string TestTopic = "test-topic";
+        public ProducerInstantiation(ITestOutputHelper output, PulsarSystemFixture fixture)
+        {
+            _system = fixture.System;
+            _output = output;
+            _client = _system.NewClient();
+        }
+        [Fact]
+        public virtual void TestProducerInstantiation()
+        {
+            var producer = new ProducerConfigBuilder<string>();
+            producer.Topic(Guid.NewGuid().ToString());
+            var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
+            Assert.NotNull(stringProducerBuilder);
+        }
+    }
+    
+    [Collection(nameof(PulsarTests))]
+    public class ConsumerInstantiation
+    {
+        private PulsarSystem _system;
+        private PulsarClient _client;
+        private readonly ITestOutputHelper _output;
 
-        public DefaultSchemasTest(ITestOutputHelper output, PulsarSystemFixture fixture)
+        public ConsumerInstantiation(ITestOutputHelper output, PulsarSystemFixture fixture)
         {
             _system = fixture.System;
             _output = output;
@@ -48,24 +69,31 @@ namespace SharpPulsar.Test.Schema
         public virtual void TestConsumerInstantiation()
         {
             var consumer = new ConsumerConfigBuilder<string>();
-            consumer.Topic(TestTopic);
+            consumer.Topic(Guid.NewGuid().ToString());
             consumer.SubscriptionName("test-sub");
             var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
         }
-        [Fact]
-        public virtual void TestProducerInstantiation()
+    }
+    
+    [Collection(nameof(PulsarTests))]
+    public class ReaderInstantiation
+    {
+        private PulsarSystem _system;
+        private PulsarClient _client;
+        private readonly ITestOutputHelper _output;
+
+        public ReaderInstantiation(ITestOutputHelper output, PulsarSystemFixture fixture)
         {
-            var producer = new ProducerConfigBuilder<string>();
-            producer.Topic(TestTopic);
-            var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
-            Assert.NotNull(stringProducerBuilder);
+            _system = fixture.System;
+            _output = output;
+            _client = _system.NewClient();
         }
         [Fact]
         public virtual void TestReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
-            reader.Topic(TestTopic);
+            reader.Topic(Guid.NewGuid().ToString());
             reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);

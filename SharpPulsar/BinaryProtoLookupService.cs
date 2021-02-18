@@ -93,10 +93,11 @@ namespace SharpPulsar
                 var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
 				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetBroker(b.TopicName, requestid, connection, task);
-				if (task.Task.IsFaulted)
-					Sender.Tell(new Failure { Exception = task.Task.Exception });
+				var result = Task.Run(()=> task.Task);
+				if (result.IsFaulted)
+					Sender.Tell(new Failure { Exception = result.Exception });
 				else
-					Sender.Tell(task.Task.Result);
+					Sender.Tell(result.Result);
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{

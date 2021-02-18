@@ -46,9 +46,9 @@ namespace SharpPulsar.Test.Api
             _system = fixture.System;
             _client = _system.NewClient();
         }
-        [Fact]
+        [Fact(Skip = "Skip")]
 
-		public void ByteKeysTest()
+        public void ByteKeysTest()
 		{
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
 
@@ -79,7 +79,7 @@ namespace SharpPulsar.Test.Api
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
         }
-        [Fact]
+        [Fact (Skip = "Skip")]
 		public void ByteKeysTestBatch()
 		{
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
