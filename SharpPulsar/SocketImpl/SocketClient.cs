@@ -6,6 +6,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Helpers;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.SocketImpl.Help;
 using System;
 using System.Buffers;
 using System.IO;
@@ -34,6 +35,11 @@ namespace SharpPulsar.SocketImpl
         private readonly bool _encrypt;
         private readonly string _serviceUrl;
         private string _targetServerName;
+
+        private const int _chunkSize = 75000;
+
+
+        private ChunkingPipeline _pipeline;
 
         public event Action OnConnect;
         public event Action OnDisconnect;
@@ -92,6 +98,7 @@ namespace SharpPulsar.SocketImpl
 
             _networkstream = networkStream;
 
+            _pipeline = new ChunkingPipeline(networkStream, _chunkSize);
             _pipeReader = PipeReader.Create(_networkstream);
 
             _pipeWriter = PipeWriter.Create(_networkstream);
@@ -119,9 +126,10 @@ namespace SharpPulsar.SocketImpl
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
+               
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var readresult = await _pipeReader.ReadAsync(cancellationToken);
+                    var readresult = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                     var buffer = readresult.Buffer;
                     var length = (int)buffer.Length;
@@ -177,11 +185,36 @@ namespace SharpPulsar.SocketImpl
             });
         }
 
+        private async Task FillPipe(CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+
+            try
+            {
+                while (true)
+                {
+                    var memory = _pipeWriter.GetMemory(84999);
+                    var bytesRead = await _networkstream.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
+                    if (bytesRead == 0)
+                        break;
+
+                    _pipeWriter.Advance(bytesRead);
+
+                    var result = await _pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+                    if (result.IsCompleted)
+                        break;
+                }
+            }
+            finally
+            {
+                await _pipeWriter.CompleteAsync().ConfigureAwait(false);
+            }
+        }
+
         public void SendMessage(byte[] message)
         {
-            var sequence = new ReadOnlySequence<byte>(message);
-            foreach (var seq in sequence)
-                _ = Task.Run(async() => await _networkstream.WriteAsync(seq));
+            _ = _pipeline.Send(new ReadOnlySequence<byte>(message));
         }
 
         public void Dispose()

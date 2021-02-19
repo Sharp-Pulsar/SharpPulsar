@@ -1311,7 +1311,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
 			}
-			var mn = (short)0x0e01;
+			var mn = (short)0x0e01; 
 			var startsWith = received.MagicNumber == mn;
 			var hascheckum = received.CheckSum;
 			if(!(startsWith && hascheckum))
@@ -1320,10 +1320,9 @@ namespace SharpPulsar
 				DiscardCorruptedMessage(messageId, cnx, CommandAck.ValidationError.ChecksumMismatch);
 				return;
 			}
-
 			MessageMetadata msgMetadata = received.Metadata;
 			int numMessages = msgMetadata.NumMessagesInBatch;
-		
+			Console.WriteLine($"Consumer found {numMessages} in batch");
 			bool isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
 			MessageId msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
@@ -1334,7 +1333,6 @@ namespace SharpPulsar
 				{
 					_log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
 				}
-
 				IncreaseAvailablePermits(cnx, numMessages);
 				return;
 			}
@@ -1343,7 +1341,7 @@ namespace SharpPulsar
 
 			bool isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
-			if(decryptedPayload == null)
+			if (decryptedPayload == null)
 			{
 				// Message was discarded or CryptoKeyReader isn't implemented
 				return;
@@ -1351,9 +1349,11 @@ namespace SharpPulsar
 
 			// uncompress decryptedPayload and release decryptedPayload-ByteBuf
 			var uncompressedPayload = (isMessageUndecryptable || isChunkedMessage) ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, cnx, true);
-			
-			if(uncompressedPayload == null)
+
+
+			if (uncompressedPayload == null)
 			{
+				
 				// Message was discarded on decompression error
 				return;
 			}
@@ -1362,9 +1362,8 @@ namespace SharpPulsar
 			// and return undecrypted payload
 			if(isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
 			{
-
 				// right now, chunked messages are only supported by non-shared subscription
-				if(isChunkedMessage)
+				if (isChunkedMessage)
 				{
 					uncompressedPayload = ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId, cnx);
 					if(uncompressedPayload == null)
@@ -1380,10 +1379,8 @@ namespace SharpPulsar
 					{
 						_log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
 					}
-
 					return;
 				}
-
 				var message = new Message<T>(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
 				
 				try
@@ -2639,6 +2636,7 @@ namespace SharpPulsar
 				Sender.Tell(new ReceivedMessage<T>(obj));
 			else
 				IncomingMessages.Add(obj);
+			Console.WriteLine($"Received Message: {((Message<T>)obj).SequenceId}");
 		}
 		private void Push<T1>(BlockingCollection<T1> queue, T1 obj)
         {

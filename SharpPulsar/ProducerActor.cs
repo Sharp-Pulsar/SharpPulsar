@@ -188,7 +188,7 @@ namespace SharpPulsar
 
 			if(conf.SendTimeoutMs > 0)
 			{
-				_sendTimeout = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(conf.SendTimeoutMs)), RunSendTimeout);
+				_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.SendTimeoutMs), Self, RunSendTimeout.Instance, ActorRefs.NoSender);
 			}
 
 			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.OperationTimeoutMs;
@@ -259,6 +259,12 @@ namespace SharpPulsar
         {
 			Receive<AckReceived>(a => {
 				AckReceived(ClientCnx, a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
+			});
+			Receive<RunSendTimeout>(_ => {
+				FailTimedoutMessages();
+			});
+			Receive<BatchTask>(_ => {
+				RunBatchTask();
 			});
 			Receive<GetProducerName>(_ => Sender.Tell(_producerName));
 			Receive<GetLastSequenceId>(_ => Sender.Tell(_lastSequenceIdPublished));
@@ -390,16 +396,7 @@ namespace SharpPulsar
 				if (BatchMessagingEnabled)
 				{
 					var interval = TimeUnit.MICROSECONDS.ToMicroseconds(Conf.BatchingMaxPublishDelayMicros);
-					_batchTimerTask =_scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(0), TimeSpan.FromTicks(interval), () =>
-					{
-						_log.Info($"[{Topic}] [{producerName}] Batching the messages from the batch container from timer thread");
-						if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-						{
-							return;
-						}
-						var sent = BatchMessageAndSend();
-						ProducerQueue.SentMessage.Add(sent);
-					});
+					_batchTimerTask =_scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(0), TimeSpan.FromTicks(interval), Self, BatchTask.Instance, ActorRefs.NoSender);
 				}
 
 				ResendMessages(response);
@@ -479,7 +476,16 @@ namespace SharpPulsar
 		{
 			_connectionHandler.Tell(new ReconnectLater(exception));
 		}
-
+		private void RunBatchTask()
+        {
+			_log.Info($"[{Topic}] [{_producerName}] Batching the messages from the batch container from timer thread");
+			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+			{
+				return;
+			}
+			var sent = BatchMessageAndSend();
+			ProducerQueue.SentMessage.Add(sent);
+		}
 		private bool BatchMessagingEnabled
 		{
 			get
@@ -1209,7 +1215,7 @@ namespace SharpPulsar
 		/// <summary>
 		/// Process sendTimeout events
 		/// </summary>
-		private void RunSendTimeout()
+		private void FailTimedoutMessages()
 		{
 			if(_sendTimeout.IsCancellationRequested)
 			{
@@ -1232,7 +1238,7 @@ namespace SharpPulsar
 			{
 				// If there is at least one message, calculate the diff between the message timeout and the elapsed
 				// time since first message was created.
-				long diff = Conf.SendTimeoutMs - TimeUnit.NANOSECONDS.ToMilliseconds(DateTime.Now.Ticks - firstMsg.CreatedAt);
+				long diff = Conf.SendTimeoutMs - (DateTimeHelper.CurrentUnixTimeMillis() - firstMsg.CreatedAt);
 				if (diff <= 0)
 				{
 					// The diff is less than or equal to zero, meaning that the message has been timed out.
@@ -1248,10 +1254,10 @@ namespace SharpPulsar
 				else
 				{
 					// The diff is greater than zero, set the timeout to the diff value
-					timeToWaitMs = diff;
+					timeToWaitMs = diff; 
 				}
 			}
-			_sendTimeout = _scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(timeToWaitMs)), RunSendTimeout);
+			_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), Self, RunSendTimeout.Instance, ActorRefs.NoSender);
 
 		}
 
@@ -1293,11 +1299,13 @@ namespace SharpPulsar
 						opSendMsgs = new List<OpSendMsg<T>> { _batchMessageContainer.CreateOpSendMsg() };
 					}
 					_batchMessageContainer.Clear();
+					var msgs = new List<Message<T>>();
 					foreach(var opSendMsg in opSendMsgs)
 					{
 						ProcessOpSendMsg(opSendMsg);
+						msgs.AddRange(opSendMsg.Msgs);
 					}
-					return SentMessage<T>.Create(opSendMsgs);
+					return SentMessage<T>.Create(msgs);
 				}
 				catch(Exception t)
 				{
@@ -1489,5 +1497,13 @@ namespace SharpPulsar
 		}
 
         public override IProducerStats Stats => _stats;
+    }
+	internal sealed class RunSendTimeout
+	{
+		internal static RunSendTimeout Instance = new RunSendTimeout();
+    }
+	internal sealed class BatchTask
+	{
+		internal static BatchTask Instance = new BatchTask();
     }
 }

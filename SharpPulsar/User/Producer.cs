@@ -9,7 +9,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Queues;
 using System;
-
+using System.Threading;
 
 namespace SharpPulsar.User
 {
@@ -76,15 +76,11 @@ namespace SharpPulsar.User
             NewMessage().Value(message).Send();
             return _queue.SentMessage.Take();
         }
-        public SentMessage<T> SendReceipt()
+        public SentMessage<T> SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)
         {
-            SentMessage<T> sent = null;
-            while (sent == null || (sent.Errored && sent.Exception is NullReferenceException))
+            if (_queue.SentMessage.TryTake(out var sent, timeoutMilliseconds, token))
             {
-                if (_queue.SentMessage.TryTake(out sent, TimeSpan.FromSeconds(5)))
-                {
-
-                }
+                return sent;
             }
             return sent;
         }

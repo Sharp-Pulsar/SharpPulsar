@@ -190,14 +190,14 @@ namespace SharpPulsar.User
                 return message;
             }
         }
-        public IMessage<T> Receive()
+        public IMessage<T> Receive(int timeoutMilliseconds = 30000, CancellationToken token = default)
         {
             VerifyConsumerState();
             if (_conf.MessageListener != null)
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            if (_queue.IncomingMessages.TryTake(out var m)) 
+            if (_queue.IncomingMessages.TryTake(out var m, timeoutMilliseconds, token)) 
                 return m;
 
             return null;

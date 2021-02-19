@@ -42,7 +42,7 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -101,13 +101,19 @@ class Build : NukeBuild
                 }
 
                 Information($"Running for {projectName} ({fw}) ...");
-
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                    .EnableNoBuild());
+                try
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                        .EnableNoBuild());
+                }
+                catch(Exception ex)
+                {
+                    Information(ex.Message);
+                }
             }
         });
     Target StartPulsar => _ => _

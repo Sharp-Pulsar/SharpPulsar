@@ -3,6 +3,7 @@ using BAMCIS.Util.Concurrent;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Stats.Consumer.Api;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -78,7 +79,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
 		///             
-		IMessage<T> Receive();
+		IMessage<T> Receive(int timeoutMilliseconds = 5000, CancellationToken token = default);
 
 
 		/// <summary>
