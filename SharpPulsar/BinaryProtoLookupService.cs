@@ -20,6 +20,7 @@ using System.Net;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -95,7 +96,7 @@ namespace SharpPulsar
 				GetBroker(b.TopicName, requestid, connection, task);
 				var result = Task.Run(()=> task.Task);
 				if (result.IsFaulted)
-					Sender.Tell(new Failure { Exception = result.Exception });
+					Sender.Tell(new ClientExceptions((PulsarClientException)result.Exception.InnerException));
 				else
 					Sender.Tell(result.Result);
 			});
@@ -140,58 +141,67 @@ namespace SharpPulsar
 			}
 			var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
 			var payload = new Payload(request, requestId, "NewLookup");
-			var lookup = clientCnx.AskFor<LookupDataResult>(payload);
-			if (Enum.IsDefined(typeof(ServerError), lookup.Error) && !string.IsNullOrWhiteSpace(lookup.ErrorMessage))
-			{
-				_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
-				if (_log.IsDebugEnabled)
+			var lk = clientCnx.AskFor(payload);
+			if(lk is LookupDataResult lookup)
+            {
+
+				if (Enum.IsDefined(typeof(ServerError), lookup.Error) && !string.IsNullOrWhiteSpace(lookup.ErrorMessage))
 				{
-					_log.Warning($"[{topicName}] Lookup response exception> {lookup.Error}:{lookup.ErrorMessage}");
+					_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
+					if (_log.IsDebugEnabled)
+					{
+						_log.Warning($"[{topicName}] Lookup response exception> {lookup.Error}:{lookup.ErrorMessage}");
+					}
+					task.SetException(new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}"));
 				}
-				task.SetException(new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}"));	
-			}
-			else
-			{
-				Uri uri = null;
-				try
+				else
 				{
-					if (_useTls)
+					Uri uri = null;
+					try
 					{
-						uri = new Uri(lookup.BrokerUrlTls);
-					}
-					else
-					{
-						string serviceUrl = lookup.BrokerUrl;
-						uri = new Uri(serviceUrl);
-					}
-					var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
-					if (lookup.Redirect)
-					{
-						var pool = _connectionPool;
-						var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(responseBrokerAddress)).ClientCnx;
-						requestId = _pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-						GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
-					}
-					else
-					{
-						if (lookup.ProxyThroughServiceUrl)
+						if (_useTls)
 						{
-							var response = new GetBrokerResponse(responseBrokerAddress, socketAddress);
-							task.SetResult(response);
+							uri = new Uri(lookup.BrokerUrlTls);
 						}
 						else
 						{
-							var response = new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
-							task.SetResult(response);
+							string serviceUrl = lookup.BrokerUrl;
+							uri = new Uri(serviceUrl);
+						}
+						var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
+						if (lookup.Redirect)
+						{
+							var pool = _connectionPool;
+							var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(responseBrokerAddress)).ClientCnx;
+							requestId = _pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+							GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
+						}
+						else
+						{
+							if (lookup.ProxyThroughServiceUrl)
+							{
+								var response = new GetBrokerResponse(responseBrokerAddress, socketAddress);
+								task.SetResult(response);
+							}
+							else
+							{
+								var response = new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
+								task.SetResult(response);
+							}
 						}
 					}
-				}
-				catch (Exception parseUrlException)
-				{
-					_log.Warning($"[{topicName}] invalid url {uri}");
-					task.SetException(parseUrlException);
+					catch (Exception parseUrlException)
+					{
+						_log.Warning($"[{topicName}] invalid url {uri}");
+						task.SetException(parseUrlException);
+					}
 				}
 			}
+            else
+            {
+				var e = lk as ClientExceptions;
+				task.SetException(e.Exception);
+            }
 		}
 
 		/// <summary>
@@ -202,17 +212,25 @@ namespace SharpPulsar
 		{
 			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
 			var payload = new Payload(request, requestId, "NewPartitionMetadataRequest");
-			var lookup = clientCnx.AskFor<LookupDataResult>(payload);
-			if (Enum.IsDefined(typeof(ServerError), lookup.Error) && lookup.ErrorMessage != null)
-			{
-				_log.Warning($"[{topicName}] failed to get Partitioned metadata : {lookup.Error}:{lookup.ErrorMessage}");
-				Sender.Tell(new PartitionedTopicMetadata(0));
-				return;
+			var lk = clientCnx.AskFor(payload);
+			if(lk is LookupDataResult lookup)
+            {
+				if (Enum.IsDefined(typeof(ServerError), lookup.Error) && lookup.ErrorMessage != null)
+				{
+					_log.Warning($"[{topicName}] failed to get Partitioned metadata : {lookup.Error}:{lookup.ErrorMessage}");
+					Sender.Tell(new PartitionedTopicMetadata(0));
+					return;
+				}
+				else
+				{
+					Sender.Tell(new PartitionedTopicMetadata(lookup.Partitions));
+				}
 			}
-			else
-			{
-				Sender.Tell(new PartitionedTopicMetadata(lookup.Partitions));
-			}
+            else
+            {
+				var ex = lk as ClientExceptions;
+				Sender.Tell(ex);
+            }
 		}
 
 

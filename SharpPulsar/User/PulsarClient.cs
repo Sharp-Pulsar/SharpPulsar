@@ -356,20 +356,19 @@ namespace SharpPulsar.User
 
         private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
         {
-            try
+            var o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+            if (o is PartitionedTopicMetadata metadata)
+                future.SetResult(metadata);
+            else
             {
-                var o = _client.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
-                future.SetResult(o);
-            }
-            catch(Exception e)
-            {
+                var e = o as ClientExceptions;
                 long nextDelay = Math.Min(backoff.Next(), remainingTime);
-                bool isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
+                bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
                 if (nextDelay <= 0 || isLookupThrottling)
                 {
-                    future.SetException(e);
+                    future.SetException(e.Exception);
                 }
-                Task.Run(async()=> 
+                Task.Run(async () =>
                 {
                     _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
                     remainingTime -= nextDelay;
