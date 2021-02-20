@@ -29,6 +29,7 @@ using SharpPulsar.Common;
 using ProtoBuf;
 using SharpPulsar.Tcps;
 using Akka.IO;
+using System.Linq;
 
 namespace SharpPulsar
 {
@@ -64,6 +65,7 @@ namespace SharpPulsar
 
 		private string _proxyToTargetBrokerAddress;
 		private readonly byte[] _pong = Commands.NewPong();
+		private List<byte> _pendingReceive;
 
 		private string _remoteHostName;
 		private bool _isTlsHostnameVerificationEnable;
@@ -81,6 +83,7 @@ namespace SharpPulsar
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_pendingReceive = new List<byte>();
 			_log = Context.GetLogger();
 			_remoteHostName = endPoint.Host;
 			_self = Self;
@@ -787,6 +790,15 @@ namespace SharpPulsar
         {
 			var buffer = readResult;
 			var length = (int)buffer.Length;
+			var isFresh = buffer.IsNewCommand();
+			if(_pendingReceive.Count > 0 && !isFresh)
+            {
+				_pendingReceive.AddRange(buffer.ToArray());
+				buffer = new ReadOnlySequence<byte>(_pendingReceive.ToArray());
+				length = (int)buffer.Length;
+				_pendingReceive.Clear();
+			}
+
 			if (length >= 8)
 			{
 				var array = ArrayPool<byte>.Shared.Rent(length);
@@ -797,7 +809,7 @@ namespace SharpPulsar
 					using var reader = new BinaryReader(stream);
 					var totalength = reader.ReadInt32().IntFromBigEndian();
 					var frameLength = totalength + 4;
-					if (length >= 4)
+					if (length >= frameLength)
 					{
 						var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
 						if (command.type == BaseCommand.Type.Message)
@@ -820,6 +832,10 @@ namespace SharpPulsar
 							OnCommandReceived(command, null, null, false, 0);
 						}
 					}
+                    else
+					{
+						_pendingReceive.AddRange(buffer.ToArray());
+                    }
 				}
 				finally
 				{

@@ -42,7 +42,7 @@ namespace SharpPulsar.Test.Fixtures
 
             RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
 
-            var waitTries = 10;
+            var waitTries = 20;
 
             using var handler = new HttpClientHandler
             {

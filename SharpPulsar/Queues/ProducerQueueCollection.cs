@@ -5,8 +5,14 @@ namespace SharpPulsar.Queues
 {
     public class ProducerQueueCollection<T>
     {
-        public BlockingCollection<SentMessage<T>> SentMessage { get; } = new BlockingCollection<SentMessage<T>>();
-        public BlockingCollection<ProducerCreation> Producer { get; } = new BlockingCollection<ProducerCreation>();
-        public BlockingCollection<ProducerCreation> PartitionedProducer { get; } = new BlockingCollection<ProducerCreation>();
+        public BlockingCollection<SentMessage<T>> SentMessage { get; }
+        public BlockingCollection<ProducerCreation> Producer { get; }
+        public BlockingCollection<ProducerCreation> PartitionedProducer { get; }
+        public ProducerQueueCollection()
+        {
+            SentMessage = new BlockingCollection<SentMessage<T>>();
+            Producer = new BlockingCollection<ProducerCreation>();
+            PartitionedProducer = new BlockingCollection<ProducerCreation>();
+        }
     }
 }

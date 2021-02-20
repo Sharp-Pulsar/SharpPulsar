@@ -69,7 +69,7 @@ namespace SharpPulsar
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
-		internal readonly long ConsumerId;
+		private readonly long _consumerId;
 
 		// Number of messages that have delivered to the application. Every once in a while, this number will be sent to the
 		// broker to notify that we are ready to get (and store in the incoming messages queue) more messages
@@ -152,24 +152,24 @@ namespace SharpPulsar
 
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 
-		public static Props NewConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public static Props NewConsumer(long consumerId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
         {
-			return Props.Create(() => new ConsumerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
+			return Props.Create(() => new ConsumerActor<T>(consumerId, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
         }
 		
-		public static Props NewConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public static Props NewConsumer(long consumerId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
 			if(conf.ReceiverQueueSize == 0)
 			{
-				return ZeroQueueConsumer<T>.NewZeroQueueConsumer(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue);
+				return ZeroQueueConsumer<T>.NewZeroQueueConsumer(consumerId, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue);
 			}
 			else
 			{
-				return Props.Create(() => new ConsumerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
+				return Props.Create(() => new ConsumerActor<T>(consumerId, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue));
 			}
 		}
 
-		public ConsumerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
+		public ConsumerActor(long consumerId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
 			_generator = idGenerator;
 			_topicName = TopicName.Get(topic);
@@ -179,7 +179,7 @@ namespace SharpPulsar
 			_self = Self;
 			_tokenSource = new CancellationTokenSource();
 			_client = client;
-			ConsumerId = idGenerator.AskFor<long>(NewConsumerId.Instance);
+			_consumerId = consumerId;
 			_subscriptionMode = conf.SubscriptionMode;
 			_startMessageId = startMessageId != null ? new BatchMessageId((MessageId) startMessageId) : null;
 			_initialStartMessageId = _startMessageId;
@@ -268,7 +268,7 @@ namespace SharpPulsar
 						
 			if(_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(client, ConsumerId, conf));
+				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(client, _consumerId, conf));
 			}
 			else
 			{
@@ -316,7 +316,11 @@ namespace SharpPulsar
 			 GrabCnx();
 		}
 		private void Ready()
-        {			
+        {
+
+			Receive<ConnectionClosed>(m => {
+				ConnectionClosed(m.ClientCnx);
+			});
 			Receive<ClearIncomingMessagesAndGetMessageNumber>(_ => 
 			{
 				var cleared = ClearIncomingMessagesAndGetMessageNumber();
@@ -669,7 +673,7 @@ namespace SharpPulsar
 				{
 					State.ConnectionState = HandlerState.State.Closing;
 					var requestId =  _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-					var unsubscribe = Commands.NewUnsubscribe(ConsumerId, requestId);
+					var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId);
 				    var cnx = _connectionHandler;
 					var send = new SendRequestWithId(unsubscribe, requestId);
                     if (cnx.AskFor<bool>(send))
@@ -727,7 +731,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				byte[] cmd = Commands.NewCloseConsumer(ConsumerId, requestId);
+				byte[] cmd = Commands.NewCloseConsumer(_consumerId, requestId);
 				var response = cnx.AskFor(new SendRequestWithId(cmd, requestId));
 				if(response is ClientExceptions ex)
                 {
@@ -1101,11 +1105,11 @@ namespace SharpPulsar
 				return;
 			}
 			_connectionHandler.Tell(new SetCnx(cnx));
-			cnx.Tell(new RegisterConsumer(ConsumerId, Self));
+			cnx.Tell(new RegisterConsumer(_consumerId, Self));
 
 			_cnx = cnx;
 
-			_log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {cnx.Path.Name}, consumerId {ConsumerId}");
+			_log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {cnx.Path.Name}, consumerId {_consumerId}");
 
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 
@@ -1146,14 +1150,14 @@ namespace SharpPulsar
 			}
 			// startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
 			long startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-			var request = Commands.NewSubscribe(Topic, Subscription, ConsumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+			var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
 			
 			cnx.Tell(new SendRequestWithId(request, requestId));
 		}
 
 		protected internal virtual void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
 		{
-			_log.Info($"[{Topic}][{Subscription}] Subscribed to topic on -- consumer: {ConsumerId}");
+			_log.Info($"[{Topic}][{Subscription}] Subscribed to topic on -- consumer: {_consumerId}");
 
 			_availablePermits = 0;
 			Become(Ready);
@@ -1230,7 +1234,7 @@ namespace SharpPulsar
 				{
 					_log.Debug($"[{Topic}] [{Subscription}] Adding {numMessages} additional permits");
 				}
-				var cmd = Commands.NewFlow(ConsumerId, numMessages);
+				var cmd = Commands.NewFlow(_consumerId, numMessages);
 				var pay = new Payload(cmd, -1, "NewFlow");
 				cnx.Tell(pay);
 			}
@@ -1246,11 +1250,11 @@ namespace SharpPulsar
                 string msg;
                 if (nonRetriableError)
 				{
-					msg = $"[{Topic}] Consumer creation failed for consumer {ConsumerId} with unretriableError: {exception}";
+					msg = $"[{Topic}] Consumer creation failed for consumer {_consumerId} with unretriableError: {exception}";
 				}
 				else
 				{
-					msg = $"[{Topic}] Consumer creation failed for consumer {ConsumerId} after timeout";
+					msg = $"[{Topic}] Consumer creation failed for consumer {_consumerId} after timeout";
 				}
 				_log.Info(msg);
 				CloseConsumerTasks();
@@ -1322,7 +1326,6 @@ namespace SharpPulsar
 			}
 			MessageMetadata msgMetadata = received.Metadata;
 			int numMessages = msgMetadata.NumMessagesInBatch;
-			Console.WriteLine($"Consumer found {numMessages} in batch");
 			bool isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
 			MessageId msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
@@ -1850,7 +1853,7 @@ namespace SharpPulsar
 
 		private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, CommandAck.ValidationError validationError)
 		{
-			var cmd = Commands.NewAck(ConsumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, CommandAck.AckType.Individual, validationError, new Dictionary<string, long>());
+			var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, CommandAck.AckType.Individual, validationError, new Dictionary<string, long>());
 			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
 			IncreaseAvailablePermits(currentCnx);
 			Stats.IncrementNumReceiveFailed();
@@ -1903,7 +1906,7 @@ namespace SharpPulsar
 				IncomingMessages = new BlockingCollection<IMessage<T>>();
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
-				var cmd = Commands.NewRedeliverUnacknowledgedMessages(ConsumerId);
+				var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId);
 				var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 				cnx.Tell(payload);
 				if(currentSize > 0)
@@ -1970,7 +1973,7 @@ namespace SharpPulsar
 					}).ToList();
 					if(messageIdDatas.Count > 0)
 					{
-						var cmd = Commands.NewRedeliverUnacknowledgedMessages(ConsumerId, messageIdDatas);
+						var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdDatas);
 						var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 						cnx.Tell(payload);
 					}
@@ -2076,12 +2079,12 @@ namespace SharpPulsar
 					ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
 					long[] ackSetArr = ackSet.ToLongArray();
 
-					seek = Commands.NewSeek(ConsumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
+					seek = Commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
 				}
 				else
 				{
 					var msgid = (MessageId)messageId;
-					seek = Commands.NewSeek(ConsumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
+					seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
 				}
 
 				var cnx = Cnx();
@@ -2130,7 +2133,7 @@ namespace SharpPulsar
 				}
 
 				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				var seek = Commands.NewSeek(ConsumerId, requestId, timestamp);
+				var seek = Commands.NewSeek(_consumerId, requestId, timestamp);
 				var cnx = Cnx();
 
 				_log.Info($"[{Topic}][{Subscription}] Seek subscription to publish time {timestamp}");
@@ -2263,7 +2266,7 @@ namespace SharpPulsar
 				}
 
 				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				var getLastIdCmd = Commands.NewGetLastMessageId(ConsumerId, requestId);
+				var getLastIdCmd = Commands.NewGetLastMessageId(_consumerId, requestId);
 				_log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
 				var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
                 try
@@ -2444,7 +2447,7 @@ namespace SharpPulsar
 				if(value != null)
 				{
 					_connectionHandler.Tell(new SetCnx(value));
-					value.Tell(new RegisterConsumer(ConsumerId, Self));
+					value.Tell(new RegisterConsumer(_consumerId, Self));
 				}
 				var previousClientCnx = _clientCnxUsedForConsumerRegistration;
 				_clientCnxUsedForConsumerRegistration = value;
@@ -2636,7 +2639,6 @@ namespace SharpPulsar
 				Sender.Tell(new ReceivedMessage<T>(obj));
 			else
 				IncomingMessages.Add(obj);
-			Console.WriteLine($"Received Message: {((Message<T>)obj).SequenceId}");
 		}
 		private void Push<T1>(BlockingCollection<T1> queue, T1 obj)
         {
@@ -2667,14 +2669,14 @@ namespace SharpPulsar
 					bitSet.Set(0, batchMessageId.BatchSize);
 					bitSet.Clear(batchMessageId.BatchIndex);
 				}
-				cmd = Commands.NewAck(ConsumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else
 			{
 				var singleMessage = (MessageId) messageId;
 				ledgerId = singleMessage.LedgerId;
 				entryId = singleMessage.EntryId;
-				cmd = Commands.NewAck(ConsumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
 			}
 
 			//OpForAckCallBack op = OpForAckCallBack.Create(cmd, callBack, messageId, new TxnID(txnID.MostSigBits, txnID.LeastSigBits));

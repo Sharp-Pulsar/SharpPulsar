@@ -91,14 +91,27 @@ namespace SharpPulsar
 			{
 				var task = new TaskCompletionSource<GetBrokerResponse>();
 				var pool = _connectionPool;
-                var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
+				var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(address)).ClientCnx;
 				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetBroker(b.TopicName, requestid, connection, task);
 				var result = Task.Run(()=> task.Task);
 				if (result.IsFaulted)
 					Sender.Tell(new ClientExceptions((PulsarClientException)result.Exception.InnerException));
 				else
-					Sender.Tell(result.Result);
+                {
+					var response = result.Result;
+					if (!response.LogicalAddress.Equals(response.PhysicalAddress))
+					{
+						var socketAdd = response.LogicalAddress;
+						//We need to update so to avoid using staled connection
+						if (_useTls)
+							UpdateServiceUrl($"pulsar+ssl://{socketAdd.Host}:{socketAdd.Port}");
+						else
+							UpdateServiceUrl($"pulsar://{socketAdd.Host}:{socketAdd.Port}");
+					}						
+					Sender.Tell(response);
+				}					
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{

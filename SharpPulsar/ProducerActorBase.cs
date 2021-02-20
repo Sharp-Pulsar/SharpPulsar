@@ -51,7 +51,7 @@ namespace SharpPulsar
 		private string _topic;
 
 		public ProducerActorBase(IActorRef client, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
-		{
+		{			
 			ClientConfiguration = configurationData;
 			ProducerQueue = queue;
 			Client = client;

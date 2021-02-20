@@ -119,8 +119,9 @@ namespace SharpPulsar
 			int completed = 0;
 			for(int partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
+				var producerId = _generator.AskFor<long>(NewProducerId.Instance);
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = Context.ActorOf(ProducerActor<T>.Prop(Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
+				var producer = Context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
 				_producers.Add(producer);
 				var routee = Routee.FromActorRef(producer);
 				_router.Tell(new AddRoutee(routee));
@@ -273,8 +274,9 @@ namespace SharpPulsar
 				var newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
 				foreach (var partitionName in newPartitions)
 				{
+					var producerId = _generator.AskFor<long>(NewProducerId.Instance);
 					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					var producer = _context.ActorOf(ProducerActor<T>.Prop(Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
+					var producer = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
 					_producers.Add(producer);
 					var routee = Routee.FromActorRef(producer);
 					_router.Tell(new AddRoutee(routee));

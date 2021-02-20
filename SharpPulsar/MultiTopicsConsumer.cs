@@ -1086,10 +1086,11 @@ namespace SharpPulsar
 				int receiverQueueSize = Math.Min(Conf.ReceiverQueueSize, Conf.MaxTotalReceiverQueueSizeAcrossPartitions / numPartitions);
 				ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
 				configurationData.ReceiverQueueSize = receiverQueueSize;
-				Enumerable.Range(0, numPartitions).ForEach(partitionIndex=> {
-
+				Enumerable.Range(0, numPartitions).ForEach(partitionIndex=> 
+				{
+					var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
 					string partitionName = TopicName.Get(topicName).GetPartition(partitionIndex).ToString();
-					var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(_client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, _startMessageId, schema, Interceptors, createIfDoesNotExist, _startMessageRollbackDurationInSec, _clientConfiguration, ConsumerQueue));
+					var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, _startMessageId, schema, Interceptors, createIfDoesNotExist, _startMessageRollbackDurationInSec, _clientConfiguration, ConsumerQueue));
 					_consumers.Add(Topic, (partitionName, newConsumer));
 				});
 			}
@@ -1103,7 +1104,8 @@ namespace SharpPulsar
 				}
 				TopicsMap.Add(topicName, 1);
 				++AllTopicPartitionsNumber;
-				var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(_client, _lookup, _cnxPool, _generator, topicName, _internalConfig, Context.System.Scheduler.Advanced, -1, true, null, schema, Interceptors, createIfDoesNotExist, _clientConfiguration, ConsumerQueue));
+				var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
+				var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, topicName, _internalConfig, Context.System.Scheduler.Advanced, -1, true, null, schema, Interceptors, createIfDoesNotExist, _clientConfiguration, ConsumerQueue));
 				_consumers.Add(Topic, (topicName, newConsumer));
 			}
 
@@ -1330,9 +1332,10 @@ namespace SharpPulsar
 					IList<string> newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
 					foreach (var partitionName in newPartitions)
                     {
+						var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
 						int partitionIndex = TopicName.GetPartitionIndex(partitionName);
 						ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
-						var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(_client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue));
+						var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue));
 						if (_paused)
 						{
 							newConsumer.Tell(Messages.Consumer.Pause.Instance);

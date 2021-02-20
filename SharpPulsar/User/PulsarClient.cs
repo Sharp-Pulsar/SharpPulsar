@@ -13,6 +13,7 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Model;
 using SharpPulsar.Precondition;
@@ -120,7 +121,7 @@ namespace SharpPulsar.User
         }
 
         public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> confBuilder)
-        {            
+        {
             var conf = confBuilder.ConsumerConfigurationData;
             // DLQ only supports non-ordered subscriptions, don't enable DLQ on Key_Shared subType since it require message ordering for given key.
             if (conf.SubscriptionType == SubType.KeyShared && !string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.DeadLetterTopic))
@@ -260,8 +261,9 @@ namespace SharpPulsar.User
                 }
                 else
                 {
+                    var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
                     int partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.NewConsumer(_client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
+                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(consumer));
                 var c = queue.ConsumerCreation.Take();
@@ -370,7 +372,7 @@ namespace SharpPulsar.User
                 }
                 Task.Run(async () =>
                 {
-                    _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
+                    _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
                     remainingTime -= nextDelay;
                     await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
                     GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
@@ -479,7 +481,8 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    reader = _actorSystem.ActorOf(ReaderActor<T>.Prop(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
+                    var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
+                    reader = _actorSystem.ActorOf(ReaderActor<T>.Prop(consumerId, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(reader));
 
@@ -579,9 +582,9 @@ namespace SharpPulsar.User
         }
 
         private Producer<T> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
-        {
-            var queue = new ProducerQueueCollection<T>();
+        {            
             var metadata = GetPartitionedTopicMetadata(topic);
+            var queue = new ProducerQueueCollection<T>();
             if (_actorSystem.Log.IsDebugEnabled)
             {
                 _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
@@ -593,7 +596,8 @@ namespace SharpPulsar.User
             }
             else
             {
-                producer = _actorSystem.ActorOf(ProducerActor<T>.Prop(_client, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue));
+                var producerId = _generator.AskFor<long>(NewProducerId.Instance);
+                producer = _actorSystem.ActorOf(ProducerActor<T>.Prop(producerId, _client, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue));
             }
             _client.Tell(new AddProducer(producer));
             //Improve with trytake for partitioned topic too

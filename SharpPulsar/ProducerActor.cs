@@ -63,7 +63,7 @@ namespace SharpPulsar
 	{
 
 		// Producer id, used to identify a producer within a single connection
-		protected internal readonly long ProducerId;
+		private readonly long _producerId;
 
 		// Variable is used through the atomic updater
 		private long _msgIdGenerator;
@@ -109,13 +109,13 @@ namespace SharpPulsar
 
 		private readonly IScheduler _scheduler;
 
-		public ProducerActor(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
+		public ProducerActor(long producerid, IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
 			_self = Self;
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
 			_log = Context.GetLogger();
-			ProducerId = _generator.AskFor<long>(NewProducerId.Instance);
+			_producerId = producerid;
 			_producerName = conf.ProducerName;
 			if(!string.IsNullOrWhiteSpace(_producerName))
 			{
@@ -142,7 +142,7 @@ namespace SharpPulsar
 
 			if(conf.EncryptionEnabled)
 			{
-				string logCtx = "[" + topic + "] [" + _producerName + "] [" + ProducerId + "]";
+				string logCtx = "[" + topic + "] [" + _producerName + "] [" + _producerId + "]";
 
 				if(conf.MessageCrypto != null)
 				{
@@ -180,7 +180,7 @@ namespace SharpPulsar
 					}
 					catch (CryptoException e)
 					{
-						Context.System.Log.Warning($"[{Topic}] [{ProducerName}] [{ProducerId}] Failed to add public key cipher.");
+						Context.System.Log.Warning($"[{Topic}] [{ProducerName}] [{_producerId}] Failed to add public key cipher.");
 						Context.System.Log.Error(e.ToString());
 					}
 				});
@@ -227,9 +227,9 @@ namespace SharpPulsar
 
 			GrabCnx();
 		}
-		public static Props Prop(IActorRef client, IActorRef idgenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
+		public static Props Prop(long producerid, IActorRef client, IActorRef idgenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
         {
-			return Props.Create(() => new ProducerActor<T>(client, idgenerator, topic, conf, partitionIndex, schema, interceptors, clientConfiguration, queue));
+			return Props.Create(() => new ProducerActor<T>(producerid, client, idgenerator, topic, conf, partitionIndex, schema, interceptors, clientConfiguration, queue));
         }
 		internal virtual void GrabCnx()
 		{
@@ -265,6 +265,9 @@ namespace SharpPulsar
 			});
 			Receive<BatchTask>(_ => {
 				RunBatchTask();
+			});
+			Receive<ConnectionClosed>(m => {
+				ConnectionClosed(m.ClientCnx);
 			});
 			Receive<GetProducerName>(_ => Sender.Tell(_producerName));
 			Receive<GetLastSequenceId>(_ => Sender.Tell(_lastSequenceIdPublished));
@@ -317,7 +320,7 @@ namespace SharpPulsar
 				_batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System);
 			}
 
-			cnx.Tell(new RegisterProducer(ProducerId, _self)); 
+			cnx.Tell(new RegisterProducer(_producerId, _self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
 
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
@@ -360,7 +363,7 @@ namespace SharpPulsar
 			try
             {
 				var epoch = _connectionHandler.AskFor<long>(GetEpoch.Instance);
-				var cmd = Commands.NewProducer(Topic, ProducerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
+				var cmd = Commands.NewProducer(Topic, _producerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
 				var payload = new Payload(cmd, requestId, "NewProducer");
 
 				var response = cnx.AskFor<ProducerResponse>(payload);
@@ -374,7 +377,7 @@ namespace SharpPulsar
 					SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
-					cnx.Tell(new RemoveProducer(ProducerId));
+					cnx.Tell(new RemoveProducer(_producerId));
 					cnx.GracefulStop(TimeSpan.FromSeconds(5));
 					return;
 				}
@@ -403,7 +406,7 @@ namespace SharpPulsar
 			}
 			catch(Exception ex)
             {
-				cnx.Tell(new RemoveProducer(ProducerId));
+				cnx.Tell(new RemoveProducer(_producerId));
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
 					cnx.GracefulStop(TimeSpan.FromSeconds(5));
@@ -461,11 +464,11 @@ namespace SharpPulsar
 		{
 			if (nonRetriableError)
 			{
-				_log.Info($"[{Topic}] Producer creation failed for producer {ProducerId} with unretriableError = {exception}");
+				_log.Info($"[{Topic}] Producer creation failed for producer {_producerId} with unretriableError = {exception}");
 			}
 			else
 			{
-				_log.Info($"[{Topic}] Producer creation failed for producer {ProducerId} after producerTimeout");
+				_log.Info($"[{Topic}] Producer creation failed for producer {_producerId} after producerTimeout");
 			}
 			State.ConnectionState = HandlerState.State.Failed;
 			Client.Tell(new CleanupProducer(Self));
@@ -478,11 +481,12 @@ namespace SharpPulsar
 		}
 		private void RunBatchTask()
         {
-			_log.Info($"[{Topic}] [{_producerName}] Batching the messages from the batch container from timer thread");
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
 				return;
 			}
+			_log.Info($"[{Topic}] [{_producerName}] Batching the messages from the batch container from timer thread");
+
 			var sent = BatchMessageAndSend();
 			ProducerQueue.SentMessage.Add(sent);
 		}
@@ -731,13 +735,13 @@ namespace SharpPulsar
 				OpSendMsg<T> op;
 				if(msg.GetSchemaState() == Message<T>.SchemaState.Ready)
 				{
-					var cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+					var cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
 					op = OpSendMsg<T>.Create(msg, cmd, sequenceId);
 				}
 				else
 				{
 					op = OpSendMsg<T>.Create(msg, null, sequenceId);
-					op.Cmd = SendMessage(ProducerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+					op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
 				}
 				op.NumMessagesInBatch = numMessages;
 				op.BatchSizeByte = encryptedPayload.Length;
@@ -1004,7 +1008,7 @@ namespace SharpPulsar
 			}
 
 			var requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-			var cmd = Commands.NewCloseProducer(ProducerId, requestId);
+			var cmd = Commands.NewCloseProducer(_producerId, requestId);
 			var response = cnx.AskFor(new SendRequestWithId(cmd, requestId));
 			if (!(response is Exception))
 			{

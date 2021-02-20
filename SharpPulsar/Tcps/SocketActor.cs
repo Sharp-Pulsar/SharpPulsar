@@ -41,14 +41,17 @@ namespace SharpPulsar.Tcps
                 // Register self as connection handler
                 Sender.Tell(new Tcp.Register(Self));
                 Context.Parent.Tell(connected);
-                Become(Connected(Sender));
                 Stash.UnstashAll();
+                Become(Connected(Sender));
             }
             else if (message is Tcp.CommandFailed)
             {
                 Console.WriteLine("Connection failed");
             }
-            else Stash.Stash();
+            else
+            {
+                Stash.Stash();
+            }
         }
 
         private UntypedReceive Connected(IActorRef connection)

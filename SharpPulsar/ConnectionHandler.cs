@@ -143,7 +143,6 @@ namespace SharpPulsar
 		private void ConnectionClosed(IActorRef cnx)
 		{
 			LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
-			_state.Client.AskFor(new ReleaseConnectionPool(cnx));
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
 			{
