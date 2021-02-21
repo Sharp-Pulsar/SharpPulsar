@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-namespace SharpPulsar.Akka.Admin.Api.Models
+namespace SharpPulsar.Admin.Api.Models
 {
 	/// <summary>
 	/// Subscription authorization for Pulsar policies.

@@ -4,7 +4,7 @@
 // regenerated.
 // </auto-generated>
 
-using SharpPulsar.Akka.Admin.Api.Models;
+using SharpPulsar.Admin.Api.Models;
 
 namespace PulsarAdmin.Models
 {

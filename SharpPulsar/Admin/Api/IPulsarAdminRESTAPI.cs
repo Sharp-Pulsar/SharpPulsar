@@ -4,13 +4,14 @@
 // regenerated.
 // </auto-generated>
 
-using SharpPulsar.Akka.Admin.Api.Models;
+using SharpPulsar.Admin.Api.Models;
 
 namespace PulsarAdmin
 {
     using Microsoft.Rest;
     using Models;
     using Newtonsoft.Json;
+    using SharpPulsar.Admin.Api.Models;
     using System.Collections;
     using System.Collections.Generic;
     using System.Threading;

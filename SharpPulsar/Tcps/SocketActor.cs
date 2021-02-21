@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.IO;
 using SharpPulsar.Configuration;
+using SharpPulsar.PulsarSocket;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace SharpPulsar.Tcps
         {
             _clientConfiguration = conf;
             _targetServerName = hostName;
-            Context.System.Tcp().Tell(new Tcp.Connect(server));
+            Context.System.TcpPulsar().Tell(new PulsarTcp.Connect(server));
         }
 
         public IStash Stash { get; set; }
@@ -33,18 +34,18 @@ namespace SharpPulsar.Tcps
         }
         protected override void OnReceive(object message)
         {
-            if (message is Tcp.Connected)
+            if (message is PulsarTcp.Connected)
             {
-                var connected = message as Tcp.Connected;
+                var connected = message as PulsarTcp.Connected;
                 Console.WriteLine("Connected to {0}", connected.RemoteAddress);
 
                 // Register self as connection handler
-                Sender.Tell(new Tcp.Register(Self));
+                Sender.Tell(new PulsarTcp.Register(Self));
                 Context.Parent.Tell(connected);
                 Stash.UnstashAll();
                 Become(Connected(Sender));
             }
-            else if (message is Tcp.CommandFailed)
+            else if (message is PulsarTcp.CommandFailed)
             {
                 Console.WriteLine("Connection failed");
             }
@@ -58,17 +59,17 @@ namespace SharpPulsar.Tcps
         {
             return message =>
             {
-                if (message is Tcp.Received)  // data received from network
+                if (message is PulsarTcp.Received)  // data received from network
                 {
-                    var received = message as Tcp.Received;
+                    var received = message as PulsarTcp.Received;
                     var data = new ReadOnlySequence<byte>(received.Data.ToArray());
                     Context.Parent.Tell(new SocketPayload(data));
                 }
                 else if (message is SocketPayload p)   // data received from console
                 {
-                    connection.Tell(Tcp.Write.Create(ByteString.CopyFrom(p.Payload.ToArray())));
+                    connection.Tell(PulsarTcp.Write.Create(PulsarByteString.CopyFrom(p.Payload.ToArray())));
                 }
-                else if (message is Tcp.PeerClosed)
+                else if (message is PulsarTcp.PeerClosed)
                 {
                     Console.WriteLine("Connection closed");
                 }

@@ -28,8 +28,8 @@ using System.IO;
 using SharpPulsar.Common;
 using ProtoBuf;
 using SharpPulsar.Tcps;
-using Akka.IO;
 using System.Linq;
+using SharpPulsar.PulsarSocket;
 
 namespace SharpPulsar
 {
@@ -145,7 +145,7 @@ namespace SharpPulsar
 
 				RemoveProducer(m.ProducerId);
 			});
-			Receive<Tcp.Connected>(m => {
+			Receive<PulsarTcp.Connected>(m => {
 				OnConnected();
 			});
 			Receive<MaxMessageSize>(_ => {

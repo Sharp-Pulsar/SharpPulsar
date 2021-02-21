@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using SharpPulsar.Akka;
 using SharpPulsar.Messages;
 using SharpPulsar.Batch;
 using SharpPulsar.Extension;
