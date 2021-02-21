@@ -47,6 +47,8 @@ namespace SharpPulsar.Tcps
             }
             else if (message is PulsarTcp.CommandFailed)
             {
+                var failed = message as PulsarTcp.CommandFailed;
+                Context.Parent.Tell(failed);
                 Console.WriteLine("Connection failed");
             }
             else

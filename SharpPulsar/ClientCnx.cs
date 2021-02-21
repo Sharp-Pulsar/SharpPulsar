@@ -33,9 +33,9 @@ using SharpPulsar.PulsarSocket;
 
 namespace SharpPulsar
 {
-    public sealed class ClientCnx: ReceiveActor
-    {
-        private readonly IActorRef _socketClient;
+	public sealed class ClientCnx : ReceiveActor
+	{
+		private readonly IActorRef _socketClient;
 		private readonly IAuthentication _authentication;
 		private State _state;
 		private readonly IActorRef _self;
@@ -45,7 +45,7 @@ namespace SharpPulsar
 		private readonly LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>> _waitingLookupRequests;
 
 		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
-		
+
 		private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
 		private readonly Dictionary<long, IActorRef> _transactionMetaStoreHandlers = new Dictionary<long, IActorRef>();
 
@@ -100,10 +100,10 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
-			Receive<Payload>(p => 
-			{ 
-				switch(p.Command)
-                {
+			Receive<Payload>(p =>
+			{
+				switch (p.Command)
+				{
 					case "NewLookup":
 						NewLookup(p.Bytes, p.RequestId);
 						break;
@@ -148,12 +148,18 @@ namespace SharpPulsar
 			Receive<PulsarTcp.Connected>(m => {
 				OnConnected();
 			});
+			Receive<PulsarTcp.CommandFailed>(m => {
+				Context.Parent.Tell(new ConnectionFailed(new PulsarClientException(m.Cmd.FailureMessage.ToString())));
+			});
 			Receive<MaxMessageSize>(_ => {
 
 				Sender.Tell(_maxMessageSize);
 			});
 			Receive<RemoveConsumer>(m => {
 				RemoveConsumer(m.ConsumerId);
+			});
+			Receive<RequestTimeout>(m => {
+				CheckRequestTimeout();
 			});
 			Receive<RegisterTransactionMetaStoreHandler>(h => {
 				RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
@@ -166,16 +172,16 @@ namespace SharpPulsar
 			});
 		}
 		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
-        {
-			return Props.Create(()=> new ClientCnx(conf, endPoint, targetBroker));
-        }
+		{
+			return Props.Create(() => new ClientCnx(conf, endPoint, targetBroker));
+		}
 		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
-        {
-			return Props.Create(()=> new ClientCnx(conf, endPoint, protocolVersion, targetBroker));
-        }
+		{
+			return Props.Create(() => new ClientCnx(conf, endPoint, protocolVersion, targetBroker));
+		}
 		private void OnConnected()
 		{
-			_timeoutTask = _actorContext.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(_operationTimeoutMs)), CheckRequestTimeout);
+			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
 			if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
 			{
@@ -231,10 +237,10 @@ namespace SharpPulsar
 
 		}
 		protected override void PostStop()
-        {
+		{
 			_timeoutTask?.Cancel();
-            base.PostStop();
-        }
+			base.PostStop();
+		}
 		private void HandleConnected(CommandConnected connected)
 		{
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Connecting);
@@ -253,6 +259,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
+			Context.Parent.Tell(new ConnectionOpened(Self));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
@@ -307,7 +314,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
 			}
-			if(_producers.TryGetValue(producerId, out var producer))
+			if (_producers.TryGetValue(producerId, out var producer))
 				producer.Tell(new AckReceived(_self, sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
@@ -317,16 +324,16 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received a message from the server: {msg}");
 			}
-            MessageIdData id = new MessageIdData
-            {
-                AckSets = msg.AckSets,
-                ledgerId = msg.MessageId.ledgerId,
-                entryId = msg.MessageId.entryId,
-                Partition = msg.MessageId.Partition,
-                BatchSize = msg.MessageId.BatchSize,
-                BatchIndex = msg.MessageId.BatchIndex
-            };
-            var message = new MessageReceived(metadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
+			MessageIdData id = new MessageIdData
+			{
+				AckSets = msg.AckSets,
+				ledgerId = msg.MessageId.ledgerId,
+				entryId = msg.MessageId.entryId,
+				Partition = msg.MessageId.Partition,
+				BatchSize = msg.MessageId.BatchSize,
+				BatchIndex = msg.MessageId.BatchIndex
+			};
+			var message = new MessageReceived(metadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
@@ -356,8 +363,8 @@ namespace SharpPulsar
 				_log.Debug($"Received success response from server: {success.RequestId}");
 			}
 			long requestId = (long)success.RequestId;
-			if(_pendingRequests.TryGetValue(requestId, out var req))
-            {
+			if (_pendingRequests.TryGetValue(requestId, out var req))
+			{
 				_pendingRequests.Remove(requestId);
 				req.Requester.Tell(new CommandSuccessResponse(success));
 			}
@@ -547,7 +554,7 @@ namespace SharpPulsar
 
 			_log.Warning($"Received error from server: {error.Message}");
 			long requestId = (long)error.RequestId;
-					
+
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
 				if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
@@ -555,7 +562,7 @@ namespace SharpPulsar
 					_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
 					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
 				}
-				else if(error.Error == ServerError.AuthenticationError)
+				else if (error.Error == ServerError.AuthenticationError)
 				{
 					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException(error.Message)));
 					_log.Error("Failed to authenticate the client");
@@ -586,7 +593,7 @@ namespace SharpPulsar
 		private void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
 		{
 			_log.Info($"[{_remoteHostName}] Broker notification of Closed consumer: {closeConsumer.ConsumerId}");
-			
+
 			long consumerId = (long)closeConsumer.ConsumerId;
 			if (_consumers.TryGetValue(consumerId, out var consumer))
 			{
@@ -614,8 +621,7 @@ namespace SharpPulsar
 
 		private void NewGetTopicsOfNamespace(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
 		}
 
 		private void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
@@ -645,7 +651,7 @@ namespace SharpPulsar
 			long requestId = (long)commandGetSchemaResponse.RequestId;
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
-			{				
+			{
 				requester.Requester.Tell(new GetSchemaResponse(commandGetSchemaResponse));
 			}
 			else
@@ -666,10 +672,9 @@ namespace SharpPulsar
 
 		private void SendRequestWithId(byte[] cmd, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
 		}
-		
+
 		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
 		{
 			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
@@ -686,28 +691,25 @@ namespace SharpPulsar
 		}
 		private void SendRequest(byte[] requestMessage, long requestId)
 		{
-			if(requestId >= 0)
-			  _pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+			if (requestId >= 0)
+				_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
 
 			_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(requestMessage)));
 		}
 
 		private void SendGetLastMessageId(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
 		}
 
 		private void SendGetRawSchema(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
 		}
 
 		private void SendGetOrCreateSchema(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
 		}
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse command)
@@ -787,12 +789,12 @@ namespace SharpPulsar
 			}
 		}
 		private void ReceivedFromSocket(ReadOnlySequence<byte> readResult)
-        {
+		{
 			var buffer = readResult;
 			var length = (int)buffer.Length;
 			var isFresh = buffer.IsNewCommand();
-			if(_pendingReceive.Count > 0 && !isFresh)
-            {
+			if (_pendingReceive.Count > 0 && !isFresh)
+			{
 				_pendingReceive.AddRange(buffer.ToArray());
 				buffer = new ReadOnlySequence<byte>(_pendingReceive.ToArray());
 				length = (int)buffer.Length;
@@ -832,10 +834,10 @@ namespace SharpPulsar
 							OnCommandReceived(command, null, null, false, 0);
 						}
 					}
-                    else
+					else
 					{
 						_pendingReceive.AddRange(buffer.ToArray());
-                    }
+					}
 				}
 				finally
 				{
@@ -844,7 +846,7 @@ namespace SharpPulsar
 			}
 		}
 		private void OnCommandReceived(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)
-        {
+		{
 			var cmd = command;
 			switch (cmd.type)
 			{
@@ -1003,7 +1005,7 @@ namespace SharpPulsar
 					_log.Warning(timeoutMessage);
 				}
 			}
-			_timeoutTask = _actorContext.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(_operationTimeoutMs)), CheckRequestTimeout);
+			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
 		}
 		public byte[] NewConnectCommand()
@@ -1129,5 +1131,10 @@ namespace SharpPulsar
 		#endregion
 
 
+	}
+
+	internal sealed class RequestTimeout
+	{
+		public static RequestTimeout Instance = new RequestTimeout();
 	}
 }

@@ -81,7 +81,7 @@ namespace SharpPulsar
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			_blockIfReachMaxPendingOps = true;
 			_requestTimeout = _scheduler.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(conf.OperationTimeoutMs)), RunRequestTime);
-			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
+			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, _state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
 			_connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
 			Receive<NewTxn>(t => 
 			{

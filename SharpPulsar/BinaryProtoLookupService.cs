@@ -101,15 +101,6 @@ namespace SharpPulsar
 				else
                 {
 					var response = result.Result;
-					if (!response.LogicalAddress.Equals(response.PhysicalAddress))
-					{
-						var socketAdd = response.LogicalAddress;
-						//We need to update so to avoid using staled connection
-						if (_useTls)
-							UpdateServiceUrl($"pulsar+ssl://{socketAdd.Host}:{socketAdd.Port}");
-						else
-							UpdateServiceUrl($"pulsar://{socketAdd.Host}:{socketAdd.Port}");
-					}						
 					Sender.Tell(response);
 				}					
 			});

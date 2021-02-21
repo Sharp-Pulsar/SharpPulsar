@@ -90,8 +90,8 @@ namespace SharpPulsar
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
-			Receive<GetConnection>(m => {
-				var cnx = GetConnection(m.Topic);
+			Receive<GetBroker>(m => {
+				var cnx = GetBroker(m.TopicName);
 				Sender.Tell(cnx);
 			});
 			Receive<GetSchema>(s => {
@@ -161,12 +161,11 @@ namespace SharpPulsar
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 
-		private GetConnectionResponse GetConnection(string topic)
+		private GetBrokerResponse GetBroker(TopicName topic)
 		{
-			TopicName topicName = TopicName.Get(topic);
-			var broker = _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
-			var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
-			return connection;
+			return _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
+			//var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+			//return connection;
 		}
 
 
