@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -53,7 +54,7 @@ namespace SharpPulsar.Interfaces
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		SentMessage<T> Send(T message);
+		AckReceived Send(T message);
 
 		
 		/// <summary>

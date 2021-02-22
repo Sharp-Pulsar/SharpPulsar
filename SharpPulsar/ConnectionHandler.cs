@@ -77,6 +77,9 @@ namespace SharpPulsar
 			});
 			Receive<ConnectionClosed>(c =>
 			{
+				var children = Context.GetChildren();
+				foreach (var child in children)
+					child.GracefulStop(TimeSpan.FromMilliseconds(100));
 				ConnectionClosed(c.ClientCnx);
 			});
 		}
@@ -142,6 +145,10 @@ namespace SharpPulsar
 
 		private void ReconnectLater(Exception exception)
 		{
+			var children = Context.GetChildren();
+			foreach (var child in children)
+				child.GracefulStop(TimeSpan.FromMilliseconds(100));
+
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
 			{

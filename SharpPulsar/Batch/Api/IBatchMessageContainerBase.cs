@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using Akka.Actor;
-using SharpPulsar.Interfaces;
+using SharpPulsar.Batch;
+using SharpPulsar.Batch.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,64 +23,64 @@ using SharpPulsar.Interfaces;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Batch.Api
+namespace SharpPulsar
 {
 
-    public interface IBatchMessageContainerBase<T> : IBatchMessageContainer
-	{
+    interface IBatchMessageContainerBase<T> : IBatchMessageContainer
+    {
 
-		/// <summary>
-		/// Add message to the batch message container.
-		/// </summary>
-		/// <param name="msg"> message will add to the batch message container </param>
-		/// <param name="callback"> message send callback </param>
-		/// <returns> true if the batch is full, otherwise false </returns>
-		bool Add(Message<T> msg, Action<object, Exception> callback);
+        /// <summary>
+        /// Add message to the batch message container.
+        /// </summary>
+        /// <param name="msg"> message will add to the batch message container </param>
+        /// <param name="callback"> message send callback </param>
+        /// <returns> true if the batch is full, otherwise false </returns>
+        bool Add(Message<T> msg, Action<object, Exception> callback);
 
-		/// <summary>
-		/// Check the batch message container have enough space for the message want to add.
-		/// </summary>
-		/// <param name="msg"> the message want to add </param>
-		/// <returns> return true if the container have enough space for the specific message,
-		///         otherwise return false. </returns>
-		bool HaveEnoughSpace(Message<T> msg);
+        /// <summary>
+        /// Check the batch message container have enough space for the message want to add.
+        /// </summary>
+        /// <param name="msg"> the message want to add </param>
+        /// <returns> return true if the container have enough space for the specific message,
+        ///         otherwise return false. </returns>
+        bool HaveEnoughSpace(Message<T> msg);
 
-		/// <summary>
-		/// Check the batch message container has same schema with the message want to add.
-		/// </summary>
-		/// <param name="msg"> the message want to add </param>
-		/// <returns> return true if the container has same schema with the specific message,
-		///         otherwise return false. </returns>
-		bool HasSameSchema(Message<T> msg);
+        /// <summary>
+        /// Check the batch message container has same schema with the message want to add.
+        /// </summary>
+        /// <param name="msg"> the message want to add </param>
+        /// <returns> return true if the container has same schema with the specific message,
+        ///         otherwise return false. </returns>
+        bool HasSameSchema(Message<T> msg);
 
-		/// <summary>
-		/// Set producer of the message batch container.
-		/// </summary>
-		/// <param name="producer"> producer </param>
-		IActorRef Producer {set;}
+        /// <summary>
+        /// Set producer of the message batch container.
+        /// </summary>
+        /// <param name="producer"> producer </param>
+        IActorRef Producer { set; }
 
-		ProducerContainer Container { get; set; }
+        ProducerContainer Container { get; set; }
 
-		/// <summary>
-		/// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.
-		/// </summary>
-		/// <returns> list of OpSendMsg </returns>
-		/// <exception cref="IOException"> </exception>
-		IList<OpSendMsg<T>> CreateOpSendMsgs();
+        /// <summary>
+        /// Create list of OpSendMsg, producer use OpSendMsg to send to the broker.
+        /// </summary>
+        /// <returns> list of OpSendMsg </returns>
+        /// <exception cref="IOException"> </exception>
+        IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs();
 
-		/// <summary>
-		/// Create OpSendMsg, producer use OpSendMsg to send to the broker.
-		/// </summary>
-		/// <returns> OpSendMsg </returns>
-		/// <exception cref="IOException"> </exception>
-		OpSendMsg<T> CreateOpSendMsg();
+        /// <summary>
+        /// Create OpSendMsg, producer use OpSendMsg to send to the broker.
+        /// </summary>
+        /// <returns> OpSendMsg </returns>
+        /// <exception cref="IOException"> </exception>
+        ProducerActor<T>.OpSendMsg<T> CreateOpSendMsg();
 
-		/// <summary>
-		/// Check whether the added message belong to the same txn with batch message container.
-		/// </summary>
-		/// <param name="msg"> added message </param>
-		/// <returns> belong to the same txn or not </returns>
-		bool HasSameTxn(Message<T> msg);
-	}
+        /// <summary>
+        /// Check whether the added message belong to the same txn with batch message container.
+        /// </summary>
+        /// <param name="msg"> added message </param>
+        /// <returns> belong to the same txn or not </returns>
+        bool HasSameTxn(Message<T> msg);
+    }
 
 }

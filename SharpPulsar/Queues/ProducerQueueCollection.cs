@@ -1,16 +1,17 @@
-﻿using SharpPulsar.Messages.Producer;
+﻿using SharpPulsar.Messages;
+using SharpPulsar.Messages.Producer;
 using System.Collections.Concurrent;
 
 namespace SharpPulsar.Queues
 {
     public class ProducerQueueCollection<T>
     {
-        public BlockingCollection<SentMessage<T>> SentMessage { get; }
+        public BlockingCollection<AckReceived> Receipt { get; }
         public BlockingCollection<ProducerCreation> Producer { get; }
         public BlockingCollection<ProducerCreation> PartitionedProducer { get; }
         public ProducerQueueCollection()
         {
-            SentMessage = new BlockingCollection<SentMessage<T>>();
+            Receipt = new BlockingCollection<AckReceived>();
             Producer = new BlockingCollection<ProducerCreation>();
             PartitionedProducer = new BlockingCollection<ProducerCreation>();
         }

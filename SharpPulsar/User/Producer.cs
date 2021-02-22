@@ -3,6 +3,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
@@ -71,14 +72,14 @@ namespace SharpPulsar.User
             return new TypedMessageBuilder<T>(_producerActor, _schema, txn);
         }
         internal IActorRef GetProducer => _producerActor;
-        public SentMessage<T> Send(T message)
+        public AckReceived Send(T message)
         {
             NewMessage().Value(message).Send();
-            return _queue.SentMessage.Take();
+            return _queue.Receipt.Take();
         }
-        public SentMessage<T> SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)
+        public AckReceived SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)
         {
-            if (_queue.SentMessage.TryTake(out var sent, timeoutMilliseconds, token))
+            if (_queue.Receipt.TryTake(out var sent, timeoutMilliseconds, token))
             {
                 return sent;
             }

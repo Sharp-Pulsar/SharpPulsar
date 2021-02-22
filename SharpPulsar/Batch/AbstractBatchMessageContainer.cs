@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
@@ -30,7 +28,7 @@ namespace SharpPulsar.Batch
     /// <summary>
 	/// Batch message container framework.
 	/// </summary>
-	public abstract class AbstractBatchMessageContainer<T> : IBatchMessageContainerBase<T>
+	internal abstract class AbstractBatchMessageContainer<T> : IBatchMessageContainerBase<T>
 	{
 		public abstract bool MultiBatches {get;}
 		public abstract void Discard(Exception ex);
@@ -86,12 +84,12 @@ namespace SharpPulsar.Batch
 
         public virtual string TopicName => _topicName;
 
-        public virtual IList<OpSendMsg<T>> CreateOpSendMsgs()
+        public virtual IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual OpSendMsg<T> CreateOpSendMsg()
+		public virtual ProducerActor<T>.OpSendMsg<T> CreateOpSendMsg()
 		{
 			throw new NotSupportedException();
 		}

@@ -1051,7 +1051,7 @@ namespace SharpPulsar.PulsarSocket
             BufferPool = CreateBufferPool(system, bufferPoolConfig);
             Manager = system.SystemActorOf(
                 props: Props.Create(() => new PulsarTcpManager(this)).WithDispatcher(Settings.ManagementDispatcher).WithDeploy(Deploy.Local),
-                name: "IO-TCP");
+                name: "PULSAR-TCP");
         }
 
         /// <summary>

@@ -1,17 +1,14 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Configuration;
-using SharpPulsar.Auth;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Model;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol;
-using SharpPulsar.SocketImpl;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Reflection;
-using BAMCIS.Util.Concurrent;
 using System.Collections.Concurrent;
 using SharpPulsar.Exceptions;
 using Akka.Util.Internal;
@@ -61,7 +58,6 @@ namespace SharpPulsar
 		private readonly long _operationTimeoutMs;
 
 		private readonly ILoggingAdapter _log;
-		private readonly IActorContext _actorContext;
 
 		private string _proxyToTargetBrokerAddress;
 		private readonly byte[] _pong = Commands.NewPong();
@@ -74,6 +70,8 @@ namespace SharpPulsar
 		private readonly TlsHostnameVerifier _hostnameVerifier;
 
 		private ICancelable _timeoutTask;
+
+		private ICancelable _sendPing;
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
@@ -89,7 +87,6 @@ namespace SharpPulsar
 			_self = Self;
 			_clientConfigurationData = conf;
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
-			_actorContext = Context;
 			_proxyToTargetBrokerAddress = targetBroker;
 			_socketClient = Context.ActorOf(SocketActor.Prop(conf, endPoint, endPoint.Host));
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
@@ -158,6 +155,9 @@ namespace SharpPulsar
 			Receive<RemoveConsumer>(m => {
 				RemoveConsumer(m.ConsumerId);
 			});
+			Receive<SendPing>(m => {
+				_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(_pong))); ;
+			});
 			Receive<RequestTimeout>(m => {
 				CheckRequestTimeout();
 			});
@@ -182,6 +182,8 @@ namespace SharpPulsar
 		private void OnConnected()
 		{
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
+
+			_sendPing = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
 			if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
 			{
@@ -236,9 +238,11 @@ namespace SharpPulsar
 			}
 
 		}
+
 		protected override void PostStop()
 		{
 			_timeoutTask?.Cancel();
+			_sendPing?.Cancel();
 			base.PostStop();
 		}
 		private void HandleConnected(CommandConnected connected)
@@ -269,7 +273,7 @@ namespace SharpPulsar
 			{
 				var assemblyName = Assembly.GetCallingAssembly().GetName();
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
-				var auth = new Protocol.Proto.AuthData { auth_data = (authData.Bytes.ToBytes()) };
+				var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
@@ -315,7 +319,7 @@ namespace SharpPulsar
 				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
 			}
 			if (_producers.TryGetValue(producerId, out var producer))
-				producer.Tell(new AckReceived(_self, sequenceId, highestSequenceId, ledgerId, entryId));
+				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
 		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)
@@ -1016,7 +1020,7 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(_authentication.AuthMethodName.ToLower() == "sts" ? null : new Auth.AuthData(Auth.AuthData.InitAuthData));
 			var assemblyName = Assembly.GetCallingAssembly().GetName();
-			var auth = new Protocol.Proto.AuthData { auth_data = (authData.Bytes.ToBytes()) };
+			var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
 			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
@@ -1136,5 +1140,9 @@ namespace SharpPulsar
 	internal sealed class RequestTimeout
 	{
 		public static RequestTimeout Instance = new RequestTimeout();
+	}
+	internal sealed class SendPing
+	{
+		public static SendPing Instance = new SendPing();
 	}
 }

@@ -41,18 +41,13 @@ namespace SharpPulsar.Test.Api
         private readonly PulsarSystem _system;
         private readonly PulsarClient _client;
         private readonly string _topic;
-        private readonly byte[] _byteKey;
 
         public ByteKeysTestBatchTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _output = output;
             _system = fixture.System;
             _client = _system.NewClient();
-            _topic = $"persistent://public/default/my-topic-Batch";
-
-            Random r = new Random(0);
-            _byteKey = new byte[1000];
-            r.NextBytes(_byteKey);
+            _topic = $"persistent://public/default/my-topic-Batch-{Guid.NewGuid()}";
         }
 
         [Fact]
@@ -86,7 +81,6 @@ namespace SharpPulsar.Test.Api
         {
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
 
-
             Random r = new Random(0);
             byte[] byteKey = new byte[1000];
             r.NextBytes(byteKey);
@@ -116,59 +110,90 @@ namespace SharpPulsar.Test.Api
             Assert.Equal("TestMessage", receivedMessage);
         }
         [Fact]
-		public void ProduceAndConsumeBatch()
+        public void ProduceAndConsumeBatch()
 		{
-            var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
-            producerBuilder.Topic(_topic);
-            producerBuilder.EnableBatching(true);
-            producerBuilder.BatchingMaxPublishDelay(60000, TimeUnit.MILLISECONDS);
-            producerBuilder.BatchingMaxMessages(5);
-            var producer = _client.NewProducer(producerBuilder);
 
-            for (var i = 0; i < 5; i++)
-            {
-                producer.NewMessage().KeyBytes(_byteKey.ToSBytes())
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(_byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}").ToSBytes())
-                .Send();
-            }
-            for (var i = 0; i < 6; i++)
-            {
-                var sent = producer.SendReceipt();
-                if (sent != null)
-                    if(sent.Errored)
-                        _output.WriteLine(sent.Exception.Message);
-                    else if(sent.Message != null)
-                        _output.WriteLine(sent.Message.Metadata.SequenceId.ToString());
-                    else
-                    {
-                        foreach(var msg in sent.Messages)
-                            _output.WriteLine(msg.Metadata.SequenceId.ToString());
-                    }
-            }
+            Random r = new Random(0);
+            var byteKey = new byte[1000];
+            r.NextBytes(byteKey);
+
             var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
             consumerBuilder.Topic(_topic);
             consumerBuilder.SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
             var consumer = _client.NewConsumer(consumerBuilder);
 
-            for (var i = 0; i < 5; i++)
-            {
-                try
-                {
-                    Console.WriteLine($"About to Receive message: [{i}]");
-                    var message = consumer.Receive();
-                    Assert.Equal(_byteKey, message.KeyBytes.ToBytes());
-                    Assert.True(message.HasBase64EncodedKey());
-                    var receivedMessage = Encoding.UTF8.GetString(message.Data.ToBytes());
-                    _output.WriteLine($"Received message: [{receivedMessage}]");
-                    Console.WriteLine($"Received message: [{receivedMessage}]");
-                    Assert.Equal($"TestMessage-{i}", receivedMessage);
-                }
-                catch
-                {
 
-                }
-            }
+            var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
+            producerBuilder.Topic(_topic);
+            producerBuilder.EnableBatching(true);
+            producerBuilder.BatchingMaxPublishDelay(5000);
+            producerBuilder.BatchingMaxMessages(5);
+            var producer = _client.NewProducer(producerBuilder);
+
+            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
+                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                .Value(Encoding.UTF8.GetBytes($"TestMessage-0").ToSBytes())
+                .Send();
+
+            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
+                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                .Value(Encoding.UTF8.GetBytes($"TestMessage-1").ToSBytes())
+                .Send();
+
+            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
+                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                .Value(Encoding.UTF8.GetBytes($"TestMessage-2").ToSBytes())
+                .Send();
+
+            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
+                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                .Value(Encoding.UTF8.GetBytes($"TestMessage-3").ToSBytes())
+                .Send();
+
+            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
+                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                .Value(Encoding.UTF8.GetBytes($"TestMessage-4").ToSBytes())
+                .Send();
+
+            var sent = producer.SendReceipt();
+            if (sent != null)
+                _output.WriteLine($"Highest Sequence Id => {sent.SequenceId}:{sent.HighestSequenceId}");
+
+
+            var message = consumer.Receive();
+            Assert.Equal(byteKey, message.KeyBytes.ToBytes());
+            Assert.True(message.HasBase64EncodedKey());
+            var receivedMessage = Encoding.UTF8.GetString(message.Data.ToBytes());
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal($"TestMessage-0", receivedMessage);
+
+            message = consumer.Receive();
+            Assert.Equal(byteKey, message.KeyBytes.ToBytes());
+            Assert.True(message.HasBase64EncodedKey());
+            receivedMessage = Encoding.UTF8.GetString(message.Data.ToBytes());
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal($"TestMessage-1", receivedMessage);
+
+            message = consumer.Receive();
+            Assert.Equal(byteKey, message.KeyBytes.ToBytes());
+            Assert.True(message.HasBase64EncodedKey());
+            receivedMessage = Encoding.UTF8.GetString(message.Data.ToBytes());
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal($"TestMessage-2", receivedMessage);
+
+            message = consumer.Receive();
+            Assert.Equal(byteKey, message.KeyBytes.ToBytes());
+            Assert.True(message.HasBase64EncodedKey());
+            receivedMessage = Encoding.UTF8.GetString(message.Data.ToBytes());
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal($"TestMessage-3", receivedMessage);
+
+            message = consumer.Receive();
+            Assert.Equal(byteKey, message.KeyBytes.ToBytes());
+            Assert.True(message.HasBase64EncodedKey());
+            receivedMessage = Encoding.UTF8.GetString(message.Data.ToBytes());
+            _output.WriteLine($"Received message: [{receivedMessage}]");
+            Assert.Equal($"TestMessage-4", receivedMessage);
         }
 
     }

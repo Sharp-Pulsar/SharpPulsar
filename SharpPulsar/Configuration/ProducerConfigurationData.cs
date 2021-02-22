@@ -110,11 +110,11 @@ namespace SharpPulsar.Configuration
 			}
 		}
 
-		public void SetBatchingMaxPublishDelayMicros(long batchDelay, TimeUnit timeUnit)
+		public void SetBatchingMaxPublishDelayMicros(long batchDelay)
 		{
-			long delayInMs = timeUnit.ToMilliseconds(batchDelay);
+			long delayInMs = batchDelay;
 			Condition.CheckArgument(delayInMs >= 1, "configured value for batch delay must be at least 1ms");
-			BatchingMaxPublishDelayMicros = timeUnit.ToMicroseconds(batchDelay);
+			BatchingMaxPublishDelayMicros = delayInMs;
 		}
 
 		public int BatchingPartitionSwitchFrequencyByPublishDelay

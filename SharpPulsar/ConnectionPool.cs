@@ -51,6 +51,10 @@ namespace SharpPulsar
 			{
 				CloseAllConnections();
 			});
+			Receive<ConnectionOpened>(_ =>
+			{
+				//CloseAllConnections();
+			});
 			Receive<ReleaseConnection>(c =>
 			{
 				ReleaseConnection(c.ClientCnx);

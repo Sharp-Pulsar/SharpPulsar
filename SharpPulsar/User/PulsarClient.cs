@@ -381,8 +381,7 @@ namespace SharpPulsar.User
         }
         public Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder)
         {
-            var conf = producerConfigBuilder.Build();
-            return CreateProducer(conf);
+            return NewProducer(ISchema<object>.Bytes, producerConfigBuilder);
         }
 
         public Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)

@@ -19,10 +19,14 @@ namespace SharpPulsar.Tcps
         private readonly bool _encrypt;
         private readonly string _serviceUrl;
         private string _targetServerName;
+        private readonly int _chunkSize = 512;
+        private readonly byte[] _buffer;
+        private int _bufferCount;
         public SocketActor(ClientConfigurationData conf, DnsEndPoint server, string hostName)
         {
             _clientConfiguration = conf;
             _targetServerName = hostName;
+            _buffer = new byte[_chunkSize];
             Context.System.TcpPulsar().Tell(new PulsarTcp.Connect(server));
         }
 
@@ -78,5 +82,23 @@ namespace SharpPulsar.Tcps
                 else Unhandled(message);
             };
         }
+        private void SendBuffer(IActorRef connection)
+        {
+            if (_bufferCount != 0)
+            {
+                connection.Tell(PulsarTcp.Write.Create(PulsarByteString.CopyFrom(_buffer.AsMemory(0, _bufferCount).ToArray())));
+                _bufferCount = 0;
+            }
+        }
+
+        private void Send(byte[] sequence, IActorRef connection)
+        {
+            SendBuffer(connection);
+            connection.Tell(PulsarTcp.Write.Create(PulsarByteString.CopyFrom(sequence)));
+        }
+        private void CopyToBuffer(ReadOnlySequence<byte> sequence) => sequence.CopyTo(_buffer.AsSpan());
+
+        private void CopyToBuffer(ReadOnlyMemory<byte> memory) => memory.CopyTo(_buffer.AsMemory(_bufferCount));
+
     }
 }

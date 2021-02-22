@@ -150,12 +150,12 @@ namespace SharpPulsar
 
 		}
 
-		internal override SentMessage<T> InternalSend(IMessage<T> message)
+		internal override void InternalSend(IMessage<T> message)
 		{
-			return InternalSendWithTxn(message, null);
+			InternalSendWithTxn(message, null);
 		}
 
-		internal override SentMessage<T> InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			switch(State.ConnectionState)
 			{
@@ -165,12 +165,14 @@ namespace SharpPulsar
 					goto case HandlerState.State.Closing;
 				case HandlerState.State.Closing:
 				case HandlerState.State.Closed:
-					return new SentMessage<T>(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+					 _log.Error("Producer already closed");
+					break;
 				case HandlerState.State.Terminated:
-					return new SentMessage<T>(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+					_log.Error("Topic was terminated");
+					break;
 				case HandlerState.State.Failed:
 				case HandlerState.State.Uninitialized:
-					return new SentMessage<T>(new PulsarClientException.NotConnectedException());
+					_log.Error("NotConnectedException");break;
 			}
 
 			//int partition = _routerPolicy.ChoosePartition(message, _topicMetadata);
@@ -178,9 +180,9 @@ namespace SharpPulsar
 			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
 				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn), message.Key);
-				return _router.AskFor<SentMessage<T>>(msg);
+				_router.Tell(msg);
 			}
-			return _router.AskFor<SentMessage<T>>(new InternalSendWithTxn<T>(message, txn));
+			_router.Tell(new InternalSendWithTxn<T>(message, txn));
 
 		}
 
