@@ -51,6 +51,10 @@ namespace SharpPulsar
 			{
 				CloseAllConnections();
 			});
+			Receive<ConnectionOpened>(_ =>
+			{
+				//CloseAllConnections();
+			});
 			Receive<ReleaseConnection>(c =>
 			{
 				ReleaseConnection(c.ClientCnx);
@@ -127,7 +131,7 @@ namespace SharpPulsar
 			if (!logicalAddress.Equals(physicalAddress))
 				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
 
-			return _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, targetBroker), $"{targetBroker}{connectionKey}".ToAkkaNaming());			
+			return _context.ActorOf(Props.Create(()=> new ClientCnx(_clientConfig, physicalAddress, targetBroker)), $"{targetBroker}{connectionKey}".ToAkkaNaming());			
 		}
 		private void CleanupConnection(DnsEndPoint address, int connectionKey)
 		{

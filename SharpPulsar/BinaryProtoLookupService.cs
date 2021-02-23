@@ -91,14 +91,18 @@ namespace SharpPulsar
 			{
 				var task = new TaskCompletionSource<GetBrokerResponse>();
 				var pool = _connectionPool;
-                var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
+				var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(address)).ClientCnx;
 				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				GetBroker(b.TopicName, requestid, connection, task);
 				var result = Task.Run(()=> task.Task);
 				if (result.IsFaulted)
 					Sender.Tell(new ClientExceptions((PulsarClientException)result.Exception.InnerException));
 				else
-					Sender.Tell(result.Result);
+                {
+					var response = result.Result;
+					Sender.Tell(response);
+				}					
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{
@@ -139,7 +143,7 @@ namespace SharpPulsar
 				task.SetException(err);
 				return;
 			}
-			var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
+			var request = new Commands().NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
 			var payload = new Payload(request, requestId, "NewLookup");
 			var lk = clientCnx.AskFor(payload);
 			if(lk is LookupDataResult lookup)
@@ -210,7 +214,7 @@ namespace SharpPulsar
 		/// </summary>
 		private void GetPartitionedTopicMetadata(TopicName topicName, long requestId, IActorRef clientCnx)
 		{
-			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), requestId);
+			var request = new Commands().NewPartitionMetadataRequest(topicName.ToString(), requestId);
 			var payload = new Payload(request, requestId, "NewPartitionMetadataRequest");
 			var lk = clientCnx.AskFor(payload);
 			if(lk is LookupDataResult lookup)
@@ -236,7 +240,7 @@ namespace SharpPulsar
 
 		private void GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx)
 		{
-			var request = Commands.NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
+			var request = new Commands().NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, requestId, "SendGetRawSchema");
 			var schemaResponse = clientCnx.AskFor<Messages.GetSchemaResponse>(payload);
 			var err = schemaResponse.Response.ErrorCode;
@@ -277,7 +281,7 @@ namespace SharpPulsar
 
 		private void GetTopicsUnderNamespace(long requestId, NamespaceName @namespace, Backoff backoff, long remainingTime, Mode mode, IActorRef clientCnx)
 		{
-			var request = Commands.NewGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
+			var request = new Commands().NewGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
 			var payload = new Payload(request, requestId, "NewGetTopicsOfNamespaceRequest");
 			_context.SetReceiveTimeout(TimeSpan.FromMilliseconds(_operationTimeoutMs));
 			var topics = clientCnx.AskFor(payload);

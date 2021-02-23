@@ -9,6 +9,9 @@ using State = SharpPulsar.HandlerState.State;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Extension;
+using System.Net;
+using SharpPulsar.Configuration;
+using SharpPulsar.Common.Naming;
 
 namespace SharpPulsar
 {	
@@ -17,6 +20,7 @@ namespace SharpPulsar
 		private IActorRef _clientCnx = null;
 
 		private readonly HandlerState _state;
+		private readonly ClientConfigurationData _conf;
 		private readonly Backoff _backoff;
 		private long _epoch = 0L;
 		protected long LastConnectionClosedTimestamp = 0L;
@@ -25,13 +29,14 @@ namespace SharpPulsar
 		private ICancelable _cancelable;
 		private readonly IActorContext _actorContext;
 
-		public ConnectionHandler(HandlerState state, Backoff backoff, IActorRef connection)
+		public ConnectionHandler(ClientConfigurationData conf, HandlerState state, Backoff backoff, IActorRef connection)
 		{
 			_state = state;
 			_connection = connection;
 			_backoff = backoff;
 			_log = Context.System.Log;
 			_actorContext = Context;
+			_conf = conf;
 			Receive<GrabCnx>(g =>
 			{
 				_log.Info(g.Message);
@@ -45,6 +50,14 @@ namespace SharpPulsar
 			Receive<GetEpoch>(g =>
 			{
 				Sender.Tell(_epoch);
+			});
+			Receive<ConnectionOpened>(m =>
+			{
+				_connection.Tell(m);
+			});
+			Receive<ConnectionFailed>(m =>
+			{
+				HandleConnectionError(m.Exception);
 			});
 			Receive<ResetBackoff>(_ =>
 			{
@@ -64,6 +77,9 @@ namespace SharpPulsar
 			});
 			Receive<ConnectionClosed>(c =>
 			{
+				var children = Context.GetChildren();
+				foreach (var child in children)
+					child.GracefulStop(TimeSpan.FromMilliseconds(100));
 				ConnectionClosed(c.ClientCnx);
 			});
 		}
@@ -86,15 +102,22 @@ namespace SharpPulsar
 
 			try
 			{
-				var obj = _state.Client.AskFor(new GetConnection(_state.Topic));
-				if(obj is GetConnectionResponse cnx)
-					_connection.Tell(new ConnectionOpened(cnx.ClientCnx));
-				else
+				if(_conf.UseDedicatedConnections)
                 {
-					var ex = (Failure)obj;
-					HandleConnectionError(ex.Exception);
+					var broker = _state.Client.AskFor<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
+					var connection = CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
 				}
-					
+                else
+                {
+					var obj = _state.Client.AskFor(new GetConnection(_state.Topic));
+					if (obj is GetConnectionResponse cnx)
+						_connection.Tell(new ConnectionOpened(cnx.ClientCnx));
+					else
+					{
+						var ex = (Failure)obj;
+						HandleConnectionError(ex.Exception);
+					}
+				}				
 			}
 			catch (Exception t)
 			{
@@ -102,7 +125,15 @@ namespace SharpPulsar
 				ReconnectLater(t);
 			}
 		}
+		private IActorRef CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
+		{
+			string targetBroker = string.Empty;
 
+			if (!logicalAddress.Equals(physicalAddress))
+				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
+
+			return Context.ActorOf(Props.Create(()=> new ClientCnx(_conf, physicalAddress, targetBroker)), $"{logicalAddress.Host}".ToAkkaNaming());
+		}
 		private void HandleConnectionError(Exception exception)
 		{
 			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Error connecting to broker: {exception.Message}");
@@ -128,6 +159,10 @@ namespace SharpPulsar
 
 		private void ReconnectLater(Exception exception)
 		{
+			var children = Context.GetChildren();
+			foreach (var child in children)
+				child.GracefulStop(TimeSpan.FromMilliseconds(100));
+
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
 			{
@@ -143,7 +178,6 @@ namespace SharpPulsar
 		private void ConnectionClosed(IActorRef cnx)
 		{
 			LastConnectionClosedTimestamp = DateTimeHelper.CurrentUnixTimeMillis();
-			_state.Client.AskFor(new ReleaseConnectionPool(cnx));
 			_clientCnx = null;
 			if (!ValidStateForReconnection)
 			{
@@ -162,9 +196,9 @@ namespace SharpPulsar
 		{
 			_backoff.Reset();
 		}
-		public static Props Prop(HandlerState state, Backoff backoff, IActorRef connection)
+		public static Props Prop(ClientConfigurationData conf, HandlerState state, Backoff backoff, IActorRef connection)
         {
-			return Props.Create(() => new ConnectionHandler(state, backoff, connection));
+			return Props.Create(() => new ConnectionHandler(conf, state, backoff, connection));
         }
         protected override void PostStop()
         {

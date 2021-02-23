@@ -17,7 +17,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Akka.Admin.Api.Models
+namespace SharpPulsar.Admin.Api.Models
 {
 	/// <summary>
 	/// Topic policies.

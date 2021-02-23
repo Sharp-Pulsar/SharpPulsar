@@ -29,15 +29,15 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar
 {
-	public abstract class ProducerActorBase<T> : ReceiveActor
+	internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract SentMessage<T> InternalSendWithTxn(IMessage<T> message, IActorRef txn);
-		internal abstract SentMessage<T> InternalSend(IMessage<T> message);
-		public abstract long LastDisconnectedTimestamp {get;}
-		public abstract bool Connected {get;}
-		public abstract IProducerStats Stats {get;}
-		public abstract long LastSequenceId {get;}
-		public abstract string ProducerName {get;}
+		internal abstract void InternalSendWithTxn(IMessage<T> message, IActorRef txn);
+		internal abstract void InternalSend(IMessage<T> message);
+		protected internal abstract long LastDisconnectedTimestamp {get;}
+		protected internal abstract bool Connected {get;}
+		protected internal abstract IProducerStats Stats {get;}
+		protected internal abstract long LastSequenceId {get;}
+		protected internal abstract string ProducerName {get;}
 
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly ISchema<T> Schema;
@@ -51,7 +51,7 @@ namespace SharpPulsar
 		private string _topic;
 
 		public ProducerActorBase(IActorRef client, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
-		{
+		{			
 			ClientConfiguration = configurationData;
 			ProducerQueue = queue;
 			Client = client;
@@ -68,7 +68,7 @@ namespace SharpPulsar
 
 		}
 
-		public virtual string Topic
+		protected internal virtual string Topic
 		{
 			get
 			{
@@ -76,7 +76,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual ProducerConfigurationData Configuration
+		protected internal virtual ProducerConfigurationData Configuration
 		{
 			get
 			{
@@ -106,7 +106,7 @@ namespace SharpPulsar
 		}
 
 
-		public enum MultiSchemaMode
+		protected internal enum MultiSchemaMode
 		{
 			Auto,
 			Enabled,

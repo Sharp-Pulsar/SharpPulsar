@@ -4,7 +4,7 @@ using System.Net.Http;
 using Akka.Actor;
 using PulsarAdmin;
 using PulsarAdmin.Models;
-using SharpPulsar.Akka.Admin.Api.Models;
+using SharpPulsar.Admin.Api.Models;
 
 namespace SharpPulsar.Admin
 {

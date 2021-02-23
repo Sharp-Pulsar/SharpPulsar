@@ -91,9 +91,9 @@ namespace SharpPulsar.Configuration
             _conf.BatcherBuilder = builder;
             return this;
         }
-        public ProducerConfigBuilder<T> BatchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit)
+        public ProducerConfigBuilder<T> BatchingMaxPublishDelay(long batchDelay)
         {
-            _conf.SetBatchingMaxPublishDelayMicros(batchDelay, timeUnit);
+            _conf.SetBatchingMaxPublishDelayMicros(batchDelay);
             return this;
         }
 

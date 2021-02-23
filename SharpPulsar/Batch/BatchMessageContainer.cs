@@ -39,7 +39,7 @@ namespace SharpPulsar.Batch
 	/// batched into single batch message:
 	/// [(k1, v1), (k2, v1), (k3, v1), (k1, v2), (k2, v2), (k3, v2), (k1, v3), (k2, v3), (k3, v3)]
 	/// </summary>
-	public class BatchMessageContainer<T> : AbstractBatchMessageContainer<T>
+	internal class BatchMessageContainer<T> : AbstractBatchMessageContainer<T>
 	{
 
 		private MessageMetadata _messageMetadata = new MessageMetadata();
@@ -70,7 +70,7 @@ namespace SharpPulsar.Batch
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
 				_messageMetadata.SequenceId = (ulong)msg.SequenceId;
-				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
+				_lowestSequenceId = new Commands().InitBatchMessageMetadata(_messageMetadata);
 				_firstCallback = callback;
 				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
 				if(msg.Metadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
@@ -111,7 +111,7 @@ namespace SharpPulsar.Batch
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToBytes());
 					}
 					catch (Exception ex)
@@ -169,7 +169,7 @@ namespace SharpPulsar.Batch
 
 		public override bool MultiBatches => false;
 
-		public override OpSendMsg<T> CreateOpSendMsg()
+		public override ProducerActor<T>.OpSendMsg<T> CreateOpSendMsg()
 		{
 			var encryptedPayload = CompressedBatchMetadataAndPayload;
             if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
@@ -207,9 +207,9 @@ namespace SharpPulsar.Batch
 			{
 				_messageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = Commands.NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
+			var cmd = new Commands().NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
 
-			var op = OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId);
+			var op = ProducerActor<T>.OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId);
 
 			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSize;

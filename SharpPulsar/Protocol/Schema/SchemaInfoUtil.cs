@@ -49,7 +49,7 @@ namespace SharpPulsar.Protocol.Schema
             {
                 Name = schema.Name,
                 Schema = schema.SchemaData.ToSBytes(),
-                Type = Commands.GetSchemaType(schema.type)
+                Type = new Commands().GetSchemaType(schema.type)
             };
             if (schema.Properties.Count == 0)
 			{

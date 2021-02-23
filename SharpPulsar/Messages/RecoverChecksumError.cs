@@ -1,11 +1,13 @@
 ﻿
+using Akka.Actor;
+
 namespace SharpPulsar.Messages
 {
     public sealed class RecoverChecksumError
     {
         public long SequenceId { get; }
-        public ClientCnx ClientCnx { get; }
-        public RecoverChecksumError(ClientCnx clientCnx, long sequenceId)
+        public IActorRef ClientCnx { get; }
+        public RecoverChecksumError(IActorRef clientCnx, long sequenceId)
         {
             SequenceId = sequenceId;
             ClientCnx = clientCnx;
@@ -13,8 +15,8 @@ namespace SharpPulsar.Messages
     }
     public sealed class Terminated
     {
-        public ClientCnx ClientCnx { get; }
-        public Terminated(ClientCnx clientCnx)
+        public IActorRef ClientCnx { get; }
+        public Terminated(IActorRef clientCnx)
         {
             ClientCnx = clientCnx;
         }

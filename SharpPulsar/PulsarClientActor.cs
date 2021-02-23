@@ -41,7 +41,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	public class PulsarClientActor : ReceiveActor
+	internal class PulsarClientActor : ReceiveActor
 	{
 
 		private readonly ClientConfigurationData _conf;
@@ -63,9 +63,12 @@ namespace SharpPulsar
 		private readonly DateTime _clientClock;
 
 		private IActorRef _tcClient;
-		
 		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
 		{
+			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
+			{
+				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
+			}
 			_log = Context.GetLogger();
 			Auth = conf;
 			_conf = conf;
@@ -90,6 +93,10 @@ namespace SharpPulsar
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
+			Receive<GetBroker>(m => {
+				var cnx = GetBroker(m.TopicName);
+				Sender.Tell(cnx);
+			});
 			Receive<GetConnection>(m => {
 				var cnx = GetConnection(m.Topic);
 				Sender.Tell(cnx);
@@ -109,14 +116,6 @@ namespace SharpPulsar
 			});
 		}
 
-		public static Props Prop(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
-        {
-			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
-			}
-			return Props.Create(() => new PulsarClientActor(conf, cnxPool, txnCoordinator, lookup, idGenerator));
-        }
 		private ClientConfigurationData Auth
 		{
 			set
@@ -161,9 +160,13 @@ namespace SharpPulsar
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 
+		private GetBrokerResponse GetBroker(TopicName topic)
+		{
+			return _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
+		}
 		private GetConnectionResponse GetConnection(string topic)
 		{
-			TopicName topicName = TopicName.Get(topic);
+			var topicName = TopicName.Get(topic);
 			var broker = _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
 			var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			return connection;

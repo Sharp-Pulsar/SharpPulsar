@@ -38,11 +38,15 @@ namespace SharpPulsar.Test.Fixtures
         public async Task InitializeAsync()
         {
             SetupSystem();
+            await DeployPulsar();
+        }
+        public async Task DeployPulsar()
+        {
             TakeDownPulsar(); // clean-up if anything was left running from previous run
 
             RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
 
-            var waitTries = 10;
+            var waitTries = 20;
 
             using var handler = new HttpClientHandler
             {
@@ -131,6 +135,7 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
+            //client.UseDedicatedConnections(true);
             System = PulsarSystem.GetInstance(client);
         }
     }

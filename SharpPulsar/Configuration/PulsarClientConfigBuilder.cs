@@ -229,6 +229,11 @@ namespace SharpPulsar.Configuration
             _conf.EnableTransaction = enableTransaction;
             return this;
         }
+        public PulsarClientConfigBuilder UseDedicatedConnections(bool useDedicatedConnections)
+        {
+            _conf.UseDedicatedConnections = useDedicatedConnections;
+            return this;
+        }
     }
 
 }
