@@ -33,7 +33,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    public class ReaderActor<T>: ReceiveActor
+    internal class ReaderActor<T>: ReceiveActor
 	{
 		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
 		private readonly IActorRef _consumer;
@@ -88,8 +88,14 @@ namespace SharpPulsar
 			}
 
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-			_consumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
-
+			if (consumerConfiguration.ReceiverQueueSize == 0)
+			{
+				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, clientConfigurationData, consumerQueue)));
+			}
+			else
+			{
+				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, clientConfigurationData, consumerQueue)));
+			}
 			Receive<GetHandlerState>(m =>
 			{
 				var state = _consumer.AskFor<HandlerStateResponse>(m);
@@ -117,10 +123,6 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-		public static Props Prop(long consumerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
-        {
-			return Props.Create(() => new ReaderActor<T>(consumerid, client, lookup, cnxPool, idGenerator, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
-        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;
@@ -145,15 +147,6 @@ namespace SharpPulsar
 				_readerListener.ReachedEndOfTopic(_outerInstance);
 			}
 		}
-
-		public virtual IActorRef Consumer
-		{
-			get
-			{
-				return _consumer;
-			}
-		}
-
 
         protected override void PostStop()
         {

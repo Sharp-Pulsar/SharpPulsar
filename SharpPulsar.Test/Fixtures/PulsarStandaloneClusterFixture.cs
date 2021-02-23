@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Fixtures
         public async Task InitializeAsync()
         {
             SetupSystem();
-            //await DeployPulsar();
+            await DeployPulsar();
         }
         public async Task DeployPulsar()
         {
@@ -73,7 +73,7 @@ namespace SharpPulsar.Test.Fixtures
         }
         public async Task DisposeAsync()
         {
-            //TakeDownPulsar();
+            TakeDownPulsar();
             await System.Shutdown();
         }
 
@@ -135,6 +135,7 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
+            //client.UseDedicatedConnections(true);
             System = PulsarSystem.GetInstance(client);
         }
     }

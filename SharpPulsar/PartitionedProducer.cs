@@ -42,7 +42,7 @@ using System.Linq;
 /// </summary>
 namespace SharpPulsar
 {
-	public class PartitionedProducer<T> : ProducerActorBase<T>
+	internal class PartitionedProducer<T> : ProducerActorBase<T>
 	{
 		private IList<IActorRef> _producers;
 		private IMessageRouter _routerPolicy;
@@ -90,11 +90,7 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(TimeUnit.SECONDS.ToSeconds(conf.AutoUpdatePartitionsIntervalSeconds)), () => OnTopicsExtended(new List<string> { topic}));
 			}
 		}
-		public static Props Prop(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
-        {
-			return Props.Create(()=> new PartitionedProducer<T>(client, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, queue));
-        }
-		public override string ProducerName
+		protected internal override string ProducerName
 		{
 			get
 			{
@@ -102,7 +98,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public override long LastSequenceId
+		protected internal override long LastSequenceId
 		{
 			get
 			{
@@ -121,7 +117,7 @@ namespace SharpPulsar
 			{
 				var producerId = _generator.AskFor<long>(NewProducerId.Instance);
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = Context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
+				var producer = Context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 				_producers.Add(producer);
 				var routee = Routee.FromActorRef(producer);
 				_router.Tell(new AddRoutee(routee));
@@ -196,7 +192,7 @@ namespace SharpPulsar
 			_producers.ForEach(x => x.Tell(Messages.Producer.TriggerFlush.Instance));
 		}
 
-		public override bool Connected
+		protected internal override bool Connected
 		{
 			get
 			{
@@ -205,7 +201,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public override long LastDisconnectedTimestamp
+		protected internal override long LastDisconnectedTimestamp
 		{
 			get
 			{
@@ -229,7 +225,7 @@ namespace SharpPulsar
 			base.PostStop();
         }
 
-		public override IProducerStats Stats
+		protected internal override IProducerStats Stats
 		{
 			get
 			{
@@ -278,7 +274,7 @@ namespace SharpPulsar
 				{
 					var producerId = _generator.AskFor<long>(NewProducerId.Instance);
 					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					var producer = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue));
+					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 					_producers.Add(producer);
 					var routee = Routee.FromActorRef(producer);
 					_router.Tell(new AddRoutee(routee));

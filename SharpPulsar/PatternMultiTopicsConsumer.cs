@@ -38,7 +38,7 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 namespace SharpPulsar
 {
 
-	public class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
+	internal class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
 	{
 		private readonly Regex _topicsPattern;
 		private readonly Mode _subscriptionMode;
@@ -66,11 +66,6 @@ namespace SharpPulsar
 
 			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), TopicReChecker);
 		}
-
-		public static Props Prop(Regex topicsPattern, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
-        {
-			return Props.Create(() => new PatternMultiTopicsConsumer<T>(topicsPattern, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, interceptors, clientConfiguration, queue));
-        }
 
 		private void TopicReChecker()
 		{
@@ -139,7 +134,7 @@ namespace SharpPulsar
 			return original.Select(TopicName.Get).Select(x => x.ToString()).Where(topic => pattern.Match(Regex.Split(topic, @"\:\/\/")[1]).Success).ToList();
 		}
 		// get topics, which are contained in list1, and not in list2
-		public static IList<string> TopicsListsMinus(IList<string> list1, IList<string> list2)
+		internal IList<string> TopicsListsMinus(IList<string> list1, IList<string> list2)
 		{
 			HashSet<string> s1 = new HashSet<string>(list1);
             foreach (var l in list2)

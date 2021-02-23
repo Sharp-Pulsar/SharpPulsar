@@ -36,7 +36,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    public abstract class ConsumerActorBase<T> : ReceiveActor
+    internal abstract class ConsumerActorBase<T> : ReceiveActor
 	{
 
 		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
@@ -73,11 +73,6 @@ namespace SharpPulsar
 		protected internal ICancelable BatchReceiveTimeout = null;
 		protected internal HandlerState State;
 		private readonly string _topic;
-
-        public ConsumerActorBase()
-        {
-
-        }
 		public ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
 			_topic = topic;
@@ -382,12 +377,6 @@ namespace SharpPulsar
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
 		protected internal abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
-
-		public override string ToString()
-		{
-			return "ConsumerBase{" + "subscription='" + _subscription + '\'' + ", consumerName='" + _consumerName + '\'' + ", topic='" + Topic + '\'' + '}';
-		}
-
 
 		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
 		{

@@ -48,10 +48,10 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 namespace SharpPulsar
 {
 
-    public class MultiTopicsConsumer<T> : ConsumerActorBase<T>
+    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>
 	{
 
-		public const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
+		internal const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
 
 		// Map <topic+partition, consumer>, when get do ACK, consumer will by find by topic name
 		private readonly Dictionary<string, (string Topic , IActorRef Consumer)> _consumers;
@@ -768,7 +768,7 @@ namespace SharpPulsar
 			Close();
             base.PostStop();
         }
-        public void Close()
+        internal void Close()
 		{
 			if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
@@ -908,7 +908,7 @@ namespace SharpPulsar
 				return;
             }
 		}
-		public virtual bool HasMessageAvailable()
+		internal virtual bool HasMessageAvailable()
 		{
 			try
 			{
@@ -940,7 +940,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual IActorRef UnAckedMessageTracker
+		internal virtual IActorRef UnAckedMessageTracker
 		{
 			get
 			{
@@ -1003,36 +1003,6 @@ namespace SharpPulsar
 			}
 		}
 
-		// create consumer for a single topic with already known partitions.
-		// first create a consumer with no topic, then do subscription for already know partitionedTopic.
-		public static Props CreatePartitionedConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf,IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
-		{
-			Condition.CheckArgument(conf.TopicNames.Count == 1, "Should have only 1 topic for partitioned consumer");
-
-			// get topic name, then remove it from conf, so constructor will create a consumer with no topic.
-			var cloneConf = conf;
-			string topicName = cloneConf.SingleTopic;
-			cloneConf.TopicNames.Remove(topicName);
-
-			return Props.Create(()=> new MultiTopicsConsumer<T>(client, lookup, cnxPool, idGenerator, topicName, conf, listenerExecutor, schema, interceptors, true, clientConfiguration, queue));
-			
-		}
-		public static Props NewMultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf,IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
-		{
-			return Props.Create(()=> new MultiTopicsConsumer<T>(client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, clientConfiguration, queue));
-			
-		}
-		public static Props NewMultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
-		{
-			return Props.Create(()=> new MultiTopicsConsumer<T>(client, lookup, cnxPool, idGenerator, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, queue));
-			
-		}
-		public static Props NewMultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, bool createTopicIfNotExist, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue)
-		{
-			return Props.Create(()=> new MultiTopicsConsumer<T>(client, lookup, cnxPool, idGenerator, conf, listenerExecutor, schema, interceptors, createTopicIfNotExist, clientConfiguration, queue));
-			
-		}
-
 		internal void Subscribe(string topicName, int numberPartitions)
 		{
 			TopicName topicNameInstance = GetTopicName(topicName);
@@ -1090,7 +1060,7 @@ namespace SharpPulsar
 				{
 					var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
 					string partitionName = TopicName.Get(topicName).GetPartition(partitionIndex).ToString();
-					var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, _startMessageId, schema, Interceptors, createIfDoesNotExist, _startMessageRollbackDurationInSec, _clientConfiguration, ConsumerQueue));
+					var newConsumer = CreateConsumer(consumerId, partitionName, configurationData, partitionIndex, schema, Interceptors, createIfDoesNotExist);					
 					_consumers.Add(Topic, (partitionName, newConsumer));
 				});
 			}
@@ -1105,7 +1075,8 @@ namespace SharpPulsar
 				TopicsMap.Add(topicName, 1);
 				++AllTopicPartitionsNumber;
 				var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
-				var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, topicName, _internalConfig, Context.System.Scheduler.Advanced, -1, true, null, schema, Interceptors, createIfDoesNotExist, _clientConfiguration, ConsumerQueue));
+
+				var newConsumer = CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, Interceptors, createIfDoesNotExist);
 				_consumers.Add(Topic, (topicName, newConsumer));
 			}
 
@@ -1128,6 +1099,15 @@ namespace SharpPulsar
 			//HandleSubscribeOneTopicError(topicName, ex, subscribeResult);
 		}
 
+		private IActorRef CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createIfDoesNotExist)
+        {
+			if (conf.ReceiverQueueSize == 0)
+			{
+				return Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, null, createIfDoesNotExist, _clientConfiguration, ConsumerQueue)));
+			}
+			return Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, _startMessageRollbackDurationInSec, schema, null, createIfDoesNotExist, _clientConfiguration, ConsumerQueue)));
+
+		}
 		// handling failure during subscribe new topic, unsubscribe success created partitions
 		private void HandleSubscribeOneTopicError(string topicName, Exception error)
 		{
@@ -1166,7 +1146,7 @@ namespace SharpPulsar
 		}
 
 		// un-subscribe a given topic
-		public virtual void Unsubscribe(string topicName)
+		internal virtual void Unsubscribe(string topicName)
 		{
 			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
@@ -1214,7 +1194,7 @@ namespace SharpPulsar
 		}
 
 		// Remove a consumer for a topic
-		public virtual void RemoveConsumer(string topicName)
+		internal virtual void RemoveConsumer(string topicName)
 		{
 			Condition.CheckArgument(TopicName.IsValid(topicName), "Invalid topic name:" + topicName);
 
@@ -1258,7 +1238,7 @@ namespace SharpPulsar
 
 
 		// get topics name
-		public virtual IList<string> Topics
+		internal virtual IList<string> Topics
 		{
 			get
 			{
@@ -1267,7 +1247,7 @@ namespace SharpPulsar
 		}
 
 		// get partitioned topics name
-		public virtual IList<string> PartitionedTopics
+		internal virtual IList<string> PartitionedTopics
 		{
 			get
 			{
@@ -1276,7 +1256,7 @@ namespace SharpPulsar
 		}
 
 		// get partitioned consumers
-		public virtual IList<IActorRef> Consumers
+		internal virtual IList<IActorRef> Consumers
 		{
 			get
 			{
@@ -1335,7 +1315,7 @@ namespace SharpPulsar
 						var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
 						int partitionIndex = TopicName.GetPartitionIndex(partitionName);
 						ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
-						var newConsumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(consumerId, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue));
+						var newConsumer = Context.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue)));
 						if (_paused)
 						{
 							newConsumer.Tell(Messages.Consumer.Pause.Instance);
@@ -1362,7 +1342,7 @@ namespace SharpPulsar
 		{
 				queue.Add(obj);
 		}
-		public IMessageId LastMessageId
+		internal IMessageId LastMessageId
 		{
 			get
 			{
@@ -1386,13 +1366,13 @@ namespace SharpPulsar
 			}
 		}
 
-		public static bool IsIllegalMultiTopicsMessageId(IMessageId messageId)
+		internal static bool IsIllegalMultiTopicsMessageId(IMessageId messageId)
 		{
 			//only support earliest/latest
 			return !IMessageId.Earliest.Equals(messageId) && !IMessageId.Latest.Equals(messageId);
 		}
 
-		public virtual void TryAcknowledgeMessage(IMessage<T> msg)
+		internal virtual void TryAcknowledgeMessage(IMessage<T> msg)
 		{
 			if(msg != null)
 			{

@@ -158,7 +158,7 @@ namespace SharpPulsar.Batch
 			{
 				keyedBatch.MessageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
+			var cmd = new Commands().NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
 			var op = ProducerActor<T>.OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId);
 
@@ -233,7 +233,7 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToBytes());
 					}
 					BatchedMessageMetadataAndPayload.AddRange(stream.ToArray());
@@ -257,7 +257,7 @@ namespace SharpPulsar.Batch
 			{
 				if (Messages.Count == 0)
 				{
-					SequenceId = Commands.InitBatchMessageMetadata(MessageMetadata);
+					SequenceId = new Commands().InitBatchMessageMetadata(MessageMetadata);
 					if (msg.HasKey())
 					{
 						MessageMetadata.PartitionKey = msg.Key;

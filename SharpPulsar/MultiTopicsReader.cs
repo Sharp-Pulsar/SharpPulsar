@@ -31,7 +31,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    public class MultiTopicsReader<T> : ReceiveActor
+    internal class MultiTopicsReader<T> : ReceiveActor
 	{
 
 		private readonly IActorRef _consumer;
@@ -77,7 +77,7 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
+			_consumer = Context.ActorOf(Props.Create<MultiTopicsConsumer<T>>(client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
 
 
 			Receive<GetHandlerState>(m =>
@@ -107,10 +107,6 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-		public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
-        {
-			return Props.Create(() => new MultiTopicsReader<T>(client, lookup, cnxPool, idGenerator, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
-        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;

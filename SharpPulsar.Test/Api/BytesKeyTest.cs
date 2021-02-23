@@ -126,7 +126,7 @@ namespace SharpPulsar.Test.Api
             var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
             producerBuilder.Topic(_topic);
             producerBuilder.EnableBatching(true);
-            producerBuilder.BatchingMaxPublishDelay(5000);
+            producerBuilder.BatchingMaxPublishDelay(60000);
             producerBuilder.BatchingMaxMessages(5);
             var producer = _client.NewProducer(producerBuilder);
 

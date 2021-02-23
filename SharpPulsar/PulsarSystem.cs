@@ -92,7 +92,7 @@ namespace SharpPulsar
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf,  _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
+            _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
         }
         private PulsarSystem(ActorSystem actorSystem, PulsarClientConfigBuilder confBuilder)
@@ -104,7 +104,7 @@ namespace SharpPulsar
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
+            _client = _actorSystem.ActorOf(Props.Create<PulsarClientActor>(conf, _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
         }
         public PulsarClient NewClient() 

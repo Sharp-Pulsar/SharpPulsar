@@ -59,7 +59,7 @@ using static SharpPulsar.Exceptions.PulsarClientException;
 namespace SharpPulsar
 {
 
-    public class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
+    internal class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
 	{
 
 		// Producer id, used to identify a producer within a single connection
@@ -109,9 +109,11 @@ namespace SharpPulsar
 		private Dictionary<long, IActorRef> _txnSequence;
 
 		private readonly IScheduler _scheduler;
+		private readonly Commands _commands;
 
 		public ProducerActor(long producerid, IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
+			_commands = new Commands();
 			_txnSequence = new Dictionary<long, IActorRef>();
 			_self = Self;
 			_generator = idGenerator;
@@ -229,10 +231,6 @@ namespace SharpPulsar
 
 			GrabCnx();
 		}
-		public static Props Prop(long producerid, IActorRef client, IActorRef idgenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue)
-        {
-			return Props.Create(() => new ProducerActor<T>(producerid, client, idgenerator, topic, conf, partitionIndex, schema, interceptors, clientConfiguration, queue));
-        }
 		internal virtual void GrabCnx()
 		{
 			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {ProducerName}"));
@@ -313,8 +311,11 @@ namespace SharpPulsar
 			if(_batchMessageContainer != null)
             {
 				var maxMessageSize = cnx.AskFor<int>(MaxMessageSize.Instance);
-				_batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System);
-			}
+                _batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System)
+                {
+                    ProducerId = _producerId
+                };
+            }
 
 			cnx.Tell(new RegisterProducer(_producerId, _self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
@@ -332,7 +333,7 @@ namespace SharpPulsar
 						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
 						// but now we have standardized on every schema to generate an Avro based schema
 						var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-						if (Commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
+						if (_commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
 						{
 							schemaInfo = Schema.SchemaInfo;
 						}
@@ -359,7 +360,7 @@ namespace SharpPulsar
 			try
             {
 				var epoch = _connectionHandler.AskFor<long>(GetEpoch.Instance);
-				var cmd = Commands.NewProducer(Topic, _producerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
+				var cmd = _commands.NewProducer(Topic, _producerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
 				var payload = new Payload(cmd, requestId, "NewProducer");
 
 				var response = cnx.AskFor<ProducerResponse>(payload);
@@ -453,7 +454,7 @@ namespace SharpPulsar
 		}
 
 		private void ConnectionFailed(PulsarClientException exception)
-	{
+		{
 		bool nonRetriableError = !IsRetriableError(exception);
 		bool producerTimeout = DateTimeHelper.CurrentUnixTimeMillis() > _createProducerTimeout;
 		if ((nonRetriableError || producerTimeout))
@@ -507,7 +508,7 @@ namespace SharpPulsar
 			return false;
 		}
 
-		public override long LastSequenceId
+		protected internal override long LastSequenceId
 		{
 			get
 			{
@@ -833,12 +834,12 @@ namespace SharpPulsar
 		private object GetOrCreateSchema(IActorRef cnx, ISchemaInfo schemaInfo)
 		{
 			var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-			if(!Commands.PeerSupportsGetOrCreateSchema(protocolVersion))
+			if(!_commands.PeerSupportsGetOrCreateSchema(protocolVersion))
 			{
 				throw new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {protocolVersion}. The producer is {_producerName}, topic is {Topic}");
 			}
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-			var request = Commands.NewGetOrCreateSchema(requestId, Topic, schemaInfo);
+			var request = _commands.NewGetOrCreateSchema(requestId, Topic, schemaInfo);
 			var payload = new Payload(request, requestId, "SendGetOrCreateSchema");
 			_log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
 			return cnx.AskFor(payload);
@@ -871,12 +872,13 @@ namespace SharpPulsar
 
 		private byte[] SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
-			return Commands.NewSend(producerId, sequenceId, numMessages, msgMetadata, compressedPayload);
+			_log.Info($"Send message with {_producerName}:{producerId}");
+			return new Commands().NewSend(producerId, sequenceId, numMessages, msgMetadata, compressedPayload);
 		}
 
 		private byte[] SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
-			return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, compressedPayload);
+			return _commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, compressedPayload);
 		}
 
         public IStash Stash { get; set; }
@@ -988,7 +990,7 @@ namespace SharpPulsar
 			}
 
 			var requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-			var cmd = Commands.NewCloseProducer(_producerId, requestId);
+			var cmd = _commands.NewCloseProducer(_producerId, requestId);
 			var response = cnx.AskFor(new SendRequestWithId(cmd, requestId));
 			if (!(response is Exception))
 			{
@@ -1003,7 +1005,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public override bool Connected
+		protected internal override bool Connected
 		{
 			get
 			{
@@ -1011,7 +1013,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public override long LastDisconnectedTimestamp
+		protected internal override long LastDisconnectedTimestamp
 		{
 			get
 			{
@@ -1430,7 +1432,7 @@ namespace SharpPulsar
 			}
 		}
 
-		public override string ProducerName
+		protected internal override string ProducerName
 		{
 			get
 			{
@@ -1461,7 +1463,7 @@ namespace SharpPulsar
 			}
 		}
 
-        public override IProducerStats Stats => _stats;
+		protected internal override IProducerStats Stats => _stats;
 		protected internal sealed class OpSendMsg<T1>
 		{
 			internal Message<T1> Msg;

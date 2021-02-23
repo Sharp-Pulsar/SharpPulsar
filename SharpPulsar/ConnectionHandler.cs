@@ -102,8 +102,22 @@ namespace SharpPulsar
 
 			try
 			{
-				var broker = _state.Client.AskFor<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
-				var connection = CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);					
+				if(_conf.UseDedicatedConnections)
+                {
+					var broker = _state.Client.AskFor<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
+					var connection = CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
+				}
+                else
+                {
+					var obj = _state.Client.AskFor(new GetConnection(_state.Topic));
+					if (obj is GetConnectionResponse cnx)
+						_connection.Tell(new ConnectionOpened(cnx.ClientCnx));
+					else
+					{
+						var ex = (Failure)obj;
+						HandleConnectionError(ex.Exception);
+					}
+				}				
 			}
 			catch (Exception t)
 			{
@@ -118,7 +132,7 @@ namespace SharpPulsar
 			if (!logicalAddress.Equals(physicalAddress))
 				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
 
-			return Context.ActorOf(ClientCnx.Prop(_conf, physicalAddress, targetBroker), $"{logicalAddress.Host}".ToAkkaNaming());
+			return Context.ActorOf(Props.Create(()=> new ClientCnx(_conf, physicalAddress, targetBroker)), $"{logicalAddress.Host}".ToAkkaNaming());
 		}
 		private void HandleConnectionError(Exception exception)
 		{

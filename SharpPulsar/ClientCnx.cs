@@ -30,7 +30,7 @@ using SharpPulsar.PulsarSocket;
 
 namespace SharpPulsar
 {
-	public sealed class ClientCnx : ReceiveActor
+	internal sealed class ClientCnx : ReceiveActor
 	{
 		private readonly IActorRef _socketClient;
 		private readonly IAuthentication _authentication;
@@ -60,7 +60,7 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 
 		private string _proxyToTargetBrokerAddress;
-		private readonly byte[] _pong = Commands.NewPong();
+		private readonly byte[] _pong = new Commands().NewPong();
 		private List<byte> _pendingReceive;
 
 		private string _remoteHostName;
@@ -75,7 +75,7 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, new Commands().CurrentProtocolVersion, targetBroker)
 		{
 		}
 
@@ -170,14 +170,6 @@ namespace SharpPulsar
 			Receive<RemoteEndpointProtocolVersion>(r => {
 				Sender.Tell(_protocolVersion);
 			});
-		}
-		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
-		{
-			return Props.Create(() => new ClientCnx(conf, endPoint, targetBroker));
-		}
-		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
-		{
-			return Props.Create(() => new ClientCnx(conf, endPoint, protocolVersion, targetBroker));
 		}
 		private void OnConnected()
 		{
@@ -275,7 +267,7 @@ namespace SharpPulsar
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
 				var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
-				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
+				var request = new Commands().NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
 				if (_log.IsDebugEnabled)
 				{
@@ -537,11 +529,11 @@ namespace SharpPulsar
 			switch (sendError.Error)
 			{
 				case ServerError.ChecksumError:
-					_producers[producerId].Tell(new RecoverChecksumError(this, sequenceId));
+					_producers[producerId].Tell(new RecoverChecksumError(Self, sequenceId));
 					break;
 
 				case ServerError.TopicTerminatedError:
-					_producers[producerId].Tell(new Messages.Terminated(this));
+					_producers[producerId].Tell(new Messages.Terminated(Self));
 					break;
 
 				default:
@@ -1023,7 +1015,7 @@ namespace SharpPulsar
 			var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return new Commands().NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State
