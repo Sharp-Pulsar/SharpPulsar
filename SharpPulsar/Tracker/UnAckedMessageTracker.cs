@@ -24,7 +24,9 @@ using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
@@ -121,7 +123,7 @@ namespace SharpPulsar.Tracker
                 if (messageIds.Count > 0)
                 { 
                     _consumer.Tell(new AckTimeoutSend(messageIds));
-                    _consumer.Tell(new RedeliverUnacknowledgedMessages(messageIds));
+                    _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messageIds));
                 }
                 _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
             }
@@ -132,7 +134,7 @@ namespace SharpPulsar.Tracker
             if (messageId is MessageId id)
             {
                 //use ask here
-                var chunkedMsgIds = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).GetAwaiter().GetResult();
+                var chunkedMsgIds = _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id));
                 if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length> 0)
                 {
                     foreach (var msgId in chunkedMsgIds.MessageIds)

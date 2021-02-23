@@ -307,7 +307,24 @@ namespace SharpPulsar
 		}
 		private void Ready()
         {
+			Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
+			{
+				MessageId msgid;
+				if (r.MessageId is BatchMessageId id)
+					msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+				else msgid = (MessageId)r.MessageId;
+				if (r.Command == UnAckedCommand.Remove)
+					UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
+				else if (UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
+					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(UnAckedChunckedMessageIdSequenceMap[msgid]));
+				else
+					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(Array.Empty<MessageId>()));
+			});
 
+			Receive<AckTimeoutSend>(ack =>
+			{
+				OnAckTimeoutSend(ack.MessageIds);
+			});
 			Receive<ConnectionClosed>(m => {
 				ConnectionClosed(m.ClientCnx);
 			});
@@ -1294,7 +1311,6 @@ namespace SharpPulsar
 				ConsumerEventListener.BecameInactive(Self, _partitionIndex);
 			}
 		}
-
 		private void MessageReceived(MessageReceived received, IActorRef cnx)
 		{
 			var messageId = received.MessageId;
@@ -1891,19 +1907,18 @@ namespace SharpPulsar
 			var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
 			if(Connected && protocolVersion >= (int)ProtocolVersion.V2)
 			{
-				int currentSize = 0;
-				currentSize = IncomingMessages.Count;
+				var currentSize = IncomingMessages.Count;
 				IncomingMessages = new BlockingCollection<IMessage<T>>();
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
 				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);
 				var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 				cnx.Tell(payload);
+
 				if(currentSize > 0)
-				{
 					IncreaseAvailablePermits(cnx, currentSize);
-				}
-				if(_log.IsDebugEnabled)
+
+				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"[{Subscription}] [{Topic}] [{ConsumerName}] Redeliver unacked messages and send {currentSize} permits");
 				}
@@ -1951,18 +1966,20 @@ namespace SharpPulsar
 				int messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
 
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
-				var builder = new MessageIdData();
 				batches.ForEach(ids =>
 				{
 					IList<MessageIdData> messageIdDatas = ids.Where(messageId => !ProcessPossibleToDLQ(messageId)).Select(messageId =>
 					{
-						builder.Partition = messageId.PartitionIndex;
-						builder.ledgerId = (ulong)messageId.LedgerId;
-						builder.entryId = (ulong)messageId.EntryId;
-						return builder;
+                        var builder = new MessageIdData
+                        {
+                            Partition = messageId.PartitionIndex,
+                            ledgerId = (ulong)messageId.LedgerId,
+                            entryId = (ulong)messageId.EntryId
+                        };
+                        return builder;
 					}).ToList();
 					if(messageIdDatas.Count > 0)
-					{
+                    {
 						var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdDatas);
 						var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 						cnx.Tell(payload);
@@ -2366,8 +2383,7 @@ namespace SharpPulsar
 		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			int messagesFromQueue = 0;
-			var peek = IncomingMessages.Take(_tokenSource.Token);
-			if(peek != null)
+			if(IncomingMessages.TryTake(out var peek))
 			{
 				var messageId = GetMessageId(peek);
 				if(!messageIds.Contains(messageId))
@@ -2628,7 +2644,13 @@ namespace SharpPulsar
 			if (_hasParentConsumer)
 				Sender.Tell(new ReceivedMessage<T>(obj));
 			else
-				IncomingMessages.Add(obj);
+            {
+				if (IncomingMessages.TryAdd(obj))
+					_log.Info($"Added message with sequnceid {obj.SequenceId} to IncomingMessages");
+				else
+					_log.Info($"Failed to add message with sequnceid {obj.SequenceId} to IncomingMessages");
+			}
+				
 		}
 		private void Push<T1>(BlockingCollection<T1> queue, T1 obj)
         {

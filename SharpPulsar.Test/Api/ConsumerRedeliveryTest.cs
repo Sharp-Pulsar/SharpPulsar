@@ -44,17 +44,17 @@ namespace SharpPulsar.Test.Api
             _system = fixture.System;
             _client = _system.NewClient();
         }
-
-        [Fact (Skip = "Not ready")]
+        [Fact]
         public void TestUnAckMessageRedeliveryWithReceive()
         {
             var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
             var builder = new ConsumerConfigBuilder<sbyte[]>();
             builder.Topic(topic);
             builder.SubscriptionName("sub-TestUnAckMessageRedeliveryWithReceive");
-            builder.AckTimeout(30000, TimeUnit.MILLISECONDS);
+            builder.AckTimeout(20000, TimeUnit.MILLISECONDS);
             builder.ForceTopicCreation(true);
             builder.AcknowledgmentGroupTime(0);
+            builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);
             var consumer = _client.NewConsumer(builder);
 
             var pBuilder = new ProducerConfigBuilder<sbyte[]>();
@@ -70,9 +70,9 @@ namespace SharpPulsar.Test.Api
             }
 
             var messageReceived = 0;
-            for (var i = 0; i < messageCount; i++)
+            for (var i = 0; i < messageCount; ++i)
             {
-                var m = consumer.Receive();
+                var m = consumer.Receive(60000);
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.NotNull(receivedMessage);
@@ -82,16 +82,9 @@ namespace SharpPulsar.Test.Api
 			Assert.Equal(10, messageReceived);
             Thread.Sleep(31000);
 
-
             for (var i = 0; i < messageCount; i++)
             {
-                var receipt = producer.Send(Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes());
-                _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
-            }
-
-            for (var i = 0; i < messageCount; i++)
-            {
-                var m = consumer.Receive();
+                var m = consumer.Receive(120000);
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.NotNull(receivedMessage);

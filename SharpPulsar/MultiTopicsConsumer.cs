@@ -190,7 +190,7 @@ namespace SharpPulsar
 			});
 			Receive<ReceivedMessage<T>>(r =>
 			{
-				IncomingMessages.Add(r.Message);
+				IncomingMessages.TryAdd(r.Message);
 			});
 			Receive<AcknowledgeMessage<T>>(m => {
 				try
@@ -626,7 +626,7 @@ namespace SharpPulsar
 			}
             else
             {
-				IncomingMessages.Add(topicMessage);
+				IncomingMessages.TryAdd(topicMessage);
             }
 		}
 

@@ -675,6 +675,7 @@ namespace SharpPulsar.PulsarSocket
             }
 
             var args = new SocketAsyncEventArgs();
+
             args.UserToken = onCompleteNotificationsReceiver;
             args.Completed += (sender, e) =>
             {

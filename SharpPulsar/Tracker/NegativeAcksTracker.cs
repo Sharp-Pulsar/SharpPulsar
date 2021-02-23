@@ -28,6 +28,7 @@ using SharpPulsar.Batch;
 using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Extension;
 
 namespace SharpPulsar.Tracker
 {
@@ -77,9 +78,9 @@ namespace SharpPulsar.Tracker
                         if (a.Value < now)
                         {
                             var ms = _unAckedMessageTracker
-                                .Ask<ImmutableHashSet<IMessageId>>(
+                                .AskFor<ImmutableHashSet<IMessageId>>(
                                     new AddChunkedMessageIdsAndRemoveFromSequnceMap(a.Key,
-                                        messagesToRedeliver.ToImmutableHashSet())).GetAwaiter().GetResult();
+                                        messagesToRedeliver.ToImmutableHashSet()));
                             ms.ToList().ForEach(x => messagesToRedeliver.Add(x));
                             messagesToRedeliver.Add(a.Key);
                         }

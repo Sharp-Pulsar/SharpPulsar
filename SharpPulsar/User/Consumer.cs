@@ -197,8 +197,11 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            if (_queue.IncomingMessages.TryTake(out var m, timeoutMilliseconds, token)) 
+            if (_queue.IncomingMessages.TryTake(out var m, timeoutMilliseconds, token))
+            {
+                _consumerActor.Tell(new MessageProcessed<T>(m));
                 return m;
+            }
 
             return null;
         }
