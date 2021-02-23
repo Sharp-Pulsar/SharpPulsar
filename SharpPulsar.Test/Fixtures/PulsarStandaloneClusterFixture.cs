@@ -42,9 +42,9 @@ namespace SharpPulsar.Test.Fixtures
         }
         public async Task DeployPulsar()
         {
-            TakeDownPulsar(); // clean-up if anything was left running from previous run
+            //TakeDownPulsar(); // clean-up if anything was left running from previous run
 
-            RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
+            //RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
 
             var waitTries = 20;
 
@@ -73,7 +73,7 @@ namespace SharpPulsar.Test.Fixtures
         }
         public async Task DisposeAsync()
         {
-            TakeDownPulsar();
+            //TakeDownPulsar();
             await System.Shutdown();
         }
 
