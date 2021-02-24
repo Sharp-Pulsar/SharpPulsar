@@ -21,18 +21,13 @@ using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.Extension;
-using System.IO;
-using SharpPulsar.Common;
-using ProtoBuf;
-using SharpPulsar.Tcps;
-using System.Linq;
-using SharpPulsar.PulsarSocket;
+using SharpPulsar.SocketImpl;
 
 namespace SharpPulsar
 {
 	internal sealed class ClientCnx : ReceiveActor
 	{
-		private readonly IActorRef _socketClient;
+		private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;
 		private State _state;
 		private readonly IActorRef _self;
@@ -72,6 +67,7 @@ namespace SharpPulsar
 		private ICancelable _timeoutTask;
 
 		private ICancelable _sendPing;
+		private readonly IActorRef _parent;
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
@@ -81,6 +77,7 @@ namespace SharpPulsar
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_parent = Context.Parent;
 			_pendingReceive = new List<byte>();
 			_log = Context.GetLogger();
 			_remoteHostName = endPoint.Host;
@@ -88,7 +85,9 @@ namespace SharpPulsar
 			_clientConfigurationData = conf;
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
 			_proxyToTargetBrokerAddress = targetBroker;
-			_socketClient = Context.ActorOf(SocketActor.Prop(conf, endPoint, endPoint.Host));
+			_socketClient = (SocketClient)SocketClient.CreateClient(conf, endPoint, endPoint.Host, Context.System.Log);
+			_socketClient.OnConnect += OnConnected;
+			_socketClient.OnDisconnect += OnDisconnected;
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>>();
 			_authentication = conf.Authentication;
@@ -97,6 +96,7 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
+			_socketClient.Connect();
 			Receive<Payload>(p =>
 			{
 				switch (p.Command)
@@ -120,7 +120,7 @@ namespace SharpPulsar
 					case "NewAddPartitionToTxn":
 					case "NewTxn":
 					case "NewEndTxn":
-						_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(p.Bytes)));
+						_socketClient.SendMessage(p.Bytes);
 						break;
 					default:
 						SendRequest(p.Bytes, p.RequestId);
@@ -135,18 +135,9 @@ namespace SharpPulsar
 			Receive<RegisterConsumer>(m => {
 				RegisterConsumer(m.ConsumerId, m.Consumer);
 			});
-			Receive<SocketPayload>(m => {
-				ReceivedFromSocket(m.Payload);
-			});
 			Receive<RemoveProducer>(m => {
 
 				RemoveProducer(m.ProducerId);
-			});
-			Receive<PulsarTcp.Connected>(m => {
-				OnConnected();
-			});
-			Receive<PulsarTcp.CommandFailed>(m => {
-				Context.Parent.Tell(new ConnectionFailed(new PulsarClientException(m.Cmd.FailureMessage.ToString())));
 			});
 			Receive<MaxMessageSize>(_ => {
 
@@ -156,7 +147,7 @@ namespace SharpPulsar
 				RemoveConsumer(m.ConsumerId);
 			});
 			Receive<SendPing>(m => {
-				_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(_pong))); ;
+				_socketClient.SendMessage(_pong);
 			});
 			Receive<RequestTimeout>(m => {
 				CheckRequestTimeout();
@@ -175,7 +166,7 @@ namespace SharpPulsar
 		{
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
-			_sendPing = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
+			//_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
 			if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
 			{
@@ -189,8 +180,9 @@ namespace SharpPulsar
 				_log.Info($"{_remoteHostName} Connected through proxy to target broker at {_proxyToTargetBrokerAddress}");
 			}
 			// Send CONNECT command
-			_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(NewConnectCommand())));
+			_socketClient.SendMessage(NewConnectCommand());
 			_state = State.SentConnectFrame;
+			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
 		}
 		private void OnDisconnected()
 		{
@@ -255,7 +247,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
-			Context.Parent.Tell(new ConnectionOpened(Self));
+			_parent.Tell(new ConnectionOpened(_self));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
@@ -274,7 +266,7 @@ namespace SharpPulsar
 					_log.Debug($"Mutual auth {_authentication.AuthMethodName}");
 				}
 
-				_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(request)));
+				_socketClient.SendMessage(request);
 				if (_state == State.SentConnectFrame)
 				{
 					_state = State.Connecting;
@@ -453,7 +445,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
 			}
-			_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(_pong)));
+			_socketClient.SendMessage(_pong);
 		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
@@ -612,7 +604,7 @@ namespace SharpPulsar
 		private void NewLookup(byte[] request, long requestId)
 		{
 			AddPendingLookupRequests(requestId, new ReadOnlySequence<byte>(request));
-			_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(request)));
+			_socketClient.SendMessage(request);
 		}
 
 		private void NewGetTopicsOfNamespace(byte[] request, long requestId)
@@ -674,7 +666,7 @@ namespace SharpPulsar
 		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
 		{
 			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
-			_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(requestMessage)));
+			_socketClient.SendMessage(requestMessage);
 			/*var task = _socketClient.Execute(requestMessage); 
 			if (task.IsFaulted)
 			{
@@ -690,7 +682,7 @@ namespace SharpPulsar
 			if (requestId >= 0)
 				_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
 
-			_socketClient.Tell(new SocketPayload(new ReadOnlySequence<byte>(requestMessage)));
+			_socketClient.SendMessage(requestMessage);
 		}
 
 		private void SendGetLastMessageId(byte[] request, long requestId)
@@ -750,7 +742,7 @@ namespace SharpPulsar
 			if (_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
 			{
 
-				_socketClient.GracefulStop(TimeSpan.FromSeconds(1));
+				_socketClient.Dispose();
 				_log.Warning("Close the channel since can't get the transaction meta store handler, will reconnect later.");
 			}
 			return handler;
@@ -771,7 +763,7 @@ namespace SharpPulsar
 			if (ServerError.ServiceNotReady.Equals(error))
 			{
 				_log.Error($"Close connection because received internal-server error {errMsg}");
-				_socketClient.GracefulStop(TimeSpan.FromSeconds(1));
+				_socketClient.Dispose();
 			}
 			else if (ServerError.TooManyRequests.Equals(error))
 			{
@@ -780,70 +772,13 @@ namespace SharpPulsar
 				{
 					_log.Error($"Close connection because received {this} rejected request in {_rejectedRequestResetTimeSec} seconds ");
 
-					_socketClient.GracefulStop(TimeSpan.FromSeconds(1));
+					_socketClient.Dispose();
 				}
 			}
 		}
-		private void ReceivedFromSocket(ReadOnlySequence<byte> readResult)
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber) args)
 		{
-			var buffer = readResult;
-			var length = (int)buffer.Length;
-			var isFresh = buffer.IsNewCommand();
-			if (_pendingReceive.Count > 0 && !isFresh)
-			{
-				_pendingReceive.AddRange(buffer.ToArray());
-				buffer = new ReadOnlySequence<byte>(_pendingReceive.ToArray());
-				length = (int)buffer.Length;
-				_pendingReceive.Clear();
-			}
-
-			if (length >= 8)
-			{
-				var array = ArrayPool<byte>.Shared.Rent(length);
-				try
-				{
-					buffer.CopyTo(array);
-					using var stream = new MemoryStream(array);
-					using var reader = new BinaryReader(stream);
-					var totalength = reader.ReadInt32().IntFromBigEndian();
-					var frameLength = totalength + 4;
-					if (length >= frameLength)
-					{
-						var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-						if (command.type == BaseCommand.Type.Message)
-						{
-							var magicNumber = reader.ReadInt16().Int16FromBigEndian();
-							var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
-							var metadataPointer = stream.Position;
-							var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-							var payloadPointer = stream.Position;
-							var metadataLength = (int)(payloadPointer - metadataPointer);
-							var payloadLength = frameLength - (int)payloadPointer;
-							var payload = reader.ReadBytes(payloadLength);
-							stream.Seek(metadataPointer, SeekOrigin.Begin);
-							var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-							OnCommandReceived(command, metadata, payload, messageCheckSum == calculatedCheckSum, magicNumber);
-							//|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
-						}
-						else
-						{
-							OnCommandReceived(command, null, null, false, 0);
-						}
-					}
-					else
-					{
-						_pendingReceive.AddRange(buffer.ToArray());
-					}
-				}
-				finally
-				{
-					ArrayPool<byte>.Shared.Return(array);
-				}
-			}
-		}
-		private void OnCommandReceived(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)
-		{
-			var cmd = command;
+			var cmd = args.command;
 			switch (cmd.type)
 			{
 				case BaseCommand.Type.AuthChallenge:
@@ -852,7 +787,7 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
-					HandleMessage(msg, metadata, payload, checkSum, magicNumber);
+					HandleMessage(msg, args.metadata, args.payload, args.checkSum, args.magicNumber);
 					break;
 				case BaseCommand.Type.GetLastMessageIdResponse:
 					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);

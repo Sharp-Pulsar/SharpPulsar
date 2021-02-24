@@ -72,7 +72,7 @@ namespace SharpPulsar.Test.Api
             var messageReceived = 0;
             for (var i = 0; i < messageCount; ++i)
             {
-                var m = consumer.Receive(60000);
+                var m = consumer.Receive();
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.NotNull(receivedMessage);
@@ -80,11 +80,10 @@ namespace SharpPulsar.Test.Api
             }
 			
 			Assert.Equal(10, messageReceived);
-            Thread.Sleep(31000);
 
             for (var i = 0; i < messageCount; i++)
             {
-                var m = consumer.Receive(120000);
+                var m = consumer.Receive();
                 var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.NotNull(receivedMessage);

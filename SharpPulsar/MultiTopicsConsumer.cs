@@ -962,7 +962,8 @@ namespace SharpPulsar
 				var message = peek;
 				if (!(message is TopicMessage<T>))
 					throw new InvalidMessageException(message.GetType().FullName);
-				while(message != null)
+
+				while(IncomingMessages.Count > 0)
 				{
 					IncomingMessagesSize -= message.Data.Length;
 					var messageId = message.MessageId;
