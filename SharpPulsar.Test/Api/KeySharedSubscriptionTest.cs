@@ -5,19 +5,21 @@ using System.Text;
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Util.Internal;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Api;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Auth;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Common.Schema;
+using SharpPulsar.Common;
+using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl;
-using SharpPulsar.Impl.Auth;
-using SharpPulsar.Impl.Schema;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Schemas;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
+using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using Murmur332Hash = SharpPulsar.Impl.Murmur332Hash;
-using Range = SharpPulsar.Api.Range;
+using Range = SharpPulsar.Common.Range;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -39,18 +41,24 @@ using Range = SharpPulsar.Api.Range;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
-    public class KeySharedSubscriptionTest : ProducerConsumerBase
+	[Collection(nameof(PulsarTests))]
+	public class KeySharedSubscriptionTest
 	{
         private readonly ITestOutputHelper _output;
-        private readonly TestCommon.Common _common;
+		private readonly PulsarSystem _system;
+		private readonly PulsarClient _client;
 
-        public KeySharedSubscriptionTest(ITestOutputHelper output)
-        {
-            _output = output;
-            _output = output;
-            _common = new TestCommon.Common(output);
-            _common.GetPulsarSystem(new AuthenticationDisabled(), useProxy: true, operationTime: 60000, brokerService: "pulsar://52.177.137.243:6651");
-        }
+		public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		{
+			_output = output;
+			_output = output;
+			var client = fixture.ClientBuilder;
+			client.OperationTimeout(60000);
+			client.Authentication(new AuthenticationDisabled());
+
+			_system = PulsarSystem.GetInstance(client);
+			_client = _system.NewClient();
+		}
 		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 		
 		private static readonly Random Random = new Random(DateTimeOffset.Now.Millisecond);
@@ -60,64 +68,57 @@ namespace SharpPulsar.Test.Api
 		{
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = topicType + "://public/default/key_shared-" + Guid.NewGuid();
-			var producer = CreateProducer(topic, enableBatch, "HashRangeAutoSplitSticky");
+			var producer = CreateProducer(topic, enableBatch);
 
 			for (var i = 0; i < 1000; i++)
 			{
-                var config = new Dictionary<string, object> {["key"] = Random.Next(NumberOfKeys).ToString()};
-                var send = new Send(i.ToString().GetBytes(), config.ToImmutableDictionary());
-				_common.PulsarSystem.Send(send, producer);
+				producer.NewMessage().Value(i.ToString().GetBytes()).Key(Random.Next(NumberOfKeys).ToString()).Send();
 			}
 
 
-            var consumer1 = CreateConsumer(topic, "consumer1");
+            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
 
-            var consumer2 = CreateConsumer(topic, "consumer2");
+            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
 
-            var consumer3 = CreateConsumer(topic, "consumer3");
+            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
 
-			ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)>{(consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
+			ReceiveAndCheckDistribution(new List<Consumer<sbyte[]>>{consumer1, consumer2, consumer3});
 		}
 
 		[Fact]
         public void TestSendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()
         {
             SendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", false);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
 		}
 		[Fact]
         public void TestSendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
             SendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", true);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
 		}
 		private void SendAndReceiveWithBatching(string topicType, bool enableBatch)
 		{
 			//this.conf.SubscriptionKeySharedEnable = true;
             var topic = topicType + "://public/default/key_shared-" + Guid.NewGuid();
 
-            var producer = CreateProducer(topic, enableBatch, "TestSendAndReceiveWithBatching");
+            var producer = CreateProducer(topic, enableBatch);
 
             for (var i = 0; i < 1000; i++)
             {
-                var config = new Dictionary<string, object> { ["key"] = Random.Next(NumberOfKeys).ToString() };
-                var send = new Send(i.ToString().GetBytes(), config.ToImmutableDictionary());
-
-                // Send the same key twice so that we'll have a batch message
-				_common.PulsarSystem.Send(send, producer);
-				_common.PulsarSystem.Send(send, producer);
+				var v = i.ToString().GetBytes();
+				var k = Random.Next(NumberOfKeys).ToString();
+				// Send the same key twice so that we'll have a batch message
+				producer.NewMessage().Value(v).Key(k).Send();
+				producer.NewMessage().Value(v).Key(k).Send();
             }
 
 
-            var consumer1 = CreateConsumer(topic, "consumer1");
+            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
 
-            var consumer2 = CreateConsumer(topic, "consumer2");
+            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
 
-            var consumer3 = CreateConsumer(topic, "consumer3");
+            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
 
-			ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)> { (consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
+			ReceiveAndCheckDistribution(new List<Consumer<sbyte[]>> { consumer1, consumer2, consumer3 });
 
 		}
 
@@ -125,8 +126,6 @@ namespace SharpPulsar.Test.Api
         public void TestSendAndReceiveWithBatching()
         {
             SendAndReceiveWithBatching("persistent", true);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
 		}
 
         private void SendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector(bool enableBatch)
@@ -134,7 +133,7 @@ namespace SharpPulsar.Test.Api
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = "persistent://public/default/key_shared_exclusive-" + Guid.NewGuid();
 
-            var producer = CreateProducer(topic, enableBatch, "TestSendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector");
+            var producer = CreateProducer(topic, enableBatch);
 
 			var consumer1ExpectMessages = 0;
 			var consumer2ExpectMessages = 0;
@@ -157,26 +156,26 @@ namespace SharpPulsar.Test.Api
 					{
 						consumer3ExpectMessages++;
 					}
-                    var config = new Dictionary<string, object> { ["key"] = key };
-                    var send = new Send(i.ToString().GetBytes(), config.ToImmutableDictionary());
-
-                    _common.PulsarSystem.Send(send, producer);
+					producer.NewMessage().Value(i.ToString().GetBytes())
+						.Key(key).Send();
 				}
 			}
 
 
-            CreateConsumer(topic, "consumer1", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(0, 20000)));
+            var c1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(0, 20000)));
 
-            CreateConsumer(topic, "consumer2", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(20001, 40000)));
+            var c2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(20001, 40000)));
 
-            CreateConsumer(topic, "consumer3", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(40001, KeySharedPolicy.DefaultHashRangeSize)));
+            var c3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(40001, KeySharedPolicy.DefaultHashRangeSize)));
 
-			IList<KeyValue<string, int>> checkList = new List<KeyValue<string, int>>();
-			checkList.Add(new KeyValue<string, int>("consumer1", consumer1ExpectMessages));
-			checkList.Add(new KeyValue<string, int>("consumer2", consumer2ExpectMessages));
-			checkList.Add(new KeyValue<string, int>("consumer3", consumer3ExpectMessages));
+            IList<KeyValue<Consumer<sbyte[]>, int>> checkList = new List<KeyValue<Consumer<sbyte[]>, int>>
+            {
+                new KeyValue<Consumer<sbyte[]>, int>(c1, consumer1ExpectMessages),
+                new KeyValue<Consumer<sbyte[]>, int>(c2, consumer2ExpectMessages),
+                new KeyValue<Consumer<sbyte[]>, int>(c3, consumer3ExpectMessages)
+            };
 
-			ReceiveAndCheck(checkList);
+            ReceiveAndCheck(checkList);
 
 		}
 
@@ -184,17 +183,11 @@ namespace SharpPulsar.Test.Api
         public void TestSendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelectorNoBatch()
         {
             SendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector(false);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
-
 		}
 		[Fact]
         public void TestSendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelectorBatch()
         {
             SendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector(true);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
-
 		}
 		
 		private void NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector(string topicType, bool enableBatch)
@@ -202,122 +195,120 @@ namespace SharpPulsar.Test.Api
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = topicType + "://public/default/key_shared_none_key-" + Guid.NewGuid();
 
-            var consumer1 = CreateConsumer(topic, "consumer1");
+            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
 
-            var consumer2 = CreateConsumer(topic, "consumer2");
+            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
 
-            var consumer3 = CreateConsumer(topic, "consumer3");
+            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
 
-            var producer = CreateProducer(topic, enableBatch, "TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector");
+            var producer = CreateProducer(topic, enableBatch);
 
             for (var i = 0; i < 1000; i++)
-			{ 
-                var send = new Send(i.ToString().GetBytes(), ImmutableDictionary<string, object>.Empty);
-
-                _common.PulsarSystem.Send(send, producer);
+			{
+				producer.NewMessage().Value(i.ToString().GetBytes())
+					.Send();
             }
-			Receive(new List<string>{ "consumer1", "consumer2", "consumer3" });
+			Receive(new List<Consumer<sbyte[]>>{ consumer1, consumer2, consumer3 });
 		}
 
 		[Fact]
         public void TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()
         {
             NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", false);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
 		}
 		[Fact]
         public void TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
 
 			NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", true);
-            _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
         }
 		private void OrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelector(bool enableBatch)
 		{
 			//this.conf.SubscriptionKeySharedEnable = true;
 			var topic = "persistent://public/default/key_shared_ordering_key-" + Guid.NewGuid();
 
-            var producer = CreateProducer(topic, enableBatch, "TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector", 20);
+            var producer = CreateProducer(topic, enableBatch, 20);
 
 
 			for (var i = 0; i < 1000; i++)
 			{
-                var config = new Dictionary<string, object>
-                {
-                    ["key"] = "any key",
-					["orderingKey"] = Random.Next(NumberOfKeys).ToString().GetBytes()
-				};
-                var send = new Send(i.ToString().GetBytes(), config.ToImmutableDictionary());
-                _common.PulsarSystem.Send(send, producer);
-
+				var ok = Encoding.UTF8.GetBytes(Random.Next(NumberOfKeys).ToString()).ToSBytes();
+				producer.NewMessage().Value(i.ToString().GetBytes()).Key("any key").OrderingKey(ok).
+					Send();
 			}
 
 
-            var consumer1 = CreateConsumer(topic, "consumer1");
+            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
 
-            var consumer2 = CreateConsumer(topic, "consumer2");
+            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
 
-            var consumer3 = CreateConsumer(topic, "consumer3");
-			ReceiveAndCheckDistribution(new List<(IActorRef consr, string name)> { (consumer1.consumer, "consumer1"), (consumer2.consumer, "consumer2"), (consumer3.consumer, "consumer3") });
+            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
+			ReceiveAndCheckDistribution(new List<Consumer<sbyte[]>> { consumer1, consumer2, consumer3 });
 		}
         [Fact]
         public void TestOrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()
         {
              OrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelector(false);
-             _common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
         }
 		[Fact]
         public void TestOrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
             OrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelector(true);
-			_common.PulsarSystem.Stop();
-            _common.PulsarSystem = null;
         }
-		private IActorRef CreateProducer(string topic, bool enableBatch, string producerName, int batchSize = 500)
+		private Producer<sbyte[]> CreateProducer(string topic, bool enableBatch, int batchSize = 500)
         {
-            if (enableBatch)
+			var pBuilder = new ProducerConfigBuilder<sbyte[]>();
+			pBuilder.Topic(topic);
+			if (enableBatch)
             {
-				return _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, producerName, batchingMaxMessages: batchSize, batcherBuilder: BatcherBuilderFields.KeyBased(_common.PulsarSystem.GetActorSystem()))).Producer;
+				pBuilder.EnableBatching(true);
+				pBuilder.BatchBuilder(IBatcherBuilder.KeyBased(_client.ActorSystem));
+				pBuilder.BatchingMaxMessages(batchSize);
 			}
 
-            return _common.PulsarSystem.PulsarProducer(_common.CreateProducer(BytesSchema.Of(), topic, producerName)).Producer;
+			return _client.NewProducer(pBuilder);
         }
 
-        private (IActorRef consumer, string topic) CreateConsumer(string topic, string consumerName, KeySharedPolicy keySharedPolicy = null)
+        private Consumer<sbyte[]> CreateConsumer(string topic, string consumerSub, KeySharedPolicy keySharedPolicy = null)
         {
-            var con = _common.PulsarSystem.PulsarConsumer(_common.CreateConsumer(BytesSchema.Of(), topic, consumerName, $"{consumerName}-Sub", subType: CommandSubscribe.SubType.KeyShared, ackTimeout: 30000, keySharedPolicy: keySharedPolicy, forceTopic: true));
-			return con;
+			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			builder.Topic(topic);
+			builder.SubscriptionName(consumerSub);
+			builder.AckTimeout(30000, TimeUnit.MILLISECONDS);
+			builder.ForceTopicCreation(true);
+			if(keySharedPolicy != null)
+				builder.KeySharedPolicy(keySharedPolicy);
+			builder.SubscriptionType(CommandSubscribe.SubType.KeyShared);
+			return _client.NewConsumer(builder);
 		}
 
-        private void Receive(IList<string> consumers)
+        private void Receive(IList<Consumer<sbyte[]>> consumers)
 		{
 			// Add a key so that we know this key was already assigned to one consumer
 
-            IDictionary<string, string> keyToConsumer = new Dictionary<string, string>();
+            IDictionary<string, Consumer<sbyte[]>> keyToConsumer = new Dictionary<string, Consumer<sbyte[]>>();
 
             foreach (var c in consumers)
 			{
 				while (true)
 				{
-                    var msg = _common.PulsarSystem.Receive(c, 100);
+                    var msg = c.Receive(100);
 					if (msg == null)
 					{
 						// Go to next consumer
 						break;
 					}
+					_output.WriteLine(Encoding.UTF8.GetString((byte[])(Array)msg.Data));
 
-					_common.PulsarSystem.Acknowledge(msg);
+					c.Acknowledge(msg);
 
-					if (msg.Message.HasKey())
+					if (msg.HasKey())
 					{
-                        var assignedConsumer = keyToConsumer[msg.Message.Key];
-						if (!keyToConsumer.ContainsKey(msg.Message.Key))
+                        var assignedConsumer = keyToConsumer[msg.Key];
+						if (!keyToConsumer.ContainsKey(msg.Key))
 						{
 							// This is a new key
-							keyToConsumer[msg.Message.Key] = c;
+							keyToConsumer[msg.Key] = c;
 						}
 						else
 						{
@@ -332,13 +323,13 @@ namespace SharpPulsar.Test.Api
 		/// <summary>
 		/// Check that every consumer receives a fair number of messages and that same key is delivered to only 1 consumer
 		/// </summary>
-        private void ReceiveAndCheckDistribution(IList<(IActorRef consr, string name)> consumers)
+        private void ReceiveAndCheckDistribution(IList<Consumer<sbyte[]>> consumers)
 		{
 			// Add a key so that we know this key was already assigned to one consumer
 
-            IDictionary<string, IActorRef> keyToConsumer = new Dictionary<string, IActorRef>();
+            IDictionary<string, Consumer<sbyte[]>> keyToConsumer = new Dictionary<string, Consumer<sbyte[]>>();
 
-            IDictionary<IActorRef, int> messagesPerConsumer = new Dictionary<IActorRef, int>();
+            IDictionary<Consumer<sbyte[]>, int> messagesPerConsumer = new Dictionary<Consumer<sbyte[]>, int>();
 
 			var totalMessages = 0;
 
@@ -348,34 +339,34 @@ namespace SharpPulsar.Test.Api
 				var messagesForThisConsumer = 0;
                 while (true)
                 {
-					var msg = _common.PulsarSystem.Receive(c.name, 100);
+					var msg = c.Receive(100);
                     if (msg == null)
                     {
                         // Go to next consumer
-                        messagesPerConsumer[c.consr] = messagesForThisConsumer;
+                        messagesPerConsumer[c] = messagesForThisConsumer;
                         break;
                     }
 
                     ++totalMessages;
                     ++messagesForThisConsumer;
-                    _common.PulsarSystem.Acknowledge(msg); 
+                    c.Acknowledge(msg); 
                     
-                    if (msg.Message.HasKey() || msg.Message.HasOrderingKey())
+                    if (msg.HasKey() || msg.HasOrderingKey())
                     {
-                        var orderingKey = msg.Message.HasOrderingKey() ? ((byte[]) (object) msg.Message?.OrderingKey).GetString(): string.Empty;
+                        var orderingKey = msg.HasOrderingKey() ? Encoding.UTF8.GetString((byte[])(Array)msg.OrderingKey): string.Empty;
 
-						string key = msg.Message.HasOrderingKey() ? orderingKey : msg.Message.Key;
+						string key = msg.HasOrderingKey() ? orderingKey : msg.Key;
                         
                         if (!keyToConsumer.TryGetValue(key, out var assignedConsumer))
                         {
                             // This is a new key
-                            keyToConsumer[key] = c.consr;
+                            keyToConsumer[key] = c;
                         }
                         else
                         {
                             // The consumer should be the same
-							_output.WriteLine($"The consumer should be the same: [{assignedConsumer}] > [{c.consr}] (OrderingKey: {orderingKey}, Key: {msg.Message.Key})");
-                            Assert.Equal(c.consr, assignedConsumer);
+							_output.WriteLine($"The consumer should be the same: [{assignedConsumer}] > (OrderingKey: {orderingKey}, Key: {msg.Key})");
+                            Assert.Equal(c, assignedConsumer);
 
                         }
                     }
@@ -393,9 +384,9 @@ namespace SharpPulsar.Test.Api
 			}
 		}
 
-        private void ReceiveAndCheck(IEnumerable<KeyValue<string, int>> checkList)
+        private void ReceiveAndCheck(IEnumerable<KeyValue<Consumer<sbyte[]>, int>> checkList)
 		{
-			var consumerKeys = new Dictionary<string, ISet<string>>();
+			var consumerKeys = new Dictionary<Consumer<sbyte[]>, ISet<string>>();
 			foreach (var check in checkList)
 			{
 				if (check.Value % 2 != 0)
@@ -403,16 +394,16 @@ namespace SharpPulsar.Test.Api
 					throw new ArgumentException();
 				}
 				var received = 0;
-				var lastMessageForKey = new Dictionary<string, Message>();
+				var lastMessageForKey = new Dictionary<string, Message<sbyte[]>>();
 				for (int? i = 0; i.Value < check.Value; i++)
 				{
-					var message = _common.PulsarSystem.Receive(check.Key);
+					var message = check.Key.Receive();
 					if (i % 2 == 0)
 					{
-						_common.PulsarSystem.Acknowledge(message);
+						check.Key.Acknowledge(message);
 					}
-					var key = message.Message.HasOrderingKey() ? ((byte[])(object)message.Message.OrderingKey).GetString() : message.Message.Key;
-					_output.WriteLine($"[{check.Key}] Receive message key: {key} value: {((byte[])message.Message.Value).GetString()} messageId: {message.Message.MessageId}");
+					var key = message.HasOrderingKey() ? Encoding.UTF8.GetString((byte[])(Array)message.OrderingKey) : message.Key;
+					_output.WriteLine($"[{check.Key}] Receive message key: {key} value: {Encoding.UTF8.GetString((byte[])(Array)message.Data)} messageId: {message.MessageId}");
 					// check messages is order by key
 					if (!lastMessageForKey.TryGetValue(key, out var msgO))
 					{
@@ -420,11 +411,11 @@ namespace SharpPulsar.Test.Api
 					}
 					else
                     {
-                        var l = Convert.ToInt32(((byte[])msgO.Value).GetString());
-						var o = Convert.ToInt32(((byte[])message.Message.Value).GetString());
+						var l = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)msgO.Data));
+						var o = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)message.Data));
 						Assert.True(o.CompareTo(l) > 0);
 					}
-					lastMessageForKey[key] = (Message)message.Message;
+					lastMessageForKey[key] = (Message<sbyte[]>)message;
 					if (!consumerKeys.ContainsKey(check.Key)) 
                         consumerKeys.Add(check.Key, new HashSet<string>());
 					consumerKeys[check.Key].Add(key);
@@ -434,14 +425,14 @@ namespace SharpPulsar.Test.Api
 				var redeliveryCount = check.Value / 2;
 				_output.WriteLine($"[{check.Key}] Consumer wait for {redeliveryCount} messages redelivery ...");
 				// messages not acked, test redelivery
-				lastMessageForKey = new Dictionary<string, Message>();
+				lastMessageForKey = new Dictionary<string, Message<sbyte[]>>();
 				for (var i = 0; i < redeliveryCount; i++)
 				{
-                    var message = _common.PulsarSystem.Receive(check.Key);
+                    var message = check.Key.Receive();
 					received++;
-					_common.PulsarSystem.Acknowledge(message);
-					var key = message.Message.HasOrderingKey() ? ((byte[])(object)message.Message.OrderingKey).GetString() : message.Message.Key;
-                    _output.WriteLine($"[{check.Key}] Receive message key: {key} value: {((byte[])message.Message.Value).GetString()} messageId: {message.Message.MessageId}");
+					check.Key.Acknowledge(message);
+					var key = message.HasOrderingKey() ? Encoding.UTF8.GetString((byte[])(Array)message.OrderingKey) : message.Key;
+                    _output.WriteLine($"[{check.Key}] Receive message key: {key} value: {Encoding.UTF8.GetString((byte[])(Array)message.Data)} messageId: {message.MessageId}");
 					// check redelivery messages is order by key
 					if (!lastMessageForKey.TryGetValue(key, out var msgO))
                     {
@@ -449,16 +440,16 @@ namespace SharpPulsar.Test.Api
                     }
                     else
                     {
-                        var l = Convert.ToInt32(((byte[])msgO.Value).GetString());
-                        var o = Convert.ToInt32(((byte[])message.Message.Value).GetString());
+                        var l = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)msgO.Data));
+                        var o = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)message.Data));
                         Assert.True(o.CompareTo(l) > 0);
                     }
-                    lastMessageForKey[key] = (Message)message.Message;
+                    lastMessageForKey[key] = (Message<sbyte[]>)message;
 				}
-				Message noMessages = null;
+				Message<sbyte[]> noMessages = null;
 				try
 				{
-					noMessages = (Message)_common.PulsarSystem.Receive(check.Key, 100)?.Message;
+					noMessages = (Message<sbyte[]>)check.Key.Receive(100);
 				}
 				catch (PulsarClientException)
 				{

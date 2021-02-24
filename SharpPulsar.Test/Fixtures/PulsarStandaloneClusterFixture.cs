@@ -28,6 +28,7 @@ namespace SharpPulsar.Test.Fixtures
     public class PulsarStandaloneClusterFixture : IAsyncLifetime
     {
         public PulsarSystem System;
+        public PulsarClientConfigBuilder ClientBuilder;
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -135,6 +136,7 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
+            ClientBuilder = client;
             //client.UseDedicatedConnections(true);
             System = PulsarSystem.GetInstance(client);
         }

@@ -1616,9 +1616,9 @@ namespace SharpPulsar
 					ackBitSet = null;
 				}
 			}
-			catch(Exception)
+			catch(Exception ex)
 			{
-				_log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch");
+				_log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch: {ex}");
 				DiscardCorruptedMessage(messageId, cnx, CommandAck.ValidationError.BatchDeSerializeError);
 			}
 

@@ -62,8 +62,7 @@ namespace SharpPulsar.Batch
 			NumMessagesInBatch++;
 			CurrentBatchSize += msg.Data.Length;
 			var key = GetKey(msg);
-			var part = _batches[key];
-			if (part == null)
+			if (!_batches.TryGetValue(key, out var part))
 			{
 				part = new KeyedBatch();
 				part.AddMsg(msg, callback);
@@ -198,7 +197,7 @@ namespace SharpPulsar.Batch
 			return Equals(msg.SchemaVersion, part.MessageMetadata.SchemaVersion);
 		}
 
-		private string GetKey<T>(Message<T> msg)
+		private string GetKey(Message<T> msg)
 		{
 			if (msg.HasOrderingKey())
 			{
@@ -212,8 +211,8 @@ namespace SharpPulsar.Batch
 			internal MessageMetadata MessageMetadata = new MessageMetadata();
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
-			internal List<byte> BatchedMessageMetadataAndPayload;
-			internal IList<Message<object>> Messages = new List<Message<object>>();
+			internal List<byte> BatchedMessageMetadataAndPayload = new List<byte>();
+			internal IList<Message<T>> Messages = new List<Message<T>>();
 			internal Action<object, Exception> PreviousCallback = null;
 			internal CompressionType CompressionType;
 			internal CompressionCodec Compressor;
@@ -236,9 +235,9 @@ namespace SharpPulsar.Batch
 						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToBytes());
 					}
-					BatchedMessageMetadataAndPayload.AddRange(stream.ToArray());
-					var uncompressedSize = BatchedMessageMetadataAndPayload.Count;
-					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload.ToArray());
+					var batchedMessageMetadataAndPayload = stream.ToArray();
+					var uncompressedSize = batchedMessageMetadataAndPayload.Length;
+					var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
 					BatchedMessageMetadataAndPayload = null;
 					if (CompressionType != CompressionType.None)
 					{
@@ -253,29 +252,17 @@ namespace SharpPulsar.Batch
 				}
 			}
 
-			public virtual void AddMsg<T>(Message<T> msg, Action<object, Exception> callback)
+			public virtual void AddMsg(Message<T> msg, Action<object, Exception> callback)
 			{
 				if (Messages.Count == 0)
 				{
 					SequenceId = new Commands().InitBatchMessageMetadata(MessageMetadata);
-					if (msg.HasKey())
-					{
-						MessageMetadata.PartitionKey = msg.Key;
-						if (msg.HasBase64EncodedKey())
-						{
-							MessageMetadata.PartitionKeyB64Encoded = true;
-						}
-					}
-					if (msg.HasOrderingKey())
-					{
-						MessageMetadata.OrderingKey = msg.OrderingKey.ToBytes();
-					}
 					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToBytes());
 					FirstCallback = callback;
 				}
 ;
                 PreviousCallback = callback;
-				Messages.Add((Message<object>)(object)msg);
+				Messages.Add(msg);
 			}
 
 			public virtual void Discard(Exception ex)
@@ -294,7 +281,7 @@ namespace SharpPulsar.Batch
 
 			public virtual void Clear()
 			{
-				Messages =  new List<Message<object>>();
+				Messages =  new List<Message<T>>();
 				FirstCallback = null;
 				PreviousCallback = null;
 				MessageMetadata = new MessageMetadata();

@@ -124,7 +124,7 @@ namespace SharpPulsar.User
         {
             var conf = confBuilder.ConsumerConfigurationData;
             // DLQ only supports non-ordered subscriptions, don't enable DLQ on Key_Shared subType since it require message ordering for given key.
-            if (conf.SubscriptionType == SubType.KeyShared && !string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.DeadLetterTopic))
+            if (conf.SubscriptionType == SubType.KeyShared && !string.IsNullOrWhiteSpace(conf.DeadLetterPolicy?.DeadLetterTopic))
             {
                 throw new PulsarClientException.InvalidConfigurationException("Deadletter topic on Key_Shared " +
                         "subscription type is not supported.");
@@ -512,7 +512,7 @@ namespace SharpPulsar.User
         {
             _actorSystem.Terminate();
         }
-
+        public ActorSystem ActorSystem => _actorSystem;
         public void UpdateServiceUrl(string serviceUrl)
         {
             _client.Tell(new UpdateServiceUrl(serviceUrl));
