@@ -135,7 +135,7 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            client.UseDedicatedConnections(true);
+            //client.UseDedicatedConnections(true);
             System = PulsarSystem.GetInstance(client);
         }
     }
