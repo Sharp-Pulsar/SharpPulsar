@@ -46,7 +46,7 @@ namespace SharpPulsar.Configuration
 		/// But when we need a smaller size than the size set by the server when chunking
 		/// we can do it here
 		/// </summary>
-		public int MaxMessageSize { get; set; } = 2 * 1024; //2kb
+		public int MaxMessageSize { get; set; } = -1;
         public string TopicName { get; set; }
         public int Partitions { get; set; } = 0;
 

@@ -546,7 +546,7 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(message is Message<T>);
 			var maxMessageSize = ClientCnx.AskFor<int>(MaxMessageSize.Instance);
-			if (Conf.ChunkingEnabled)
+			if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)
 				maxMessageSize = Math.Min(Conf.MaxMessageSize, maxMessageSize);
 			if (!IsValidProducerState(message.SequenceId))
 			{
