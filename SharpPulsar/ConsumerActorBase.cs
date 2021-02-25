@@ -123,7 +123,7 @@ namespace SharpPulsar
 		}
 		
 
-		internal virtual void Acknowledge<T1>(IMessage<T1> message)
+		internal virtual void Acknowledge(IMessage<T> message)
 		{
 			try
 			{
@@ -162,7 +162,7 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void Acknowledge<T1>(IMessages<T1> messages)
+		internal virtual void Acknowledge(IMessages<T> messages)
 		{
 			try
 			{

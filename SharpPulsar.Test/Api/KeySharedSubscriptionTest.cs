@@ -20,6 +20,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Murmur332Hash = SharpPulsar.Impl.Murmur332Hash;
 using Range = SharpPulsar.Common.Range;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -62,134 +63,7 @@ namespace SharpPulsar.Test.Api
 		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 		
 		private static readonly Random Random = new Random(DateTimeOffset.Now.Millisecond);
-		private const int NumberOfKeys = 300;
-
-		private void SendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector(string topicType, bool enableBatch)
-		{
-			//this.conf.SubscriptionKeySharedEnable = true;
-			var topic = topicType + "://public/default/key_shared-" + Guid.NewGuid();
-			var producer = CreateProducer(topic, enableBatch);
-
-			for (var i = 0; i < 1000; i++)
-			{
-				producer.NewMessage().Value(i.ToString().GetBytes()).Key(Random.Next(NumberOfKeys).ToString()).Send();
-			}
-
-
-            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
-
-            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
-
-            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
-
-			ReceiveAndCheckDistribution(new List<Consumer<sbyte[]>>{consumer1, consumer2, consumer3});
-		}
-
-		[Fact]
-        public void TestSendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()
-        {
-            SendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", false);
-		}
-		[Fact]
-        public void TestSendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
-        {
-            SendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", true);
-		}
-		private void SendAndReceiveWithBatching(string topicType, bool enableBatch)
-		{
-			//this.conf.SubscriptionKeySharedEnable = true;
-            var topic = topicType + "://public/default/key_shared-" + Guid.NewGuid();
-
-            var producer = CreateProducer(topic, enableBatch);
-
-            for (var i = 0; i < 1000; i++)
-            {
-				var v = i.ToString().GetBytes();
-				var k = Random.Next(NumberOfKeys).ToString();
-				// Send the same key twice so that we'll have a batch message
-				producer.NewMessage().Value(v).Key(k).Send();
-				producer.NewMessage().Value(v).Key(k).Send();
-            }
-
-
-            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
-
-            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
-
-            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
-
-			ReceiveAndCheckDistribution(new List<Consumer<sbyte[]>> { consumer1, consumer2, consumer3 });
-
-		}
-
-		[Fact]
-        public void TestSendAndReceiveWithBatching()
-        {
-            SendAndReceiveWithBatching("persistent", true);
-		}
-
-        private void SendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector(bool enableBatch)
-		{
-			//this.conf.SubscriptionKeySharedEnable = true;
-			var topic = "persistent://public/default/key_shared_exclusive-" + Guid.NewGuid();
-
-            var producer = CreateProducer(topic, enableBatch);
-
-			var consumer1ExpectMessages = 0;
-			var consumer2ExpectMessages = 0;
-			var consumer3ExpectMessages = 0;
-
-			for (var i = 0; i < 10; i++)
-			{
-				foreach (var key in Keys)
-				{
-					var slot = Murmur332Hash.Instance.MakeHash((sbyte[])(object)key.GetBytes()) % KeySharedPolicy.DefaultHashRangeSize;
-					if (slot <= 20000)
-					{
-						consumer1ExpectMessages++;
-					}
-					else if (slot <= 40000)
-					{
-						consumer2ExpectMessages++;
-					}
-					else
-					{
-						consumer3ExpectMessages++;
-					}
-					producer.NewMessage().Value(i.ToString().GetBytes())
-						.Key(key).Send();
-				}
-			}
-
-
-            var c1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(0, 20000)));
-
-            var c2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(20001, 40000)));
-
-            var c3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}", KeySharedPolicy.StickyHashRange().GetRanges(Range.Of(40001, KeySharedPolicy.DefaultHashRangeSize)));
-
-            IList<KeyValue<Consumer<sbyte[]>, int>> checkList = new List<KeyValue<Consumer<sbyte[]>, int>>
-            {
-                new KeyValue<Consumer<sbyte[]>, int>(c1, consumer1ExpectMessages),
-                new KeyValue<Consumer<sbyte[]>, int>(c2, consumer2ExpectMessages),
-                new KeyValue<Consumer<sbyte[]>, int>(c3, consumer3ExpectMessages)
-            };
-
-            ReceiveAndCheck(checkList);
-
-		}
-
-		[Fact]
-        public void TestSendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelectorNoBatch()
-        {
-            SendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector(false);
-		}
-		[Fact]
-        public void TestSendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelectorBatch()
-        {
-            SendAndReceiveWithHashRangeExclusiveStickyKeyConsumerSelector(true);
-		}
-		
+				
 		private void NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector(string topicType, bool enableBatch)
 		{
 			//this.conf.SubscriptionKeySharedEnable = true;
@@ -221,39 +95,6 @@ namespace SharpPulsar.Test.Api
         {
 
 			NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", true);
-        }
-		private void OrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelector(bool enableBatch)
-		{
-			//this.conf.SubscriptionKeySharedEnable = true;
-			var topic = "persistent://public/default/key_shared_ordering_key-" + Guid.NewGuid();
-
-            var producer = CreateProducer(topic, enableBatch, 20);
-
-
-			for (var i = 0; i < 1000; i++)
-			{
-				var ok = Encoding.UTF8.GetBytes(Random.Next(NumberOfKeys).ToString()).ToSBytes();
-				producer.NewMessage().Value(i.ToString().GetBytes()).Key("any key").OrderingKey(ok).
-					Send();
-			}
-
-
-            var consumer1 = CreateConsumer(topic, $"consumer1-{Guid.NewGuid()}");
-
-            var consumer2 = CreateConsumer(topic, $"consumer2-{Guid.NewGuid()}");
-
-            var consumer3 = CreateConsumer(topic, $"consumer3-{Guid.NewGuid()}");
-			ReceiveAndCheckDistribution(new List<Consumer<sbyte[]>> { consumer1, consumer2, consumer3 });
-		}
-        [Fact]
-        public void TestOrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()
-        {
-             OrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelector(false);
-        }
-		[Fact]
-        public void TestOrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
-        {
-            OrderingKeyWithHashRangeAutoSplitStickyKeyConsumerSelector(true);
         }
 		private Producer<sbyte[]> CreateProducer(string topic, bool enableBatch, int batchSize = 500)
         {
@@ -321,70 +162,6 @@ namespace SharpPulsar.Test.Api
 			}
 		}
 
-		/// <summary>
-		/// Check that every consumer receives a fair number of messages and that same key is delivered to only 1 consumer
-		/// </summary>
-        private void ReceiveAndCheckDistribution(IList<Consumer<sbyte[]>> consumers)
-		{
-			// Add a key so that we know this key was already assigned to one consumer
-
-            IDictionary<string, Consumer<sbyte[]>> keyToConsumer = new Dictionary<string, Consumer<sbyte[]>>();
-
-            IDictionary<Consumer<sbyte[]>, int> messagesPerConsumer = new Dictionary<Consumer<sbyte[]>, int>();
-
-			var totalMessages = 0;
-
-
-            foreach (var c in consumers)
-			{
-				var messagesForThisConsumer = 0;
-                while (true)
-                {
-					var msg = c.Receive(100);
-                    if (msg == null)
-                    {
-                        // Go to next consumer
-                        messagesPerConsumer[c] = messagesForThisConsumer;
-                        break;
-                    }
-
-                    ++totalMessages;
-                    ++messagesForThisConsumer;
-                    c.Acknowledge(msg); 
-                    
-                    if (msg.HasKey() || msg.HasOrderingKey())
-                    {
-                        var orderingKey = msg.HasOrderingKey() ? Encoding.UTF8.GetString((byte[])(Array)msg.OrderingKey): string.Empty;
-
-						string key = msg.HasOrderingKey() ? orderingKey : msg.Key;
-                        
-                        if (!keyToConsumer.TryGetValue(key, out var assignedConsumer))
-                        {
-                            // This is a new key
-                            keyToConsumer[key] = c;
-                        }
-                        else
-                        {
-                            // The consumer should be the same
-							_output.WriteLine($"The consumer should be the same: [{assignedConsumer}] > (OrderingKey: {orderingKey}, Key: {msg.Key})");
-                            Assert.Equal(c, assignedConsumer);
-
-                        }
-                    }
-				}
-			}
-
-			const double percentError = 0.40; // 40 %
-
-			var expectedMessagesPerConsumer = (double)totalMessages / consumers.Count;
-
-			_output.WriteLine(JsonSerializer.Serialize(messagesPerConsumer, new JsonSerializerOptions{WriteIndented = true}));
-			foreach (var count in messagesPerConsumer.Values)
-			{
-				Assert.Equal(expectedMessagesPerConsumer, expectedMessagesPerConsumer * percentError, count);
-			}
-		}
-
         private void ReceiveAndCheck(IEnumerable<KeyValue<Consumer<sbyte[]>, int>> checkList)
 		{
 			var consumerKeys = new Dictionary<Consumer<sbyte[]>, ISet<string>>();
@@ -425,6 +202,7 @@ namespace SharpPulsar.Test.Api
 				Assert.Equal(check.Value, received);
 				var redeliveryCount = check.Value / 2;
 				_output.WriteLine($"[{check.Key}] Consumer wait for {redeliveryCount} messages redelivery ...");
+				Thread.Sleep(TimeSpan.FromSeconds(redeliveryCount));
 				// messages not acked, test redelivery
 				lastMessageForKey = new Dictionary<string, Message<sbyte[]>>();
 				for (var i = 0; i < redeliveryCount; i++)
