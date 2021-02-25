@@ -64,7 +64,7 @@ namespace SharpPulsar.Configuration
 		public ISet<string> EncryptionKeys { get; set; } = new SortedSet<string>();
 
 		public CompressionType CompressionType { get; set; } = CompressionType.None;
-		public long BatchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMicroseconds(1);
+		public long BatchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMilliseconds(1000);
 
 		public long? InitialSequenceId { get; set; }
 

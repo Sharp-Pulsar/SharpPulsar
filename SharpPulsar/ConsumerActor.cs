@@ -469,7 +469,14 @@ namespace SharpPulsar
 				Sender.Tell(permits);
 			});
 			Receive<MessageProcessed<T>>(m => {
-				MessageProcessed(m.Message);
+                try
+                {
+					MessageProcessed(m.Message);
+				}
+				catch(Exception ex)
+                {
+					_log.Error($"{m}===>>>{ex}");
+                }
 			});
 			Receive<IsConnected>(_ => {
 				Push(ConsumerQueue.Connected, Connected);
@@ -1684,7 +1691,7 @@ namespace SharpPulsar
 			IncomingMessagesSize -= (msg.Data == null ? 0 : msg.Data.Length);
 		}
 
-		protected internal virtual void TrackMessage<T1>(IMessage<T1> msg)
+		protected internal virtual void TrackMessage(IMessage<T> msg)
 		{
 			if(msg != null)
 			{
@@ -1696,11 +1703,11 @@ namespace SharpPulsar
 		{
 			if(Conf.AckTimeoutMillis > 0)
 			{
-				MessageId id = null;
-				if (messageId is BatchMessageId)
+                MessageId id;
+                if (messageId is BatchMessageId msgId)
 				{
 					// do not add each item in batch message into tracker
-					id = new MessageId(id.LedgerId, id.EntryId, PartitionIndex);
+					id = new MessageId(msgId.LedgerId, msgId.EntryId, PartitionIndex);
 				}
 				else
 					id = (MessageId)messageId;

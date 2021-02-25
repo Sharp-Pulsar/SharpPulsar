@@ -264,6 +264,7 @@ namespace SharpPulsar.Test.Api
 				pBuilder.EnableBatching(true);
 				pBuilder.BatchBuilder(IBatcherBuilder.KeyBased(_client.ActorSystem));
 				pBuilder.BatchingMaxMessages(batchSize);
+				pBuilder.BatchingMaxPublishDelay(5000);
 			}
 
 			return _client.NewProducer(pBuilder);
@@ -292,7 +293,7 @@ namespace SharpPulsar.Test.Api
 			{
 				while (true)
 				{
-                    var msg = c.Receive(100);
+                    var msg = c.Receive();
 					if (msg == null)
 					{
 						// Go to next consumer

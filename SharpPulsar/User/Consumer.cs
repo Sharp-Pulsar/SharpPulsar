@@ -53,7 +53,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeMessage<T>(message));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -61,7 +61,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeMessageId(messageId));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -69,7 +69,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeMessages<T>(messages));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
         /*private void StartListener()
@@ -87,7 +87,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeMessageIds(messageIds));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -95,7 +95,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -103,7 +103,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeCumulativeMessageId(messageId));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -111,7 +111,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new AcknowledgeCumulativeTxn(messageId, txn.Txn));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -133,7 +133,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new NegativeAcknowledgeMessage<T>(message));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -141,7 +141,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new NegativeAcknowledgeMessageId(messageId));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -149,7 +149,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new NegativeAcknowledgeMessages<T>(messages));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -281,7 +281,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new ReconsumeLaterMessage<T>(message, delayTime, unit));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -289,7 +289,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new ReconsumeLaterMessages<T>(messages, delayTime, unit));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -297,7 +297,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new ReconsumeLaterCumulative<T>(message, delayTime, unit));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -305,7 +305,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
             if (_queue.RedeliverUnacknowledgedException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -318,7 +318,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new SeekMessageId(messageId));
             if (_queue.SeekException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
@@ -326,7 +326,7 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(new SeekTimestamp(timestamp));
             if (_queue.SeekException.TryTake(out var msg, 1000))
-                if (msg.Exception != null)
+                if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
