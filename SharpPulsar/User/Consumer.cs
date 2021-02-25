@@ -137,14 +137,6 @@ namespace SharpPulsar.User
                     throw msg.Exception;
         }
 
-        public void NegativeAcknowledge(IMessageId messageId)
-        {
-            _consumerActor.Tell(new NegativeAcknowledgeMessageId(messageId));
-            if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
-                if (msg?.Exception != null)
-                    throw msg.Exception;
-        }
-
         public void NegativeAcknowledge(IMessages<T> messages)
         {
             _consumerActor.Tell(new NegativeAcknowledgeMessages<T>(messages));

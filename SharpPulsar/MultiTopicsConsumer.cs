@@ -723,7 +723,7 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal override void DoReconsumeLater<T1>(IMessage<T1> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+		protected internal override void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
 		{
 			var messageId = message.MessageId;
 			Condition.CheckArgument(messageId is TopicMessageId);
@@ -739,7 +739,7 @@ namespace SharpPulsar
 				if(consumer != null)
 				{
 					var innerId = topicMessageId.InnerMessageId;
-					consumer.Tell(new ReconsumeLaterCumulative<T1>(message, delayTime, unit));
+					consumer.Tell(new ReconsumeLaterCumulative<T>(message, delayTime, unit));
 				}
 				else
 				{
@@ -750,7 +750,7 @@ namespace SharpPulsar
 			{
 				var (topic, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 				var innerId = topicMessageId.InnerMessageId;
-				consumer.Tell(new ReconsumeLaterWithProperties<T1>(message, ackType, properties, delayTime, unit));
+				consumer.Tell(new ReconsumeLaterWithProperties<T>(message, ackType, properties, delayTime, unit));
 				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
 		}

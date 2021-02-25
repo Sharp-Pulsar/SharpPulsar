@@ -29,6 +29,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Extension;
+using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.Tracker
 {
@@ -62,44 +63,35 @@ namespace SharpPulsar.Tracker
         }
 		private void TriggerRedelivery()
         {
-            if (_nackedMessages.Count == 0)
+            try
             {
-                _timeout = null;
-            }
-            else
-            {
-                try
+                // Group all the nacked messages into one single re-delivery request
+                var messagesToRedeliver = new HashSet<IMessageId>();
+                var now = DateTimeHelper.CurrentUnixTimeMillis();
+                foreach (var unack in _nackedMessages)
                 {
-                    // Group all the nacked messages into one single re-delivery request
-                    var messagesToRedeliver = new HashSet<IMessageId>();
-                    var now = DateTimeHelper.CurrentUnixTimeMillis();
-                    _nackedMessages.ForEach(a =>
+                    if (unack.Value < now)
                     {
-                        if (a.Value < now)
-                        {
-                            var ms = _unAckedMessageTracker
-                                .AskFor<ImmutableHashSet<IMessageId>>(
-                                    new AddChunkedMessageIdsAndRemoveFromSequnceMap(a.Key,
-                                        messagesToRedeliver.ToImmutableHashSet()));
-                            ms.ToList().ForEach(x => messagesToRedeliver.Add(x));
-                            messagesToRedeliver.Add(a.Key);
-                        }
-                    });
-
+                        var ms = _unAckedMessageTracker.AskFor<AddChunkedMessageIdsAndRemoveFromSequnceMapResponse>(new AddChunkedMessageIdsAndRemoveFromSequnceMap(unack.Key, messagesToRedeliver.ToImmutableHashSet()));
+                        ms.MessageIds.ToList().ForEach(x => messagesToRedeliver.Add(x));
+                        messagesToRedeliver.Add(unack.Key);
+                    }
+                }
+                if(messagesToRedeliver.Count > 0)
+                {
                     messagesToRedeliver.ForEach(a => _nackedMessages.Remove(a));
                     Context.Parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
-                    Context.Parent.Tell(new RedeliverUnacknowledgedMessages(messagesToRedeliver));
-                }
-                catch (Exception e)
-                {
-                    Context.System.Log.Error(e.ToString());
-                }
-                finally
-                {
-                    _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
+                    Context.Parent.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
                 }
             }
-           
+            catch (Exception e)
+            {
+                Context.System.Log.Error(e.ToString());
+            }
+            finally
+            {
+                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
+            }
         }
 
         private void Add(IMessageId messageId)

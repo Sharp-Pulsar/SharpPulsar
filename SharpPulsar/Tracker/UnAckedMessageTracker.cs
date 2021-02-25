@@ -93,7 +93,7 @@ namespace SharpPulsar.Tracker
             {
                 var ids = new HashSet<IMessageId>(c.MessageIds);
                 AddChunkedMessageIdsAndRemoveFromSequnceMap(c.MessageId, ids);
-                Sender.Tell(ids.ToImmutableHashSet());
+                Sender.Tell(new AddChunkedMessageIdsAndRemoveFromSequnceMapResponse(ids.ToImmutableHashSet()));
             });
             _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
 
@@ -294,15 +294,6 @@ namespace SharpPulsar.Tracker
     public sealed class AckTimeoutSend
     {
         public AckTimeoutSend(ISet<IMessageId> messageIds)
-        {
-            MessageIds = messageIds;
-        }
-
-        public ISet<IMessageId> MessageIds { get; }
-    }
-    public sealed class RedeliverUnacknowledgedMessages
-    {
-        public RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
         {
             MessageIds = messageIds;
         }

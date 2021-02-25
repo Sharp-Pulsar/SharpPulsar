@@ -513,6 +513,7 @@ namespace SharpPulsar.User
             _actorSystem.Terminate();
         }
         public ActorSystem ActorSystem => _actorSystem;
+        public IActorRef ClientCnx => _client;
         public void UpdateServiceUrl(string serviceUrl)
         {
             _client.Tell(new UpdateServiceUrl(serviceUrl));

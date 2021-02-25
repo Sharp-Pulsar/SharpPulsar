@@ -175,7 +175,7 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void ReconsumeLater<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
+		internal virtual void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit)
 		{
 			if (!Conf.RetryEnable)
 			{
@@ -199,7 +199,7 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual void ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
+		internal virtual void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit)
 		{
 			try
 			{
@@ -237,7 +237,7 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void ReconsumeLaterCumulative<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
+		internal virtual void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit)
 		{
 			try
 			{
@@ -265,7 +265,7 @@ namespace SharpPulsar
 			DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txn);
 		}
 
-		internal virtual void NegativeAcknowledge<T1>(IMessage<T1> message)
+		internal void NegativeAcknowledge(IMessage<T> message)
 		{
 			NegativeAcknowledge(message.MessageId);
 		}
@@ -304,9 +304,9 @@ namespace SharpPulsar
 
 		protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-		protected internal abstract void DoReconsumeLater<T1>(IMessage<T1> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit);
+		protected internal abstract void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit);
 
-		internal virtual void NegativeAcknowledge<T1>(IMessages<T1> messages)
+		internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{
 			messages.ForEach(NegativeAcknowledge);
 		}

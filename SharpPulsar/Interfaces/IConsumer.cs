@@ -183,28 +183,6 @@ namespace SharpPulsar.Interfaces
 		///            
 		void NegativeAcknowledge(IMessage<T> message);
 
-		/// <summary>
-		/// Acknowledge the failure to process a single message.
-		/// 
-		/// <para>When a message is "negatively acked" it will be marked for redelivery after
-		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
-		/// 
-		/// </para>
-		/// <para>This call is not blocking.
-		/// 
-		/// </para>
-		/// <para>This variation allows to pass a <seealso cref="IMessageId"/> rather than a <seealso cref="Message"/>
-		/// object, in order to avoid keeping the payload in memory for extended amount
-		/// of time
-		/// 
-		/// </para>
-		/// </summary>
-		/// <seealso cref= #negativeAcknowledge(Message)
-		/// </seealso>
-		/// <param name="messageId">
-		///            The {@code MessageId} to be acknowledged </param>
-		void NegativeAcknowledge(IMessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the failure to process <seealso cref="Messages"/>.

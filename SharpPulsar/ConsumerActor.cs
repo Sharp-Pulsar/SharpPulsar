@@ -182,7 +182,6 @@ namespace SharpPulsar
 			_priorityLevel = conf.PriorityLevel;
 			_readCompacted = conf.ReadCompacted;
 			_subscriptionInitialPosition = conf.SubscriptionInitialPosition;
-			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, Self));
 			_resetIncludeHead = conf.ResetIncludeHead;
 			_createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 			_maxPendingChuckedMessage = conf.MaxPendingChuckedMessage;
@@ -217,8 +216,9 @@ namespace SharpPulsar
 				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
 			}
 
+			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, _unAckedMessageTracker));
 			// Create msgCrypto if not created already
-			if(conf.CryptoKeyReader != null)
+			if (conf.CryptoKeyReader != null)
 			{
 				if(conf.MessageCrypto != null)
 				{
@@ -324,6 +324,10 @@ namespace SharpPulsar
 			Receive<AckTimeoutSend>(ack =>
 			{
 				OnAckTimeoutSend(ack.MessageIds);
+			});
+			Receive<OnNegativeAcksSend>(ack =>
+			{
+				OnNegativeAcksSend(ack.MessageIds);
 			});
 			Receive<ConnectionClosed>(m => {
 				ConnectionClosed(m.ClientCnx);
@@ -562,6 +566,18 @@ namespace SharpPulsar
                 try
                 {
 					NegativeAcknowledge(m.MessageId);
+					Push(ConsumerQueue.NegativeAcknowledgeException, null);
+				}
+                catch (Exception ex)
+                {
+					Push(ConsumerQueue.NegativeAcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+				}
+			});
+			Receive<NegativeAcknowledgeMessage<T>>(m => 
+			{
+                try
+                {
+					NegativeAcknowledge(m.Message);
 					Push(ConsumerQueue.NegativeAcknowledgeException, null);
 				}
                 catch (Exception ex)
@@ -905,8 +921,7 @@ namespace SharpPulsar
 			}
 			//return CompletableFuture.completedFuture(null);
 		}
-
-		protected internal override void DoReconsumeLater<T1>(IMessage<T1> message, CommandAck.AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+        protected internal override void DoReconsumeLater(IMessage<T> message, CommandAck.AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
 		{
 			IMessageId messageId = message.MessageId;
 			if(messageId is TopicMessageId)

@@ -41,7 +41,12 @@ namespace SharpPulsar.Configuration
         public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
-        public int MaxMessageSize { get; set; } = 2 * 1024; //2kb
+		/// <summary>
+		/// MaxMessageSize is set at the server side,
+		/// But when we need a smaller size than the size set by the server when chunking
+		/// we can do it here
+		/// </summary>
+		public int MaxMessageSize { get; set; } = 2 * 1024; //2kb
         public string TopicName { get; set; }
         public int Partitions { get; set; } = 0;
 

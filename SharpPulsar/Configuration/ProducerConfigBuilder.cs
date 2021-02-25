@@ -57,10 +57,10 @@ namespace SharpPulsar.Configuration
             return this;
         }
         /// <summary>
-        /// max in bytes
-        /// </summary>
-        /// <param name="max"></param>
-        /// <returns></returns>
+		/// MaxMessageSize is set at the server side,
+		/// But when we need a smaller size than the size set by the server when chunking
+		/// we can do it here
+		/// </summary>
         public ProducerConfigBuilder<T> MaxMessageSize(int max)
         {
             if (max < 1)
