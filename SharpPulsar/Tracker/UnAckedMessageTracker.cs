@@ -65,13 +65,13 @@ namespace SharpPulsar.Tracker
             Receive<Empty>(c =>
             {
                 var emptied = Empty();
-                //Sender.Tell(emptied);
+                Sender.Tell(emptied);
             });
             Receive<Clear>(c => Clear());
             Receive<Remove>(c =>
             {
                 var removed = Remove(c.MessageId);
-               // Sender.Tell(removed);
+                Sender.Tell(removed);
             });
             Receive<RemoveMessagesTill>(c =>
             {
@@ -81,7 +81,7 @@ namespace SharpPulsar.Tracker
             Receive<Add>(c =>
             {
                 var added = Add(c.MessageId);
-                //Sender.Tell(added);
+                Sender.Tell(added);
             });
             Receive<Size>(c =>
             {
