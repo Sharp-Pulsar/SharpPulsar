@@ -52,7 +52,6 @@ namespace SharpPulsar.Test.Api
 		public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
-			_output = output;
 			var client = fixture.ClientBuilder;
 			client.OperationTimeout(60000);
 			client.Authentication(new AuthenticationDisabled());
@@ -90,7 +89,7 @@ namespace SharpPulsar.Test.Api
         {
             NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", false);
 		}
-		[Fact (Skip ="Works well locally")]
+		[Fact]
         public void TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
 

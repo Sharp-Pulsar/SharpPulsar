@@ -389,7 +389,7 @@ namespace SharpPulsar.User
         {
             return NewProducer(ISchema<object>.Bytes, producerConfigBuilder);
         }
-
+        
         public Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
             var interceptors = configBuilder.GetInterceptors;
@@ -513,7 +513,7 @@ namespace SharpPulsar.User
             _actorSystem.Terminate();
         }
         public ActorSystem ActorSystem => _actorSystem;
-        public IActorRef ClientCnx => _client;
+        private IActorRef ClientCnx => _client;
         public void UpdateServiceUrl(string serviceUrl)
         {
             _client.Tell(new UpdateServiceUrl(serviceUrl));

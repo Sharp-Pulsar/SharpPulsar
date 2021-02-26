@@ -258,7 +258,7 @@ namespace SharpPulsar
 						
 			if(_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(client, _consumerId, conf));
+				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(Self, _consumerId, conf));
 			}
 			else
 			{
@@ -344,6 +344,11 @@ namespace SharpPulsar
 			Receive<GetIncomingMessageSize>(_ => 
 			{
 				Sender.Tell(IncomingMessagesSize);
+			});		
+			Receive<GetCnx>(_ => 
+			{
+				var cnx = Cnx();
+				Sender.Tell(cnx);
 			});
 			Receive<IncreaseAvailablePermits>(i => 
 			{

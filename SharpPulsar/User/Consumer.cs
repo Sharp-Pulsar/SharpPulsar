@@ -64,7 +64,7 @@ namespace SharpPulsar.User
                 if (msg?.Exception != null)
                     throw msg.Exception;
         }
-
+        public IActorRef ConsumerActor => _consumerActor;
         public void Acknowledge(IMessages<T> messages)
         {
             _consumerActor.Tell(new AcknowledgeMessages<T>(messages));
