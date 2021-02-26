@@ -147,6 +147,21 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
+                .SetArgs("clusters", "create", "standalone-cluster", "--url", "http://localhost:8080")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("namespaces","create", "tnx/ns1")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces","create", "public/deduplication")
             );
            DockerTasks.DockerExec(x => x
@@ -173,6 +188,16 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/partitioned", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/output", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/message-ack-test", "--partitions", "3")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
