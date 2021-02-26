@@ -859,6 +859,8 @@ namespace SharpPulsar
 		}
 		private void RegisterConsumer(long consumerId, IActorRef consumer)
 		{
+			//if (_consumers.ContainsKey(consumerId))
+				//_consumers.Remove(consumerId);
 			_consumers.Add(consumerId, consumer);
 		}
 		private PulsarClientException GetPulsarClientException(ServerError error, string errorMsg)

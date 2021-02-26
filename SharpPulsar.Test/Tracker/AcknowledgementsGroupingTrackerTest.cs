@@ -50,8 +50,8 @@ namespace SharpPulsar.Test.Tracker
 		{
 			var builder = new ConsumerConfigBuilder<sbyte[]>();
 			builder.AcknowledgmentGroupTime((long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000));
-			builder.Topic("TestAckTracker");
-			builder.SubscriptionName("TestAckTracker-sub");
+			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
+			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, conf));
@@ -131,8 +131,8 @@ namespace SharpPulsar.Test.Tracker
 		{
 			var builder = new ConsumerConfigBuilder<sbyte[]>();
 			builder.AcknowledgmentGroupTime(0);
-			builder.Topic("TestAckTracker");
-			builder.SubscriptionName("TestAckTracker-sub");
+			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
+			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
 			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, conf));
@@ -164,8 +164,8 @@ namespace SharpPulsar.Test.Tracker
 		{
 			var builder = new ConsumerConfigBuilder<sbyte[]>();
 			builder.AcknowledgmentGroupTime((long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000));
-			builder.Topic("TestAckTracker");
-			builder.SubscriptionName("TestAckTracker-sub");
+			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
+			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
 			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, conf));
