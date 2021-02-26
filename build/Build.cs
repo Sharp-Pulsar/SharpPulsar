@@ -107,8 +107,8 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
-                        .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                        .EnableNoBuild());
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild()); ;
                 }
                 catch(Exception ex)
                 {
@@ -125,7 +125,7 @@ class Build : NukeBuild
             b
             .SetDetach(true)
             .SetInteractive(true)
-            .SetName("pulsar_test_2")
+            .SetName("pulsar_test")
             .SetPublish("6650:6650", "8080:8080")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
@@ -151,7 +151,7 @@ class Build : NukeBuild
     {
 
         DockerTasks.DockerRm(b => b
-          .SetContainers("pulsar_test_2")
+          .SetContainers("pulsar_test")
           .SetForce(true));
 
     });
