@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <Compile Remove="Api\TlsProducerConsumerTest.cs" />
-    <Compile Remove="TransactionEndToEndTest.cs" />
   </ItemGroup>
 
   <ItemGroup>

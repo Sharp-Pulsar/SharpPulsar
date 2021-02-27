@@ -32,7 +32,6 @@ namespace SharpPulsar.Test.Tracker
 	[Collection(nameof(PulsarTests))]
 	public class UnAckedMessageTrackerTest
     {
-
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarSystem _system;
 		private readonly PulsarClient _client;

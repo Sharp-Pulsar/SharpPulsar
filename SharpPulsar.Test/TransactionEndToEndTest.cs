@@ -1,6 +1,17 @@
-﻿using System;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Configuration;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
+using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
+using SharpPulsar.Extension;
+using Xunit;
+using Xunit.Abstractions;
+using SharpPulsar.Common;
+using SharpPulsar.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,6 +36,7 @@ namespace SharpPulsar.Test
 	/// <summary>
 	/// End to end transaction test.
 	/// </summary>
+	[Collection(nameof(PulsarTests))]
 	public class TransactionEndToEndTest
 	{
 
@@ -34,6 +46,18 @@ namespace SharpPulsar.Test
 		private static readonly string _nAMESPACE1 = TENANT + "/ns1";
 		private static readonly string _topicOutput = _nAMESPACE1 + "/output";
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
+
+		private readonly ITestOutputHelper _output;
+		private readonly PulsarSystem _system;
+		private readonly PulsarClient _client;
+		public TransactionEndToEndTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		{
+			_output = output;
+			_system = fixture.System;
+			_client = _system.NewClient();
+			var ns = NamespaceName.SystemNamespace.ToString();
+			var co = TopicName.TransactionCoordinatorAssign.ToString();
+		}
 		protected internal virtual void Setup()
 		{
 
@@ -54,11 +78,6 @@ namespace SharpPulsar.Test
 			Thread.Sleep(1000 * 3);
 		}
 
-		protected internal virtual void Cleanup()
-		{
-			base.InternalCleanup();
-		}
-
 		public virtual void NoBatchProduceCommitTest()
 		{
 			ProduceCommitTest(false);
@@ -71,14 +90,21 @@ namespace SharpPulsar.Test
 
 		private void ProduceCommitTest(bool enableBatch)
 		{
-			Consumer<sbyte[]> consumer = PulsarClient.NewConsumer().Topic(_topicOutput).SubscriptionName("test").EnableBatchIndexAcknowledgment(true).Subscribe();
+			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
+			consumerBuilder.Topic(_topicOutput);
+			consumerBuilder.SubscriptionName("test");
+			consumerBuilder.EnableBatchIndexAcknowledgment(true);
+			var consumer = _client.NewConsumer(consumerBuilder);
 
-			ProducerBuilder<sbyte[]> producerBuilder = PulsarClient.NewProducer().Topic(_topicOutput).EnableBatching(enableBatch).SendTimeout(0, TimeUnit.SECONDS);
+			var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
+			producerBuilder.Topic(_topicOutput);
+			producerBuilder.EnableBatching(enableBatch);
+			producerBuilder.SendTimeout(0);
 
-			Producer<sbyte[]> producer = producerBuilder.Create();
+			Producer<sbyte[]> producer = _client.NewProducer(producerBuilder);
 
-			Transaction txn1 = Txn;
-			Transaction txn2 = Txn;
+			User.Transaction txn1 = Txn;
+			User.Transaction txn2 = Txn;
 
 			int txn1MessageCnt = 0;
 			int txn2MessageCnt = 0;
@@ -87,56 +113,56 @@ namespace SharpPulsar.Test
 			{
 				if(i % 5 == 0)
 				{
-					producer.newMessage(txn1).value(("Hello Txn - " + i).GetBytes(UTF_8)).send();
+					producer.NewMessage(txn1).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
 					txn1MessageCnt++;
 				}
 				else
 				{
-					producer.newMessage(txn2).value(("Hello Txn - " + i).GetBytes(UTF_8)).sendAsync();
+					producer.NewMessage(txn2).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
 					txn2MessageCnt++;
 				}
 			}
 
 			// Can't receive transaction messages before commit.
-			Message<sbyte[]> message = consumer.receive(5, TimeUnit.SECONDS);
-			Assert.assertNull(message);
+			var message = consumer.Receive(5000);
+			Assert.Null(message);
 
-			txn1.Commit().get();
+			txn1.Commit();
 
 			// txn1 messages could be received after txn1 committed
 			int receiveCnt = 0;
 			for(int i = 0; i < txn1MessageCnt; i++)
 			{
-				message = consumer.receive();
-				Assert.assertNotNull(message);
+				message = consumer.Receive();
+				Assert.NotNull(message);
 				receiveCnt++;
 			}
-			Assert.assertEquals(txn1MessageCnt, receiveCnt);
+			Assert.Equal(txn1MessageCnt, receiveCnt);
 
-			message = consumer.receive(5, TimeUnit.SECONDS);
-			Assert.assertNull(message);
+			message = consumer.Receive(5000);
+			Assert.Null(message);
 
-			txn2.Commit().get();
+			txn2.Commit();
 
 			// txn2 messages could be received after txn2 committed
 			receiveCnt = 0;
 			for(int i = 0; i < txn2MessageCnt; i++)
 			{
-				message = consumer.receive();
-				Assert.assertNotNull(message);
+				message = consumer.Receive();
+				Assert.NotNull(message);
 				receiveCnt++;
 			}
-			Assert.assertEquals(txn2MessageCnt, receiveCnt);
+			Assert.Equal(txn2MessageCnt, receiveCnt);
 
-			message = consumer.receive(5, TimeUnit.SECONDS);
-			Assert.assertNull(message);
+			message = consumer.Receive(5000);
+			Assert.Null(message);
 
-			log.info("message commit test enableBatch {}", enableBatch);
+			_output.WriteLine($"message commit test enableBatch {enableBatch}");
 		}
 
 		public virtual void ProduceAbortTest()
 		{
-			Transaction txn = Txn;
+			User.Transaction txn = Txn;
 
 
 			Producer<sbyte[]> producer = PulsarClient.NewProducer().Topic(_topicOutput).SendTimeout(0, TimeUnit.SECONDS).EnableBatching(false).Create();
@@ -305,48 +331,6 @@ namespace SharpPulsar.Test
 
 			message = consumer.receive(2, TimeUnit.SECONDS);
 			Assert.assertNull(message);
-			for(int partition = 0; partition < TopicPartition; partition++)
-			{
-				topic = TopicName.Get(topic).getPartition(partition).ToString();
-				bool exist = false;
-				for(int i = 0; i < PulsarServiceList.size(); i++)
-				{
-
-					System.Reflection.FieldInfo field = typeof(BrokerService).getDeclaredField("topics");
-					field.Accessible = true;
-					ConcurrentOpenHashMap<string, CompletableFuture<Optional<Topic>>> topics = (ConcurrentOpenHashMap<string, CompletableFuture<Optional<Topic>>>) field.get(PulsarServiceList.get(i).BrokerService);
-					CompletableFuture<Optional<Topic>> topicFuture = topics.Get(topic);
-
-					if(topicFuture != null)
-					{
-						Optional<Topic> topicOptional = topicFuture.get();
-						if(topicOptional.Present)
-						{
-							PersistentSubscription persistentSubscription = (PersistentSubscription) topicOptional.get().getSubscription(subName);
-							Position markDeletePosition = persistentSubscription.Cursor.MarkDeletedPosition;
-							Position lastConfirmedEntry = persistentSubscription.Cursor.ManagedLedger.LastConfirmedEntry;
-							exist = true;
-							if(!markDeletePosition.Equals(lastConfirmedEntry))
-							{
-								//this because of the transaction commit marker have't delete
-								//delete commit marker after ack position
-								//when delete commit marker operation is processing, next delete operation will not do again
-								//when delete commit marker operation finish, it can run next delete commit marker operation
-								//so this test may not delete all the position in this manageLedger.
-								Position markerPosition = ((ManagedLedgerImpl) persistentSubscription.Cursor.ManagedLedger).getNextValidPosition((PositionImpl) markDeletePosition);
-								//marker is the lastConfirmedEntry, after commit the marker will only be write in
-								if(!markerPosition.Equals(lastConfirmedEntry))
-								{
-									log.error("Mark delete position is not commit marker position!");
-									fail();
-								}
-							}
-						}
-					}
-				}
-				assertTrue(exist);
-			}
-
 			log.info("receive transaction messages count: {}", receiveCnt);
 		}
 
@@ -445,11 +429,11 @@ namespace SharpPulsar.Test
 			}
 		}
 
-		private Transaction Txn
+		private User.Transaction Txn
 		{
 			get
 			{
-				return PulsarClient.NewTransaction().WithTransactionTimeout(2, TimeUnit.SECONDS).Build().get();
+				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2, TimeUnit.SECONDS).Build();
 			}
 		}
 
