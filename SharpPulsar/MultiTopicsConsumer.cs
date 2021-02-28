@@ -341,7 +341,7 @@ namespace SharpPulsar
 					Push(ConsumerQueue.LastMessageId, nul);
 				}
 			});
-			Receive<AcknowledgeWithTxn>(m =>
+			Receive<AcknowledgeWithTxnMessages>(m =>
 			{
 				try
 				{
@@ -681,7 +681,7 @@ namespace SharpPulsar
 				var (topic, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 
 				var innerId = topicMessageId.InnerMessageId;
-				consumer.Ask(new AcknowledgeWithTxn(new List<IMessageId> { innerId }, ackType, properties, txnImpl)).ContinueWith
+				consumer.Ask(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl)).ContinueWith
 					(t=> {
 						_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 					});
@@ -717,7 +717,7 @@ namespace SharpPulsar
 				topicToMessageIdMap.ForEach(t =>
 				{
 					var consumer = _consumers.GetValueOrNull(t.Key);
-					consumer.Consumer.Tell(new AcknowledgeWithTxn(t.Value, ackType, properties, txn));
+					consumer.Consumer.Tell(new AcknowledgeWithTxnMessages(t.Value, properties, txn));
 					messageIdList.ForEach(x => _unAckedMessageTracker.Tell(new Remove(x)));
 				});
 			}

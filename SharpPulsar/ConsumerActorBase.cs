@@ -274,13 +274,9 @@ namespace SharpPulsar
 		{
 			if (txn != null)
 			{
-				txn.Tell(new RegisterAckedTopic(Topic, _subscription));
-				DoAcknowledge(messageIdList, ackType, properties, txn);				
+				txn.Tell(new RegisterAckedTopic(Topic, _subscription));		
 			}
-			else
-			{
-				DoAcknowledge(messageIdList, ackType, properties, txn);
-			}
+			DoAcknowledge(messageIdList, ackType, properties, txn);
 		}
 
 		protected internal virtual void DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)

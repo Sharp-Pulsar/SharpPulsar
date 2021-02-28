@@ -157,7 +157,17 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
+                .SetArgs("tenants", "create", "pulsar", "-r", "appid1", "--allowed-clusters", "standalone")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces","create", "tnx/ns1")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("namespaces","create", "pulsar/system")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
@@ -188,6 +198,11 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/partitioned", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://pulsar/system/transaction_coordinator_assign", "--partitions", "16")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")

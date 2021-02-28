@@ -90,6 +90,13 @@ namespace SharpPulsar.User
                 if (msg?.Exception != null)
                     throw msg.Exception;
         }
+        public void Acknowledge(IMessageId messageId, Transaction txn)
+        {
+            _consumerActor.Tell(new AcknowledgeWithTxn(messageId, txn.Txn));
+            if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
+                if (msg?.Exception != null)
+                    throw msg.Exception;
+        }
 
         public void AcknowledgeCumulative(IMessage<T> message)
         {

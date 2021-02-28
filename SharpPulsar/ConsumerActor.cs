@@ -517,11 +517,23 @@ namespace SharpPulsar
 					Push(ConsumerQueue.LastMessageId, nul);
 				}
 			});
-			Receive<AcknowledgeWithTxn>(m => 
+			Receive<AcknowledgeWithTxnMessages>(m => 
 			{
                 try
                 {
 					DoAcknowledgeWithTxn(m.MessageIds, m.AckType, m.Properties, m.Txn);
+					Push(ConsumerQueue.AcknowledgeException, null);
+				}
+                catch (Exception ex)
+                {
+					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+				}
+			});
+			Receive<AcknowledgeWithTxn>(m => 
+			{
+                try
+                {
+					DoAcknowledgeWithTxn(m.MessageId, m.AckType, m.Properties, m.Txn);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
                 catch (Exception ex)
@@ -888,13 +900,14 @@ namespace SharpPulsar
 			if(CommandAck.AckType.Cumulative.Equals(ackType))
 			{
 				messageIdList.ForEach(messageId => DoAcknowledge(messageId, ackType, properties, txn));
+				return;
 			}
 			if(State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
 			{
 				Stats.IncrementNumAcksFailed();
 				PulsarClientException exception = new PulsarClientException("Consumer not ready. State: " + State);
 				messageIdList.ForEach(messageId => OnAcknowledge(messageId, exception));
-				//return FutureUtil.FailedFuture(exception);
+				return;
 			}
 			IList<MessageId> nonBatchMessageIds = new List<MessageId>();
 			foreach(MessageId messageId in messageIdList)

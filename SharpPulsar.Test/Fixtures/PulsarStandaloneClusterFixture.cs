@@ -119,8 +119,10 @@ namespace SharpPulsar.Test.Fixtures
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
             var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
             var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
+            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
 
 
+            client.EnableTransaction(enableTxn);
             if (operationTime > 0)
                 client.OperationTimeout(operationTime);
 
