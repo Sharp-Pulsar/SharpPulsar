@@ -58,7 +58,7 @@ namespace SharpPulsar.Transaction
 			//       and start the transaction to get the transaction id.
 			//       After getting the transaction id, all the operations are handled by the
 			//       `Transaction`
-			var txnID = _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTransaction(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS)).Response;
+			var txnID = _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS)).Response;
 			var transaction = _actorSystem.ActorOf(Transaction.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
 			return new User.Transaction(transaction);	
 		}

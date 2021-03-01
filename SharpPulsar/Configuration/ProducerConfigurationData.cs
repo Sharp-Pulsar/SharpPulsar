@@ -138,7 +138,7 @@ namespace SharpPulsar.Configuration
 
 		public void SetSendTimeoutMs(long sendTimeoutMs)
 		{
-			if (sendTimeoutMs < 1)
+			if (sendTimeoutMs < 0)
 				throw new ArgumentException("sendTimeout needs to be >= 0");
 			SendTimeoutMs = sendTimeoutMs;
 		}

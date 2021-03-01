@@ -25,6 +25,8 @@ namespace SharpPulsar.Test.Fixtures
     using System.Threading.Tasks;
     using Xunit;
 
+    //docker run -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_transactionCoordinatorEnabled=true -p 6650:6650 -p 8080:8080 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf  apachepulsar/pulsar-all:2.7.0 bash -c "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2"
+
     public class PulsarStandaloneClusterFixture : IAsyncLifetime
     {
         public PulsarSystem System;

@@ -45,9 +45,9 @@ namespace SharpPulsar.Test
 
 		private const int TopicPartition = 3;
 
-		private const string TENANT = "tnx";
-		private static readonly string _nAMESPACE1 = TENANT + "/ns1";
-		private static readonly string _topicOutput = _nAMESPACE1 + "/output";
+		private const string TENANT = "public";
+		private static readonly string _nAMESPACE1 = TENANT + "/default";
+		private static readonly string _topicOutput = _nAMESPACE1 + $"/output-{Guid.NewGuid()}";
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
 		private readonly ITestOutputHelper _output;
@@ -60,82 +60,49 @@ namespace SharpPulsar.Test
 			_client = _system.NewClient();
 			Thread.Sleep(1000 * 3);
 		}
-		[Fact]
-		public virtual void NoBatchProduceCommitTest()
-		{
-			ProduceCommitTest(false);
-		}
-		[Fact]
-		public virtual void BatchProduceCommitTest()
-		{
-			ProduceCommitTest(true);
-		}
-
+		[Theory]
+		[InlineData(false)]
+		[InlineData(true)]
 		private void ProduceCommitTest(bool enableBatch)
 		{
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
-			consumerBuilder.Topic(_topicOutput);
-			consumerBuilder.SubscriptionName("test");
-			consumerBuilder.EnableBatchIndexAcknowledgment(true);
+			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+				.Topic(_topicOutput)
+				.SubscriptionName($"test-{Guid.NewGuid()}")
+				.EnableBatchIndexAcknowledgment(true);
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
-			producerBuilder.Topic(_topicOutput);
-			producerBuilder.EnableBatching(enableBatch);
-			producerBuilder.SendTimeout(0);
+			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+				.Topic(_topicOutput)
+				.EnableBatching(enableBatch)
+				.SendTimeout(0);
 
 			Producer<sbyte[]> producer = _client.NewProducer(producerBuilder);
 
-			User.Transaction txn1 = Txn;
-			User.Transaction txn2 = Txn;
+			User.Transaction txn = Txn;
 
-			int txn1MessageCnt = 0;
-			int txn2MessageCnt = 0;
-			int messageCnt = 1000;
+			int txnMessageCnt = 0;
+			int messageCnt = 100;
 			for(int i = 0; i < messageCnt; i++)
 			{
-				if(i % 5 == 0)
-				{
-					producer.NewMessage(txn1).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
-					txn1MessageCnt++;
-				}
-				else
-				{
-					producer.NewMessage(txn2).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
-					txn2MessageCnt++;
-				}
+				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
+				txnMessageCnt++;
 			}
 
 			// Can't receive transaction messages before commit.
 			var message = consumer.Receive(5000);
 			Assert.Null(message);
 
-			txn1.Commit();
+			txn.Commit();
 
 			// txn1 messages could be received after txn1 committed
 			int receiveCnt = 0;
-			for(int i = 0; i < txn1MessageCnt; i++)
+			for(int i = 0; i < txnMessageCnt; i++)
 			{
 				message = consumer.Receive();
 				Assert.NotNull(message);
 				receiveCnt++;
 			}
-			Assert.Equal(txn1MessageCnt, receiveCnt);
-
-			message = consumer.Receive(5000);
-			Assert.Null(message);
-
-			txn2.Commit();
-
-			// txn2 messages could be received after txn2 committed
-			receiveCnt = 0;
-			for(int i = 0; i < txn2MessageCnt; i++)
-			{
-				message = consumer.Receive();
-				Assert.NotNull(message);
-				receiveCnt++;
-			}
-			Assert.Equal(txn2MessageCnt, receiveCnt);
+			Assert.Equal(txnMessageCnt, receiveCnt);
 
 			message = consumer.Receive(5000);
 			Assert.Null(message);

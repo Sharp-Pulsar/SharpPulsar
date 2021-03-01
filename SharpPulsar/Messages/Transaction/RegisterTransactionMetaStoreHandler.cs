@@ -50,7 +50,11 @@ namespace SharpPulsar.Messages.Transaction
     }
     public sealed class StartTransactionCoordinatorClient
     {
-        public static StartTransactionCoordinatorClient Instance = new StartTransactionCoordinatorClient();
+        public IActorRef Client { get; }
+        public StartTransactionCoordinatorClient(IActorRef client)
+        {
+            Client = client;
+        }
     }
     public sealed class RegisterSendOp
     {

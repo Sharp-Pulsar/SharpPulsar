@@ -281,7 +281,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				if (Metadata != null && Metadata.SchemaVersion.Length > 0)
+				if (Metadata != null && Metadata.SchemaVersion?.Length > 0)
 				{
 					return Metadata.SchemaVersion.ToSBytes();
 				}

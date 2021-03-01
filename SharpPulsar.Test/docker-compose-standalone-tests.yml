@@ -18,9 +18,7 @@ services:
       PULSAR_PREFIX_transactionCoordinatorEnabled: "true"
       
     command: >
-      bash -c "bin/set_python_version.sh &&
-               bin/apply-config-from-env.py conf/standalone.conf &&
-               bin/pulsar standalone"
+      bash -c "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
 
   init:
     image: apachepulsar/pulsar-all:2.7.0

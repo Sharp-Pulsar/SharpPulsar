@@ -55,7 +55,7 @@ namespace SharpPulsar.Transaction
 
 		private readonly List<IMessageId> _sendList;
 
-		internal Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+		public Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
 			_log = Context.System.Log;
 			_client = client;
@@ -105,6 +105,7 @@ namespace SharpPulsar.Transaction
 			Receive<RegisterProducedTopic>(p =>
 			{
 				RegisterProducedTopic(p.Topic);
+				Sender.Tell(true);
 			});
 			_sendList = new List<IMessageId>();
 		}

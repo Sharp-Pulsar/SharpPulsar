@@ -11,6 +11,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
@@ -69,6 +70,7 @@ namespace SharpPulsar
 			{
 				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
 			}
+			_tcClient = txnCoordinator;
 			_log = Context.GetLogger();
 			Auth = conf;
 			_conf = conf;
@@ -78,14 +80,6 @@ namespace SharpPulsar
 			_lookup = lookup;
 			_producers = new HashSet<IActorRef>();
 			_consumers = new HashSet<IActorRef>();
-
-			if (conf.EnableTransaction)
-			{
-				_tcClient = Context.ActorOf(TransactionCoordinatorClient.Prop(Self, idGenerator, conf));
-				_tcClient.Tell(StartTransactionCoordinatorClient.Instance);
-				txnCoordinator = _tcClient;
-			}
-
 			_state = State.Open;
 			Receive<AddProducer>(m => _producers.Add(m.Producer));
 			Receive<UpdateServiceUrl>(m => UpdateServiceUrl(m.ServiceUrl));
@@ -100,6 +94,9 @@ namespace SharpPulsar
 			Receive<GetConnection>(m => {
 				var cnx = GetConnection(m.Topic);
 				Sender.Tell(cnx);
+			});
+			Receive<GetTcClient>(_ => {
+				Sender.Tell(new TcClient(_tcClient));
 			});
 			Receive<GetSchema>(s => {
 				var response = _lookup.AskFor(s);

@@ -3,6 +3,8 @@ using Akka.Configuration;
 using NLog;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using System.Threading.Tasks;
 
@@ -92,8 +94,15 @@ namespace SharpPulsar
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+
+            if (conf.EnableTransaction)
+                _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_generator, conf));
+
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
+
+            if(conf.EnableTransaction)
+                _tcClient.Tell(new StartTransactionCoordinatorClient(_client));
         }
         private PulsarSystem(ActorSystem actorSystem, PulsarClientConfigBuilder confBuilder)
         {
@@ -104,8 +113,15 @@ namespace SharpPulsar
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+
+            if (conf.EnableTransaction)
+                _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_generator, conf));
+
             _client = _actorSystem.ActorOf(Props.Create<PulsarClientActor>(conf, _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
+
+            if (conf.EnableTransaction)
+                _tcClient.Tell(new StartTransactionCoordinatorClient(_client));
         }
         public PulsarClient NewClient() 
         {

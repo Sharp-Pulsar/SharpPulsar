@@ -189,7 +189,7 @@ namespace SharpPulsar.User
                 return message;
             }
         }
-        public IMessage<T> Receive(int timeoutMilliseconds = 30000, CancellationToken token = default)
+        public IMessage<T> Receive(int timeoutMilliseconds = 5000, CancellationToken token = default)
         {
             VerifyConsumerState();
             if (_conf.MessageListener != null)

@@ -49,13 +49,9 @@ namespace SharpPulsar.SocketImpl
 
         private PipeWriter _pipeWriter;
 
-        private readonly TimeSpan heartbeatttimespan = TimeSpan.FromMilliseconds(800);
-
         private readonly ILoggingAdapter _logger;
 
         private readonly DnsEndPoint _server;
-
-        private bool _connected;
 
         private readonly string _connectonId = string.Empty;
 
@@ -168,7 +164,7 @@ namespace SharpPulsar.SocketImpl
                                 if (readresult.IsCompleted)
                                     _pipeReader.AdvanceTo(buffer.Start, buffer.End);
                                 else
-                                    _pipeReader.AdvanceTo(consumed);
+                                   _pipeReader.AdvanceTo(consumed);
                             }
                         }
                         finally
@@ -182,33 +178,6 @@ namespace SharpPulsar.SocketImpl
                 observer.OnCompleted();
 
             });
-        }
-
-        private async Task FillPipe(CancellationToken cancellationToken)
-        {
-            await Task.Yield();
-
-            try
-            {
-                while (true)
-                {
-                    var memory = _pipeWriter.GetMemory(84999);
-                    var bytesRead = await _networkstream.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
-                    if (bytesRead == 0)
-                        break;
-
-                    _pipeWriter.Advance(bytesRead);
-
-                    var result = await _pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (result.IsCompleted)
-                        break;
-                }
-            }
-            finally
-            {
-                await _pipeWriter.CompleteAsync().ConfigureAwait(false);
-            }
         }
 
         public void SendMessage(byte[] message)

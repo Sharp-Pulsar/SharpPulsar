@@ -14,11 +14,11 @@ namespace SharpPulsar.Messages.Transaction
     }
     public sealed class NewTxn
     {
-        public long Timeout { get; }
+        public long TxnRequestTimeoutMs { get; }
         public TimeUnit TimeUnit { get; }
-        public NewTxn(long timeout, TimeUnit unit)
+        public NewTxn(long txnRequestTimeoutMs, TimeUnit unit)
         {
-            Timeout = timeout;
+            TxnRequestTimeoutMs = txnRequestTimeoutMs;
             TimeUnit = unit;
         }
     }

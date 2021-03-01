@@ -739,7 +739,7 @@ namespace SharpPulsar
 
 		private IActorRef CheckAndGetTransactionMetaStoreHandler(long tcId)
 		{
-			if (_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
+			if (!_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
 			{
 
 				_socketClient.Dispose();
