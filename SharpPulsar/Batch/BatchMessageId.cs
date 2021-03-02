@@ -128,6 +128,10 @@ namespace SharpPulsar.Batch
 		{
 			return Acker.AckCumulative(BatchIndex);
 		}
+		public virtual bool AckCumulative(int batchsize)
+		{
+			return Acker.AckCumulative(batchsize);
+		}
 
 		public virtual int OutstandingAcksInSameBatch => Acker.OutstandingAcks;
 

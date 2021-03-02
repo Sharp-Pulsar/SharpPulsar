@@ -1592,11 +1592,7 @@ namespace SharpPulsar
 			}
 
 			BatchMessageAcker acker = BatchMessageAcker.NewAcker(batchSize);
-			BitSet ackBitSet = null;
-			if(ackSet != null && ackSet.Count > 0)
-			{
-				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
-			}
+			
 			using var stream = new MemoryStream(payload);
 			using var binaryReader = new BinaryReader(stream);
 			int skippedMessages = 0;
@@ -1650,10 +1646,6 @@ namespace SharpPulsar
 						possibleToDeadLetter.Add(message);
 					}
 					_ = EnqueueMessageAndCheckBatchReceive(message);
-				}
-				if(ackBitSet != null)
-				{
-					ackBitSet = null;
 				}
 			}
 			catch(Exception ex)
@@ -2121,9 +2113,8 @@ namespace SharpPulsar
 				if (messageId is BatchMessageId msgId)
 				{
 					// Initialize ack set
-					var ackSet = BitSet.Create();
-					ackSet.Set(0, msgId.BatchSize);
-					ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
+					var ackSet = new BitArray(msgId.BatchSize, true);
+					ackSet[msgId.BatchIndex] = false;
 					long[] ackSetArr = ackSet.ToLongArray();
 
 					seek = _commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
@@ -2707,21 +2698,35 @@ namespace SharpPulsar
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			if(messageId is BatchMessageId batchMessageId)
 			{
-				var bitSet = BitSet.Create();
 				ledgerId = batchMessageId.LedgerId;
 				entryId = batchMessageId.EntryId;
-				if(ackType == CommandAck.AckType.Cumulative)
+				var bitSet = new BitArray(batchMessageId.BatchSize, true);
+				if (ackType == CommandAck.AckType.Cumulative)
 				{
-					batchMessageId.AckCumulative();
-					bitSet.Set(0, batchMessageId.BatchSize);
-					bitSet.Clear(0, batchMessageId.BatchIndex + 1);
+					batchMessageId.AckCumulative(batchMessageId.BatchIndex);
+					for (var i = 0; i <= batchMessageId.BatchIndex; i++)
+						bitSet[i] = false;
 				}
 				else
 				{
-					bitSet.Set(0, batchMessageId.BatchSize);
-					bitSet.Clear(batchMessageId.BatchIndex);
+					bitSet[batchMessageId.BatchIndex] = false;
 				}
-				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+				var result = true;
+				var y = 0;
+				long[] ackSet;
+				while (result && y < bitSet.Length)
+                {
+					result = !bitSet[y];
+					y = -y + 1;
+				}
+				if (result)
+					ackSet = new long[0];
+				else
+                {
+					var ack = bitSet.ToLongArray();
+					ackSet = ack;
+				}
+				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, ackSet , ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else
 			{

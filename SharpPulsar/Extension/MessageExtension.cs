@@ -1,4 +1,7 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Helpers;
 using SharpPulsar.Protocol.Proto;
@@ -26,6 +29,49 @@ namespace SharpPulsar.Extension
                     return false;
             }
             return true;
+        }
+        public static long[] ToLongArray(this BitArray bitSet)
+        {
+            var longs = new List<long>();
+            var resultArrayLengthLongs = bitSet.Length / 64 + (bitSet.Length % 64 == 0? 0: 1);
+            var resultArray = Enumerable.Repeat((byte)0, resultArrayLengthLongs*8).ToArray();
+            bitSet.CopyTo(resultArray, 0);
+            for (var i = 0; i < resultArray.Length - 1; i++)
+            {
+                try
+                {
+                    var l = BitConverter.ToInt64(resultArray, i);
+                    longs.Add(l);
+                }
+                catch
+                {
+
+                }
+            }
+            return longs.ToArray();   
+        }
+        public static BitArray FromLongArray(this IList<long> ackSets, int numMessagesInBatch)
+        {
+            var bitArray = new BitArray(numMessagesInBatch);
+            var index = 0;
+            foreach(var ackSet in ackSets)
+            {
+                var stillToGo = numMessagesInBatch - index;
+                var currentLimit = stillToGo > 64 ? 64 : stillToGo;
+                for(var i = 0; i <= currentLimit; i++)
+                {
+                    bitArray[index] = (ackSet & (1 << i - 1)) != 0;
+                    index = index + 1;
+                }
+                
+            }
+            return bitArray;
+        }
+        private static long Set(BitArray bitSet)
+        {
+            if (bitSet.Length % 64 == 0)
+                return 0;
+            return 1;
         }
     }
 }

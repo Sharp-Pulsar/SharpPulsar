@@ -131,7 +131,7 @@ class Build : NukeBuild
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
             .SetImage("apachepulsar/pulsar-all:2.7.0")
-            .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
+            .SetEnv(@"PULSAR_MEM="" -Xms1g -Xmx1g -XX:MaxDirectMemorySize=2g""", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
             .SetCommand("bash")
             .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone")) ;
        });

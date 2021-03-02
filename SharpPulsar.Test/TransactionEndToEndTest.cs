@@ -81,7 +81,7 @@ namespace SharpPulsar.Test
 			User.Transaction txn = Txn;
 
 			int txnMessageCnt = 0;
-			int messageCnt = 100;
+			int messageCnt = 40;
 			for(int i = 0; i < messageCnt; i++)
 			{
 				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
@@ -145,34 +145,18 @@ namespace SharpPulsar.Test
 			message = consumer.Receive(5000);
 			Assert.Null(message);
 		}
-		[Fact]
-		public virtual void TxnIndividualAckTestNoBatchAndSharedSub()
+		[Theory]
+		[InlineData(true, 100, SubType.Failover, 100)]
+		[InlineData(false, 1, SubType.Failover, 50)]
+		[InlineData(true, 100, SubType.Shared, 100)]
+		[InlineData(false, 1, SubType.Shared, 50)]
+		public void TxnAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType, int messageCount)
 		{
-			TxnAckTest(false, 1, SubType.Shared);
-		}
-		[Fact]
-		public virtual void TxnIndividualAckTestBatchAndSharedSub()
-		{
-			TxnAckTest(true, 200, SubType.Shared);
-		}
-		[Fact]
-		public virtual void TxnIndividualAckTestNoBatchAndFailoverSub()
-		{
-			TxnAckTest(false, 1, SubType.Failover);
-		}
-		[Fact]
-		public virtual void TxnIndividualAckTestBatchAndFailoverSub()
-		{
-			TxnAckTest(true, 200, SubType.Failover);
-		}
-
-		private void TxnAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType)
-		{
-			string normalTopic = _nAMESPACE1 + "/normal-topic";
+			string normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 
 			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
 			consumerBuilder.Topic(normalTopic);
-			consumerBuilder.SubscriptionName("test");
+			consumerBuilder.SubscriptionName($"test-{Guid.NewGuid()}");
 			consumerBuilder.EnableBatchIndexAcknowledgment(true);
 			consumerBuilder.SubscriptionType(subscriptionType);
 
@@ -189,7 +173,7 @@ namespace SharpPulsar.Test
 			{
 				User.Transaction txn = Txn;
 
-				int messageCnt = 1000;
+				int messageCnt = messageCount;
 				// produce normal messages
 				for(int i = 0; i < messageCnt; i++)
 				{
@@ -314,18 +298,10 @@ namespace SharpPulsar.Test
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}
-		[Fact]
-		public virtual void TxnAckTestBatchAndCumulativeSub()
-		{
-			TxnCumulativeAckTest(true, 200, SubType.Failover);
-		}
-		[Fact]
-		public virtual void TxnAckTestNoBatchAndCumulativeSub()
-		{
-			TxnCumulativeAckTest(false, 1, SubType.Failover);
-		}
-		
-		private void TxnCumulativeAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType)
+		[Theory]
+		[InlineData(false, 1, SubType.Failover)]
+		[InlineData(true, 200, SubType.Failover)]
+		public void TxnCumulativeAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType)
 		{
 			string normalTopic = _nAMESPACE1 + "/normal-topic";
 			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
@@ -347,7 +323,7 @@ namespace SharpPulsar.Test
 			for(int retryCnt = 0; retryCnt < 2; retryCnt++)
 			{
 				User.Transaction abortTxn = Txn;
-				int messageCnt = 1000;
+				int messageCnt = 100;
 				// produce normal messages
 				for(int i = 0; i < messageCnt; i++)
 				{
