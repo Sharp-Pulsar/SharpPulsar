@@ -108,6 +108,7 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
+                        .SetResultsDirectory(OutputDirectory)
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                         .EnableNoBuild()); ;
                 }
@@ -143,11 +144,6 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces","create","public/retention")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
                 .SetArgs("clusters", "create", "standalone-cluster", "--url", "http://localhost:8080")
             );
            DockerTasks.DockerExec(x => x
@@ -178,7 +174,7 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-retention", "public/retention","--time","3h", "--size", "1G")
+                .SetArgs("namespaces", "set-retention", "public/default","--time","3h", "--size", "1G")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
@@ -189,16 +185,6 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/partitioned", "--partitions", "3")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
@@ -214,26 +200,6 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/message-ack-test", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/partitioned2", "--partitions", "2")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/partitioned3", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/partitioned4", "--partitions", "2")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/deduplication/partitioned", "--partitions", "3")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")

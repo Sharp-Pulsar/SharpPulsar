@@ -147,9 +147,9 @@ namespace SharpPulsar.Test
 			Assert.Null(message);
 		}
 		[Theory]
-		[InlineData(true, 100, SubType.Failover, 100)]
+		[InlineData(true, 10, SubType.Failover, 10)]
 		[InlineData(false, 1, SubType.Failover, 50)]
-		[InlineData(true, 100, SubType.Shared, 100)]
+		[InlineData(true, 10, SubType.Shared, 10)]
 		[InlineData(false, 1, SubType.Shared, 50)]
 		public void TxnAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType, int messageCount)
 		{
