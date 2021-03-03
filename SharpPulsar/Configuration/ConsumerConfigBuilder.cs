@@ -161,15 +161,18 @@ namespace SharpPulsar.Configuration
 
 		public ConsumerConfigBuilder<T> AckTimeout(long ackTimeoutMs, TimeUnit timeUnit)
 		{
-			Condition.CheckArgument(ackTimeoutMs == 0 ||  ackTimeoutMs >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
-			_conf.AckTimeoutMillis = timeUnit.ToMilliseconds(ackTimeoutMs);
+			var toms = timeUnit.ToMilliseconds(ackTimeoutMs);
+			Condition.CheckArgument(toms == 0 ||  toms >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
+			_conf.AckTimeoutMillis = toms;
             return this;
 		}
 
 		public ConsumerConfigBuilder<T> AckTimeoutTickTime(long tickTimeMs, TimeUnit timeUnit)
 		{
-            Condition.CheckArgument(tickTimeMs < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
-			_conf.TickDurationMillis = timeUnit.ToMilliseconds(tickTimeMs);
+			var toms = timeUnit.ToMilliseconds(tickTimeMs);
+
+			Condition.CheckArgument(toms < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
+			_conf.TickDurationMillis = toms;
             return this;
 		}
 

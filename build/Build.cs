@@ -108,7 +108,7 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
-                        .SetResultsDirectory(OutputDirectory)
+                        //.SetLogger("trx")
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                         .EnableNoBuild()); ;
                 }

@@ -26,7 +26,7 @@ namespace SharpPulsar.Batch
 
 		public static readonly BatchMessageAckerDisabled Instance = new BatchMessageAckerDisabled();
 
-		private BatchMessageAckerDisabled() : base(new BatchBitSet(0), 0)
+		private BatchMessageAckerDisabled() : base(new BitArray(0), 0)
 		{
 		}
 

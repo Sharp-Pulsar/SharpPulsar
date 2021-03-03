@@ -170,7 +170,7 @@ namespace SharpPulsar.Tracker
                     BitArray value = new BitArray(batchSize, true);
                     if (msgId.Acker != null && !(msgId.Acker is BatchMessageAckerDisabled))
                     {
-                        value[msgId.Acker.BitSet.Size] = false;
+                        value[msgId.Acker.BitSet.Count] = false;
                     }
                     else
                     {

@@ -1216,6 +1216,7 @@ namespace SharpPulsar
 		/// </summary>
 		private BatchMessageId ClearReceiverQueue()
 		{
+			_log.Warning($"Clearing {IncomingMessages.Count} message(s) in queue");
 			var currentMessageQueue = new List<IMessage<T>>(IncomingMessages.Count);
 			var mcount = IncomingMessages.Count;
 			var n = 0;
@@ -2591,7 +2592,11 @@ namespace SharpPulsar
 			});
 			ReceiveAny(a => Stash.Stash());
 		}
-		internal virtual string TopicNameWithoutPartition
+        protected override void Unhandled(object message)
+        {
+			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
+        }
+        internal virtual string TopicNameWithoutPartition
 		{
 			get
 			{
@@ -2703,9 +2708,9 @@ namespace SharpPulsar
 				var bitSet = new BitArray(batchMessageId.BatchSize, true);
 				if (ackType == CommandAck.AckType.Cumulative)
 				{
-					batchMessageId.AckCumulative();
+					batchMessageId.AckCumulative(batchMessageId.BatchSize);
 					//bitSet.Set(batchMessageId.BatchSize, false);
-					for (var i = 0; i <= batchMessageId.BatchIndex; i++)
+					for (var i = 0; i < batchMessageId.BatchIndex; i++)
 						bitSet[i] = false;
 				}
 				else
@@ -2724,8 +2729,6 @@ namespace SharpPulsar
 					ackSet = new long[0];
 				else
 					ackSet = bitSet.ToLongArray();
-				ackSet = new long[] { batchMessageId.BatchIndex};
-
 				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, ackSet , ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else

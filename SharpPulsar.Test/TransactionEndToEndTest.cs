@@ -147,19 +147,20 @@ namespace SharpPulsar.Test
 			Assert.Null(message);
 		}
 		[Theory]
-		[InlineData(true, 10, SubType.Failover, 10)]
+		//[InlineData(true, 10, SubType.Failover, 10)]
 		[InlineData(false, 1, SubType.Failover, 50)]
-		[InlineData(true, 10, SubType.Shared, 10)]
+		//[InlineData(true, 10, SubType.Shared, 10)]
 		[InlineData(false, 1, SubType.Shared, 50)]
 		public void TxnAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType, int messageCount)
 		{
 			string normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
-			consumerBuilder.Topic(normalTopic);
-			consumerBuilder.SubscriptionName($"test-{Guid.NewGuid()}");
-			consumerBuilder.EnableBatchIndexAcknowledgment(true);
-			consumerBuilder.SubscriptionType(subscriptionType);
+			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+				.Topic(normalTopic)
+				.SubscriptionName($"test-{Guid.NewGuid()}")
+				.EnableBatchIndexAcknowledgment(true)
+				
+				.SubscriptionType(subscriptionType);
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
@@ -199,6 +200,7 @@ namespace SharpPulsar.Test
 
 				// after transaction abort, the messages could be received
 				User.Transaction commitTxn = Txn;
+				Thread.Sleep(TimeSpan.FromSeconds(30));
 				for(int i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(2, TimeUnit.SECONDS);
@@ -367,6 +369,7 @@ namespace SharpPulsar.Test
 				Assert.Null(message);
 
 				abortTxn.Abort();
+				Thread.Sleep(TimeSpan.FromSeconds(30));
 				User.Transaction commitTxn = Txn;
 				for(int i = 0; i < messageCnt; i++)
 				{
