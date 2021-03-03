@@ -65,14 +65,15 @@ namespace SharpPulsar.Test
 		[InlineData(true)]
 		private void ProduceCommitTest(bool enableBatch)
 		{
+			var topic = $"{_topicOutput}-{Guid.NewGuid()}";
 			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
-				.Topic(_topicOutput)
+				.Topic(topic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
 				.EnableBatchIndexAcknowledgment(true);
 			var consumer = _client.NewConsumer(consumerBuilder);
 
 			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
-				.Topic(_topicOutput)
+				.Topic(topic)
 				.EnableBatching(enableBatch)
 				.SendTimeout(0);
 

@@ -2703,13 +2703,14 @@ namespace SharpPulsar
 				var bitSet = new BitArray(batchMessageId.BatchSize, true);
 				if (ackType == CommandAck.AckType.Cumulative)
 				{
-					batchMessageId.AckCumulative(batchMessageId.BatchIndex);
+					batchMessageId.AckCumulative();
+					//bitSet.Set(batchMessageId.BatchSize, false);
 					for (var i = 0; i <= batchMessageId.BatchIndex; i++)
 						bitSet[i] = false;
 				}
 				else
 				{
-					bitSet[batchMessageId.BatchIndex] = false;
+					bitSet[batchMessageId.BatchSize - 1] = false;
 				}
 				var result = true;
 				var y = 0;
@@ -2722,10 +2723,9 @@ namespace SharpPulsar
 				if (result)
 					ackSet = new long[0];
 				else
-                {
-					var ack = bitSet.ToLongArray();
-					ackSet = ack;
-				}
+					ackSet = bitSet.ToLongArray();
+				ackSet = new long[] { batchMessageId.BatchIndex};
+
 				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, ackSet , ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else

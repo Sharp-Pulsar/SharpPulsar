@@ -32,23 +32,12 @@ namespace SharpPulsar.Extension
         }
         public static long[] ToLongArray(this BitArray bitSet)
         {
-            var longs = new List<long>();
+            var longs = new long[bitSet.Length];
             var resultArrayLengthLongs = bitSet.Length / 64 + (bitSet.Length % 64 == 0? 0: 1);
-            var resultArray = Enumerable.Repeat((byte)0, resultArrayLengthLongs*8).ToArray();
+            var resultArray = Array.CreateInstance(typeof(byte), resultArrayLengthLongs * 8);
             bitSet.CopyTo(resultArray, 0);
-            for (var i = 0; i < resultArray.Length - 1; i++)
-            {
-                try
-                {
-                    var l = BitConverter.ToInt64(resultArray, i);
-                    longs.Add(l);
-                }
-                catch
-                {
-
-                }
-            }
-            return longs.ToArray();   
+            resultArray.CopyTo(longs, 0);
+            return longs;
         }
         public static BitArray FromLongArray(this IList<long> ackSets, int numMessagesInBatch)
         {

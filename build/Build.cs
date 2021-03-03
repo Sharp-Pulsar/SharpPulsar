@@ -131,7 +131,7 @@ class Build : NukeBuild
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
             .SetImage("apachepulsar/pulsar-all:2.7.0")
-            .SetEnv(@"PULSAR_MEM="" -Xms1g -Xmx1g -XX:MaxDirectMemorySize=2g""", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
+            .SetEnv(@"PULSAR_MEM=-Xms1g -Xmx1g -XX:MaxDirectMemorySize=2g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
             .SetCommand("bash")
             .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone")) ;
        });
@@ -238,7 +238,7 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar")
-                .SetArgs("initialize-transaction-coordinator-metadata", "-cs", "localhost:2181", "-c", "standalone", "--initial-num-transaction-coordinators", "2")
+                .SetArgs("initialize-transaction-coordinator-metadata", "-cs", "localhost:2181", "-c", "standalone", "--initial-num-transaction-coordinators", "16")
             );
        });
     Target CheckDockerVersion => _ => _
