@@ -233,21 +233,21 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TxnMessageAckTest()
 		{
-			string topic = _topicMessageAckTest;
-			const string subName = "test";
+			string topic = $"{_topicMessageAckTest}-{Guid.NewGuid()}";
+			var subName = $"test-{Guid.NewGuid()}";
 
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
-			consumerBuilder.Topic(topic);
-			consumerBuilder.SubscriptionName(subName);
-			consumerBuilder.EnableBatchIndexAcknowledgment(true);
-			consumerBuilder.AcknowledgmentGroupTime(0);
+			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.SubscriptionName(subName)
+				.EnableBatchIndexAcknowledgment(true)
+				.AcknowledgmentGroupTime(0);
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
-			producerBuilder.Topic(topic);
-			producerBuilder.EnableBatching(false);
-			producerBuilder.SendTimeout(0);
+			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.EnableBatching(false)
+				.SendTimeout(0);
 
 			var producer = _client.NewProducer(producerBuilder);
 
@@ -269,7 +269,7 @@ namespace SharpPulsar.Test
 
 			int ackedMessageCount = 0;
 			int receiveCnt = 0;
-			for(int i = 0; i < messageCnt; i++)
+			for (int i = 0; i < messageCnt; i++)
 			{
 				message = consumer.Receive();
 				Assert.NotNull(message);
@@ -303,7 +303,7 @@ namespace SharpPulsar.Test
 		}
 		[Theory]
 		[InlineData(false, 1, SubType.Failover)]
-		[InlineData(true, 200, SubType.Failover)]
+		[InlineData(true, 100, SubType.Failover)]
 		public void TxnCumulativeAckTest(bool batchEnable, int maxBatchSize, SubType subscriptionType)
 		{
 			string normalTopic = _nAMESPACE1 + "/normal-topic";
@@ -336,7 +336,7 @@ namespace SharpPulsar.Test
 				Thread.Sleep(1000);
 				for(int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(1, TimeUnit.SECONDS);
+					message = consumer.Receive();
 					Assert.NotNull(message);
 					if(i % 3 == 0)
 					{
@@ -373,7 +373,7 @@ namespace SharpPulsar.Test
 				User.Transaction commitTxn = Txn;
 				for(int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(1, TimeUnit.SECONDS);
+					message = consumer.Receive();
 					Assert.NotNull(message);
 					if(i % 3 == 0)
 					{

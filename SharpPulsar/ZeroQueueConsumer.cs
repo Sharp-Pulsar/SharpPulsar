@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
@@ -44,7 +45,7 @@ namespace SharpPulsar
 			if(IncomingMessages.Count > 0)
 			{
 				_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
-				IncomingMessages = new System.Collections.Concurrent.BlockingCollection<IMessage<T>>();
+				IncomingMessages.Empty();
 			}
 
 			IMessage<T> message;
@@ -84,7 +85,7 @@ namespace SharpPulsar
 				// Finally blocked is invoked in case the block on incomingMessages is interrupted
 				_waitingOnReceiveForZeroQueueSize = false;
 				// Clearing the queue in case there was a race with messageReceived
-				IncomingMessages = new System.Collections.Concurrent.BlockingCollection<IMessage<T>>();
+				IncomingMessages.Empty();
 			}
 		}
 

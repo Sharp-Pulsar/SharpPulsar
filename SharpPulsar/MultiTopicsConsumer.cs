@@ -825,7 +825,7 @@ namespace SharpPulsar
 				consumer.Consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
 				consumer.Consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
 			});
-			IncomingMessages = new BlockingCollection<IMessage<T>>();
+			IncomingMessages.Empty();
 			IncomingMessagesSize =  0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
 			ResumeReceivingFromPausedConsumersIfNeeded();
@@ -865,7 +865,7 @@ namespace SharpPulsar
 				_consumers.Values.ForEach(c => c.Consumer.Tell(new SeekMessageId(targetMessageId)));
 
 				_unAckedMessageTracker.Tell(Clear.Instance);
-				IncomingMessages = new BlockingCollection<IMessage<T>>();
+				IncomingMessages.Empty();
 				IncomingMessagesSize = 0;
 			}
 			catch(Exception e)

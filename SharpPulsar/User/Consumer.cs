@@ -11,6 +11,7 @@ using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.User
 {
@@ -116,12 +117,20 @@ namespace SharpPulsar.User
 
         public void AcknowledgeCumulative(IMessageId messageId, Transaction txn)
         {
+            if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
+            {
+                throw new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription");
+            }
             _consumerActor.Tell(new AcknowledgeCumulativeTxn(messageId, txn.Txn));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
                     throw msg.Exception;
         }
 
+        private bool IsCumulativeAcknowledgementAllowed(SubType type)
+        {
+            return SubType.Shared != type && SubType.KeyShared != type;
+        }
         public void Close()
         {
             _consumerActor.GracefulStop(TimeSpan.FromSeconds(5));
@@ -189,7 +198,7 @@ namespace SharpPulsar.User
                 return message;
             }
         }
-        public IMessage<T> Receive(int timeoutMilliseconds = 5000, CancellationToken token = default)
+        public IMessage<T> Receive(int timeoutMilliseconds = 30000, CancellationToken token = default)
         {
             VerifyConsumerState();
             if (_conf.MessageListener != null)

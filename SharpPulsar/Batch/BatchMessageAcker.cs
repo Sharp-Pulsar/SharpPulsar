@@ -20,56 +20,51 @@
 /// </summary>
 namespace SharpPulsar.Batch
 {
-	
+
 	public class BatchMessageAcker
 	{
+		private BatchMessageAcker()
+		{
+			_bitSet = new BatchBitSet();
+			BatchSize = 0;
+		}
 		public static BatchMessageAcker NewAcker(int batchSize)
 		{
-			var bitSet = new BitArray(batchSize, true);
+			var bitSet = new BatchBitSet(batchSize);
+			bitSet.Set(0, batchSize);
 			return new BatchMessageAcker(bitSet, batchSize);
 		}
 
 		// bitset shared across messages in the same batch.
-        private readonly BitArray _bitSet;
-		private int _unackedCount;
-		private readonly int _batchSize;
+		private readonly BatchBitSet _bitSet;
 
-        public BatchMessageAcker(BitArray bitSet, int batchSize)
+		public BatchMessageAcker(BatchBitSet bitSet, int batchSize)
 		{
-			_unackedCount = batchSize;
 			_bitSet = bitSet;
-			_batchSize = batchSize;
+			BatchSize = batchSize;
 		}
 
-		public virtual BitArray BitSet => _bitSet;
+		public virtual BatchBitSet BitSet => _bitSet;
 
-		public virtual int BatchSize => _batchSize;
+		public virtual int BatchSize { get; }
 
-        public virtual bool AckIndividual(int batchIndex)
+		public virtual bool AckIndividual(int batchIndex)
 		{
-            _bitSet[batchIndex] = false;
-			_unackedCount = _unackedCount - 1;
-			return _unackedCount == 0;
+			_bitSet.Clear(batchIndex);
+			return _bitSet.IsEmpty();
 		}
 
 		public virtual bool AckCumulative(int batchIndex)
 		{
-            // +1 since to argument is exclusive
-			for(var i = 0; i < _batchSize; i++)
-            {
-				if (_bitSet[i])
-                {
-					_bitSet[i] = false;
-					_unackedCount = _unackedCount - 1;
-				}
-            }
-            return _unackedCount == 0;
+			// +1 since to argument is exclusive
+			_bitSet.Clear(0, batchIndex + 1);
+			return _bitSet.IsEmpty();
 		}
 
 		// debug purpose
-		public virtual int OutstandingAcks => _unackedCount;
+		public virtual int OutstandingAcks => _bitSet.Cardinality();
 
-        public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
-    }
+		public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
+	}
 
 }

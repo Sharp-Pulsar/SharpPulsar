@@ -1941,7 +1941,7 @@ namespace SharpPulsar
 			if(Connected && protocolVersion >= (int)ProtocolVersion.V2)
 			{
 				var currentSize = IncomingMessages.Count;
-				IncomingMessages = new BlockingCollection<IMessage<T>>();
+				IncomingMessages.Empty();
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
 				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);
@@ -1971,7 +1971,7 @@ namespace SharpPulsar
 		internal virtual int ClearIncomingMessagesAndGetMessageNumber()
 		{
 			int messagesNumber = IncomingMessages.Count;
-			IncomingMessages = new BlockingCollection<IMessage<T>>();
+			IncomingMessages.Empty();
 			IncomingMessagesSize = 0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
 			return messagesNumber;
@@ -2138,7 +2138,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)messageId);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					IncomingMessages = new BlockingCollection<IMessage<T>>();
+					IncomingMessages.Empty();
 					IncomingMessagesSize = 0;
 				}
 				else
@@ -2184,7 +2184,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)IMessageId.Earliest);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					IncomingMessages = new BlockingCollection<IMessage<T>>();
+					IncomingMessages.Empty();
 					IncomingMessagesSize = 0;
 				}
                 else
@@ -2682,7 +2682,7 @@ namespace SharpPulsar
 			else
             {
 				if (IncomingMessages.TryAdd(obj))
-					_log.Info($"Added message with sequnceid {obj.SequenceId} to IncomingMessages");
+					_log.Info($"Added message with sequnceid {obj.SequenceId} to IncomingMessages. Message Count: {IncomingMessages.Count}");
 				else
 					_log.Info($"Failed to add message with sequnceid {obj.SequenceId} to IncomingMessages");
 			}

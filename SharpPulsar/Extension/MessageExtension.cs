@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Helpers;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Extension
@@ -38,6 +40,10 @@ namespace SharpPulsar.Extension
             bitSet.CopyTo(resultArray, 0);
             resultArray.CopyTo(longs, 0);
             return longs;
+        }
+        public static void Empty<T>(this BlockingCollection<IMessage<T>> messages)
+        {
+            while (messages.TryTake(out var _)) { }
         }
         public static BitArray FromLongArray(this IList<long> ackSets, int numMessagesInBatch)
         {

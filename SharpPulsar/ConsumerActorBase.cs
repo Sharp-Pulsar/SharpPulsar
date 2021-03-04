@@ -256,11 +256,7 @@ namespace SharpPulsar
 		}
 
 		internal virtual void AcknowledgeCumulative(IMessageId messageId, IActorRef txn)
-		{
-			if (!IsCumulativeAcknowledgementAllowed(Conf.SubscriptionType))
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription");
-			}
+		{			
 
 			DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txn);
 		}
@@ -305,11 +301,6 @@ namespace SharpPulsar
 		internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{
 			messages.ForEach(NegativeAcknowledge);
-		}
-
-		private bool IsCumulativeAcknowledgementAllowed(SubType type)
-		{
-			return SubType.Shared != type && SubType.KeyShared != type;
 		}
 
 		protected internal virtual SubType SubType

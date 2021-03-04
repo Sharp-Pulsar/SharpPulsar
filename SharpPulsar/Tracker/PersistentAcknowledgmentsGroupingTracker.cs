@@ -170,7 +170,7 @@ namespace SharpPulsar.Tracker
                     BitArray value = new BitArray(batchSize, true);
                     if (msgId.Acker != null && !(msgId.Acker is BatchMessageAckerDisabled))
                     {
-                        value[msgId.Acker.BitSet.Count] = false;
+                        value[msgId.Acker.BitSet.Size] = false;
                     }
                     else
                     {
@@ -537,9 +537,9 @@ namespace SharpPulsar.Tracker
 		}
         private void NewAckCommand(long consumerId, IMessageId msgId, BitArray lastCumulativeAckSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> map, bool flush, long txnidMostBits, long txnidLeastBits)
         {
-
+            
             var chunkMsgIds = _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).MessageIds;
-            if (chunkMsgIds != null && txnidLeastBits < 0 && txnidMostBits < 0)
+            if (chunkMsgIds?.Length > 0 && txnidLeastBits < 0 && txnidMostBits < 0)
             {
                 var cnx = Cnx();
                 var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
@@ -568,8 +568,14 @@ namespace SharpPulsar.Tracker
             }
             else
             {
+                var sets = new long[] { };
+
+                if (lastCumulativeAckSet != null)
+                    sets = lastCumulativeAckSet.ToLongArray();
+
                 var mid = (MessageId)msgId;
-                var cmd = new Commands().NewAck(consumerId, mid.LedgerId, mid.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
+
+                var cmd = new Commands().NewAck(consumerId, mid.LedgerId, mid.EntryId, sets, ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
                 Cnx().Tell(new Payload(cmd, -1, "NewAck"));
             }
         }
