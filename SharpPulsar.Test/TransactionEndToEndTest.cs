@@ -58,6 +58,7 @@ namespace SharpPulsar.Test
 			_output = output;
 			_system = fixture.System;
 			_client = _system.NewClient();
+			Thread.Sleep(1000 * 3);
 		}
 		[Fact]
 		public void ProduceCommitTest()
