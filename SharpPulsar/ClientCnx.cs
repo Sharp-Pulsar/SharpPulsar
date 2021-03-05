@@ -852,9 +852,26 @@ namespace SharpPulsar
 				case BaseCommand.Type.ReachedEndOfTopic:
 					HandleReachedEndOfTopic(cmd.reachedEndOfTopic);
 					break;
+				case BaseCommand.Type.AckResponse:
+					HandleAckResponse(cmd.ackResponse);
+					break;
 				default:
 					_log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
 					break;
+			}
+		}
+		private void HandleAckResponse(CommandAckResponse ackResponse)
+		{
+			Condition.CheckArgument(_state == State.Ready);
+			Condition.CheckArgument(ackResponse.RequestId >= 0);
+			long consumerId = (long)ackResponse.ConsumerId;
+			if (ackResponse?.Error == ServerError.UnknownError && string.IsNullOrWhiteSpace(ackResponse.Message))
+			{
+				_consumers[consumerId].Tell(new AckReceipt((long)ackResponse.RequestId));
+			}
+			else
+			{
+				_consumers[consumerId].Tell(new AckError((long)ackResponse.RequestId, GetPulsarClientException(ackResponse.Error, ackResponse.Message)));
 			}
 		}
 		private void RegisterConsumer(long consumerId, IActorRef consumer)

@@ -54,7 +54,7 @@ namespace SharpPulsar.Test.Tracker
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
-            var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, conf));
+            var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
 
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);
@@ -135,7 +135,7 @@ namespace SharpPulsar.Test.Tracker
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
-			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, conf));
+			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
 
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);
@@ -168,7 +168,7 @@ namespace SharpPulsar.Test.Tracker
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
-			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, conf));
+			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
 
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);

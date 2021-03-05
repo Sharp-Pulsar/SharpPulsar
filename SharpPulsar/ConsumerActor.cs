@@ -123,6 +123,8 @@ namespace SharpPulsar
 		private readonly IActorRef _connectionHandler;
 		private readonly IActorRef _generator;
 
+		private readonly Dictionary<long, (IMessageId messageid, TxnID txnid)> _ackRequests;
+
 		private readonly TopicName _topicName;
 		private readonly string _topicNameWithoutPartition;
 
@@ -160,6 +162,7 @@ namespace SharpPulsar
 
 		public ConsumerActor(long consumerId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
+			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
 			_commands = new Commands();
 			_generator = idGenerator;
 			_topicName = TopicName.Get(topic);
@@ -258,7 +261,7 @@ namespace SharpPulsar
 						
 			if(_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(Self, _consumerId, conf));
+				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(Self, _consumerId, _connectionHandler, conf));
 			}
 			else
 			{
@@ -453,6 +456,12 @@ namespace SharpPulsar
 			});
 			Receive<GetConsumerName>(m => {
 				Push(ConsumerQueue.ConsumerName, ConsumerName);
+			});
+			Receive<AckReceipt>(m => {
+				AckReceipt(m.RequestId);
+			});
+			Receive<AckError>(m => {
+				AckError(m.RequestId, m.Exception);
 			});
 			Receive<ActiveConsumerChanged>(m => {
 				ActiveConsumerChanged(m.IsActive);
@@ -2739,8 +2748,7 @@ namespace SharpPulsar
 				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
 			}
 
-			//OpForAckCallBack op = OpForAckCallBack.Create(cmd, callBack, messageId, new TxnID(txnID.MostSigBits, txnID.LeastSigBits));
-			//_ackRequests.Put(requestId, op);
+			_ackRequests.Add(requestId, (messageId, txnID));
 			if(ackType == CommandAck.AckType.Cumulative)
 			{
 				_unAckedMessageTracker.Tell(new RemoveMessagesTill(messageId));
@@ -2752,7 +2760,39 @@ namespace SharpPulsar
 			var payload = new Payload(cmd, requestId, "NewAck");
 			_cnx.Tell(payload);
 		}
+		private void AckReceipt(long requestId)
+		{
+			if (_ackRequests.TryGetValue(requestId, out var ot))
+			{
+				_ = _ackRequests.Remove(requestId);
+				if (_log.IsDebugEnabled)
+				{
+					_log.Debug($"MessageId : {ot.messageid} has ack by TxnId : {ot.txnid}");
+				}
+			}
+			else
+			{
+				_log.Info($"Ack request has been handled requestId : {requestId}");
+			}
+		}
 
+		private void AckError(long requestId, PulsarClientException pulsarClientException)
+		{
+			
+			if(_ackRequests.TryGetValue(requestId, out var ot))
+            {
+				_ = _ackRequests.Remove(requestId);
+				if (_log.IsDebugEnabled)
+				{
+					_log.Debug($"MessageId : {ot.messageid} has ack by TxnId : {ot.txnid}");
+				}
+			}
+            else
+            {
+				_log.Info($"Ack request has been handled requestId : {requestId}");
+			}
+			ConsumerQueue.AcknowledgeException.Add(new ClientExceptions(pulsarClientException));
+		}
 
 	}
 

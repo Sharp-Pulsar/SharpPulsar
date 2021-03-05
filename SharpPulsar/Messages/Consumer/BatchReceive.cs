@@ -1,5 +1,4 @@
-﻿
-namespace SharpPulsar.Messages.Consumer
+﻿namespace SharpPulsar.Messages.Consumer
 {
     public sealed class BatchReceive
     {
