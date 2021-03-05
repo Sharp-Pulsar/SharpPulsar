@@ -867,13 +867,14 @@ namespace SharpPulsar
 				{
 					OnAcknowledgeCumulative(messageId, exception);
 				}
-				//return FutureUtil.FailedFuture(exception);
+				return;
 			}
 
 			if(txn != null)
 			{
 				var bits = txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
 				DoTransactionAcknowledgeForResponse(messageId, ackType, null, properties, new TxnID(bits.MostBits, bits.LeastBits));
+				return;
 			}
 
 			if(messageId is BatchMessageId)
@@ -882,6 +883,7 @@ namespace SharpPulsar
 				if(ackType == CommandAck.AckType.Cumulative && txn != null)
 				{
 					SendAcknowledge(messageId, ackType, properties, txn);
+					return;
 				}
 				if(MarkAckForBatchMessage(batchMessageId, ackType, properties, txn))
 				{
@@ -897,8 +899,7 @@ namespace SharpPulsar
 					{
 						_acknowledgmentsGroupingTracker.Tell(new AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties, txn));
 					}
-					// other messages in batch are still pending ack.
-					//return CompletableFuture.completedFuture(null);
+					return;
 				}
 			}
 			SendAcknowledge(messageId, ackType, properties, txn);

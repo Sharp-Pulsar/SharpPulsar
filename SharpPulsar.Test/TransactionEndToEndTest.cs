@@ -227,7 +227,7 @@ namespace SharpPulsar.Test
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					//consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
@@ -278,7 +278,7 @@ namespace SharpPulsar.Test
 			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
 				.Topic(normalTopic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
-				.AcknowledgmentGroupTime(30000)
+				.AcknowledgmentGroupTime(2000)
 				.EnableBatchIndexAcknowledgment(true)				
 				.SubscriptionType(SubType.Shared);
 
@@ -308,7 +308,7 @@ namespace SharpPulsar.Test
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					//consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
@@ -385,7 +385,7 @@ namespace SharpPulsar.Test
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					//consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
@@ -461,7 +461,7 @@ namespace SharpPulsar.Test
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					//consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
