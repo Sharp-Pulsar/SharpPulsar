@@ -254,6 +254,7 @@ namespace SharpPulsar.User
                     _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
                 }
                 IActorRef consumer;
+                IActorRef state = _actorSystem.ActorOf(Props.Create(()=> new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
                 {
                     Condition.CheckArgument(conf.TopicNames.Count == 1, "Should have only 1 topic for partitioned consumer");
@@ -262,21 +263,20 @@ namespace SharpPulsar.User
                     var cloneConf = conf;
                     string topicName = cloneConf.SingleTopic;
                     cloneConf.TopicNames.Remove(topicName);
-                    consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(_client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, true, _clientConfigurationData, queue));
+                    consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, true, _clientConfigurationData, queue));
                     consumer.Tell(new Subscribe(topic, metadata.Partitions));
                 }
                 else
                 {
                     var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
                     int partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(Props.Create<ConsumerActor<T>>(consumerId, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
+                    consumer = _actorSystem.ActorOf(Props.Create<ConsumerActor<T>>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(consumer));
                 var c = queue.ConsumerCreation.Take();
                 if (c != null)
                     throw c.Exception;
-
-                return new Consumer<T>(consumer, queue, schema, conf, interceptors);
+                return new Consumer<T>(state, consumer, queue, schema, conf, interceptors);
             }
             catch(Exception e)
             {
@@ -287,11 +287,12 @@ namespace SharpPulsar.User
 
         private Consumer<T> MultiTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
+            IActorRef state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var queue = new ConsumerQueueCollections<T>();
-            var consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
+            var consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
             
             _client.Tell(new AddConsumer(consumer));
-            return new Consumer<T>(consumer, queue, schema, conf, interceptors);
+            return new Consumer<T>(state, consumer, queue, schema, conf, interceptors);
         }
 
         private Consumer<T> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
@@ -312,10 +313,11 @@ namespace SharpPulsar.User
                 }
                 IList<string> topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
                 topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
-                var consumer = _actorSystem.ActorOf(Props.Create<PatternMultiTopicsConsumer<T>>(conf.TopicsPattern, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
+                IActorRef state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+                var consumer = _actorSystem.ActorOf(Props.Create<PatternMultiTopicsConsumer<T>>(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
 
                 _client.Tell(new AddConsumer(consumer));
-                return new Consumer<T>(consumer, queue, schema, conf, interceptors);
+                return new Consumer<T>(state, consumer, queue, schema, conf, interceptors);
             }
             catch(Exception e)
             {
@@ -480,14 +482,16 @@ namespace SharpPulsar.User
                     throw new PulsarClientException("The partitioned topic startMessageId is illegal");
                 }
                 IActorRef reader;
+                IActorRef stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+                
                 if (metadata.Partitions > 0)
                 {
-                    reader = _actorSystem.ActorOf(Props.Create<MultiTopicsReader<T>>(_client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));                    
+                    reader = _actorSystem.ActorOf(Props.Create<MultiTopicsReader<T>>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));                    
                 }
                 else
                 {
                     var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
-                    reader = _actorSystem.ActorOf(Props.Create<ReaderActor<T>>(consumerId, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
+                    reader = _actorSystem.ActorOf(Props.Create(() => new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue)));
                 }
                 _client.Tell(new AddConsumer(reader));
 
@@ -495,7 +499,7 @@ namespace SharpPulsar.User
                 if (c != null)
                     throw c.Exception;
 
-                return new Reader<T>(reader, queue, schema, conf);
+                return new Reader<T>(stateA, reader, queue, schema, conf);
             }
             catch(Exception ex)
             {

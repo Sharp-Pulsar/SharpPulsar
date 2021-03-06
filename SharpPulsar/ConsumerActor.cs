@@ -155,12 +155,12 @@ namespace SharpPulsar
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 		private readonly Commands _commands;
 
-		public ConsumerActor(long consumerId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue):this
-			(consumerId, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue):this
+			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue)
 		{
 		}
 
-		public ConsumerActor(long consumerId, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(stateActor, client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
 			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
 			_commands = new Commands();
@@ -1603,7 +1603,12 @@ namespace SharpPulsar
 			}
 
 			BatchMessageAcker acker = BatchMessageAcker.NewAcker(batchSize);
-			
+			BitSet ackBitSet = null;
+			if (ackSet != null && ackSet.Count > 0)
+			{
+				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
+			}
+
 			using var stream = new MemoryStream(payload);
 			using var binaryReader = new BinaryReader(stream);
 			int skippedMessages = 0;
@@ -1657,6 +1662,10 @@ namespace SharpPulsar
 						possibleToDeadLetter.Add(message);
 					}
 					_ = EnqueueMessageAndCheckBatchReceive(message);
+				}
+				if (ackBitSet != null)
+				{
+					ackBitSet = null;
 				}
 			}
 			catch(Exception ex)
@@ -2107,25 +2116,15 @@ namespace SharpPulsar
 		{
 			try
 			{
-				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-				{
-					throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to the message {messageId}");
-					
-				}
-
-				if (!Connected)
-				{
-					throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to the message {messageId}");
-					
-				}
-
+				
 				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				byte[] seek = null;
 				if (messageId is BatchMessageId msgId)
 				{
 					// Initialize ack set
-					var ackSet = new BitArray(msgId.BatchSize, true);
-					ackSet[msgId.BatchIndex] = false;
+					var ackSet = BitSet.Create();
+					ackSet.Set(0, msgId.BatchSize);
+					ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
 					long[] ackSetArr = ackSet.ToLongArray();
 
 					seek = _commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
@@ -2168,19 +2167,7 @@ namespace SharpPulsar
 		{
 			try
 			{
-				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-				{
-					_log.Error($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
-					throw  new Exception($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
-					
-				}
-
-				if (!Connected)
-				{
-					_log.Error($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
-					throw new Exception($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to the timestamp {timestamp:D}");
-				}
-
+				
 				long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 				var seek = _commands.NewSeek(_consumerId, requestId, timestamp);
 				var cnx = Cnx();
@@ -2713,33 +2700,21 @@ namespace SharpPulsar
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			if(messageId is BatchMessageId batchMessageId)
 			{
+				var bitSet = BitSet.Create();
 				ledgerId = batchMessageId.LedgerId;
 				entryId = batchMessageId.EntryId;
-				var bitSet = new BitArray(batchMessageId.BatchSize, true);
 				if (ackType == CommandAck.AckType.Cumulative)
 				{
-					batchMessageId.AckCumulative(batchMessageId.BatchSize);
-					//bitSet.Set(batchMessageId.BatchSize, false);
-					for (var i = 0; i < batchMessageId.BatchIndex; i++)
-						bitSet[i] = false;
+					batchMessageId.AckCumulative();
+					bitSet.Set(0, batchMessageId.BatchSize);
+					bitSet.Clear(0, batchMessageId.BatchIndex + 1);
 				}
 				else
 				{
-					bitSet[batchMessageId.BatchSize - 1] = false;
+					bitSet.Set(0, batchMessageId.BatchSize);
+					bitSet.Clear(batchMessageId.BatchIndex);
 				}
-				var result = true;
-				var y = 0;
-				long[] ackSet;
-				while (result && y < bitSet.Length)
-                {
-					result = !bitSet[y];
-					y = -y + 1;
-				}
-				if (result)
-					ackSet = new long[0];
-				else
-					ackSet = bitSet.ToLongArray();
-				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, ackSet , ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else
 			{

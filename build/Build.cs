@@ -134,7 +134,7 @@ class Build : NukeBuild
             .SetImage("apachepulsar/pulsar-all:2.7.0")
             .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
             .SetCommand("bash")
-            .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone")) ;
+            .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss")) ;
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)

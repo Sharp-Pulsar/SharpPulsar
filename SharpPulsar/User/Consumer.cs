@@ -21,13 +21,15 @@ namespace SharpPulsar.User
         private readonly ISchema<T> _schema;
         private readonly ConsumerConfigurationData<T> _conf;
         private readonly IActorRef _consumerActor;
+        private readonly IActorRef _stateActor;
         private readonly ConsumerQueueCollections<T> _queue;
         private readonly ConsumerInterceptors<T> _interceptors;
         private readonly CancellationTokenSource _tokenSource;
         private IMessageListener<T> _listener;
 
-        public Consumer(IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ConsumerConfigurationData<T> conf, ConsumerInterceptors<T> interceptors)
+        public Consumer(IActorRef stateActor, IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ConsumerConfigurationData<T> conf, ConsumerInterceptors<T> interceptors)
         {
+            _stateActor = stateActor;
             _listener = conf.MessageListener;
             _tokenSource = new CancellationTokenSource();
             _interceptors = interceptors;
@@ -198,7 +200,7 @@ namespace SharpPulsar.User
                 return message;
             }
         }
-        public IMessage<T> Receive(int timeoutMilliseconds = 30000, CancellationToken token = default)
+        public IMessage<T> Receive(int timeoutMilliseconds = 3000, CancellationToken token = default)
         {
             VerifyConsumerState();
             if (_conf.MessageListener != null)
@@ -246,7 +248,15 @@ namespace SharpPulsar.User
 
         protected internal void VerifyConsumerState()
         {
-            var state = _consumerActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).State;
+            var state = _stateActor.AskForState<HandlerStateResponse>(GetHandlerState.Instance).State;
+            var retry = 10;
+            while(state == HandlerState.State.Uninitialized && retry > 0)
+            {
+                state = _stateActor.AskForState<HandlerStateResponse>(GetHandlerState.Instance).State;
+                retry--;
+                if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+            }
             switch (state)
             {
                 case HandlerState.State.Ready:
@@ -324,6 +334,19 @@ namespace SharpPulsar.User
 
         public void Seek(IMessageId messageId)
         {
+            var state = _stateActor.AskForState<HandlerStateResponse>(GetHandlerState.Instance).State;
+            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            {
+                throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the message {messageId}");
+
+            }
+
+            if (!Connected)
+            {
+                throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {Topic} to the message {messageId}");
+
+            }
+
             _consumerActor.Tell(new SeekMessageId(messageId));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
@@ -332,6 +355,18 @@ namespace SharpPulsar.User
 
         public void Seek(long timestamp)
         {
+            var state = _stateActor.AskForState<HandlerStateResponse>(GetHandlerState.Instance).State;
+            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            {
+                throw new Exception($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the timestamp {timestamp:D}");
+
+            }
+
+            if (!Connected)
+            {
+                throw new Exception($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {Topic} to the timestamp {timestamp:D}");
+            }
+
             _consumerActor.Tell(new SeekTimestamp(timestamp));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)

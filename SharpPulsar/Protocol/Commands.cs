@@ -17,6 +17,7 @@ using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
 using SharpPulsar.Extension;
 using System.Collections;
+using SharpPulsar.Batch;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -566,7 +567,7 @@ namespace SharpPulsar.Protocol
 			
 			return res.ToArray();
 		}
-		public byte[] NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, BitArray bitSet)> entries)
+		public byte[] NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, BitSet bitSet)> entries)
 		{
             var ackBuilder = new CommandAck
             {
@@ -577,7 +578,7 @@ namespace SharpPulsar.Protocol
             };
             return NewMultiMessageAckCommon(ackBuilder, entries);
 		}
-		public byte[] NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, BitArray bitSet)> entries)
+		public byte[] NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, BitSet bitSet)> entries)
 		{
 			int entriesCount = entries.Count;
 			for (int i = 0; i < entriesCount; i++)
@@ -603,7 +604,7 @@ namespace SharpPulsar.Protocol
 			var res = Serializer.Serialize(ack.ToBaseCommand());
 			return res.ToArray();
 		}
-		public byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitArray Sets)> entries)
+		public byte[] NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
         {
             var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = CommandAck.AckType.Individual};
 

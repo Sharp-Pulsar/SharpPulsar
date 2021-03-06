@@ -37,7 +37,7 @@ namespace SharpPulsar
 		private readonly IActorRef _consumer;
 		private readonly IActorRef _generator;
 
-		public MultiTopicsReader(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
 			_generator = idGenerator;
 			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -77,14 +77,8 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create<MultiTopicsConsumer<T>>(client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
+			_consumer = Context.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
 
-
-			Receive<GetHandlerState>(m =>
-			{
-				var state = _consumer.AskFor<HandlerStateResponse>(m);
-				Sender.Tell(state);
-			});
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);
 			});

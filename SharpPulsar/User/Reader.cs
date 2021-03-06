@@ -17,10 +17,12 @@ namespace SharpPulsar.User
         private readonly ISchema<T> _schema;
         private readonly ReaderConfigurationData<T> _conf;
         private readonly IActorRef _readerActor;
+        private readonly IActorRef _stateActor;
         private readonly ConsumerQueueCollections<T> _queue;
 
-        public Reader(IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ReaderConfigurationData<T> conf)
+        public Reader(IActorRef stateActor, IActorRef consumer, ConsumerQueueCollections<T> queue, ISchema<T> schema, ReaderConfigurationData<T> conf)
         {
+            _stateActor = stateActor;
             _readerActor = consumer;
             _queue = queue;
             _schema = schema;
@@ -76,7 +78,7 @@ namespace SharpPulsar.User
         }
         protected internal void VerifyConsumerState()
         {
-            var state = _readerActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).State;
+            var state = _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).State;
             switch (state)
             {
                 case HandlerState.State.Ready:
@@ -97,6 +99,18 @@ namespace SharpPulsar.User
         }
         public void Seek(IMessageId messageId)
         {
+            var state = _stateActor.AskForState<HandlerStateResponse>(GetHandlerState.Instance).State;
+            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            {
+                throw new PulsarClientException.AlreadyClosedException($"The consumer was already closed when seeking the subscription of the topic {Topic} to the message {messageId}");
+
+            }
+
+            if (!Connected)
+            {
+                throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription of the topic {Topic} to the message {messageId}");
+
+            }
             _readerActor.Tell(new SeekMessageId(messageId));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg.Exception != null)
@@ -105,6 +119,17 @@ namespace SharpPulsar.User
 
         public void Seek(long timestamp)
         {
+            var state = _stateActor.AskForState<HandlerStateResponse>(GetHandlerState.Instance).State;
+            if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
+            {
+                throw new Exception($"The reader was already closed when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
+
+            }
+
+            if (!Connected)
+            {
+                throw new Exception($"The client is not connected to the broker when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
+            }
             _readerActor.Tell(new SeekTimestamp(timestamp));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg.Exception != null)

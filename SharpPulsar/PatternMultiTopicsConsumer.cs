@@ -49,7 +49,7 @@ namespace SharpPulsar
 		private IActorRef _self;
 		private IActorRef _generator;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
 		{
 			_generator = idGenerator;
 			_self = Self;

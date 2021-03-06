@@ -7,6 +7,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
@@ -71,10 +72,13 @@ namespace SharpPulsar
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
 		protected internal long IncomingMessagesSize = 0L;
 		protected internal ICancelable BatchReceiveTimeout = null;
+		private readonly IActorRef _stateActor;
+		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
-		public ConsumerActorBase(IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
+		public ConsumerActorBase(IActorRef stateActor, IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
+			_stateActor = stateActor;
 			_topic = topic;
 			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
@@ -120,6 +124,11 @@ namespace SharpPulsar
 				//BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
 				
 			}
+			_stateUpdater = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(5000), ()=> 
+			{
+				var actor = _stateActor;
+				actor.Tell(new SetConumerState(State.ConnectionState));
+			});
 		}
 		
 
@@ -412,5 +421,21 @@ namespace SharpPulsar
 		}
 
 	}
-
+	internal class ConsumerStateActor: ReceiveActor
+    {
+		private HandlerState.State _state;
+		public ConsumerStateActor()
+        {
+			Receive<SetConumerState>(m => _state = m.State);
+			Receive<GetHandlerState>(_ => Sender.Tell(new HandlerStateResponse(_state)));
+        }
+    }
+	internal class SetConumerState
+    {
+		public HandlerState.State State { get; }
+        public SetConumerState(HandlerState.State state)
+        {
+			State = state;
+        }
+    }
 }

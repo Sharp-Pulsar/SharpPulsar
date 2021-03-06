@@ -74,6 +74,7 @@ namespace SharpPulsar
 		private readonly IActorRef _lookup;
 		private readonly IActorRef _cnxPool;
 		private readonly IActorRef _generator;
+		private readonly IActorRef _stateActor;
 
 		private bool _paused = false;
 		// timeout related to auto check and subscribe partition increasement
@@ -89,24 +90,21 @@ namespace SharpPulsar
 		private readonly IActorRef _client;
 
 		private readonly IActorRef _self;
-		public MultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, queue)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, queue)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, queue)
+		public MultiTopicsConsumer(IActorRef stateActor,IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, null, 0, clientConfiguration, queue)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(client, lookup, cnxPool, idGenerator, singleTopic, conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, null, 0, clientConfiguration, queue)
-		{
-		}
-
-		public MultiTopicsConsumer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(stateActor, client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
 		{
 			_generator = idGenerator;
 			_lookup = lookup;
 			_client = client;
 			_cnxPool = cnxPool;
+			_stateActor = stateActor;
 			Condition.CheckArgument(conf.ReceiverQueueSize > 0, "Receiver queue size needs to be greater than 0 for Topics Consumer");
 			_self = Self;
 			_scheduler = Context.System.Scheduler;
@@ -903,7 +901,7 @@ namespace SharpPulsar
 		{
 			foreach(var consumer in _consumers.Values)
             {
-				var st = consumer.Consumer.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+				var st = _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
 				Sender.Tell(st);
 				return;
             }
@@ -1104,9 +1102,9 @@ namespace SharpPulsar
         {
 			if (conf.ReceiverQueueSize == 0)
 			{
-				return Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, null, createIfDoesNotExist, _clientConfiguration, ConsumerQueue)));
+				return Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, null, createIfDoesNotExist, _clientConfiguration, ConsumerQueue)));
 			}
-			return Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, _startMessageRollbackDurationInSec, schema, null, createIfDoesNotExist, _clientConfiguration, ConsumerQueue)));
+			return Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, _startMessageRollbackDurationInSec, schema, null, createIfDoesNotExist, _clientConfiguration, ConsumerQueue)));
 
 		}
 		// handling failure during subscribe new topic, unsubscribe success created partitions
@@ -1316,7 +1314,7 @@ namespace SharpPulsar
 						var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
 						int partitionIndex = TopicName.GetPartitionIndex(partitionName);
 						ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
-						var newConsumer = Context.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue)));
+						var newConsumer = Context.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue)));
 						if (_paused)
 						{
 							newConsumer.Tell(Messages.Consumer.Pause.Instance);
