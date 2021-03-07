@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 
 namespace SharpPulsar.Tls
 {

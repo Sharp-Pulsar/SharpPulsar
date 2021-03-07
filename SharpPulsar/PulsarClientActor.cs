@@ -104,12 +104,27 @@ namespace SharpPulsar
 			});
 			Receive<GetPartitionedTopicMetadata>(p => 
 			{
-				var partition = GetPartitionedTopicMetadata(p.TopicName.ToString());
-				Sender.Tell(partition);
+                try
+                {
+					var partition = GetPartitionedTopicMetadata(p.TopicName.ToString());
+					Sender.Tell(partition);
+				}
+				catch(Exception ex)
+                {
+					Sender.Tell(new ClientExceptions(new PulsarClientException(ex)));
+                }
 			});
-			Receive<GetPartitionsForTopic>(s => {
-				var topics = GetPartitionsForTopic(s.TopicName);
-				Sender.Tell(new PartitionsForTopic(topics));
+			Receive<GetPartitionsForTopic>(s => 
+			{
+				try
+				{
+					var topics = GetPartitionsForTopic(s.TopicName);
+					Sender.Tell(new PartitionsForTopic(topics));
+				}
+				catch (Exception ex)
+				{
+					Sender.Tell(new ClientExceptions(new PulsarClientException(ex)));
+				}
 			});
 		}
 

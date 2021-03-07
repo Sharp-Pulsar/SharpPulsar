@@ -491,7 +491,7 @@ namespace SharpPulsar.User
                 else
                 {
                     var consumerId = _generator.AskFor<long>(NewConsumerId.Instance);
-                    reader = _actorSystem.ActorOf(Props.Create(() => new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue)));
+                    reader = _actorSystem.ActorOf(Props.Create<ReaderActor<T>>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(reader));
 

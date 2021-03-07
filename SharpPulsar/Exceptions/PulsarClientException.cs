@@ -904,7 +904,7 @@ namespace SharpPulsar.Exceptions
 
             if (t is Exception)
             {
-                throw (Exception)t;
+                return new PulsarClientException(t);
             }
 
             // Unwrap the exception to keep the same exception type but a stack trace that includes the application calling

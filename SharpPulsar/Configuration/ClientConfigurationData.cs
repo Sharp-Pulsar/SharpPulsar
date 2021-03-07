@@ -58,6 +58,7 @@ namespace SharpPulsar.Configuration
         public ProxyProtocol? ProxyProtocol { get; set; }
 		public int OperationTimeoutMs { get; set; } = 30000;
         public int WebServicePort { get; set; } = 8080;
+
         public string WebServiceScheme { get; set; } = "http";
 		public long StatsIntervalSeconds { get; set; } = 60;
 		public int ConnectionsPerBroker { get; set; } = 1;

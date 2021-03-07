@@ -5,6 +5,7 @@ using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Model;
@@ -79,38 +80,58 @@ namespace SharpPulsar.Transaction
 
 		private void StartCoordinator()
 		{
-            try 
+			_state = TransactionCoordinatorClientState.Starting;
+			var started = Start();
+			while (!started)
 			{
-				_state = TransactionCoordinatorClientState.Starting;
-				var lkup = _pulsarClient.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+				_log.Info("Transaction coordinator not started...retrying");
+				started = Start();
+			}
+			_state = TransactionCoordinatorClientState.Ready;
+		}
+		private bool Start()
+		{
+			try
+			{
+				var result = _pulsarClient.AskFor(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+				if (result is PartitionedTopicMetadata lkup)
+				{
 
-				var partitionMeta = lkup;
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
-				}
-				if (partitionMeta.Partitions > 0)
-				{
-					_handlers = new List<IActorRef>(partitionMeta.Partitions);
-					for (int i = 0; i < partitionMeta.Partitions; i++)
+					var partitionMeta = lkup;
+					if (_log.IsDebugEnabled)
 					{
-						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-						_handlers.Add(handler);
-						_handlerMap.Add(i, handler);
+						_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
 					}
+					if (partitionMeta.Partitions > 0)
+					{
+						_handlers = new List<IActorRef>(partitionMeta.Partitions);
+						for (int i = 0; i < partitionMeta.Partitions; i++)
+						{
+							var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+							_handlers.Add(handler);
+							_handlerMap.Add(i, handler);
+						}
+					}
+					else
+					{
+						_handlers = new List<IActorRef>(1);
+						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+						_handlers[0] = handler;
+						_handlerMap.Add(0, handler);
+					}
+					return true;
 				}
-				else
-				{
-					_handlers = new List<IActorRef>(1);
-					var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-					_handlers[0] = handler;
-					_handlerMap.Add(0, handler);
-				}
-				_state = TransactionCoordinatorClientState.Ready;
+                else
+                {
+					var ex = result as ClientExceptions;
+					_log.Error(ex.ToString());
+					return false;
+                }
 			}
 			catch(Exception ex)
             {
 				_log.Error(ex.ToString());
+				return false;
 			}
 		}
 		public static Props Prop(IActorRef idGenerator, ClientConfigurationData conf)

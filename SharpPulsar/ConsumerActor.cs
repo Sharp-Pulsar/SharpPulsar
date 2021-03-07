@@ -2700,7 +2700,7 @@ namespace SharpPulsar
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			if(messageId is BatchMessageId batchMessageId)
 			{
-				var bitSet = BitSet.Create();
+				var bitSet = new BitSet(batchMessageId.BatchSize);
 				ledgerId = batchMessageId.LedgerId;
 				entryId = batchMessageId.EntryId;
 				if (ackType == CommandAck.AckType.Cumulative)

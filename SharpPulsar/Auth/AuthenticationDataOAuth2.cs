@@ -5,9 +5,9 @@ using System.Net.Http;
 using System.Text;
 using IdentityModel.Client;
 using SharpPulsar.Exceptions;
-using Nito.AsyncEx;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Extension;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -43,7 +43,7 @@ namespace SharpPulsar.Auth
             _clientSecret = secret;
             _client = new HttpClient();
             var discoTask = _client.GetDiscoveryDocumentAsync(authority);
-            _disco = SynchronizationContextSwitcher.NoContext(async () => await discoTask ).Result;
+            _disco = Task.Run(async () => await discoTask ).Result;
             if (_disco.IsError) throw new Exception(_disco.Error);
         }
 
@@ -68,7 +68,7 @@ namespace SharpPulsar.Auth
                         ClientId = _clientId,
                         ClientSecret = _clientSecret,
                     });
-                    var response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
+                    var response = Task.Run(async () => await responseTask).Result;
                     if (response.IsError) throw new Exception(response.Error);
                     return response.AccessToken;
 				}
@@ -91,7 +91,7 @@ namespace SharpPulsar.Auth
                     ClientSecret = _clientSecret,
                     Token = Encoding.UTF8.GetString(data.Bytes.ToBytes())
                 });
-                var result = SynchronizationContextSwitcher.NoContext(async () => await resultTask).Result;
+                var result = Task.Run(async () => await resultTask).Result;
                 if (result.IsError)
                 {
                     throw new PulsarClientException(result.Error);

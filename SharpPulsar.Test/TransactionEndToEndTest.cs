@@ -1,20 +1,16 @@
 ﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
-using SharpPulsar.Exceptions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Transaction;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -58,6 +54,7 @@ namespace SharpPulsar.Test
 			_output = output;
 			_system = fixture.System;
 			_client = _system.NewClient();
+			Thread.Sleep(TimeSpan.FromSeconds(10));
 		}
 		~TransactionEndToEndTest()
         {
@@ -215,7 +212,7 @@ namespace SharpPulsar.Test
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			for(int retryCnt = 0; retryCnt < 2; retryCnt++)
+			for(int retryCnt = 0; retryCnt < 1; retryCnt++)
 			{
 				User.Transaction txn = Txn;
 
@@ -300,7 +297,7 @@ namespace SharpPulsar.Test
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					//consumer.Acknowledge(msg.MessageId, txn);
+					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
@@ -312,7 +309,6 @@ namespace SharpPulsar.Test
 
 				// after transaction abort, the messages could be received
 				User.Transaction commitTxn = Txn;
-				Thread.Sleep(TimeSpan.FromSeconds(30));
 				for(int i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(2, TimeUnit.SECONDS);
@@ -327,19 +323,6 @@ namespace SharpPulsar.Test
 				// after transaction commit, the messages can't be received
 				message = consumer.Receive(2, TimeUnit.SECONDS);
 				Assert.Null(message);
-
-				try
-				{
-					commitTxn.Commit();
-					//fail("recommit one transaction should be failed.");
-				}
-				catch(Exception reCommitError)
-				{
-					// recommit one transaction should be failed
-					//log.info("expected exception for recommit one transaction.");
-					Assert.NotNull(reCommitError);
-					Assert.True(reCommitError.InnerException is TransactionCoordinatorClientException.InvalidTxnStatusException);
-				}
 			}
 		}
 
@@ -628,7 +611,7 @@ namespace SharpPulsar.Test
 			for(int retryCnt = 0; retryCnt < 2; retryCnt++)
 			{
 				User.Transaction abortTxn = Txn;
-				int messageCnt = 50;
+				int messageCnt = 100;
 				// produce normal messages
 				for(int i = 0; i < messageCnt; i++)
 				{
@@ -675,6 +658,7 @@ namespace SharpPulsar.Test
 
 		private User.Transaction Txn
 		{
+			
 			get
 			{
 				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2, TimeUnit.SECONDS).Build();

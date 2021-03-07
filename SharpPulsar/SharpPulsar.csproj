@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
     <Version>2.0-beta</Version>
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
@@ -53,7 +53,7 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="avroschemagenerator" Version="1.8.0" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.14.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.15.5" />
     <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
     <PackageReference Include="IdentityModel" Version="5.0.1" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
@@ -64,11 +64,10 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.4.0" />
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.22" />
-    <PackageReference Include="Nager.PublicSuffix" Version="2.1.0" />
+    <PackageReference Include="Nager.PublicSuffix" Version="2.2.2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Nito.AsyncEx.Tasks" Version="5.1.0" />
     <PackageReference Include="NodaTime" Version="3.0.5" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.9" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
     <PackageReference Include="protobuf-net" Version="3.0.73" />
     <PackageReference Include="RestSharp" Version="106.11.7" />
     <PackageReference Include="SharpZipLib" Version="1.3.1" />

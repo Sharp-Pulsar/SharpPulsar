@@ -122,7 +122,6 @@ class Build : NukeBuild
       .DependsOn(CheckDockerVersion)
       .Executes(() =>
        {
-
            DockerTasks.DockerRun(b =>
             b
             .SetDetach(true)
@@ -134,7 +133,7 @@ class Build : NukeBuild
             .SetImage("apachepulsar/pulsar-all:2.7.0")
             .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
             .SetCommand("bash")
-            .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss")) ;
+            .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16")) ;
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)
@@ -200,11 +199,6 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/message-ack-test", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar")
-                .SetArgs("initialize-transaction-coordinator-metadata", "-cs", "localhost:2181", "-c", "standalone", "--initial-num-transaction-coordinators", "16")
             );
        });
     Target CheckDockerVersion => _ => _

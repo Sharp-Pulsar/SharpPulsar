@@ -7,8 +7,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
-using Nito.AsyncEx;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
@@ -59,7 +59,7 @@ namespace SharpPulsar.Presto
 			var request = BuildQueryRequest(session, query);
 
 			var responseTask = JsonResponse<QueryResults>.Execute(httpClient, request);
-			var response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
+			var response = Task.Run(async () => await responseTask).Result;
 			if ((response.ResponseMessage.StatusCode != HttpStatusCode.OK) || !response.HasValue())
 			{
 				if (_state == State.Running)
@@ -265,7 +265,7 @@ namespace SharpPulsar.Presto
 				try
 				{
 					var responseTask = JsonResponse<QueryResults>.Execute(_httpClient, request);
-					response = SynchronizationContextSwitcher.NoContext(async () => await responseTask).Result;
+					response = Task.Run(async () => await responseTask).Result;
 				}
 				catch (Exception e)
 				{
