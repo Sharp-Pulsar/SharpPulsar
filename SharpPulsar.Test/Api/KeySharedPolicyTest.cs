@@ -22,7 +22,8 @@ using Xunit;
 
 namespace SharpPulsar.Test.Api
 {
-    public class KeySharedPolicyTest
+	[Collection("SharpPulsar")]
+	public class KeySharedPolicyTest
 	{
 		[Fact]
 		public void TestAutoSplit()

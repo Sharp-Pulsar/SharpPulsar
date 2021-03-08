@@ -24,7 +24,8 @@ using Range = SharpPulsar.Common.Range;
 
 namespace SharpPulsar.Test.Api
 {
-    public class RangeTest
+	[Collection("SharpPulsar")]
+	public class RangeTest
 	{
         private readonly ITestOutputHelper _output;
 

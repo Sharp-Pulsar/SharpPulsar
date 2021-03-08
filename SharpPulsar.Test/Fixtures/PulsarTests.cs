@@ -18,4 +18,7 @@ namespace SharpPulsar.Test.Fixtures
 
     [CollectionDefinition(nameof(PulsarTests))]
     public class PulsarTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
+
+    [CollectionDefinition(nameof(PulsarTransactionTests))]
+    public class PulsarTransactionTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
 }

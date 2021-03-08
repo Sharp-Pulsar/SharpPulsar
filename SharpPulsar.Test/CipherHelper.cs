@@ -8,6 +8,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test
 {
+    [Collection("SharpPulsar")]
     public class CipherHelper
     {
         private readonly ITestOutputHelper _output;

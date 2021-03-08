@@ -156,7 +156,7 @@ namespace SharpPulsar.Test
 			_output.WriteLine($"message commit test enableBatch {true}");
 		}
 		[Fact]
-		public virtual void ProduceAbortTest()
+		public void ProduceAbortTest()
 		{
 			User.Transaction txn = Txn;
 			
@@ -228,7 +228,7 @@ namespace SharpPulsar.Test
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
@@ -247,7 +247,7 @@ namespace SharpPulsar.Test
 					message = consumer.Receive(2, TimeUnit.SECONDS);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
@@ -296,7 +296,7 @@ namespace SharpPulsar.Test
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
@@ -314,7 +314,7 @@ namespace SharpPulsar.Test
 					message = consumer.Receive(2, TimeUnit.SECONDS);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
@@ -360,7 +360,7 @@ namespace SharpPulsar.Test
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
@@ -379,7 +379,7 @@ namespace SharpPulsar.Test
 					message = consumer.Receive(2, TimeUnit.SECONDS);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
@@ -424,7 +424,7 @@ namespace SharpPulsar.Test
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
@@ -443,7 +443,7 @@ namespace SharpPulsar.Test
 					message = consumer.Receive(2, TimeUnit.SECONDS);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
@@ -456,7 +456,7 @@ namespace SharpPulsar.Test
 		}
 		
 		[Fact]
-		public virtual void TxnMessageAckTest()
+		public void TxnMessageAckTest()
 		{
 			string topic = $"{_topicMessageAckTest}-{Guid.NewGuid()}";
 			var subName = $"test-{Guid.NewGuid()}";
@@ -563,7 +563,7 @@ namespace SharpPulsar.Test
 					{
 						consumer.AcknowledgeCumulative(message.MessageId, abortTxn);
 					}
-					_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
+					//_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
 				}
 				// the messages are pending ack state and can't be received
 				message = consumer.Receive(2, TimeUnit.SECONDS);
@@ -577,7 +577,7 @@ namespace SharpPulsar.Test
 					message = consumer.Receive();
 					Assert.NotNull(message);
 					consumer.AcknowledgeCumulative(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
+					//_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
 				}
 
 				commitTxn.Commit();
@@ -629,7 +629,7 @@ namespace SharpPulsar.Test
 						//better done outside
 						consumer.AcknowledgeCumulative(message.MessageId, abortTxn);
 					}
-					_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
+					//_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
 				}
 				// consumer.AcknowledgeCumulative(message.MessageId, abortTxn);
 				// the messages are pending ack state and can't be received
@@ -647,7 +647,7 @@ namespace SharpPulsar.Test
 					{
 						consumer.AcknowledgeCumulative(message.MessageId, commitTxn);
 					}
-					_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
+					//_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
 				}
 
 				commitTxn.Commit();

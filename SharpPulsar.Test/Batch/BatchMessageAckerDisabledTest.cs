@@ -22,7 +22,7 @@ using Xunit;
 
 namespace SharpPulsar.Test.Batch
 {
-    [Collection("BatchMessageAckerDisabledTest")]
+    [Collection("SharpPulsar")]
     public class BatchMessageAckerDisabledTest
     {
         [Fact]
