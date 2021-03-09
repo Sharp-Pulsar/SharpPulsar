@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
@@ -34,15 +35,14 @@ namespace SharpPulsar.Test.Api
     public class ConsumerRedeliveryTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarSystem _system;
         private readonly PulsarClient _client;
 
         public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _output = output;
-            _system = fixture.System;
-            _client = _system.NewClient();
+            _client = fixture.Client;
         }
+
         [Fact]
         public void TestUnAckMessageRedeliveryWithReceive()
         {

@@ -38,15 +38,13 @@ namespace SharpPulsar.Test.Api
     public class ByteKeysTestBatchTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarSystem _system;
         private readonly PulsarClient _client;
         private readonly string _topic;
 
         public ByteKeysTestBatchTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _output = output;
-            _system = fixture.System;
-            _client = _system.NewClient();
+            _client = fixture.Client;
             _topic = $"persistent://public/default/my-topic-Batch-{Guid.NewGuid()}";
         }
 

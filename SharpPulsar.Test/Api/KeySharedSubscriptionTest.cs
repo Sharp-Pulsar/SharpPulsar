@@ -15,6 +15,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -40,19 +41,14 @@ namespace SharpPulsar.Test.Api
 	public class KeySharedSubscriptionTest
 	{
         private readonly ITestOutputHelper _output;
-		private readonly PulsarSystem _system;
 		private readonly PulsarClient _client;
 
 		public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
-			var client = fixture.ClientBuilder;
-			client.OperationTimeout(60000);
-			client.Authentication(new AuthenticationDisabled());
-
-			_system = PulsarSystem.GetInstance(client);
-			_client = _system.NewClient();
+			_client = fixture.Client;
 		}
+
 		private static readonly IList<string> Keys = new List<string>{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 		
 		private static readonly Random Random = new Random(DateTimeOffset.Now.Millisecond);

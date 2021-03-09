@@ -9,6 +9,7 @@ using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -34,15 +35,14 @@ namespace SharpPulsar.Test
 	public class NegativeAcksTest
 	{
         private readonly ITestOutputHelper _output;
-		private readonly PulsarSystem _system;
 		private readonly PulsarClient _client;
 
 		public NegativeAcksTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
-			_system = fixture.System;
-			_client = _system.NewClient();
+			_client = fixture.Client;
 		}
+
 		[Fact]
         public void TestNegativeAcksBatch()
         {

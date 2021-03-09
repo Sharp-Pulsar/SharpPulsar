@@ -16,6 +16,7 @@ namespace SharpPulsar.Test.Fixtures
 {
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
+    using SharpPulsar.User;
     using System;
     using System.Diagnostics;
     using System.IO;
@@ -27,10 +28,10 @@ namespace SharpPulsar.Test.Fixtures
 
     //docker run -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 --env PULSAR_PREFIX_transactionCoordinatorEnabled=true -p 6650:6650 -p 8080:8080 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf  apachepulsar/pulsar-all:2.7.0 bash -c "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16"
 
+
     public class PulsarStandaloneClusterFixture : IAsyncLifetime
     {
-        public PulsarSystem System;
-        public PulsarClientConfigBuilder ClientBuilder;
+        public PulsarClient Client;
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -77,7 +78,8 @@ namespace SharpPulsar.Test.Fixtures
         public async Task DisposeAsync()
         {
             //TakeDownPulsar();
-            await System.Shutdown();
+            Client.Shutdown();
+            await Task.CompletedTask;
         }
 
         private static void TakeDownPulsar()
@@ -140,9 +142,8 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            ClientBuilder = client;
-            //client.UseDedicatedConnections(true);
-            System = PulsarSystem.GetInstance(client);
+            var system = PulsarSystem.GetInstance(client);
+            Client = system.NewClient();
         }
     }
 }

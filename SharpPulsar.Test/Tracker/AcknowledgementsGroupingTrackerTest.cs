@@ -30,6 +30,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
 using System;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.Test.Tracker
 {
@@ -37,19 +38,18 @@ namespace SharpPulsar.Test.Tracker
 	public class AcknowledgementsGroupingTrackerTest
 	{
         private readonly ITestOutputHelper _output;
-		private readonly PulsarSystem _system;
 		private readonly PulsarClient _client;
 		public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
-			_system = fixture.System;
-			_client = _system.NewClient();
+			_client = fixture.Client;
 		}
+
 		[Fact]
 		public void TestAckTracker()
 		{
 			var builder = new ConsumerConfigBuilder<sbyte[]>();
-			builder.AcknowledgmentGroupTime((long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000));
+			builder.AcknowledgmentGroupTime(10000);
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
