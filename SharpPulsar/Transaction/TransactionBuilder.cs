@@ -4,6 +4,7 @@ using BAMCIS.Util.Concurrent;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
+using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -53,12 +54,17 @@ namespace SharpPulsar.Transaction
 
 		public ITransaction Build()
 		{
+			return BuildAsync().GetAwaiter().GetResult();
+		}
+		public async Task<ITransaction> BuildAsync()
+		{
 			// talk to TC to begin a transaction
 			//       the builder is responsible for locating the transaction coorindator (TC)
 			//       and start the transaction to get the transaction id.
 			//       After getting the transaction id, all the operations are handled by the
 			//       `Transaction`
-			var txnID = _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS)).Response;
+			var result = await _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS));
+			var txnID = result.Response;
 			var transaction = _actorSystem.ActorOf(Transaction.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
 			return new User.Transaction(transaction);	
 		}

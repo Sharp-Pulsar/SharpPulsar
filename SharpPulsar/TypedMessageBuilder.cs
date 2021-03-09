@@ -32,6 +32,7 @@ namespace SharpPulsar
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
+    using System.Threading.Tasks;
 
     [Serializable]
 	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
@@ -54,15 +55,15 @@ namespace SharpPulsar
 			_txn = txn;
 		}
 
-		private long BeforeSend()
+		private async Task<long> BeforeSend()
 		{
 			if (_txn == null)
 			{
 				return -1L;
 			}
 			
-			var bits = _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-			var sequence = _txn.Txn.AskFor<long>(NextSequenceId.Instance);
+			var bits = await _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+			var sequence = await _txn.Txn.AskFor<long>(NextSequenceId.Instance);
 			_metadata.TxnidLeastBits = (ulong)bits.LeastBits;
 			_metadata.TxnidMostBits = (ulong)bits.MostBits;
 			long sequenceId = sequence;
@@ -71,7 +72,11 @@ namespace SharpPulsar
 		}
 		public void Send(bool isDeadLetter = false)
 		{
-			var message = Message;
+			SendAsync(isDeadLetter).ConfigureAwait(false);
+		}
+		public async Task SendAsync(bool isDeadLetter = false)
+		{
+			var message = await Message();
 			if (_txn != null)
 			{
 				_producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter));
@@ -81,7 +86,7 @@ namespace SharpPulsar
 				_producer.Tell(new InternalSend<T>(message, isDeadLetter));
 			}
 		}
-		public virtual ITypedMessageBuilder<T> Key(string key)
+		public ITypedMessageBuilder<T> Key(string key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -97,7 +102,7 @@ namespace SharpPulsar
 			_metadata.PartitionKeyB64Encoded = false;
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
+		public ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -119,7 +124,7 @@ namespace SharpPulsar
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> Value(T value)
+		public ITypedMessageBuilder<T> Value(T value)
 		{
 			if (value == null)
 			{
@@ -158,14 +163,14 @@ namespace SharpPulsar
 			_content = _schema.Encode(value).ToBytes();
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> Property(string name, string value)
+		public ITypedMessageBuilder<T> Property(string name, string value)
 		{
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(name), "Need Non-Null name");
 			Condition.CheckArgument(string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);
 			_metadata.Properties.Add(new KeyValue { Key = name, Value = value });
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
+		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
 		{
 			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
 			{
@@ -177,39 +182,39 @@ namespace SharpPulsar
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> EventTime(long timestamp)
+		public ITypedMessageBuilder<T> EventTime(long timestamp)
 		{
 			Condition.CheckArgument(timestamp > 0, "Invalid timestamp : '%s'", timestamp);
 			_metadata.EventTime = (ulong)timestamp;
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> SequenceId(long sequenceId)
+		public ITypedMessageBuilder<T> SequenceId(long sequenceId)
 		{
 			Condition.CheckArgument(sequenceId >= 0);
 			_metadata.SequenceId = (ulong)sequenceId;
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
+		public ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
 		{
 			Condition.CheckNotNull(clusters);
 			_metadata.ReplicateToes.Clear();
 			_metadata.ReplicateToes.AddRange(clusters);
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> DisableReplication()
+		public ITypedMessageBuilder<T> DisableReplication()
 		{
 			_metadata.ReplicateToes.Clear();
 			_metadata.ReplicateToes.Add("__local__");
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit)
+		public ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit)
 		{
 			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMilliseconds(delay));
 		}
 
-		public virtual ITypedMessageBuilder<T> DeliverAt(long timestamp)
+		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
 		{
 			_metadata.DeliverAtTime = timestamp;
 			return this;
@@ -265,24 +270,21 @@ namespace SharpPulsar
 			return this;
 		}
 
-		public virtual IMessage<T> Message
+		public async Task<IMessage<T>> Message()
 		{
-			get
-			{
-				BeforeSend();
-				return Message<T>.Create(_metadata, _content, _schema);
-			}
+			await BeforeSend();
+			return Message<T>.Create(_metadata, _content, _schema);
 		}
 
-		public virtual long PublishTime => (long)_metadata.PublishTime;
+		public long PublishTime => (long)_metadata.PublishTime;
 
-        public virtual bool HasKey()
+        public bool HasKey()
 		{
 			return !string.IsNullOrWhiteSpace(_metadata.PartitionKey);
 		}
 
 
-        public virtual string GetKey => _metadata.PartitionKey;
+        public string GetKey => _metadata.PartitionKey;
     }
 
 }

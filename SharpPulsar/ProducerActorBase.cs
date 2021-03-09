@@ -8,6 +8,7 @@ using SharpPulsar.Queues;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,8 +32,8 @@ namespace SharpPulsar
 {
 	internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract void InternalSendWithTxn(IMessage<T> message, IActorRef txn);
-		internal abstract void InternalSend(IMessage<T> message);
+		internal abstract Task InternalSendWithTxn(IMessage<T> message, IActorRef txn);
+		internal abstract Task InternalSend(IMessage<T> message);
 		protected internal abstract long LastDisconnectedTimestamp {get;}
 		protected internal abstract bool Connected {get;}
 		protected internal abstract IProducerStats Stats {get;}

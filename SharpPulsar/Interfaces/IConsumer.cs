@@ -41,12 +41,14 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> topic for the consumer </returns>
 		string Topic {get;}
+		Task<string> TopicAsync();
 
 		/// <summary>
 		/// Get a subscription for the consumer.
 		/// </summary>
 		/// <returns> subscription for the consumer </returns>
 		string Subscription {get;}
+		Task<string> SubscriptionAsync();
 
 		/// <summary>
 		/// Unsubscribe the consumer.
@@ -80,6 +82,7 @@ namespace SharpPulsar.Interfaces
 		///             if a message listener was defined in the configuration </exception>
 		///             
 		IMessage<T> Receive(int timeoutMilliseconds = 5000, CancellationToken token = default);
+		Task<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 5000, CancellationToken token = default);
 
 
 		/// <summary>
@@ -99,6 +102,7 @@ namespace SharpPulsar.Interfaces
 		///             if a message listener was defined in the configuration </exception>
 		///             
 		IMessage<T> Receive(int timeout, TimeUnit unit);
+		Task<IMessage<T>> ReceiveAsync(int timeout, TimeUnit unit);
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -112,6 +116,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException"> </exception>
 		/// 
 		IMessages<T> BatchReceive();
+		Task<IMessages<T>> BatchReceiveAsync();
 
 
 		/// <summary>
@@ -383,6 +388,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> statistic for the consumer </returns>
 		IConsumerStats Stats {get;}
+		Task<IConsumerStats> StatsAsync();
 
 		/// <summary>
 		/// Close the consumer and stop the broker to push more messages.
@@ -426,6 +432,7 @@ namespace SharpPulsar.Interfaces
 		///            the message id where to reposition the subscription </param>
 		///            
 		void Seek(IMessageId messageId);
+		Task SeekAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -434,6 +441,7 @@ namespace SharpPulsar.Interfaces
 		///            the message publish time where to reposition the subscription </param>
 		///            
 		void Seek(long timestamp);
+		Task SeekAsync(long timestamp);
 
 
 		/// <summary>
@@ -442,14 +450,17 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the last message id. </returns>
 		/// 
 		IMessageId LastMessageId {get;}
+		Task<IMessageId> LastMessageIdAsync();
 
 		/// <returns> Whether the consumer is connected to the broker </returns>
 		bool Connected {get;}
+		Task<bool> ConnectedAsync();
 
 		/// <summary>
 		/// Get the name of consumer. </summary>
 		/// <returns> consumer name. </returns>
 		string ConsumerName {get;}
+		Task<string> ConsumerNameAsync();
 
 		/// <summary>
 		/// Stop requesting new messages from the broker until <seealso cref="resume()"/> is called. Note that this might cause
@@ -464,6 +475,7 @@ namespace SharpPulsar.Interfaces
 
 		/// <returns> The last disconnected timestamp of the consumer </returns>
 		long LastDisconnectedTimestamp {get;}
+		Task<long> LastDisconnectedTimestampAsync();
 	}
 
 }

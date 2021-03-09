@@ -1,5 +1,6 @@
 ﻿using BAMCIS.Util.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -55,6 +56,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
 		void Send(bool isDeadLetter = false);
+		Task SendAsync(bool isDeadLetter = false);
 
 		
 

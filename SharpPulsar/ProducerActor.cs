@@ -238,8 +238,8 @@ namespace SharpPulsar
 		}
 		private void Connection()
 		{
-			Receive<ConnectionOpened>(c => {
-				ConnectionOpened(c.ClientCnx);
+			ReceiveAsync<ConnectionOpened>(async c => {
+				await ConnectionOpened(c.ClientCnx);
 			});
 			Receive<ConnectionFailed>(c => {
 				ConnectionFailed(c.Exception);
@@ -276,24 +276,24 @@ namespace SharpPulsar
 			Receive<IsConnected>(_ => Sender.Tell(Connected));
 			Receive<GetStats>(_ => Sender.Tell(_stats));
 			Receive<GetLastDisconnectedTimestamp>(_ => Sender.Tell(LastDisconnectedTimestamp));
-			Receive<InternalSend<T>>(m => 
+			ReceiveAsync<InternalSend<T>>(async m => 
 			{
                 try
                 {
 					//get excepyion vai out
-					InternalSend(m.Message);
+					await InternalSend(m.Message);
 				}
                 catch(Exception ex)
                 {
 					_log.Error(ex.ToString());
 				}
 			});
-			Receive<InternalSendWithTxn<T>>(m =>
+			ReceiveAsync<InternalSendWithTxn<T>>(async m =>
 			{
 				try
 				{
 					_txnSequence.Add(_msgIdGenerator, m.Txn);
-					InternalSendWithTxn(m.Message, m.Txn);
+					await InternalSendWithTxn(m.Message, m.Txn);
 				}
 				catch (Exception ex)
 				{
@@ -301,7 +301,7 @@ namespace SharpPulsar
 				}
 			});
 		}
-		private void ConnectionOpened(IActorRef cnx)
+		private async Task ConnectionOpened(IActorRef cnx)
 		{
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
@@ -310,7 +310,7 @@ namespace SharpPulsar
 
 			if(_batchMessageContainer != null)
             {
-				var maxMessageSize = cnx.AskFor<int>(MaxMessageSize.Instance);
+				var maxMessageSize = await cnx.AskFor<int>(MaxMessageSize.Instance);
                 _batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System)
                 {
                     ProducerId = _producerId
@@ -320,7 +320,7 @@ namespace SharpPulsar
 			cnx.Tell(new RegisterProducer(_producerId, _self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
 
-			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var requestId = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
 
 			ISchemaInfo schemaInfo = null;
 			if (Schema != null)
@@ -332,7 +332,7 @@ namespace SharpPulsar
 						// for backwards compatibility purposes
 						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
 						// but now we have standardized on every schema to generate an Avro based schema
-						var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+						var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
 						if (_commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
 						{
 							schemaInfo = Schema.SchemaInfo;
@@ -359,11 +359,11 @@ namespace SharpPulsar
 			}
 			try
             {
-				var epoch = _connectionHandler.AskFor<long>(GetEpoch.Instance);
-				var cmd = _commands.NewProducer(Topic, _producerId, requestId, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
-				var payload = new Payload(cmd, requestId, "NewProducer");
+				var epoch = await _connectionHandler.AskFor<long>(GetEpoch.Instance);
+				var cmd = _commands.NewProducer(Topic, _producerId, requestId.Id, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
+				var payload = new Payload(cmd, requestId.Id, "NewProducer");
 
-				var response = cnx.AskFor<ProducerResponse>(payload);
+				var response = await cnx.AskFor<ProducerResponse>(payload);
 
 				string producerName = response.ProducerName;
 				long lastSequenceId = response.LastSequenceId;
@@ -375,7 +375,7 @@ namespace SharpPulsar
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
 					cnx.Tell(new RemoveProducer(_producerId));
-					cnx.GracefulStop(TimeSpan.FromSeconds(5));
+					await cnx.GracefulStop(TimeSpan.FromSeconds(5));
 					return;
 				}
 				if(_batchMessageContainer != null)
@@ -406,7 +406,7 @@ namespace SharpPulsar
 				cnx.Tell(new RemoveProducer(_producerId));
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
-					cnx.GracefulStop(TimeSpan.FromSeconds(5));
+					await cnx.GracefulStop(TimeSpan.FromSeconds(5));
 					ProducerQueue.Producer.Add(new ProducerCreation(ex));
 					return;
 				}
@@ -516,7 +516,7 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override void InternalSend(IMessage<T> message)
+		internal override async Task InternalSend(IMessage<T> message)
 		{
 
 			var interceptorMessage = (Message<T>) BeforeSend(message);
@@ -525,27 +525,27 @@ namespace SharpPulsar
 
 				_ = interceptorMessage.Properties;
 			}
-			Send(interceptorMessage);
+			await Send(interceptorMessage);
 		}
 
-		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		internal override async Task InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			if(txn == null)
 			{
-				InternalSend(message);
+				await InternalSend(message);
 			}
 			else
 			{
-				var registered = txn.AskFor<bool>(new RegisterProducedTopic(Topic));
+				var registered = await txn.AskFor<bool>(new RegisterProducedTopic(Topic));
 				if(registered)
-					InternalSend(message);
+					await InternalSend(message);
 			}
 		}
 
-		private void Send(IMessage<T> message)
+		private async Task Send(IMessage<T> message)
 		{
 			Condition.CheckArgument(message is Message<T>);
-			var maxMessageSize = ClientCnx.AskFor<int>(MaxMessageSize.Instance);
+			var maxMessageSize = await ClientCnx.AskFor<int>(MaxMessageSize.Instance);
 			if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)
 				maxMessageSize = Math.Min(Conf.MaxMessageSize, maxMessageSize);
 			if (!IsValidProducerState(message.SequenceId))

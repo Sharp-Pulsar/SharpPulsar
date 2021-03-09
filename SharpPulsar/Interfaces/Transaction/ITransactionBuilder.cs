@@ -48,6 +48,7 @@ namespace SharpPulsar.Interfaces.Transaction
 		/// </summary>
 		/// <returns> a future represents the result of starting a new transaction </returns>
 		ITransaction Build();
+		Task<ITransaction> BuildAsync();
 
 	}
 
