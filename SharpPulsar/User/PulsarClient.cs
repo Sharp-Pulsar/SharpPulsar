@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -347,46 +348,35 @@ namespace SharpPulsar.User
         }
         private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
         {
-
-            var metadataFuture = new TaskCompletionSource<PartitionedTopicMetadata>();
-
             try
             {
                 TopicName topicName = TopicName.Get(topic);
+                var o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
                 var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
                 Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-                GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, metadataFuture);
+
+                while (!(o is PartitionedTopicMetadata))
+                {
+                    var e = o as ClientExceptions;
+                    long nextDelay = Math.Min(backoff.Next(), opTimeoutMs);
+                    bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
+                    if (nextDelay <= 0 || isLookupThrottling)
+                    {
+                        throw new PulsarClientException.InvalidConfigurationException(e.Exception);
+                    }
+                    _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
+                    opTimeoutMs -= (int)nextDelay;
+                    Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
+                    o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+                }
+                return o as PartitionedTopicMetadata;
             }
             catch (ArgumentException e)
             {
                 throw new PulsarClientException.InvalidConfigurationException(e.Message);
-            }
-            return Task.Run(() => metadataFuture.Task).Result; 
+            } 
         }
 
-        private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
-        {
-            var o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
-            if (o is PartitionedTopicMetadata metadata)
-                future.SetResult(metadata);
-            else
-            {
-                var e = o as ClientExceptions;
-                long nextDelay = Math.Min(backoff.Next(), remainingTime);
-                bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
-                if (nextDelay <= 0 || isLookupThrottling)
-                {
-                    future.SetException(e.Exception);
-                }
-                Task.Run(async () =>
-                {
-                    _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
-                    remainingTime -= nextDelay;
-                    await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-                    GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
-                });
-            }
-        }
         public Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder)
         {
             return NewProducer(ISchema<object>.Bytes, producerConfigBuilder);

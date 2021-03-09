@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Compile Remove="Akka\**" />
+    <Compile Remove="Transaction\**" />
     <EmbeddedResource Remove="Akka\**" />
+    <EmbeddedResource Remove="Transaction\**" />
     <None Remove="Akka\**" />
+    <None Remove="Transaction\**" />
   </ItemGroup>
 
   <ItemGroup>

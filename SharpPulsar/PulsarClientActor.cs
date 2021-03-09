@@ -197,56 +197,34 @@ namespace SharpPulsar
 		{
 			return GetPartitionedTopicMetadata(topic).Partitions;
 		}
-
 		private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
 		{
-
-			var metadataFuture = new TaskCompletionSource<PartitionedTopicMetadata>();
-
 			try
 			{
 				TopicName topicName = TopicName.Get(topic);
+				var o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
 				var opTimeoutMs = _conf.OperationTimeoutMs;
 				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-				GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, metadataFuture);
+
+				while (!(o is PartitionedTopicMetadata))
+				{
+					var e = o as ClientExceptions;
+					long nextDelay = Math.Min(backoff.Next(), opTimeoutMs);
+					bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
+					if (nextDelay <= 0 || isLookupThrottling)
+					{
+						throw new PulsarClientException.InvalidConfigurationException(e.Exception);
+					}
+					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
+					opTimeoutMs -= (int)nextDelay;
+					Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
+					o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+				}
+				return o as PartitionedTopicMetadata;
 			}
 			catch (ArgumentException e)
 			{
 				throw new PulsarClientException.InvalidConfigurationException(e.Message);
-			}
-			var result = Task.Run(() => metadataFuture.Task);
-			if (result.IsFaulted)
-				return new PartitionedTopicMetadata(0);
-
-			var pmetadata = result.Result;
-			if (pmetadata is PartitionedTopicMetadata p)
-				return p;
-
-			return new PartitionedTopicMetadata(0);
-		}
-		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
-		{
-			try
-			{
-				var o = _lookup.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
-				future.SetResult(o);
-			}
-			catch (Exception e)
-			{
-				long nextDelay = Math.Min(backoff.Next(), remainingTime);
-				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
-				if (nextDelay <= 0 || isLookupThrottling)
-				{
-					future.SetException(e);
-					future.SetResult(null);
-				}
-				Task.Run(async () =>
-				{
-					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
-					remainingTime -= nextDelay;
-					await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-					GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
-				});
 			}
 		}
 
