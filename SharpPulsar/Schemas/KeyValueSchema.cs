@@ -4,6 +4,7 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -117,12 +118,9 @@ namespace SharpPulsar.Schemas
 				return _outerInstance._schemaInfo;
 			}
 
-			public ISchemaInfo LatestSchema
+			public async ValueTask<ISchemaInfo> LatestSchema()
 			{
-				get
-				{
-					return _outerInstance._schemaInfo;
-				}
+				return await Task.FromResult(_outerInstance._schemaInfo);
 			}
 
 			public string TopicName
@@ -279,14 +277,10 @@ namespace SharpPulsar.Schemas
 				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Key;
 			}
 
-			public ISchemaInfo LatestSchema
+			public async ValueTask<ISchemaInfo> LatestSchema()
 			{
-				get
-				{
-					return _outerInstance._keySchema.SchemaInfo;
-				}
+				return await Task.FromResult(_outerInstance._keySchema.SchemaInfo);
 			}
-
 			public string TopicName
 			{
 				get
@@ -314,14 +308,10 @@ namespace SharpPulsar.Schemas
 				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Value;
 			}
 
-			public ISchemaInfo LatestSchema
+			public async ValueTask<ISchemaInfo> LatestSchema()
 			{
-				get
-				{
-					return _outerInstance._valueSchema.SchemaInfo;
-				}
+				return await Task.FromResult(_outerInstance._valueSchema.SchemaInfo);
 			}
-
 			public string TopicName
 			{
 				get

@@ -184,7 +184,7 @@ namespace SharpPulsar
 					}
 					catch (CryptoException e)
 					{
-						Context.System.Log.Warning($"[{Topic}] [{ProducerName}] [{_producerId}] Failed to add public key cipher.");
+						Context.System.Log.Warning($"[{Topic}] [{ProducerName().GetAwaiter().GetResult()}] [{_producerId}] Failed to add public key cipher.");
 						Context.System.Log.Error(e.ToString());
 					}
 				});
@@ -212,7 +212,7 @@ namespace SharpPulsar
 			}
 			if (clientConfiguration.StatsIntervalSeconds > 0)
 			{
-				_stats = new ProducerStatsRecorder(Context.System, ProducerName, topic, Configuration.MaxPendingMessages);
+				_stats = new ProducerStatsRecorder(Context.System, ProducerName().GetAwaiter().GetResult(), topic, Configuration.MaxPendingMessages);
 			}
 			else
 			{
@@ -233,7 +233,7 @@ namespace SharpPulsar
 		}
 		internal virtual void GrabCnx()
 		{
-			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {ProducerName}"));
+			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {ProducerName().GetAwaiter().GetResult()}"));
 			Become(Connection);
 		}
 		private void Connection()
@@ -273,7 +273,7 @@ namespace SharpPulsar
 			Receive<GetProducerName>(_ => Sender.Tell(_producerName));
 			Receive<GetLastSequenceId>(_ => Sender.Tell(_lastSequenceIdPublished));
 			Receive<GetTopic>(_ => Sender.Tell(Topic));
-			Receive<IsConnected>(_ => Sender.Tell(Connected));
+			ReceiveAsync<IsConnected>(async _ => Sender.Tell(await Connected()));
 			Receive<GetStats>(_ => Sender.Tell(_stats));
 			ReceiveAsync<GetLastDisconnectedTimestamp>(async _ => 
 			{
@@ -512,12 +512,9 @@ namespace SharpPulsar
 			return false;
 		}
 
-		protected internal override long LastSequenceId
+		protected internal override async ValueTask<long> LastSequenceId()
 		{
-			get
-			{
-				return _lastSequenceIdPublished;
-			}
+			return await Task.FromResult(_lastSequenceIdPublished);
 		}
 
 		internal override async ValueTask InternalSend(IMessage<T> message)
@@ -1011,12 +1008,10 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal override bool Connected
+		protected internal override async ValueTask<bool> Connected()
 		{
-			get
-			{
-				return Cnx() != null && (State.ConnectionState == HandlerState.State.Ready);
-			}
+			var cnx = await Cnx();
+			return cnx != null && (State.ConnectionState == HandlerState.State.Ready);
 		}
 
 		protected internal override async ValueTask<long> LastDisconnectedTimestamp()
@@ -1170,7 +1165,7 @@ namespace SharpPulsar
 			{
 				if (_log.IsDebugEnabled)
 				{
-					_log.Debug($"[{Topic}] [{ProducerName}] No pending messages to resend {messagesToResend}");
+					_log.Debug($"[{Topic}] [{await ProducerName()}] No pending messages to resend {messagesToResend}");
 				}
 
 				if (State.ChangeToReadyState())
@@ -1181,7 +1176,7 @@ namespace SharpPulsar
 				}
 				return;
 			}
-			_log.Info($"[{Topic}] [{ProducerName}] Re-Sending {messagesToResend} messages to server");
+			_log.Info($"[{Topic}] [{await ProducerName()}] Re-Sending {messagesToResend} messages to server");
 			await RecoverProcessOpSendMsgFrom(null);
 		}
 		
@@ -1240,24 +1235,24 @@ namespace SharpPulsar
 		}
 
 
-		private void Flush()
+		private async ValueTask Flush()
 		{
 			if (BatchMessagingEnabled)
 			{
-				BatchMessageAndSend();
+				await BatchMessageAndSend();
 			}
 		}
 
-		private void TriggerFlush()
+		private async ValueTask TriggerFlush()
 		{
 			if(BatchMessagingEnabled)
 			{
-				BatchMessageAndSend();
+				await BatchMessageAndSend();
 			}
 		}
 
 		// must acquire semaphore before enqueuing
-		private void BatchMessageAndSend()
+		private async ValueTask BatchMessageAndSend()
 		{
 			if(_log.IsDebugEnabled)
 			{
@@ -1279,7 +1274,7 @@ namespace SharpPulsar
 					_batchMessageContainer.Clear();
 					foreach(var opSendMsg in opSendMsgs)
 					{
-						ProcessOpSendMsg(opSendMsg);
+						await ProcessOpSendMsg(opSendMsg);
 					}
 				}
 				catch(Exception t)
@@ -1288,24 +1283,24 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void ProcessOpSendMsg(OpSendMsg<T> op)
+		private async ValueTask ProcessOpSendMsg(OpSendMsg<T> op)
 		{
 			try
 			{
 				if (op.Msg != null && BatchMessagingEnabled)
 				{
-					BatchMessageAndSend();
+					await BatchMessageAndSend();
 				}
 				_pendingMessages.Enqueue(op);
 				if (op.Msg != null)
 				{
 					LastSequenceIdPushed = Math.Max(LastSequenceIdPushed, GetHighestSequenceId(op));
 				}
-				if(Connected)
+				if(await Connected())
 				{
 					if (op.Msg != null && op.Msg.GetSchemaState() == Message<T>.SchemaState.None)
 					{
-						TryRegisterSchema(ClientCnx, op.Msg);
+						await TryRegisterSchema(ClientCnx, op.Msg);
 					}
 
 					_stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
@@ -1322,7 +1317,7 @@ namespace SharpPulsar
 			}
 			catch (Exception t)
 			{
-				_log.Warning($"[{Topic}] [{ProducerName}] error while closing out batch -- {t}");
+				_log.Warning($"[{Topic}] [{await ProducerName()}] error while closing out batch -- {t}");
 				SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), new PulsarClientException(t.ToString(), op.SequenceId));
 			}
 		}
@@ -1377,7 +1372,7 @@ namespace SharpPulsar
 
 					if (_log.IsDebugEnabled)
 					{
-						_log.Debug($"[{Topic}] [{ProducerName}] Re-Sending message in sequenceId {op.SequenceId}");
+						_log.Debug($"[{Topic}] [{await ProducerName()}] Re-Sending message in sequenceId {op.SequenceId}");
 					}
 				}
 			}
@@ -1435,12 +1430,9 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal override string ProducerName
+		protected internal override async ValueTask<string> ProducerName()
 		{
-			get
-			{
-				return _producerName;
-			}
+			return await Task.FromResult(_producerName);
 		}
 
 		// wrapper for connection methods
@@ -1466,7 +1458,7 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal override IProducerStats Stats => _stats;
+		protected internal override async ValueTask<IProducerStats> Stats() => await Task.FromResult(_stats);
 		protected internal sealed class OpSendMsg<T1>
 		{
 			internal Message<T1> Msg;

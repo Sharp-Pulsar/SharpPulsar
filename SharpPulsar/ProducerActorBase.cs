@@ -35,10 +35,10 @@ namespace SharpPulsar
 		internal abstract ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn);
 		internal abstract ValueTask InternalSend(IMessage<T> message);
 		protected internal abstract ValueTask<long> LastDisconnectedTimestamp();
-		protected internal abstract bool Connected {get;}
-		protected internal abstract IProducerStats Stats {get;}
-		protected internal abstract long LastSequenceId {get;}
-		protected internal abstract string ProducerName {get;}
+		protected internal abstract ValueTask<bool> Connected();
+		protected internal abstract ValueTask<IProducerStats> Stats();
+		protected internal abstract ValueTask<long> LastSequenceId();
+		protected internal abstract ValueTask<string> ProducerName();
 
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly ISchema<T> Schema;
@@ -65,7 +65,8 @@ namespace SharpPulsar
 			{
 				_multiSchemaMode = MultiSchemaMode.Disabled;
 			}
-			State = new HandlerState(client, topic, Context.System, ProducerName);
+			var pName = ProducerName().GetAwaiter().GetResult();
+			State = new HandlerState(client, topic, Context.System, pName);
 
 		}
 

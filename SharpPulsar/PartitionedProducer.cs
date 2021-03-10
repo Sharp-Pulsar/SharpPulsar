@@ -21,6 +21,7 @@ using SharpPulsar.Stats.Producer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -62,7 +63,8 @@ namespace SharpPulsar
 			_context = Context;
 			_producers = new List<IActorRef>(numPartitions);
 			_topicMetadata = new TopicMetadata(numPartitions);
-			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, ProducerName, topic, conf.MaxPendingMessages) : null;
+			var pName = ProducerName().GetAwaiter().GetResult();
+			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, pName, topic, conf.MaxPendingMessages) : null;
 			_log = Context.GetLogger();
 			int maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
@@ -82,7 +84,7 @@ namespace SharpPulsar
 					_router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
 					break;
 			}
-			Start();
+			Start().ConfigureAwait(false);
 
 			// start track and auto subscribe partition increasement
 			if(conf.AutoUpdatePartitions)
@@ -90,32 +92,26 @@ namespace SharpPulsar
 				_partitionsAutoUpdateTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(TimeUnit.SECONDS.ToSeconds(conf.AutoUpdatePartitionsIntervalSeconds)), () => OnTopicsExtended(new List<string> { topic}));
 			}
 		}
-		protected internal override string ProducerName
+		protected internal override async ValueTask<string> ProducerName()
 		{
-			get
-			{
-				return _producers[0].AskFor<string>(GetProducerName.Instance);
-			}
+			return await _producers[0].AskFor<string>(GetProducerName.Instance);
 		}
 
-		protected internal override long LastSequenceId
+		protected internal override async ValueTask<long> LastSequenceId()
 		{
-			get
-			{
-				// Return the highest sequence id across all partitions. This will be correct,
-				// since there is a single id generator across all partitions for the same producer
+			// Return the highest sequence id across all partitions. This will be correct,
+			// since there is a single id generator across all partitions for the same producer
 
-				return _producers.Max(x => x.AskFor<long>(GetLastSequenceId.Instance));
-			}
+			return await _producers.Max(x => x.AskFor<long>(GetLastSequenceId.Instance));
 		}
 
-		private void Start()
+		private async ValueTask Start()
 		{
 			Exception createFail = null;
 			int completed = 0;
 			for(int partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
-				var producerId = _generator.AskFor<long>(NewProducerId.Instance);
+				var producerId = await _generator.AskFor<long>(NewProducerId.Instance);
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
 				var producer = Context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 				_producers.Add(producer);
@@ -146,12 +142,12 @@ namespace SharpPulsar
 
 		}
 
-		internal override void InternalSend(IMessage<T> message)
+		internal override async ValueTask InternalSend(IMessage<T> message)
 		{
-			InternalSendWithTxn(message, null);
+			await InternalSendWithTxn(message, null);
 		}
 
-		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		internal override async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			switch(State.ConnectionState)
 			{
@@ -179,7 +175,7 @@ namespace SharpPulsar
 				_router.Tell(msg);
 			}
 			_router.Tell(new InternalSendWithTxn<T>(message, txn));
-
+			await Task.CompletedTask;
 		}
 
 		private void Flush()
@@ -192,28 +188,28 @@ namespace SharpPulsar
 			_producers.ForEach(x => x.Tell(Messages.Producer.TriggerFlush.Instance));
 		}
 
-		protected internal override bool Connected
+		protected internal override async ValueTask<bool> Connected()
 		{
-			get
-			{
-				// returns false if any of the partition is not connected
-				return _producers.All(x=> x.AskFor<bool>(IsConnected.Instance));
+			foreach(var p in _producers)
+            {
+				var x = await p.AskFor<bool>(IsConnected.Instance);
+				if (!x)
+					return false;
+
 			}
+			return true;
 		}
 
-		protected internal override long LastDisconnectedTimestamp
+		protected internal override async ValueTask<long> LastDisconnectedTimestamp()
 		{
-			get
-			{
-				long lastDisconnectedTimestamp = 0;
-
-				var p = new Option<long>(_producers.Max(x => x.AskFor<long>(GetLastDisconnectedTimestamp.Instance)));
-				if(p.HasValue)
-				{
-					lastDisconnectedTimestamp = p.Value;
-				}
-				return lastDisconnectedTimestamp;
+			long lastDisconnectedTimestamp = 0;
+			foreach(var pr in _producers)
+            {
+				var max = await pr.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
+				if (max > lastDisconnectedTimestamp)
+					lastDisconnectedTimestamp = max;
 			}
+			return lastDisconnectedTimestamp;
 		}
         protected override void PostStop()
         {
@@ -225,22 +221,19 @@ namespace SharpPulsar
 			base.PostStop();
         }
 
-		protected internal override IProducerStats Stats
+		protected internal override async ValueTask<IProducerStats> Stats()
 		{
-			get
+			if (_stats == null)
 			{
-				if (_stats == null)
-				{
-					return null;
-				}
-				_stats.Reset();
-				for (int i = 0; i < _topicMetadata.NumPartitions(); i++)
-				{
-					var stats = _producers[i].AskFor<IProducerStats>(GetStats.Instance);
-					_stats.UpdateCumulativeStats(stats);
-				}
-				return _stats;
+				return null;
 			}
+			_stats.Reset();
+			for (int i = 0; i < _topicMetadata.NumPartitions(); i++)
+			{
+				var stats = await _producers[i].AskFor<IProducerStats>(GetStats.Instance);
+				_stats.UpdateCumulativeStats(stats);
+			}
+			return _stats;
 		}
 
 		internal string HandlerName
@@ -250,13 +243,14 @@ namespace SharpPulsar
 				return "partition-producer";
 			}
 		}
-		public virtual void OnTopicsExtended(ICollection<string> topicsExtended)
+		private async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
 		{
 			if (topicsExtended.Count == 0 || !topicsExtended.Contains(Topic))
 			{
 				return;
 			}
-			var list = Client.AskFor<PartitionsForTopic>(new GetPartitionsForTopic(Topic)).Topics;
+			var result = await Client.AskFor<PartitionsForTopic>(new GetPartitionsForTopic(Topic));
+			var list = result.Topics;
 			int oldPartitionNumber = _topicMetadata.NumPartitions();
 			int currentPartitionNumber = list.Count;
 			if (_log.IsDebugEnabled)
@@ -272,7 +266,7 @@ namespace SharpPulsar
 				var newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
 				foreach (var partitionName in newPartitions)
 				{
-					var producerId = _generator.AskFor<long>(NewProducerId.Instance);
+					var producerId = await _generator.AskFor<long>(NewProducerId.Instance);
 					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 					_producers.Add(producer);
@@ -290,7 +284,6 @@ namespace SharpPulsar
 				_log.Error($"[{Topic}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
 			}
 		}
-
 
 	}
 

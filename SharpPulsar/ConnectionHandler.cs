@@ -12,6 +12,7 @@ using SharpPulsar.Extension;
 using System.Net;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Naming;
+using System.Threading.Tasks;
 
 namespace SharpPulsar
 {	
@@ -37,15 +38,15 @@ namespace SharpPulsar
 			_log = Context.System.Log;
 			_actorContext = Context;
 			_conf = conf;
-			Receive<GrabCnx>(g =>
+			ReceiveAsync<GrabCnx>(async g =>
 			{
 				_log.Info(g.Message);
 				++_epoch;
-				GrabCnx();
+				await GrabCnx();
 			});
-			Receive<ReconnectLater>(g =>
+			ReceiveAsync<ReconnectLater>(async g =>
 			{
-				ReconnectLater(g.Exception);
+				await ReconnectLater(g.Exception);
 			});
 			Receive<GetEpoch>(g =>
 			{
@@ -55,9 +56,9 @@ namespace SharpPulsar
 			{
 				_connection.Tell(m);
 			});
-			Receive<ConnectionFailed>(m =>
+			ReceiveAsync<ConnectionFailed>(async m =>
 			{
-				HandleConnectionError(m.Exception);
+				await HandleConnectionError(m.Exception);
 			});
 			Receive<ResetBackoff>(_ =>
 			{
@@ -75,16 +76,16 @@ namespace SharpPulsar
 			{
 				_clientCnx = s.ClientCnx;
 			});
-			Receive<ConnectionClosed>(c =>
+			ReceiveAsync<ConnectionClosed>(async c =>
 			{
 				var children = Context.GetChildren();
 				foreach (var child in children)
-					child.GracefulStop(TimeSpan.FromMilliseconds(100));
+					await child.GracefulStop(TimeSpan.FromMilliseconds(100));
 				ConnectionClosed(c.ClientCnx);
 			});
 		}
 
-		private void GrabCnx()
+		private async ValueTask GrabCnx()
 		{
 			if (_clientCnx != null)
 			{
@@ -104,25 +105,25 @@ namespace SharpPulsar
 			{
 				if(_conf.UseDedicatedConnections)
                 {
-					var broker = _state.Client.AskFor<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
+					var broker = await _state.Client.AskFor<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
 					var connection = CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
 				}
                 else
                 {
-					var obj = _state.Client.AskFor(new GetConnection(_state.Topic));
+					var obj = await _state.Client.AskFor(new GetConnection(_state.Topic));
 					if (obj is GetConnectionResponse cnx)
 						_connection.Tell(new ConnectionOpened(cnx.ClientCnx));
 					else
 					{
 						var ex = (Failure)obj;
-						HandleConnectionError(ex.Exception);
+						await HandleConnectionError(ex.Exception);
 					}
 				}				
 			}
 			catch (Exception t)
 			{
 				_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Exception thrown while getting connection: {t}");
-				ReconnectLater(t);
+				await ReconnectLater(t);
 			}
 		}
 		private IActorRef CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
@@ -134,7 +135,7 @@ namespace SharpPulsar
 
 			return Context.ActorOf(Props.Create(()=> new ClientCnx(_conf, physicalAddress, targetBroker)), $"{logicalAddress.Host}".ToAkkaNaming());
 		}
-		private void HandleConnectionError(Exception exception)
+		private async ValueTask HandleConnectionError(Exception exception)
 		{
 			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Error connecting to broker: {exception.Message}");
 			if (exception is PulsarClientException)
@@ -153,15 +154,15 @@ namespace SharpPulsar
 			var state = _state.ConnectionState;
 			if (state == State.Uninitialized || state == State.Connecting || state == State.Ready)
 			{
-				ReconnectLater(exception);
+				await ReconnectLater(exception);
 			}
 		}
 
-		private void ReconnectLater(Exception exception)
+		private async ValueTask ReconnectLater(Exception exception)
 		{
 			var children = Context.GetChildren();
 			foreach (var child in children)
-				child.GracefulStop(TimeSpan.FromMilliseconds(100));
+				await child.GracefulStop(TimeSpan.FromMilliseconds(100));
 
 			_clientCnx = null;
 			if (!ValidStateForReconnection)

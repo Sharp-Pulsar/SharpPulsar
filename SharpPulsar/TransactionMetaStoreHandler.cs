@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Extension;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -86,9 +87,9 @@ namespace SharpPulsar
 			{
 				RunRequestTime();
 			});
-			Receive<NewTxn>(t => 
+			ReceiveAsync<NewTxn>(async t => 
 			{
-				NewTransaction(t.TxnRequestTimeoutMs, t.TimeUnit);
+				await NewTransaction(t.TxnRequestTimeoutMs, t.TimeUnit);
 			});
 			Receive<NewTxnResponse>(r=> 
 			{
@@ -102,20 +103,20 @@ namespace SharpPulsar
 				HandleAddPublishPartitionToTxnResponse(a.Response);
 			
 			});
-			Receive<AddPublishPartitionToTxn>(p => {
-				AddPublishPartitionToTxn(p.TxnID, p.Topics);
+			ReceiveAsync<AddPublishPartitionToTxn>(async p => {
+				await AddPublishPartitionToTxn(p.TxnID, p.Topics);
 			});
 			Receive<AddSubscriptionToTxnResponse>(p => {
 				HandleAddSubscriptionToTxnResponse(p.Response);
 			});
-			Receive<AbortTxnID>(a => {
-				Abort(a.TxnID, a.MessageIds);
+			ReceiveAsync<AbortTxnID>(async a => {
+				await Abort(a.TxnID, a.MessageIds);
 			});
-			Receive<CommitTxnID>(c => {
-				Commit(c.TxnID, c.MessageIds);
+			ReceiveAsync<CommitTxnID>(async c => {
+				await Commit(c.TxnID, c.MessageIds);
 			});
-			Receive<AddSubscriptionToTxn>(s => {
-				AddSubscriptionToTxn(s.TxnID, s.Subscriptions);
+			ReceiveAsync<AddSubscriptionToTxn>(async s => {
+				await AddSubscriptionToTxn(s.TxnID, s.Subscriptions);
 			});
 			Receive<ConnectionOpened>(o => {
 				HandleConnectionOpened(o.ClientCnx);
@@ -147,21 +148,24 @@ namespace SharpPulsar
 			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, Self));
 			if(!_state.ChangeToReadyState())
 			{
-				cnx.GracefulStop(TimeSpan.FromSeconds(2));
+				cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
 			}
 		}
 
-		private void NewTransaction(long timeout, TimeUnit unit)
+		private async ValueTask NewTransaction(long timeout, TimeUnit unit)
 		{
 			if(_log.IsDebugEnabled)
 			{
 				_log.Debug("New transaction with timeout in ms {}", unit.ToMilliseconds(timeout));
 			}
-			var requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+
+			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			long requestId = request.Id;
 			_pendingRequests.Add(requestId, (new byte[] { (byte)timeout }, Sender));
 			var cmd = new Commands().NewTxn(_transactionCoordinatorId, requestId, unit.ToMilliseconds(timeout));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			Cnx().Tell(new Payload(cmd, requestId, "NewTxn"));
+			var cnx = await Cnx();
+			cnx.Tell(new Payload(cmd, requestId, "NewTxn"));
 		}
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse response)
@@ -193,17 +197,19 @@ namespace SharpPulsar
 			}
 		}
 
-		private void AddPublishPartitionToTxn(TxnID txnID, IList<string> partitions)
+		private async ValueTask AddPublishPartitionToTxn(TxnID txnID, IList<string> partitions)
 		{
 			if(_log.IsDebugEnabled)
 			{
 				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
-			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			long requestId = request.Id;
 			var cmd = new Commands().NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
 			_pendingRequests.Add(requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			Cnx().Tell(new Payload(cmd, requestId, "NewAddPartitionToTxn"));
+			var cnx = await Cnx();
+			cnx.Tell(new Payload(cmd, requestId, "NewAddPartitionToTxn"));
 		}
 
 		private void HandleAddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse response)
@@ -230,17 +236,19 @@ namespace SharpPulsar
 			}
 		}
 
-		private void AddSubscriptionToTxn(TxnID txnID, IList<Subscription> subscriptionList)
+		private async ValueTask AddSubscriptionToTxn(TxnID txnID, IList<Subscription> subscriptionList)
 		{
 			if(_log.IsDebugEnabled)
 			{
 				_log.Debug("Add subscription {} to txn {}.", subscriptionList, txnID);
 			}
-			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			long requestId = request.Id;
 			var cmd = new Commands().NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
 			_pendingRequests.Add(requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			Cnx().Tell(new Payload(cmd, requestId, "NewAddSubscriptionToTxn"));
+			var cnx = await Cnx();
+			cnx.Tell(new Payload(cmd, requestId, "NewAddSubscriptionToTxn"));
 		}
 
 		private void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse response)
@@ -267,13 +275,14 @@ namespace SharpPulsar
 			}
 		}
 
-		private void Commit(TxnID txnID, IList<IMessageId> sendMessageIdList)
+		private async ValueTask Commit(TxnID txnID, IList<IMessageId> sendMessageIdList)
 		{
 			if(_log.IsDebugEnabled)
 			{
 				_log.Debug("Commit txn {}", txnID);
 			}
-			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			long requestId = request.Id;
 			var messageIdDataList = new List<MessageIdData>();
 			foreach(MessageId messageId in sendMessageIdList)
 			{
@@ -287,17 +296,19 @@ namespace SharpPulsar
 			var cmd = new Commands().NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit, messageIdDataList);
 			_pendingRequests.Add(requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			Cnx().Tell(new Payload(cmd, requestId, "NewEndTxn"));
+			var cnx = await Cnx();
+			cnx.Tell(new Payload(cmd, requestId, "NewEndTxn"));
 		}
 
-		private void Abort(TxnID txnID, IList<IMessageId> sendMessageIdList)
+		private async ValueTask Abort(TxnID txnID, IList<IMessageId> sendMessageIdList)
 		{
 			if(_log.IsDebugEnabled)
 			{
 				_log.Debug("Abort txn {}", txnID);
 			}
 
-			long requestId =_generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			long requestId = request.Id;
 
 			IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
 			foreach(IMessageId messageId in sendMessageIdList)
@@ -314,7 +325,8 @@ namespace SharpPulsar
 			var cmd = new Commands().NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort, messageIdDataList);
 			_pendingRequests.Add(requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-			Cnx().Tell(new Payload(cmd, requestId, "NewEndTxn"));
+			var cnx = await Cnx();
+			cnx.Tell(new Payload(cmd, requestId, "NewEndTxn"));
 		}
 
 		private void HandleEndTxnResponse(CommandEndTxnResponse response)
@@ -407,9 +419,9 @@ namespace SharpPulsar
 			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
 		}
 
-		private IActorRef Cnx()
+		private async ValueTask<IActorRef> Cnx()
 		{
-			return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
+			return await _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 		}
 
 		private void HandleConnectionClosed(IActorRef cnx)

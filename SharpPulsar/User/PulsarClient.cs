@@ -74,7 +74,7 @@ namespace SharpPulsar.User
         {
             return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _actorSystem.Log, _lookup);
         }
-        private ISchema<T> PreProcessSchemaBeforeSubscribe<T>(ISchema<T> schema, string topicName)
+        private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe<T>(ISchema<T> schema, string topicName)
         {
             if (schema != null && schema.SupportSchemaVersioning())
             {
@@ -94,7 +94,7 @@ namespace SharpPulsar.User
                 if (schema.RequireFetchingSchemaInfo())
                 {
                     var finalSchema = schema;
-                    var schemaInfo = schemaInfoProvider.LatestSchema;
+                    var schemaInfo = await schemaInfoProvider.LatestSchema();
                     if (null == schemaInfo)
                     {
                         if (!(finalSchema is AutoConsumeSchema))
@@ -245,7 +245,7 @@ namespace SharpPulsar.User
 
         private async ValueTask<Consumer<T>> SingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
-            var schemaClone = PreProcessSchemaBeforeSubscribe(schema, conf.SingleTopic);
+            var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.SingleTopic);
             return await DoSingleTopicSubscribe(conf, schemaClone, interceptors);
         }
 
@@ -464,7 +464,7 @@ namespace SharpPulsar.User
         }
         private async ValueTask<Reader<T>> CreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
-            var schemaClone = PreProcessSchemaBeforeSubscribe(schema, conf.TopicName);
+            var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.TopicName);
             return await DoCreateReader(conf, schemaClone);
         }
 

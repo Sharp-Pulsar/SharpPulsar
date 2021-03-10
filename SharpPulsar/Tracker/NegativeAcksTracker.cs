@@ -30,6 +30,7 @@ using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Extension;
 using SharpPulsar.Messages.Consumer;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.Tracker
 {
@@ -54,14 +55,14 @@ namespace SharpPulsar.Tracker
 			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
 			_timerIntervalMs = _nackDelayMs / 3;
             Receive<Add>(a => Add(a.MessageId));
-            Receive<Trigger>(t => TriggerRedelivery());
+            ReceiveAsync<Trigger>(async t => await TriggerRedelivery());
         }
 
         public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
         {
             return Props.Create(()=> new NegativeAcksTracker<T>(conf, unAckedMessageTracker));
         }
-		private void TriggerRedelivery()
+		private async ValueTask TriggerRedelivery()
         {
             try
             {
@@ -72,7 +73,7 @@ namespace SharpPulsar.Tracker
                 {
                     if (unack.Value < now)
                     {
-                        var ms = _unAckedMessageTracker.AskFor<AddChunkedMessageIdsAndRemoveFromSequnceMapResponse>(new AddChunkedMessageIdsAndRemoveFromSequnceMap(unack.Key, messagesToRedeliver.ToImmutableHashSet()));
+                        var ms = await _unAckedMessageTracker.AskFor<AddChunkedMessageIdsAndRemoveFromSequnceMapResponse>(new AddChunkedMessageIdsAndRemoveFromSequnceMap(unack.Key, messagesToRedeliver.ToImmutableHashSet()));
                         ms.MessageIds.ToList().ForEach(x => messagesToRedeliver.Add(x));
                         messagesToRedeliver.Add(unack.Key);
                     }
