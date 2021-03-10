@@ -40,92 +40,89 @@ namespace SharpPulsar.User
             _conf = conf;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
-        public async Task<string> TopicAsync() => await _consumerActor.AskFor<string>(GetTopic.Instance);
+        public async ValueTask<string> TopicAsync() => await _consumerActor.AskFor<string>(GetTopic.Instance);
 
         public string Subscription => SubscriptionAsync().GetAwaiter().GetResult();
-        public async Task<string> SubscriptionAsync() => await _consumerActor.AskFor<string>(GetSubscription.Instance);
+        public async ValueTask<string> SubscriptionAsync() => await _consumerActor.AskFor<string>(GetSubscription.Instance);
 
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
-        public async Task<IConsumerStats> StatsAsync() => await _consumerActor.AskFor<IConsumerStats>(GetStats.Instance);
+        public async ValueTask<IConsumerStats> StatsAsync() => await _consumerActor.AskFor<IConsumerStats>(GetStats.Instance);
 
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
-        public async Task<IMessageId> LastMessageIdAsync() => await _consumerActor.AskFor<IMessageId>(GetLastMessageId.Instance);
+        public async ValueTask<IMessageId> LastMessageIdAsync() => await _consumerActor.AskFor<IMessageId>(GetLastMessageId.Instance);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
-        public async Task<bool> ConnectedAsync() => await _consumerActor.AskFor<bool>(IsConnected.Instance);
+        public async ValueTask<bool> ConnectedAsync() => await _consumerActor.AskFor<bool>(IsConnected.Instance);
 
         public string ConsumerName => ConsumerNameAsync().GetAwaiter().GetResult();
-        public async Task<string> ConsumerNameAsync() => await _consumerActor.AskFor<string>(GetConsumerName.Instance);
+        public async ValueTask<string> ConsumerNameAsync() => await _consumerActor.AskFor<string>(GetConsumerName.Instance);
 
         public long LastDisconnectedTimestamp => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
-        public async Task<long> LastDisconnectedTimestampAsync() => await _consumerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
+        public async ValueTask<long> LastDisconnectedTimestampAsync() => await _consumerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
 
-        public void Acknowledge(IMessage<T> message)
+        public void Acknowledge(IMessage<T> message) => AcknowledgeAsync(message).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeAsync(IMessage<T> message)
         {
             _consumerActor.Tell(new AcknowledgeMessage<T>(message));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
-
-        public void Acknowledge(IMessageId messageId)
+        public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeAsync(IMessageId messageId)
         {
             _consumerActor.Tell(new AcknowledgeMessageId(messageId));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
         public IActorRef ConsumerActor => _consumerActor;
-        public void Acknowledge(IMessages<T> messages)
+        public void Acknowledge(IMessages<T> messages) => AcknowledgeAsync(messages).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeAsync(IMessages<T> messages)
         {
             _consumerActor.Tell(new AcknowledgeMessages<T>(messages));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
-        /*private void StartListener()
-        {
-            var t9 = Task.Factory.StartNew(ConsumeFromQueue, _tokenSource.Token);
-        }
-        private void ConsumeFromQueue()
-        {
-            while(_queue.IncomingMessages.TryTake(out var message))
-            {
-                _listener.Received(_consumerActor, message);
-            }
-        }*/
-        public void Acknowledge(IList<IMessageId> messageIds)
+        public void Acknowledge(IList<IMessageId> messageIds) => AcknowledgeAsync(messageIds).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeAsync(IList<IMessageId> messageIds)
         {
             _consumerActor.Tell(new AcknowledgeMessageIds(messageIds));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
         public void Acknowledge(IMessageId messageId, Transaction txn)
+            => AcknowledgeAsync(messageId, txn).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeAsync(IMessageId messageId, Transaction txn)
         {
             _consumerActor.Tell(new AcknowledgeWithTxn(messageId, txn.Txn));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
-
-        public void AcknowledgeCumulative(IMessage<T> message)
+        public void AcknowledgeCumulative(IMessage<T> message) 
+            => AcknowledgeCumulativeAsync(message).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeCumulativeAsync(IMessage<T> message)
         {
             _consumerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
-
-        public void AcknowledgeCumulative(IMessageId messageId)
+        public void AcknowledgeCumulative(IMessageId messageid)
+            => AcknowledgeCumulativeAsync(messageid).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeCumulativeAsync(IMessageId messageId)
         {
             _consumerActor.Tell(new AcknowledgeCumulativeMessageId(messageId));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
-
-        public void AcknowledgeCumulative(IMessageId messageId, Transaction txn)
+        public void AcknowledgeCumulative(IMessageId messageid, Transaction txn)
+            => AcknowledgeCumulativeAsync(messageid, txn).GetAwaiter().GetResult();
+        public async ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, Transaction txn)
         {
             if (!IsCumulativeAcknowledgementAllowed(_conf.SubscriptionType))
             {
@@ -134,41 +131,47 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeCumulativeTxn(messageId, txn.Txn));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         private bool IsCumulativeAcknowledgementAllowed(SubType type)
         {
             return SubType.Shared != type && SubType.KeyShared != type;
         }
-        public void Close()
+        public void Close() => CloseAsync().ConfigureAwait(false);
+        public async ValueTask CloseAsync()
         {
-            _consumerActor.GracefulStop(TimeSpan.FromSeconds(5));
+            await _consumerActor.GracefulStop(TimeSpan.FromSeconds(5));
         }
-
-        public bool? HasReachedEndOfTopic()
+        public bool HasReachedEndOfTopic() 
+            => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
+        public async ValueTask<bool> HasReachedEndOfTopicAsync()
         {
             _consumerActor.Tell(Messages.Consumer.HasReachedEndOfTopic.Instance);
             if (_queue.HasReachedEndOfTopic.TryTake(out var reached, 5000))
-                return reached;
+                return await Task.FromResult(reached);
 
-            return null;
+            return false;
         }
 
-        public void NegativeAcknowledge(IMessage<T> message)
+        public void NegativeAcknowledge(IMessage<T> message) 
+            => NegativeAcknowledgeAsync(message).GetAwaiter().GetResult();
+        public async ValueTask NegativeAcknowledgeAsync(IMessage<T> message)
         {
             _consumerActor.Tell(new NegativeAcknowledgeMessage<T>(message));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
-        public void NegativeAcknowledge(IMessages<T> messages)
+        public void NegativeAcknowledge(IMessages<T> messages) 
+            => NegativeAcknowledgeAsync(messages).GetAwaiter().GetResult();
+        public async ValueTask NegativeAcknowledgeAsync(IMessages<T> messages)
         {
             _consumerActor.Tell(new NegativeAcknowledgeMessages<T>(messages));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         public void Pause()
@@ -180,7 +183,7 @@ namespace SharpPulsar.User
             return ReceiveAsync(timeout, unit).GetAwaiter().GetResult();
         }
 
-        public async Task<IMessage<T>> ReceiveAsync(int timeout, TimeUnit unit)
+        public async ValueTask<IMessage<T>> ReceiveAsync(int timeout, TimeUnit unit)
         {
             await VerifyConsumerState();
             if (_conf.ReceiverQueueSize == 0)
@@ -215,7 +218,7 @@ namespace SharpPulsar.User
         {
             return ReceiveAsync(timeoutMilliseconds, token).GetAwaiter().GetResult();
         }
-        public async Task<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 3000, CancellationToken token = default)
+        public async ValueTask<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 3000, CancellationToken token = default)
         {
             await VerifyConsumerState();
             if (_conf.MessageListener != null)
@@ -247,7 +250,7 @@ namespace SharpPulsar.User
         {            
             return BatchReceiveAsync().GetAwaiter().GetResult();
         }
-        public async Task<IMessages<T>> BatchReceiveAsync()
+        public async ValueTask<IMessages<T>> BatchReceiveAsync()
         {
             VerifyBatchReceive();
             await VerifyConsumerState();
@@ -308,7 +311,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
             }
         }
-        private async Task<bool> HasEnoughMessagesForBatchReceive()
+        private async ValueTask<bool> HasEnoughMessagesForBatchReceive()
         {
             var mesageSize = await _consumerActor.AskFor<long>(GetIncomingMessageSize.Instance);
             if (_conf.BatchReceivePolicy.MaxNumMessages <= 0 && _conf.BatchReceivePolicy.MaxNumBytes <= 0)
@@ -317,36 +320,44 @@ namespace SharpPulsar.User
             }
             return (_conf.BatchReceivePolicy.MaxNumMessages > 0 && _queue.IncomingMessages.Count >= _conf.BatchReceivePolicy.MaxNumMessages) || (_conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= _conf.BatchReceivePolicy.MaxNumBytes);
         }
-        public void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit)
+        public void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit) 
+            => ReconsumeLaterAsync(message, delayTime, unit).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterAsync(IMessage<T> message, long delayTime, TimeUnit unit)
         {
             _consumerActor.Tell(new ReconsumeLaterMessage<T>(message, delayTime, unit));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         public void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit)
+            => ReconsumeLaterAsync(messages, delayTime, unit).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterAsync(IMessages<T> messages, long delayTime, TimeUnit unit)
         {
             _consumerActor.Tell(new ReconsumeLaterMessages<T>(messages, delayTime, unit));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         public void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit)
+            => ReconsumeLaterCumulativeAsync(message, delayTime, unit).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, long delayTime, TimeUnit unit)
         {
             _consumerActor.Tell(new ReconsumeLaterCumulative<T>(message, delayTime, unit));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         public void RedeliverUnacknowledgedMessages()
+            => RedeliverUnacknowledgedMessagesAsync().ConfigureAwait(false);
+        public async ValueTask RedeliverUnacknowledgedMessagesAsync()
         {
             _consumerActor.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
             if (_queue.RedeliverUnacknowledgedException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         public void Resume()
@@ -376,7 +387,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new SeekMessageId(messageId));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
         public void Seek(long timestamp)
         {
@@ -400,7 +411,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new SeekTimestamp(timestamp));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    throw msg.Exception;
+                    await Task.FromException(msg.Exception);
         }
 
         /// <summary>

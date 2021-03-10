@@ -14,6 +14,7 @@ using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
@@ -41,11 +42,11 @@ namespace SharpPulsar
 	{
 
 		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
-		internal abstract long LastDisconnectedTimestamp { get; }
+		internal abstract ValueTask<long> LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
 		internal abstract void Resume();
 		internal abstract void Pause();
-		internal abstract bool Connected { get; }
+		internal abstract ValueTask<bool> Connected();
 		internal abstract void Seek(long timestamp);
 		internal abstract void Seek(IMessageId messageId);
 		internal abstract void RedeliverUnacknowledgedMessages();
@@ -337,9 +338,9 @@ namespace SharpPulsar
 			}
 		}
 
-		internal abstract int AvailablePermits { get; }
+		internal abstract ValueTask<int> AvailablePermits();
 
-		internal abstract int NumMessagesInQueue();
+		internal abstract ValueTask<int> NumMessagesInQueue();
 
 
 		internal virtual string Topic

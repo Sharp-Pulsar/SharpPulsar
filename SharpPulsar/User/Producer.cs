@@ -31,32 +31,32 @@ namespace SharpPulsar.User
         }
         public string Topic 
             => TopicAsync().GetAwaiter().GetResult();
-        public async Task<string> TopicAsync() 
+        public async ValueTask<string> TopicAsync() 
             => await _producerActor.AskFor<string>(GetTopic.Instance);
 
         public string ProducerName 
             => ProducerNameAsync().GetAwaiter().GetResult();
-        public async Task<string> ProducerNameAsync()
+        public async ValueTask<string> ProducerNameAsync()
             => await _producerActor.AskFor<string>(GetProducerName.Instance);
 
         public long LastSequenceId 
             => LastSequenceIdAsync().GetAwaiter().GetResult();
-        public async Task<long> LastSequenceIdAsync()
+        public async ValueTask<long> LastSequenceIdAsync()
             => await _producerActor.AskFor<long>(GetLastSequenceId.Instance);
         
         public IProducerStats Stats 
             => StatsAsync().GetAwaiter().GetResult();
-        public async Task<IProducerStats> StatsAsync()
+        public async ValueTask<IProducerStats> StatsAsync()
             => await _producerActor.AskFor<IProducerStats>(GetStats.Instance);
 
         public bool Connected 
             => ConnectedAsync().GetAwaiter().GetResult();
-        public async Task<bool> ConnectedAsync() 
+        public async ValueTask<bool> ConnectedAsync() 
             => await _producerActor.AskFor<bool>(IsConnected.Instance);
 
         public long LastDisconnectedTimestamp 
             => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
-        public async Task<long> LastDisconnectedTimestampAsync()
+        public async ValueTask<long> LastDisconnectedTimestampAsync()
             => await _producerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
 
         public void Close()
@@ -99,7 +99,7 @@ namespace SharpPulsar.User
                 .GetAwaiter()
                 .GetResult();
         }
-        public async Task<AckReceived> SendAsync(T message)
+        public async ValueTask<AckReceived> SendAsync(T message)
         {
             await NewMessage().Value(message).SendAsync();
             return _queue.Receipt.Take();

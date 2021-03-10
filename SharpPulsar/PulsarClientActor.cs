@@ -87,26 +87,26 @@ namespace SharpPulsar
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
-			Receive<GetBroker>(m => {
-				var cnx = GetBroker(m.TopicName);
+			ReceiveAsync<GetBroker>(async m => {
+				var cnx = await GetBroker(m.TopicName);
 				Sender.Tell(cnx);
 			});
-			Receive<GetConnection>(m => {
-				var cnx = GetConnection(m.Topic);
+			ReceiveAsync<GetConnection>(async m => {
+				var cnx = await GetConnection(m.Topic);
 				Sender.Tell(cnx);
 			});
 			Receive<GetTcClient>(_ => {
 				Sender.Tell(new TcClient(_tcClient));
 			});
-			Receive<GetSchema>(s => {
-				var response = _lookup.AskFor(s);
+			ReceiveAsync<GetSchema>(async s => {
+				var response = await _lookup.AskFor(s);
 				Sender.Tell(response);
 			});
-			Receive<GetPartitionedTopicMetadata>(p => 
+			ReceiveAsync<GetPartitionedTopicMetadata>(async p => 
 			{
                 try
                 {
-					var partition = GetPartitionedTopicMetadata(p.TopicName.ToString());
+					var partition = await GetPartitionedTopicMetadata(p.TopicName.ToString());
 					Sender.Tell(partition);
 				}
 				catch(Exception ex)
@@ -114,11 +114,11 @@ namespace SharpPulsar
 					Sender.Tell(new ClientExceptions(new PulsarClientException(ex)));
                 }
 			});
-			Receive<GetPartitionsForTopic>(s => 
+			ReceiveAsync<GetPartitionsForTopic>(async s => 
 			{
 				try
 				{
-					var topics = GetPartitionsForTopic(s.TopicName);
+					var topics = await GetPartitionsForTopic(s.TopicName);
 					Sender.Tell(new PartitionsForTopic(topics));
 				}
 				catch (Exception ex)
@@ -172,15 +172,15 @@ namespace SharpPulsar
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 
-		private GetBrokerResponse GetBroker(TopicName topic)
+		private async ValueTask<GetBrokerResponse> GetBroker(TopicName topic)
 		{
-			return _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
+			return await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
 		}
-		private GetConnectionResponse GetConnection(string topic)
+		private async ValueTask<GetConnectionResponse> GetConnection(string topic)
 		{
 			var topicName = TopicName.Get(topic);
-			var broker = _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
-			var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+			var broker = await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
+			var connection = await _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			return connection;
 		}
 
@@ -193,16 +193,17 @@ namespace SharpPulsar
 			}
 		}
 
-		private int GetNumberOfPartitions(string topic)
+		private async ValueTask<int> GetNumberOfPartitions(string topic)
 		{
-			return GetPartitionedTopicMetadata(topic).Partitions;
+			var p = await GetPartitionedTopicMetadata(topic);
+			return p.Partitions;
 		}
-		private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
+		private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
 		{
 			try
 			{
 				TopicName topicName = TopicName.Get(topic);
-				var o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+				var o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
 				var opTimeoutMs = _conf.OperationTimeoutMs;
 				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
 
@@ -218,7 +219,7 @@ namespace SharpPulsar
 					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
 					opTimeoutMs -= (int)nextDelay;
 					Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-					o = _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+					o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
 				}
 				return o as PartitionedTopicMetadata;
 			}
@@ -228,9 +229,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private IList<string> GetPartitionsForTopic(string topic)
+		private async ValueTask<IList<string>> GetPartitionsForTopic(string topic)
 		{
-			var metadata = GetPartitionedTopicMetadata(topic);
+			var metadata = await GetPartitionedTopicMetadata(topic);
 			if (metadata.Partitions > 0)
 			{
 				TopicName topicName = TopicName.Get(topic);

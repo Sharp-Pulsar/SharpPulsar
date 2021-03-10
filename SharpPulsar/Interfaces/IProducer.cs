@@ -34,11 +34,11 @@ namespace SharpPulsar.Interfaces
 
 		/// <returns> the topic which producer is publishing to </returns>
 		string Topic {get;}
-		Task<string> TopicAsync();
+		ValueTask<string> TopicAsync();
 
 		/// <returns> the producer name which could have been assigned by the system or specified by the client </returns>
 		string ProducerName {get;}
-		Task<string> ProducerNameAsync();
+		ValueTask<string> ProducerNameAsync();
 
 		/// <summary>
 		/// Sends a message.
@@ -58,7 +58,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
 		AckReceived Send(T message);
-		Task<AckReceived> SendAsync(T message);
+		ValueTask<AckReceived> SendAsync(T message);
 
 		
 		/// <summary>
@@ -123,7 +123,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> the last sequence id published by this producer </returns>
 		long LastSequenceId {get;}
-		Task<long> LastSequenceIdAsync();
+		ValueTask<long> LastSequenceIdAsync();
 
 		/// <summary>
 		/// Get statistics for the producer.
@@ -140,7 +140,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> statistic for the producer or null if ProducerStatsRecorderImpl is disabled. </returns>
 		IProducerStats Stats {get;}
-		Task<IProducerStats> StatsAsync();
+		ValueTask<IProducerStats> StatsAsync();
 
 		/// <summary>
 		/// Close the producer and releases resources allocated.
@@ -156,11 +156,11 @@ namespace SharpPulsar.Interfaces
 
 		/// <returns> Whether the producer is currently connected to the broker </returns>
 		bool Connected {get;}
-		Task<bool> ConnectedAsync();
+		ValueTask<bool> ConnectedAsync();
 
 		/// <returns> The last disconnected timestamp of the producer </returns>
 		long LastDisconnectedTimestamp {get;}
-		Task<long> LastDisconnectedTimestampAsync();
+		ValueTask<long> LastDisconnectedTimestampAsync();
 	}
 
 }
