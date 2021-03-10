@@ -94,14 +94,11 @@ namespace SharpPulsar.User
 
         public AckReceived Send(T message)
         {
-            return SendAsync(message)
-                .ConfigureAwait(false)
-                .GetAwaiter()
-                .GetResult();
+            return SendAsync(message).GetAwaiter().GetResult();
         }
         public async ValueTask<AckReceived> SendAsync(T message)
         {
-            await NewMessage().Value(message).SendAsync();
+            await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
             return _queue.Receipt.Take();
         }
         public AckReceived SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)

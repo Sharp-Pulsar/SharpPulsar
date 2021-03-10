@@ -40,25 +40,32 @@ namespace SharpPulsar.User
             _conf = conf;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> TopicAsync() => await _consumerActor.AskFor<string>(GetTopic.Instance);
+        public async ValueTask<string> TopicAsync() 
+            => await _consumerActor.AskFor<string>(GetTopic.Instance).ConfigureAwait(false);
 
         public string Subscription => SubscriptionAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> SubscriptionAsync() => await _consumerActor.AskFor<string>(GetSubscription.Instance);
+        public async ValueTask<string> SubscriptionAsync() 
+            => await _consumerActor.AskFor<string>(GetSubscription.Instance).ConfigureAwait(false);
 
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
-        public async ValueTask<IConsumerStats> StatsAsync() => await _consumerActor.AskFor<IConsumerStats>(GetStats.Instance);
+        public async ValueTask<IConsumerStats> StatsAsync() 
+            => await _consumerActor.AskFor<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
 
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
-        public async ValueTask<IMessageId> LastMessageIdAsync() => await _consumerActor.AskFor<IMessageId>(GetLastMessageId.Instance);
+        public async ValueTask<IMessageId> LastMessageIdAsync() 
+            => await _consumerActor.AskFor<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
-        public async ValueTask<bool> ConnectedAsync() => await _consumerActor.AskFor<bool>(IsConnected.Instance);
+        public async ValueTask<bool> ConnectedAsync() 
+            => await _consumerActor.AskFor<bool>(IsConnected.Instance).ConfigureAwait(false);
 
         public string ConsumerName => ConsumerNameAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> ConsumerNameAsync() => await _consumerActor.AskFor<string>(GetConsumerName.Instance);
+        public async ValueTask<string> ConsumerNameAsync() 
+            => await _consumerActor.AskFor<string>(GetConsumerName.Instance).ConfigureAwait(false);
 
         public long LastDisconnectedTimestamp => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
-        public async ValueTask<long> LastDisconnectedTimestampAsync() => await _consumerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
+        public async ValueTask<long> LastDisconnectedTimestampAsync() 
+            => await _consumerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance).ConfigureAwait(false);
 
         public void Acknowledge(IMessage<T> message) => AcknowledgeAsync(message).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessage<T> message)
@@ -141,7 +148,7 @@ namespace SharpPulsar.User
         public void Close() => CloseAsync().ConfigureAwait(false);
         public async ValueTask CloseAsync()
         {
-            await _consumerActor.GracefulStop(TimeSpan.FromSeconds(5));
+            await _consumerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
         }
         public bool HasReachedEndOfTopic() 
             => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
@@ -220,7 +227,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 3000, CancellationToken token = default)
         {
-            await VerifyConsumerState();
+            await VerifyConsumerState().ConfigureAwait(false);
             if (_conf.MessageListener != null)
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
@@ -270,13 +277,13 @@ namespace SharpPulsar.User
 
         private async Task VerifyConsumerState()
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
 
             var retry = 10;
             while(state == HandlerState.State.Uninitialized && retry > 0)
             {
-                result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+                result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
                 state = result.State;
                 retry--;
                 if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
@@ -313,7 +320,7 @@ namespace SharpPulsar.User
         }
         private async ValueTask<bool> HasEnoughMessagesForBatchReceive()
         {
-            var mesageSize = await _consumerActor.AskFor<long>(GetIncomingMessageSize.Instance);
+            var mesageSize = await _consumerActor.AskFor<long>(GetIncomingMessageSize.Instance).ConfigureAwait(false);
             if (_conf.BatchReceivePolicy.MaxNumMessages <= 0 && _conf.BatchReceivePolicy.MaxNumBytes <= 0)
             {
                 return false;
@@ -370,7 +377,7 @@ namespace SharpPulsar.User
         }
         public async Task SeekAsync(IMessageId messageId)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -395,7 +402,7 @@ namespace SharpPulsar.User
         }
         public async Task SeekAsync(long timestamp)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {

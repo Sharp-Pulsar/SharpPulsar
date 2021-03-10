@@ -56,7 +56,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
 		void Send(bool isDeadLetter = false);
-		Task SendAsync(bool isDeadLetter = false);
+		ValueTask SendAsync(bool isDeadLetter = false);
 
 		
 

@@ -72,7 +72,7 @@ namespace SharpPulsar.Schemas.Generic
 
         public async ValueTask<ISchemaInfo> LatestSchema()
         {
-            var schema = await _lookup.AskFor<GetSchemaInfoResponse>(new GetSchema(_topicName));
+            var schema = await _lookup.AskFor<GetSchemaInfoResponse>(new GetSchema(_topicName)).ConfigureAwait(false);
             var sch = schema.SchemaInfo;
             _cache.Put(BytesSchemaVersion.Of(sch.Schema), sch);
             return sch;

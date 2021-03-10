@@ -257,8 +257,10 @@ namespace SharpPulsar
 		}
 		private void Ready()
         {
-			Receive<AckReceived>(a => {
-				AckReceived(ClientCnx, a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
+			ReceiveAsync<AckReceived>(async a => 
+			{
+				var cnx = await ClientCnx(); 
+				AckReceived(cnx, a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
 				ProducerQueue.Receipt.Add(a);
 			});
 			ReceiveAsync<RunSendTimeout>(async _ => {
@@ -309,7 +311,6 @@ namespace SharpPulsar
 		{
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
-			ClientCnx = cnx;
 			_connectionHandler.Tell(new SetCnx(cnx));
 
 			if(_batchMessageContainer != null)
@@ -545,8 +546,9 @@ namespace SharpPulsar
 
 		private async ValueTask Send(IMessage<T> message)
 		{
+			var cnx = await ClientCnx();
 			Condition.CheckArgument(message is Message<T>);
-			var maxMessageSize = await ClientCnx.AskFor<int>(MaxMessageSize.Instance);
+			var maxMessageSize = await cnx.AskFor<int>(MaxMessageSize.Instance).ConfigureAwait(false);
 			if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)
 				maxMessageSize = Math.Min(Conf.MaxMessageSize, maxMessageSize);
 			if (!IsValidProducerState(message.SequenceId))
@@ -586,7 +588,7 @@ namespace SharpPulsar
 				return;
 			}
 
-			if(!PopulateMessageSchema(msg, out var exception))
+			if(!PopulateMessageSchema(msg, out _))
 			{
 				return;
 			}
@@ -1026,8 +1028,7 @@ namespace SharpPulsar
 			if(previousState != HandlerState.State.Terminated && previousState != HandlerState.State.Closed)
 			{
 				_log.Info($"[{Topic}] [{_producerName}] The topic has been terminated");
-				ClientCnx = null;
-
+				
 				FailPendingMessages(cnx, new TopicTerminatedException($"The topic {Topic} that the producer {_producerName} produces to has been terminated"));
 			}
 		}
@@ -1298,13 +1299,14 @@ namespace SharpPulsar
 				}
 				if(await Connected())
 				{
+					var cnx = await ClientCnx();
 					if (op.Msg != null && op.Msg.GetSchemaState() == Message<T>.SchemaState.None)
 					{
-						await TryRegisterSchema(ClientCnx, op.Msg);
+						await TryRegisterSchema(cnx, op.Msg);
 					}
 
 					_stats.UpdateNumMsgsSent(op.NumMessagesInBatch, op.BatchSizeByte);
-					SendCommand(op, ClientCnx);
+					SendCommand(op, cnx);
 				}
 				else
 				{
@@ -1378,7 +1380,8 @@ namespace SharpPulsar
 			}
 			if (pendingRegisteringOp != null)
 			{
-				await TryRegisterSchema(ClientCnx, pendingRegisteringOp.Msg);
+				var cnx = await ClientCnx();
+				await TryRegisterSchema(cnx, pendingRegisteringOp.Msg);
 			}
 		}
 
@@ -1446,16 +1449,9 @@ namespace SharpPulsar
 			_connectionHandler.Tell(new ConnectionClosed(cnx));
 		}
 
-		internal IActorRef ClientCnx
+		internal async ValueTask<IActorRef> ClientCnx()
 		{
-			get
-			{
-				return Cnx().GetAwaiter().GetResult();
-			}
-			set
-			{
-				_connectionHandler.Tell(new SetCnx(value)); 
-			}
+			return await Cnx();
 		}
 
 		protected internal override async ValueTask<IProducerStats> Stats() => await Task.FromResult(_stats);

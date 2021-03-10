@@ -62,8 +62,8 @@ namespace SharpPulsar
 				return -1L;
 			}
 			
-			var bits = await _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-			var sequence = await _txn.Txn.AskFor<long>(NextSequenceId.Instance);
+			var bits = await _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).ConfigureAwait(false);
+			var sequence = await _txn.Txn.AskFor<long>(NextSequenceId.Instance).ConfigureAwait(false);
 			_metadata.TxnidLeastBits = (ulong)bits.LeastBits;
 			_metadata.TxnidMostBits = (ulong)bits.MostBits;
 			long sequenceId = sequence;
@@ -74,9 +74,9 @@ namespace SharpPulsar
 		{
 			SendAsync(isDeadLetter).ConfigureAwait(false);
 		}
-		public async Task SendAsync(bool isDeadLetter = false)
+		public async ValueTask SendAsync(bool isDeadLetter = false)
 		{
-			var message = await Message();
+			var message = await Message().ConfigureAwait(false);
 			if (_txn != null)
 			{
 				_producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter));
@@ -272,7 +272,7 @@ namespace SharpPulsar
 
 		public async Task<IMessage<T>> Message()
 		{
-			await BeforeSend();
+			await BeforeSend().ConfigureAwait(false);
 			return Message<T>.Create(_metadata, _content, _schema);
 		}
 
