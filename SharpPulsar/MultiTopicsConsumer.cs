@@ -653,7 +653,7 @@ namespace SharpPulsar
 			}
 		}
 
-		protected internal override void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
+		protected internal override async ValueTask DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
 		{
 			Condition.CheckArgument(messageId is TopicMessageId);
 			var topicMessageId = (TopicMessageId) messageId;
@@ -665,7 +665,7 @@ namespace SharpPulsar
 
 			if(ackType == AckType.Cumulative)
 			{
-				var (topic, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+				var (_, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 				if(consumer != null)
 				{
 					var innerId = topicMessageId.InnerMessageId;
@@ -678,21 +678,20 @@ namespace SharpPulsar
 			}
 			else
 			{
-				var (topic, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
+				var (_, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 
 				var innerId = topicMessageId.InnerMessageId;
-				consumer.Ask(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl)).ContinueWith
-					(t=> {
-						_unAckedMessageTracker.Tell(new Remove(topicMessageId));
-					});
+				_ = await consumer.Ask(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl));
+				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
+			await Task.CompletedTask;
 		}
 
-		protected internal override void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		protected internal override async ValueTask DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if(ackType == AckType.Cumulative)
 			{
-				messageIdList.ForEach(messageId => DoAcknowledge(messageId, ackType, properties, txn));
+				messageIdList.ForEach( async messageId => await DoAcknowledge(messageId, ackType, properties, txn));
 			}
 			else
 			{
@@ -721,9 +720,10 @@ namespace SharpPulsar
 					messageIdList.ForEach(x => _unAckedMessageTracker.Tell(new Remove(x)));
 				});
 			}
+			await Task.CompletedTask;
 		}
 
-		protected internal override void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+		protected internal override async ValueTask DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
 		{
 			var messageId = message.MessageId;
 			Condition.CheckArgument(messageId is TopicMessageId);
@@ -753,6 +753,7 @@ namespace SharpPulsar
 				consumer.Tell(new ReconsumeLaterWithProperties<T>(message, ackType, properties, delayTime, unit));
 				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
+			await Task.CompletedTask;
 		}
 
 		internal override void NegativeAcknowledge(IMessageId messageId)
@@ -821,7 +822,7 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override void RedeliverUnacknowledgedMessages()
+		internal override async ValueTask RedeliverUnacknowledgedMessages()
 		{
 			_consumers.Values.ForEach(consumer =>
 			{
@@ -832,9 +833,10 @@ namespace SharpPulsar
 			IncomingMessagesSize =  0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
 			ResumeReceivingFromPausedConsumersIfNeeded();
+			await Task.CompletedTask;
 		}
 
-		protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+		protected internal override async ValueTask RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -846,7 +848,7 @@ namespace SharpPulsar
 			if(Conf.SubscriptionType != CommandSubscribe.SubType.Shared)
 			{
 				// We cannot redeliver single messages if subscription type is not Shared
-				RedeliverUnacknowledgedMessages();
+				await RedeliverUnacknowledgedMessages();
 				return;
 			}
 			RemoveExpiredMessagesFromQueue(messageIds);
@@ -856,7 +858,7 @@ namespace SharpPulsar
 			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		internal override void Seek(IMessageId messageId)
+		internal override async ValueTask Seek(IMessageId messageId)
 		{
 			try
 			{
@@ -875,9 +877,10 @@ namespace SharpPulsar
 			{
 				throw PulsarClientException.Unwrap(e);
 			}
+			await Task.CompletedTask;
 		}
 
-		internal override void Seek(long timestamp)
+		internal override async ValueTask Seek(long timestamp)
 		{
 			try
 			{
@@ -887,6 +890,7 @@ namespace SharpPulsar
 			{
 				throw PulsarClientException.Unwrap(e);
 			}
+			await Task.CompletedTask;
 		}
 
 
@@ -1284,10 +1288,11 @@ namespace SharpPulsar
 			_consumers.ForEach(x => x.Value.Consumer.Tell(Messages.Consumer.Pause.Instance));
 		}
 
-		internal override void Resume()
+		internal override async ValueTask Resume()
 		{
 			_paused = false;
 			_consumers.ForEach(x => x.Value.Consumer.Tell(Messages.Consumer.Resume.Instance));
+			await Task.CompletedTask;
 		}
 
 		internal override async ValueTask<long> LastDisconnectedTimestamp()
