@@ -118,21 +118,23 @@ namespace SharpPulsar
 			});
 			ReceiveAsync<GetSchema>(async s => 
 			{
+				var sender = Sender;
 				var pool = _connectionPool;
 				var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
 				var connection = xtion.ClientCnx;
 				var id = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
 				var requestid = id.Id;
-				await GetSchema(s.TopicName, s.Version, requestid, connection);
+				await GetSchema(s.TopicName, s.Version, requestid, connection, sender);
 			});
 			ReceiveAsync<GetTopicsUnderNamespace>( async t => 
 			{
+				var sender = Sender;
 				var pool = _connectionPool;
 				var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
 				var connection = xtion.ClientCnx;
 				var id = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
 				var requestid = id.Id;
-				await GetTopicsUnderNamespace(t, requestid, connection);
+				await GetTopicsUnderNamespace(t, requestid, connection, sender);
 			});
 		}
 		
@@ -249,7 +251,7 @@ namespace SharpPulsar
 		}
 
 
-		private async ValueTask GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx)
+		private async ValueTask GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx, IActorRef sender)
 		{
 			var request = new Commands().NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, requestId, "SendGetRawSchema");
@@ -259,7 +261,7 @@ namespace SharpPulsar
 			{
 				var e = $"{err}: {schemaResponse.Response.ErrorMessage}";
 				_log.Error(e);
-				Sender.Tell(new Failure { Exception = new Exception(e) });
+				sender.Tell(new Failure { Exception = new Exception(e) });
 			}
 			else
 			{
@@ -271,7 +273,7 @@ namespace SharpPulsar
 					Properties = schema.Properties.ToDictionary(k => k.Key, v => v.Value),
 					Type = SchemaType.ValueOf((int)schema.type)
 				};
-				Sender.Tell(new GetSchemaInfoResponse(info));
+				sender.Tell(new GetSchemaInfoResponse(info));
 			}
 		}
 
@@ -283,7 +285,7 @@ namespace SharpPulsar
 			}
 		}
 
-        private async ValueTask GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx)
+        private async ValueTask GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx, IActorRef sender)
 		{
 			var opTimeoutMs = _operationTimeoutMs;
 			var backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
@@ -330,10 +332,10 @@ namespace SharpPulsar
 						result.Add(filtered);
 					}
 				});
-				Sender.Tell(new GetTopicsUnderNamespaceResponse(result));
+				sender.Tell(new GetTopicsUnderNamespaceResponse(result));
 			}
 			else
-				Sender.Tell(new GetTopicsUnderNamespaceResponse(new List<string>()));
+				sender.Tell(new GetTopicsUnderNamespaceResponse(new List<string>()));
 		}
 
 		protected override void Unhandled(object message)

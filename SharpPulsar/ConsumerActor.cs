@@ -1213,7 +1213,7 @@ namespace SharpPulsar
 			long startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
 			var request = _commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
 			
-			cnx.Tell(new SendRequestWithId(request, requestId), _self);
+			cnx.Tell(new SendRequestWithId(request, requestId));
 		}
 
 		protected internal virtual void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
@@ -2580,8 +2580,8 @@ namespace SharpPulsar
 		}
 		private void Connection()
         {
-			Receive<ConnectionOpened>(c => {
-				ConnectionOpened(c.ClientCnx);
+			ReceiveAsync<ConnectionOpened>(async c => {
+				await ConnectionOpened(c.ClientCnx);
 				Become(AwaitingSubcriptionResponse);
 			});
 			ReceiveAny(a => Stash.Stash());

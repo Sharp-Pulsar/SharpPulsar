@@ -91,7 +91,8 @@ namespace SharpPulsar
 				var cnx = await GetBroker(m.TopicName);
 				Sender.Tell(cnx);
 			});
-			ReceiveAsync<GetConnection>(async m => {
+			ReceiveAsync<GetConnection>(async m => 
+			{
 				var cnx = await GetConnection(m.Topic);
 				Sender.Tell(cnx);
 			});

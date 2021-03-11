@@ -46,7 +46,7 @@ namespace SharpPulsar.Test
 		[Fact]
         public void TestNegativeAcksBatch()
         {
-			TestNegativeAcks(true, false, CommandSubscribe.SubType.Shared, 35000, 30000);
+			TestNegativeAcks(true, false, CommandSubscribe.SubType.Shared, 35000, 3000);
 			//TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
         }
 		
@@ -54,7 +54,7 @@ namespace SharpPulsar.Test
         public void TestNegativeAcksNoBatch()
         {
 			//TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
-			TestNegativeAcks(false, false, CommandSubscribe.SubType.Shared, 35000, 30000);
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Shared, 35000, 3000);
         }
 
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)

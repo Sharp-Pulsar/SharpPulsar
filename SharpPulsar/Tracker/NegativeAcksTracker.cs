@@ -42,6 +42,8 @@ namespace SharpPulsar.Tracker
 		private readonly long _nackDelayMs;
 		private readonly long _timerIntervalMs;
         private IActorRef _unAckedMessageTracker;
+        private IActorRef _parent;
+        private IActorRef _self;
 
 
         private ICancelable _timeout;
@@ -51,6 +53,8 @@ namespace SharpPulsar.Tracker
 
 		public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
         {
+            _parent = Context.Parent;
+            _self = Self;
             _unAckedMessageTracker = unAckedMessageTracker;
 			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
 			_timerIntervalMs = _nackDelayMs / 3;
@@ -81,8 +85,8 @@ namespace SharpPulsar.Tracker
                 if(messagesToRedeliver.Count > 0)
                 {
                     messagesToRedeliver.ForEach(a => _nackedMessages.Remove(a));
-                    Context.Parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
-                    Context.Parent.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
+                    _parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
+                    _parent.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
                 }
             }
             catch (Exception e)
@@ -91,7 +95,7 @@ namespace SharpPulsar.Tracker
             }
             finally
             {
-                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
+                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
             }
         }
 
