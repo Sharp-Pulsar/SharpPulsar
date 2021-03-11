@@ -46,9 +46,9 @@ namespace SharpPulsar.Transaction
 			_client = client;
 		}
 
-		public virtual ITransactionBuilder WithTransactionTimeout(long timeout, TimeUnit timeoutUnit)
+		public virtual ITransactionBuilder WithTransactionTimeout(long timeoutInMs)
 		{
-			_txnTimeoutMs = timeoutUnit.ToMilliseconds(timeout);
+			_txnTimeoutMs = timeoutInMs;
 			return this;
 		}
 
@@ -63,7 +63,7 @@ namespace SharpPulsar.Transaction
 			//       and start the transaction to get the transaction id.
 			//       After getting the transaction id, all the operations are handled by the
 			//       `Transaction`
-			var result = await _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs, TimeUnit.MILLISECONDS));
+			var result = await _transactionCoordinatorClient.AskFor<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs)).ConfigureAwait(false);
 			var txnID = result.Response;
 			var transaction = _actorSystem.ActorOf(Transaction.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
 			return new User.Transaction(transaction);	

@@ -209,9 +209,9 @@ namespace SharpPulsar
 			_metadata.ReplicateToes.Add("__local__");
 			return this;
 		}
-		public ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit)
+		public ITypedMessageBuilder<T> DeliverAfter(long delay)
 		{
-			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMilliseconds(delay));
+			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + delay);
 		}
 
 		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
@@ -255,7 +255,7 @@ namespace SharpPulsar
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AFTER_SECONDS, StringComparison.OrdinalIgnoreCase))
 			{
-				DeliverAfter((long)d.Value, TimeUnit.SECONDS);
+				DeliverAfter((long)d.Value);
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AT, StringComparison.OrdinalIgnoreCase))
 			{

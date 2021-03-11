@@ -246,10 +246,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeCumulativeTxn>(m => {
+			ReceiveAsync<AcknowledgeCumulativeTxn>(async m => {
 				try
 				{
-					AcknowledgeCumulative(m.MessageId, m.Txn);
+					await AcknowledgeCumulative(m.MessageId, m.Txn);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -257,10 +257,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<ReconsumeLaterCumulative<T>>(m => {
+			ReceiveAsync<ReconsumeLaterCumulative<T>>(async m => {
 				try
 				{
-					ReconsumeLaterCumulative(m.Message, m.DelayTime, m.TimeUnit);
+					await ReconsumeLaterCumulative(m.Message, m.DelayTime);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -273,10 +273,10 @@ namespace SharpPulsar
 				var l = await LastDisconnectedTimestamp();
 				Push(ConsumerQueue.LastDisconnectedTimestamp, l);
 			});
-			Receive<ReconsumeLaterCumulative<T>>(m => {
+			ReceiveAsync<ReconsumeLaterCumulative<T>>(async m => {
 				try
 				{
-					ReconsumeLaterCumulative(m.Message, m.DelayTime, m.TimeUnit);
+					await ReconsumeLaterCumulative(m.Message, m.DelayTime);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -325,8 +325,8 @@ namespace SharpPulsar
 				var num = await NumMessagesInQueue();
 				Sender.Tell(num);
 			});
-			Receive<Resume>(_ => {
-				Resume();
+			ReceiveAsync<Resume>(async _ => {
+				await Resume();
 			});
 			ReceiveAsync<GetLastMessageId>(async m =>
 			{
@@ -341,11 +341,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.LastMessageId, nul);
 				}
 			});
-			Receive<AcknowledgeWithTxnMessages>(m =>
+			ReceiveAsync<AcknowledgeWithTxnMessages>(async m =>
 			{
 				try
 				{
-					DoAcknowledgeWithTxn(m.MessageIds, m.AckType, m.Properties, m.Txn);
+					await DoAcknowledgeWithTxn(m.MessageIds, m.AckType, m.Properties, m.Txn);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
 				catch (Exception ex)
@@ -406,11 +406,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.NegativeAcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<ReconsumeLaterMessages<T>>(m =>
+			ReceiveAsync<ReconsumeLaterMessages<T>>(async m =>
 			{
 				try
 				{
-					ReconsumeLater(m.Messages, m.DelayTime, m.TimeUnit);
+					await ReconsumeLater(m.Messages, m.DelayTime);
 					Push(ConsumerQueue.ReconsumeLaterException, null);
 				}
 				catch (Exception ex)
@@ -418,11 +418,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<ReconsumeLaterWithProperties<T>>(m =>
+			ReceiveAsync<ReconsumeLaterWithProperties<T>>(async m =>
 			{
 				try
 				{
-					DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x => x.Key, x => x.Value), m.DelayTime, m.TimeUnit);
+					await DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x => x.Key, x => x.Value), m.DelayTime);
 					Push(ConsumerQueue.ReconsumeLaterException, null);
 				}
 				catch (Exception ex)
@@ -430,11 +430,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<ReconsumeLaterMessage<T>>(m =>
+			ReceiveAsync<ReconsumeLaterMessage<T>>(async m =>
 			{
 				try
 				{
-					ReconsumeLater(m.Message, m.DelayTime, m.TimeUnit);
+					await ReconsumeLater (m.Message, m.DelayTime);
 					Push(ConsumerQueue.ReconsumeLaterException, null);
 				}
 				catch (Exception ex)
@@ -442,11 +442,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<RedeliverUnacknowledgedMessages>(m =>
+			ReceiveAsync<RedeliverUnacknowledgedMessages>(async m =>
 			{
 				try
 				{
-					RedeliverUnacknowledgedMessages();
+					await RedeliverUnacknowledgedMessages();
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
 				}
 				catch (Exception ex)
@@ -454,11 +454,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<RedeliverUnacknowledgedMessageIds>(m =>
+			ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m =>
 			{
 				try
 				{
-					RedeliverUnacknowledgedMessages(m.MessageIds);
+					await RedeliverUnacknowledgedMessages(m.MessageIds);
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
 				}
 				catch (Exception ex)
@@ -478,11 +478,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.UnsubscribeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<SeekMessageId>(m =>
+			ReceiveAsync<SeekMessageId>(async m =>
 			{
 				try
 				{
-					Seek(m.MessageId);
+					await Seek(m.MessageId);
 					Push(ConsumerQueue.SeekException, null);
 				}
 				catch (Exception ex)
@@ -490,11 +490,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.SeekException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<SeekTimestamp>(m =>
+			ReceiveAsync<SeekTimestamp>(async m =>
 			{
 				try
 				{
-					Seek(m.Timestamp);
+					await Seek(m.Timestamp);
 					Push(ConsumerQueue.SeekException, null);
 				}
 				catch (Exception ex)
@@ -723,7 +723,7 @@ namespace SharpPulsar
 			await Task.CompletedTask;
 		}
 
-		protected internal override async ValueTask DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+		protected internal override async ValueTask DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime)
 		{
 			var messageId = message.MessageId;
 			Condition.CheckArgument(messageId is TopicMessageId);
@@ -739,7 +739,7 @@ namespace SharpPulsar
 				if(consumer != null)
 				{
 					var innerId = topicMessageId.InnerMessageId;
-					consumer.Tell(new ReconsumeLaterCumulative<T>(message, delayTime, unit));
+					consumer.Tell(new ReconsumeLaterCumulative<T>(message, delayTime));
 				}
 				else
 				{
@@ -750,7 +750,7 @@ namespace SharpPulsar
 			{
 				var (_, consumer) = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 				var innerId = topicMessageId.InnerMessageId;
-				consumer.Tell(new ReconsumeLaterWithProperties<T>(message, ackType, properties, delayTime, unit));
+				consumer.Tell(new ReconsumeLaterWithProperties<T>(message, ackType, properties, delayTime));
 				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
 			await Task.CompletedTask;

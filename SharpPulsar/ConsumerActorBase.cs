@@ -185,7 +185,7 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual async ValueTask ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit)
+		internal virtual async ValueTask ReconsumeLater(IMessage<T> message, long delayTime)
 		{
 			if (!Conf.RetryEnable)
 			{
@@ -193,7 +193,7 @@ namespace SharpPulsar
 			}
 			try
 			{
-				await DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime, unit);
+				await DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime);
 			}
 			catch (Exception e)
 			{
@@ -209,11 +209,11 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual async ValueTask ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit)
+		internal virtual async ValueTask ReconsumeLater(IMessages<T> messages, long delayTime)
 		{
 			try
 			{
-				messages.ForEach(async message => await ReconsumeLater(message, delayTime, unit));
+				messages.ForEach(async message => await ReconsumeLater(message, delayTime));
 			}
 			catch (NullReferenceException npe)
 			{
@@ -248,11 +248,11 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual async ValueTask ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit)
+		internal virtual async ValueTask ReconsumeLaterCumulative(IMessage<T> message, long delayTime)
 		{
 			try
 			{
-				await DoReconsumeLater(message, AckType.Cumulative, new Dictionary<string, long>(), delayTime, unit);
+				await DoReconsumeLater(message, AckType.Cumulative, new Dictionary<string, long>(), delayTime);
 			}
 			catch (Exception e)
 			{
@@ -307,7 +307,7 @@ namespace SharpPulsar
 
 		protected internal abstract ValueTask DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-		protected internal abstract ValueTask DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit);
+		protected internal abstract ValueTask DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime);
 
 		internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{

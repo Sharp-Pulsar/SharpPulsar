@@ -7,6 +7,7 @@ using System.Text;
 using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
+using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
 {
@@ -19,7 +20,6 @@ namespace SharpPulsar.Test.Transaction
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
 		private readonly ITestOutputHelper _output;
-		private readonly PulsarSystem _system;
 		private readonly PulsarClient _client;
         public TxnMessageAck(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
@@ -93,7 +93,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.Equal(messageCnt - ackedMessageCount, receiveCnt);
 
-			message = consumer.Receive(2, TimeUnit.SECONDS);
+			message = consumer.Receive(2000);
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}
@@ -102,7 +102,7 @@ namespace SharpPulsar.Test.Transaction
 
 			get
 			{
-				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2, TimeUnit.SECONDS).Build();
+				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2000).Build();
 			}
 		}
 

@@ -182,7 +182,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit);
+		ITypedMessageBuilder<T> DeliverAfter(long delay);
 
 		/// <summary>
 		/// Configure the <seealso cref="TypedMessageBuilder"/> from a config map, as an alternative compared

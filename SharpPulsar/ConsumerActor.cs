@@ -432,7 +432,7 @@ namespace SharpPulsar
 			ReceiveAsync<ReconsumeLaterCumulative<T>>(async m => {
 				try
 				{
-					await ReconsumeLaterCumulative(m.Message, m.DelayTime, m.TimeUnit);
+					await ReconsumeLaterCumulative(m.Message, m.DelayTime);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -448,7 +448,7 @@ namespace SharpPulsar
 			{
 				try
 				{
-					await ReconsumeLaterCumulative(m.Message, m.DelayTime, m.TimeUnit);
+					await ReconsumeLaterCumulative(m.Message, m.DelayTime);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -617,7 +617,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-					await ReconsumeLater(m.Messages, m.DelayTime, m.TimeUnit);
+					await ReconsumeLater(m.Messages, m.DelayTime);
 					Push(ConsumerQueue.ReconsumeLaterException, null);
 				}
                 catch (Exception ex)
@@ -629,7 +629,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-					await DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x=> x.Key, x => x.Value), m.DelayTime, m.TimeUnit);
+					await DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x=> x.Key, x => x.Value), m.DelayTime);
 					Push(ConsumerQueue.ReconsumeLaterException, null);
 				}
                 catch (Exception ex)
@@ -641,7 +641,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-					await ReconsumeLater(m.Message, m.DelayTime, m.TimeUnit);
+					await ReconsumeLater(m.Message, m.DelayTime);
 					Push(ConsumerQueue.ReconsumeLaterException, null);
 				}
                 catch (Exception ex)
@@ -665,7 +665,9 @@ namespace SharpPulsar
 			{
                 try
                 {
+					_log.Info($"RedeliverUnacknowledgedMessageIds: {m.MessageIds.Count}");
 					await RedeliverUnacknowledgedMessages(m.MessageIds);
+					_log.Info($"RedeliverUnacknowledgedMessageIds=2: {m.MessageIds.Count}");
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
 				}
                 catch (Exception ex)
@@ -776,7 +778,7 @@ namespace SharpPulsar
 				_client.Tell(new CleanupConsumer(Self));
 			}
 
-			_stats.StatTimeout.Cancel();
+			_stats.StatTimeout?.Cancel();
 
 			State.ConnectionState = HandlerState.State.Closing;
 
@@ -952,7 +954,7 @@ namespace SharpPulsar
 			}
 			//return CompletableFuture.completedFuture(null);
 		}
-        protected internal override async ValueTask DoReconsumeLater(IMessage<T> message, CommandAck.AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+        protected internal override async ValueTask DoReconsumeLater(IMessage<T> message, CommandAck.AckType ackType, IDictionary<string, long> properties, long delayTime)
 		{
 			IMessageId messageId = message.MessageId;
 			if(messageId is TopicMessageId)
@@ -1035,7 +1037,7 @@ namespace SharpPulsar
 					}
 
 					propertiesMap[RetryMessageUtil.SystemPropertyReconsumetimes] = reconsumetimes.ToString();
-					propertiesMap[RetryMessageUtil.SystemPropertyDelayTime] = unit.ToMilliseconds(delayTime).ToString();
+					propertiesMap[RetryMessageUtil.SystemPropertyDelayTime] = delayTime.ToString();
 
 				   if(reconsumetimes > _deadLetterPolicy.MaxRedeliverCount)
 				   {
@@ -1076,7 +1078,7 @@ namespace SharpPulsar
 						typedMessageBuilderNew.Properties(propertiesMap);
 						if (delayTime > 0)
 						{
-							typedMessageBuilderNew.DeliverAfter(delayTime, unit);
+							typedMessageBuilderNew.DeliverAfter(delayTime);
 						}
 						if(message.HasKey())
 						{
@@ -1164,8 +1166,7 @@ namespace SharpPulsar
 				ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is in a closing state")));
 				return;
 			}
-			_connectionHandler.Tell(new SetCnx(cnx));
-			cnx.Tell(new RegisterConsumer(_consumerId, Self));
+			SetCnx(cnx);
 
 			_cnx = cnx;
 
@@ -1506,9 +1507,9 @@ namespace SharpPulsar
 				_pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
 			}
 
-			ChunkedMessageCtx chunkedMsgCtx = ChunkedMessagesMap[msgMetadata.Uuid];
+			ChunkedMessageCtx chunkedMsgCtx;
 			// discard message if chunk is out-of-order
-			if(chunkedMsgCtx == null || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
+			if(!ChunkedMessagesMap.TryGetValue(msgMetadata.Uuid, out chunkedMsgCtx) || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
 			{
 				// means we lost the first chunk: should never happen
 				_log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id{chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
@@ -1930,7 +1931,7 @@ namespace SharpPulsar
 
 		internal override async ValueTask<bool> Connected()
 		{
-			var connected = ClientCnx != null && (State.ConnectionState == HandlerState.State.Ready);
+			var connected = _cnx != null && (State.ConnectionState == HandlerState.State.Ready);
 			return await Task.FromResult(connected);
 		}
 
@@ -1953,10 +1954,14 @@ namespace SharpPulsar
 
 		internal override async ValueTask RedeliverUnacknowledgedMessages()
 		{
+			_log.Info("RedeliverUnacknowledgedMessages()=1");
 			var cnx = await Cnx();
+			_log.Info("RedeliverUnacknowledgedMessages()=2");
 			var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-			if(await Connected() && protocolVersion >= (int)ProtocolVersion.V2)
+			_log.Info("RedeliverUnacknowledgedMessages()=3");
+			if (await Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
+				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				var currentSize = IncomingMessages.Count;
 				IncomingMessages.Empty();
 				IncomingMessagesSize = 0;
@@ -1983,6 +1988,7 @@ namespace SharpPulsar
 				_log.Warning($"[{Self}] Reconnecting the client to redeliver the messages.");
 				await cnx.GracefulStop(TimeSpan.FromSeconds(5));
 			}
+			_log.Info("RedeliverUnacknowledgedMessages()=5");
 		}
 
 		internal virtual int ClearIncomingMessagesAndGetMessageNumber()
@@ -2467,34 +2473,30 @@ namespace SharpPulsar
 			_connectionHandler.Tell(new ConnectionClosed(cnx));
 		}
 
-
-		private IActorRef ClientCnx
+		private void SetCnx(IActorRef cnx)
+        {
+			if (cnx != null)
+			{
+				_connectionHandler.Tell(new SetCnx(cnx));
+				cnx.Tell(new RegisterConsumer(_consumerId, Self));
+			}
+			var previousClientCnx = _clientCnxUsedForConsumerRegistration;
+			_clientCnxUsedForConsumerRegistration = cnx;
+			if (previousClientCnx != null && previousClientCnx != cnx)
+			{
+				var previousName = int.Parse(previousClientCnx.Path.Name);
+				previousClientCnx.Tell(new RemoveConsumer(previousName));
+			}
+		}
+		private async ValueTask<IActorRef> ClientCnx()
 		{
-			get
-			{
-				return _connectionHandler.AskFor<IActorRef>(GetCnx.Instance).GetAwaiter().GetResult();
-			}
-			set
-			{
-				if(value != null)
-				{
-					_connectionHandler.Tell(new SetCnx(value));
-					value.Tell(new RegisterConsumer(_consumerId, Self));
-				}
-				var previousClientCnx = _clientCnxUsedForConsumerRegistration;
-				_clientCnxUsedForConsumerRegistration = value;
-				if(previousClientCnx != null && previousClientCnx != value)
-				{
-					var previousName = int.Parse(previousClientCnx.Path.Name);
-					previousClientCnx.Tell(new RemoveConsumer(previousName));
-				}
-			}
+			return await _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
 		}
 
 
 		internal virtual void DeregisterFromClientCnx()
 		{
-			ClientCnx = null;
+			SetCnx(null);
 		}
 
 		internal virtual void ReconnectLater(Exception exception)

@@ -89,7 +89,7 @@ namespace SharpPulsar
 			});
 			ReceiveAsync<NewTxn>(async t => 
 			{
-				await NewTransaction(t.TxnRequestTimeoutMs, t.TimeUnit);
+				await NewTransaction(t.TxnRequestTimeoutMs);
 			});
 			Receive<NewTxnResponse>(r=> 
 			{
@@ -152,17 +152,17 @@ namespace SharpPulsar
 			}
 		}
 
-		private async ValueTask NewTransaction(long timeout, TimeUnit unit)
+		private async ValueTask NewTransaction(long timeout)
 		{
 			if(_log.IsDebugEnabled)
 			{
-				_log.Debug("New transaction with timeout in ms {}", unit.ToMilliseconds(timeout));
+				_log.Debug("New transaction with timeout in ms {}", timeout);
 			}
 
 			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = request.Id;
 			_pendingRequests.Add(requestId, (new byte[] { (byte)timeout }, Sender));
-			var cmd = new Commands().NewTxn(_transactionCoordinatorId, requestId, unit.ToMilliseconds(timeout));
+			var cmd = new Commands().NewTxn(_transactionCoordinatorId, requestId, timeout);
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
 			var cnx = await Cnx();
 			cnx.Tell(new Payload(cmd, requestId, "NewTxn"));

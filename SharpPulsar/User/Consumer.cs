@@ -73,7 +73,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeMessage<T>(message));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId)
@@ -81,7 +81,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeMessageId(messageId));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public IActorRef ConsumerActor => _consumerActor;
         public void Acknowledge(IMessages<T> messages) => AcknowledgeAsync(messages).GetAwaiter().GetResult();
@@ -90,7 +90,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeMessages<T>(messages));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void Acknowledge(IList<IMessageId> messageIds) => AcknowledgeAsync(messageIds).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IList<IMessageId> messageIds)
@@ -98,7 +98,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeMessageIds(messageIds));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void Acknowledge(IMessageId messageId, Transaction txn)
             => AcknowledgeAsync(messageId, txn).GetAwaiter().GetResult();
@@ -107,7 +107,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeWithTxn(messageId, txn.Txn));
             if (_queue.AcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void AcknowledgeCumulative(IMessage<T> message) 
             => AcknowledgeCumulativeAsync(message).GetAwaiter().GetResult();
@@ -116,7 +116,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void AcknowledgeCumulative(IMessageId messageid)
             => AcknowledgeCumulativeAsync(messageid).GetAwaiter().GetResult();
@@ -125,7 +125,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeCumulativeMessageId(messageId));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void AcknowledgeCumulative(IMessageId messageid, Transaction txn)
             => AcknowledgeCumulativeAsync(messageid, txn).GetAwaiter().GetResult();
@@ -138,7 +138,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new AcknowledgeCumulativeTxn(messageId, txn.Txn));
             if (_queue.AcknowledgeCumulativeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
         private bool IsCumulativeAcknowledgementAllowed(SubType type)
@@ -168,7 +168,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new NegativeAcknowledgeMessage<T>(message));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
         public void NegativeAcknowledge(IMessages<T> messages) 
@@ -178,19 +178,19 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new NegativeAcknowledgeMessages<T>(messages));
             if (_queue.NegativeAcknowledgeException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
         public void Pause()
         {
             _consumerActor.Tell(Messages.Consumer.Pause.Instance);
         }
-        public IMessage<T> Receive(int timeout, TimeUnit unit)
+        public IMessage<T> Receive(int timeoutInMs)
         {
-            return ReceiveAsync(timeout, unit).GetAwaiter().GetResult();
+            return ReceiveAsync(timeoutInMs).GetAwaiter().GetResult();
         }
 
-        public async ValueTask<IMessage<T>> ReceiveAsync(int timeout, TimeUnit unit)
+        public async ValueTask<IMessage<T>> ReceiveAsync(int timeoutInMs)
         {
             await VerifyConsumerState();
             if (_conf.ReceiverQueueSize == 0)
@@ -201,7 +201,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            if (_queue.IncomingMessages.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
+            if (_queue.IncomingMessages.TryTake(out var message, timeoutInMs))
             {
                 _consumerActor.Tell(new MessageProcessed<T>(message));
                 IMessage<T> interceptMsg = BeforeConsume(message);
@@ -327,34 +327,34 @@ namespace SharpPulsar.User
             }
             return (_conf.BatchReceivePolicy.MaxNumMessages > 0 && _queue.IncomingMessages.Count >= _conf.BatchReceivePolicy.MaxNumMessages) || (_conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= _conf.BatchReceivePolicy.MaxNumBytes);
         }
-        public void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit) 
-            => ReconsumeLaterAsync(message, delayTime, unit).GetAwaiter().GetResult();
-        public async ValueTask ReconsumeLaterAsync(IMessage<T> message, long delayTime, TimeUnit unit)
+        public void ReconsumeLater(IMessage<T> message, long delayTimeInMs) 
+            => ReconsumeLaterAsync(message, delayTimeInMs).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterAsync(IMessage<T> message, long delayTimeInMs)
         {
-            _consumerActor.Tell(new ReconsumeLaterMessage<T>(message, delayTime, unit));
+            _consumerActor.Tell(new ReconsumeLaterMessage<T>(message, delayTimeInMs));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
-        public void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit)
-            => ReconsumeLaterAsync(messages, delayTime, unit).GetAwaiter().GetResult();
-        public async ValueTask ReconsumeLaterAsync(IMessages<T> messages, long delayTime, TimeUnit unit)
+        public void ReconsumeLater(IMessages<T> messages, long delayTimeInMs)
+            => ReconsumeLaterAsync(messages, delayTimeInMs).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterAsync(IMessages<T> messages, long delayTimeInMs)
         {
-            _consumerActor.Tell(new ReconsumeLaterMessages<T>(messages, delayTime, unit));
+            _consumerActor.Tell(new ReconsumeLaterMessages<T>(messages, delayTimeInMs));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
-        public void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit)
-            => ReconsumeLaterCumulativeAsync(message, delayTime, unit).GetAwaiter().GetResult();
-        public async ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, long delayTime, TimeUnit unit)
+        public void ReconsumeLaterCumulative(IMessage<T> message, long delayTimeInMs)
+            => ReconsumeLaterCumulativeAsync(message, delayTimeInMs).GetAwaiter().GetResult();
+        public async ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, long delayTimeInMs)
         {
-            _consumerActor.Tell(new ReconsumeLaterCumulative<T>(message, delayTime, unit));
+            _consumerActor.Tell(new ReconsumeLaterCumulative<T>(message, delayTimeInMs));
             if (_queue.ReconsumeLaterException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
         public void RedeliverUnacknowledgedMessages()
@@ -364,7 +364,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
             if (_queue.RedeliverUnacknowledgedException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
         public void Resume()
@@ -394,7 +394,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new SeekMessageId(messageId));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
         public void Seek(long timestamp)
         {
@@ -418,7 +418,7 @@ namespace SharpPulsar.User
             _consumerActor.Tell(new SeekTimestamp(timestamp));
             if (_queue.SeekException.TryTake(out var msg, 1000))
                 if (msg?.Exception != null)
-                    await Task.FromException(msg.Exception);
+                    await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
 
         /// <summary>

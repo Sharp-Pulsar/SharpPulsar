@@ -31,6 +31,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Extension;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks;
+using Akka.Event;
 
 namespace SharpPulsar.Tracker
 {
@@ -44,6 +45,7 @@ namespace SharpPulsar.Tracker
         private IActorRef _unAckedMessageTracker;
         private IActorRef _parent;
         private IActorRef _self;
+        private ILoggingAdapter _log;
 
 
         private ICancelable _timeout;
@@ -53,6 +55,7 @@ namespace SharpPulsar.Tracker
 
 		public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
         {
+            _log = Context.GetLogger();
             _parent = Context.Parent;
             _self = Self;
             _unAckedMessageTracker = unAckedMessageTracker;
@@ -84,6 +87,7 @@ namespace SharpPulsar.Tracker
                 }
                 if(messagesToRedeliver.Count > 0)
                 {
+                    _log.Info($"messagesToRedeliver: {messagesToRedeliver.Count}");
                     messagesToRedeliver.ForEach(a => _nackedMessages.Remove(a));
                     _parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
                     _parent.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
@@ -91,7 +95,7 @@ namespace SharpPulsar.Tracker
             }
             catch (Exception e)
             {
-                Context.System.Log.Error(e.ToString());
+                _log.Error(e.ToString());
             }
             finally
             {

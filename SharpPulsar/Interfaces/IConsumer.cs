@@ -101,8 +101,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
 		///             
-		IMessage<T> Receive(int timeout, TimeUnit unit);
-		ValueTask<IMessage<T>> ReceiveAsync(int timeout, TimeUnit unit);
+		IMessage<T> Receive(int timeoutInMs);
+		ValueTask<IMessage<T>> ReceiveAsync(int timeoutInMs);
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -163,7 +163,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// <para>When a message is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.
@@ -199,7 +199,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// <para>When messages is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.
@@ -263,8 +263,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 
-		void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit);
-		ValueTask ReconsumeLaterAsync(IMessage<T> message, long delayTime, TimeUnit unit);
+		void ReconsumeLater(IMessage<T> message, long delayTimeInMs);
+		ValueTask ReconsumeLaterAsync(IMessage<T> message, long delayTimeInMs);
 
 		/// <summary>
 		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
@@ -278,8 +278,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 		///              
-		void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit);
-		ValueTask ReconsumeLaterAsync(IMessages<T> messages, long delayTime, TimeUnit unit);
+		void ReconsumeLater(IMessages<T> messages, long delayTime);
+		ValueTask ReconsumeLaterAsync(IMessages<T> messages, long delayTime);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -380,8 +380,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 		///             
-		void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit);
-		ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, long delayTime, TimeUnit unit);
+		void ReconsumeLaterCumulative(IMessage<T> message, long delayTimeInMs);
+		ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, long delayTimeInMs);
 
 		/// <summary>
 		/// Get statistics for the consumer.
