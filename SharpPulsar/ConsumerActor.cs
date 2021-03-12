@@ -1581,7 +1581,7 @@ namespace SharpPulsar
 							{
 								_log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {msg.MessageId}");
 							}
-							Listener.Received(self, msg);
+							Listener.Received(_self, msg);
 						}
 						catch(Exception t)
 						{
@@ -2448,7 +2448,7 @@ namespace SharpPulsar
 			if(Listener != null)
 			{
 				// Propagate notification to listener
-				Listener.ReachedEndOfTopic(Self);
+				Listener.ReachedEndOfTopic(_self);
 			}
 		}
 

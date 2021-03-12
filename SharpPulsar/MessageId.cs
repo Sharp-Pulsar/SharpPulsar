@@ -198,7 +198,22 @@ namespace SharpPulsar
 
                 return 0;
             }
+			if(o is BatchMessageId bm)
+            {
+				var ledgercompare = _ledgerId.CompareTo(bm.LedgerId);
+				if (ledgercompare != 0)
+					return ledgercompare;
 
+				var entryCompare = EntryId.CompareTo(bm.EntryId);
+				if (entryCompare != 0)
+					return entryCompare;
+
+				var partitionCompare = PartitionIndex.CompareTo(bm.BatchIndex);
+				if (partitionCompare != 0)
+					return partitionCompare;
+
+				return 0;
+			}
             if (o is TopicMessageId impl)
             {
                 return CompareTo(impl.InnerMessageId);

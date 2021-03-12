@@ -616,7 +616,7 @@ namespace SharpPulsar
 						{
 							log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {message.MessageId}");
 						}
-						listener.Received(consumer, message);
+						listener.Received(_self, message);
 					}
 					catch (Exception t)
 					{

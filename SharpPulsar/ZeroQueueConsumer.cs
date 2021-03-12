@@ -132,7 +132,7 @@ namespace SharpPulsar
 					}
 					_waitingOnListenerForZeroQueueSize = true;
 					TrackMessage(message);
-					Listener.Received(self, message);
+					Listener.Received(_self, message);
 				}
 				catch (Exception t)
 				{

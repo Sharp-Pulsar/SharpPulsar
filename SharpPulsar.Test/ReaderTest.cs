@@ -26,21 +26,6 @@ namespace SharpPulsar.Test
 
 		private const string Subscription = "reader-sub";
 
-		protected internal override void Setup()
-		{
-			base.InternalSetup();
-
-			Admin.Clusters().CreateCluster("test", new ClusterData(Pulsar.WebServiceAddress));
-			Admin.Tenants().CreateTenant("my-property", new TenantInfo(Sets.newHashSet("appid1", "appid2"), Sets.newHashSet("test")));
-			Admin.Namespaces().createNamespace("my-property/my-ns", Sets.newHashSet("test"));
-		}
-
-		
-		protected internal override void Cleanup()
-		{
-			base.InternalCleanup();
-		}
-
 		private ISet<string> PublishMessages(string topic, int count, bool enableBatch)
 		{
 			ISet<string> keys = new HashSet<string>();
@@ -238,12 +223,10 @@ namespace SharpPulsar.Test
 
 			const string topic = "persistent://my-property/my-ns/testRemoveSubscriptionForReaderNeedRemoveCursor";
 
-			//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-			//ORIGINAL LINE: @Cleanup Reader<byte[]> reader1 = pulsarClient.newReader().topic(topic).startMessageId(org.apache.pulsar.client.api.MessageId.earliest).create();
+			
 			Reader<sbyte[]> reader1 = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).Create();
 
-			//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-			//ORIGINAL LINE: @Cleanup Reader<byte[]> reader2 = pulsarClient.newReader().topic(topic).startMessageId(org.apache.pulsar.client.api.MessageId.earliest).create();
+			
 			Reader<sbyte[]> reader2 = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).Create();
 
 			Assert.assertEquals(Admin.Topics().GetStats(topic).Subscriptions.Count, 2);
@@ -262,9 +245,7 @@ namespace SharpPulsar.Test
 		}
 
 		public virtual void TestKeyHashRangeReader()
-		{
-			//JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-			//ORIGINAL LINE: final java.util.List<String> keys = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+		{			
 			IList<string> keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 			const string topic = "persistent://my-property/my-ns/testKeyHashRangeReader";
 

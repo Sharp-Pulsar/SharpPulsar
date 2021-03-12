@@ -16,25 +16,20 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-
-	using Test = org.testng.annotations.Test;
-
+    using SharpPulsar;
+    using Xunit;
 	/// <summary>
-	/// Unit test of <seealso cref="TopicMetadataImpl"/>.
+	/// Unit test of <seealso cref="TopicMetadata"/>.
 	/// </summary>
-	public class TopicMetadataImplTest
+	public class TopicMetadataTest
 	{
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testNumPartitions()
-		public virtual void TestNumPartitions()
+		[Fact]
+		public void TestNumPartitions()
 		{
-			TopicMetadataImpl metadata = new TopicMetadataImpl(1234);
-			assertEquals(1234, metadata.NumPartitions());
+			TopicMetadata metadata = new TopicMetadata(1234);
+			Assert.Equal(1234, metadata.NumPartitions());
 		}
 
 	}

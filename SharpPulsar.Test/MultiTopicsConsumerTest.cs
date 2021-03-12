@@ -19,48 +19,16 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test
 {
-	using Sets = com.google.common.collect.Sets;
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api;
-	using PulsarClientException = Org.Apache.Pulsar.Client.Api.PulsarClientException;
-	using Org.Apache.Pulsar.Client.Api;
-	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using Org.Apache.Pulsar.Client.Impl.Conf;
-	using PartitionedTopicMetadata = Org.Apache.Pulsar.Common.Partition.PartitionedTopicMetadata;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using Test = org.testng.annotations.Test;
 
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.ClientTestFixtures.createDelayedCompletedFuture;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.apache.pulsar.client.impl.ClientTestFixtures.createPulsarClientMockWithMockedClientCnx;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.ArgumentMatchers.any;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.*;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.expectThrows;
 
 	/// <summary>
 	/// Unit Tests of <seealso cref="MultiTopicsConsumerImpl"/>.
 	/// </summary>
-	public class MultiTopicsConsumerImplTest
+	public class MultiTopicsConsumerTest
 	{
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testGetStats() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestGetStats()
 		{
 			string topicName = "test-stats";
@@ -89,9 +57,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 		//
 		// Code under tests is using CompletableFutures. Theses may hang indefinitely if code is broken.
 		// That's why a test timeout is defined.
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test(timeOut = 5000) public void testParallelSubscribeAsync() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
+
 		public virtual void TestParallelSubscribeAsync()
 		{
 			string topicName = "parallel-subscribe-async-topic";
@@ -122,8 +88,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			return impl;
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testReceiveAsyncCanBeCancelled()
+
 		public virtual void TestReceiveAsyncCanBeCancelled()
 		{
 			// given
@@ -136,8 +101,7 @@ namespace Org.Apache.Pulsar.Client.Impl
 			assertTrue(consumer.PendingReceives.Empty);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testBatchReceiveAsyncCanBeCancelled()
+
 		public virtual void TestBatchReceiveAsyncCanBeCancelled()
 		{
 			// given

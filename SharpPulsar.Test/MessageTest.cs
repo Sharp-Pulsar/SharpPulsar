@@ -1,4 +1,11 @@
-﻿/// <summary>
+﻿using SharpPulsar.Interfaces;
+using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Schemas;
+using Xunit;
+using SharpPulsar.Extension;
+using System;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,80 +23,211 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test
 {
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertFalse;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
-
-	using Org.Apache.Pulsar.Client.Api;
-	using Org.Apache.Pulsar.Client.Api;
-	using MessageMetadata = Org.Apache.Pulsar.Common.Api.Proto.PulsarApi.MessageMetadata;
-	using Test = org.testng.annotations.Test;
 
 	/// <summary>
-	/// Unit test of <seealso cref="Message"/> methods.
+	/// Unit test of <seealso cref="MessageImpl"/>.
 	/// </summary>
 	public class MessageTest
 	{
+		[Fact]
+		public virtual void TestGetSequenceIdNotAssociated()
+		{
+			var builder = new MessageMetadata();
+			var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testMessageImplReplicatedInfo()
+			Assert.Equal(-1, msg.SequenceId);
+		}
+
+		[Fact]
+		public virtual void TestSetDuplicatePropertiesKey()
+		{
+			var builder = new MessageMetadata();
+			builder.Properties.Add(new KeyValue { Key = "key1", Value = "value1" });
+			builder.Properties.Add(new KeyValue { Key = "key1", Value = "value2" });
+			builder.Properties.Add(new KeyValue { Key = "key3", Value = "value3" });
+			var payload = new byte[0];
+			
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+			Assert.Equal("value2", msg.GetProperty("key1"));
+			Assert.Equal("value3", msg.GetProperty("key3"));
+		}
+
+		[Fact]
+		public virtual void TestGetSequenceIdAssociated()
+		{
+            var builder = new MessageMetadata
+            {
+                SequenceId = 1234
+            };
+
+            var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+
+			Assert.Equal(1234, msg.SequenceId);
+		}
+		[Fact]
+		public virtual void TestGetProducerNameNotAssigned()
+		{
+			var builder = new MessageMetadata();
+			var payload = new byte[0];
+
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+
+			Assert.Null(msg.ProducerName);
+		}
+		[Fact]
+		public virtual void TestGetProducerNameAssigned()
+		{
+			var builder = new MessageMetadata();
+			builder.ProducerName = "test-producer";
+
+			var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+
+			Assert.Equal("test-producer", msg.ProducerName);
+		}
+
+		[Fact]
+		public virtual void TestDefaultGetProducerDataAssigned()
+		{
+			AvroSchema<SchemaTestUtils.Foo> fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
+			AvroSchema<SchemaTestUtils.Bar> barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
+
+			ISchema<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>> keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema);
+            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+            {
+                Field1 = "field1",
+                Field2 = "field2",
+                Field3 = 3
+            };
+            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            {
+                Field1 = true
+            };
+
+            // // Check kv.encoding.type default, not set value
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar)).ToBytes();
+			var builder = new MessageMetadata();
+			builder.ProducerName = "default";
+
+			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
+			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
+			Assert.Equal(keyValue.Key, foo);
+			Assert.Equal(keyValue.Value, bar);
+			Assert.False(builder.ShouldSerializePartitionKey());
+		}
+
+		[Fact]
+		public virtual void TestInlineGetProducerDataAssigned()
+		{
+			AvroSchema<SchemaTestUtils.Foo> fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
+			AvroSchema<SchemaTestUtils.Bar> barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
+
+			var keyValueSchema = ISchema<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.INLINE);
+            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+            {
+                Field1 = "field1",
+                Field2 = "field2",
+                Field3 = 3
+            };
+            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            {
+                Field1 = true
+            };
+
+            // Check kv.encoding.type INLINE
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar)).ToBytes();
+			var builder = new MessageMetadata();
+			builder.ProducerName = "inline";
+			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
+			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
+			Assert.Equal(keyValue.Key, foo);
+			Assert.Equal(keyValue.Value, bar);
+			Assert.False(builder.ShouldSerializePartitionKey());
+		}
+		[Fact]
+		public virtual void TestSeparatedGetProducerDataAssigned()
+		{
+			AvroSchema<SchemaTestUtils.Foo> fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
+			AvroSchema<SchemaTestUtils.Bar> barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
+
+			var keyValueSchema = ISchema<int>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.SEPARATED);
+            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+            {
+                Field1 = "field1",
+                Field2 = "field2",
+                Field3 = 3
+            };
+            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            {
+                Field1 = true
+            };
+
+            // Check kv.encoding.type SPRAERATE
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar)).ToBytes();
+			var builder = new MessageMetadata();
+			builder.ProducerName = "separated";
+			builder.PartitionKey = Convert.ToBase64String(fooSchema.Encode(foo).ToBytes());
+			builder.PartitionKeyB64Encoded = true;
+			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
+			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
+			Assert.Equal(keyValue.Key, foo);
+			Assert.Equal(keyValue.Value, bar);
+			Assert.True(builder.ShouldSerializePartitionKey());
+		}
+		[Fact]
 		public virtual void TestMessageImplReplicatedInfo()
 		{
 			string from = "ClusterNameOfReplicatedFrom";
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder().setReplicatedFrom(from);
-			ByteBuffer payload = ByteBuffer.wrap(new sbyte[0]);
-			Message<sbyte[]> msg = MessageImpl.Create(builder, payload, Schema.BYTES);
+			var builder = new MessageMetadata();
+			builder.ReplicatedFrom = from;
+			var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
-			assertTrue(msg.Replicated);
-			assertEquals(msg.ReplicatedFrom, from);
+			Assert.True(msg.Replicated);
+			Assert.Equal(msg.ReplicatedFrom, from);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testMessageImplNoReplicatedInfo()
+		[Fact]
 		public virtual void TestMessageImplNoReplicatedInfo()
 		{
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder();
-			ByteBuffer payload = ByteBuffer.wrap(new sbyte[0]);
-			Message<sbyte[]> msg = MessageImpl.Create(builder, payload, Schema.BYTES);
+			var builder = new MessageMetadata();
+			var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
-			assertFalse(msg.Replicated);
-			assertTrue(msg.ReplicatedFrom.Length == 0);
+			Assert.False(msg.Replicated);
+			Assert.True(msg.ReplicatedFrom.Length == 0);
 		}
-
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testTopicMessageImplReplicatedInfo()
+		[Fact]
 		public virtual void TestTopicMessageImplReplicatedInfo()
 		{
 			string from = "ClusterNameOfReplicatedFromForTopicMessage";
 			string topicName = "myTopic";
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder().setReplicatedFrom(from);
-			ByteBuffer payload = ByteBuffer.wrap(new sbyte[0]);
-			MessageImpl<sbyte[]> msg = MessageImpl.Create(builder, payload, Schema.BYTES);
-			msg.SetMessageId(new MessageIdImpl(-1, -1, -1));
-			TopicMessageImpl<sbyte[]> topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
+			var builder = new MessageMetadata();
+			builder.ReplicatedFrom = from;
+			var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
+			msg.SetMessageId(new MessageId(-1, -1, -1));
+			var topicMessage = new TopicMessage<sbyte[]>(topicName, topicName, msg);
 
-			assertTrue(topicMessage.Replicated);
-			assertEquals(msg.ReplicatedFrom, from);
+			Assert.True(topicMessage.Replicated);
+			Assert.Equal(msg.ReplicatedFrom, from);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testTopicMessageImplNoReplicatedInfo()
+		[Fact]
 		public virtual void TestTopicMessageImplNoReplicatedInfo()
 		{
 			string topicName = "myTopic";
-			MessageMetadata.Builder builder = MessageMetadata.NewBuilder();
-			ByteBuffer payload = ByteBuffer.wrap(new sbyte[0]);
-			MessageImpl<sbyte[]> msg = MessageImpl.Create(builder, payload, Schema.BYTES);
-			msg.SetMessageId(new MessageIdImpl(-1, -1, -1));
-			TopicMessageImpl<sbyte[]> topicMessage = new TopicMessageImpl<sbyte[]>(topicName, topicName, msg);
+			var builder = new MessageMetadata();
+			var payload = new byte[0];
+			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
+			msg.SetMessageId(new MessageId(-1, -1, -1));
+			var topicMessage = new TopicMessage<sbyte[]>(topicName, topicName, msg);
 
-			assertFalse(topicMessage.Replicated);
-			assertTrue(topicMessage.ReplicatedFrom.Length == 0);
+			Assert.False(topicMessage.Replicated);
+			Assert.True(topicMessage.ReplicatedFrom.Length == 0);
 		}
 	}
 

@@ -19,40 +19,13 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Client.Impl
+namespace SharpPulsar.Test
 {
-	using EventLoopGroup = io.netty.channel.EventLoopGroup;
-	using Timer = io.netty.util.Timer;
-
-	using DefaultThreadFactory = io.netty.util.concurrent.DefaultThreadFactory;
-	using Org.Apache.Pulsar.Client.Api;
-	using MessageRouter = Org.Apache.Pulsar.Client.Api.MessageRouter;
-	using MessageRoutingMode = Org.Apache.Pulsar.Client.Api.MessageRoutingMode;
-	using Producer = Org.Apache.Pulsar.Client.Api.Producer;
-	using Org.Apache.Pulsar.Client.Api;
-	using TopicMetadata = Org.Apache.Pulsar.Client.Api.TopicMetadata;
-	using ClientConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ClientConfigurationData;
-	using ProducerConfigurationData = Org.Apache.Pulsar.Client.Impl.Conf.ProducerConfigurationData;
-	using EventLoopUtil = Org.Apache.Pulsar.Common.Util.Netty.EventLoopUtil;
-	using BeforeTest = org.testng.annotations.BeforeTest;
-	using Test = org.testng.annotations.Test;
-
-
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.mock;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.mockito.Mockito.when;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertEquals;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertNotNull;
-//JAVA TO C# CONVERTER TODO TASK: This Java 'import static' statement cannot be converted to C#:
-//	import static org.testng.Assert.assertTrue;
 
 	/// <summary>
-	/// Unit Tests of <seealso cref="PartitionedProducerImpl"/>.
+	/// Unit Tests of <seealso cref="PartitionedProducer"/>.
 	/// </summary>
-	public class PartitionedProducerImplTest
+	public class PartitionedProducerTest
 	{
 
 		private const string TopicName = "testTopicName";
@@ -62,8 +35,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 		private ProducerInterceptors _producerInterceptors;
 		private CompletableFuture<Producer> _producerCreatedFuture;
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @BeforeTest public void setup()
 		public virtual void Setup()
 		{
 			_client = mock(typeof(PulsarClientImpl));
@@ -80,9 +51,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			when(_client.NewProducer()).thenReturn(_producerBuilderImpl);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testSinglePartitionMessageRouterImplInstance() throws NoSuchFieldException, IllegalAccessException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestSinglePartitionMessageRouterImplInstance()
 		{
 			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
@@ -92,9 +60,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			assertTrue(messageRouter is SinglePartitionMessageRouterImpl);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testRoundRobinPartitionMessageRouterImplInstance() throws NoSuchFieldException, IllegalAccessException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestRoundRobinPartitionMessageRouterImplInstance()
 		{
 			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
@@ -104,9 +69,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			assertTrue(messageRouter is RoundRobinPartitionMessageRouterImpl);
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testCustomMessageRouterInstance() throws NoSuchFieldException, IllegalAccessException
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestCustomMessageRouterInstance()
 		{
 			ProducerConfigurationData producerConfigurationData = new ProducerConfigurationData();
@@ -117,8 +79,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			assertTrue(messageRouter is CustomMessageRouter);
 		}
 
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: private org.apache.pulsar.client.api.MessageRouter getMessageRouter(org.apache.pulsar.client.impl.conf.ProducerConfigurationData producerConfigurationData) throws NoSuchFieldException, IllegalAccessException
 		private MessageRouter GetMessageRouter(ProducerConfigurationData producerConfigurationData)
 		{
 			PartitionedProducerImpl impl = new PartitionedProducerImpl(_client, TopicName, producerConfigurationData, 2, _producerCreatedFuture, _schema, _producerInterceptors);
@@ -133,9 +93,9 @@ namespace Org.Apache.Pulsar.Client.Impl
 		[Serializable]
 		private class CustomMessageRouter : MessageRouter
 		{
-			private readonly PartitionedProducerImplTest _outerInstance;
+			private readonly PartitionedProducerTest _outerInstance;
 
-			public CustomMessageRouter(PartitionedProducerImplTest outerInstance)
+			public CustomMessageRouter(PartitionedProducerTest outerInstance)
 			{
 				this._outerInstance = outerInstance;
 			}
@@ -147,9 +107,6 @@ namespace Org.Apache.Pulsar.Client.Impl
 			}
 		}
 
-//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-//ORIGINAL LINE: @Test public void testGetStats() throws Exception
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
 		public virtual void TestGetStats()
 		{
 			string topicName = "test-stats";

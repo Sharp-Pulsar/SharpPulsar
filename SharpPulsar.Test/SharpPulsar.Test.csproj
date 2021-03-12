@@ -14,6 +14,11 @@
 
   <ItemGroup>
     <Compile Remove="Api\TlsProducerConsumerTest.cs" />
+    <Compile Remove="MultiTopicsConsumerTest.cs" />
+    <Compile Remove="MultiTopicsReaderTest.cs" />
+    <Compile Remove="PartitionedProducerTest.cs" />
+    <Compile Remove="PatternTopicsConsumerTest.cs" />
+    <Compile Remove="ReaderTest.cs" />
   </ItemGroup>
 
   <ItemGroup>

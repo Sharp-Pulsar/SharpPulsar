@@ -75,6 +75,8 @@ namespace SharpPulsar.User
                 if (msg?.Exception != null)
                     await Task.FromException(msg.Exception).ConfigureAwait(false);
         }
+        public int NumMessagesInQueue()
+            => _queue.IncomingMessages.Count;
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId)
         {
