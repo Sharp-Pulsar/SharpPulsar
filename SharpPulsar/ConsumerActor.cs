@@ -138,7 +138,7 @@ namespace SharpPulsar
 
 		protected internal volatile bool Paused;
 
-		private Dictionary<string, ChunkedMessageCtx> ChunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
+		private readonly Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
 		private int _pendingChunckedMessageCount = 0;
 		protected internal long ExpireTimeOfIncompleteChunkedMessageMillis = 0;
 		private bool _expireChunkMessageTaskScheduled = false;
@@ -1498,7 +1498,7 @@ namespace SharpPulsar
 			if (msgMetadata.ChunkId == 0)
 			{
 				var totalChunks = msgMetadata.NumChunksFromMsg;
-				ChunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, new List<byte>()));
+				_chunkedMessagesMap.TryAdd(msgMetadata.Uuid, ChunkedMessageCtx.Get(totalChunks, new List<byte>()));
 				_pendingChunckedMessageCount++;
 				if (_maxPendingChuckedMessage > 0 && _pendingChunckedMessageCount > _maxPendingChuckedMessage)
 				{
@@ -1507,14 +1507,17 @@ namespace SharpPulsar
 				_pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
 			}
 
-			ChunkedMessageCtx chunkedMsgCtx;
+			ChunkedMessageCtx chunkedMsgCtx = null;
+			if (_chunkedMessagesMap.ContainsKey(msgMetadata.Uuid))
+				chunkedMsgCtx = _chunkedMessagesMap[msgMetadata.Uuid];
+
 			// discard message if chunk is out-of-order
-			if(!ChunkedMessagesMap.TryGetValue(msgMetadata.Uuid, out chunkedMsgCtx) || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
+			if (chunkedMsgCtx == null || chunkedMsgCtx.ChunkedMsgBuffer == null || msgMetadata.ChunkId != (chunkedMsgCtx.LastChunkedMessageId + 1) || msgMetadata.ChunkId >= msgMetadata.TotalChunkMsgSize)
 			{
 				// means we lost the first chunk: should never happen
 				_log.Info($"Received unexpected chunk messageId {msgId}, last-chunk-id{chunkedMsgCtx?.LastChunkedMessageId ?? 0}, chunkId = {msgMetadata.ChunkId}, total-chunks {msgMetadata.TotalChunkMsgSize}");
 				chunkedMsgCtx?.Recycle();
-				ChunkedMessagesMap.Remove(msgMetadata.Uuid);
+				_chunkedMessagesMap.Remove(msgMetadata.Uuid);
 				IncreaseAvailablePermits(cnx);
 				if(ExpireTimeOfIncompleteChunkedMessageMillis > 0 && DateTimeHelper.CurrentUnixTimeMillis() > ((long)msgMetadata.PublishTime + ExpireTimeOfIncompleteChunkedMessageMillis))
 				{
@@ -1546,7 +1549,7 @@ namespace SharpPulsar
 				_log.Debug($"Chunked message completed chunkId {msgMetadata.ChunkId}, total-chunks {msgMetadata.NumChunksFromMsg}, msgId {msgId} sequenceId {msgMetadata.SequenceId}");
 			}
 			// remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
-			ChunkedMessagesMap.Remove(msgMetadata.Uuid);
+			_chunkedMessagesMap.Remove(msgMetadata.Uuid);
 			UnAckedChunckedMessageIdSequenceMap.Add(msgId, chunkedMsgCtx.ChunkedMessageIds);
 			_pendingChunckedMessageCount--;
 			compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer.ToArray();
@@ -2610,7 +2613,7 @@ namespace SharpPulsar
 			{
 				// remove oldest pending chunked-message group and free memory
 				firstPendingMsgUuid = _pendingChunckedMessageUuidQueue.Dequeue();
-				chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? ChunkedMessagesMap[firstPendingMsgUuid] : null;
+				chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? _chunkedMessagesMap[firstPendingMsgUuid] : null;
 			}
 			RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, this._autoAckOldestChunkedMessageOnQueueFull);
 		}
@@ -2625,7 +2628,7 @@ namespace SharpPulsar
 			string messageUUID;
 			while(!ReferenceEquals((messageUUID = _pendingChunckedMessageUuidQueue.Dequeue()), null))
 			{
-				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? ChunkedMessagesMap[messageUUID] : null;
+				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
 				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessageMillis))
 				{
 					RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
@@ -2644,7 +2647,7 @@ namespace SharpPulsar
 				return;
 			}
 			// clean up pending chuncked-Message
-			ChunkedMessagesMap.Remove(msgUUID);
+			_chunkedMessagesMap.Remove(msgUUID);
 			if(chunkedMsgCtx.ChunkedMessageIds != null)
 			{
 				foreach(MessageId msgId in chunkedMsgCtx.ChunkedMessageIds)
