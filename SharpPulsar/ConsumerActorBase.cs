@@ -14,6 +14,7 @@ using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
@@ -41,14 +42,14 @@ namespace SharpPulsar
 	{
 
 		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
-		internal abstract long LastDisconnectedTimestamp { get; }
+		internal abstract ValueTask<long> LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
-		internal abstract void Resume();
+		internal abstract ValueTask Resume();
 		internal abstract void Pause();
-		internal abstract bool Connected { get; }
-		internal abstract void Seek(long timestamp);
-		internal abstract void Seek(IMessageId messageId);
-		internal abstract void RedeliverUnacknowledgedMessages();
+		internal abstract ValueTask<bool> Connected();
+		internal abstract ValueTask Seek(long timestamp);
+		internal abstract ValueTask Seek(IMessageId messageId);
+		internal abstract ValueTask RedeliverUnacknowledgedMessages();
 		internal abstract IConsumerStatsRecorder Stats { get; }
 
 		internal enum ConsumerType
@@ -184,7 +185,7 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit)
+		internal virtual async ValueTask ReconsumeLater(IMessage<T> message, long delayTime)
 		{
 			if (!Conf.RetryEnable)
 			{
@@ -192,7 +193,7 @@ namespace SharpPulsar
 			}
 			try
 			{
-				DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime, unit);
+				await DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime);
 			}
 			catch (Exception e)
 			{
@@ -208,16 +209,17 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit)
+		internal virtual async ValueTask ReconsumeLater(IMessages<T> messages, long delayTime)
 		{
 			try
 			{
-				messages.ForEach(message => ReconsumeLater(message, delayTime, unit));
+				messages.ForEach(async message => await ReconsumeLater(message, delayTime));
 			}
 			catch (NullReferenceException npe)
 			{
 				throw new PulsarClientException.InvalidMessageException(npe.Message);
 			}
+			await Task.CompletedTask;
 		}
 
 		
@@ -246,11 +248,11 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit)
+		internal virtual async ValueTask ReconsumeLaterCumulative(IMessage<T> message, long delayTime)
 		{
 			try
 			{
-				DoReconsumeLater(message, AckType.Cumulative, new Dictionary<string, long>(), delayTime, unit);
+				await DoReconsumeLater(message, AckType.Cumulative, new Dictionary<string, long>(), delayTime);
 			}
 			catch (Exception e)
 			{
@@ -259,15 +261,15 @@ namespace SharpPulsar
 		}
 
 
-		internal virtual void Acknowledge(IMessageId messageId, IActorRef txn)
+		internal virtual async ValueTask Acknowledge(IMessageId messageId, IActorRef txn)
 		{
-			DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), txn);
+			await DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), txn);
 		}
 
-		internal virtual void AcknowledgeCumulative(IMessageId messageId, IActorRef txn)
+		internal virtual async ValueTask AcknowledgeCumulative(IMessageId messageId, IActorRef txn)
 		{			
 
-			DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txn);
+			await DoAcknowledgeWithTxn(messageId, AckType.Cumulative, new Dictionary<string, long>(), txn);
 		}
 
 		internal void NegativeAcknowledge(IMessage<T> message)
@@ -275,16 +277,16 @@ namespace SharpPulsar
 			NegativeAcknowledge(message.MessageId);
 		}
 
-		protected internal virtual void DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		protected internal virtual async ValueTask DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if (txn != null)
 			{
 				txn.Tell(new RegisterAckedTopic(Topic, _subscription));		
 			}
-			DoAcknowledge(messageIdList, ackType, properties, txn);
+			await DoAcknowledge(messageIdList, ackType, properties, txn);
 		}
 
-		protected internal virtual void DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		protected internal virtual async ValueTask DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if (txn != null)
 			{
@@ -298,14 +300,14 @@ namespace SharpPulsar
 
 				txn.Tell(new RegisterAckedTopic(Topic, _subscription));				
 			}
-			DoAcknowledge(messageId, ackType, properties, txn);
+			await DoAcknowledge(messageId, ackType, properties, txn);
 		}
 
-		protected internal abstract void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
+		protected internal abstract ValueTask DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-		protected internal abstract void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
+		protected internal abstract ValueTask DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn);
 
-		protected internal abstract void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit);
+		protected internal abstract ValueTask DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime);
 
 		internal virtual void NegativeAcknowledge(IMessages<T> messages)
 		{
@@ -337,9 +339,9 @@ namespace SharpPulsar
 			}
 		}
 
-		internal abstract int AvailablePermits { get; }
+		internal abstract ValueTask<int> AvailablePermits();
 
-		internal abstract int NumMessagesInQueue();
+		internal abstract ValueTask<int> NumMessagesInQueue();
 
 
 		internal virtual string Topic
@@ -372,7 +374,7 @@ namespace SharpPulsar
 		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
-		protected internal abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
+		protected internal abstract ValueTask RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
 
 		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
 		{

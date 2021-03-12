@@ -10,6 +10,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading.Tasks;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,15 +47,15 @@ namespace SharpPulsar.Test
 		[Fact]
         public void TestNegativeAcksBatch()
         {
-			TestNegativeAcks(true, false, CommandSubscribe.SubType.Shared, 35000, 30000);
-			//TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
+			Thread.Sleep(TimeSpan.FromSeconds(10));
+			TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
         }
 		
 		[Fact]
         public void TestNegativeAcksNoBatch()
         {
-			//TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
-			TestNegativeAcks(false, false, CommandSubscribe.SubType.Shared, 35000, 30000);
+			Thread.Sleep(TimeSpan.FromSeconds(10));
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
         }
 
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)

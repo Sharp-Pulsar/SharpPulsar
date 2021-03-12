@@ -12,6 +12,7 @@ using SharpPulsar.Model;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -54,8 +55,8 @@ namespace SharpPulsar.Transaction
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
-			Receive<NewTxn>(n => {
-				var nt = NewTransaction(n);
+			ReceiveAsync<NewTxn>(async n => {
+				var nt = await NewTransaction(n);
 				Sender.Tell(nt);
 			});
 			Receive<AddPublishPartitionToTxn>(n => {
@@ -70,30 +71,30 @@ namespace SharpPulsar.Transaction
 			Receive<CommitTxnID>(n => {
 				Commit(n);
 			});
-			Receive<StartTransactionCoordinatorClient>(m => 
+			ReceiveAsync<StartTransactionCoordinatorClient>(async m => 
 			{
 				if (_pulsarClient == null)
 					_pulsarClient = m.Client;
-				StartCoordinator();
+				await StartCoordinator();
 			});
 		}
 
-		private void StartCoordinator()
+		private async ValueTask StartCoordinator()
 		{
 			_state = TransactionCoordinatorClientState.Starting;
-			var started = Start();
+			var started = await Start();
 			while (!started)
 			{
 				_log.Info("Transaction coordinator not started...retrying");
-				started = Start();
+				started = await Start();
 			}
 			_state = TransactionCoordinatorClientState.Ready;
 		}
-		private bool Start()
+		private async ValueTask<bool> Start()
 		{
 			try
 			{
-				var result = _pulsarClient.AskFor(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+				var result = await _pulsarClient.AskFor(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
 				if (result is PartitionedTopicMetadata lkup)
 				{
 
@@ -165,17 +166,17 @@ namespace SharpPulsar.Transaction
 			{
 				foreach(var handler in _handlers)
 				{
-					handler.GracefulStop(TimeSpan.FromSeconds(1));
+					handler.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
 				}
 			}
 		}
 
-		private NewTxnResponse NewTransaction(NewTxn txn)
+		private async ValueTask<NewTxnResponse> NewTransaction(NewTxn txn)
 		{
 			NewTxnResponse txnid = null;
             try
             {
-				var next = NextHandler().AskFor<NewTxnResponse>(txn);
+				var next = await NextHandler().AskFor<NewTxnResponse>(txn);
 				return next;
 			}
 			catch (Exception ex)

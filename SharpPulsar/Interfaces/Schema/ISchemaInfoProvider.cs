@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -35,7 +36,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// Retrieve the latest schema info.
 		/// </summary>
 		/// <returns> the latest schema </returns>
-		ISchemaInfo LatestSchema {get;}
+		ValueTask<ISchemaInfo> LatestSchema();
 
 		/// <summary>
 		/// Retrieve the topic name.

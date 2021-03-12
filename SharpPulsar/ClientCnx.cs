@@ -354,7 +354,7 @@ namespace SharpPulsar
 			if (_pendingRequests.TryGetValue(requestId, out var req))
 			{
 				_pendingRequests.Remove(requestId);
-				req.Requester.Tell(new CommandSuccessResponse(success));
+				req.Requester.Tell(new CommandSuccessResponse(success), _self);
 			}
 			else
 			{

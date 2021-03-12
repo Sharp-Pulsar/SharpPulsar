@@ -41,12 +41,14 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> topic for the consumer </returns>
 		string Topic {get;}
+		ValueTask<string> TopicAsync();
 
 		/// <summary>
 		/// Get a subscription for the consumer.
 		/// </summary>
 		/// <returns> subscription for the consumer </returns>
 		string Subscription {get;}
+		ValueTask<string> SubscriptionAsync();
 
 		/// <summary>
 		/// Unsubscribe the consumer.
@@ -80,6 +82,7 @@ namespace SharpPulsar.Interfaces
 		///             if a message listener was defined in the configuration </exception>
 		///             
 		IMessage<T> Receive(int timeoutMilliseconds = 5000, CancellationToken token = default);
+		ValueTask<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 5000, CancellationToken token = default);
 
 
 		/// <summary>
@@ -98,7 +101,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
 		///             
-		IMessage<T> Receive(int timeout, TimeUnit unit);
+		IMessage<T> Receive(int timeoutInMs);
+		ValueTask<IMessage<T>> ReceiveAsync(int timeoutInMs);
 
 		/// <summary>
 		/// Batch receiving messages.
@@ -112,6 +116,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException"> </exception>
 		/// 
 		IMessages<T> BatchReceive();
+		ValueTask<IMessages<T>> BatchReceiveAsync();
 
 
 		/// <summary>
@@ -122,6 +127,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 		void Acknowledge(IMessage<T> message);
+		ValueTask AcknowledgeAsync(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the consumption of a single message, identified by its <seealso cref="IMessageId"/>.
@@ -132,6 +138,7 @@ namespace SharpPulsar.Interfaces
 		///             if the consumer was already closed </exception>
 		///             
 		void Acknowledge(IMessageId messageId);
+		ValueTask AcknowledgeAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the consumption of <seealso cref="Messages"/>.
@@ -141,6 +148,7 @@ namespace SharpPulsar.Interfaces
 		///              if the consumer was already closed </exception>
 		///              
 		void Acknowledge(IMessages<T> messages);
+		ValueTask AcknowledgeAsync(IMessages<T> messages);
 
 		/// <summary>
 		/// Acknowledge the consumption of a list of message. </summary>
@@ -148,13 +156,14 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException"> </exception>
 		/// 
 		void Acknowledge(IList<IMessageId> messageIdList);
+		ValueTask AcknowledgeAsync(IList<IMessageId> messageIdList);
 
 		/// <summary>
 		/// Acknowledge the failure to process a single message.
 		/// 
 		/// <para>When a message is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.
@@ -182,6 +191,7 @@ namespace SharpPulsar.Interfaces
 		///            The {@code Message} to be acknowledged </param>
 		///            
 		void NegativeAcknowledge(IMessage<T> message);
+		ValueTask NegativeAcknowledgeAsync(IMessage<T> message);
 
 
 		/// <summary>
@@ -189,7 +199,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// <para>When messages is "negatively acked" it will be marked for redelivery after
 		/// some fixed delay. The delay is configurable when constructing the consumer
-		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long, TimeUnit)"/>.
+		/// with <seealso cref="ConsumerBuilder.negativeAckRedeliveryDelay(long)"/>.
 		/// 
 		/// </para>
 		/// <para>This call is not blocking.
@@ -217,6 +227,7 @@ namespace SharpPulsar.Interfaces
 		///            The {@code Message} to be acknowledged </param>
 		///            
 		void NegativeAcknowledge(IMessages<T> messages);
+		ValueTask NegativeAcknowledgeAsync(IMessages<T> messages);
 
 		/// <summary>
 		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
@@ -252,7 +263,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 
-		void ReconsumeLater(IMessage<T> message, long delayTime, TimeUnit unit);
+		void ReconsumeLater(IMessage<T> message, long delayTimeInMs);
+		ValueTask ReconsumeLaterAsync(IMessage<T> message, long delayTimeInMs);
 
 		/// <summary>
 		/// reconsumeLater the consumption of <seealso cref="Messages"/>.
@@ -266,7 +278,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///              if the consumer was already closed </exception>
 		///              
-		void ReconsumeLater(IMessages<T> messages, long delayTime, TimeUnit unit);
+		void ReconsumeLater(IMessages<T> messages, long delayTime);
+		ValueTask ReconsumeLaterAsync(IMessages<T> messages, long delayTime);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -288,6 +301,7 @@ namespace SharpPulsar.Interfaces
 		///             if the consumer was already closed </exception>
 		///             
 		void AcknowledgeCumulative(IMessage<T> message);
+		ValueTask AcknowledgeCumulativeAsync(IMessage<T> message);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message.
@@ -309,6 +323,7 @@ namespace SharpPulsar.Interfaces
 		///             if the consumer was already closed </exception>
 		///             
 		void AcknowledgeCumulative(IMessageId messageId);
+		ValueTask AcknowledgeCumulativeAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Acknowledge the reception of all the messages in the stream up to (and including) the provided message with this
@@ -351,6 +366,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// @since 2.7.0 </returns>
 		void AcknowledgeCumulative(IMessageId messageId, User.Transaction txn);
+		ValueTask AcknowledgeCumulativeAsync(IMessageId messageId, User.Transaction txn);
 
 		/// <summary>
 		/// reconsumeLater the reception of all the messages in the stream up to (and including) the provided message.
@@ -364,7 +380,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the consumer was already closed </exception>
 		///             
-		void ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit);
+		void ReconsumeLaterCumulative(IMessage<T> message, long delayTimeInMs);
+		ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, long delayTimeInMs);
 
 		/// <summary>
 		/// Get statistics for the consumer.
@@ -383,12 +400,14 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> statistic for the consumer </returns>
 		IConsumerStats Stats {get;}
+		ValueTask<IConsumerStats> StatsAsync();
 
 		/// <summary>
 		/// Close the consumer and stop the broker to push more messages.
 		/// </summary>
 		/// 
 		void Close();
+		ValueTask CloseAsync();
 
 		/// <summary>
 		/// Return true if the topic was terminated and this consumer has already consumed all the messages in the topic.
@@ -397,7 +416,8 @@ namespace SharpPulsar.Interfaces
 		/// producers, rather the topic needs to be explicitly "terminated".
 		/// </para>
 		/// </summary>
-		bool? HasReachedEndOfTopic();
+		bool HasReachedEndOfTopic();
+		ValueTask<bool> HasReachedEndOfTopicAsync();
 
 		/// <summary>
 		/// Redelivers all the unacknowledged messages. In Failover mode, the request is ignored if the consumer is not
@@ -406,6 +426,7 @@ namespace SharpPulsar.Interfaces
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
 		void RedeliverUnacknowledgedMessages();
+		ValueTask RedeliverUnacknowledgedMessagesAsync();
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message id.
@@ -426,6 +447,7 @@ namespace SharpPulsar.Interfaces
 		///            the message id where to reposition the subscription </param>
 		///            
 		void Seek(IMessageId messageId);
+		Task SeekAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this consumer to a specific message publish time.
@@ -434,6 +456,7 @@ namespace SharpPulsar.Interfaces
 		///            the message publish time where to reposition the subscription </param>
 		///            
 		void Seek(long timestamp);
+		Task SeekAsync(long timestamp);
 
 
 		/// <summary>
@@ -442,14 +465,17 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the last message id. </returns>
 		/// 
 		IMessageId LastMessageId {get;}
+		ValueTask<IMessageId> LastMessageIdAsync();
 
 		/// <returns> Whether the consumer is connected to the broker </returns>
 		bool Connected {get;}
+		ValueTask<bool> ConnectedAsync();
 
 		/// <summary>
 		/// Get the name of consumer. </summary>
 		/// <returns> consumer name. </returns>
 		string ConsumerName {get;}
+		ValueTask<string> ConsumerNameAsync();
 
 		/// <summary>
 		/// Stop requesting new messages from the broker until <seealso cref="resume()"/> is called. Note that this might cause
@@ -464,6 +490,7 @@ namespace SharpPulsar.Interfaces
 
 		/// <returns> The last disconnected timestamp of the consumer </returns>
 		long LastDisconnectedTimestamp {get;}
+		ValueTask<long> LastDisconnectedTimestampAsync();
 	}
 
 }

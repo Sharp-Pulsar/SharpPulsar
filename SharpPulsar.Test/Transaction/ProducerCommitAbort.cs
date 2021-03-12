@@ -189,7 +189,7 @@ namespace SharpPulsar.Test.Transaction
 			
 			get
 			{
-				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2, TimeUnit.SECONDS).Build();
+				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2000).Build();
 			}
 		}
 

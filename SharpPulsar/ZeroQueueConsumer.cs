@@ -39,7 +39,7 @@ namespace SharpPulsar
 		{
 		}
 
-		private IMessage<T> FetchSingleMessageFromBroker()
+		private async ValueTask<IMessage<T>> FetchSingleMessageFromBroker()
 		{
 			// Just being cautious
 			if(IncomingMessages.Count > 0)
@@ -53,9 +53,9 @@ namespace SharpPulsar
 			{
 				// if cnx is null or if the connection breaks the connectionOpened function will send the flow again
 				_waitingOnReceiveForZeroQueueSize = true;
-				if (Connected)
+				if (await Connected())
 				{
-					IncreaseAvailablePermits(Cnx());
+					IncreaseAvailablePermits(await Cnx());
 				}
 				do
 				{
@@ -65,7 +65,7 @@ namespace SharpPulsar
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					// if message received due to an old flow - discard it and wait for the message from the
 					// latest flow command
-					if (msgCnx == Cnx())
+					if (msgCnx == await Cnx())
 					{
 						_waitingOnReceiveForZeroQueueSize = false;
 						break;
@@ -119,7 +119,7 @@ namespace SharpPulsar
 			Condition.CheckNotNull(Listener, "listener can't be null");
 			Condition.CheckNotNull(message, "unqueued message can't be null");
 
-			Task.Run(() =>
+			Task.Run(async () =>
 			{
 				var self = _self;
 				var log = _log;
@@ -138,7 +138,7 @@ namespace SharpPulsar
 				{
 					log.Error($"[{Topic}][{Subscription}] Message listener error in processing unqueued message: {message.MessageId} => {t}");
 				}
-				IncreaseAvailablePermits(Cnx());
+				IncreaseAvailablePermits(await Cnx());
 				_waitingOnListenerForZeroQueueSize = false;
 			});
 		}

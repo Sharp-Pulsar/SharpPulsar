@@ -87,43 +87,54 @@ namespace SharpPulsar
 				UpdateServiceUrl(u.ServiceUrl);
 
 			});
-			Receive<GetBroker>(b => 
+			ReceiveAsync<GetBroker>(async b => 
 			{
 				var task = new TaskCompletionSource<GetBrokerResponse>();
 				var pool = _connectionPool;
 				var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(address)).ClientCnx;
-				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				GetBroker(b.TopicName, requestid, connection, task);
-				var result = Task.Run(()=> task.Task);
-				if (result.IsFaulted)
-					Sender.Tell(new ClientExceptions((PulsarClientException)result.Exception.InnerException));
-				else
+				var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(address));
+				var connection = xtion.ClientCnx;
+				var id = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var requestid = id.Id;
+				await GetBroker(b.TopicName, requestid, connection, task);
+                try
                 {
-					var response = result.Result;
-					Sender.Tell(response);
-				}					
+					var result = await task.Task;
+					Sender.Tell(result);
+				}
+				catch(Exception ex)
+                {
+					Sender.Tell(new ClientExceptions((PulsarClientException)ex.InnerException));
+				}
 			});
-			Receive<GetPartitionedTopicMetadata>(p =>
+			ReceiveAsync<GetPartitionedTopicMetadata>(async p =>
 			{
 				var pool = _connectionPool;
-				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				GetPartitionedTopicMetadata(p.TopicName, requestid, connection);
+				var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
+				var connection = xtion.ClientCnx;
+				var id = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var requestid = id.Id;
+				await GetPartitionedTopicMetadata(p.TopicName, requestid, connection);
 			});
-			Receive<GetSchema>(s => 
+			ReceiveAsync<GetSchema>(async s => 
 			{
+				var sender = Sender;
 				var pool = _connectionPool;
-				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				GetSchema(s.TopicName, s.Version, requestid, connection);
+				var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
+				var connection = xtion.ClientCnx;
+				var id = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var requestid = id.Id;
+				await GetSchema(s.TopicName, s.Version, requestid, connection, sender);
 			});
-			Receive<GetTopicsUnderNamespace>(t => 
+			ReceiveAsync<GetTopicsUnderNamespace>( async t => 
 			{
+				var sender = Sender;
 				var pool = _connectionPool;
-				var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint())).ClientCnx;
-				var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-				GetTopicsUnderNamespace(t, requestid, connection);
+				var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(_serviceNameResolver.ResolveHost().ToDnsEndPoint()));
+				var connection = xtion.ClientCnx;
+				var id = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var requestid = id.Id;
+				await GetTopicsUnderNamespace(t, requestid, connection, sender);
 			});
 		}
 		
@@ -133,7 +144,7 @@ namespace SharpPulsar
 		/// <param name="topicName">
 		///            topic-name </param>
 		/// <returns> broker-socket-address that serves given topic </returns>
-		private void GetBroker(TopicName topicName, long requestId, IActorRef clientCnx, TaskCompletionSource<GetBrokerResponse> task, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
+		private async ValueTask GetBroker(TopicName topicName, long requestId, IActorRef clientCnx, TaskCompletionSource<GetBrokerResponse> task, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
 		{
 			var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
 			if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
@@ -145,7 +156,7 @@ namespace SharpPulsar
 			}
 			var request = new Commands().NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
 			var payload = new Payload(request, requestId, "NewLookup");
-			var lk = clientCnx.AskFor(payload);
+			var lk = await clientCnx.AskFor(payload);
 			if(lk is LookupDataResult lookup)
             {
 
@@ -176,9 +187,11 @@ namespace SharpPulsar
 						if (lookup.Redirect)
 						{
 							var pool = _connectionPool;
-							var connection = pool.AskFor<GetConnectionResponse>(new GetConnection(responseBrokerAddress)).ClientCnx;
-							requestId = _pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-							GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
+							var xtion = await pool.AskFor<GetConnectionResponse>(new GetConnection(responseBrokerAddress));
+							var connection = xtion.ClientCnx;
+							var id = await _pulsarClient.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+							requestId = id.Id;
+							await GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
 						}
 						else
 						{
@@ -212,11 +225,11 @@ namespace SharpPulsar
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		private void GetPartitionedTopicMetadata(TopicName topicName, long requestId, IActorRef clientCnx)
+		private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, long requestId, IActorRef clientCnx)
 		{
 			var request = new Commands().NewPartitionMetadataRequest(topicName.ToString(), requestId);
 			var payload = new Payload(request, requestId, "NewPartitionMetadataRequest");
-			var lk = clientCnx.AskFor(payload);
+			var lk = await clientCnx.AskFor(payload);
 			if(lk is LookupDataResult lookup)
             {
 				if (Enum.IsDefined(typeof(ServerError), lookup.Error) && lookup.ErrorMessage != null)
@@ -238,17 +251,17 @@ namespace SharpPulsar
 		}
 
 
-		private void GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx)
+		private async ValueTask GetSchema(TopicName topicName, sbyte[] version, long requestId, IActorRef clientCnx, IActorRef sender)
 		{
 			var request = new Commands().NewGetSchema(requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, requestId, "SendGetRawSchema");
-			var schemaResponse = clientCnx.AskFor<Messages.GetSchemaResponse>(payload);
+			var schemaResponse = await clientCnx.AskFor<Messages.GetSchemaResponse>(payload);
 			var err = schemaResponse.Response.ErrorCode;
 			if (Enum.IsDefined(typeof(ServerError), err))
 			{
 				var e = $"{err}: {schemaResponse.Response.ErrorMessage}";
 				_log.Error(e);
-				Sender.Tell(new Failure { Exception = new Exception(e) });
+				sender.Tell(new Failure { Exception = new Exception(e) });
 			}
 			else
 			{
@@ -260,7 +273,7 @@ namespace SharpPulsar
 					Properties = schema.Properties.ToDictionary(k => k.Key, v => v.Value),
 					Type = SchemaType.ValueOf((int)schema.type)
 				};
-				Sender.Tell(new GetSchemaInfoResponse(info));
+				sender.Tell(new GetSchemaInfoResponse(info));
 			}
 		}
 
@@ -272,24 +285,43 @@ namespace SharpPulsar
 			}
 		}
 
-        private void GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx)
+        private async ValueTask GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx, IActorRef sender)
 		{
 			var opTimeoutMs = _operationTimeoutMs;
 			var backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-			GetTopicsUnderNamespace(requestid, nsn.Namespace, backoff, opTimeoutMs, nsn.Mode, clientCnx);			
-		}
+			
+			var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.Namespace.ToString(), requestid, nsn.Mode);
+			var payload = new Payload(request, requestid, "NewGetTopicsOfNamespaceRequest");
+			var topics = await clientCnx.AskFor(payload);
 
-		private void GetTopicsUnderNamespace(long requestId, NamespaceName @namespace, Backoff backoff, long remainingTime, Mode mode, IActorRef clientCnx)
-		{
-			var request = new Commands().NewGetTopicsOfNamespaceRequest(@namespace.ToString(), requestId, mode);
-			var payload = new Payload(request, requestId, "NewGetTopicsOfNamespaceRequest");
-			_context.SetReceiveTimeout(TimeSpan.FromMilliseconds(_operationTimeoutMs));
-			var topics = clientCnx.AskFor(payload);
-			if(topics is GetTopicsOfNamespaceResponse t)
+			while(!(topics is GetTopicsOfNamespaceResponse))
             {
+				var ns = nsn.Namespace;
+				var bkOff = backoff;
+				var mde = nsn.Mode;
+				var nextDelay = Math.Min(backoff.Next(), opTimeoutMs);
+				var reply = Sender;
+				if (nextDelay <= 0)
+				{
+					reply.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
+					break;
+				}
+				else
+				{
+					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
+					opTimeoutMs -= nextDelay;
+					var task = Task.Run(() => Task.Delay(TimeSpan.FromMilliseconds(nextDelay)));
+					var reqid = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance); 
+					request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.Namespace.ToString(), reqid.Id, nsn.Mode);
+					payload = new Payload(request, reqid.Id, "NewGetTopicsOfNamespaceRequest");
+					topics = await clientCnx.AskFor(payload);
+				}
+			}
+			if (topics is GetTopicsOfNamespaceResponse t)
+			{
 				if (_log.IsDebugEnabled)
 				{
-					_log.Debug($"[namespace: {@namespace}] Success get topics list in request: {requestId}");
+					_log.Debug($"[namespace: {nsn.Namespace}] Success get topics list in request: {requestid}");
 				}
 				var result = new List<string>();
 				t.Response.Topics.ForEach(topic =>
@@ -300,34 +332,13 @@ namespace SharpPulsar
 						result.Add(filtered);
 					}
 				});
-				Sender.Tell(new GetTopicsUnderNamespaceResponse(result));
-				_context.SetReceiveTimeout(null);
-			}	
-			else if(topics is ReceiveTimeout r)
-            {
-				var ns = @namespace;
-				var bkOff = backoff;
-				var mde = mode;
-				var remaining = remainingTime;
-				var nextDelay = Math.Min(backoff.Next(), remaining);
-				var reply = Sender;
-				if (nextDelay <= 0)
-				{
-					reply.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
-
-					_context.SetReceiveTimeout(null);
-				}
-				else
-				{
-					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
-					remaining -= nextDelay;
-					var task = Task.Run(() => Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay))));
-					var requestid = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
-					var cnx = clientCnx;
-				}
+				sender.Tell(new GetTopicsUnderNamespaceResponse(result));
 			}
+			else
+				sender.Tell(new GetTopicsUnderNamespaceResponse(new List<string>()));
 		}
-        protected override void Unhandled(object message)
+
+		protected override void Unhandled(object message)
         {
 			_log.Info($"Unhandled {message.GetType().FullName} received");
             base.Unhandled(message);

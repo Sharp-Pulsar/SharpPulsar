@@ -51,36 +51,36 @@ namespace SharpPulsar.Test.Tracker
 			var consumer = _client.NewConsumer(builder);
 			var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop (1000000, 100000, consumer.ConsumerActor));
 
-			var empty = tracker.AskFor<bool>(Empty.Instance);
+			var empty = tracker.AskFor<bool>(Empty.Instance).GetAwaiter().GetResult();
 			Assert.True(empty);
 
-			var size = tracker.AskFor<long>(Size.Instance);
+			var size = tracker.AskFor<long>(Size.Instance).GetAwaiter().GetResult();
 			Assert.Equal(0, size);
 
 			var mid = new MessageId(1L, 1L, -1);
-			var added = tracker.AskFor<bool>(new Add(mid));
+			var added = tracker.AskFor<bool>(new Add(mid)).GetAwaiter().GetResult();
 			Assert.True(added);
-			added = tracker.AskFor<bool>(new Add(mid));
+			added = tracker.AskFor<bool>(new Add(mid)).GetAwaiter().GetResult();
 			Assert.False(added);
-			size = tracker.AskFor<long>(Size.Instance);
+			size = tracker.AskFor<long>(Size.Instance).GetAwaiter().GetResult();
 			Assert.Equal(1, size);
 
 			tracker.Tell(Clear.Instance);
 
-			added = tracker.AskFor<bool>(new Add(mid));
+			added = tracker.AskFor<bool>(new Add(mid)).GetAwaiter().GetResult();
 			Assert.True(added);
 
-			size = tracker.AskFor<long>(Size.Instance);
+			size = tracker.AskFor<long>(Size.Instance).GetAwaiter().GetResult();
 			Assert.Equal(1, size);
 
-			var removed = tracker.AskFor<bool>(new Remove(mid));
+			var removed = tracker.AskFor<bool>(new Remove(mid)).GetAwaiter().GetResult();
 
 			Assert.True(removed);
 
-			empty = tracker.AskFor<bool>(Empty.Instance);
+			empty = tracker.AskFor<bool>(Empty.Instance).GetAwaiter().GetResult();
 			Assert.True(empty);
 
-			size = tracker.AskFor<long>(Size.Instance);
+			size = tracker.AskFor<long>(Size.Instance).GetAwaiter().GetResult();
 			Assert.Equal(0, size);
 		}
 

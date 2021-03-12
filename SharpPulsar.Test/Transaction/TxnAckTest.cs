@@ -8,6 +8,7 @@ using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
 {
@@ -64,12 +65,12 @@ namespace SharpPulsar.Test.Transaction
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2, TimeUnit.SECONDS);
+				var message = consumer.Receive(2000);
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -80,17 +81,17 @@ namespace SharpPulsar.Test.Transaction
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2, TimeUnit.SECONDS);
+					message = consumer.Receive(2000);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2, TimeUnit.SECONDS);
+				message = consumer.Receive(2000);
 				Assert.Null(message);
 			}
 		}
@@ -132,12 +133,12 @@ namespace SharpPulsar.Test.Transaction
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2, TimeUnit.SECONDS);
+				var message = consumer.Receive(2000);
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -147,17 +148,17 @@ namespace SharpPulsar.Test.Transaction
 				User.Transaction commitTxn = Txn;
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2, TimeUnit.SECONDS);
+					message = consumer.Receive(2000);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2, TimeUnit.SECONDS);
+				message = consumer.Receive(2000);
 				Assert.Null(message);
 			}
 		}
@@ -196,12 +197,12 @@ namespace SharpPulsar.Test.Transaction
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2, TimeUnit.SECONDS);
+				var message = consumer.Receive(2000);
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -212,17 +213,17 @@ namespace SharpPulsar.Test.Transaction
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2, TimeUnit.SECONDS);
+					message = consumer.Receive(2000);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2, TimeUnit.SECONDS);
+				message = consumer.Receive(2000);
 				Assert.Null(message);
 			}
 		}
@@ -260,12 +261,12 @@ namespace SharpPulsar.Test.Transaction
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
-					//_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2, TimeUnit.SECONDS);
+				var message = consumer.Receive(2000);
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -276,17 +277,17 @@ namespace SharpPulsar.Test.Transaction
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2, TimeUnit.SECONDS);
+					message = consumer.Receive(2000);
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
-					//_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
 				}
 
 				// 2) ack committed by a new txn
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2, TimeUnit.SECONDS);
+				message = consumer.Receive(2000);
 				Assert.Null(message);
 			}
 		}
@@ -296,7 +297,7 @@ namespace SharpPulsar.Test.Transaction
 
 			get
 			{
-				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2, TimeUnit.SECONDS).Build();
+				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2000).Build();
 			}
 		}
 	}

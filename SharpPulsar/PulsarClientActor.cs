@@ -87,26 +87,27 @@ namespace SharpPulsar
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
-			Receive<GetBroker>(m => {
-				var cnx = GetBroker(m.TopicName);
+			ReceiveAsync<GetBroker>(async m => {
+				var cnx = await GetBroker(m.TopicName);
 				Sender.Tell(cnx);
 			});
-			Receive<GetConnection>(m => {
-				var cnx = GetConnection(m.Topic);
+			ReceiveAsync<GetConnection>(async m => 
+			{
+				var cnx = await GetConnection(m.Topic);
 				Sender.Tell(cnx);
 			});
 			Receive<GetTcClient>(_ => {
 				Sender.Tell(new TcClient(_tcClient));
 			});
-			Receive<GetSchema>(s => {
-				var response = _lookup.AskFor(s);
+			ReceiveAsync<GetSchema>(async s => {
+				var response = await _lookup.AskFor(s);
 				Sender.Tell(response);
 			});
-			Receive<GetPartitionedTopicMetadata>(p => 
+			ReceiveAsync<GetPartitionedTopicMetadata>(async p => 
 			{
                 try
                 {
-					var partition = GetPartitionedTopicMetadata(p.TopicName.ToString());
+					var partition = await GetPartitionedTopicMetadata(p.TopicName.ToString());
 					Sender.Tell(partition);
 				}
 				catch(Exception ex)
@@ -114,11 +115,11 @@ namespace SharpPulsar
 					Sender.Tell(new ClientExceptions(new PulsarClientException(ex)));
                 }
 			});
-			Receive<GetPartitionsForTopic>(s => 
+			ReceiveAsync<GetPartitionsForTopic>(async s => 
 			{
 				try
 				{
-					var topics = GetPartitionsForTopic(s.TopicName);
+					var topics = await GetPartitionsForTopic(s.TopicName);
 					Sender.Tell(new PartitionsForTopic(topics));
 				}
 				catch (Exception ex)
@@ -172,15 +173,15 @@ namespace SharpPulsar
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 
-		private GetBrokerResponse GetBroker(TopicName topic)
+		private async ValueTask<GetBrokerResponse> GetBroker(TopicName topic)
 		{
-			return _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
+			return await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
 		}
-		private GetConnectionResponse GetConnection(string topic)
+		private async ValueTask<GetConnectionResponse> GetConnection(string topic)
 		{
 			var topicName = TopicName.Get(topic);
-			var broker = _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
-			var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+			var broker = await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
+			var connection = await _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			return connection;
 		}
 
@@ -193,66 +194,45 @@ namespace SharpPulsar
 			}
 		}
 
-		private int GetNumberOfPartitions(string topic)
+		private async ValueTask<int> GetNumberOfPartitions(string topic)
 		{
-			return GetPartitionedTopicMetadata(topic).Partitions;
+			var p = await GetPartitionedTopicMetadata(topic);
+			return p.Partitions;
 		}
-
-		private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
+		private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
 		{
-
-			var metadataFuture = new TaskCompletionSource<PartitionedTopicMetadata>();
-
 			try
 			{
 				TopicName topicName = TopicName.Get(topic);
+				var o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
 				var opTimeoutMs = _conf.OperationTimeoutMs;
 				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-				GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, metadataFuture);
+
+				while (!(o is PartitionedTopicMetadata))
+				{
+					var e = o as ClientExceptions;
+					long nextDelay = Math.Min(backoff.Next(), opTimeoutMs);
+					bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
+					if (nextDelay <= 0 || isLookupThrottling)
+					{
+						throw new PulsarClientException.InvalidConfigurationException(e.Exception);
+					}
+					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
+					opTimeoutMs -= (int)nextDelay;
+					Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
+					o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+				}
+				return o as PartitionedTopicMetadata;
 			}
 			catch (ArgumentException e)
 			{
 				throw new PulsarClientException.InvalidConfigurationException(e.Message);
 			}
-			var result = Task.Run(() => metadataFuture.Task);
-			if (result.IsFaulted)
-				return new PartitionedTopicMetadata(0);
-
-			var pmetadata = result.Result;
-			if (pmetadata is PartitionedTopicMetadata p)
-				return p;
-
-			return new PartitionedTopicMetadata(0);
-		}
-		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
-		{
-			try
-			{
-				var o = _lookup.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
-				future.SetResult(o);
-			}
-			catch (Exception e)
-			{
-				long nextDelay = Math.Min(backoff.Next(), remainingTime);
-				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
-				if (nextDelay <= 0 || isLookupThrottling)
-				{
-					future.SetException(e);
-					future.SetResult(null);
-				}
-				Task.Run(async () =>
-				{
-					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
-					remainingTime -= nextDelay;
-					await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-					GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
-				});
-			}
 		}
 
-		private IList<string> GetPartitionsForTopic(string topic)
+		private async ValueTask<IList<string>> GetPartitionsForTopic(string topic)
 		{
-			var metadata = GetPartitionedTopicMetadata(topic);
+			var metadata = await GetPartitionedTopicMetadata(topic);
 			if (metadata.Partitions > 0)
 			{
 				TopicName topicName = TopicName.Get(topic);
