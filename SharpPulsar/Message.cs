@@ -36,6 +36,7 @@ namespace SharpPulsar
     using SharpPulsar.Schemas;
     using SharpPulsar.Extension;
     using System.Buffers;
+    using System.Reflection;
 
     public class Message<T> : IMessage<T>
 	{
@@ -340,12 +341,19 @@ namespace SharpPulsar
 		{
 			get
 			{
-				//maybe it works
-				var kvSchema = (KeyValueSchema<object,object>)_schema;
+				var schemaType = _schema.GetType();
+				var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
+				
 				sbyte[] schemaVersion = SchemaVersion;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
+				if (keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
-					return (T)(object)kvSchema.Decode(Metadata.NullPartitionKey ? null : KeyBytes, Metadata.NullValue ? null : Data, schemaVersion);
+					var decode = schemaType
+						.GetMethods()
+						.Where(x=> x.Name == "Decode")
+						.FirstOrDefault(x=> x.GetParameters().Length == 3);
+					var k = Metadata.NullPartitionKey ? null : KeyBytes;
+					var v = Metadata.NullValue ? null : Data;
+					return (T)decode.Invoke(_schema, new object[] { k, v, schemaVersion });
 				}
 				else
 				{
@@ -353,7 +361,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-
+		
 		private T KeyValue
 		{
 			get
@@ -413,7 +421,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-                if (_properties != null) return _properties;
+                if (_properties?.Count > 0) return _properties;
                 _properties = Metadata.Properties.Count > 0 ? Metadata.Properties.ToDictionary(x => x.Key, x => x.Value) : new Dictionary<string, string>();
                 return _properties;
 			}
@@ -427,7 +435,7 @@ namespace SharpPulsar
 
 		public string GetProperty(string name)
 		{
-			return Properties[name];
+			return Properties.GetValueOrNull(name);
 		}
 
 

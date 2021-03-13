@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,7 +28,8 @@ namespace SharpPulsar.Test
 	public class SchemaTestUtils
 	{
 
-		public class Foo
+		[Serializable]
+		public class Foo : IEquatable<Foo>
 		{
 
 			public string Field1 { get; set; }
@@ -39,19 +41,38 @@ namespace SharpPulsar.Test
 			public Color Color { get; set; }
 
 			public string FieldUnableNull { get; set; }
+			public bool Equals(Foo other)
+			{
+				if (Field1 == other.Field1 && Field2 == other.Field2 && Field3 == other.Field3
+					&& Field4?.Field1 == other.Field4?.Field1 && Color == other.Color && FieldUnableNull == other.FieldUnableNull)
+					return true;
+				return false;
+			}
 		}
 
-
-		public class FooV2
+		[Serializable]
+		public class FooV2: IEquatable<FooV2>
 		{
 			public string Field1 { get; set; }
 			public int Field3 { get; set; }
+			public bool Equals(FooV2 other)
+			{
+				return Field1 == other.Field1 && Field3 == other.Field3;
+			}
 		}
 
 
-		public class Bar
+		[Serializable]
+		public class Bar : IEquatable<Bar>
 		{
 			public bool Field1 { get; set; }
+
+			public bool Equals(Bar other)
+			{
+				if (Field1 == other.Field1)
+					return true;
+				return false;
+			}
 		}
 
 		public class NestedBar
@@ -68,11 +89,15 @@ namespace SharpPulsar.Test
 		}
 
 
-		public class DerivedFoo : Foo
+		public class DerivedFoo : Foo, IEquatable<DerivedFoo>
 		{
 			public string Field5 { get; set; }
 			public int Field6 { get; set; }
 			public Foo Foo { get; set; }
+			public bool Equals(DerivedFoo other)
+			{
+				return Field5 == other.Field5 && Field6 == other.Field6 && Foo == other.Foo;
+			}
 		}
 
 		public enum Color

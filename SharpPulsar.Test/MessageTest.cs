@@ -31,27 +31,18 @@ namespace SharpPulsar.Test
 	/// </summary>
 	public class MessageTest
 	{
+		
 		[Fact]
-		public virtual void TestGetSequenceIdNotAssociated()
-		{
-			var builder = new MessageMetadata();
-			var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
-
-			Assert.Equal(-1, msg.SequenceId);
-		}
-
-		[Fact]
-		public virtual void TestSetDuplicatePropertiesKey()
+		public virtual void TestSetPropertiesKey()
 		{
 			var builder = new MessageMetadata();
 			builder.Properties.Add(new KeyValue { Key = "key1", Value = "value1" });
-			builder.Properties.Add(new KeyValue { Key = "key1", Value = "value2" });
+			builder.Properties.Add(new KeyValue { Key = "key2", Value = "value2" });
 			builder.Properties.Add(new KeyValue { Key = "key3", Value = "value3" });
 			var payload = new byte[0];
 			
 			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
-			Assert.Equal("value2", msg.GetProperty("key1"));
+			Assert.Equal("value1", msg.GetProperty("key1"));
 			Assert.Equal("value3", msg.GetProperty("key3"));
 		}
 
