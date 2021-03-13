@@ -1,5 +1,15 @@
-﻿using System;
+﻿using SharpPulsar.Configuration;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
+using System;
 using System.Collections.Generic;
+using System.Text;
+using Xunit;
+using Xunit.Abstractions;
+using SharpPulsar.Extension;
+using SharpPulsar.Interfaces;
+using BAMCIS.Util.Concurrent;
+using SharpPulsar.Common.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,20 +31,27 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Test
 {
+	[Collection(nameof(PulsarTests))]
 	public class ReaderTest
 	{
 
 		private const string Subscription = "reader-sub";
+		private readonly ITestOutputHelper _output;
+		private readonly PulsarClient _client;
 
+		public ReaderTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		{
+			_output = output;
+			_client = fixture.Client;
+		}
 		private ISet<string> PublishMessages(string topic, int count, bool enableBatch)
 		{
 			ISet<string> keys = new HashSet<string>();
-			ProducerBuilder<sbyte[]> builder = PulsarClient.NewProducer();
-			builder.MessageRoutingMode(MessageRoutingMode.SinglePartition);
-			builder.MaxPendingMessages(count);
-			// disable periodical flushing
-			builder.BatchingMaxPublishDelay(1, TimeUnit.DAYS);
-			builder.Topic(topic);
+			var builder = new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.MessageRoutingMode(Common.MessageRoutingMode.RoundRobinMode)
+				.MaxPendingMessages(count)
+				.BatchingMaxPublishDelay(86400000);
 			if (enableBatch)
 			{
 				builder.EnableBatching(true);
@@ -44,62 +61,70 @@ namespace SharpPulsar.Test
 			{
 				builder.EnableBatching(false);
 			}
-			using (Producer<sbyte[]> producer = builder.Create())
+			
+			var producer = _client.NewProducer(builder); 
+			for (int i = 0; i < count; i++)
 			{
-				Future<object> lastFuture = null;
-				for (int i = 0; i < count; i++)
-				{
-					string key = "key" + i;
-					sbyte[] data = ("my-message-" + i).GetBytes();
-					lastFuture = producer.NewMessage().Key(key).Value(data).SendAsync();
-					keys.Add(key);
-				}
-				producer.Flush();
-				lastFuture.get();
+				string key = "key" + i;
+				sbyte[] data = Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes();
+				producer.NewMessage().Key(key).Value(data).Send();
+				keys.Add(key);
 			}
+			producer.Flush();
 			return keys;
 		}
-
+		[Fact]
 		public virtual void TestReadMessageWithoutBatching()
 		{
-			string topic = "persistent://my-property/my-ns/my-reader-topic";
+			string topic = $"my-reader-topic-{Guid.NewGuid()}";
 			TestReadMessages(topic, false);
 		}
 
-		
+		[Fact]
 		public virtual void TestReadMessageWithoutBatchingWithMessageInclusive()
 		{
-			string topic = "persistent://my-property/my-ns/my-reader-topic-inclusive";
+			string topic = $"my-reader-topic-inclusive-{Guid.NewGuid()}";
 			ISet<string> keys = PublishMessages(topic, 10, false);
-
-			Reader<sbyte[]> reader = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.latest).StartMessageIdInclusive().ReaderName(Subscription).Create();
-
-			Assert.assertTrue(reader.HasMessageAvailable());
-			Assert.assertTrue(keys.remove(reader.ReadNext().Key));
-			Assert.assertFalse(reader.HasMessageAvailable());
+			var builder = new ReaderConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.StartMessageId(IMessageId.Latest)
+				.StartMessageIdInclusive()
+				.ReaderName(Subscription);
+			var reader = _client.NewReader(builder);
+			var available = reader.HasMessageAvailable();
+			var removed = keys.Remove(reader.ReadNext().Key);
+			available = reader.HasMessageAvailable();
+			Assert.True(available);
+			Assert.True(removed);
+			Assert.False(available);
 		}
-
+		[Fact]
 		public virtual void TestReadMessageWithBatching()
 		{
-			string topic = "persistent://my-property/my-ns/my-reader-topic-with-batching";
+			string topic = $"my-reader-topic-with-batching-{Guid.NewGuid()}";
 			TestReadMessages(topic, true);
 		}
-
+		[Fact]
 		public virtual void TestReadMessageWithBatchingWithMessageInclusive()
 		{
-			string topic = "persistent://my-property/my-ns/my-reader-topic-with-batching-inclusive";
+			string topic = $"my-reader-topic-with-batching-inclusive-{Guid.NewGuid()}";
 			ISet<string> keys = PublishMessages(topic, 10, true);
-
-			Reader<sbyte[]> reader = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.latest).StartMessageIdInclusive().ReaderName(Subscription).Create();
+			var builder = new ReaderConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.StartMessageId(IMessageId.Latest)
+				.StartMessageIdInclusive()
+				.ReaderName(Subscription);
+			var reader = _client.NewReader(builder);
 
 			while (reader.HasMessageAvailable())
 			{
-				Assert.assertTrue(keys.remove(reader.ReadNext().Key));
+				var removed = keys.Remove(reader.ReadNext().Key);
+				Assert.True(removed);
 			}
 			// start from latest with start message inclusive should only read the last message in batch
-			Assert.assertTrue(keys.Count == 9);
-			Assert.assertFalse(keys.Contains("key9"));
-			Assert.assertFalse(reader.HasMessageAvailable());
+			Assert.True(keys.Count == 9);
+			Assert.False(keys.Contains("key9"));
+			Assert.False(reader.HasMessageAvailable());
 		}
 
 		private void TestReadMessages(string topic, bool enableBatch)
@@ -107,35 +132,46 @@ namespace SharpPulsar.Test
 			int numKeys = 10;
 
 			ISet<string> keys = PublishMessages(topic, numKeys, enableBatch);
-			Reader<sbyte[]> reader = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).ReaderName(Subscription).Create();
+			var builder = new ReaderConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.StartMessageId(IMessageId.Earliest)
+				.ReaderName(Subscription);
+			var reader = _client.NewReader(builder);
 
 			while (reader.HasMessageAvailable())
 			{
-				Message<sbyte[]> message = reader.ReadNext();
-				Assert.assertTrue(keys.remove(message.Key));
+				var message = reader.ReadNext();
+				Assert.True(keys.Remove(message.Key));
 			}
-			Assert.assertTrue(keys.Count == 0);
+			Assert.True(keys.Count == 0);
 
-			Reader<sbyte[]> readLatest = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.latest).ReaderName(Subscription + "latest").Create();
-			Assert.assertFalse(readLatest.HasMessageAvailable());
+			var builderLatest = new ReaderConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.StartMessageId(IMessageId.Latest)
+				.ReaderName(Subscription + "latest");
+			var readerLatest = _client.NewReader(builderLatest);
+			Assert.False(readerLatest.HasMessageAvailable());
 		}
-
+		[Fact]
 		public virtual void TestReadFromPartition()
 		{
-			string topic = "persistent://my-property/my-ns/testReadFromPartition";
+			string topic = "testReadFromPartition";
 			string partition0 = topic + "-partition-0";
-			Admin.Topics().CreatePartitionedTopic(topic, 4);
 			int numKeys = 10;
 
 			ISet<string> keys = PublishMessages(partition0, numKeys, false);
-			Reader<sbyte[]> reader = PulsarClient.NewReader().Topic(partition0).StartMessageId(MessageId.earliest).Create();
+			var builder = new ReaderConfigBuilder<sbyte[]>()
+				.Topic(partition0)
+				.StartMessageId(IMessageId.Earliest)
+				.ReaderName(Subscription);
+			var reader = _client.NewReader(builder);
 
 			while (reader.HasMessageAvailable())
 			{
-				Message<sbyte[]> message = reader.ReadNext();
-				Assert.assertTrue(keys.remove(message.Key));
+				var message = reader.ReadNext();
+				Assert.True(keys.Remove(message.Key));
 			}
-			Assert.assertTrue(keys.Count == 0);
+			Assert.True(keys.Count == 0);
 		}
 
 		/// <summary>
@@ -147,173 +183,162 @@ namespace SharpPulsar.Test
 		/// 4. Reader should be able to read only messages which are only 2 hours old
 		/// </pre> </summary>
 		/// <exception cref="Exception"> </exception>
-		
+		[Fact]
 		public virtual void TestReaderWithTimeLong()
 		{
-			string ns = "my-property/my-ns";
+			string ns = "public/default";
 			string topic = "persistent://" + ns + "/testReadFromPartition";
-			RetentionPolicies retention = new RetentionPolicies(-1, -1);
-			Admin.Namespaces().SetRetention(ns, retention);
+			var builder = new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.EnableBatching(false);
 
-			ProducerBuilder<sbyte[]> produceBuilder = PulsarClient.NewProducer();
-			produceBuilder.Topic(topic);
-			produceBuilder.EnableBatching(false);
-			Producer<sbyte[]> producer = produceBuilder.Create();
+			var producer = _client.NewProducer(builder);
 			MessageId lastMsgId = null;
 			int totalMsg = 10;
 			// (1) Publish 10 messages with publish-time 5 HOUR back
-			long oldMsgPublishTime = DateTimeHelper.CurrentUnixTimeMillis() - TimeUnit.HOURS.toMillis(5); // 5 hours old
+			long oldMsgPublishTime = DateTimeHelper.CurrentUnixTimeMillis() - TimeUnit.HOURS.ToMilliseconds(5); // 5 hours old
 			for (int i = 0; i < totalMsg; i++)
 			{
-				TypedMessageBuilderImpl<sbyte[]> msg = (TypedMessageBuilderImpl<sbyte[]>)producer.NewMessage().Value(("old" + i).GetBytes());
-				Builder metadataBuilder = msg.MetadataBuilder;
-				metadataBuilder.setPublishTime(oldMsgPublishTime).setSequenceId(i);
-				metadataBuilder.setProducerName(producer.ProducerName).setReplicatedFrom("us-west1");
-				lastMsgId = msg.Send();
+				var val = Encoding.UTF8.GetBytes("old" + i).ToSBytes();
+				var msg = (TypedMessageBuilder<sbyte[]>)producer.NewMessage().Value(val);
+				var metadata = msg.Metadata;
+				metadata.PublishTime = (ulong)oldMsgPublishTime;
+				metadata.SequenceId = (ulong)i;
+				metadata.ProducerName = producer.ProducerName;
+				metadata.ReplicatedFrom = "us-west1";
+				msg.Send();
+				var receipt = producer.SendReceipt();
+				lastMsgId = new MessageId(receipt.LedgerId, receipt.EntryId, 0);
 			}
 
 			// (2) Publish 10 messages with publish-time 1 HOUR back
-			long newMsgPublishTime = DateTimeHelper.CurrentUnixTimeMillis() - TimeUnit.HOURS.toMillis(1); // 1 hour old
+			long newMsgPublishTime = DateTimeHelper.CurrentUnixTimeMillis() - TimeUnit.HOURS.ToMilliseconds(1); // 1 hour old
 			MessageId firstMsgId = null;
 			for (int i = 0; i < totalMsg; i++)
 			{
-				TypedMessageBuilderImpl<sbyte[]> msg = (TypedMessageBuilderImpl<sbyte[]>)producer.NewMessage().Value(("new" + i).GetBytes());
-				Builder metadataBuilder = msg.MetadataBuilder;
-				metadataBuilder.PublishTime = newMsgPublishTime;
-				metadataBuilder.setProducerName(producer.ProducerName).setReplicatedFrom("us-west1");
-				MessageId msgId = msg.Send();
+				var val = Encoding.UTF8.GetBytes("new" + i).ToSBytes();
+				var msg = (TypedMessageBuilder<sbyte[]>)producer.NewMessage().Value(val);
+				var metadata = msg.Metadata;
+				metadata.PublishTime = (ulong)newMsgPublishTime;
+				metadata.ProducerName = producer.ProducerName;
+				metadata.ReplicatedFrom = "us-west1";
+				msg.Send();
+				var receipt = producer.SendReceipt();
 				if (firstMsgId == null)
 				{
-					firstMsgId = msgId;
+					firstMsgId = new MessageId(receipt.LedgerId, receipt.EntryId, 0);
 				}
 			}
 
 			// (3) Create reader and set position 1 hour back so, it should only read messages which are 2 hours old which
 			// published on step 2
-			Reader<sbyte[]> reader = PulsarClient.NewReader().Topic(topic).StartMessageFromRollbackDuration(2, TimeUnit.HOURS).Create();
+			var rbuilder = new ReaderConfigBuilder<sbyte[]>()
+				.Topic(topic)
+				.StartMessageId(IMessageId.Earliest)
+				.StartMessageFromRollbackDuration((int)TimeSpan.FromHours(2).TotalMilliseconds);
+			var reader = _client.NewReader(rbuilder);
 
-			IList<MessageId> receivedMessageIds = Lists.newArrayList();
+			var receivedMessageIds = new List<IMessageId>();
 
 			while (reader.HasMessageAvailable())
 			{
-				Message<sbyte[]> msg = reader.ReadNext(1, TimeUnit.SECONDS);
+				var msg = reader.ReadNext(1, TimeUnit.SECONDS);
 				if (msg == null)
 				{
 					break;
 				}
-				Console.WriteLine("msg.getMessageId()=" + msg.MessageId + ", data=" + (new string(msg.Data)));
+				_output.WriteLine("msg.getMessageId()=" + msg.MessageId + ", data=" + (Encoding.UTF8.GetString(msg.Data.ToBytes())));
 				receivedMessageIds.Add(msg.MessageId);
 			}
 
-			assertEquals(receivedMessageIds.Count, totalMsg);
-			assertEquals(receivedMessageIds[0], firstMsgId);
-
-			RestartBroker();
-
-			assertFalse(reader.HasMessageAvailable());
+			Assert.Equal(receivedMessageIds.Count, totalMsg);
+			Assert.Equal(receivedMessageIds[0], firstMsgId);
 		}
-
-		/// <summary>
-		/// We need to ensure that delete subscription of read also need to delete the
-		/// non-durable cursor, because data deletion depends on the mark delete position of all cursors.
-		/// </summary>
-		
-		public virtual void TestRemoveSubscriptionForReaderNeedRemoveCursor()
-		{
-
-			const string topic = "persistent://my-property/my-ns/testRemoveSubscriptionForReaderNeedRemoveCursor";
-
-			
-			Reader<sbyte[]> reader1 = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).Create();
-
-			
-			Reader<sbyte[]> reader2 = PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).Create();
-
-			Assert.assertEquals(Admin.Topics().GetStats(topic).Subscriptions.Count, 2);
-			Assert.assertEquals(Admin.Topics().GetInternalStats(topic, false).Cursors.Count, 2);
-
-			reader1.close();
-
-			Assert.assertEquals(Admin.Topics().GetStats(topic).Subscriptions.Count, 1);
-			Assert.assertEquals(Admin.Topics().GetInternalStats(topic, false).Cursors.Count, 1);
-
-			reader2.close();
-
-			Assert.assertEquals(Admin.Topics().GetStats(topic).Subscriptions.Count, 0);
-			Assert.assertEquals(Admin.Topics().GetInternalStats(topic, false).Cursors.Count, 0);
-
-		}
-
+		[Fact]
 		public virtual void TestKeyHashRangeReader()
-		{			
+		{
+			var rangeSize = (2 << 15);
 			IList<string> keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-			const string topic = "persistent://my-property/my-ns/testKeyHashRangeReader";
+			string topic = $"testKeyHashRangeReader-{Guid.NewGuid()}";
 
 			try
 			{
-				PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).KeyHashRange(Range.Of(0, 10000), Range.Of(8000, 12000)).create();
-				fail("should failed with unexpected key hash range");
+				_ = _client.NewReader(new ReaderConfigBuilder<sbyte[]>()
+					.Topic(topic)
+					.StartMessageId(IMessageId.Earliest)
+					.KeyHashRange(Common.Range.Of(0, 10000), Common.Range.Of(8000, 12000)));
+				Assert.False(false, "should failed with unexpected key hash range");
 			}
-			catch (System.ArgumentException e)
+			catch (ArgumentException e)
 			{
-				log.error("Create key hash range failed", e);
-			}
-
-			try
-			{
-				PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).KeyHashRange(Range.Of(30000, 20000)).Create();
-				fail("should failed with unexpected key hash range");
-			}
-			catch (System.ArgumentException e)
-			{
-				log.error("Create key hash range failed", e);
+				_output.WriteLine("Create key hash range failed", e);
 			}
 
 			try
 			{
-				PulsarClient.NewReader().Topic(topic).StartMessageId(MessageId.earliest).KeyHashRange(Range.Of(80000, 90000)).Create();
-				fail("should failed with unexpected key hash range");
+				_ = _client.NewReader(new ReaderConfigBuilder<sbyte[]>()
+					.Topic(topic)
+					.StartMessageId(IMessageId.Earliest)
+					.KeyHashRange(Common.Range.Of(30000, 20000)));
+				Assert.False(false, "should failed with unexpected key hash range");
 			}
-			catch (System.ArgumentException e)
+			catch (ArgumentException e)
 			{
-				log.error("Create key hash range failed", e);
+				_output.WriteLine("Create key hash range failed", e);
 			}
 
-			Reader<string> reader = PulsarClient.NewReader(Schema.STRING).Topic(topic).StartMessageId(MessageId.earliest).KeyHashRange(Range.Of(0, StickyKeyConsumerSelector.DEFAULT_RANGE_SIZE / 2)).Create();
+			try
+			{
 
-			
-			Producer<string> producer = PulsarClient.NewProducer(Schema.STRING).Topic(topic).EnableBatching(false).Create();
+				_ = _client.NewReader(new ReaderConfigBuilder<sbyte[]>()
+					.Topic(topic)
+					.StartMessageId(IMessageId.Earliest)
+					.KeyHashRange(Common.Range.Of(80000, 90000)));
+
+				Assert.False(false, "should failed with unexpected key hash range");
+			}
+			catch (ArgumentException e)
+			{
+				_output.WriteLine("Create key hash range failed", e);
+			}
+			var reader = _client.NewReader(ISchema<object>.String, new ReaderConfigBuilder<string>()
+					.Topic(topic)
+					.StartMessageId(IMessageId.Earliest)
+					.KeyHashRange(Common.Range.Of(0, (rangeSize / 2))));
+						
+			var producer = _client.NewProducer(ISchema<object>.String, new ProducerConfigBuilder<string>()
+				.Topic(topic).EnableBatching(false));
 
 			int expectedMessages = 0;
 			foreach (string key in keys)
 			{
-				int slot = Murmur3_32Hash.Instance.makeHash(key.GetBytes()) % StickyKeyConsumerSelector.DEFAULT_RANGE_SIZE;
-				if (slot <= StickyKeyConsumerSelector.DEFAULT_RANGE_SIZE / 2)
+				int slot = Murmur332Hash.Instance.MakeHash(Encoding.UTF8.GetBytes(key).ToSBytes()) % rangeSize;
+				if (slot <= rangeSize / 2)
 				{
 					expectedMessages++;
 				}
-				producer.newMessage().key(key).value(key).send();
-				log.info("Publish message to slot {}", slot);
+				producer.NewMessage().Key(key).Value(key).Send();
+				_output.WriteLine($"Publish message to slot {slot}");
 			}
 
 			IList<string> receivedMessages = new List<string>();
 
-			Message<string> msg;
+			IMessage<string> msg;
 			do
 			{
-				msg = reader.readNext(1, TimeUnit.SECONDS);
+				msg = reader.ReadNext(1, TimeUnit.SECONDS);
 				if (msg != null)
 				{
 					receivedMessages.Add(msg.Value);
 				}
 			} while (msg != null);
 
-			assertTrue(expectedMessages > 0);
-			assertEquals(receivedMessages.Count, expectedMessages);
+			Assert.True(expectedMessages > 0);
+			Assert.Equal(receivedMessages.Count, expectedMessages);
 			foreach (string receivedMessage in receivedMessages)
 			{
-				log.info("Receive message {}", receivedMessage);
-				assertTrue(Convert.ToInt32(receivedMessage) <= StickyKeyConsumerSelector.DEFAULT_RANGE_SIZE / 2);
+				_output.WriteLine($"Receive message {receivedMessage}");
+				Assert.True(Convert.ToInt32(receivedMessage) <= rangeSize / 2);
 			}
 
 		}

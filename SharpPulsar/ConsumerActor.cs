@@ -1348,7 +1348,7 @@ namespace SharpPulsar
 			{
 				BatchReceiveTimeout.Cancel();
 			}
-			Stats.StatTimeout.Cancel();
+			Stats.StatTimeout?.Cancel();
 		}
 
 		internal virtual void ActiveConsumerChanged(bool isActive)
