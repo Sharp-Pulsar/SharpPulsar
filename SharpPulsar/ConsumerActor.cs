@@ -2698,6 +2698,7 @@ namespace SharpPulsar
 				Sender.Tell(new ReceivedMessage<T>(o));
 			else
             {
+				//@davidfowl o.Metadata is the problem.....
 				if (IncomingMessages.Post(o))
 					_log.Info($"Added message with sequnceid {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
 				else
