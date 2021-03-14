@@ -10,6 +10,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.User
 {
@@ -60,13 +61,12 @@ namespace SharpPulsar.User
         public async ValueTask<IMessage<T>> ReadNextAsync()
         {
             await VerifyConsumerState().ConfigureAwait(false);
-            if (_queue.IncomingMessages.TryTake(out var m))
+            var m = await _queue.IncomingMessages.ReceiveAsync();
+            if (m!= null)
             {
                 _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(m));
-                return m;
-            }                
-
-            return null;
+            } 
+            return m;
         }
         public IMessage<T> ReadNext(int timeout, TimeUnit unit) => ReadNextAsync(timeout, unit).GetAwaiter().GetResult();
         public async ValueTask<IMessage<T>> ReadNextAsync(int timeout, TimeUnit unit)
@@ -76,13 +76,13 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
             }
-            if (_queue.IncomingMessages.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
+            var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeout));
+            if (message != null)
             {
                 _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
                 _readerActor.Tell(new MessageProcessed<T>(message));
-                return message;
             }
-            return null;
+            return message;
         }
         private async ValueTask VerifyConsumerState()
         {

@@ -10,6 +10,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Util;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -115,7 +116,7 @@ namespace SharpPulsar.Test
 				.StartMessageIdInclusive()
 				.ReaderName(Subscription);
 			var reader = _client.NewReader(builder);
-
+			Thread.Sleep(TimeSpan.FromSeconds(30));
 			while (reader.HasMessageAvailable())
 			{
 				var removed = keys.Remove(reader.ReadNext().Key);
@@ -137,10 +138,11 @@ namespace SharpPulsar.Test
 				.StartMessageId(IMessageId.Earliest)
 				.ReaderName(Subscription);
 			var reader = _client.NewReader(builder);
-
+			Thread.Sleep(TimeSpan.FromSeconds(30));
 			while (reader.HasMessageAvailable())
 			{
-				var message = reader.ReadNext();
+				var message = (Message<sbyte[]>)reader.ReadNext();
+				_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data.ToBytes())}");
 				Assert.True(keys.Remove(message.Key));
 			}
 			Assert.True(keys.Count == 0);

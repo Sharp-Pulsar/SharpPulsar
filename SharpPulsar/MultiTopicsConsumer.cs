@@ -25,6 +25,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 
 /// <summary>
@@ -188,7 +189,7 @@ namespace SharpPulsar
 			});
 			Receive<ReceivedMessage<T>>(r =>
 			{
-				IncomingMessages.TryAdd(r.Message);
+				IncomingMessages.Post(r.Message);
 			});
 			Receive<AcknowledgeMessage<T>>(m => {
 				try
@@ -626,7 +627,7 @@ namespace SharpPulsar
 			}
             else
             {
-				IncomingMessages.TryAdd(topicMessage);
+				IncomingMessages.Post(topicMessage);
             }
 		}
 
@@ -829,7 +830,7 @@ namespace SharpPulsar
 				consumer.Consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
 				consumer.Consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
 			});
-			IncomingMessages.Empty();
+			await IncomingMessages .Empty();
 			IncomingMessagesSize =  0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
 			ResumeReceivingFromPausedConsumersIfNeeded();
@@ -851,7 +852,7 @@ namespace SharpPulsar
 				await RedeliverUnacknowledgedMessages();
 				return;
 			}
-			RemoveExpiredMessagesFromQueue(messageIds);
+			await RemoveExpiredMessagesFromQueue(messageIds);
 			messageIds.Select(messageId => (TopicMessageId)messageId).Collect()
 				.ForEach(t => _consumers.GetValueOrNull(t.First().TopicPartitionName)
 				.Consumer.Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => mid.InnerMessageId).ToHashSet())));
@@ -870,7 +871,7 @@ namespace SharpPulsar
 				_consumers.Values.ForEach(c => c.Consumer.Tell(new SeekMessageId(targetMessageId)));
 
 				_unAckedMessageTracker.Tell(Clear.Instance);
-				IncomingMessages.Empty();
+				await IncomingMessages .Empty();
 				IncomingMessagesSize = 0;
 			}
 			catch(Exception e)
@@ -965,9 +966,10 @@ namespace SharpPulsar
 			}
 		}
 
-		private void RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
+		private async ValueTask RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
-			if(IncomingMessages.TryTake(out var peek))
+			var peek = await IncomingMessages.ReceiveAsync();
+			if (peek != null)
 			{
 				if(!messageIds.Contains(peek.MessageId))
 				{
@@ -989,7 +991,7 @@ namespace SharpPulsar
 						messageIds.Add(messageId);
 						break;
 					}
-					message = IncomingMessages.Take();
+					message = await IncomingMessages.ReceiveAsync();
 				}
 			}
 		}

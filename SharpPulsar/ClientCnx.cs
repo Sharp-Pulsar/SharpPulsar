@@ -156,7 +156,7 @@ namespace SharpPulsar
 				RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
 			});
 			Receive<SendRequestWithId>(r => {
-				SendRequestWithId(r.Message, r.RequestId);
+				SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
 			});
 			Receive<RemoteEndpointProtocolVersion>(r => {
 				Sender.Tell(_protocolVersion);
@@ -658,9 +658,11 @@ namespace SharpPulsar
 				_log.Warning($"Received unknown request id from server: {requestId}");
 		}
 
-		private void SendRequestWithId(byte[] cmd, long requestId)
+		private void SendRequestWithId(byte[] cmd, long requestId, bool reply)
 		{
-			_ = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
+			var sent = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
+			if (reply)
+				Sender.Tell(sent);
 		}
 
 		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
