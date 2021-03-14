@@ -10,6 +10,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.User
 {
@@ -30,10 +31,10 @@ namespace SharpPulsar.User
             _conf = conf;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> TopicAsync() => await _readerActor.AskFor<string>(GetTopic.Instance);
+        public async ValueTask<string> TopicAsync() => await _readerActor.AskFor<string>(GetTopic.Instance).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
-        public async ValueTask<bool> ConnectedAsync() => await _readerActor.AskFor<bool>(IsConnected.Instance);
+        public async ValueTask<bool> ConnectedAsync() => await _readerActor.AskFor<bool>(IsConnected.Instance).ConfigureAwait(false);
 
 
         public void Stop()
@@ -46,7 +47,7 @@ namespace SharpPulsar.User
         {
             _readerActor.Tell(Messages.Consumer.HasMessageAvailable.Instance);
             var b = _queue.HasMessageAvailable.Take();
-            return await Task.FromResult(b);
+            return await Task.FromResult(b).ConfigureAwait(false);
         }
 
         public bool HasReachedEndOfTopic() => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
@@ -54,39 +55,37 @@ namespace SharpPulsar.User
         {
             _readerActor.Tell(Messages.Consumer.HasReachedEndOfTopic.Instance);
             var b = _queue.HasReachedEndOfTopic.Take();
-            return await Task.FromResult(b);
+            return await Task.FromResult(b).ConfigureAwait(false);
         }
         public IMessage<T> ReadNext() => ReadNextAsync().GetAwaiter().GetResult();
         public async ValueTask<IMessage<T>> ReadNextAsync()
         {
-            await VerifyConsumerState();
-            if (_queue.IncomingMessages.TryTake(out var m))
+            await VerifyConsumerState().ConfigureAwait(false);
+            if (_queue.IncomingMessages.TryReceive(out var m))
             {
                 _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(m));
-                return m;
-            }                
-
-            return null;
+            }
+            return m;
         }
         public IMessage<T> ReadNext(int timeout, TimeUnit unit) => ReadNextAsync(timeout, unit).GetAwaiter().GetResult();
         public async ValueTask<IMessage<T>> ReadNextAsync(int timeout, TimeUnit unit)
         {
-            await VerifyConsumerState();
+            await VerifyConsumerState().ConfigureAwait(false);
             if (_conf.ReceiverQueueSize == 0)
             {
                 throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
             }
-            if (_queue.IncomingMessages.TryTake(out var message, (int)unit.ToMilliseconds(timeout)))
+            var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeout));
+            if (message != null)
             {
                 _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
                 _readerActor.Tell(new MessageProcessed<T>(message));
-                return message;
             }
-            return null;
+            return message;
         }
         private async ValueTask VerifyConsumerState()
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             switch (state)
             {
@@ -110,7 +109,7 @@ namespace SharpPulsar.User
             => SeekAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(IMessageId messageId)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -118,7 +117,7 @@ namespace SharpPulsar.User
 
             }
 
-            if (!await ConnectedAsync())
+            if (!await ConnectedAsync().ConfigureAwait(false))
             {
                 throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription of the topic {Topic} to the message {messageId}");
 
@@ -132,7 +131,7 @@ namespace SharpPulsar.User
             => SeekAsync(timestamp).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(long timestamp)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance);
+            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -140,7 +139,7 @@ namespace SharpPulsar.User
 
             }
 
-            if (!await ConnectedAsync())
+            if (!await ConnectedAsync().ConfigureAwait(false))
             {
                 throw new Exception($"The client is not connected to the broker when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
             }

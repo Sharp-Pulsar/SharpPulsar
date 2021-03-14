@@ -41,10 +41,12 @@ namespace SharpPulsar.Messages.Requests
     {
         public byte[] Message { get; }
         public long RequestId { get; }
-        public SendRequestWithId(byte[] message,  long requestid)
+        public bool NeedsResponse { get; }
+        public SendRequestWithId(byte[] message,  long requestid, bool needsResponse = false)
         {
             Message = message;
             RequestId = requestid;
+            NeedsResponse = needsResponse;
         }
     }
     public sealed class RegisterConsumer

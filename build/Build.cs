@@ -173,7 +173,7 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-retention", "public/default","--time","3h", "--size", "1G")
+                .SetArgs("namespaces", "set-retention", "public/default","--time","-1", "--size", "-1")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
@@ -199,6 +199,11 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/message-ack-test", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/testReadFromPartition", "--partitions", "4")
             );
        });
     Target CheckDockerVersion => _ => _

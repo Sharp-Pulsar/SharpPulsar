@@ -15,6 +15,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
@@ -64,7 +65,7 @@ namespace SharpPulsar
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly IAdvancedScheduler ListenerExecutor;
-		protected internal BlockingCollection<IMessage<T>> IncomingMessages;
+		protected internal BufferBlock<IMessage<T>> IncomingMessages;
 		protected internal Dictionary<MessageId, MessageId[]> UnAckedChunckedMessageIdSequenceMap;
 
 		protected internal int MaxReceiverQueueSize;

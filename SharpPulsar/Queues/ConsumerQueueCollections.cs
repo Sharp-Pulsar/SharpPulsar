@@ -3,12 +3,13 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Stats.Consumer.Api;
 using System.Collections.Concurrent;
+using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.Queues
 {
     public class ConsumerQueueCollections<T>
     {
-        public BlockingCollection<IMessage<T>> IncomingMessages { get; }
+        public BufferBlock<IMessage<T>> IncomingMessages { get; }
         public BlockingCollection<ClientExceptions> AcknowledgeException { get; } 
         public BlockingCollection<ClientExceptions> NegativeAcknowledgeException { get; }
         public BlockingCollection<ClientExceptions> ReconsumeLaterException { get; }
@@ -29,7 +30,7 @@ namespace SharpPulsar.Queues
 
         public ConsumerQueueCollections()
         {
-            IncomingMessages = new BlockingCollection<IMessage<T>>();
+            IncomingMessages = new BufferBlock<IMessage<T>>();
             AcknowledgeException = new BlockingCollection<ClientExceptions>();
             NegativeAcknowledgeException = new BlockingCollection<ClientExceptions>();
             ReconsumeLaterException = new BlockingCollection<ClientExceptions>();

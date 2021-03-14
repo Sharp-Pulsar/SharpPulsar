@@ -55,10 +55,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="consumer">
 		///            the Consumer object associated with the terminated topic </param>
-		virtual void ReachedEndOfTopic(IActorRef consumer)
-		{
-			// By default ignore the notification
-		}
+		void ReachedEndOfTopic(IActorRef consumer);
 	}
 
 }

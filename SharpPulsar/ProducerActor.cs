@@ -272,6 +272,9 @@ namespace SharpPulsar
 			Receive<ConnectionClosed>(m => {
 				ConnectionClosed(m.ClientCnx);
 			});
+			ReceiveAsync<Flush>(async _ => {
+				await Flush();
+			});
 			Receive<GetProducerName>(_ => Sender.Tell(_producerName));
 			Receive<GetLastSequenceId>(_ => Sender.Tell(_lastSequenceIdPublished));
 			Receive<GetTopic>(_ => Sender.Tell(Topic));

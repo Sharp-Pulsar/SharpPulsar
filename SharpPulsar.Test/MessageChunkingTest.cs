@@ -9,7 +9,6 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

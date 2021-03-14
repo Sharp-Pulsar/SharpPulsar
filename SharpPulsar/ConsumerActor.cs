@@ -43,6 +43,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -162,6 +163,7 @@ namespace SharpPulsar
 
 		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(stateActor, client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
+			_clientConfigurationData = clientConfiguration;
 			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
 			_commands = new Commands();
 			_generator = idGenerator;
@@ -335,9 +337,9 @@ namespace SharpPulsar
 			Receive<ConnectionClosed>(m => {
 				ConnectionClosed(m.ClientCnx);
 			});
-			Receive<ClearIncomingMessagesAndGetMessageNumber>(_ => 
+			ReceiveAsync<ClearIncomingMessagesAndGetMessageNumber>(async _ => 
 			{
-				var cleared = ClearIncomingMessagesAndGetMessageNumber();
+				var cleared = await ClearIncomingMessagesAndGetMessageNumber();
 				Sender.Tell(cleared);
 			});				
 			Receive<GetHandlerState>(_ => 
@@ -410,6 +412,17 @@ namespace SharpPulsar
 				try
 				{
 					AcknowledgeCumulative(m.MessageId);
+					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
+				}
+				catch (Exception ex)
+				{
+					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
+				}
+			});
+			Receive<AcknowledgeCumulativeMessage<T>>(m => {
+				try
+				{
+					AcknowledgeCumulative(m.Message);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -1162,7 +1175,7 @@ namespace SharpPulsar
 				CloseConsumerTasks();
 				DeregisterFromClientCnx();
 				_client.Tell(new CleanupConsumer(Self));
-				ClearReceiverQueue();
+				await ClearReceiverQueue();
 				ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is in a closing state")));
 				return;
 			}
@@ -1176,7 +1189,7 @@ namespace SharpPulsar
 			long requestId = res.Id;
 
 			
-			_startMessageId = ClearReceiverQueue();
+			_startMessageId = await ClearReceiverQueue();
 			if (_possibleSendToDeadLetterTopicMessages != null)
 			{
 				_possibleSendToDeadLetterTopicMessages.Clear();
@@ -1229,7 +1242,7 @@ namespace SharpPulsar
 		/// Clear the internal receiver queue and returns the message id of what was the 1st message in the queue that was
 		/// not seen by the application
 		/// </summary>
-		private BatchMessageId ClearReceiverQueue()
+		private async ValueTask<BatchMessageId> ClearReceiverQueue()
 		{
 			_log.Warning($"Clearing {IncomingMessages.Count} message(s) in queue");
 			var currentMessageQueue = new List<IMessage<T>>(IncomingMessages.Count);
@@ -1237,8 +1250,8 @@ namespace SharpPulsar
 			var n = 0;
 			while (n < mcount)
 			{
-
-				if (IncomingMessages.TryTake(out var m))
+				var m = await IncomingMessages.ReceiveAsync();
+				if(m != null)
 					currentMessageQueue.Add(m);
 				else
 					break;
@@ -1348,7 +1361,7 @@ namespace SharpPulsar
 			{
 				BatchReceiveTimeout.Cancel();
 			}
-			Stats.StatTimeout.Cancel();
+			Stats.StatTimeout?.Cancel();
 		}
 
 		internal virtual void ActiveConsumerChanged(bool isActive)
@@ -1491,7 +1504,9 @@ namespace SharpPulsar
 			// Lazy task scheduling to expire incomplete chunk message
 			if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessageMillis > 0)
 			{				
-				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
+				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), async () => {
+					await RemoveExpireIncompleteChunkedMessages();
+				});
 				_expireChunkMessageTaskScheduled = true;
 			}
 
@@ -1502,7 +1517,7 @@ namespace SharpPulsar
 				_pendingChunckedMessageCount++;
 				if (_maxPendingChuckedMessage > 0 && _pendingChunckedMessageCount > _maxPendingChuckedMessage)
 				{
-					RemoveOldestPendingChunkedMessage();
+					await RemoveOldestPendingChunkedMessage();
 				}
 				_pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
 			}
@@ -1562,14 +1577,14 @@ namespace SharpPulsar
 		{
 			// Trigger the notification on the message listener in a separate thread to avoid blocking the networking
 			// thread while the message processing happens
-			Task.Run(() =>
+			Task.Run(async() =>
 			{
 				var self = Self;
 				for(int i = 0; i < numMessages; i++)
 				{
 					try
 					{
-						IMessage<T> msg = IncomingMessages.Take();
+						IMessage<T> msg = await IncomingMessages.ReceiveAsync();
 						if(msg == null)
 						{
 							if(_log.IsDebugEnabled)
@@ -1584,7 +1599,7 @@ namespace SharpPulsar
 							{
 								_log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {msg.MessageId}");
 							}
-							Listener.Received(self, msg);
+							Listener.Received(_self, msg);
 						}
 						catch(Exception t)
 						{
@@ -1630,6 +1645,7 @@ namespace SharpPulsar
 					}
 					var singleMessageMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
 					var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+					var singleMetadata = singleMessageMetadata;
 					if (IsSameEntry(messageId) && IsPriorBatchIndex(i))
 					{
 						// If we are receiving a batch message, we need to discard messages that were prior
@@ -1664,7 +1680,7 @@ namespace SharpPulsar
 
 					var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex, i, batchSize, acker);
 
-					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
 					if(possibleToDeadLetter != null)
 					{
 						possibleToDeadLetter.Add(message);
@@ -1697,7 +1713,7 @@ namespace SharpPulsar
 				IncreaseAvailablePermits(cnx, skippedMessages);
 			}
 		}
-		private bool EnqueueMessageAndCheckBatchReceive(Message<T> message)
+		private bool EnqueueMessageAndCheckBatchReceive(IMessage<T> message)
 		{
 			if (CanEnqueueMessage(message))
 			{
@@ -1966,7 +1982,7 @@ namespace SharpPulsar
 			{
 				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				var currentSize = IncomingMessages.Count;
-				IncomingMessages.Empty();
+				await IncomingMessages.Empty();
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
 				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);
@@ -1994,10 +2010,10 @@ namespace SharpPulsar
 			_log.Info("RedeliverUnacknowledgedMessages()=5");
 		}
 
-		internal virtual int ClearIncomingMessagesAndGetMessageNumber()
+		private async ValueTask<int> ClearIncomingMessagesAndGetMessageNumber()
 		{
 			int messagesNumber = IncomingMessages.Count;
-			IncomingMessages.Empty();
+			await IncomingMessages.Empty();
 			IncomingMessagesSize = 0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
 			return messagesNumber;
@@ -2022,7 +2038,7 @@ namespace SharpPulsar
 			var protocolversion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
 			if (await Connected() && protocolversion >= (int)ProtocolVersion.V2)
 			{
-				int messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
+				int messagesFromQueue = await RemoveExpiredMessagesFromQueue(messageIds);
 
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
 				batches.ForEach(ids =>
@@ -2146,7 +2162,7 @@ namespace SharpPulsar
 				var cnx = await Cnx();
 
 				_log.Info($"[{Topic}][{Subscription}] Seek subscription to message id {messageId}");
-				var sent = await cnx.AskFor<bool>(new SendRequestWithId(seek, requestId));
+				var sent = await cnx.AskFor<bool>(new SendRequestWithId(seek, requestId, true));
 				if (sent)
 				{
 
@@ -2155,7 +2171,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)messageId);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					IncomingMessages.Empty();
+					await IncomingMessages .Empty();
 					IncomingMessagesSize = 0;
 				}
 				else
@@ -2189,7 +2205,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)IMessageId.Earliest);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					IncomingMessages.Empty();
+					await IncomingMessages.Empty();
 					IncomingMessagesSize = 0;
 				}
                 else
@@ -2415,10 +2431,11 @@ namespace SharpPulsar
 			return new Option<EncryptionContext>(encryptionCtx);
 		}
 
-		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
+		private async ValueTask<int> RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			int messagesFromQueue = 0;
-			if(IncomingMessages.TryTake(out var peek))
+			var peek = await IncomingMessages.ReceiveAsync();
+			if (peek != null)
 			{
 				var messageId = GetMessageId(peek);
 				if(!messageIds.Contains(messageId))
@@ -2430,7 +2447,7 @@ namespace SharpPulsar
 				// try not to remove elements that are added while we remove
 				while(IncomingMessages.Count > 0)
 				{
-					var message = IncomingMessages.Take();
+					var message = await IncomingMessages.ReceiveAsync();
 					IncomingMessagesSize -= message.Data.Length;
 					messagesFromQueue++;
 					var id = GetMessageId(message);
@@ -2451,7 +2468,7 @@ namespace SharpPulsar
 			if(Listener != null)
 			{
 				// Propagate notification to listener
-				Listener.ReachedEndOfTopic(Self);
+				Listener.ReachedEndOfTopic(_self);
 			}
 		}
 
@@ -2605,7 +2622,7 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-		private void RemoveOldestPendingChunkedMessage()
+		private async ValueTask RemoveOldestPendingChunkedMessage()
 		{
 			ChunkedMessageCtx chunkedMsgCtx = null;
 			string firstPendingMsgUuid = null;
@@ -2615,10 +2632,10 @@ namespace SharpPulsar
 				firstPendingMsgUuid = _pendingChunckedMessageUuidQueue.Dequeue();
 				chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? _chunkedMessagesMap[firstPendingMsgUuid] : null;
 			}
-			RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, this._autoAckOldestChunkedMessageOnQueueFull);
+			await RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, this._autoAckOldestChunkedMessageOnQueueFull);
 		}
 
-		protected internal virtual void RemoveExpireIncompleteChunkedMessages()
+		private async ValueTask RemoveExpireIncompleteChunkedMessages()
 		{
 			if(ExpireTimeOfIncompleteChunkedMessageMillis <= 0)
 			{
@@ -2631,7 +2648,7 @@ namespace SharpPulsar
 				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
 				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessageMillis))
 				{
-					RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
+					await RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
 				}
 				else
 				{
@@ -2640,7 +2657,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private void RemoveChunkMessage(string msgUUID, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
+		private async ValueTask RemoveChunkMessage(string msgUUID, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
 		{
 			if(chunkedMsgCtx == null)
 			{
@@ -2659,7 +2676,7 @@ namespace SharpPulsar
 					if(autoAck)
 					{
 						_log.Info("Removing chunk message-id {}", msgId);
-						DoAcknowledge(msgId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
+						await DoAcknowledge(msgId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
 					}
 					else
 					{
@@ -2675,17 +2692,17 @@ namespace SharpPulsar
 			_pendingChunckedMessageCount--;
 		}
 		private void Push(IMessage<T> obj)
-        {
+		{
+			var o = (Message<T>)obj;
 			if (_hasParentConsumer)
-				Sender.Tell(new ReceivedMessage<T>(obj));
+				Sender.Tell(new ReceivedMessage<T>(o));
 			else
             {
-				if (IncomingMessages.TryAdd(obj))
-					_log.Info($"Added message with sequnceid {obj.SequenceId} to IncomingMessages. Message Count: {IncomingMessages.Count}");
+				if (IncomingMessages.Post(o))
+					_log.Info($"Added message with sequnceid {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
 				else
-					_log.Info($"Failed to add message with sequnceid {obj.SequenceId} to IncomingMessages");
+					_log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
 			}
-				
 		}
 		private void Push<T1>(BlockingCollection<T1> queue, T1 obj)
         {

@@ -189,7 +189,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder<T> MessageListener(IMessageListener<T> messageListener)
+		public ConsumerConfigBuilder<T> MessageListener(MessageListener<T> messageListener)
 		{
 			_conf.MessageListener = messageListener;
             return this;

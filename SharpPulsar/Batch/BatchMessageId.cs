@@ -61,7 +61,6 @@ namespace SharpPulsar.Batch
 			}
 		}
 
-
 		public virtual int CompareTo(object o)
         {
             if (o is BatchMessageId other)
@@ -151,14 +150,14 @@ namespace SharpPulsar.Batch
             var entryCompare = EntryId.CompareTo(m.EntryId);
             if (entryCompare != 0)
                 return entryCompare;
-            
-            var partitionCompare = PartitionIndex.CompareTo(m.PartitionIndex);
+
+			var batchCompare = BatchIndex.CompareTo(m.BatchIndex);
+			if (batchCompare != 0)
+				return batchCompare;
+
+			var partitionCompare = PartitionIndex.CompareTo(m.PartitionIndex);
             if (partitionCompare != 0)
                 return partitionCompare;
-            
-            var batchCompare = BatchIndex.CompareTo(m.BatchIndex);
-            if (batchCompare != 0)
-                return batchCompare;
 
             return 0;
         }

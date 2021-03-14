@@ -9,6 +9,7 @@ using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -45,7 +46,7 @@ namespace SharpPulsar
 			if(IncomingMessages.Count > 0)
 			{
 				_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
-				IncomingMessages.Empty();
+				await IncomingMessages.Empty();
 			}
 
 			IMessage<T> message;
@@ -59,7 +60,7 @@ namespace SharpPulsar
 				}
 				do
 				{
-					message = IncomingMessages.Take();
+					message = await IncomingMessages.ReceiveAsync();
 					_lastDequeuedMessageId = message.MessageId;
 					var msgCnx = ((Message<T>) message).Cnx();
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
@@ -85,7 +86,7 @@ namespace SharpPulsar
 				// Finally blocked is invoked in case the block on incomingMessages is interrupted
 				_waitingOnReceiveForZeroQueueSize = false;
 				// Clearing the queue in case there was a race with messageReceived
-				IncomingMessages.Empty();
+				await IncomingMessages.Empty();
 			}
 		}
 
@@ -132,7 +133,7 @@ namespace SharpPulsar
 					}
 					_waitingOnListenerForZeroQueueSize = true;
 					TrackMessage(message);
-					Listener.Received(self, message);
+					Listener.Received(_self, message);
 				}
 				catch (Exception t)
 				{
