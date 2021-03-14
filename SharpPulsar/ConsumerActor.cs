@@ -1504,7 +1504,9 @@ namespace SharpPulsar
 			// Lazy task scheduling to expire incomplete chunk message
 			if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessageMillis > 0)
 			{				
-				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
+				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), async () => {
+					await RemoveExpireIncompleteChunkedMessages();
+				});
 				_expireChunkMessageTaskScheduled = true;
 			}
 
@@ -1515,7 +1517,7 @@ namespace SharpPulsar
 				_pendingChunckedMessageCount++;
 				if (_maxPendingChuckedMessage > 0 && _pendingChunckedMessageCount > _maxPendingChuckedMessage)
 				{
-					RemoveOldestPendingChunkedMessage();
+					await RemoveOldestPendingChunkedMessage();
 				}
 				_pendingChunckedMessageUuidQueue.Enqueue(msgMetadata.Uuid);
 			}
@@ -1640,6 +1642,7 @@ namespace SharpPulsar
 					}
 					var singleMessageMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
 					var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+					var singleMetadata = singleMessageMetadata;
 					if (IsSameEntry(messageId) && IsPriorBatchIndex(i))
 					{
 						// If we are receiving a batch message, we need to discard messages that were prior
@@ -1674,7 +1677,7 @@ namespace SharpPulsar
 
 					var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex, i, batchSize, acker);
 
-					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
 					if(possibleToDeadLetter != null)
 					{
 						possibleToDeadLetter.Add(message);
@@ -2616,7 +2619,7 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-		private void RemoveOldestPendingChunkedMessage()
+		private async ValueTask RemoveOldestPendingChunkedMessage()
 		{
 			ChunkedMessageCtx chunkedMsgCtx = null;
 			string firstPendingMsgUuid = null;
@@ -2626,10 +2629,10 @@ namespace SharpPulsar
 				firstPendingMsgUuid = _pendingChunckedMessageUuidQueue.Dequeue();
 				chunkedMsgCtx = !string.IsNullOrWhiteSpace(firstPendingMsgUuid) ? ChunkedMessagesMap[firstPendingMsgUuid] : null;
 			}
-			RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, this._autoAckOldestChunkedMessageOnQueueFull);
+			await RemoveChunkMessage(firstPendingMsgUuid, chunkedMsgCtx, this._autoAckOldestChunkedMessageOnQueueFull);
 		}
 
-		protected internal virtual void RemoveExpireIncompleteChunkedMessages()
+		private async ValueTask RemoveExpireIncompleteChunkedMessages()
 		{
 			if(ExpireTimeOfIncompleteChunkedMessageMillis <= 0)
 			{
@@ -2642,7 +2645,7 @@ namespace SharpPulsar
 				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? ChunkedMessagesMap[messageUUID] : null;
 				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessageMillis))
 				{
-					RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
+					await RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
 				}
 				else
 				{
@@ -2651,7 +2654,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private void RemoveChunkMessage(string msgUUID, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
+		private async ValueTask RemoveChunkMessage(string msgUUID, ChunkedMessageCtx chunkedMsgCtx, bool autoAck)
 		{
 			if(chunkedMsgCtx == null)
 			{
@@ -2670,7 +2673,7 @@ namespace SharpPulsar
 					if(autoAck)
 					{
 						_log.Info("Removing chunk message-id {}", msgId);
-						DoAcknowledge(msgId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
+						await DoAcknowledge(msgId, CommandAck.AckType.Individual, new Dictionary<string, long>(), null);
 					}
 					else
 					{

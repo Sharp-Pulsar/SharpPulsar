@@ -142,8 +142,11 @@ namespace SharpPulsar.Test
 			while (reader.HasMessageAvailable())
 			{
 				var message = (Message<sbyte[]>)reader.ReadNext();
-				_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data.ToBytes())}");
-				Assert.True(keys.Remove(message.Key));
+				if(message != null)
+				{
+					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data.ToBytes())}");
+					Assert.True(keys.Remove(message.Key));
+				}
 			}
 			Assert.True(keys.Count == 0);
 

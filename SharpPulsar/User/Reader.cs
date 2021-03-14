@@ -61,11 +61,10 @@ namespace SharpPulsar.User
         public async ValueTask<IMessage<T>> ReadNextAsync()
         {
             await VerifyConsumerState().ConfigureAwait(false);
-            var m = await _queue.IncomingMessages.ReceiveAsync();
-            if (m!= null)
+            if (_queue.IncomingMessages.TryReceive(out var m))
             {
                 _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(m));
-            } 
+            }
             return m;
         }
         public IMessage<T> ReadNext(int timeout, TimeUnit unit) => ReadNextAsync(timeout, unit).GetAwaiter().GetResult();

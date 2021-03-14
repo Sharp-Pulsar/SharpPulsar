@@ -41,6 +41,7 @@ namespace SharpPulsar
 		private IActorRef _cnx;
 
 		private readonly MessageMetadata _metadata;
+		private readonly Metadata _mtadata;
 		private byte[] _payload { get; set; }
 		private ISchema<T> _schema;
 		private SchemaState _schemaState = SchemaState.None;
@@ -111,7 +112,8 @@ namespace SharpPulsar
 				SingleMessageMetadata singleMessageMetadata, byte[] payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount)
         {
-            _metadata = msgMetadata;
+			_metadata = msgMetadata;
+			_mtadata = new Metadata();
 			_messageId = batchMessageId;
 			_topic = topic;
 			_cnx = cnx;
@@ -136,30 +138,34 @@ namespace SharpPulsar
 
 			if (singleMessageMetadata.ShouldSerializePartitionKey())
 			{
-				_metadata.PartitionKeyB64Encoded = singleMessageMetadata.PartitionKeyB64Encoded;
-				_metadata.PartitionKey = singleMessageMetadata.PartitionKey;
+				_mtadata.HasBase64EncodedKey = singleMessageMetadata.PartitionKeyB64Encoded;
+				_mtadata.Key = singleMessageMetadata.PartitionKey;
 			}
 			else if (msgMetadata.ShouldSerializePartitionKey())
 			{
-				_metadata.PartitionKey = string.Empty;
-				_metadata.PartitionKeyB64Encoded = false;
+				_mtadata.Key = string.Empty;
+				_mtadata.HasBase64EncodedKey = false;
 			}
 			if (singleMessageMetadata.ShouldSerializeOrderingKey())
 			{
-				_metadata.OrderingKey = singleMessageMetadata.OrderingKey;
+				_mtadata.OrderingKey = singleMessageMetadata.OrderingKey;
 			}
 			else if (msgMetadata.ShouldSerializeOrderingKey())
 			{
-				_metadata.OrderingKey = new byte[0] {};
+				_mtadata.OrderingKey = new byte[0] {};
 			}
 			if (singleMessageMetadata.ShouldSerializeEventTime())
 			{
-				_metadata.EventTime = singleMessageMetadata.EventTime;
+				_mtadata.EventTime = (long)singleMessageMetadata.EventTime;
 			}
 
 			if (singleMessageMetadata.ShouldSerializeSequenceId())
 			{
-				_metadata.SequenceId = singleMessageMetadata.SequenceId;
+				_mtadata.SequenceId = (long)singleMessageMetadata.SequenceId;
+			}
+			if (msgMetadata.ShouldSerializeReplicatedFrom())
+			{
+				_mtadata.ReplicatedFrom = msgMetadata.ReplicatedFrom;
 			}
 
 			if (singleMessageMetadata.NullValue)
@@ -195,49 +201,52 @@ namespace SharpPulsar
 			_redeliveryCount = 0;
 			_metadata = msgMetadata;
 		}
+
 		public virtual string ReplicatedFrom
 		{
 			set
 			{
-				Condition.CheckNotNull(_metadata);
-				_metadata.ReplicatedFrom = value;
+				if (_metadata != null)
+					_metadata.ReplicatedFrom = value;
 			}
 			get
 			{
-				Condition.CheckNotNull(_metadata);
+				if (_mtadata != null)
+					return _mtadata.ReplicatedFrom;
+				
 				return _metadata.ReplicatedFrom;
 			}
 		}
-
 		public virtual bool Replicated
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
+				if (_mtadata != null)
+					return !string.IsNullOrWhiteSpace(_mtadata.ReplicatedFrom);
+				
 				return !string.IsNullOrWhiteSpace(_metadata.ReplicatedFrom);
 			}
 		}
-
 
 		public virtual long PublishTime
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
+				if(_mtadata != null)
+					return _mtadata.PublishTime;
+
 				return (long)_metadata.PublishTime;
 			}
 		}
-
 		public virtual long EventTime
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata); ;
-				if (_metadata.EventTime > 0)
-				{
-					return (long)_metadata.EventTime;
+				if (_mtadata != null)
+                {
+					return (long)_mtadata.EventTime;
 				}
-				return 0;
+				return (long)_metadata.EventTime;
 			}
 		}
 
@@ -355,11 +364,19 @@ namespace SharpPulsar
 		{
 			get
 			{
-				//maybe it works
+				var schemaType = _schema.GetType();
+				var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
+
 				var kvSchema = (KeyValueSchema<object, object>)_schema;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
+				if (keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
-					return (T)(object)kvSchema.Decode(_metadata.NullPartitionKey ? null : KeyBytes, _metadata.NullValue ? null : Data, null);
+					var decode = schemaType
+						.GetMethods()
+						.Where(x => x.Name == "Decode")
+						.FirstOrDefault(x => x.GetParameters().Length == 3);
+					var k = _metadata.NullPartitionKey ? null : KeyBytes;
+					var v = _metadata.NullValue ? null : Data;
+					return (T)decode.Invoke(_schema, new object[] { k, v, null });
 				}
 				else
 				{
@@ -372,28 +389,40 @@ namespace SharpPulsar
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
-				if (_metadata.SequenceId >= 0)
-				{
-					return (long)_metadata.SequenceId;
+				if(_mtadata != null)
+                {
+					if (_mtadata.SequenceId >= 0)
+					{
+						return _mtadata.SequenceId;
+					}
+					return -1;
 				}
-				return -1;
+				return (long)_metadata.SequenceId;
 			}
 		}
 
 		public int RedeliveryCount { get => _redeliveryCount; }
 
-
 		public string ProducerName
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
-				if (!string.IsNullOrWhiteSpace(_metadata.ProducerName))
+				if(_mtadata != null)
 				{
-					return _metadata.ProducerName;
+					if (!string.IsNullOrWhiteSpace(_mtadata.ProducerName))
+					{
+						return _mtadata.ProducerName;
+					}
+					return null;
 				}
-				return null;
+                else
+                {
+					if (!string.IsNullOrWhiteSpace(_metadata.ProducerName))
+					{
+						return _metadata.ProducerName;
+					}
+					return null;
+				}
 			}
 		}
 
@@ -405,7 +434,6 @@ namespace SharpPulsar
 			
             return MessageId;
 		}
-
 		public IDictionary<string, string> Properties
 		{
 			get
@@ -430,23 +458,29 @@ namespace SharpPulsar
 
 		public bool HasKey()
 		{
-			Condition.CheckNotNull(_metadata);
+			if(_mtadata != null)
+				return !string.IsNullOrWhiteSpace(_mtadata.Key);
+			
 			return !string.IsNullOrWhiteSpace(_metadata.PartitionKey);
 		}
-
 
 		public string Key
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
-				return _metadata.PartitionKey;
+				if(_mtadata != null)
+					return _mtadata.Key;
+
+				return  _metadata.PartitionKey;
 			}
 		}
 
+
 		public bool HasBase64EncodedKey()
 		{
-			Condition.CheckNotNull(_metadata);
+			if(_mtadata != null)
+				return _mtadata.HasBase64EncodedKey;
+
 			return _metadata.PartitionKeyB64Encoded;
 		}
 
@@ -454,27 +488,28 @@ namespace SharpPulsar
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
 				if (HasBase64EncodedKey())
 				{
 					return Convert.FromBase64String(Key).ToSBytes();
 				}
 
-                return Encoding.UTF8.GetBytes(Key).ToSBytes();
-            }
+				return Encoding.UTF8.GetBytes(Key).ToSBytes();
+			}
 		}
 
 		public bool HasOrderingKey()
 		{
-			Condition.CheckNotNull(_metadata);
-			return _metadata.OrderingKey?.Length > 0;
+			
+			return OrderingKey?.Length > 0;
 		}
-
+		
 		public sbyte[] OrderingKey
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
+				if(_mtadata != null)
+					return _mtadata.OrderingKey.ToSBytes();
+
 				return _metadata.OrderingKey.ToSBytes();
 			}
 		}
@@ -482,15 +517,16 @@ namespace SharpPulsar
 		
 		public bool HasReplicateTo()
 		{
-			Condition.CheckNotNull(_metadata);
-			return _metadata.ReplicateToes.Count > 0;
+			return ReplicateTo.Count > 0;
 		}
-
+		
 		public IList<string> ReplicateTo
 		{
 			get
 			{
-				Condition.CheckNotNull(_metadata);
+				if(_mtadata != null)
+					return _mtadata.ReplicateTo;
+
 				return _metadata.ReplicateToes;
 			}
 		}
@@ -531,5 +567,20 @@ namespace SharpPulsar
 		}
 		
 	}
+	public sealed class Metadata
+    {
+		public string Key { get; set; }
+		public IList<string> ReplicateTo { get; set; }
+		public byte[] OrderingKey { get; set; }
+		public bool HasBase64EncodedKey { get; set; }
+		public string ProducerName { get; set; }
+		public long SequenceId { get; set; }
+		public byte[] SchemaVersion { get; set; }
+		public long EventTime { get; set; }
+		public long PublishTime { get; set; }
+		public bool Replicated { get; set; }
+		public string ReplicatedFrom { get; set; }
+		public Dictionary<string, string> Properties { get; set; }
 
+	}
 }
