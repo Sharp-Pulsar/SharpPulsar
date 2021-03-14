@@ -1643,9 +1643,12 @@ namespace SharpPulsar
 					{
 						_log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {i} in batch");
 					}
+					//@davidfowl this the origin - TestReadMessageWithBatching() to test this!
+					//am thinking that the last singleMessageMetadata instance after the iteration
+					//is what is been referenced for all elements in the collection when line 2705 is hit
 					var singleMessageMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
 					var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
-					var singleMetadata = singleMessageMetadata;
+					
 					if (IsSameEntry(messageId) && IsPriorBatchIndex(i))
 					{
 						// If we are receiving a batch message, we need to discard messages that were prior
@@ -1680,7 +1683,7 @@ namespace SharpPulsar
 
 					var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex, i, batchSize, acker);
 
-					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
 					if(possibleToDeadLetter != null)
 					{
 						possibleToDeadLetter.Add(message);
