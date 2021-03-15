@@ -139,7 +139,7 @@ namespace SharpPulsar.Test
 				.ReaderName(Subscription);
 			var reader = _client.NewReader(builder);
 			Thread.Sleep(TimeSpan.FromSeconds(30));
-			while (reader.HasMessageAvailable())
+			for (var i = 0; i < numKeys; i++)
 			{
 				var message = (Message<sbyte[]>)reader.ReadNext();
 				if(message != null)
@@ -147,15 +147,10 @@ namespace SharpPulsar.Test
 					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data.ToBytes())}");
 					Assert.True(keys.Remove(message.Key));
 				}
+				else
+					break;
 			}
 			Assert.True(keys.Count == 0);
-
-			var builderLatest = new ReaderConfigBuilder<sbyte[]>()
-				.Topic(topic)
-				.StartMessageId(IMessageId.Latest)
-				.ReaderName(Subscription + "latest");
-			var readerLatest = _client.NewReader(builderLatest);
-			Assert.False(readerLatest.HasMessageAvailable());
 		}
 		[Fact]
 		public virtual void TestReadFromPartition()
@@ -171,7 +166,7 @@ namespace SharpPulsar.Test
 				.ReaderName(Subscription);
 			var reader = _client.NewReader(builder);
 
-			while (reader.HasMessageAvailable())
+			for (var i = 0; i < numKeys; i++)
 			{
 				var message = reader.ReadNext();
 				Assert.True(keys.Remove(message.Key));

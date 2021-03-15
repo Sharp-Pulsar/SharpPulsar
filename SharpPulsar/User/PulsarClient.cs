@@ -507,7 +507,6 @@ namespace SharpPulsar.User
                 }
                 IActorRef reader;
                 IActorRef stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
-                
                 if (metadata.Partitions > 0)
                 {
                     reader = _actorSystem.ActorOf(Props.Create<MultiTopicsReader<T>>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));                    

@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Threading.Tasks.Dataflow;
+using System.Runtime.CompilerServices;
 
 namespace SharpPulsar.User
 {
@@ -204,13 +205,20 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeoutInMs));
-            if(message != null)
+            try
             {
-                _consumerActor.Tell(new MessageProcessed<T>(message));
-                return BeforeConsume(message);
+                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeoutInMs));
+                if (message != null)
+                {
+                    _consumerActor.Tell(new MessageProcessed<T>(message));
+                    return BeforeConsume(message);
+                }
+                return message;
             }
-            return message;
+            catch
+            {
+                return null;
+            }
         }
 
         protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
@@ -245,13 +253,9 @@ namespace SharpPulsar.User
                 }
                 return message;
             }
-            catch (TimeoutException)
+            catch
             {
                 return null;
-            }
-            catch(Exception ex)
-            {
-                throw ex;
             }
         }
         /// <summary>
@@ -279,14 +283,28 @@ namespace SharpPulsar.User
 
             if (await HasEnoughMessagesForBatchReceive())
             {
-                var message = await _queue.IncomingMessages.ReceiveAsync();
-
+                IMessage<T> message;
+                try
+                {
+                    message = await _queue.IncomingMessages.ReceiveAsync(TimeSpan.FromSeconds(5));
+                }
+                catch
+                {
+                    message = null;
+                }
                 while (message != null && messages.CanAdd(message))
                 {
-                    _consumerActor.Tell(new MessageProcessed<T>(message));
-                    IMessage<T> interceptMsg = BeforeConsume(message);
-                    messages.Add(interceptMsg);
-                    message = await _queue.IncomingMessages.ReceiveAsync();
+                    try
+                    {
+                        _consumerActor.Tell(new MessageProcessed<T>(message));
+                        IMessage<T> interceptMsg = BeforeConsume(message);
+                        messages.Add(interceptMsg);
+                        message = await _queue.IncomingMessages.ReceiveAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch
+                    {
+                        break;
+                    }
                 }
             }
             return messages;
@@ -447,14 +465,23 @@ namespace SharpPulsar.User
         /// <param name="takeCount"></param>
         /// <param name="customProcess"></param>
         /// <returns></returns>
-        public async IAsyncEnumerable<T> ReceiveFunc(bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<IMessage<T>, T> customHander = null, CancellationToken token = default)
+        public async IAsyncEnumerable<T> ReceiveFunc(bool autoAck = true, int takeCount = -1, int receiveTimeout = 3000, Func<IMessage<T>, T> customHander = null, [EnumeratorCancellation]CancellationToken token = default)
         {
             //no end
             if (takeCount == -1)
             {
                 for (var i = 0; i > takeCount; i++)
                 {
-                    var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(receiveTimeout), cancellationToken: token);
+                    IMessage<T> message;
+                    try
+                    {
+                        message = message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(receiveTimeout), cancellationToken: token);
+                    }
+                    catch
+                    {
+                        message = null;
+                    }
+
                     if (message != null)
                     {
                         yield return ProcessMessage(message, autoAck, customHander); 
@@ -465,7 +492,15 @@ namespace SharpPulsar.User
             {
                 for (var i = 0; i < takeCount; i++)
                 {
-                    var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(receiveTimeout), cancellationToken: token);
+                    IMessage<T> message;
+                    try
+                    {
+                        message = message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(receiveTimeout), cancellationToken: token);
+                    }
+                    catch
+                    {
+                        message = null;
+                    }
                     if (message != null)
                     {
                         yield return ProcessMessage(message, autoAck, customHander);
@@ -482,7 +517,15 @@ namespace SharpPulsar.User
                 //drain the current messages
                 while (true)
                 {
-                    var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(receiveTimeout), cancellationToken: token);
+                    IMessage<T> message;
+                    try
+                    {
+                        message = message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(receiveTimeout), cancellationToken: token);
+                    }
+                    catch
+                    {
+                        message = null;
+                    }
                     if (message != null)
                     {
                         yield return ProcessMessage(message, autoAck, customHander);

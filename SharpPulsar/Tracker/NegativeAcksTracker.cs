@@ -87,7 +87,6 @@ namespace SharpPulsar.Tracker
                 }
                 if(messagesToRedeliver.Count > 0)
                 {
-                    _log.Info($"messagesToRedeliver: {messagesToRedeliver.Count}");
                     messagesToRedeliver.ForEach(a => _nackedMessages.Remove(a));
                     _parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
                     _parent.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));

@@ -45,11 +45,15 @@ namespace SharpPulsar.Extension
         }
         public static async Task Empty<T>(this BufferBlock<IMessage<T>> messages)
         {
-            var m = await messages.ReceiveAsync();
-            while (m != null) 
+            try
             {
-                m = await messages.ReceiveAsync();
+                var m = await messages.ReceiveAsync(TimeSpan.FromMilliseconds(5000));
+                while (m != null)
+                {
+                    m = await messages.ReceiveAsync(TimeSpan.FromMilliseconds(5000));
+                }
             }
+            catch { }
         }
         public static BitArray FromLongArray(this IList<long> ackSets, int numMessagesInBatch)
         {

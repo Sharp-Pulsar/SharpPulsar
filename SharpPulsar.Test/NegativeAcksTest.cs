@@ -47,15 +47,13 @@ namespace SharpPulsar.Test
 		[Fact]
         public void TestNegativeAcksBatch()
         {
-			Thread.Sleep(TimeSpan.FromSeconds(10));
-			TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
+			TestNegativeAcks(true, false, CommandSubscribe.SubType.Exclusive, 10000, 8000);
         }
 		
 		[Fact]
         public void TestNegativeAcksNoBatch()
         {
-			Thread.Sleep(TimeSpan.FromSeconds(10));
-			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 35000, 30000);
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 10000, 8000);
         }
 
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)
@@ -75,9 +73,12 @@ namespace SharpPulsar.Test
 
 			var pBuilder = new ProducerConfigBuilder<sbyte[]>();
 			pBuilder.Topic(topic);
-			pBuilder.EnableBatching(batching);
-			pBuilder.BatchingMaxPublishDelay(negAcksDelayMillis);
-			pBuilder.BatchingMaxMessages(10);
+			if(batching)
+            {
+				pBuilder.EnableBatching(batching);
+				pBuilder.BatchingMaxPublishDelay(negAcksDelayMillis);
+				pBuilder.BatchingMaxMessages(10);
+			}
 			var producer = _client.NewProducer(pBuilder);
 
 			ISet<string> sentMessages = new HashSet<string>();
@@ -94,22 +95,27 @@ namespace SharpPulsar.Test
 			{
 				var msg = consumer.Receive();
 				if(msg != null)
-				    consumer.NegativeAcknowledge(msg);
+                {
+					var ms = Encoding.UTF8.GetString(msg.Data.ToBytes());
+					consumer.NegativeAcknowledge(msg);
+					_output.WriteLine(ms);
+				}
 			}
 
 			ISet<string> receivedMessages = new HashSet<string>();
 
+			Thread.Sleep(TimeSpan.FromSeconds(15));
 			// All the messages should be received again
 			for (int i = 0; i < n; i++)
 			{
                 var msg = consumer.Receive();
                 if (msg != null)
                 {
-                    receivedMessages.Add(Encoding.UTF8.GetString(msg.Data.ToBytes()));
+					var ms = Encoding.UTF8.GetString(msg.Data.ToBytes());
+					_output.WriteLine(ms);
+					receivedMessages.Add(ms);
                     consumer.Acknowledge(msg);
                 }
-                else
-                    i--;
             }
 
 			Assert.Equal(sentMessages, receivedMessages);

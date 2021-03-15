@@ -312,6 +312,10 @@ namespace SharpPulsar
 		}
 		private void Ready()
         {
+			Receive<SendState>(_ =>
+			{
+				StateActor.Tell(new SetConumerState(State.ConnectionState));
+			});
 			Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
 			{
 				MessageId msgid;
@@ -363,10 +367,10 @@ namespace SharpPulsar
 				else
 					IncreaseAvailablePermits(cnx);
 			});
-			Receive<AcknowledgeMessage<T>>(m => {
+			ReceiveAsync<AcknowledgeMessage<T>>(async m => {
                 try
                 {
-					Acknowledge(m.Message);
+					await Acknowledge(m.Message);
 
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
@@ -375,10 +379,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeMessageId>(m => {
+			ReceiveAsync<AcknowledgeMessageId>(async m => {
                 try
                 {
-					Acknowledge(m.MessageId);
+					await Acknowledge(m.MessageId);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
                 catch(Exception ex)
@@ -386,10 +390,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeMessageIds>(m => {
+			ReceiveAsync<AcknowledgeMessageIds>(async m => {
                 try
                 {
-					Acknowledge(m.MessageIds);
+					await Acknowledge(m.MessageIds);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
                 catch(Exception ex)
@@ -397,10 +401,11 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeMessages<T>>(m => {
+			ReceiveAsync<AcknowledgeMessages<T>>(async m => 
+			{
                 try
                 {
-					Acknowledge(m.Messages);
+					await Acknowledge(m.Messages);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
                 catch(Exception ex)
@@ -408,10 +413,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeCumulativeMessageId>(m => {
+			ReceiveAsync<AcknowledgeCumulativeMessageId>(async m => {
 				try
 				{
-					AcknowledgeCumulative(m.MessageId);
+					await AcknowledgeCumulative(m.MessageId);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -419,10 +424,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeCumulativeMessage<T>>(m => {
+			ReceiveAsync<AcknowledgeCumulativeMessage<T>>(async m => {
 				try
 				{
-					AcknowledgeCumulative(m.Message);
+					await AcknowledgeCumulative(m.Message);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -677,10 +682,8 @@ namespace SharpPulsar
 			ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m => 
 			{
                 try
-                {
-					_log.Info($"RedeliverUnacknowledgedMessageIds: {m.MessageIds.Count}");
+				{
 					await RedeliverUnacknowledgedMessages(m.MessageIds);
-					_log.Info($"RedeliverUnacknowledgedMessageIds=2: {m.MessageIds.Count}");
 					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
 				}
                 catch (Exception ex)
@@ -1986,6 +1989,7 @@ namespace SharpPulsar
 				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				var currentSize = IncomingMessages.Count;
 				await IncomingMessages.Empty();
+				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
 				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);
@@ -2044,25 +2048,30 @@ namespace SharpPulsar
 				int messagesFromQueue = await RemoveExpiredMessagesFromQueue(messageIds);
 
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
-				batches.ForEach(ids =>
-				{
-					IList<MessageIdData> messageIdDatas = ids.Where(messageId => !ProcessPossibleToDLQ(messageId)).Select(messageId =>
-					{
-                        var builder = new MessageIdData
-                        {
-                            Partition = messageId.PartitionIndex,
-                            ledgerId = (ulong)messageId.LedgerId,
-                            entryId = (ulong)messageId.EntryId
-                        };
-                        return builder;
-					}).ToList();
-					if(messageIdDatas.Count > 0)
+				foreach(var batch in batches)
+                {
+					var messageIdDatas = new List<MessageIdData>();
+					foreach(var msgId in batch)
                     {
+						if(!await ProcessPossibleToDLQ(msgId))
+                        {
+							messageIdDatas.Add(
+							new MessageIdData
+							{
+								Partition = msgId.PartitionIndex,
+								ledgerId = (ulong)msgId.LedgerId,
+								entryId = (ulong)msgId.EntryId
+							});
+                        }
+                    }
+
+					if (messageIdDatas.Count > 0)
+					{
 						var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdDatas);
 						var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 						cnx.Tell(payload);
 					}
-				});
+				}
 				if(messagesFromQueue > 0)
 				{
 					IncreaseAvailablePermits(cnx, messagesFromQueue);
@@ -2084,7 +2093,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private bool ProcessPossibleToDLQ(IMessageId messageId)
+		private async ValueTask<bool> ProcessPossibleToDLQ(IMessageId messageId)
 		{
 			IList<IMessage<T>> deadLetterMessages = null;
 			if(_possibleSendToDeadLetterTopicMessages != null)
@@ -2126,7 +2135,7 @@ namespace SharpPulsar
 							typedMessageBuilderNew.Properties(message.Properties);
 							typedMessageBuilderNew.Send(true);
 						}
-						Acknowledge(messageId);
+						await Acknowledge(messageId);
 						return true;
 					}
 					catch(Exception e)
@@ -2437,8 +2446,7 @@ namespace SharpPulsar
 		private async ValueTask<int> RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			int messagesFromQueue = 0;
-			var peek = await IncomingMessages.ReceiveAsync();
-			if (peek != null)
+			if (IncomingMessages.TryReceive(out var peek))
 			{
 				var messageId = GetMessageId(peek);
 				if(!messageIds.Contains(messageId))

@@ -191,10 +191,10 @@ namespace SharpPulsar
 			{
 				IncomingMessages.Post(r.Message);
 			});
-			Receive<AcknowledgeMessage<T>>(m => {
+			ReceiveAsync<AcknowledgeMessage<T>>(async m => {
 				try
 				{
-					Acknowledge(m.Message);
+					await Acknowledge(m.Message);
 
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
@@ -203,10 +203,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeMessageId>(m => {
+			ReceiveAsync<AcknowledgeMessageId>(async m => {
 				try
 				{
-					Acknowledge(m.MessageId);
+					await Acknowledge(m.MessageId);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
 				catch (Exception ex)
@@ -214,10 +214,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeMessageIds>(m => {
+			ReceiveAsync<AcknowledgeMessageIds>(async m => {
 				try
 				{
-					Acknowledge(m.MessageIds);
+					await Acknowledge(m.MessageIds);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
 				catch (Exception ex)
@@ -225,10 +225,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeMessages<T>>(m => {
+			ReceiveAsync<AcknowledgeMessages<T>>(async m => {
 				try
 				{
-					Acknowledge(m.Messages);
+					await Acknowledge(m.Messages);
 					Push(ConsumerQueue.AcknowledgeException, null);
 				}
 				catch (Exception ex)
@@ -236,10 +236,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			Receive<AcknowledgeCumulativeMessageId>(m => {
+			ReceiveAsync<AcknowledgeCumulativeMessageId>(async m => {
 				try
 				{
-					AcknowledgeCumulative(m.MessageId);
+					await AcknowledgeCumulative(m.MessageId);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -1382,11 +1382,11 @@ namespace SharpPulsar
 			return !IMessageId.Earliest.Equals(messageId) && !IMessageId.Latest.Equals(messageId);
 		}
 
-		internal virtual void TryAcknowledgeMessage(IMessage<T> msg)
+		internal virtual async ValueTask TryAcknowledgeMessage(IMessage<T> msg)
 		{
 			if(msg != null)
 			{
-				AcknowledgeCumulative(msg);
+				await AcknowledgeCumulative(msg);
 			}
 		}
 	}

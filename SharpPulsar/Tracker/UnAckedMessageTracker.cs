@@ -89,7 +89,7 @@ namespace SharpPulsar.Tracker
                 var size = Size();
                 Sender.Tell(size);
             });
-            Receive<RunJob>(r=> RedeliverMessages());
+            ReceiveAsync<RunJob>(async _=> await RedeliverMessages());
             ReceiveAsync<AddChunkedMessageIdsAndRemoveFromSequnceMap>(async c =>
             {
                 var ids = new HashSet<IMessageId>(c.MessageIds);
@@ -99,7 +99,7 @@ namespace SharpPulsar.Tracker
             _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
 
         }
-        private void RedeliverMessages()
+        private async ValueTask RedeliverMessages()
         {
             var messageIds = new SortedSet<IMessageId>();
             try
@@ -108,12 +108,12 @@ namespace SharpPulsar.Tracker
                 if (headPartition?.Count > 0)
                 {
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
-                    headPartition.ForEach(async messageId =>
+                    foreach(var messageId in headPartition)
                     {
                         await AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds);
                         messageIds.Add(messageId);
                         MessageIdPartitionMap.Remove(messageId, out var m);
-                    });
+                    }
                 }
 
                 headPartition?.Clear();

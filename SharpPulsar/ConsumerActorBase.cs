@@ -74,13 +74,13 @@ namespace SharpPulsar
 		protected internal readonly BatchReceivePolicy BatchReceivePolicy;
 		protected internal long IncomingMessagesSize = 0L;
 		protected internal ICancelable BatchReceiveTimeout = null;
-		private readonly IActorRef _stateActor;
+		protected internal readonly IActorRef StateActor;
 		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
 		public ConsumerActorBase(IActorRef stateActor, IActorRef client, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
-			_stateActor = stateActor;
+			StateActor = stateActor;
 			_topic = topic;
 			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
@@ -98,6 +98,7 @@ namespace SharpPulsar
 			ListenerExecutor = listenerExecutor;
 			Schema = schema;
 			Interceptors = interceptors;
+			
 			if (conf.BatchReceivePolicy != null)
 			{
 				BatchReceivePolicy userBatchReceivePolicy = conf.BatchReceivePolicy;
@@ -126,19 +127,15 @@ namespace SharpPulsar
 				//BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
 				
 			}
-			_stateUpdater = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(5000), ()=> 
-			{
-				var actor = _stateActor;
-				actor.Tell(new SetConumerState(State.ConnectionState));
-			});
+			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), Self, SendState.Instance, ActorRefs.NoSender);
 		}
 		
 
-		internal virtual void Acknowledge(IMessage<T> message)
+		internal virtual async ValueTask Acknowledge(IMessage<T> message)
 		{
 			try
 			{
-				Acknowledge(message.MessageId);
+				await Acknowledge(message.MessageId);
 			}
 			catch (Exception npe)
 			{
@@ -147,11 +144,11 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void Acknowledge(IMessageId messageId)
+		internal virtual async ValueTask Acknowledge(IMessageId messageId)
 		{
 			try
 			{
-				Acknowledge(messageId, null);
+				await Acknowledge(messageId, null);
 			}
 			catch (Exception e)
 			{
@@ -160,11 +157,11 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void Acknowledge(IList<IMessageId> messageIdList)
+		internal virtual async ValueTask Acknowledge(IList<IMessageId> messageIdList)
 		{
 			try
 			{
-				DoAcknowledgeWithTxn(messageIdList, AckType.Individual, new Dictionary<string, long>(), null);
+				await DoAcknowledgeWithTxn(messageIdList, AckType.Individual, new Dictionary<string, long>(), null);
 			}
 			catch (Exception e)
 			{
@@ -173,11 +170,14 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void Acknowledge(IMessages<T> messages)
+		internal virtual async ValueTask Acknowledge(IMessages<T> messages)
 		{
 			try
 			{
-				messages.ForEach(x => Acknowledge(x));
+				foreach(var x in messages)
+                {
+					await Acknowledge(x);
+				}
 			}
 			catch (Exception e)
 			{
@@ -224,11 +224,11 @@ namespace SharpPulsar
 		}
 
 		
-		internal virtual void AcknowledgeCumulative<T1>(IMessage<T1> message)
+		internal virtual async ValueTask AcknowledgeCumulative<T1>(IMessage<T1> message)
 		{
 			try
 			{
-				AcknowledgeCumulative(message.MessageId);
+				await AcknowledgeCumulative(message.MessageId);
 			}
 			catch (System.NullReferenceException npe)
 			{
@@ -236,11 +236,11 @@ namespace SharpPulsar
 			}
 		}
 
-		internal virtual void AcknowledgeCumulative(IMessageId messageId)
+		internal virtual async ValueTask AcknowledgeCumulative(IMessageId messageId)
 		{
 			try
 			{
-				AcknowledgeCumulative(messageId, null); 
+				await AcknowledgeCumulative(messageId, null); 
 			}
 			catch (Exception e)
 			{
@@ -429,9 +429,19 @@ namespace SharpPulsar
 		private HandlerState.State _state;
 		public ConsumerStateActor()
         {
-			Receive<SetConumerState>(m => _state = m.State);
-			Receive<GetHandlerState>(_ => Sender.Tell(new HandlerStateResponse(_state)));
+			Receive<SetConumerState>(m => 
+			{
+				_state = m.State;
+			});
+			Receive<GetHandlerState>(_ => 
+			{
+				Sender.Tell(new HandlerStateResponse(_state));
+			});
         }
+    }
+	internal sealed class SendState
+    {
+		public static SendState Instance = new SendState();
     }
 	internal class SetConumerState
     {
