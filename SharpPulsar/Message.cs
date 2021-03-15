@@ -92,7 +92,13 @@ namespace SharpPulsar
 
 			if (msgMetadata.Properties.Count > 0)
 			{
-				msgMetadata.Properties.ToList().ForEach(x => Properties.Add(x.Key, x.Value));
+				msgMetadata.Properties.ToList().ForEach(x => 
+				{
+                    if (!Properties.ContainsKey(x.Key))
+                    {
+						Properties.Add(x.Key, x.Value);
+					}
+				});
 			}
 			else
 			{

@@ -50,7 +50,7 @@ namespace SharpPulsar.Test.Api
             var builder = new ConsumerConfigBuilder<sbyte[]>();
             builder.Topic(topic);
             builder.SubscriptionName("sub-TestUnAckMessageRedeliveryWithReceive");
-            builder.AckTimeout(20000, TimeUnit.MILLISECONDS);
+            builder.AckTimeout(8000, TimeUnit.MILLISECONDS);
             builder.ForceTopicCreation(true);
             builder.AcknowledgmentGroupTime(0);
             builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);

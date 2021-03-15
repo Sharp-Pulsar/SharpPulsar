@@ -235,13 +235,24 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeoutMilliseconds), cancellationToken: token);
-            if (message != null)
+            try
             {
-                _consumerActor.Tell(new MessageProcessed<T>(message));
-                return BeforeConsume(message);
+                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeoutMilliseconds), cancellationToken: token);
+                if (message != null)
+                {
+                    _consumerActor.Tell(new MessageProcessed<T>(message));
+                    return BeforeConsume(message);
+                }
+                return message;
             }
-            return message;
+            catch (TimeoutException)
+            {
+                return null;
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
         }
         /// <summary>
         /// batch receive messages
