@@ -362,6 +362,8 @@ namespace SharpPulsar
 					return new TransactionCoordinatorClientException.CoordinatorNotFoundException(msg);
 				case ServerError.InvalidTxnStatus:
 					return new TransactionCoordinatorClientException.InvalidTxnStatusException(msg);
+				case ServerError.TransactionNotFound:
+					return new TransactionCoordinatorClientException.TransactionNotFoundException(msg);
 				default:
 					return new TransactionCoordinatorClientException(msg);
 			}

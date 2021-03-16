@@ -75,18 +75,33 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
             }
-            var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeout));
-            if (message != null)
+            try
             {
-                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                _readerActor.Tell(new MessageProcessed<T>(message));
+                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeout));
+                if (message != null)
+                {
+                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                    _readerActor.Tell(new MessageProcessed<T>(message));
+                    return message;
+                }
             }
-            return message;
+            catch { }
+            return null;
         }
         private async ValueTask VerifyConsumerState()
         {
             var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
+
+            var retry = 10;
+            while (state == HandlerState.State.Uninitialized && retry > 0)
+            {
+                result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+                state = result.State;
+                retry--;
+                if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+            }
             switch (state)
             {
                 case HandlerState.State.Ready:

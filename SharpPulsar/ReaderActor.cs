@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using BAMCIS.Util.Concurrent;
+using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -60,7 +61,11 @@ namespace SharpPulsar
 			// disable the batch receive timer for the ConsumerImpl instance wrapped by the ReaderImpl
 			consumerConfiguration.BatchReceivePolicy = _disabledBatchReceivePolicy;
 
-			if(readerConfiguration.ReaderName != null)
+			if (readerConfiguration.StartMessageId != null)
+				consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
+			
+
+			if (readerConfiguration.ReaderName != null)
 			{
 				consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
 			}
@@ -100,6 +105,9 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<MessageProcessed<T>> (m => {
 				_consumer.Tell(m);
 			});
 			Receive<HasMessageAvailable> (m => {

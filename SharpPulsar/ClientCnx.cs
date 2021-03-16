@@ -376,7 +376,7 @@ namespace SharpPulsar
 				var consumer = request.Requester;
 				var req = _pendingRequests.Remove(requestId);
 				var lid = success.LastMessageId;
-				consumer.Tell(new LastMessageIdResponse((long)lid.ledgerId, (long)lid.entryId, lid.Partition, lid.BatchIndex, lid.BatchSize, lid.AckSets));
+				consumer.Tell(new LastMessageIdResponse((long)lid.ledgerId, (long)lid.entryId, lid.Partition, lid.BatchIndex, lid.BatchSize, lid.AckSets, success.ConsumerMarkDeletePosition));
 			}
 			else
 			{
@@ -878,8 +878,9 @@ namespace SharpPulsar
 		}
 		private void RegisterConsumer(long consumerId, IActorRef consumer)
 		{
-			//if (_consumers.ContainsKey(consumerId))
-				//_consumers.Remove(consumerId);
+			if (_consumers.ContainsKey(consumerId))
+					_consumers.Remove(consumerId);
+
 			_consumers.Add(consumerId, consumer);
 		}
 		private PulsarClientException GetPulsarClientException(ServerError error, string errorMsg)

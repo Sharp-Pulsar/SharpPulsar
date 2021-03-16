@@ -97,7 +97,7 @@ namespace SharpPulsar.Batch
 		{
 			if (obj is BatchMessageId other1)
 			{
-                return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex;
+                return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex && BatchSize == other1.BatchSize;
 			}
 
             if (obj is MessageId other)
@@ -113,9 +113,10 @@ namespace SharpPulsar.Batch
 		}
 
 		// Serialization
-		public sbyte[] ToByteArray()
+		public override sbyte[] ToByteArray()
 		{
 			return ToByteArray(BatchIndex);
+			//return ToByteArray(BatchIndex, BatchSize);
 		}
 
 		public virtual bool AckIndividual()

@@ -130,7 +130,7 @@ class Build : NukeBuild
             .SetPublish("6650:6650", "8080:8080", "2181:2181")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
-            .SetImage("apachepulsar/pulsar-all:2.7.0")
+            .SetImage("apachepulsar/pulsar-all:2.7.1")
             .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120",@"PULSAR_PREFIX_transactionCoordinatorEnabled=true")
             .SetCommand("bash")
             .SetArgs("-c", "bin/set_python_version.sh && bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16")) ;

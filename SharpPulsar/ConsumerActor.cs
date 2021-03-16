@@ -367,6 +367,10 @@ namespace SharpPulsar
 				else
 					IncreaseAvailablePermits(cnx);
 			});
+			ReceiveAsync<ConnectionOpened>(async c => {
+				await ConnectionOpened(c.ClientCnx);
+				Become(AwaitingSubcriptionResponse);
+			});
 			ReceiveAsync<AcknowledgeMessage<T>>(async m => {
                 try
                 {
@@ -1441,19 +1445,19 @@ namespace SharpPulsar
 
 			// if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
 			// and return undecrypted payload
-			if(isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
+			if (isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
 			{
 				// right now, chunked messages are only supported by non-shared subscription
 				if (isChunkedMessage)
 				{
 					uncompressedPayload = await ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId, cnx);
-					if(uncompressedPayload == null)
+					if (uncompressedPayload == null)
 					{
 						return;
 					}
 				}
 
-				if(IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
+				if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
 				{
 					// We need to discard entries that were prior to startMessageId
 					if(_log.IsDebugEnabled)
@@ -2177,7 +2181,6 @@ namespace SharpPulsar
 				var sent = await cnx.AskFor<bool>(new SendRequestWithId(seek, requestId, true));
 				if (sent)
 				{
-
 					_log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to message id {messageId}");
 					_acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
 					_seekMessageId = new BatchMessageId((MessageId)messageId);
@@ -2236,16 +2239,40 @@ namespace SharpPulsar
 		private async ValueTask<bool> HasMessageAvailable()
 		{
 			try
-			{///hereredtry
+			{
 				if (_lastDequeuedMessageId == IMessageId.Earliest)
 				{
 					// if we are starting from latest, we should seek to the actual last message first.
 					// allow the last one to be read when read head inclusively.
-					if (_startMessageId.LedgerId == long.MaxValue && _startMessageId.EntryId == long.MaxValue && _startMessageId.PartitionIndex == -1)
+					if (_startMessageId.Equals(IMessageId.Latest))
 					{
-						var lstid = await LastMessageId();
-						await Seek(lstid);
-						return true;
+						var response = await InternalGetLastMessageId();
+						if(_resetIncludeHead)
+                        {
+							await Seek(response.LastMessageId);
+						}
+						var lastMessageId = MessageId.ConvertToMessageId(response.LastMessageId);
+						var markDeletePosition = MessageId.ConvertToMessageId(response.MarkDeletePosition);
+						if (markDeletePosition != null)
+						{
+							int result = markDeletePosition.CompareTo(lastMessageId);
+							if (lastMessageId.EntryId < 0)
+							{
+								return false;
+							}
+							else
+							{
+								return _resetIncludeHead ? result <= 0 : result < 0;
+							}
+						}
+						else if (lastMessageId == null || lastMessageId.EntryId < 0)
+						{
+							return false;
+						}
+						else
+						{
+							return _resetIncludeHead;
+						}
 					}
 
 					if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
@@ -2307,6 +2334,11 @@ namespace SharpPulsar
 
 		private async ValueTask<IMessageId> LastMessageId()
 		{
+			var last = await InternalGetLastMessageId();
+			return last.LastMessageId;
+		}
+		private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageId()
+		{
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
 				throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
@@ -2315,13 +2347,12 @@ namespace SharpPulsar
 			var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
 			Backoff backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMax(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create();
 
-			var getLastMessageId = new TaskCompletionSource<IMessageId>();
+			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
 			await InternalGetLastMessageId(backoff, opTimeoutMs, getLastMessageId);
 			return await getLastMessageId.Task;
 		}
-
-		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<IMessageId> source)
+		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<GetLastMessageIdResponse> source)
 		{
 			///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 
 			///retrying in times delay
@@ -2342,16 +2373,24 @@ namespace SharpPulsar
                 try
                 {
 					var result = await cnx.AskFor<LastMessageIdResponse>(payload);
-
+					IMessageId lastMessageId;
+					MessageId markDeletePosition = null;
+					if (result.MarkDeletePosition != null)
+					{
+						markDeletePosition = new MessageId(result.MarkDeletePosition.LedgerId, result.MarkDeletePosition.EntryId, -1);
+					}
 					_log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
 					if (result.BatchIndex < 0)
 					{
-						source.SetResult(new MessageId(result.LedgerId, result.EntryId, result.Partition));
+						lastMessageId = new MessageId(result.LedgerId, result.EntryId, result.Partition);
 					}
 					else
 					{
-						source.SetResult(new BatchMessageId(result.LedgerId, result.EntryId, result.Partition, result.BatchIndex));
+						lastMessageId = new BatchMessageId(result.LedgerId, result.EntryId, result.Partition, result.BatchIndex);
+						
 					}
+
+					source.SetResult(new GetLastMessageIdResponse(lastMessageId, markDeletePosition));
 				}
 				catch(Exception ex)
                 {

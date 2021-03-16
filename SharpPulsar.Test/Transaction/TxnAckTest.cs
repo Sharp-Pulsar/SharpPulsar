@@ -52,7 +52,7 @@ namespace SharpPulsar.Test.Transaction
 			for (int retryCnt = 0; retryCnt < 1; retryCnt++)
 			{
 				User.Transaction txn = Txn;
-
+				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				int messageCnt = 100;
 				// produce normal messages
 				for (int i = 0; i < messageCnt; i++)

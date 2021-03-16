@@ -19,7 +19,7 @@
 
 using System.Collections.Generic;
 
-namespace SharpPulsar.Impl
+namespace SharpPulsar.ServiceName
 {
     using SharpPulsar.Common;
     using System;
@@ -28,37 +28,37 @@ namespace SharpPulsar.Impl
 	/// A service name resolver to resolve real socket address.
 	/// </summary>
 	public interface ServiceNameResolver
-	{
+    {
 
-		/// <summary>
-		/// Resolve pulsar service url.
-		/// </summary>
-		/// <returns> resolve the service url to return a socket address </returns>
-		Uri ResolveHost();
+        /// <summary>
+        /// Resolve pulsar service url.
+        /// </summary>
+        /// <returns> resolve the service url to return a socket address </returns>
+        Uri ResolveHost();
 
-		/// <summary>
-		/// Resolve pulsar service url
-		/// @return
-		/// </summary>
-		Uri ResolveHostUri();
+        /// <summary>
+        /// Resolve pulsar service url
+        /// @return
+        /// </summary>
+        Uri ResolveHostUri();
 
-		/// <summary>
-		/// Get service url.
-		/// </summary>
-		/// <returns> service url </returns>
-		string ServiceUrl {get;}
+        /// <summary>
+        /// Get service url.
+        /// </summary>
+        /// <returns> service url </returns>
+        string ServiceUrl { get; }
 
-		/// <summary>
-		/// Get service uri.
-		/// </summary>
-		/// <returns> service uri </returns>
-		ServiceUri ServiceUri {get; }
+        /// <summary>
+        /// Get service uri.
+        /// </summary>
+        /// <returns> service uri </returns>
+        ServiceUri ServiceUri { get; }
 
-		/// <summary>
-		/// Update service url.
-		/// </summary>
-		/// <param name="serviceUrl"> service url </param>
-		void UpdateServiceUrl(string ServiceUrl);
+        /// <summary>
+        /// Update service url.
+        /// </summary>
+        /// <param name="serviceUrl"> service url </param>
+        void UpdateServiceUrl(string ServiceUrl);
 
         IList<Uri> AddressList();
 

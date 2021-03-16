@@ -3,7 +3,6 @@ using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
-using SharpPulsar.Impl;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Model;
@@ -21,6 +20,7 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Exceptions;
+using SharpPulsar.ServiceName;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -42,7 +42,7 @@ using SharpPulsar.Exceptions;
 /// </summary>
 namespace SharpPulsar
 {
-	public class BinaryProtoLookupService : ReceiveActor
+    public class BinaryProtoLookupService : ReceiveActor
 	{
 		private IActorRef _pulsarClient;
 		private readonly ServiceNameResolver _serviceNameResolver;

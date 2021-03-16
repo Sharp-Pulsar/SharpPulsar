@@ -258,9 +258,8 @@ namespace SharpPulsar
 		private void Ready()
         {
 			ReceiveAsync<AckReceived>(async a => 
-			{
-				var cnx = await ClientCnx(); 
-				AckReceived(cnx, a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
+			{				
+				await AckReceived(a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
 				ProducerQueue.Receipt.Add(a);
 			});
 			ReceiveAsync<RunSendTimeout>(async _ => {
@@ -1090,12 +1089,13 @@ namespace SharpPulsar
 		int numMessagesInBatch = _batchMessageContainer.NumMessagesInBatch;
 		_batchMessageContainer.Discard(ex);
 	}
-	private void AckReceived(IActorRef cnx, long sequenceId, long highestSequenceId, long ledgerId, long entryId)
+	private async ValueTask AckReceived(long sequenceId, long highestSequenceId, long ledgerId, long entryId)
 	{
-			if(_txnSequence.TryGetValue(sequenceId, out var txn))
+			var cnx = await ClientCnx();
+			if (_txnSequence.TryGetValue(sequenceId, out var txn))
 				txn.Tell(new RegisterSendOp(new MessageId(ledgerId, entryId, _partitionIndex)));
 
-			if (!_pendingMessages.TryPeek(out var op))
+			if (!_pendingMessages.TryDequeue(out var op))
 			{
 				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {sequenceId} - {highestSequenceId}";
 				if (_log.IsDebugEnabled)
@@ -1129,16 +1129,14 @@ namespace SharpPulsar
 					{
 						_log.Debug($"[{Topic}] [{_producerName}] Received ack for msg {sequenceId} ");
 					}
-					var finalOp = _pendingMessages.Dequeue();
-					_lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(finalOp));
+					_lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(op));
 					op.SetMessageId(ledgerId, entryId, _partitionIndex);
 					try
 					{
 						// if message is chunked then call callback only on last chunk
 						if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
 						{
-							var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {sequenceId}";
-							_log.Warning($"{msg}");
+							SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), null);
 						}
 					}
 					catch (Exception t)

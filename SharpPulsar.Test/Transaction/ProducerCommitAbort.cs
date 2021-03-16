@@ -83,7 +83,7 @@ namespace SharpPulsar.Test.Transaction
 			Assert.Null(message);
 
 			txn.Commit();
-
+			Thread.Sleep(TimeSpan.FromSeconds(60));
 			// txn1 messages could be received after txn1 committed
 			int receiveCnt = 0;
 			for(int i = 0; i < txnMessageCnt; i++)

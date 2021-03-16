@@ -33,7 +33,15 @@ namespace SharpPulsar.Exceptions
 		public TransactionCoordinatorClientException(string message) : base(message)
 		{
 		}
-
+		// <summary>
+		/// Thrown when transaction not found in transaction coordinator.
+		/// </summary>
+		public class TransactionNotFoundException : TransactionCoordinatorClientException
+		{
+			public TransactionNotFoundException(string message) : base(message)
+			{
+			}
+		}
 		/// <summary>
 		/// Thrown when transaction coordinator with unexpected state.
 		/// </summary>

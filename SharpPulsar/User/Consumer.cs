@@ -322,7 +322,7 @@ namespace SharpPulsar.User
                 state = result.State;
                 retry--;
                 if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(5));
             }
             switch (state)
             {

@@ -15,16 +15,7 @@ namespace SharpPulsar
 
 		internal MessageRouterBase(HashingScheme hashingScheme)
 		{
-			switch (hashingScheme)
-			{
-				case HashingScheme.JavaStringHash:
-					Hash = JavaStringHash.Instance;
-					break;
-				case HashingScheme.Murmur332Hash:
-				default:
-					Hash = Murmur332Hash.Instance;
-					break;
-			}
+			
 		}
 	}
 }

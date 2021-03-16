@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.Transaction
 				.SubscriptionType(SubType.Failover)
 				.EnableBatchIndexAcknowledgment(true)
 				.AcknowledgmentGroupTime(5000)
-				.AckTimeout(60000, TimeUnit.MILLISECONDS);
+				.AckTimeout(20000, TimeUnit.MILLISECONDS);
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
@@ -75,8 +75,8 @@ namespace SharpPulsar.Test.Transaction
 				Assert.Null(message);
 
 				abortTxn.Abort();
-				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				User.Transaction commitTxn = Txn;
+				Thread.Sleep(TimeSpan.FromSeconds(60));
 				for (int i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
@@ -101,8 +101,8 @@ namespace SharpPulsar.Test.Transaction
 				.SubscriptionName($"test-{Guid.NewGuid()}")
 				.EnableBatchIndexAcknowledgment(true)
 				.SubscriptionType(SubType.Failover)
-				.AcknowledgmentGroupTime(30000)
-				.AckTimeout(60000, TimeUnit.MILLISECONDS);
+				.AcknowledgmentGroupTime(5000)
+				.AckTimeout(20000, TimeUnit.MILLISECONDS);
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
@@ -143,8 +143,8 @@ namespace SharpPulsar.Test.Transaction
 				Assert.Null(message);
 
 				abortTxn.Abort();
-				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				User.Transaction commitTxn = Txn;
+				Thread.Sleep(TimeSpan.FromSeconds(60));
 				for (int i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();

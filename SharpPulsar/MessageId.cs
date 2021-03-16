@@ -173,7 +173,7 @@ namespace SharpPulsar
 			return builder.ToByteArrays().ToSBytes();
 		}
 
-		public sbyte[] ToByteArray()
+		public virtual sbyte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
 			return ToByteArray(-1);
