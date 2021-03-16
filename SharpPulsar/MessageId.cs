@@ -100,7 +100,14 @@ namespace SharpPulsar
 			MessageId messageId;
 			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
+				if(idData.BatchSize > 0)
+				{
+					messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.BatchSize, BatchMessageAcker.NewAcker(idData.BatchSize));
+				}
+                else
+				{
+					messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
+				}
 			}
 			else
 			{
@@ -126,7 +133,7 @@ namespace SharpPulsar
 			IMessageId messageId;
 			if (idData.BatchIndex >= 0)
 			{
-				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex);
+				messageId = new BatchMessageId((long)idData.ledgerId, (long)idData.entryId, idData.Partition, idData.BatchIndex, idData.BatchSize, BatchMessageAcker.NewAcker(idData.BatchSize));
 			}
 			else
 			{
@@ -158,25 +165,30 @@ namespace SharpPulsar
 			return null;
 		}
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
-		public virtual sbyte[] ToByteArray(int batchIndex)
+		public virtual sbyte[] ToByteArray(int batchIndex, int batchSize)
 		{
-            var builder = new MessageIdData {ledgerId = (ulong) (_ledgerId), entryId = (ulong) (_entryId)};
-            if (_partitionIndex >= 0)
+			MessageIdData msgId = new MessageIdData { ledgerId = (ulong)(_ledgerId), entryId = (ulong)(_entryId) };
+			if (_partitionIndex >= 0)
 			{
-				builder.Partition = (_partitionIndex);
+				msgId.Partition = _partitionIndex;
 			}
 
 			if (batchIndex != -1)
 			{
-				builder.BatchIndex = (batchIndex);
+				msgId.BatchIndex = batchIndex;
 			}
-			return builder.ToByteArrays().ToSBytes();
-		}
 
+			if (batchSize > 0)
+			{
+				msgId.BatchSize = batchSize;
+			}
+
+			return msgId.ToByteArrays().ToSBytes();
+		}
 		public virtual sbyte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
-			return ToByteArray(-1);
+			return ToByteArray(-1, 0);
 		}
 
 		public int CompareTo(IMessageId o)

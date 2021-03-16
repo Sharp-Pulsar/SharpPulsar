@@ -115,8 +115,7 @@ namespace SharpPulsar.Batch
 		// Serialization
 		public override sbyte[] ToByteArray()
 		{
-			return ToByteArray(BatchIndex);
-			//return ToByteArray(BatchIndex, BatchSize);
+			return ToByteArray(BatchIndex, BatchSize);
 		}
 
 		public virtual bool AckIndividual()
