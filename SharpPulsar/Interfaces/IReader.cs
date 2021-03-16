@@ -29,6 +29,7 @@ namespace SharpPulsar.Interfaces
 
 		/// <returns> the topic from which this reader is reading from </returns>
 		string Topic {get;}
+		ValueTask<string> TopicAsync();
 
 		/// <summary>
 		/// Read the next message in the topic.
@@ -40,6 +41,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the next message </returns>
 		/// <exception cref="PulsarClientException"> </exception>
 		IMessage<T> ReadNext();
+		ValueTask<IMessage<T>> ReadNextAsync();
 
 		/// <summary>
 		/// Read the next message in the topic waiting for a maximum time.
@@ -51,9 +53,11 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the next message(Could be null if none received in time) </returns>
 		/// <exception cref="PulsarClientException"> </exception>
 		IMessage<T> ReadNext(int timeout, TimeUnit unit);
+		ValueTask<IMessage<T>> ReadNextAsync(int timeout, TimeUnit unit);
 
 		
 		bool HasReachedEndOfTopic();
+		ValueTask<bool> HasReachedEndOfTopicAsync();
 
 		/// <summary>
 		/// Check if there is any message available to read from the current position.
@@ -80,10 +84,12 @@ namespace SharpPulsar.Interfaces
 		/// <returns> true if the are messages available to be read, false otherwise </returns>
 		/// <exception cref="PulsarClientException"> if there was any error in the operation </exception>
 		bool HasMessageAvailable();
+		ValueTask<bool> HasMessageAvailableAsync();
 
 
 		/// <returns> Whether the reader is connected to the broker </returns>
 		bool Connected {get;}
+		ValueTask<bool> ConnectedAsync();
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message id.
@@ -102,6 +108,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="messageId"> the message id where to reposition the reader </param>
 		void Seek(IMessageId messageId);
+		ValueTask SeekAsync(IMessageId messageId);
 
 		/// <summary>
 		/// Reset the subscription associated with this reader to a specific message publish time.
@@ -113,6 +120,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="timestamp"> the message publish time where to reposition the reader </param>
 		void Seek(long timestamp);
+		ValueTask SeekAsync(long timestamp);
 	}
 
 }

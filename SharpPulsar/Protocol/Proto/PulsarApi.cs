@@ -2013,6 +2013,9 @@ namespace SharpPulsar.Protocol.Proto
         [global::ProtoBuf.ProtoMember(2, Name = @"request_id", IsRequired = true)]
         public ulong RequestId { get; set; }
 
+        [global::ProtoBuf.ProtoMember(3, Name = @"consumer_mark_delete_position")]
+        public MessageIdData ConsumerMarkDeletePosition { get; set; }
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -3129,6 +3132,7 @@ namespace SharpPulsar.Protocol.Proto
         InvalidTxnStatus = 21,
         NotAllowedError = 22,
         TransactionConflict = 23,
+        TransactionNotFound = 24,
     }
 
     [global::ProtoBuf.ProtoContract()]

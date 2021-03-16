@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace SharpPulsar.Akka.Admin.Api.Models
+namespace SharpPulsar.Admin.Api.Models
 {
     public partial class DelayedDeliveryPolicies
     {

@@ -1,14 +1,18 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Model;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -36,22 +40,23 @@ namespace SharpPulsar.Transaction
 	public class TransactionCoordinatorClient : ReceiveActor
 	{
 
-		private readonly IActorRef _pulsarClient;
+		private IActorRef _pulsarClient;
 		private List<IActorRef> _handlers;
 		private Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();
 		private ILoggingAdapter _log;
 		private long _epoch = 0L;
 		private ClientConfigurationData _clientConfigurationData;
+		private IActorRef _generator;
 
 		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		public TransactionCoordinatorClient(IActorRef pulsarClient, ClientConfigurationData conf)
+		public TransactionCoordinatorClient(IActorRef idGenerator, ClientConfigurationData conf)
 		{
+			_generator = idGenerator;
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
-			_pulsarClient = pulsarClient;
-			Receive<NewTxn>(n => {
-				var nt = NewTransaction(n);
+			ReceiveAsync<NewTxn>(async n => {
+				var nt = await NewTransaction(n);
 				Sender.Tell(nt);
 			});
 			Receive<AddPublishPartitionToTxn>(n => {
@@ -66,56 +71,73 @@ namespace SharpPulsar.Transaction
 			Receive<CommitTxnID>(n => {
 				Commit(n);
 			});
-			Receive<StartTransactionCoordinatorClient>(_ => {
-				StartCoordinator();
+			ReceiveAsync<StartTransactionCoordinatorClient>(async m => 
+			{
+				if (_pulsarClient == null)
+					_pulsarClient = m.Client;
+				await StartCoordinator();
 			});
 		}
 
-		private void StartCoordinator()
+		private async ValueTask StartCoordinator()
 		{
-            try 
+			_state = TransactionCoordinatorClientState.Starting;
+			var started = await Start();
+			while (!started)
 			{
-				_state = TransactionCoordinatorClientState.Starting;
-				_pulsarClient.Ask<LookupDataResult>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign))
-					.ContinueWith(task =>
-					{
-						if (!task.IsFaulted)
-						{
-							var partitionMeta = task.Result;
-							if (_log.IsDebugEnabled)
-							{
-								_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
-							}
-							if (partitionMeta.Partitions > 0)
-							{
-								_handlers = new List<IActorRef>(partitionMeta.Partitions);
-								for (int i = 0; i < partitionMeta.Partitions; i++)
-								{
-									var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-									_handlers[i] = handler;
-									_handlerMap.Add(i, handler);
-								}
-							}
-							else
-							{
-								_handlers = new List<IActorRef>(1);
-								var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-								_handlers[0] = handler;
-								_handlerMap.Add(0, handler);
-							}
-							_state = TransactionCoordinatorClientState.Ready;
-						}
+				_log.Info("Transaction coordinator not started...retrying");
+				started = await Start();
+			}
+			_state = TransactionCoordinatorClientState.Ready;
+		}
+		private async ValueTask<bool> Start()
+		{
+			try
+			{
+				var result = await _pulsarClient.AskFor(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+				if (result is PartitionedTopicMetadata lkup)
+				{
 
-					});
+					var partitionMeta = lkup;
+					if (_log.IsDebugEnabled)
+					{
+						_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
+					}
+					if (partitionMeta.Partitions > 0)
+					{
+						_handlers = new List<IActorRef>(partitionMeta.Partitions);
+						for (int i = 0; i < partitionMeta.Partitions; i++)
+						{
+							var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+							_handlers.Add(handler);
+							_handlerMap.Add(i, handler);
+						}
+					}
+					else
+					{
+						_handlers = new List<IActorRef>(1);
+						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+						_handlers[0] = handler;
+						_handlerMap.Add(0, handler);
+					}
+					return true;
+				}
+                else
+                {
+					var ex = result as ClientExceptions;
+					_log.Error(ex.ToString());
+					return false;
+                }
 			}
 			catch(Exception ex)
             {
-				_log.Error(TransactionCoordinatorClientException.Unwrap(ex).ToString());
+				_log.Error(ex.ToString());
+				return false;
 			}
 		}
-		public static Props Prop(IActorRef pulsarClient, ClientConfigurationData conf)
+		public static Props Prop(IActorRef idGenerator, ClientConfigurationData conf)
         {
-			return Props.Create(() => new TransactionCoordinatorClient(pulsarClient, conf));
+			return Props.Create(() => new TransactionCoordinatorClient(idGenerator, conf));
         }
 		private string GetTCAssignTopicName(int partition)
 		{
@@ -144,20 +166,23 @@ namespace SharpPulsar.Transaction
 			{
 				foreach(var handler in _handlers)
 				{
-					handler.GracefulStop(TimeSpan.FromSeconds(1));
+					handler.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
 				}
 			}
 		}
 
-		private TxnID NewTransaction(NewTxn txn)
+		private async ValueTask<NewTxnResponse> NewTransaction(NewTxn txn)
 		{
-			TxnID txnid = null;
-			NextHandler().Ask<NewTxnResponse>(txn).ContinueWith(task=> {
-				if (task.IsFaulted)
-					_log.Error(task.Exception.ToString());
-				else
-					txnid = new TxnID((long)task.Result.Response.TxnidMostBits, (long)task.Result.Response.TxnidLeastBits);
-			});
+			NewTxnResponse txnid = null;
+            try
+            {
+				var next = await NextHandler().AskFor<NewTxnResponse>(txn);
+				return next;
+			}
+			catch (Exception ex)
+            {
+				_log.Error(ex.ToString());
+            }
 			return txnid;
 		}
 

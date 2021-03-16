@@ -20,39 +20,32 @@
 /// </summary>
 namespace SharpPulsar
 {
+	internal class ChunkedMessageCtx
+	{
 
-    public partial class ConsumerActor<T>
-    {
-        internal class ChunkedMessageCtx
+		protected internal int TotalChunks = -1;
+		protected internal List<byte> ChunkedMsgBuffer;
+		protected internal int LastChunkedMessageId = -1;
+		protected internal MessageId[] ChunkedMessageIds;
+		protected internal long ReceivedTime = 0;
+
+		internal static ChunkedMessageCtx Get(int numChunksFromMsg, List<byte> chunkedMsgBuffer)
 		{
-
-			protected internal int TotalChunks = -1;
-			protected internal List<byte> ChunkedMsgBuffer;
-			protected internal int LastChunkedMessageId = -1;
-			protected internal MessageId[] ChunkedMessageIds;
-			protected internal long ReceivedTime = 0;
-
-			internal static ChunkedMessageCtx Get(int numChunksFromMsg, List<byte> chunkedMsgBuffer)
+			ChunkedMessageCtx ctx = new ChunkedMessageCtx
 			{
-                ChunkedMessageCtx ctx = new ChunkedMessageCtx
-                {
-                    TotalChunks = numChunksFromMsg,
-                    ChunkedMsgBuffer = chunkedMsgBuffer,
-                    ChunkedMessageIds = new MessageId[numChunksFromMsg],
-                    ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
-                };
-                return ctx;
-			}
-
-			internal virtual void Recycle()
-			{
-				TotalChunks = -1;
-				ChunkedMsgBuffer = null;
-				LastChunkedMessageId = -1;
-			}
+				TotalChunks = numChunksFromMsg,
+				ChunkedMsgBuffer = chunkedMsgBuffer,
+				ChunkedMessageIds = new MessageId[numChunksFromMsg],
+				ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
+			};
+			return ctx;
 		}
 
-
+		internal virtual void Recycle()
+		{
+			TotalChunks = -1;
+			ChunkedMsgBuffer = null;
+			LastChunkedMessageId = -1;
+		}
 	}
-
 }

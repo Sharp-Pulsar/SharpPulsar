@@ -1,15 +1,16 @@
-[![Windows](https://github.com/eaba/SharpPulsar/workflows/windows/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3Awindows)
-[![Ubuntu](https://github.com/eaba/SharpPulsar/workflows/linux/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3Alinux)
+[![Build](https://github.com/eaba/SharpPulsar/workflows/Build/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3ABuild)
+[![Tests](https://github.com/eaba/SharpPulsar/workflows/Tests/badge.svg)](https://github.com/eaba/SharpPulsar/actions?query=workflow%3ATests)
 
 # SharpPulsar
-SharpPulsar is [Apache Pulsar](https://github.com/apache/pulsar) Client built using [Akka.net](https://github.com/akkadotnet/akka.net). 
+SharpPulsar is an [Apache Pulsar](https://github.com/apache/pulsar) Client built on top [Akka.net](https://github.com/akkadotnet/akka.net), which can handle millions of 
+Apache Pulsar Producers/Consumers (in theory). 
 
 # What Is Akka.Net?
-**Akka.NET** is a professional-grade port of the popular Java/Scala framework [Akka](http://akka.io) distributed actor framework to .NET.
+**Akka.NET** is a toolkit and runtime for building highly concurrent, distributed, and fault tolerant event-driven applications on .NET & Mono that is able to support up to 50 million msg/sec on a single machine,
+with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/Consumers) per GB of heap.
 
 # What Is Apache Pulsar?
-Pulsar is a distributed pub-sub messaging platform with a very flexible messaging model and an intuitive client API.
-Supported pulsar cluster versions: 2.5+
+**Apache Pulsar** is a cloud-native, distributed messaging and streaming platform that is able to support millions of topics while delivering high-throughput and low-latency performance.
 
 ## Supported features
 - [x] Basic Producer/Consumer API

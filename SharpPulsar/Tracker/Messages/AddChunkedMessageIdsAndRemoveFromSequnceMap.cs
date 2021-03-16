@@ -14,4 +14,13 @@ namespace SharpPulsar.Tracker.Messages
         public IMessageId MessageId { get; } 
         public IImmutableSet<IMessageId> MessageIds { get; }
     }
+    public sealed class AddChunkedMessageIdsAndRemoveFromSequnceMapResponse
+    {
+        public AddChunkedMessageIdsAndRemoveFromSequnceMapResponse(IImmutableSet<IMessageId> messageIds)
+        {
+            MessageIds = messageIds;
+        }
+
+        public IImmutableSet<IMessageId> MessageIds { get; }
+    }
 }

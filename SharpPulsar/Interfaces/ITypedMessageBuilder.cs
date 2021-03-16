@@ -1,5 +1,6 @@
 ﻿using BAMCIS.Util.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -55,6 +56,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
 		void Send(bool isDeadLetter = false);
+		ValueTask SendAsync(bool isDeadLetter = false);
 
 		
 
@@ -180,7 +182,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit);
+		ITypedMessageBuilder<T> DeliverAfter(long delay);
 
 		/// <summary>
 		/// Configure the <seealso cref="TypedMessageBuilder"/> from a config map, as an alternative compared

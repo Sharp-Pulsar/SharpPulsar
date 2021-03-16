@@ -1,5 +1,6 @@
 ﻿using AvroSchemaGenerator;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;
@@ -66,7 +67,7 @@ namespace SharpPulsar.Schemas
                         Name = "",
                         Properties = SchemaInfo.Properties,
                         Type = SchemaType.JSON,
-                        Schema = (sbyte[])(object)_jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
+                        Schema = _jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema).ToSBytes()
                     };
                 }
 				catch (Exception ex)

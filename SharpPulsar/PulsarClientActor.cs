@@ -11,6 +11,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Impl.Schema.Generic;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
@@ -41,7 +42,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	public class PulsarClientActor : ReceiveActor
+	internal class PulsarClientActor : ReceiveActor
 	{
 
 		private readonly ClientConfigurationData _conf;
@@ -60,80 +61,74 @@ namespace SharpPulsar
 		private State _state;
 		private readonly ISet<IActorRef> _producers;
 		private readonly ISet<IActorRef> _consumers;
-
-		private long _producerIdGenerator = 0L;
-		private long _consumerIdGenerator = 0L;
-		private long _requestIdGenerator = 0L;
-		private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
-
-
 		private readonly DateTime _clientClock;
 
 		private IActorRef _tcClient;
-		
-		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator)
+		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
 		{
+			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
+			{
+				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
+			}
+			_tcClient = txnCoordinator;
+			_log = Context.GetLogger();
 			Auth = conf;
 			_conf = conf;
 			_clientClock = conf.Clock;
 			conf.Authentication.Start();
 			_cnxPool = cnxPool;
-			_lookup = Context.ActorOf(BinaryProtoLookupService.Prop(Self, cnxPool, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs));
-
+			_lookup = lookup;
 			_producers = new HashSet<IActorRef>();
 			_consumers = new HashSet<IActorRef>();
-
-			if (conf.EnableTransaction)
-			{
-				_tcClient = Context.ActorOf(TransactionCoordinatorClient.Prop(Self, conf));
-				_tcClient.Tell(StartTransactionCoordinatorClient.Instance);
-				txnCoordinator = _tcClient;
-			}
-
 			_state = State.Open;
 			Receive<AddProducer>(m => _producers.Add(m.Producer));
 			Receive<UpdateServiceUrl>(m => UpdateServiceUrl(m.ServiceUrl));
 			Receive<AddConsumer>(m => _consumers.Add(m.Consumer));
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
-			Receive<ReloadLookUp>(_ => ReloadLookUp());
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
-			Receive<GetConnection>(m => {
-				var cnx = GetConnection(m.Topic);
+			ReceiveAsync<GetBroker>(async m => {
+				var cnx = await GetBroker(m.TopicName);
+				Sender.Tell(cnx);
 			});
-			Receive<NewRequestId>(_ => Sender.Tell(new NewRequestIdResponse(NewRequestId())));
-			Receive<Messages.Consumer.NewConsumerId>(_ => Sender.Tell(NewConsumerId()));
-			Receive<Messages.Producer.NewProducerId>(_ => Sender.Tell(NewProducerId()));
-			Receive<GetSchema>(s => {
-				var response = _lookup.AskFor(s);
+			ReceiveAsync<GetConnection>(async m => 
+			{
+				var cnx = await GetConnection(m.Topic);
+				Sender.Tell(cnx);
+			});
+			Receive<GetTcClient>(_ => {
+				Sender.Tell(new TcClient(_tcClient));
+			});
+			ReceiveAsync<GetSchema>(async s => {
+				var response = await _lookup.AskFor(s);
 				Sender.Tell(response);
 			});
-			Receive<GetPartitionsForTopic>(s => {
-				var topics = GetPartitionsForTopic(s.TopicName);
-				Sender.Tell(new PartitionsForTopic(topics));
-			});
-			Receive<PreProcessSchemaBeforeSubscribe<object>>(p=> {
+			ReceiveAsync<GetPartitionedTopicMetadata>(async p => 
+			{
                 try
                 {
-					var schema = PreProcessSchemaBeforeSubscribe(p.Schema, p.TopicName);
-					Sender.Tell(new PreProcessedSchema<object>(schema));
+					var partition = await GetPartitionedTopicMetadata(p.TopicName.ToString());
+					Sender.Tell(partition);
 				}
 				catch(Exception ex)
                 {
-					_log.Error(ex.ToString());
-					Sender.Tell(ex);
+					Sender.Tell(new ClientExceptions(new PulsarClientException(ex)));
                 }
+			});
+			ReceiveAsync<GetPartitionsForTopic>(async s => 
+			{
+				try
+				{
+					var topics = await GetPartitionsForTopic(s.TopicName);
+					Sender.Tell(new PartitionsForTopic(topics));
+				}
+				catch (Exception ex)
+				{
+					Sender.Tell(new ClientExceptions(new PulsarClientException(ex)));
+				}
 			});
 		}
 
-		public static Props Prop(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator)
-        {
-			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))
-			{
-				throw new PulsarClientException.InvalidConfigurationException("Invalid client configuration");
-			}
-			return Props.Create(() => new PulsarClientActor(conf, cnxPool, txnCoordinator));
-        }
 		private ClientConfigurationData Auth
 		{
 			set
@@ -178,28 +173,18 @@ namespace SharpPulsar
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 
-		private GetConnectionResponse GetConnection(string topic)
+		private async ValueTask<GetBrokerResponse> GetBroker(TopicName topic)
 		{
-			TopicName topicName = TopicName.Get(topic);
-			var broker = _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
-			var connection = _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+			return await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
+		}
+		private async ValueTask<GetConnectionResponse> GetConnection(string topic)
+		{
+			var topicName = TopicName.Get(topic);
+			var broker = await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
+			var connection = await _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			return connection;
 		}
 
-		private long NewProducerId()
-		{
-			return _producerIdGenerator++;
-		}
-
-		private long NewConsumerId()
-		{
-			return _consumerIdGenerator++;
-		}
-
-		private long NewRequestId()
-		{
-			return _requestIdGenerator++;
-		}
 
 		private IActorRef CnxPool
 		{
@@ -209,63 +194,45 @@ namespace SharpPulsar
 			}
 		}
 
-		private void ReloadLookUp()
+		private async ValueTask<int> GetNumberOfPartitions(string topic)
 		{
-			_lookup = Context.ActorOf(BinaryProtoLookupService.Prop(Self, _cnxPool, _conf.ServiceUrl, _conf.ListenerName, _conf.UseTls, _conf.MaxLookupRequest, _conf.OperationTimeoutMs));
-
+			var p = await GetPartitionedTopicMetadata(topic);
+			return p.Partitions;
 		}
-
-		private int GetNumberOfPartitions(string topic)
+		private async ValueTask<PartitionedTopicMetadata> GetPartitionedTopicMetadata(string topic)
 		{
-			return GetPartitionedTopicMetadata(topic).Partitions;
-		}
-
-		private PartitionedTopicMetadata GetPartitionedTopicMetadata(string topic)
-		{
-
-			var metadataFuture = new TaskCompletionSource<PartitionedTopicMetadata>();
-
 			try
 			{
 				TopicName topicName = TopicName.Get(topic);
+				var o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
 				var opTimeoutMs = _conf.OperationTimeoutMs;
 				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-				GetPartitionedTopicMetadata(topicName, backoff, opTimeoutMs, metadataFuture);
+
+				while (!(o is PartitionedTopicMetadata))
+				{
+					var e = o as ClientExceptions;
+					long nextDelay = Math.Min(backoff.Next(), opTimeoutMs);
+					bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
+					if (nextDelay <= 0 || isLookupThrottling)
+					{
+						throw new PulsarClientException.InvalidConfigurationException(e.Exception);
+					}
+					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
+					opTimeoutMs -= (int)nextDelay;
+					Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
+					o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+				}
+				return o as PartitionedTopicMetadata;
 			}
 			catch (ArgumentException e)
 			{
 				throw new PulsarClientException.InvalidConfigurationException(e.Message);
 			}
-			return Task.Run(() => metadataFuture.Task).Result;
-		}
-		private void GetPartitionedTopicMetadata(TopicName topicName, Backoff backoff, long remainingTime, TaskCompletionSource<PartitionedTopicMetadata> future)
-		{
-			try
-			{
-				var o = _lookup.AskFor<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
-				future.SetResult(o);
-			}
-			catch (Exception e)
-			{
-				long nextDelay = Math.Min(backoff.Next(), remainingTime);
-				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
-				if (nextDelay <= 0 || isLookupThrottling)
-				{
-					future.SetException(e);
-				}
-				Task.Run(async () =>
-				{
-					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms");
-					remainingTime -= nextDelay;
-					await Task.Delay(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-					GetPartitionedTopicMetadata(topicName, backoff, remainingTime, future);
-				});
-			}
 		}
 
-		private IList<string> GetPartitionsForTopic(string topic)
+		private async ValueTask<IList<string>> GetPartitionsForTopic(string topic)
 		{
-			var metadata = GetPartitionedTopicMetadata(topic);
+			var metadata = await GetPartitionedTopicMetadata(topic);
 			if (metadata.Partitions > 0)
 			{
 				TopicName topicName = TopicName.Get(topic);
@@ -298,53 +265,7 @@ namespace SharpPulsar
 				return _consumers.Count;
 			}
 		}
-
-
-		private ISchemaInfoProvider NewSchemaProvider(string topicName)
-		{
-			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
-		}
-
-		private ISchema<object> PreProcessSchemaBeforeSubscribe(ISchema<object> schema, string topicName)
-		{
-			if (schema != null && schema.SupportSchemaVersioning())
-			{
-				ISchemaInfoProvider schemaInfoProvider;
-				try
-				{
-					schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
-					if (schemaInfoProvider == null)
-						_schemaProviderLoadingCache.Put(topicName, NewSchemaProvider(topicName));
-				}
-				catch (Exception e)
-				{
-					_log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
-					throw e;
-				}
-				schema = schema.Clone();
-				if (schema.RequireFetchingSchemaInfo())
-				{
-					var finalSchema = schema;
-					var schemaInfo = schemaInfoProvider.LatestSchema;
-					if (null == schemaInfo)
-					{
-						if (!(finalSchema is AutoConsumeSchema))
-						{
-							throw new PulsarClientException.NotFoundException("No latest schema found for topic " + topicName);
-						}
-					}
-					_log.Info($"Configuring schema for topic {topicName} : {schemaInfo}");
-					finalSchema.ConfigureSchemaInfo(topicName, "topic", schemaInfo);
-					finalSchema.SchemaInfoProvider = schemaInfoProvider;
-					return finalSchema;
-				}
-				else
-				{
-					schema.SchemaInfoProvider = schemaInfoProvider;
-				}
-			}
-			return schema;
-		}
+		
 
 	}
 

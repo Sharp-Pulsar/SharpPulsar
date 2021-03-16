@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using SharpPulsar.Akka.Configuration;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
@@ -42,7 +41,12 @@ namespace SharpPulsar.Configuration
         public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
-        public int MaxMessageSize { get; set; } = 2 * 1024; //2kb
+		/// <summary>
+		/// MaxMessageSize is set at the server side,
+		/// But when we need a smaller size than the size set by the server when chunking
+		/// we can do it here
+		/// </summary>
+		public int MaxMessageSize { get; set; } = -1;
         public string TopicName { get; set; }
         public int Partitions { get; set; } = 0;
 
@@ -65,7 +69,7 @@ namespace SharpPulsar.Configuration
 		public ISet<string> EncryptionKeys { get; set; } = new SortedSet<string>();
 
 		public CompressionType CompressionType { get; set; } = CompressionType.None;
-		public long BatchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMicroseconds(1);
+		public long BatchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMilliseconds(1000);
 
 		public long? InitialSequenceId { get; set; }
 
@@ -111,11 +115,11 @@ namespace SharpPulsar.Configuration
 			}
 		}
 
-		public void SetBatchingMaxPublishDelayMicros(long batchDelay, TimeUnit timeUnit)
+		public void SetBatchingMaxPublishDelayMicros(long batchDelay)
 		{
-			long delayInMs = timeUnit.ToMilliseconds(batchDelay);
+			long delayInMs = batchDelay;
 			Condition.CheckArgument(delayInMs >= 1, "configured value for batch delay must be at least 1ms");
-			BatchingMaxPublishDelayMicros = timeUnit.ToMicroseconds(batchDelay);
+			BatchingMaxPublishDelayMicros = delayInMs;
 		}
 
 		public int BatchingPartitionSwitchFrequencyByPublishDelay
@@ -134,7 +138,7 @@ namespace SharpPulsar.Configuration
 
 		public void SetSendTimeoutMs(long sendTimeoutMs)
 		{
-			if (sendTimeoutMs < 1)
+			if (sendTimeoutMs < 0)
 				throw new ArgumentException("sendTimeout needs to be >= 0");
 			SendTimeoutMs = sendTimeoutMs;
 		}

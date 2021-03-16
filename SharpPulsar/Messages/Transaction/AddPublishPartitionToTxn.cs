@@ -40,14 +40,4 @@ namespace SharpPulsar.Messages.Transaction
             Subscriptions = subscriptions.ToImmutableList();
         }
     }
-    public sealed class NewTransaction
-    {
-        public long TxnRequestTimeoutMs { get; }
-        public TimeUnit TimeUnit { get; }
-        public NewTransaction(long txnRequestTimeoutMs, TimeUnit unit)
-        {
-            TxnRequestTimeoutMs = txnRequestTimeoutMs;
-            TimeUnit = unit;
-        }
-    }
 }

@@ -9,6 +9,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Shared;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -122,14 +123,14 @@ namespace SharpPulsar.Schemas
 
             if (schemaVersionBytes.Length == sizeof(long) || schemaVersionBytes.Length == (sizeof(long) * 8))
             {
-                var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap((byte[])(object)schemaVersionBytes);
+                var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap(schemaVersionBytes.ToBytes());
                 return bb.GetLong().ToString();
             }
             if (schemaVersionBytes.Length == 0)
             {
                 return "EMPTY";
             }
-            return Convert.ToBase64String((byte[])(Array)schemaVersionBytes);
+            return Convert.ToBase64String(schemaVersionBytes.ToBytes());
         }
 
 		/// <summary>
@@ -175,7 +176,7 @@ namespace SharpPulsar.Schemas
 
 		private static sbyte[] GetKeyOrValueSchemaBytes(JsonElement jsonElement)
 		{
-			return KeyValueSchemaNullString.Equals(jsonElement.ToString()) ? KeyValueSchemaIsPrimitive : (sbyte[])(object)Encoding.UTF8.GetBytes(jsonElement.ToString());
+			return KeyValueSchemaNullString.Equals(jsonElement.ToString()) ? KeyValueSchemaIsPrimitive : Encoding.UTF8.GetBytes(jsonElement.ToString()).ToSBytes();
 		}
 		
 		/// <summary>

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
@@ -30,14 +28,14 @@ namespace SharpPulsar.Batch
     /// <summary>
 	/// Batch message container framework.
 	/// </summary>
-	public abstract class AbstractBatchMessageContainer : IBatchMessageContainerBase
+	internal abstract class AbstractBatchMessageContainer<T> : IBatchMessageContainerBase<T>
 	{
 		public abstract bool MultiBatches {get;}
 		public abstract void Discard(Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
-		public abstract bool HasSameSchema<T>(Message<T> msg);
-		public abstract bool Add<T>(Message<T> msg, Action<object, Exception> callback);
+		public abstract bool HasSameSchema(Message<T> msg);
+		public abstract bool Add(Message<T> msg, Action<object, Exception> callback);
 
 		private string _topicName;
 		private string _producerName;
@@ -56,7 +54,7 @@ namespace SharpPulsar.Batch
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		private int _maxBatchSize = InitialBatchBufferSize;
 
-		public virtual bool HaveEnoughSpace<T>(Message<T> msg)
+		public virtual bool HaveEnoughSpace(Message<T> msg)
 		{
 			var messageSize = msg.Data.Length;
 			return ((_maxBytesInBatch <= 0 && (messageSize + _currentBatchSizeBytes) <= _producerContainer.MaxMessageSize) || (_maxBytesInBatch > 0 && (messageSize + _currentBatchSizeBytes) <= _maxBytesInBatch)) && (_maxNumMessagesInBatch <= 0 || _numMessagesInBatch < _maxNumMessagesInBatch);
@@ -86,12 +84,12 @@ namespace SharpPulsar.Batch
 
         public virtual string TopicName => _topicName;
 
-        public virtual IList<OpSendMsg<T>> CreateOpSendMsgs<T>()
+        public virtual IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual OpSendMsg<T> CreateOpSendMsg<T>()
+		public virtual ProducerActor<T>.OpSendMsg<T> CreateOpSendMsg()
 		{
 			throw new NotSupportedException();
 		}
@@ -112,7 +110,7 @@ namespace SharpPulsar.Batch
 				_maxBytesInBatch = value.Configuration.BatchingMaxBytes;
             }
 		}
-		public virtual bool HasSameTxn<T>(Message<T> msg)
+		public virtual bool HasSameTxn(Message<T> msg)
 		{
 			if (!msg.Metadata.ShouldSerializeTxnidMostBits() || !msg.Metadata.ShouldSerializeTxnidLeastBits())
 			{

@@ -62,12 +62,10 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessage<T> Message { get; }
         public long DelayTime { get; }
-        public TimeUnit TimeUnit { get; }
-        public ReconsumeLaterCumulative(IMessage<T> message, long delayTime, TimeUnit unit)
+        public ReconsumeLaterCumulative(IMessage<T> message, long delayTime)
         {
             Message = message;
             DelayTime = delayTime;
-            TimeUnit = unit;
         }
     }
 }

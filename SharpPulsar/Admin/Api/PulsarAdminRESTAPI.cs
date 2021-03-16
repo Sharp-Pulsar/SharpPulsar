@@ -10,7 +10,7 @@ namespace PulsarAdmin
     using Microsoft.Rest.Serialization;
     using Models;
     using Newtonsoft.Json;
-    using SharpPulsar.Akka.Admin.Api.Models;
+    using SharpPulsar.Admin.Api.Models;
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;

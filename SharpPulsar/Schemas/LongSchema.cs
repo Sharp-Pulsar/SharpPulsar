@@ -59,7 +59,7 @@ namespace SharpPulsar.Schemas
 
 		public override sbyte[] Encode(long data)
 		{
-			return (sbyte[])(object)BitConverter.GetBytes(data.LongToBigEndian());
+			return BitConverter.GetBytes(data.LongToBigEndian()).ToSBytes();
 			//return new sbyte[] { (sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data };
 		}
 

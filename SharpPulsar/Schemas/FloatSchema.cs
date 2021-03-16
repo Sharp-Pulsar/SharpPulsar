@@ -62,19 +62,11 @@ namespace SharpPulsar.Schemas
 		public override sbyte[] Encode(float message)
 		{
 			return BitConverter.GetBytes(message).Reverse().ToArray().ToSBytes();
-			//return new sbyte[] { (sbyte)((long)((ulong)bits >> 24)), (sbyte)((long)((ulong)bits >> 16)), (sbyte)((long)((ulong)bits >> 8)), (sbyte)bits };
-
 		}
 
 		public override float Decode(sbyte[] bytes)
 		{
 			Validate(bytes);
-			/*int value = 0;
-			foreach (sbyte b in bytes)
-			{
-				value <<= 8;
-				value |= b & 0xFF;
-			}*/
 			return BitConverter.ToSingle(bytes.ToBytes().Reverse().ToArray(), 0);
 		}
 

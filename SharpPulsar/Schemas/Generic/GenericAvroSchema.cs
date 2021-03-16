@@ -1,5 +1,6 @@
 ﻿using Avro;
 using Avro.Generic;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
@@ -20,7 +21,7 @@ namespace SharpPulsar.Schemas.Generic
         public GenericAvroSchema(ISchemaInfo schemaInfo):base(schemaInfo)
         {
             _schemaInfo = schemaInfo;
-            _stringSchema = Encoding.UTF8.GetString((byte[])(object)_schemaInfo.Schema);
+            _stringSchema = Encoding.UTF8.GetString(_schemaInfo.Schema.ToBytes());
             _avroSchema = (RecordSchema)Avro.Schema.Parse(_stringSchema);
             _avroReader = new GenericDatumReader<GenericRecord>(_avroSchema, _avroSchema);
             _schemaFields = _avroSchema.Fields;

@@ -3,13 +3,15 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Queues;
 using System;
-
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.User
 {
@@ -27,17 +29,35 @@ namespace SharpPulsar.User
             _schema = schema;
             _conf = conf;
         }
-        public string Topic => _producerActor.AskFor<string>(GetTopic.Instance);
+        public string Topic 
+            => TopicAsync().GetAwaiter().GetResult();
+        public async ValueTask<string> TopicAsync() 
+            => await _producerActor.AskFor<string>(GetTopic.Instance);
 
-        public string ProducerName => _producerActor.AskFor<string>(GetProducerName.Instance);
+        public string ProducerName 
+            => ProducerNameAsync().GetAwaiter().GetResult();
+        public async ValueTask<string> ProducerNameAsync()
+            => await _producerActor.AskFor<string>(GetProducerName.Instance);
 
-        public long LastSequenceId => _producerActor.AskFor<long>(GetLastSequenceId.Instance);
+        public long LastSequenceId 
+            => LastSequenceIdAsync().GetAwaiter().GetResult();
+        public async ValueTask<long> LastSequenceIdAsync()
+            => await _producerActor.AskFor<long>(GetLastSequenceId.Instance);
         
-        public IProducerStats Stats => _producerActor.AskFor<IProducerStats>(GetStats.Instance);
+        public IProducerStats Stats 
+            => StatsAsync().GetAwaiter().GetResult();
+        public async ValueTask<IProducerStats> StatsAsync()
+            => await _producerActor.AskFor<IProducerStats>(GetStats.Instance);
 
-        public bool Connected => _producerActor.AskFor<bool>(IsConnected.Instance);
+        public bool Connected 
+            => ConnectedAsync().GetAwaiter().GetResult();
+        public async ValueTask<bool> ConnectedAsync() 
+            => await _producerActor.AskFor<bool>(IsConnected.Instance);
 
-        public long LastDisconnectedTimestamp => _producerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
+        public long LastDisconnectedTimestamp 
+            => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
+        public async ValueTask<long> LastDisconnectedTimestampAsync()
+            => await _producerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance);
 
         public void Close()
         {
@@ -71,10 +91,23 @@ namespace SharpPulsar.User
             return new TypedMessageBuilder<T>(_producerActor, _schema, txn);
         }
         internal IActorRef GetProducer => _producerActor;
-        public SentMessage<T> Send(T message)
+
+        public AckReceived Send(T message)
         {
-            NewMessage().Value(message).Send();
-            return _queue.SentMessage.Take();
+            return SendAsync(message).GetAwaiter().GetResult();
+        }
+        public async ValueTask<AckReceived> SendAsync(T message)
+        {
+            await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
+            return _queue.Receipt.Take();
+        }
+        public AckReceived SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)
+        {
+            if (_queue.Receipt.TryTake(out var sent, timeoutMilliseconds, token))
+            {
+                return sent;
+            }
+            return sent;
         }
     }
 }

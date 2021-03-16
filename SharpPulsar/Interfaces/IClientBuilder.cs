@@ -115,7 +115,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="serviceUrlProvider">
 		///            the provider instance </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder ServiceUrlProvider(ServiceUrlProvider serviceUrlProvider);
+		IClientBuilder ServiceUrlProvider(IServiceUrlProvider serviceUrlProvider);
 
 		/// <summary>
 		/// Configure the listenerName that the broker will return the corresponding `advertisedListener`.

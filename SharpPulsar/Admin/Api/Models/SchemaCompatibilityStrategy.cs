@@ -1,5 +1,5 @@
 ﻿
-namespace SharpPulsar.Akka.Admin.Api.Models
+namespace SharpPulsar.Admin.Api.Models
 {
     /**
  * Pulsar Schema compatibility strategy.

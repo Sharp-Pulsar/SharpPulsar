@@ -39,9 +39,14 @@ namespace SharpPulsar.Configuration
 		/// </summary>
 		public long InitialBackoffIntervalNanos = TimeUnit.MILLISECONDS.ToNanoseconds(100);
 
+		public int ConnectionTimeoutMs { get; set; }
+		public string WebUrl { get; set; }
+		public int MaxLookupRedirects { get; set; }
+
 		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.ToNanoseconds(60);
 		public string TlsTrustStoreType { get; set; } = "PKCS12";
 		public bool EnableTransaction { get; set; } = false;
+		public bool UseDedicatedConnections { get; set; } = false;
 		public string TlsTrustStorePath { get; set; } = null;
         private string TlsTrustStorePassword { get; set; } = null;
         private ISet<string> TlsCiphers { get; set; } = new HashSet<string>();
@@ -53,8 +58,8 @@ namespace SharpPulsar.Configuration
         public ProxyProtocol? ProxyProtocol { get; set; }
 		public int OperationTimeoutMs { get; set; } = 30000;
         public int WebServicePort { get; set; } = 8080;
+
         public string WebServiceScheme { get; set; } = "http";
-		public bool UseProxy { get; set; } = false;
 		public long StatsIntervalSeconds { get; set; } = 60;
 		public int ConnectionsPerBroker { get; set; } = 1;
 		public X509Certificate2 TrustedCertificateAuthority { get; set; }
@@ -71,7 +76,7 @@ namespace SharpPulsar.Configuration
 			set => _authentication = value;
         }
 
-        public ServiceUrlProvider ServiceUrlProvider { get; set; }
+        public IServiceUrlProvider ServiceUrlProvider { get; set; }
 		public string AuthPluginClassName { get; set; }
 		public string ListenerName { get; set; }
 

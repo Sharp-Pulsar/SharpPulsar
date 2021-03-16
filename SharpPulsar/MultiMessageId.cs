@@ -37,7 +37,7 @@ namespace SharpPulsar
 
 		public MultiMessageId(IDictionary<string, IMessageId> map)
 		{
-			Map = map.ToImmutableDictionary();
+			Map = map?.ToImmutableDictionary();
 		}
 
 		// TODO: Add support for Serialization and Deserialization
@@ -76,8 +76,7 @@ namespace SharpPulsar
 			var result = 0;
 			foreach (var entry in HashMapHelper.SetOfKeyValuePairs(Map))
 			{
-				var otherMessage = otherMap[entry.Key];
-				if (otherMessage == null)
+				if (!otherMap.TryGetValue(entry.Key, out var otherMessage))
 				{
 					throw new ArgumentException("Other MessageId not have topic " + entry.Key);
 				}

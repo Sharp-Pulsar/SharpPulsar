@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Reader;
@@ -30,13 +31,15 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    public class MultiTopicsReader<T> : ReceiveActor
+    internal class MultiTopicsReader<T> : ReceiveActor
 	{
 
 		private readonly IActorRef _consumer;
+		private readonly IActorRef _generator;
 
-		public MultiTopicsReader(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
+			_generator = idGenerator;
 			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
 			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
@@ -74,18 +77,10 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(MultiTopicsConsumer<T>.NewMultiTopicsConsumer(client, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
-			Receive<ReadNext>(_ => {
-				_consumer.Tell(Messages.Consumer.Receive.Instance);
+			_consumer = Context.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, true, schema, null, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
 
-			});
-			Receive<ReadNextTimeout>(m => {
-				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
-
-			});
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);
-
 			});
 			Receive<AcknowledgeCumulativeMessage<T>>(m => {
 				_consumer.Tell(m);
@@ -106,10 +101,6 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-		public static Props Prop(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
-        {
-			return Props.Create(() => new MultiTopicsReader<T>(client, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
-        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;

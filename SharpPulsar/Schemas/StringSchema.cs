@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interfaces.ISchema;
+﻿using SharpPulsar.Extension;
+using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
@@ -46,7 +47,8 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "String",
 				Type = SchemaType.STRING,
-				Schema = new sbyte[0]
+				Schema = new sbyte[0],
+				Properties = new Dictionary<string, string>()
 			};
 			DefaultSchemaInfo = info;
 
@@ -58,8 +60,7 @@ namespace SharpPulsar.Schemas
 			if(SchemaType.STRING != schemaInfo.Type)
 				throw new ArgumentException("Not a string schema");
 
-			string charsetName = schemaInfo.Properties[CHARSET_KEY];
-			if (null == charsetName)
+			if (!schemaInfo.Properties.TryGetValue(CHARSET_KEY, out var charsetName))
 			{
 				return UTF8;
 			}
@@ -108,7 +109,7 @@ namespace SharpPulsar.Schemas
 			}
 			else
 			{
-				return (sbyte[])(object)_encoding.GetBytes(message);
+				return _encoding.GetBytes(message).ToSBytes();
 			}
 		}
 
@@ -120,7 +121,7 @@ namespace SharpPulsar.Schemas
 			}
 			else
 			{
-				return _encoding.GetString((byte[])(object)bytes);
+				return _encoding.GetString(bytes.ToBytes());
 			}
 		}
 

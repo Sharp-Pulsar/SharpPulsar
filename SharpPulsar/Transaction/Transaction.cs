@@ -7,6 +7,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -55,7 +56,7 @@ namespace SharpPulsar.Transaction
 
 		private readonly List<IMessageId> _sendList;
 
-		internal Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+		public Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
 			_log = Context.System.Log;
 			_client = client;
@@ -65,7 +66,7 @@ namespace SharpPulsar.Transaction
 
 			_producedTopics = new HashSet<string>();
 			_ackedTopics = new HashSet<string>();
-			var obj = client.AskFor(GetTcClient.Instance);
+			var obj = client.AskFor(GetTcClient.Instance).GetAwaiter().GetResult();
 			if (obj is TcClient tcp)
 			{
 				var actor = tcp.TCClient;
@@ -86,9 +87,9 @@ namespace SharpPulsar.Transaction
 			{
 				Sender.Tell(new GetTxnIdBitsResponse(_txnIdMostBits, _txnIdLeastBits));
 			});
-			Receive<Abort>(_ =>
+			ReceiveAsync<Abort>(async _ =>
 			{
-				Abort();
+				await Abort();
 			});
 			Receive<RegisterAckedTopic>(r =>
 			{
@@ -105,6 +106,7 @@ namespace SharpPulsar.Transaction
 			Receive<RegisterProducedTopic>(p =>
 			{
 				RegisterProducedTopic(p.Topic);
+				Sender.Tell(true);
 			});
 			_sendList = new List<IMessageId>();
 		}
@@ -161,14 +163,14 @@ namespace SharpPulsar.Transaction
 			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
 		}
 
-		private void Abort()
+		private async ValueTask Abort()
 		{
 			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
 			if (_cumulativeAckConsumers != null)
 			{
 				foreach(var c in _cumulativeAckConsumers)
                 {
-					var cleared = c.Key.AskFor<int>(ClearIncomingMessagesAndGetMessageNumber.Instance);
+					var cleared = await c.Key.AskFor<int>(ClearIncomingMessagesAndGetMessageNumber.Instance);
 					_cumulativeAckConsumers[c.Key] = cleared;
                 }
 			}

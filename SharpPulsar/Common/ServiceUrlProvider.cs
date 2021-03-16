@@ -25,10 +25,10 @@ namespace SharpPulsar.Common
 	/// more importantly, to force the Pulsar client to reconnect if the service URL has been changed.
 	/// 
 	/// </para>
-	/// <para>It can be passed with <seealso cref="ServiceUrlProvider"/>
+	/// <para>It can be passed with <seealso cref="IServiceUrlProvider"/>
 	/// </para>
 	/// </summary>
-	public interface ServiceUrlProvider
+	public interface IServiceUrlProvider
 	{
 
 		/// <summary>

@@ -10,6 +10,7 @@ using SharpPulsar.Extension;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Cache;
 using System;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,63 +30,61 @@ using System;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema.Generic
+namespace SharpPulsar.Schemas.Generic
 {
 
 
-	/// <summary>
-	/// Multi version generic schema provider by guava cache.
-	/// </summary>
-	public class MultiVersionSchemaInfoProvider : ISchemaInfoProvider
-	{
-		private readonly ILoggingAdapter _log;
-		private readonly IActorRef _lookup;
+    /// <summary>
+    /// Multi version generic schema provider by guava cache.
+    /// </summary>
+    public class MultiVersionSchemaInfoProvider : ISchemaInfoProvider
+    {
+        private readonly ILoggingAdapter _log;
+        private readonly IActorRef _lookup;
 
-		private readonly TopicName _topicName;
+        private readonly TopicName _topicName;
 
-		private readonly Cache<BytesSchemaVersion, ISchemaInfo> _cache = new Cache<BytesSchemaVersion, ISchemaInfo>(TimeSpan.FromMinutes(30), 1000);
+        private readonly Cache<BytesSchemaVersion, ISchemaInfo> _cache = new Cache<BytesSchemaVersion, ISchemaInfo>(TimeSpan.FromMinutes(30), 1000);
 
-		
-		public MultiVersionSchemaInfoProvider(TopicName topicName, ILoggingAdapter log, IActorRef lookup)
-		{
-			_topicName = topicName;
-			_log = log;
-			_lookup = lookup;
-		}
 
-		public ISchemaInfo GetSchemaByVersion(sbyte[] schemaVersion)
-		{
-			try
+        public MultiVersionSchemaInfoProvider(TopicName topicName, ILoggingAdapter log, IActorRef lookup)
+        {
+            _topicName = topicName;
+            _log = log;
+            _lookup = lookup;
+        }
+
+        public ISchemaInfo GetSchemaByVersion(sbyte[] schemaVersion)
+        {
+            try
             {
                 if (schemaVersion != null)
                     return _cache.Get(BytesSchemaVersion.Of(schemaVersion));
                 return null;
 
             }
-			catch (Exception e)
-			{
-				_log.Error($"Can't get schema for topic {_topicName} schema version {StringHelper.NewString(schemaVersion)}: {e}");
-				return null; 
-			}
-		}
-
-		public virtual ISchemaInfo LatestSchema
-		{
-			get
-			{
-				var sch = _lookup.AskFor<GetSchemaInfoResponse>(new GetSchema(_topicName)).SchemaInfo;
-				_cache.Put(BytesSchemaVersion.Of(sch.Schema), sch);
-				return sch;
+            catch (Exception e)
+            {
+                _log.Error($"Can't get schema for topic {_topicName} schema version {StringHelper.NewString(schemaVersion)}: {e}");
+                return null;
             }
-		}
+        }
 
-		public virtual string TopicName => _topicName.LocalName;
+        public async ValueTask<ISchemaInfo> LatestSchema()
+        {
+            var schema = await _lookup.AskFor<GetSchemaInfoResponse>(new GetSchema(_topicName)).ConfigureAwait(false);
+            var sch = schema.SchemaInfo;
+            _cache.Put(BytesSchemaVersion.Of(sch.Schema), sch);
+            return sch;
+        }
+
+        public virtual string TopicName => _topicName.LocalName;
 
         private ISchemaInfo LoadSchema(sbyte[] schemaVersion)
-		{
-			 return null;
-		}
+        {
+            return null;
+        }
 
-	}
+    }
 
 }

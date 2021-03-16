@@ -4,6 +4,7 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Precondition;
 using SharpPulsar.Shared;
 using System;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -67,7 +68,7 @@ namespace SharpPulsar.Schemas
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType.INLINE);
 		}
 
-		public static ISchema<KeyValue<K, V>> Of<K, V>(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
+		public static ISchema<KeyValue<K, V>> Of(ISchema<K> KeySchema, ISchema<V> ValueSchema, KeyValueEncodingType KeyValueEncodingType)
 		{
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
@@ -117,12 +118,9 @@ namespace SharpPulsar.Schemas
 				return _outerInstance._schemaInfo;
 			}
 
-			public ISchemaInfo LatestSchema
+			public async ValueTask<ISchemaInfo> LatestSchema()
 			{
-				get
-				{
-					return _outerInstance._schemaInfo;
-				}
+				return await Task.FromResult(_outerInstance._schemaInfo);
 			}
 
 			public string TopicName
@@ -137,7 +135,7 @@ namespace SharpPulsar.Schemas
 		// encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
 		public virtual sbyte[] Encode(KeyValue<K, V> Message)
 		{
-			if (_keyValueEncodingType != null && _keyValueEncodingType == KeyValueEncodingType.INLINE)
+			if (_keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
 				return KeyValue<K, V>.Encode(Message.Key, _keySchema, Message.Value, _valueSchema);
 			}
@@ -279,14 +277,10 @@ namespace SharpPulsar.Schemas
 				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Key;
 			}
 
-			public ISchemaInfo LatestSchema
+			public async ValueTask<ISchemaInfo> LatestSchema()
 			{
-				get
-				{
-					return _outerInstance._keySchema.SchemaInfo;
-				}
+				return await Task.FromResult(_outerInstance._keySchema.SchemaInfo);
 			}
-
 			public string TopicName
 			{
 				get
@@ -314,14 +308,10 @@ namespace SharpPulsar.Schemas
 				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Value;
 			}
 
-			public ISchemaInfo LatestSchema
+			public async ValueTask<ISchemaInfo> LatestSchema()
 			{
-				get
-				{
-					return _outerInstance._valueSchema.SchemaInfo;
-				}
+				return await Task.FromResult(_outerInstance._valueSchema.SchemaInfo);
 			}
-
 			public string TopicName
 			{
 				get

@@ -21,10 +21,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
@@ -63,13 +66,13 @@ namespace SharpPulsar.Tracker
             Receive<Empty>(c =>
             {
                 var emptied = Empty();
-                //Sender.Tell(emptied);
+                Sender.Tell(emptied);
             });
             Receive<Clear>(c => Clear());
             Receive<Remove>(c =>
             {
                 var removed = Remove(c.MessageId);
-               // Sender.Tell(removed);
+                Sender.Tell(removed);
             });
             Receive<RemoveMessagesTill>(c =>
             {
@@ -79,24 +82,24 @@ namespace SharpPulsar.Tracker
             Receive<Add>(c =>
             {
                 var added = Add(c.MessageId);
-                //Sender.Tell(added);
+                Sender.Tell(added);
             });
             Receive<Size>(c =>
             {
                 var size = Size();
                 Sender.Tell(size);
             });
-            Receive<RunJob>(r=> RedeliverMessages());
-            Receive<AddChunkedMessageIdsAndRemoveFromSequnceMap>(c =>
+            ReceiveAsync<RunJob>(async _=> await RedeliverMessages());
+            ReceiveAsync<AddChunkedMessageIdsAndRemoveFromSequnceMap>(async c =>
             {
                 var ids = new HashSet<IMessageId>(c.MessageIds);
-                AddChunkedMessageIdsAndRemoveFromSequnceMap(c.MessageId, ids);
-                Sender.Tell(ids.ToImmutableHashSet());
+                await AddChunkedMessageIdsAndRemoveFromSequnceMap(c.MessageId, ids);
+                Sender.Tell(new AddChunkedMessageIdsAndRemoveFromSequnceMapResponse(ids.ToImmutableHashSet()));
             });
             _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
 
         }
-        private void RedeliverMessages()
+        private async ValueTask RedeliverMessages()
         {
             var messageIds = new SortedSet<IMessageId>();
             try
@@ -105,12 +108,12 @@ namespace SharpPulsar.Tracker
                 if (headPartition?.Count > 0)
                 {
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
-                    headPartition.ForEach(messageId =>
+                    foreach(var messageId in headPartition)
                     {
-                        AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds);
+                        await AddChunkedMessageIdsAndRemoveFromSequnceMap(messageId, messageIds);
                         messageIds.Add(messageId);
                         MessageIdPartitionMap.Remove(messageId, out var m);
-                    });
+                    }
                 }
 
                 headPartition?.Clear();
@@ -121,18 +124,18 @@ namespace SharpPulsar.Tracker
                 if (messageIds.Count > 0)
                 { 
                     _consumer.Tell(new AckTimeoutSend(messageIds));
-                    _consumer.Tell(new RedeliverUnacknowledgedMessages(messageIds));
+                    _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messageIds));
                 }
                 _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
             }
         }
 
-        private void AddChunkedMessageIdsAndRemoveFromSequnceMap(IMessageId messageId, ISet<IMessageId> messageIds)
+        private async ValueTask AddChunkedMessageIdsAndRemoveFromSequnceMap(IMessageId messageId, ISet<IMessageId> messageIds)
         {
             if (messageId is MessageId id)
             {
                 //use ask here
-                var chunkedMsgIds = _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).GetAwaiter().GetResult();
+                var chunkedMsgIds = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).ConfigureAwait(false);
                 if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length> 0)
                 {
                     foreach (var msgId in chunkedMsgIds.MessageIds)
@@ -292,15 +295,6 @@ namespace SharpPulsar.Tracker
     public sealed class AckTimeoutSend
     {
         public AckTimeoutSend(ISet<IMessageId> messageIds)
-        {
-            MessageIds = messageIds;
-        }
-
-        public ISet<IMessageId> MessageIds { get; }
-    }
-    public sealed class RedeliverUnacknowledgedMessages
-    {
-        public RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
         {
             MessageIds = messageIds;
         }

@@ -1,17 +1,14 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Configuration;
-using SharpPulsar.Auth;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Model;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol;
-using SharpPulsar.SocketImpl;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Reflection;
-using BAMCIS.Util.Concurrent;
 using System.Collections.Concurrent;
 using SharpPulsar.Exceptions;
 using Akka.Util.Internal;
@@ -24,13 +21,13 @@ using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.Extension;
-using SharpPulsar.Helpers;
+using SharpPulsar.SocketImpl;
 
 namespace SharpPulsar
 {
-    public sealed class ClientCnx: ReceiveActor
-    {
-        private readonly SocketClient _socketClient;
+	internal sealed class ClientCnx : ReceiveActor
+	{
+		private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;
 		private State _state;
 		private readonly IActorRef _self;
@@ -39,8 +36,8 @@ namespace SharpPulsar
 		// LookupRequests that waiting in client side.
 		private readonly LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>> _waitingLookupRequests;
 
-		private readonly Dictionary<long, IActorRef> _producers = new Dictionary<long, IActorRef>();
-		
+		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
+
 		private readonly Dictionary<long, IActorRef> _consumers = new Dictionary<long, IActorRef>();
 		private readonly Dictionary<long, IActorRef> _transactionMetaStoreHandlers = new Dictionary<long, IActorRef>();
 
@@ -56,10 +53,10 @@ namespace SharpPulsar
 		private readonly long _operationTimeoutMs;
 
 		private readonly ILoggingAdapter _log;
-		private readonly IActorContext _actorContext;
 
 		private string _proxyToTargetBrokerAddress;
-		private readonly byte[] _pong = Commands.NewPong();
+		private readonly byte[] _pong = new Commands().NewPong();
+		private List<byte> _pendingReceive;
 
 		private string _remoteHostName;
 		private bool _isTlsHostnameVerificationEnable;
@@ -69,24 +66,28 @@ namespace SharpPulsar
 
 		private ICancelable _timeoutTask;
 
+		private ICancelable _sendPing;
+		private readonly IActorRef _parent;
+
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, new Commands().CurrentProtocolVersion, targetBroker)
 		{
 		}
 
 		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
 		{
+			_parent = Context.Parent;
+			_pendingReceive = new List<byte>();
+			_log = Context.GetLogger();
 			_remoteHostName = endPoint.Host;
 			_self = Self;
 			_clientConfigurationData = conf;
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
-			_actorContext = Context;
 			_proxyToTargetBrokerAddress = targetBroker;
 			_socketClient = (SocketClient)SocketClient.CreateClient(conf, endPoint, endPoint.Host, Context.System.Log);
 			_socketClient.OnConnect += OnConnected;
 			_socketClient.OnDisconnect += OnDisconnected;
-			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>>();
 			_authentication = conf.Authentication;
@@ -96,9 +97,10 @@ namespace SharpPulsar
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
 			_socketClient.Connect();
-			Receive<Payload>(p => { 
-				switch(p.Command)
-                {
+			Receive<Payload>(p =>
+			{
+				switch (p.Command)
+				{
 					case "NewLookup":
 						NewLookup(p.Bytes, p.RequestId);
 						break;
@@ -118,52 +120,53 @@ namespace SharpPulsar
 					case "NewAddPartitionToTxn":
 					case "NewTxn":
 					case "NewEndTxn":
-						_socketClient.SendMessageAsync(p.Bytes);
+						_socketClient.SendMessage(p.Bytes);
 						break;
 					default:
 						SendRequest(p.Bytes, p.RequestId);
 						break;
 
 				}
-				Receive<RegisterProducer>(m => {
-					RegisterProducer(m.ProducerId, m.Producer);
-				});
-				Receive<RegisterConsumer>(m => {
-					RegisterConsumer(m.ConsumerId, m.Consumer); 
-				});
-				Receive<RemoveProducer>(m => {
-					
-					RemoveProducer(m.ProducerId);
-				});
-				Receive<MaxMessageSize>(_ => {
-					
-					Sender.Tell(_maxMessageSize);
-				});
-				Receive<RemoveConsumer>(m => {
-					RemoveConsumer(m.ConsumerId); 
-				});
-				Receive<RegisterTransactionMetaStoreHandler>(h => {
-					RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
-				});
-				Receive<SendRequestWithId>(r => {
-					SendRequestWithId(r.Message, r.RequestId);
-				});
-				Receive<RemoteEndpointProtocolVersion>(r => {
-					Sender.Tell(_protocolVersion);
-				});
+			});
+
+			Receive<RegisterProducer>(m => {
+				RegisterProducer(m.ProducerId, m.Producer);
+			});
+			Receive<RegisterConsumer>(m => {
+				RegisterConsumer(m.ConsumerId, m.Consumer);
+			});
+			Receive<RemoveProducer>(m => {
+
+				RemoveProducer(m.ProducerId);
+			});
+			Receive<MaxMessageSize>(_ => {
+
+				Sender.Tell(_maxMessageSize);
+			});
+			Receive<RemoveConsumer>(m => {
+				RemoveConsumer(m.ConsumerId);
+			});
+			Receive<SendPing>(m => {
+				_socketClient.SendMessage(_pong);
+			});
+			Receive<RequestTimeout>(m => {
+				CheckRequestTimeout();
+			});
+			Receive<RegisterTransactionMetaStoreHandler>(h => {
+				RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
+			});
+			Receive<SendRequestWithId>(r => {
+				SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
+			});
+			Receive<RemoteEndpointProtocolVersion>(r => {
+				Sender.Tell(_protocolVersion);
 			});
 		}
-		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "")
-        {
-			return Props.Create(()=> new ClientCnx(conf, endPoint, targetBroker));
-        }
-		public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
-        {
-			return Props.Create(()=> new ClientCnx(conf, endPoint, protocolVersion, targetBroker));
-        }
 		private void OnConnected()
 		{
-			_timeoutTask = _actorContext.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(_operationTimeoutMs)), CheckRequestTimeout);
+			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
+
+			//_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
 			if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
 			{
@@ -177,20 +180,9 @@ namespace SharpPulsar
 				_log.Info($"{_remoteHostName} Connected through proxy to target broker at {_proxyToTargetBrokerAddress}");
 			}
 			// Send CONNECT command
-			var task = _socketClient.Execute(NewConnectCommand());
-			if (task.IsCompletedSuccessfully)
-			{
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"Complete: {task.IsCompletedSuccessfully}");
-				}
-				_state = State.SentConnectFrame;
-			}
-			else
-			{
-				_log.Warning($"Error during handshake: {task.Exception}");
-				//ctx.close();
-			}
+			_socketClient.SendMessage(NewConnectCommand());
+			_state = State.SentConnectFrame;
+			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
 		}
 		private void OnDisconnected()
 		{
@@ -199,9 +191,9 @@ namespace SharpPulsar
 
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
-			_producers.ForEach(p => p.Value.Tell(new ConnectionClosed(Self)));
-			_consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(Self)));
-			_transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(Self)));
+			_producers.ForEach(p => p.Value.Tell(new ConnectionClosed(_self)));
+			_consumers.ForEach(c => c.Value.Tell(new ConnectionClosed(_self)));
+			_transactionMetaStoreHandlers.ForEach(t => t.Value.Tell(new ConnectionClosed(_self)));
 
 			_pendingRequests.Clear();
 			_waitingLookupRequests.Clear();
@@ -229,13 +221,14 @@ namespace SharpPulsar
 				}
 			}
 
-			_socketClient.Dispose();
 		}
+
 		protected override void PostStop()
-        {
+		{
 			_timeoutTask?.Cancel();
-            base.PostStop();
-        }
+			_sendPing?.Cancel();
+			base.PostStop();
+		}
 		private void HandleConnected(CommandConnected connected)
 		{
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Connecting);
@@ -246,7 +239,6 @@ namespace SharpPulsar
 					_log.Debug($"{connected.MaxMessageSize} Connection has max message size setting");
 				}
 				_maxMessageSize = connected.MaxMessageSize;
-				//Ctx.pipeline().replace("frameDecoder", "newFrameDecoder", new LengthFieldBasedFrameDecoder(connected.MaxMessageSize + Commands.MessageSizeFramePadding, 0, 4, 0, 4));
 			}
 			if (_log.IsDebugEnabled)
 			{
@@ -255,6 +247,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
+			_parent.Tell(new ConnectionOpened(_self));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
@@ -264,20 +257,16 @@ namespace SharpPulsar
 			{
 				var assemblyName = Assembly.GetCallingAssembly().GetName();
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
-				var auth = new Protocol.Proto.AuthData { auth_data = ((byte[])(object)authData.Bytes) };
+				var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
-				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
+				var request = new Commands().NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"Mutual auth {_authentication.AuthMethodName}");
 				}
-				_socketClient.SendMessageAsync(request).ContinueWith(task => {
-                    if (task.IsFaulted)
-                    {
-						_log.Warning($"Failed to send request for mutual auth to broker: {task.Exception}");
-					}
-				});
+
+				_socketClient.SendMessage(request);
 				if (_state == State.SentConnectFrame)
 				{
 					_state = State.Connecting;
@@ -313,26 +302,26 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
 			}
-
-			_producers[producerId].Tell(new AckReceived(Self, sequenceId, highestSequenceId, ledgerId, entryId));
+			if (_producers.TryGetValue(producerId, out var producer))
+				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
-		private void HandleMessage(CommandMessage msg, ReadOnlySequence<byte> frame, uint commandSize)
+		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)
 		{
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"Received a message from the server: {msg}");
 			}
-            MessageIdData id = new MessageIdData
-            {
-                AckSets = msg.AckSets,
-                ledgerId = msg.MessageId.ledgerId,
-                entryId = msg.MessageId.entryId,
-                Partition = msg.MessageId.Partition,
-                BatchSize = msg.MessageId.BatchSize,
-                BatchIndex = msg.MessageId.BatchIndex
-            };
-            var message = new MessageReceived(frame.Slice(commandSize + 4), id, (int)msg.RedeliveryCount);
+			MessageIdData id = new MessageIdData
+			{
+				AckSets = msg.AckSets,
+				ledgerId = msg.MessageId.ledgerId,
+				entryId = msg.MessageId.entryId,
+				Partition = msg.MessageId.Partition,
+				BatchSize = msg.MessageId.BatchSize,
+				BatchIndex = msg.MessageId.BatchIndex
+			};
+			var message = new MessageReceived(metadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
@@ -362,10 +351,10 @@ namespace SharpPulsar
 				_log.Debug($"Received success response from server: {success.RequestId}");
 			}
 			long requestId = (long)success.RequestId;
-			if(_pendingRequests.TryGetValue(requestId, out var req))
-            {
+			if (_pendingRequests.TryGetValue(requestId, out var req))
+			{
 				_pendingRequests.Remove(requestId);
-				req.Requester.Tell(new CommandSuccessResponse(success));
+				req.Requester.Tell(new CommandSuccessResponse(success), _self);
 			}
 			else
 			{
@@ -387,7 +376,7 @@ namespace SharpPulsar
 				var consumer = request.Requester;
 				var req = _pendingRequests.Remove(requestId);
 				var lid = success.LastMessageId;
-				consumer.Tell(new LastMessageIdResponse((long)lid.ledgerId, (long)lid.entryId, lid.Partition, lid.BatchIndex, lid.BatchSize, lid.AckSets));
+				consumer.Tell(new LastMessageIdResponse((long)lid.ledgerId, (long)lid.entryId, lid.Partition, lid.BatchIndex, lid.BatchSize, lid.AckSets, success.ConsumerMarkDeletePosition));
 			}
 			else
 			{
@@ -398,7 +387,6 @@ namespace SharpPulsar
 		private void HandleProducerSuccess(CommandProducerSuccess success)
 		{
 			Condition.CheckArgument(_state == State.Ready);
-
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"Received producer success response from server: {success.RequestId} - producer-name: {success.ProducerName}");
@@ -457,7 +445,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
 			}
-			_socketClient.SendMessageAsync(_pong);
+			_socketClient.SendMessage(_pong);
 		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
@@ -533,17 +521,17 @@ namespace SharpPulsar
 			switch (sendError.Error)
 			{
 				case ServerError.ChecksumError:
-					_producers[producerId].Tell(new RecoverChecksumError(this, sequenceId));
+					_producers[producerId].Tell(new RecoverChecksumError(Self, sequenceId));
 					break;
 
 				case ServerError.TopicTerminatedError:
-					_producers[producerId].Tell(new Messages.Terminated(this));
+					_producers[producerId].Tell(new Messages.Terminated(Self));
 					break;
 
 				default:
 					// By default, for transient error, let the reconnection logic
 					// to take place and re-establish the produce again
-					_socketClient.Dispose();
+					//_socketClient.Dispose();
 					break;
 			}
 		}
@@ -554,13 +542,15 @@ namespace SharpPulsar
 
 			_log.Warning($"Received error from server: {error.Message}");
 			long requestId = (long)error.RequestId;
-			if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
-			{
-				_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
-			}			
+
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
-				if (error.Error == ServerError.AuthenticationError)
+				if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
+				{
+					_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
+					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
+				}
+				else if (error.Error == ServerError.AuthenticationError)
 				{
 					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException(error.Message)));
 					_log.Error("Failed to authenticate the client");
@@ -580,7 +570,7 @@ namespace SharpPulsar
 			long producerId = (long)closeProducer.ProducerId;
 			if (_producers.TryGetValue(producerId, out var producer))
 			{
-				producer.Tell(new ConnectionClosed(Self));
+				producer.Tell(new ConnectionClosed(_self));
 			}
 			else
 			{
@@ -591,11 +581,11 @@ namespace SharpPulsar
 		private void HandleCloseConsumer(CommandCloseConsumer closeConsumer)
 		{
 			_log.Info($"[{_remoteHostName}] Broker notification of Closed consumer: {closeConsumer.ConsumerId}");
-			
+
 			long consumerId = (long)closeConsumer.ConsumerId;
 			if (_consumers.TryGetValue(consumerId, out var consumer))
 			{
-				consumer.Tell(new ConnectionClosed(Self));
+				consumer.Tell(new ConnectionClosed(_self));
 			}
 			else
 			{
@@ -614,20 +604,12 @@ namespace SharpPulsar
 		private void NewLookup(byte[] request, long requestId)
 		{
 			AddPendingLookupRequests(requestId, new ReadOnlySequence<byte>(request));
-			_socketClient.SendMessageAsync(request).ContinueWith(task => {
-				if (task.IsFaulted)
-				{
-					_log.Warning($"Failed to send request {requestId} to broker: {task.Exception.Message}");
-					if (RemovePendingLookupRequest(requestId, out var requester))
-						requester.Tell(new ClientExceptions(PulsarClientException.Unwrap(task.Exception)));
-				}
-			});
+			_socketClient.SendMessage(request);
 		}
 
 		private void NewGetTopicsOfNamespace(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
 		}
 
 		private void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
@@ -657,7 +639,7 @@ namespace SharpPulsar
 			long requestId = (long)commandGetSchemaResponse.RequestId;
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
-			{				
+			{
 				requester.Requester.Tell(new GetSchemaResponse(commandGetSchemaResponse));
 			}
 			else
@@ -676,55 +658,48 @@ namespace SharpPulsar
 				_log.Warning($"Received unknown request id from server: {requestId}");
 		}
 
-		private void SendRequestWithId(byte[] cmd, long requestId)
+		private void SendRequestWithId(byte[] cmd, long requestId, bool reply)
 		{
-			var done = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
-			Sender.Tell(done);
+			var sent = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
+			if (reply)
+				Sender.Tell(sent);
 		}
 
 		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
 		{
 			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
-			var task = _socketClient.Execute(requestMessage); 
+			_socketClient.SendMessage(requestMessage);
+			/*var task = _socketClient.Execute(requestMessage); 
 			if (task.IsFaulted)
 			{
 				_log.Warning($"Failed to send {requestType.Description} to broker: {task.Exception}");
 				_pendingRequests.Remove(requestId);
 				return false;
-			}
+			}*/
 			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
 			return true;
 		}
 		private void SendRequest(byte[] requestMessage, long requestId)
 		{
-			if(requestId >= 0)
-			  _pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
-			var task = _socketClient.Execute(requestMessage);
-			if (task.IsFaulted)
-			{
-				_log.Warning($"Failed to send {requestId} to broker: {task.Exception}");
-				if (requestId >= 0)
-					_pendingRequests.Remove(requestId);
-				//future.completeExceptionally(writeFuture.cause());
-			}
+			if (requestId >= 0)
+				_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+
+			_socketClient.SendMessage(requestMessage);
 		}
 
 		private void SendGetLastMessageId(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
 		}
 
 		private void SendGetRawSchema(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
 		}
 
 		private void SendGetOrCreateSchema(byte[] request, long requestId)
 		{
-			var done = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
-			Sender.Tell(done);
+			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
 		}
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse command)
@@ -766,8 +741,9 @@ namespace SharpPulsar
 
 		private IActorRef CheckAndGetTransactionMetaStoreHandler(long tcId)
 		{
-			if (_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
+			if (!_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
 			{
+
 				_socketClient.Dispose();
 				_log.Warning("Close the channel since can't get the transaction meta store handler, will reconnect later.");
 			}
@@ -797,16 +773,14 @@ namespace SharpPulsar
 				if (rejectedRequests >= _maxNumberOfRejectedRequestPerConnection)
 				{
 					_log.Error($"Close connection because received {this} rejected request in {_rejectedRequestResetTimeSec} seconds ");
+
 					_socketClient.Dispose();
 				}
 			}
 		}
-
-		private void OnCommandReceived(ReadOnlySequence<byte> frame)
-        {
-			var commandSize = frame.ReadUInt32(0, true);
-			var cmd = Serializer.Deserialize(frame.Slice(4, commandSize));
-			var t = cmd.type;
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber) args)
+		{
+			var cmd = args.command;
 			switch (cmd.type)
 			{
 				case BaseCommand.Type.AuthChallenge:
@@ -815,7 +789,7 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
-					HandleMessage(msg, frame, commandSize);
+					HandleMessage(msg, args.metadata, args.payload, args.checkSum, args.magicNumber);
 					break;
 				case BaseCommand.Type.GetLastMessageIdResponse:
 					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);
@@ -880,13 +854,33 @@ namespace SharpPulsar
 				case BaseCommand.Type.ReachedEndOfTopic:
 					HandleReachedEndOfTopic(cmd.reachedEndOfTopic);
 					break;
+				case BaseCommand.Type.AckResponse:
+					HandleAckResponse(cmd.ackResponse);
+					break;
 				default:
 					_log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
 					break;
 			}
 		}
+		private void HandleAckResponse(CommandAckResponse ackResponse)
+		{
+			Condition.CheckArgument(_state == State.Ready);
+			Condition.CheckArgument(ackResponse.RequestId >= 0);
+			long consumerId = (long)ackResponse.ConsumerId;
+			if (ackResponse?.Error == ServerError.UnknownError && string.IsNullOrWhiteSpace(ackResponse.Message))
+			{
+				_consumers[consumerId].Tell(new AckReceipt((long)ackResponse.RequestId));
+			}
+			else
+			{
+				_consumers[consumerId].Tell(new AckError((long)ackResponse.RequestId, GetPulsarClientException(ackResponse.Error, ackResponse.Message)));
+			}
+		}
 		private void RegisterConsumer(long consumerId, IActorRef consumer)
 		{
+			if (_consumers.ContainsKey(consumerId))
+					_consumers.Remove(consumerId);
+
 			_consumers.Add(consumerId, consumer);
 		}
 		private PulsarClientException GetPulsarClientException(ServerError error, string errorMsg)
@@ -932,7 +926,7 @@ namespace SharpPulsar
 		}
 		private void RegisterProducer(long producerId, IActorRef producer)
 		{
-			_producers.Add(producerId, producer);
+			_producers.TryAdd(producerId, producer);
 		}
 		private void RegisterTransactionMetaStoreHandler(long transactionMetaStoreId, IActorRef handler)
 		{
@@ -940,7 +934,7 @@ namespace SharpPulsar
 		}
 		private void RemoveProducer(long producerId)
 		{
-			_producers.Remove(producerId);
+			_producers.TryRemove(producerId, out var r);
 		}
 
 		private void RemoveConsumer(long consumerId)
@@ -964,7 +958,7 @@ namespace SharpPulsar
 					_log.Warning(timeoutMessage);
 				}
 			}
-			_timeoutTask = _actorContext.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(_operationTimeoutMs)), CheckRequestTimeout);
+			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
 		}
 		public byte[] NewConnectCommand()
@@ -975,10 +969,10 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(_authentication.AuthMethodName.ToLower() == "sts" ? null : new Auth.AuthData(Auth.AuthData.InitAuthData));
 			var assemblyName = Assembly.GetCallingAssembly().GetName();
-			var auth = new Protocol.Proto.AuthData { auth_data = ((byte[])(object)authData.Bytes) };
+			var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return new Commands().NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State
@@ -1076,7 +1070,7 @@ namespace SharpPulsar
 
 			public static RequestType ValueOf(string name)
 			{
-				foreach (RequestType enumInstance in RequestType.valueList)
+				foreach (RequestType enumInstance in valueList)
 				{
 					if (enumInstance.nameValue == name)
 					{
@@ -1090,5 +1084,14 @@ namespace SharpPulsar
 		#endregion
 
 
+	}
+
+	internal sealed class RequestTimeout
+	{
+		public static RequestTimeout Instance = new RequestTimeout();
+	}
+	internal sealed class SendPing
+	{
+		public static SendPing Instance = new SendPing();
 	}
 }

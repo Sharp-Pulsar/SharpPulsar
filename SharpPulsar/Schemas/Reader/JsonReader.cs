@@ -32,6 +32,10 @@ namespace SharpPulsar.Schemas.Reader
 	{
 		private readonly ObjectMapper _objectMapper;
 
+		public JsonReader()
+		{
+			_objectMapper = new ObjectMapper();
+		}
 		public JsonReader(ObjectMapper objectMapper)
 		{
 			_objectMapper = objectMapper;

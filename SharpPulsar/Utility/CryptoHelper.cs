@@ -10,6 +10,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 using SharpPulsar.Common;
+using SharpPulsar.Extension;
 
 namespace SharpPulsar.Utility
 {
@@ -22,7 +23,7 @@ namespace SharpPulsar.Utility
     {
         public static byte[] Encrypt(byte[] data, byte[] key, byte[] encodingParam)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key.ToSBytes()).Trim()));
             var keys = (RsaKeyParameters)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -48,7 +49,7 @@ namespace SharpPulsar.Utility
         }
         public static byte[] Encrypt(byte[] data, byte[] key)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key.ToSBytes()).Trim()));
             var keys = (RsaKeyParameters)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -75,7 +76,7 @@ namespace SharpPulsar.Utility
 
         public static byte[] Decrypt(byte[] data, byte[] key, byte[] encodingParam)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key.ToSBytes()).Trim()));
             var keys = (AsymmetricCipherKeyPair)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -100,7 +101,7 @@ namespace SharpPulsar.Utility
         }
         public static byte[] Decrypt(byte[] data, byte[] key)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key.ToSBytes()).Trim()));
             var keys = (AsymmetricCipherKeyPair)pr.ReadObject();
 
             // Pure mathematical RSA implementation

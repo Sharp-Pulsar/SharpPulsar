@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using BAMCIS.Util.Concurrent;
+using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -7,7 +8,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Reader;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using SharpPulsar.Utility;
@@ -34,13 +34,15 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    public class ReaderActor<T>: ReceiveActor
+    internal class ReaderActor<T>: ReceiveActor
 	{
 		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
 		private readonly IActorRef _consumer;
+		private readonly IActorRef _generator;
 
-		public ReaderActor(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+		public ReaderActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
+			_generator = idGenerator;
 			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
 			if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
 			{
@@ -59,7 +61,11 @@ namespace SharpPulsar
 			// disable the batch receive timer for the ConsumerImpl instance wrapped by the ReaderImpl
 			consumerConfiguration.BatchReceivePolicy = _disabledBatchReceivePolicy;
 
-			if(readerConfiguration.ReaderName != null)
+			if (readerConfiguration.StartMessageId != null)
+				consumerConfiguration.StartMessageId = (BatchMessageId)readerConfiguration.StartMessageId;
+			
+
+			if (readerConfiguration.ReaderName != null)
 			{
 				consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
 			}
@@ -87,20 +93,21 @@ namespace SharpPulsar
 			}
 
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-			_consumer = Context.ActorOf(ConsumerActor<T>.NewConsumer(client, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue));
-			Receive<ReadNext>(_ => {
-				_consumer.Tell(Messages.Consumer.Receive.Instance);
-			
-			});
-			Receive<ReadNextTimeout>(m => {
-				_consumer.Tell(new ReceiveWithTimeout(m.Timeout, m.Unit));
-
-			});
+			if (consumerConfiguration.ReceiverQueueSize == 0)
+			{
+				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, clientConfigurationData, consumerQueue)));
+			}
+			else
+			{
+				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, clientConfigurationData, consumerQueue)));
+			}
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);
-
 			});
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
+				_consumer.Tell(m);
+			});
+			Receive<MessageProcessed<T>> (m => {
 				_consumer.Tell(m);
 			});
 			Receive<HasMessageAvailable> (m => {
@@ -119,10 +126,6 @@ namespace SharpPulsar
 				_consumer.Tell(m);
 			});
 		}
-		public static Props Prop(IActorRef client, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
-        {
-			return Props.Create(() => new ReaderActor<T>(client, readerConfiguration, listenerExecutor, schema, clientConfigurationData, consumerQueue));
-        }
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;
@@ -147,15 +150,6 @@ namespace SharpPulsar
 				_readerListener.ReachedEndOfTopic(_outerInstance);
 			}
 		}
-
-		public virtual IActorRef Consumer
-		{
-			get
-			{
-				return _consumer;
-			}
-		}
-
 
         protected override void PostStop()
         {

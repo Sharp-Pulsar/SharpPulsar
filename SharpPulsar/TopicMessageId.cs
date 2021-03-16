@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Interfaces;
+﻿using SharpPulsar.Batch;
+using SharpPulsar.Interfaces;
 using System;
 
 /// <summary>
@@ -71,7 +72,10 @@ namespace SharpPulsar
 
 		public int CompareTo(IMessageId o)
 		{
-			return InnerMessageId.CompareTo(o);
+			var m = InnerMessageId as BatchMessageId;
+			if (m != null)
+				return m.CompareTo(o);
+			return ((MessageId)InnerMessageId).CompareTo(o);
 		}
 	}
 

@@ -4,6 +4,7 @@ using Google.Protobuf;
 
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;
@@ -83,7 +84,7 @@ namespace SharpPulsar
 		{
 			if(data == null)
 				throw new ArgumentException();
-			var inputStream = new CodedInputStream((byte[])(object)data);
+			var inputStream = new CodedInputStream(data.ToBytes());
 			var builder = new MessageIdData();
 
             MessageIdData idData = builder;
@@ -169,10 +170,10 @@ namespace SharpPulsar
 			{
 				builder.BatchIndex = (batchIndex);
 			}
-			return (sbyte[])(object)builder.ToByteArrays();
+			return builder.ToByteArrays().ToSBytes();
 		}
 
-		public sbyte[] ToByteArray()
+		public virtual sbyte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
 			return ToByteArray(-1);
@@ -180,7 +181,29 @@ namespace SharpPulsar
 
 		public int CompareTo(IMessageId o)
 		{
-			//Needs more 
+
+			if (o is BatchMessageId bm)
+			{
+				var ord = 0;
+				var ledgercompare = _ledgerId.CompareTo(bm.LedgerId);
+
+				if (ledgercompare != 0)
+					ord = ledgercompare;
+
+				var entryCompare = EntryId.CompareTo(bm.EntryId);
+				if (entryCompare != 0 && ord == 0)
+					ord = entryCompare;
+
+				var partitionCompare = PartitionIndex.CompareTo(bm.PartitionIndex);
+				if (partitionCompare != 0 && ord == 0)
+					ord = partitionCompare;
+
+				var result = ledgercompare == 0 && entryCompare == 0 && partitionCompare == 0;
+				if (result && bm.BatchIndex > -1)
+					return -1;
+
+				return ord;
+			}
 			if (o is MessageId other)
             {
                 var ledgerCompare = _ledgerId.CompareTo(other.LedgerId);
@@ -197,7 +220,6 @@ namespace SharpPulsar
 
                 return 0;
             }
-
             if (o is TopicMessageId impl)
             {
                 return CompareTo(impl.InnerMessageId);

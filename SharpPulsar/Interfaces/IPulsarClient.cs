@@ -1,8 +1,8 @@
-﻿using SharpPulsar.Akka.Configuration;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,23 +25,23 @@ using System.Collections.Generic;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// Class that provides a client interface to Pulsar.
-	/// 
-	/// <para>Client instances are thread-safe and can be reused for managing multiple <seealso cref="Producer"/>, <seealso cref="Consumer"/> and
-	/// <seealso cref="Reader"/> instances.
-	/// 
-	/// </para>
-	/// <para>Example of constructing a client:
-	/// 
-	/// <pre>{@code
-	/// PulsarClient client = PulsarClient.builder()
-	///                              .serviceUrl("pulsar://broker:6650")
-	///                              .build();
-	/// }</pre>
-	/// </para>
-	/// </summary>
-	public interface IPulsarClient
+    /// <summary>
+    /// Class that provides a client interface to Pulsar.
+    /// 
+    /// <para>Client instances are thread-safe and can be reused for managing multiple <seealso cref="Producer"/>, <seealso cref="Consumer"/> and
+    /// <seealso cref="Reader"/> instances.
+    /// 
+    /// </para>
+    /// <para>Example of constructing a client:
+    /// 
+    /// <pre>{@code
+    /// PulsarClient client = PulsarClient.builder()
+    ///                              .serviceUrl("pulsar://broker:6650")
+    ///                              .build();
+    /// }</pre>
+    /// </para>
+    /// </summary>
+    public interface IPulsarClient
 	{
 
 		/// <summary>
@@ -63,6 +63,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// @since 2.0.0 </returns>
 		Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder);
+		ValueTask<Producer<sbyte[]>> NewProducerAsync(ProducerConfigBuilder<sbyte[]> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -86,6 +87,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// @since 2.0.0 </returns>
 		Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
+		ValueTask<Producer<T>> NewProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
@@ -108,6 +110,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// @since 2.0.0 </returns>
 		Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf);
+		ValueTask<Consumer<sbyte[]>> NewConsumerAsync(ConsumerConfigBuilder<sbyte[]> conf);
 
 		/// <summary>
 		/// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -136,6 +139,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// @since 2.0.0 </returns>
 		Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
+		ValueTask<Consumer<T>> NewConsumerAsync<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
@@ -176,6 +180,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// @since 2.0.0 </returns>
 		Reader<sbyte[]> NewReader(ReaderConfigBuilder<sbyte[]> conf);
+		ValueTask<Reader<sbyte[]>> NewReaderAsync(ReaderConfigBuilder<sbyte[]> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.
@@ -218,6 +223,7 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// @since 2.0.0 </returns>
 		Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
+		ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
 
 		/// <summary>
 		/// Update the service URL this client is using.
@@ -251,6 +257,7 @@ namespace SharpPulsar.Interfaces
 		///         error in the operation.
 		/// @since 2.3.0 </returns>
 		IList<string> GetPartitionsForTopic(string topic);
+		ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic);
 
 
 		/// <summary>
@@ -264,6 +271,7 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException">
 		///             if the forceful shutdown fails </exception>
 		void Shutdown();
+		Task ShutdownAsync();
 
 
 		/// <summary>

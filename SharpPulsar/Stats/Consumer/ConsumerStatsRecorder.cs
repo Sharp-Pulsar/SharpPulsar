@@ -228,11 +228,14 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksSent.Add(stats.TotalAcksSent);
 			_totalAcksFailed.Add(stats.TotalAcksFailed);
 		}
-
-        public void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
-        {
-            throw new NotImplementedException();
-        }
+		public virtual void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
+		{
+			if (message != null)
+			{
+				_numMsgsReceived.Increment();
+				_numBytesReceived.Add(message.Data == null ? 0 : message.Data.Length);
+			}
+		}
 
         public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
 

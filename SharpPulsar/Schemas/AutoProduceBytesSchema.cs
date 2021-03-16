@@ -18,6 +18,7 @@
 /// </summary>
 
 using System;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
@@ -80,10 +81,10 @@ namespace SharpPulsar.Schemas
 			if (_requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				_schema.Validate((sbyte[])(object)message);
+				_schema.Validate(message.ToSBytes());
 			}
 
-			return (sbyte[])(object)message;
+			return message.ToSBytes();
 		}
 
 		public sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)

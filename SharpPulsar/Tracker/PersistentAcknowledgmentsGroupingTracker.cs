@@ -3,22 +3,21 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using SharpPulsar.Akka;
 using SharpPulsar.Messages;
 using SharpPulsar.Batch;
 using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
 using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Tracker.Messages;
-using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 using SharpPulsar.Interfaces;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using Akka.Util.Internal;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Transaction;
+using System.Collections;
+using System.Linq;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -50,8 +49,9 @@ namespace SharpPulsar.Tracker
 		/// When reaching the max group Size, an ack command is sent out immediately
 		/// </summary>
 		private const int MaxAckGroupSize = 1000;
-		private readonly IActorRef _clientCnx;
         private readonly long _consumerId;
+        private readonly IActorRef _consumer;
+        private IActorRef _conx;
 
 		private readonly long _acknowledgementGroupTimeMicros;
 
@@ -59,7 +59,7 @@ namespace SharpPulsar.Tracker
 		/// Latest cumulative ack sent to broker
 		/// </summary>
 		private IMessageId _lastCumulativeAck = IMessageId.Earliest;
-		private  BitSet _lastCumulativeAckSet;
+        private BitSet _lastCumulativeAckSet;
         private bool _cumulativeAckFlushRequired;
 
 
@@ -68,16 +68,18 @@ namespace SharpPulsar.Tracker
         /// broker.
         /// </summary>
         private readonly Queue<IMessageId> _pendingIndividualAcks;
-		private readonly ConcurrentDictionary<IMessageId, BitSet> _pendingIndividualBatchIndexAcks;
+        private readonly IActorRef _handler;
+        private readonly ConcurrentDictionary<IMessageId, BitSet> _pendingIndividualBatchIndexAcks;
         private readonly Queue<(long MostSigBits, long LeastSigBits, MessageId MessageId)> _pendingIndividualTransactionAcks;
 
         private readonly ConcurrentDictionary<IActorRef, Dictionary<MessageId, BitSet>> _pendingIndividualTransactionBatchIndexAcks;
 
         private  ICancelable _scheduledTask;
 
-        public PersistentAcknowledgmentsGroupingTracker(IActorRef clientCnx, long consumerid, ConsumerConfigurationData<T> conf)
+        public PersistentAcknowledgmentsGroupingTracker(IActorRef consumer, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
-            _clientCnx = clientCnx;
+            _handler = handler;
+            _consumer = consumer;
             _consumerId = consumerid;
 			_pendingIndividualAcks = new Queue<IMessageId>();
             _acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
@@ -85,7 +87,7 @@ namespace SharpPulsar.Tracker
             _pendingIndividualTransactionBatchIndexAcks = new ConcurrentDictionary<IActorRef, Dictionary<MessageId, BitSet>>();
             _pendingIndividualTransactionAcks = new Queue<(long MostSigBits, long LeastSigBits, MessageId MessageId)>();
             BecomeActive();
-			_scheduledTask = _acknowledgementGroupTimeMicros > 0 ? Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), Self, FlushPending.Instance, ActorRefs.NoSender) : null;
+			_scheduledTask = _acknowledgementGroupTimeMicros > 0 ? Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), Self, FlushPending.Instance, ActorRefs.NoSender) : null;
 		}
 
         private void BecomeActive()
@@ -95,24 +97,24 @@ namespace SharpPulsar.Tracker
                 var isd = IsDuplicate(d.MessageId);
                 Sender.Tell(isd);
             });
-            Receive<AddAcknowledgment>(d => 
+            ReceiveAsync<AddAcknowledgment>(async d => 
             { 
-                AddAcknowledgment(d.MessageId, d.AckType, d.Properties, d.Txn); 
+                await AddAcknowledgment(d.MessageId, d.AckType, d.Properties, d.Txn); 
             });
-            Receive<AddBatchIndexAcknowledgment>(d => 
+            ReceiveAsync<AddBatchIndexAcknowledgment>(async d => 
             { 
-                AddBatchIndexAcknowledgment(d.MessageId, d.BatchIndex, d.BatchSize, d.AckType, d.Properties, d.Txn); 
+                await AddBatchIndexAcknowledgment(d.MessageId, d.BatchIndex, d.BatchSize, d.AckType, d.Properties, d.Txn); 
             
             });
-            Receive<FlushAndClean>(_ => FlushAndClean());
-            Receive<FlushPending>(_ => Flush());
-            Receive<AddListAcknowledgment>(a => {
-                AddListAcknowledgment(a.MessageIds, a.AckType, a.Properties);
+            ReceiveAsync<FlushAndClean>( async _ => await FlushAndClean());
+            ReceiveAsync<FlushPending>(async _ => await Flush());
+            ReceiveAsync<AddListAcknowledgment>(async a => {
+                await AddListAcknowledgment(a.MessageIds, a.AckType, a.Properties);
             });
         }
-        public static Props Prop(IActorRef broker, long consumerid, ConsumerConfigurationData<T> conf)
+        public static Props Prop(IActorRef consumer, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
-			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker<T>(broker, consumerid, conf));
+			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker<T>(consumer, consumerid, handler, conf));
         }
 		/// <summary>
 		/// Since the ack are delayed, we need to do some best-effort duplicate check to discard messages that are being
@@ -128,12 +130,12 @@ namespace SharpPulsar.Tracker
 
             return _pendingIndividualAcks.Contains(messageId);
         }
-        private void AddBatchIndexAcknowledgment(BatchMessageId msgId, int batchIndex, int batchSize, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        private async ValueTask AddBatchIndexAcknowledgment(BatchMessageId msgId, int batchIndex, int batchSize, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
-            if (_acknowledgementGroupTimeMicros == 0 || properties.Count > 0)
+            if ((_acknowledgementGroupTimeMicros == 0 || properties.Count > 0) && txn != null)
             {
-                var bits = txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-                DoImmediateBatchIndexAck(msgId, batchIndex, batchSize, ackType, properties, txn == null ? -1 : bits.MostBits, txn == null ? -1 : bits.LeastBits);
+                var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                await DoImmediateBatchIndexAck(msgId, batchIndex, batchSize, ackType, properties, txn == null ? -1 : bits.MostBits, txn == null ? -1 : bits.LeastBits);
             }
             else if (ackType == AckType.Cumulative)
             {
@@ -181,23 +183,23 @@ namespace SharpPulsar.Tracker
                         value.Set(0, batchSize);
                     }
                     bitSet = _pendingIndividualBatchIndexAcks.AddOrUpdate(msgid, value, (s, v) => value);
-                    
+
                     bitSet.Set(batchIndex, false);
                 }
                 if (_pendingIndividualBatchIndexAcks.Count >= MaxAckGroupSize)
                 {
-                    Flush();
+                    await Flush();
                 }
             }
         }
-        private void AddListAcknowledgment(IList<MessageId> messageIds, AckType ackType, IDictionary<string, long> properties)
+        private async ValueTask AddListAcknowledgment(IList<MessageId> messageIds, AckType ackType, IDictionary<string, long> properties)
         {
             if (ackType == AckType.Cumulative)
             {
                 messageIds.ForEach(messageId => DoCumulativeAck(messageId, null));
                 return;
             }
-            messageIds.ForEach(messageId =>
+            messageIds.ForEach(async messageId =>
             {
                 if (messageId is BatchMessageId batchMessageId)
                 {
@@ -210,28 +212,28 @@ namespace SharpPulsar.Tracker
                 _pendingIndividualBatchIndexAcks.TryRemove(messageId, out var bts);
                 if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
                 {
-                    Flush();
+                    await Flush();
                 }
             });
             if (_acknowledgementGroupTimeMicros == 0)
             {
-                Flush();
+                await Flush();
             }
         }
-        public virtual void AddAcknowledgment(IMessageId msgId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+        private async ValueTask AddAcknowledgment(IMessageId msgId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
         {
             if (_acknowledgementGroupTimeMicros == 0 || properties.Count > 0 || (txn != null && ackType == AckType.Cumulative))
             {
                 if (msgId is BatchMessageId && txn != null)
                 {
-                    var bits = txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                    var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
                     var batchMessageId = (BatchMessageId)msgId;
-                    DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchIndex, ackType, properties, bits.MostBits, bits.LeastBits);
+                    await DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchIndex, ackType, properties, bits.MostBits, bits.LeastBits);
                     return;
                 }
                 // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
                 // uncommon condition since it's only used for the compaction subscription.
-                DoImmediateAck(msgId, ackType, properties, txn);
+                await DoImmediateAck(msgId, ackType, properties, txn);
             }
             else if (ackType == AckType.Cumulative)
             {
@@ -248,7 +250,7 @@ namespace SharpPulsar.Tracker
                 {
                     if (txn != null)
                     {
-                        var bits = txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                        var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
 
                         _pendingIndividualTransactionAcks.Enqueue((bits.MostBits, bits.LeastBits, (MessageId)msgId));
                     }
@@ -257,10 +259,10 @@ namespace SharpPulsar.Tracker
                         _pendingIndividualAcks.Enqueue(msgId);
                     }
                 }
-                _pendingIndividualBatchIndexAcks.Remove(msgId, out var bitset);
+                _pendingIndividualBatchIndexAcks.Remove(msgId, out _);
                 if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
                 {
-                    Flush();
+                    await Flush();
                 }
             }
         }
@@ -303,250 +305,259 @@ namespace SharpPulsar.Tracker
 	        }
         }
 
-        private bool DoImmediateAck(IMessageId msgId, AckType ackType, IDictionary<string, long> properties, IActorRef transaction)
+        private async ValueTask<bool> DoImmediateAck(IMessageId msgId, AckType ackType, IDictionary<string, long> properties, IActorRef transaction)
         {
             if (transaction != null)
             {
-                var bits = transaction.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-                NewAckCommand(_consumerId, msgId, null, ackType, null, properties, _clientCnx, true, bits.MostBits, bits.LeastBits);
+                var bits = await transaction.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                await NewAckCommand(_consumerId, msgId, null, ackType, null, properties, true, bits.MostBits, bits.LeastBits);
             }
             else
             {
-                NewAckCommand(_consumerId, msgId, null, ackType, null, properties, _clientCnx, true, -1, -1);
+                await NewAckCommand(_consumerId, msgId, null, ackType, null, properties, true, -1, -1);
             }
             return true;
         }
-        private bool DoImmediateBatchIndexAck(BatchMessageId msgId, int batchIndex, int batchSize, AckType ackType, IDictionary<string, long> properties, long txnidMostBits, long txnidLeastBits)
+        private async ValueTask<bool> DoImmediateBatchIndexAck(BatchMessageId msgId, int batchIndex, int batchSize, AckType ackType, IDictionary<string, long> properties, long txnidMostBits, long txnidLeastBits)
         {
-            BitSet bitSet;
-            if (msgId.Acker != null && !(msgId.Acker is BatchMessageAckerDisabled))
-            {
-                bitSet = BitSet.ValueOf(msgId.Acker.BitSet.ToLongArray());
-            }
-            else
-            {
-                bitSet = BitSet.Create();
-                bitSet.Set(0, batchSize);
-            }
+            var cnx = await Cnx();
+            BitArray bitSet = new BitArray(msgId.Acker.BatchSize, true);
             if (ackType == AckType.Cumulative)
             {
-                bitSet.Clear(0, batchIndex + 1);
+                for (var i = 0; i <= batchSize; i++)
+                    bitSet[i] = false;
             }
             else
             {
-                bitSet.Clear(batchIndex);
+                bitSet[batchIndex] = false;
             }
-            var cmd = Commands.NewAck(_consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray(), ackType, null, properties, txnidLeastBits, txnidMostBits, -1);
+            var cmd = new Commands().NewAck(_consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray(), ackType, null, properties, txnidLeastBits, txnidMostBits, -1);
             var payload = new Payload(cmd, -1, "NewAck");
-            _clientCnx.Tell(payload);
+            cnx.Tell(payload);
             return true;
         }
         /// <summary>
 		/// Flush all the pending acks and send them to the broker
 		/// </summary>
-		public virtual void Flush()
+		private async ValueTask Flush()
         {
-            if (_cumulativeAckFlushRequired)
+            var cnx = await Cnx();
+            try
             {
-                NewAckCommand(_consumerId, _lastCumulativeAck, _lastCumulativeAckSet, AckType.Cumulative, null, new Dictionary<string, long>(), _clientCnx, false, -1, -1);
-                _cumulativeAckFlushRequired = false;
-            }
-
-            // Flush all individual acks
-            IList<(long ledger, long entry, BitSet bitSet)> entriesToAck = new List<(long ledger, long entry, BitSet bitSet)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
-            Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>> transactionEntriesToAck = new Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>>();
-            if (_pendingIndividualAcks.Count > 0)
-            {
-                var protocolVersion = _clientCnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-                if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                if (_cumulativeAckFlushRequired)
                 {
-                    // We can send 1 single protobuf command with all individual acks
-                    while (true)
-                    {
-                        MessageId msgId = (MessageId)_pendingIndividualAcks.Dequeue();
-                        if (msgId == null)
-                        {
-                            break;
-                        }
+                    await NewAckCommand(_consumerId, _lastCumulativeAck, _lastCumulativeAckSet, AckType.Cumulative, null, new Dictionary<string, long>(), false, -1, -1);
+                    _cumulativeAckFlushRequired = false;
+                }
 
-                        // if messageId is checked then all the chunked related to that msg also processed so, ack all of
-                        // them
-                        var chunkMsgIds = Context.Parent.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).MessageIds;
-                        if (chunkMsgIds != null && chunkMsgIds.Length > 1)
+                // Flush all individual acks
+                IList<(long ledger, long entry, BitSet bitSet)> entriesToAck = new List<(long ledger, long entry, BitSet bitSet)>(_pendingIndividualAcks.Count + _pendingIndividualBatchIndexAcks.Count);
+                Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>> transactionEntriesToAck = new Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>>();
+                if (_pendingIndividualAcks.Count > 0)
+                {
+                    var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+                    if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                    {
+                        // We can send 1 single protobuf command with all individual acks
+                        while (true)
                         {
-                            foreach (var cMsgId in chunkMsgIds)
+                            if (!_pendingIndividualAcks.TryDequeue(out var msgId))
                             {
-                                if (cMsgId != null)
-                                {
-                                    entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
-                                }
+                                break;
                             }
-                            // messages will be acked so, remove checked message sequence
-                            Context.Parent.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, msgId));
-                        }
-                        else
-                        {
-                            entriesToAck.Add((msgId.LedgerId, msgId.EntryId, null));
-                        }
-                    }
-                }
-                else
-                {
-                    // When talking to older brokers, send the acknowledgements individually
-                    while (true)
-                    {
-                        MessageId msgId = (MessageId)_pendingIndividualAcks.Dequeue();
-                        if (msgId == null)
-                        {
-                            break;
-                        }
 
-                        NewAckCommand(_consumerId, msgId, null, AckType.Individual, null, new Dictionary<string, long>(), _clientCnx, false, -1, -1);
-                        
-                    }
-                }
-            }
-
-            if (!_pendingIndividualBatchIndexAcks.IsEmpty)
-            {
-                var iterator = _pendingIndividualBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
-
-                while (iterator.MoveNext())
-                {
-                    var entry = iterator.Current;
-                    var key = (MessageId)entry.Key;
-                    entriesToAck.Add((key.LedgerId, key.EntryId, entry.Value));
-                    _pendingIndividualBatchIndexAcks.Remove(key, out var u);
-                }
-            }
-
-            if (_pendingIndividualTransactionAcks.Count > 0)
-            {
-                var protocolVersion = _clientCnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-                if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
-                {
-                    // We can send 1 single protobuf command with all individual acks
-                    while (true)
-                    {
-                        if (!_pendingIndividualTransactionAcks.TryDequeue(out var entry))
-                        {
-                            break;
-                        }
-
-                        // if messageId is checked then all the chunked related to that msg also processed so, ack all of
-                        // them
-                        var chunkMsgIds = Context.Parent.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, entry.MessageId)).MessageIds;
-                        long mostSigBits = entry.MostSigBits;
-                        long leastSigBits = entry.LeastSigBits;
-                        var messageId = entry.MessageId;
-                        if (chunkMsgIds != null && chunkMsgIds.Length > 1)
-                        {
-                            foreach (var cMsgId in chunkMsgIds)
+                            // if messageId is checked then all the chunked related to that msg also processed so, ack all of
+                            // them
+                            var result = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+                            var chunkMsgIds = result.MessageIds;
+                            if (chunkMsgIds != null && chunkMsgIds.Length > 1)
                             {
-                                if (cMsgId != null)
+                                foreach (var cMsgId in chunkMsgIds)
                                 {
-                                    NewAckCommand(_consumerId, cMsgId, null, AckType.Individual, null, new Dictionary<string, long>(), _clientCnx, false, mostSigBits, leastSigBits);
+                                    if (cMsgId != null)
+                                    {
+                                        entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
+                                    }
                                 }
+                                // messages will be acked so, remove checked message sequence
+                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, msgId));
                             }
-                            // messages will be acked so, remove checked message sequence
-
-                            Context.Parent.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, messageId));
-                        }
-                        else
-                        {
-                            NewAckCommand(_consumerId, messageId, null, AckType.Individual, null, new Dictionary<string, long>(), _clientCnx, false, mostSigBits, leastSigBits);
+                            else
+                            {
+                                var msgid = (MessageId)msgId;
+                                entriesToAck.Add((msgid.LedgerId, msgid.EntryId, null));
+                            }
                         }
                     }
-                }
-                else
-                {
-                    // When talking to older brokers, send the acknowledgements individually
-                    while (true)
+                    else
                     {
-                        if (!_pendingIndividualTransactionAcks.TryDequeue(out var entry))
+                        // When talking to older brokers, send the acknowledgements individually
+                        while (true)
                         {
-                            break;
-                        }
+                            if (!_pendingIndividualAcks.TryDequeue(out var messageId))
+                            {
+                                break;
+                            }
+                            MessageId msgId = (MessageId)messageId;
+                            await NewAckCommand(_consumerId, msgId, null, AckType.Individual, null, new Dictionary<string, long>(), false, -1, -1);
 
-                        NewAckCommand(_consumerId, entry.MessageId, null, AckType.Individual, null, new Dictionary<string, long>(), _clientCnx, false, entry.MostSigBits, entry.LeastSigBits);
-                        
+                        }
                     }
                 }
-            }
 
-            if (!_pendingIndividualTransactionBatchIndexAcks.IsEmpty)
-            {
-                var transactionIterator = _pendingIndividualTransactionBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
-                while (transactionIterator.MoveNext())
+                if (!_pendingIndividualBatchIndexAcks.IsEmpty)
                 {
-                    var transactionEntry = transactionIterator.Current;
-                    var txn = transactionEntry.Key;
-                    if (_pendingIndividualTransactionBatchIndexAcks.ContainsKey(txn))
+                    var iterator = _pendingIndividualBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
+
+                    while (iterator.MoveNext())
                     {
-                        var messageIdBitSetList = new List<(long ledger, long entry, BitSet bitSet)>();
-                        transactionEntriesToAck[txn] = messageIdBitSetList;
-                        var messageIdIterator = transactionEntry.Value.GetEnumerator();
-                        while (messageIdIterator.MoveNext())
-                        {
-                            var messageIdEntry = messageIdIterator.Current;
-                            var bitSet = messageIdEntry.Value;
-                            var messageId = messageIdEntry.Key;
-                            messageIdBitSetList.Add((messageId.LedgerId, messageId.EntryId, bitSet));
-                            messageIdEntry.Value.Set(0, messageIdEntry.Value.Size());
+                        var entry = iterator.Current;
+                        var key = (MessageId)entry.Key;
+                        entriesToAck.Add((key.LedgerId, key.EntryId, entry.Value));
+                        _pendingIndividualBatchIndexAcks.Remove(key, out var u);
+                    }
+                }
 
-                            _pendingIndividualTransactionBatchIndexAcks[txn].Remove(messageId);
+                if (_pendingIndividualTransactionAcks.Count > 0)
+                {
+                    var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+                    if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                    {
+                        // We can send 1 single protobuf command with all individual acks
+                        while (true)
+                        {
+                            if (!_pendingIndividualTransactionAcks.TryDequeue(out var entry))
+                            {
+                                break;
+                            }
+
+                            // if messageId is checked then all the chunked related to that msg also processed so, ack all of
+                            // them
+                            var result = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, entry.MessageId));
+                            var chunkMsgIds = result.MessageIds;
+                            long mostSigBits = entry.MostSigBits;
+                            long leastSigBits = entry.LeastSigBits;
+                            var messageId = entry.MessageId;
+                            if (chunkMsgIds != null && chunkMsgIds.Length > 1)
+                            {
+                                foreach (var cMsgId in chunkMsgIds)
+                                {
+                                    if (cMsgId != null)
+                                    {
+                                        await NewAckCommand(_consumerId, cMsgId, null, AckType.Individual, null, new Dictionary<string, long>(), false, mostSigBits, leastSigBits);
+                                    }
+                                }
+                                // messages will be acked so, remove checked message sequence
+
+                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, messageId));
+                            }
+                            else
+                            {
+                                await NewAckCommand(_consumerId, messageId, null, AckType.Individual, null, new Dictionary<string, long>(), false, mostSigBits, leastSigBits);
+                            }
                         }
-                        //JAVA TO C# CONVERTER TODO TASK: .NET enumerators are read-only:
-                        _pendingIndividualTransactionBatchIndexAcks.Remove(txn, out var m);
+                    }
+                    else
+                    {
+                        // When talking to older brokers, send the acknowledgements individually
+                        while (true)
+                        {
+                            if (!_pendingIndividualTransactionAcks.TryDequeue(out var entry))
+                            {
+                                break;
+                            }
+
+                            await NewAckCommand(_consumerId, entry.MessageId, null, AckType.Individual, null, new Dictionary<string, long>(), false, entry.MostSigBits, entry.LeastSigBits);
+
+                        }
+                    }
+                }
+
+                if (!_pendingIndividualTransactionBatchIndexAcks.IsEmpty)
+                {
+                    var transactionIterator = _pendingIndividualTransactionBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
+                    while (transactionIterator.MoveNext())
+                    {
+                        var transactionEntry = transactionIterator.Current;
+                        var txn = transactionEntry.Key;
+                        if (_pendingIndividualTransactionBatchIndexAcks.ContainsKey(txn))
+                        {
+                            var messageIdBitSetList = new List<(long ledger, long entry, BitSet bitSet)>();
+                            transactionEntriesToAck[txn] = messageIdBitSetList;
+                            var messageIdIterator = transactionEntry.Value.GetEnumerator();
+                            while (messageIdIterator.MoveNext())
+                            {
+                                var messageIdEntry = messageIdIterator.Current;
+                                var bitSet = messageIdEntry.Value;
+                                var messageId = messageIdEntry.Key;
+                                messageIdBitSetList.Add((messageId.LedgerId, messageId.EntryId, bitSet));
+                                messageIdEntry.Value.Set(0, messageIdEntry.Value.Size());
+
+                                _pendingIndividualTransactionBatchIndexAcks[txn].Remove(messageId);
+
+                                _pendingIndividualTransactionBatchIndexAcks.Remove(txn, out var m);
+                            }
+                        }
+                    }
+
+                    if (transactionEntriesToAck.Count > 0)
+                    {
+                        var iterator = transactionEntriesToAck.SetOfKeyValuePairs().GetEnumerator();
+                        while (iterator.MoveNext())
+                        {
+                            var entry = iterator.Current;
+                            var bits = await entry.Key.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                            var cmd = new Commands().NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), entry.Value);
+                            var payload = new Payload(cmd, -1, "NewMultiTransactionMessageAck");
+                            cnx.Tell(payload);
+                        }
+                    }
+
+                    if (entriesToAck.Count > 0)
+                    {
+                        var cmd = new Commands().NewMultiMessageAck(_consumerId, entriesToAck);
+                        var payload = new Payload(cmd, -1, "NewMultiMessageAck");
+                        cnx.Tell(payload);
                     }
                 }
             }
-
-            if (transactionEntriesToAck.Count > 0)
+            catch (Exception ex)
             {
-                var iterator = transactionEntriesToAck.SetOfKeyValuePairs().GetEnumerator();
-                while (iterator.MoveNext())
-                {
-                    var entry = iterator.Current;
-                    var bits = entry.Key.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-                    var cmd = Commands.NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), entry.Value);
-                    var payload = new Payload(cmd, -1, "NewMultiTransactionMessageAck");
-                    _clientCnx.Tell(payload);
-                }
+                Context.System.Log.Error(ex.ToString());
             }
-
-            if (entriesToAck.Count > 0)
-            {
-                var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);
-                var payload = new Payload(cmd, -1, "NewMultiMessageAck");
-                _clientCnx.Tell(payload);
-            }
-
         }
-
-        private void FlushAndClean()
+        private async ValueTask<IActorRef> Cnx()
         {
-	        Flush();
+            if(_conx == null)
+                _conx = await _handler.AskFor<IActorRef>(GetCnx.Instance);
+
+            return _conx;
+        }
+        private async ValueTask FlushAndClean()
+        {
+	        await Flush();
 	        _lastCumulativeAck = (MessageId)IMessageId.Earliest;
 	        _pendingIndividualAcks.Clear();
         }
 
         protected override void PostStop()
         {
-			Flush();
+			Flush().ConfigureAwait(false);
             if (_scheduledTask != null && !_scheduledTask.IsCancellationRequested)
             {
                 _scheduledTask.Cancel(true);
             }
 		}
-        private void NewAckCommand(long consumerId, IMessageId msgId, BitSet lastCumulativeAckSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> map, IActorRef cnx, bool flush, long txnidMostBits, long txnidLeastBits)
+        private async ValueTask NewAckCommand(long consumerId, IMessageId msgId, BitSet lastCumulativeAckSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> map, bool flush, long txnidMostBits, long txnidLeastBits)
         {
-
-            var chunkMsgIds = Context.Parent.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId)).MessageIds;
-            if (chunkMsgIds != null && txnidLeastBits < 0 && txnidMostBits < 0)
+            var cnx = await Cnx();
+            var result = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+            var chunkMsgIds = result.MessageIds;
+            if (chunkMsgIds?.Length > 0 && txnidLeastBits < 0 && txnidMostBits < 0)
             {
-                var protocolVersion = cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-                if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
+                
+                var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+                if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
                 {
                     IList<(long ledger, long entry, BitSet Bits)> entriesToAck = new List<(long ledger, long entry, BitSet Bits)>(chunkMsgIds.Length);
                     foreach (var cMsgId in chunkMsgIds)
@@ -556,23 +567,29 @@ namespace SharpPulsar.Tracker
                             entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
                         }
                     }
-                    var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);
+                    var cmd = new Commands().NewMultiMessageAck(_consumerId, entriesToAck);
                     cnx.Tell(new Payload(cmd, -1, "NewMultiMessageAck"));
                 }
                 else
                 {
                     foreach (var cMsgId in chunkMsgIds)
                     {
-                        var cmd = Commands.NewAck(consumerId, cMsgId.LedgerId, cMsgId.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map);
+                        var cmd = new Commands().NewAck(consumerId, cMsgId.LedgerId, cMsgId.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map);
                         cnx.Tell(new Payload(cmd, -1, "NewAck"));
                     }
                 }
-                Context.Parent.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, msgId));
+                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, msgId));
             }
             else
             {
+                var sets = new long[] { };
+
+                if (lastCumulativeAckSet != null)
+                    sets = lastCumulativeAckSet.ToLongArray();
+
                 var mid = (MessageId)msgId;
-                var cmd = Commands.NewAck(consumerId, mid.LedgerId, mid.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
+
+                var cmd = new Commands().NewAck(consumerId, mid.LedgerId, mid.EntryId, sets, ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
                 cnx.Tell(new Payload(cmd, -1, "NewAck"));
             }
         }

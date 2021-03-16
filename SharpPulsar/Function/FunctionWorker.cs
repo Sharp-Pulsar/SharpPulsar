@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using Akka.Actor;
-using SharpPulsar.Akka.Function.Api;
+using SharpPulsar.Function.Api;
 
 namespace SharpPulsar.Function
 {

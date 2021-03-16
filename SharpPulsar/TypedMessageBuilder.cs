@@ -32,12 +32,13 @@ namespace SharpPulsar
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
+    using System.Threading.Tasks;
 
     [Serializable]
 	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
 	{
 		private readonly IActorRef _producer;//topic
-		private readonly MessageMetadata _metadata  = new MessageMetadata();
+		public readonly MessageMetadata Metadata  = new MessageMetadata();
 		private readonly ISchema<T> _schema;
 		private byte[] _content;
 		private readonly User.Transaction _txn;
@@ -54,24 +55,28 @@ namespace SharpPulsar
 			_txn = txn;
 		}
 
-		private long BeforeSend()
+		private async Task<long> BeforeSend()
 		{
 			if (_txn == null)
 			{
 				return -1L;
 			}
 			
-			var bits = _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-			var sequence = _txn.Txn.AskFor<long>(NextSequenceId.Instance);
-			_metadata.TxnidLeastBits = (ulong)bits.LeastBits;
-			_metadata.TxnidMostBits = (ulong)bits.MostBits;
+			var bits = await _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).ConfigureAwait(false);
+			var sequence = await _txn.Txn.AskFor<long>(NextSequenceId.Instance).ConfigureAwait(false);
+			Metadata.TxnidLeastBits = (ulong)bits.LeastBits;
+			Metadata.TxnidMostBits = (ulong)bits.MostBits;
 			long sequenceId = sequence;
-			_metadata.SequenceId = (ulong)sequenceId;
+			Metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
 		public void Send(bool isDeadLetter = false)
 		{
-			var message = Message;
+			SendAsync(isDeadLetter).ConfigureAwait(false);
+		}
+		public async ValueTask SendAsync(bool isDeadLetter = false)
+		{
+			var message = await Message().ConfigureAwait(false);
 			if (_txn != null)
 			{
 				_producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter));
@@ -81,7 +86,7 @@ namespace SharpPulsar
 				_producer.Tell(new InternalSend<T>(message, isDeadLetter));
 			}
 		}
-		public virtual ITypedMessageBuilder<T> Key(string key)
+		public ITypedMessageBuilder<T> Key(string key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -89,15 +94,15 @@ namespace SharpPulsar
 				Condition.CheckArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 				if (string.IsNullOrWhiteSpace(key))
 				{
-					_metadata.NullPartitionKey = true;
+					Metadata.NullPartitionKey = true;
 					return this;
 				}
 			}
-			_metadata.PartitionKey = key;
-			_metadata.PartitionKeyB64Encoded = false;
+			Metadata.PartitionKey = key;
+			Metadata.PartitionKeyB64Encoded = false;
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
+		public ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -105,25 +110,25 @@ namespace SharpPulsar
 				Condition.CheckArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
 				if (key == null)
 				{
-					_metadata.NullPartitionKey = true;
+					Metadata.NullPartitionKey = true;
 					return this;
 				}
 			}
-			_metadata.PartitionKey = Convert.ToBase64String((byte[])(object)key);
-			_metadata.PartitionKeyB64Encoded = true;
+			Metadata.PartitionKey = Convert.ToBase64String(key.ToBytes());
+			Metadata.PartitionKeyB64Encoded = true;
 			return this;
 		}
 		public ITypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey)
 		{
-			_metadata.OrderingKey = (byte[])(object)orderingKey;
+			Metadata.OrderingKey = orderingKey.ToBytes();
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> Value(T value)
+		public ITypedMessageBuilder<T> Value(T value)
 		{
 			if (value == null)
 			{
-				_metadata.NullValue = true;
+				Metadata.NullValue = true;
 				return this;
 			}
 			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
@@ -135,83 +140,83 @@ namespace SharpPulsar
 					// set key as the message key
 					if (kv.Key != null)
 					{
-						_metadata.PartitionKey = Convert.ToBase64String((byte[])(object)kvSchema.KeySchema.Encode(kv.Key));
-						_metadata.PartitionKeyB64Encoded = true;
+						Metadata.PartitionKey = Convert.ToBase64String(kvSchema.KeySchema.Encode(kv.Key).ToBytes());
+						Metadata.PartitionKeyB64Encoded = true;
 					}
 					else
 					{
-						_metadata.NullPartitionKey = true;
+						Metadata.NullPartitionKey = true;
 					}
 
 					// set value as the payload
 					if (kv.Value != null)
 					{
-						_content = (byte[])(object)kvSchema.ValueSchema.Encode(kv.Value);
+						_content = kvSchema.ValueSchema.Encode(kv.Value).ToBytes();
 					}
 					else
 					{
-						_metadata.NullValue = true;
+						Metadata.NullValue = true;
 					}
 					return this;
 				}
 			}
-			_content = (byte[])(object)_schema.Encode(value);
+			_content = _schema.Encode(value).ToBytes();
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> Property(string name, string value)
+		public ITypedMessageBuilder<T> Property(string name, string value)
 		{
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(name), "Need Non-Null name");
 			Condition.CheckArgument(string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);
-			_metadata.Properties.Add(new KeyValue { Key = name, Value = value });
+			Metadata.Properties.Add(new KeyValue { Key = name, Value = value });
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
+		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
 		{
 			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
 			{
 				Condition.CheckArgument(entry.Key != null, "Need Non-Null key");
 				Condition.CheckArgument(entry.Value != null, "Need Non-Null value for key: " + entry.Key);
-				_metadata.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
+				Metadata.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
 			}
 
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> EventTime(long timestamp)
+		public ITypedMessageBuilder<T> EventTime(long timestamp)
 		{
 			Condition.CheckArgument(timestamp > 0, "Invalid timestamp : '%s'", timestamp);
-			_metadata.EventTime = (ulong)timestamp;
+			Metadata.EventTime = (ulong)timestamp;
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> SequenceId(long sequenceId)
+		public ITypedMessageBuilder<T> SequenceId(long sequenceId)
 		{
 			Condition.CheckArgument(sequenceId >= 0);
-			_metadata.SequenceId = (ulong)sequenceId;
+			Metadata.SequenceId = (ulong)sequenceId;
 			return this;
 		}
 
-		public virtual ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
+		public ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
 		{
 			Condition.CheckNotNull(clusters);
-			_metadata.ReplicateToes.Clear();
-			_metadata.ReplicateToes.AddRange(clusters);
+			Metadata.ReplicateToes.Clear();
+			Metadata.ReplicateToes.AddRange(clusters);
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> DisableReplication()
+		public ITypedMessageBuilder<T> DisableReplication()
 		{
-			_metadata.ReplicateToes.Clear();
-			_metadata.ReplicateToes.Add("__local__");
+			Metadata.ReplicateToes.Clear();
+			Metadata.ReplicateToes.Add("__local__");
 			return this;
 		}
-		public virtual ITypedMessageBuilder<T> DeliverAfter(long delay, TimeUnit unit)
+		public ITypedMessageBuilder<T> DeliverAfter(long delay)
 		{
-			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + unit.ToMilliseconds(delay));
+			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + delay);
 		}
 
-		public virtual ITypedMessageBuilder<T> DeliverAt(long timestamp)
+		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
 		{
-			_metadata.DeliverAtTime = timestamp;
+			Metadata.DeliverAtTime = timestamp;
 			return this;
 		}
 		
@@ -250,7 +255,7 @@ namespace SharpPulsar
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AFTER_SECONDS, StringComparison.OrdinalIgnoreCase))
 			{
-				DeliverAfter((long)d.Value, TimeUnit.SECONDS);
+				DeliverAfter((long)d.Value);
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AT, StringComparison.OrdinalIgnoreCase))
 			{
@@ -265,24 +270,21 @@ namespace SharpPulsar
 			return this;
 		}
 
-		public virtual IMessage<T> Message
+		public async Task<IMessage<T>> Message()
 		{
-			get
-			{
-				BeforeSend();
-				return Message<T>.Create(_metadata, _content, _schema);
-			}
+			await BeforeSend().ConfigureAwait(false);
+			return Message<T>.Create(Metadata, _content, _schema);
 		}
 
-		public virtual long PublishTime => (long)_metadata.PublishTime;
+		public long PublishTime => (long)Metadata.PublishTime;
 
-        public virtual bool HasKey()
+        public bool HasKey()
 		{
-			return !string.IsNullOrWhiteSpace(_metadata.PartitionKey);
+			return !string.IsNullOrWhiteSpace(Metadata.PartitionKey);
 		}
 
 
-        public virtual string GetKey => _metadata.PartitionKey;
+        public string GetKey => Metadata.PartitionKey;
     }
 
 }

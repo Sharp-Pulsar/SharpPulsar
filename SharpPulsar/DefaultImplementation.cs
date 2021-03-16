@@ -203,13 +203,11 @@ namespace SharpPulsar
 
 		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
-			//return catchExceptions(() => (Schema<KeyValue<K, V>>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, KeySchema, ValueSchema, KeyValueEncodingType));
 			return KeyValueSchema<K, V>.Of(keySchema, valueSchema, keyValueEncodingType);
 		}
 
 		public static ISchema<KeyValue<K, V>> NewKeyValueSchema<K, V>(Type key, Type value, SchemaType type)
 		{
-			//return catchExceptions(() => (Schema<KeyValue<K, V>>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchema", "of", typeof(Type), typeof(Type), typeof(SchemaType)).invoke(null, Key, Value, Type));
 			return KeyValueSchema<K, V>.Of(key, value, type);
 		}
 		public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
@@ -269,7 +267,6 @@ namespace SharpPulsar
 		public static KeyValueEncodingType DecodeKeyValueEncodingType(ISchemaInfo schemaInfo)
 		{
 			return KeyValueSchemaInfo.DecodeKeyValueEncodingType(schemaInfo);
-			//return catchExceptions(() => (KeyValueEncodingType)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "decodeKeyValueEncodingType", typeof(SchemaInfo)).invoke(null, SchemaInfo));
 		}
 
 		/// <summary>
@@ -306,7 +303,6 @@ namespace SharpPulsar
 		public static KeyValue<ISchemaInfo, ISchemaInfo> DecodeKeyValueSchemaInfo(ISchemaInfo schemaInfo)
 		{
 			return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
-			//return catchExceptions(() => (KeyValue<SchemaInfo, SchemaInfo>)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "decodeKeyValueSchemaInfo", typeof(SchemaInfo)).invoke(null, SchemaInfo));
 		}
 
 		public static IBatcherBuilder NewKeyBasedBatcherBuilder(ActorSystem system)

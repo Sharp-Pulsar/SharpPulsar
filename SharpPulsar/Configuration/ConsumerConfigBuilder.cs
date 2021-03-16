@@ -47,12 +47,8 @@ namespace SharpPulsar.Configuration
         {
             get
             {
-				if (string.IsNullOrWhiteSpace(_conf.SubscriptionName))
-					throw new ArgumentException("Subscription Name is required!");
                 if (_conf.StartMessageId == null)
                     _conf.StartMessageId = IMessageId.Latest;
-				if (_conf.ConsumerEventListener == null || _conf.MessageListener == null)
-					throw new ArgumentException("ConsumerEventListener and MessageListener cannot be null");
                 return _conf;
             }
         }
@@ -165,15 +161,18 @@ namespace SharpPulsar.Configuration
 
 		public ConsumerConfigBuilder<T> AckTimeout(long ackTimeoutMs, TimeUnit timeUnit)
 		{
-			Condition.CheckArgument(ackTimeoutMs == 0 ||  ackTimeoutMs >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
-			_conf.AckTimeoutMillis = timeUnit.ToMilliseconds(ackTimeoutMs);
+			var toms = timeUnit.ToMilliseconds(ackTimeoutMs);
+			Condition.CheckArgument(toms == 0 ||  toms >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
+			_conf.AckTimeoutMillis = toms;
             return this;
 		}
 
 		public ConsumerConfigBuilder<T> AckTimeoutTickTime(long tickTimeMs, TimeUnit timeUnit)
 		{
-            Condition.CheckArgument(tickTimeMs < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
-			_conf.TickDurationMillis = timeUnit.ToMilliseconds(tickTimeMs);
+			var toms = timeUnit.ToMilliseconds(tickTimeMs);
+
+			Condition.CheckArgument(toms < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
+			_conf.TickDurationMillis = toms;
             return this;
 		}
 
@@ -190,7 +189,7 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder<T> MessageListener(IMessageListener<T> messageListener)
+		public ConsumerConfigBuilder<T> MessageListener(MessageListener<T> messageListener)
 		{
 			_conf.MessageListener = messageListener;
             return this;

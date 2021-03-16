@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>net5.0</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -13,25 +13,154 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.4.16" />
+    <Compile Remove="Api\TlsProducerConsumerTest.cs" />
+    <Compile Remove="MultiTopicsConsumerTest.cs" />
+    <Compile Remove="MultiTopicsReaderTest.cs" />
+    <Compile Remove="PartitionedProducerTest.cs" />
+    <Compile Remove="PatternTopicsConsumerTest.cs" />
+    <Compile Remove="ZeroQueueSizeTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\authentication\tls\broker-cert.pem" />
+    <None Remove="Resources\authentication\tls\broker-key.pem" />
+    <None Remove="Resources\authentication\tls\cacert.pem" />
+    <None Remove="Resources\authentication\tls\client-cert.pem" />
+    <None Remove="Resources\authentication\tls\client-key.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.4.17" />
     <PackageReference Include="Castle.Core" Version="4.4.1" />
-    <PackageReference Include="FakeItEasy" Version="6.2.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
     <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="3.0.2">
+    <PackageReference Include="coverlet.collector" Version="3.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sample\Samples.csproj" />
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\authentication\tls\broker-cert.pem" />
+    <Resource Include="Resources\authentication\tls\broker-key.pem" />
+    <Resource Include="Resources\authentication\tls\cacert.pem" />
+    <Resource Include="Resources\authentication\tls\client-cert.pem" />
+    <Resource Include="Resources\authentication\tls\client-key.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\basic\.htpasswd">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\keystoretls\broker.keystore.jks">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\keystoretls\broker.truststore.jks">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\keystoretls\client.keystore.jks">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\keystoretls\client.truststore.jks">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\admin.cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\admin.key-pk8.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\broker.cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\broker.key-pk8.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\ca.cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\proxy.cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\proxy.key-pk8.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\superproxy.cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\superproxy.key-pk8.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\user1.cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls-http\user1.key-pk8.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls\hn-verification\broker-cert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls\hn-verification\broker-key.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\authentication\tls\hn-verification\cacert.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\client.crt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\client.csr">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\client.key">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\private-key.client-ecdsa.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\private-key.client-mismatch-rsa.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\private-key.client-rsa.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\public-key.client-ecdsa.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\public-key.client-mismatch-rsa.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\public-key.client-rsa.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\server.crt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\server.csr">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\certificate\server.key">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\configurations\pulsar_broker_test.conf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\logback.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

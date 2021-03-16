@@ -48,13 +48,13 @@ namespace SharpPulsar.Configuration
 		public ISet<string> TopicNames { get; set; } = new SortedSet<string>();
 		public List<IConsumerInterceptor<T>> Interceptors { get; set; }
 		public SubType SubscriptionType { get; set; } = SubType.Exclusive;
-		public IMessageListener<T> MessageListener { get; set; }
+		internal IMessageListener<T> MessageListener { get; set; }
         public bool ForceTopicCreation { get; set; } = false;
 		public IConsumerEventListener ConsumerEventListener { get; set; }
         public bool UseTls { get; set; } = false;
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public long AcknowledgementsGroupTimeMicros { get; set; } = TimeUnit.MILLISECONDS.ToMicroseconds(100);
+		public long AcknowledgementsGroupTimeMicros { get; set; } = 100;
 
 		public long NegativeAckRedeliveryDelayMs { get; set; } = 30000;
 
@@ -105,7 +105,7 @@ namespace SharpPulsar.Configuration
             SubscriptionInitialPosition.Earliest;
 		public Regex TopicsPattern { get; set; }
 
-		public SortedDictionary<string, string> Properties { get; set; }
+		public SortedDictionary<string, string> Properties { get; set; } = new SortedDictionary<string, string>();
 
 		public string ConsumerName { get; set; }
 

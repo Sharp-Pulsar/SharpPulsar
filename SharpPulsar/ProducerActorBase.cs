@@ -8,6 +8,7 @@ using SharpPulsar.Queues;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,15 +30,15 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar
 {
-	public abstract class ProducerActorBase<T> : ReceiveActor
+	internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract SentMessage<T> InternalSendWithTxn(IMessage<T> message, IActorRef txn);
-		internal abstract SentMessage<T> InternalSend(IMessage<T> message);
-		public abstract long LastDisconnectedTimestamp {get;}
-		public abstract bool Connected {get;}
-		public abstract IProducerStats Stats {get;}
-		public abstract long LastSequenceId {get;}
-		public abstract string ProducerName {get;}
+		internal abstract ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn);
+		internal abstract ValueTask InternalSend(IMessage<T> message);
+		protected internal abstract ValueTask<long> LastDisconnectedTimestamp();
+		protected internal abstract ValueTask<bool> Connected();
+		protected internal abstract ValueTask<IProducerStats> Stats();
+		protected internal abstract ValueTask<long> LastSequenceId();
+		protected internal abstract ValueTask<string> ProducerName();
 
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly ISchema<T> Schema;
@@ -51,7 +52,7 @@ namespace SharpPulsar
 		private string _topic;
 
 		public ProducerActorBase(IActorRef client, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
-		{
+		{			
 			ClientConfiguration = configurationData;
 			ProducerQueue = queue;
 			Client = client;
@@ -64,19 +65,20 @@ namespace SharpPulsar
 			{
 				_multiSchemaMode = MultiSchemaMode.Disabled;
 			}
-			State = new HandlerState(client, topic, Context.System, ProducerName);
+			var pName = ProducerName().GetAwaiter().GetResult();
+			State = new HandlerState(client, topic, Context.System, pName);
 
 		}
 
-		public virtual string Topic
+		protected internal virtual string Topic
 		{
 			get
 			{
-				return Topic;
+				return _topic;
 			}
 		}
 
-		public virtual ProducerConfigurationData Configuration
+		protected internal virtual ProducerConfigurationData Configuration
 		{
 			get
 			{
@@ -105,12 +107,8 @@ namespace SharpPulsar
 			}
 		}
 
-		public override string ToString()
-		{
-			return "ProducerBase{" + "topic='" + Topic + '\'' + '}';
-		}
 
-		public enum MultiSchemaMode
+		protected internal enum MultiSchemaMode
 		{
 			Auto,
 			Enabled,

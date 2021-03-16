@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
@@ -8,6 +9,7 @@ using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,32 +31,22 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	public class ZeroQueueConsumer<T> : ConsumerActor<T>
+	internal class ZeroQueueConsumer<T> : ConsumerActor<T>
 	{
 		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
 		private volatile bool _waitingOnListenerForZeroQueueSize = false;
 
-		public ZeroQueueConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, consumerQueue)
+		internal ZeroQueueConsumer(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, consumerQueue)
 		{
-		}
-		public static Props NewZeroQueueConsumer(IActorRef client, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue)
-        {
-			return Props.Create(() => new ZeroQueueConsumer<T>(client, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, consumerQueue));
-        }
-		protected internal override IMessage<T> InternalReceive()
-		{
-			var msg = FetchSingleMessageFromBroker();
-			TrackMessage(msg);
-			return BeforeConsume(msg);
 		}
 
-		private IMessage<T> FetchSingleMessageFromBroker()
+		private async ValueTask<IMessage<T>> FetchSingleMessageFromBroker()
 		{
 			// Just being cautious
 			if(IncomingMessages.Count > 0)
 			{
 				_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
-				IncomingMessages = new System.Collections.Concurrent.BlockingCollection<IMessage<T>>();
+				await IncomingMessages.Empty();
 			}
 
 			IMessage<T> message;
@@ -62,19 +54,19 @@ namespace SharpPulsar
 			{
 				// if cnx is null or if the connection breaks the connectionOpened function will send the flow again
 				_waitingOnReceiveForZeroQueueSize = true;
-				if (Connected)
+				if (await Connected())
 				{
-					IncreaseAvailablePermits(Cnx());
+					IncreaseAvailablePermits(await Cnx());
 				}
 				do
 				{
-					message = IncomingMessages.Take();
+					message = await IncomingMessages.ReceiveAsync();
 					_lastDequeuedMessageId = message.MessageId;
 					var msgCnx = ((Message<T>) message).Cnx();
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					// if message received due to an old flow - discard it and wait for the message from the
 					// latest flow command
-					if (msgCnx == Cnx())
+					if (msgCnx == await Cnx())
 					{
 						_waitingOnReceiveForZeroQueueSize = false;
 						break;
@@ -94,7 +86,7 @@ namespace SharpPulsar
 				// Finally blocked is invoked in case the block on incomingMessages is interrupted
 				_waitingOnReceiveForZeroQueueSize = false;
 				// Clearing the queue in case there was a race with messageReceived
-				IncomingMessages = new System.Collections.Concurrent.BlockingCollection<IMessage<T>>();
+				await IncomingMessages.Empty();
 			}
 		}
 
@@ -128,7 +120,7 @@ namespace SharpPulsar
 			Condition.CheckNotNull(Listener, "listener can't be null");
 			Condition.CheckNotNull(message, "unqueued message can't be null");
 
-			Task.Run(() =>
+			Task.Run(async () =>
 			{
 				var self = _self;
 				var log = _log;
@@ -141,13 +133,13 @@ namespace SharpPulsar
 					}
 					_waitingOnListenerForZeroQueueSize = true;
 					TrackMessage(message);
-					Listener.Received(self, BeforeConsume(message));
+					Listener.Received(_self, message);
 				}
 				catch (Exception t)
 				{
 					log.Error($"[{Topic}][{Subscription}] Message listener error in processing unqueued message: {message.MessageId} => {t}");
 				}
-				IncreaseAvailablePermits(Cnx());
+				IncreaseAvailablePermits(await Cnx());
 				_waitingOnListenerForZeroQueueSize = false;
 			});
 		}

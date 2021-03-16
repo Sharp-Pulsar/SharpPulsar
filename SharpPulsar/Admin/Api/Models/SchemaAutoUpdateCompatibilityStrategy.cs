@@ -1,4 +1,4 @@
-﻿namespace SharpPulsar.Akka.Admin.Api.Models
+﻿namespace SharpPulsar.Admin.Api.Models
 {
     /**
     * Strategy to use when checking an auto-updated schema for compatibility to the current schema.

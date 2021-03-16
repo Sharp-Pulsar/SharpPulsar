@@ -2,6 +2,7 @@
 using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Configuration;
+using SharpPulsar.Extension;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
 using System;
@@ -49,6 +50,10 @@ namespace SharpPulsar
 			Receive<CloseAllConnections>(_ =>
 			{
 				CloseAllConnections();
+			});
+			Receive<ConnectionOpened>(_ =>
+			{
+				//CloseAllConnections();
 			});
 			Receive<ReleaseConnection>(c =>
 			{
@@ -126,7 +131,7 @@ namespace SharpPulsar
 			if (!logicalAddress.Equals(physicalAddress))
 				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
 
-			return _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, targetBroker), connectionKey.ToString());			
+			return _context.ActorOf(Props.Create(()=> new ClientCnx(_clientConfig, physicalAddress, targetBroker)), $"{targetBroker}{connectionKey}".ToAkkaNaming());			
 		}
 		private void CleanupConnection(DnsEndPoint address, int connectionKey)
 		{

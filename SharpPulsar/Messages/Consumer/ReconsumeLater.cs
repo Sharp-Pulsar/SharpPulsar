@@ -19,13 +19,11 @@ namespace SharpPulsar.Messages.Consumer
         public ImmutableDictionary<string, long> Properties { get; }
         public long DelayTime { get; }
         public AckType AckType { get; }
-        public TimeUnit TimeUnit { get; }
-        public ReconsumeLaterWithProperties(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime, TimeUnit unit)
+        public ReconsumeLaterWithProperties(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime)
         {
             Message = message;
             Properties = properties.ToImmutableDictionary();
             DelayTime = delayTime;
-            TimeUnit = unit;
             AckType = ackType;
         }
     } public sealed class ReconsumeLaterMessages<T>
@@ -39,12 +37,10 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessages<T> Messages { get; }
         public long DelayTime { get; }
-        public TimeUnit TimeUnit { get; }
-        public ReconsumeLaterMessages(IMessages<T> messages, long delayTime, TimeUnit unit)
+        public ReconsumeLaterMessages(IMessages<T> messages, long delayTime)
         {
             Messages = messages;
             DelayTime = delayTime;
-            TimeUnit = unit;
         }
     } 
     public sealed class ReconsumeLaterMessage<T>
@@ -58,12 +54,10 @@ namespace SharpPulsar.Messages.Consumer
         /// </summary>
         public IMessage<T> Message { get; }
         public long DelayTime { get; }
-        public TimeUnit TimeUnit { get; }
-        public ReconsumeLaterMessage(IMessage<T> message, long delayTime, TimeUnit unit)
+        public ReconsumeLaterMessage(IMessage<T> message, long delayTime)
         {
             Message = message;
             DelayTime = delayTime;
-            TimeUnit = unit;
         }
     }
 }

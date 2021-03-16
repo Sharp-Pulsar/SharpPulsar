@@ -32,9 +32,12 @@ namespace SharpPulsar.SocketImpl
             await writer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
-        public static ValueTask<FlushResult> SendMessageAsync(this PipeWriter writer, byte[] buffer, CancellationToken cancellationToken = default)
+        public static ValueTask<FlushResult> SendMessageAsync(this PipeWriter writer, ReadOnlySequence<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return writer.WriteAsync(buffer, cancellationToken);
+            foreach(var seq in buffer)
+                writer.WriteAsync(seq, cancellationToken);
+
+            return new ValueTask<FlushResult>();
         }
 
 

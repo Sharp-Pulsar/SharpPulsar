@@ -50,12 +50,6 @@ namespace SharpPulsar.Schemas
 
 		public override sbyte[] Encode(Instant message)
 		{
-			// Instant is accurate to nanoseconds and requires two value storage.
-			/*ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + Integer.BYTES);
-			buffer.putLong(message.EpochSecond);
-			buffer.putInt(message.Nano);
-			  return LongSchema.Of().Encode(epochDay);
-			  return buffer.array();*/
 			long epochDay = message.ToDateTimeOffset().ToUnixTimeMilliseconds();
 			return LongSchema.Of().Encode(epochDay);
 		}

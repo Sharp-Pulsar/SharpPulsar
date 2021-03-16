@@ -33,8 +33,9 @@ namespace SharpPulsar.Schemas
 	   private static readonly LocalDateTimeSchema _instance;
 	   private static readonly ISchemaInfo _schemaInfo;
 	   public const string DELIMITER = ":";
+		private static DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-	   static LocalDateTimeSchema()
+		static LocalDateTimeSchema()
 	   {
 			var info = new SchemaInfo
 			{
@@ -53,20 +54,12 @@ namespace SharpPulsar.Schemas
 
 	   public override sbyte[] Encode(LocalDateTime message)
 	   {
-			//LocalDateTime is accurate to nanoseconds and requires two value storage.
-			//ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
-			//buffer.putLong(message.toLocalDate().toEpochDay());
-			//buffer.putLong(message.toLocalTime().toNanoOfDay());
-			var epochDay = new DateTimeOffset(message.ToDateTimeUnspecified()).ToUnixTimeMilliseconds();
+			long epochDay = (long)(message.ToDateTimeUnspecified() - _epoch).TotalMilliseconds;
 			return LongSchema.Of().Encode(epochDay);
 		}
 
 		public override LocalDateTime Decode(sbyte[] bytes)
 		{
-			//ByteBuffer buffer = ByteBuffer.wrap(bytes);
-			//long epochDay = buffer.Long;
-			//long nanoOfDay = buffer.Long;
-			//return new DateTime(LocalDate.ofEpochDay(epochDay), LocalTime.ofNanoOfDay(nanoOfDay));
 			var decode = LongSchema.Of().Decode(bytes);
 			return LocalDateTime.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode).DateTime);
 		}

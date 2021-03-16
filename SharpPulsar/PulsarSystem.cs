@@ -2,7 +2,11 @@
 using Akka.Configuration;
 using NLog;
 using SharpPulsar.Configuration;
+using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Transaction;
 using SharpPulsar.User;
+using System.Threading.Tasks;
 
 namespace SharpPulsar
 {
@@ -15,7 +19,9 @@ namespace SharpPulsar
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
         private readonly IActorRef _tcClient;
-        public static PulsarSystem GetInstance(ActorSystem actorSystem, ClientConfigurationData conf)
+        private readonly IActorRef _lookup;
+        private readonly IActorRef _generator;
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
         {
             if (_instance == null)
             {
@@ -29,7 +35,7 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(ClientConfigurationData conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
+        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
         {
             if (_instance == null)
             {
@@ -43,8 +49,11 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        private PulsarSystem(ClientConfigurationData conf, NLog.Config.LoggingConfiguration loggingConfiguration)
+        private PulsarSystem(PulsarClientConfigBuilder confBuilder, NLog.Config.LoggingConfiguration loggingConfiguration)
         {
+
+            _conf = confBuilder.ClientConfigurationData;
+            var conf = _conf;
             var nlog = new NLog.Config.LoggingConfiguration();
             var logfile = new NLog.Targets
                 .FileTarget("logFile")
@@ -83,18 +92,40 @@ namespace SharpPulsar
             _actorSystem = ActorSystem.Create("Pulsar", config);
             
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf,  _cnxPool, _tcClient), "PulsarClient");
+            _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+
+            if (conf.EnableTransaction)
+                _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_generator, conf));
+
+            _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
+            _lookup.Tell(new SetClient(_client));
+
+            if(conf.EnableTransaction)
+                _tcClient.Tell(new StartTransactionCoordinatorClient(_client));
         }
-        private PulsarSystem(ActorSystem actorSystem, ClientConfigurationData conf)
+        private PulsarSystem(ActorSystem actorSystem, PulsarClientConfigBuilder confBuilder)
         {
+            _conf = confBuilder.ClientConfigurationData;
+            var conf = _conf;
             _actorSystem = actorSystem;
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _client = _actorSystem.ActorOf(PulsarClientActor.Prop(conf, _cnxPool, _tcClient), "PulsarClient");
+            _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+
+            if (conf.EnableTransaction)
+                _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_generator, conf));
+
+            _client = _actorSystem.ActorOf(Props.Create<PulsarClientActor>(conf, _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
+            _lookup.Tell(new SetClient(_client));
+
+            if (conf.EnableTransaction)
+                _tcClient.Tell(new StartTransactionCoordinatorClient(_client));
         }
         public PulsarClient NewClient() 
         {
-            return new PulsarClient(_client, _conf, _actorSystem, _tcClient);
+            return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
         }
         public User.Admin Admin() 
         {
@@ -111,6 +142,10 @@ namespace SharpPulsar
         public User.Sql NewSql() 
         {
             return null;
+        }
+        public async Task Shutdown()
+        {
+            await _actorSystem.Terminate();
         }
     }
 }

@@ -7,7 +7,7 @@ namespace SharpPulsar.Extension
     {
         public static Task Execute(this SocketClient client, byte[] cmd)
         {
-            return Task.Run(() => client.SendMessageAsync(cmd));
+            return Task.Run(() => client.SendMessage(cmd));
         }
     }
 }

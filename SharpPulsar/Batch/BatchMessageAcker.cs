@@ -20,14 +20,14 @@
 /// </summary>
 namespace SharpPulsar.Batch
 {
-	
+
 	public class BatchMessageAcker
 	{
-        private BatchMessageAcker()
-        {
-            _bitSet = new BatchBitSet();
-            BatchSize = 0;
-        }
+		private BatchMessageAcker()
+		{
+			_bitSet = new BatchBitSet();
+			BatchSize = 0;
+		}
 		public static BatchMessageAcker NewAcker(int batchSize)
 		{
 			var bitSet = new BatchBitSet(batchSize);
@@ -36,9 +36,9 @@ namespace SharpPulsar.Batch
 		}
 
 		// bitset shared across messages in the same batch.
-        private readonly BatchBitSet _bitSet;
+		private readonly BatchBitSet _bitSet;
 
-        public BatchMessageAcker(BatchBitSet bitSet, int batchSize)
+		public BatchMessageAcker(BatchBitSet bitSet, int batchSize)
 		{
 			_bitSet = bitSet;
 			BatchSize = batchSize;
@@ -46,25 +46,25 @@ namespace SharpPulsar.Batch
 
 		public virtual BatchBitSet BitSet => _bitSet;
 
-        public virtual int BatchSize { get; }
+		public virtual int BatchSize { get; }
 
-        public virtual bool AckIndividual(int batchIndex)
+		public virtual bool AckIndividual(int batchIndex)
 		{
-            _bitSet.Clear(batchIndex);
-            return _bitSet.IsEmpty();
+			_bitSet.Clear(batchIndex);
+			return _bitSet.IsEmpty();
 		}
 
 		public virtual bool AckCumulative(int batchIndex)
 		{
-            // +1 since to argument is exclusive
+			// +1 since to argument is exclusive
 			_bitSet.Clear(0, batchIndex + 1);
-            return _bitSet.IsEmpty();
+			return _bitSet.IsEmpty();
 		}
 
 		// debug purpose
 		public virtual int OutstandingAcks => _bitSet.Cardinality();
 
-        public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
-    }
+		public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
+	}
 
 }
