@@ -94,6 +94,7 @@ namespace SharpPulsar
 		private readonly int _priorityLevel;
 		private readonly SubscriptionMode _subscriptionMode;
 		private BatchMessageId _startMessageId;
+		private IActorContext _context;
 
 		private IActorRef _cnx;
 		private IActorRef _lookup;
@@ -163,6 +164,7 @@ namespace SharpPulsar
 
 		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(stateActor, client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
+			_context = Context;
 			_clientConfigurationData = clientConfiguration;
 			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
 			_commands = new Commands();
@@ -2356,6 +2358,7 @@ namespace SharpPulsar
 		{
 			///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 
 			///retrying in times delay
+			///
 			var cnx = await Cnx();
 			if(await Connected() && cnx != null)
 			{
@@ -2408,7 +2411,7 @@ namespace SharpPulsar
 					return;
 					
 				}
-				Context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)), async () =>
+				_context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)), async () =>
 				{
 					var log = _log;
 					var remaining = remainingTime - nextDelay;
