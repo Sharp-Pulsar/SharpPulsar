@@ -498,7 +498,7 @@ namespace SharpPulsar
 			Receive<GetSubscription>(m => {
 				Push(ConsumerQueue.Subscription, Subscription);
 			});
-			Receive<GetTopic>(m => {
+			Receive<GetTopic>(m => {				
 				Push(ConsumerQueue.Topic, _topicName.ToString());
 			});
 			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
@@ -807,22 +807,26 @@ namespace SharpPulsar
 			CloseConsumerTasks();
 
 			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult().Id;
-			var cnx = Cnx().GetAwaiter().GetResult();
-			if (null == cnx)
-			{
-				CleanupAtClose(null);
-			}
-			else
-			{
-				byte[] cmd = _commands.NewCloseConsumer(_consumerId, requestId);
-				var response = cnx.AskFor(new SendRequestWithId(cmd, requestId)).GetAwaiter().GetResult();
-				if(response is ClientExceptions ex)
-                {
-					_log.Debug($"Exception ignored in closing consumer {ex.Exception}");
-					CleanupAtClose(ex.Exception);
+            try
+            {
+				var cnx = Cnx().GetAwaiter().GetResult();
+				if (null == cnx)
+				{
+					CleanupAtClose(null);
 				}
-			}
+				else
+				{
+					byte[] cmd = _commands.NewCloseConsumer(_consumerId, requestId);
+					var response = cnx.AskFor(new SendRequestWithId(cmd, requestId)).GetAwaiter().GetResult();
+					if (response is ClientExceptions ex)
+					{
+						_log.Debug($"Exception ignored in closing consumer {ex.Exception}");
+						CleanupAtClose(ex.Exception);
+					}
+				}
 
+			}
+            catch { }
 			base.PostStop();
         }
 		internal override IConsumerStatsRecorder Stats
@@ -2748,7 +2752,7 @@ namespace SharpPulsar
 		{
 			var o = (Message<T>)obj;
 			if (_hasParentConsumer)
-				Sender.Tell(new ReceivedMessage<T>(o));
+				_context.Parent.Tell(new ReceivedMessage<T>(o));
 			else
             {
 				//@davidfowl o.Metadata is the problem.....

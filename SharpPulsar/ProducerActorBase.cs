@@ -101,7 +101,7 @@ namespace SharpPulsar
 
 		protected internal virtual void OnSendAcknowledgement(IMessage<T> message, IMessageId msgId, Exception exception)
 		{
-			if(Interceptors != null)
+			if(Interceptors != null && message != null)
 			{
 				Interceptors.OnSendAcknowledgement(Self, message, msgId, exception);
 			}

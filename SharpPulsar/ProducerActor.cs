@@ -615,7 +615,7 @@ namespace SharpPulsar
 				string uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
 				for (int chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
-					SerializeAndSendMessage(msg, msgMetadata, payload.ToBytes(), sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload.ToBytes(), compressedPayload.Length, uncompressedSize);
+					await SerializeAndSendMessage(msg, msgMetadata, payload.ToBytes(), sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload.ToBytes(), compressedPayload.Length, uncompressedSize);
 					readStartIndex = ((chunkId + 1) * maxMessageSize);
 				}
 			}
@@ -633,7 +633,7 @@ namespace SharpPulsar
 		{
 			return true;
 		}
-		private void SerializeAndSendMessage(Message<T> msg, MessageMetadata msgMetadata, byte[] payload, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
+		private async ValueTask SerializeAndSendMessage(Message<T> msg, MessageMetadata msgMetadata, byte[] payload, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
 		{
 			var chunkPayload = compressedPayload;
 			var chunkMsgMetadata = msgMetadata;
@@ -711,7 +711,7 @@ namespace SharpPulsar
 							});
 							if (isBatchFull)
 							{
-								BatchMessageAndSend();
+								await BatchMessageAndSend();
 							}
 						}
 						_isLastSequenceIdPotentialDuplicated = false;
@@ -1136,7 +1136,8 @@ namespace SharpPulsar
 						// if message is chunked then call callback only on last chunk
 						if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
 						{
-							SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), null);
+							if(op.Msg != null)
+								SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), null);
 						}
 					}
 					catch (Exception t)

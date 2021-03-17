@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Messages;
+﻿using Akka.Actor;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Producer;
 using System.Collections.Concurrent;
 
@@ -8,12 +9,12 @@ namespace SharpPulsar.Queues
     {
         public BlockingCollection<AckReceived> Receipt { get; }
         public BlockingCollection<ProducerCreation> Producer { get; }
-        public BlockingCollection<ProducerCreation> PartitionedProducer { get; }
+        public BlockingCollection<IActorRef> PartitionedProducer { get; }
         public ProducerQueueCollection()
         {
             Receipt = new BlockingCollection<AckReceived>();
             Producer = new BlockingCollection<ProducerCreation>();
-            PartitionedProducer = new BlockingCollection<ProducerCreation>();
+            PartitionedProducer = new BlockingCollection<IActorRef>();
         }
     }
 }

@@ -35,7 +35,7 @@ namespace SharpPulsar.Configuration
 {
     public sealed class ConsumerConfigurationData<T>
 	{
-		private long _autoUpdatePartitionsIntervalSeconds;
+		private long _autoUpdatePartitionsIntervalSeconds = 5;
 		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
 		{
 			Condition.CheckArgument(interval > 0, "interval needs to be > 0");

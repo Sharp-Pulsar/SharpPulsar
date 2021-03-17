@@ -49,6 +49,7 @@ namespace SharpPulsar
 		private IMessageRouter _routerPolicy;
 		private readonly IActorRef _router;
 		private readonly IActorRef _generator;
+		private readonly IActorRef _self;
 		private readonly ProducerStatsRecorder _stats;
 		private TopicMetadata _topicMetadata;
 
@@ -59,12 +60,13 @@ namespace SharpPulsar
 
 		public PartitionedProducer(IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
+			_self = Self;
+			_producers = new List<IActorRef>();
 			_generator = idGenerator;
 			_context = Context;
 			_producers = new List<IActorRef>(numPartitions);
 			_topicMetadata = new TopicMetadata(numPartitions);
-			var pName = ProducerName().GetAwaiter().GetResult();
-			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, pName, topic, conf.MaxPendingMessages) : null;
+			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
 			_log = Context.GetLogger();
 			int maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
@@ -89,12 +91,49 @@ namespace SharpPulsar
 			// start track and auto subscribe partition increasement
 			if(conf.AutoUpdatePartitions)
 			{
-				_partitionsAutoUpdateTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(TimeUnit.SECONDS.ToSeconds(conf.AutoUpdatePartitionsIntervalSeconds)), () => OnTopicsExtended(new List<string> { topic}));
+				_partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
 			}
+			Receive<Flush>(_ => {
+				Flush();
+			});
+			Receive<TriggerFlush>(_ => {
+				TriggerFlush();
+			});
+			ReceiveAsync<ExtendTopics>(async _ => 
+			{
+				var t = topic;
+				await OnTopicsExtended(new List<string> { t });
+			});
+
+			ReceiveAsync<InternalSend<T>>(async m =>
+			{
+				try
+				{
+					//get excepyion vai out
+					await InternalSend(m.Message);
+				}
+				catch (Exception ex)
+				{
+					_log.Error(ex.ToString());
+				}
+			});
+			ReceiveAsync<InternalSendWithTxn<T>>(async m =>
+			{
+				try
+				{
+					await InternalSendWithTxn(m.Message, m.Txn);
+				}
+				catch (Exception ex)
+				{
+					_log.Error(ex.ToString());
+				}
+			});
+			ReceiveAny(any => _router.Forward(any));
 		}
 		protected internal override async ValueTask<string> ProducerName()
 		{
-			return await _producers[0].AskFor<string>(GetProducerName.Instance);
+			//return await _producers[0].AskFor<string>(GetProducerName.Instance);
+			return "PartitionedProducer";
 		}
 
 		protected internal override async ValueTask<long> LastSequenceId()
@@ -113,7 +152,7 @@ namespace SharpPulsar
 			{
 				var producerId = await _generator.AskFor<long>(NewProducerId.Instance);
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = Context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
+				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 				_producers.Add(producer);
 				var routee = Routee.FromActorRef(producer);
 				_router.Tell(new AddRoutee(routee));
@@ -129,13 +168,13 @@ namespace SharpPulsar
 					{
 						State.ConnectionState = HandlerState.State.Ready;
 						_log.Info($"[{Topic}] Created partitioned producer");
-						ProducerQueue.PartitionedProducer.Add(prod);
+						ProducerQueue.PartitionedProducer.Add(_self);
 					}
 					else
 					{
 						_log.Error($"[{Topic}] Could not create partitioned producer: {createFail}");
-						ProducerQueue.PartitionedProducer.Add(new ProducerCreation(createFail));
-						Client.Tell(new CleanupProducer(Self));
+						ProducerQueue.PartitionedProducer.Add(null);
+						Client.Tell(new CleanupProducer(_self));
 					}
 				}
 			}
@@ -144,7 +183,34 @@ namespace SharpPulsar
 
 		internal override async ValueTask InternalSend(IMessage<T> message)
 		{
-			await InternalSendWithTxn(message, null);
+			switch (State.ConnectionState)
+			{
+				case HandlerState.State.Ready:
+				case HandlerState.State.Connecting:
+					break; // Ok
+					goto case HandlerState.State.Closing;
+				case HandlerState.State.Closing:
+				case HandlerState.State.Closed:
+					_log.Error("Producer already closed");
+					break;
+				case HandlerState.State.Terminated:
+					_log.Error("Topic was terminated");
+					break;
+				case HandlerState.State.Failed:
+				case HandlerState.State.Uninitialized:
+					_log.Error("NotConnectedException"); break;
+			}
+
+			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+			{
+				var msg = new ConsistentHashableEnvelope(new InternalSend<T>(message), message.Key);
+				_router.Tell(msg);
+			}
+			else
+			{
+				_router.Tell(new InternalSend<T>(message));
+			}
+			await Task.CompletedTask;
 		}
 
 		internal override async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn)
@@ -167,14 +233,15 @@ namespace SharpPulsar
 					_log.Error("NotConnectedException");break;
 			}
 
-			//int partition = _routerPolicy.ChoosePartition(message, _topicMetadata);
-			//Condition.CheckArgument(partition >= 0 && partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
 			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
 				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn), message.Key);
 				_router.Tell(msg);
 			}
-			_router.Tell(new InternalSendWithTxn<T>(message, txn));
+            else
+			{
+				_router.Tell(new InternalSendWithTxn<T>(message, txn));
+			}
 			await Task.CompletedTask;
 		}
 
@@ -284,7 +351,10 @@ namespace SharpPulsar
 				_log.Error($"[{Topic}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
 			}
 		}
-
+		internal sealed class ExtendTopics
+        {
+			public static ExtendTopics Instance = new ExtendTopics();
+        }
 	}
 
 }

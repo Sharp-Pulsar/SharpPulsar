@@ -193,17 +193,27 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/output", "--partitions", "3")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/testReadFromPartition", "--partitions", "3")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://tnx/ns1/message-ack-test", "--partitions", "3")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithBatchingWithMessageInclusive", "--partitions", "3")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/testReadFromPartition", "--partitions", "4")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithoutBatchingWithMessageInclusive", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithBatching", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithoutBatching", "--partitions", "3")
             );
        });
     Target CheckDockerVersion => _ => _
