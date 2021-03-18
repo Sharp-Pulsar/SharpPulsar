@@ -47,7 +47,7 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestReadMessageWithoutBatching()
 		{
-			string topic = "TestReadMessageWithoutBatching";
+			string topic = "ReadMessageWithoutBatching";
 			TestReadMessages(topic, false);
 		}
 		[Fact]

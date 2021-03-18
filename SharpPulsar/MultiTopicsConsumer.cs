@@ -97,6 +97,7 @@ namespace SharpPulsar
 		private readonly IActorRef _client;
 
 		private readonly IActorRef _self;
+		private readonly IActorContext _context;
 		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration, queue)
 		{
 		}
@@ -107,6 +108,7 @@ namespace SharpPulsar
 
 		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) : base(stateActor, client, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors, queue)
 		{
+			_context = Context;
 			_generator = idGenerator;
 			_lookup = lookup;
 			_client = client;
@@ -177,9 +179,12 @@ namespace SharpPulsar
 		{			// start track and auto subscribe partition increasement
 			if (_internalConfig.AutoUpdatePartitions)
 			{
-				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(1000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsIntervalSeconds), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsIntervalSeconds), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
 			}
-
+			Receive<SendState>(_ =>
+			{
+				StateActor.Tell(new SetConumerState(State.ConnectionState));
+			});
 			ReceiveAsync<UpdatePartitionSub>(async s =>
 			{
 				await SubscribeIncreasedTopicPartitions(Topic);
@@ -250,6 +255,17 @@ namespace SharpPulsar
 				try
 				{
 					await AcknowledgeCumulative(m.MessageId);
+					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
+				}
+				catch (Exception ex)
+				{
+					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
+				}
+			});
+			ReceiveAsync<AcknowledgeCumulativeMessage<T>>(async m => {
+				try
+				{
+					await AcknowledgeCumulative(m.Message);
 					Push(ConsumerQueue.AcknowledgeCumulativeException, null);
 				}
 				catch (Exception ex)
@@ -1386,7 +1402,7 @@ namespace SharpPulsar
 					var consumerId = await _generator.AskFor<long>(NewConsumerId.Instance);
 					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					ConsumerConfigurationData<T> configurationData = InternalConsumerConfig;
-					var newConsumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue)));
+					var newConsumer = _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration, ConsumerQueue)));
 					if (_paused)
 					{
 						newConsumer.Tell(Messages.Consumer.Pause.Instance);
