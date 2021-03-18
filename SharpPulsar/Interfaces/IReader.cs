@@ -1,4 +1,5 @@
 ﻿using BAMCIS.Util.Concurrent;
+using System;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -52,8 +53,8 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> the next message(Could be null if none received in time) </returns>
 		/// <exception cref="PulsarClientException"> </exception>
-		IMessage<T> ReadNext(int timeout, TimeUnit unit);
-		ValueTask<IMessage<T>> ReadNextAsync(int timeout, TimeUnit unit);
+		IMessage<T> ReadNext(TimeSpan timeSpan);
+		ValueTask<IMessage<T>> ReadNextAsync(TimeSpan timeSpan);
 
 		
 		bool HasReachedEndOfTopic();

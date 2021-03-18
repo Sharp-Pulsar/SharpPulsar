@@ -51,66 +51,11 @@ namespace SharpPulsar.Test
 			TestReadMessages(topic, false);
 		}
 		[Fact]
-		public virtual void TestReadMessageWithoutBatchingWithMessageInclusive()
-		{
-			string topic = "TestReadMessageWithoutBatchingWithMessageInclusive";
-			ISet<string> keys = PublishMessages(topic, 10, false);
-
-			var builder = new ReaderConfigBuilder<sbyte[]>()
-				.Topic(topic)
-				.StartMessageId(IMessageId.Latest)
-				.StartMessageIdInclusive()
-				.ReaderName(Subscription);
-			var reader = _client.NewReader(builder); int count = 0;
-			while(reader.HasMessageAvailable())
-			{
-				var message = reader.ReadNext(1, TimeUnit.SECONDS);
-				Assert.True(keys.Remove(message.Key));
-				count++;
-			}
-			Assert.Equal(10, count);
-			Assert.False(reader.HasMessageAvailable());
-		}
-		[Fact]
 		public virtual void TestReadMessageWithBatching()
 		{
 			string topic = "TestReadMessageWithBatching";
 			TestReadMessages(topic, true);
 		}
-		[Fact]
-		public virtual void TestReadMessageWithBatchingWithMessageInclusive()
-		{
-			string topic = "TestReadMessageWithBatchingWithMessageInclusive";
-			int topicNum = 3;
-			int msgNum = 15;
-			ISet<string> keys = PublishMessages(topic, msgNum, true);
-
-			var builder = new ReaderConfigBuilder<sbyte[]>()
-				.Topic(topic)
-				.StartMessageId(IMessageId.Latest)
-				.StartMessageIdInclusive()
-				.ReaderName(Subscription);
-			var reader = _client.NewReader(builder);
-			while (reader.HasMessageAvailable())
-			{
-				var message = reader.ReadNext(2, TimeUnit.SECONDS);
-				if (message != null)
-				{
-					var removed = keys.Remove(message.Key);
-					Assert.True(removed);
-				}
-				else
-					break;
-			}
-
-			// start from latest with start message inclusive should only read the last 3 message from 3 partition
-			Assert.Equal(keys.Count, msgNum - topicNum);
-			Assert.False(keys.Contains("key14"));
-			Assert.False(keys.Contains("key13"));
-			Assert.False(keys.Contains("key12"));
-			Assert.False(reader.HasMessageAvailable());
-		}
-
 		private void TestReadMessages(string topic, bool enableBatch)
 		{
 			int numKeys = 10;

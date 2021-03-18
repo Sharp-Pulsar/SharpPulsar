@@ -189,12 +189,12 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(Messages.Consumer.Pause.Instance);
         }
-        public IMessage<T> Receive(int timeoutInMs)
+        public IMessage<T> Receive(TimeSpan timeout)
         {
-            return ReceiveAsync(timeoutInMs).GetAwaiter().GetResult();
+            return ReceiveAsync(timeout).GetAwaiter().GetResult();
         }
 
-        public async ValueTask<IMessage<T>> ReceiveAsync(int timeoutInMs)
+        public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan timeouts)
         {
             await VerifyConsumerState();
             if (_conf.ReceiverQueueSize == 0)
@@ -207,7 +207,7 @@ namespace SharpPulsar.User
             }
             try
             {
-                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeoutInMs));
+                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: timeouts);
                 if (message != null)
                 {
                     _consumerActor.Tell(new MessageProcessed<T>(message));

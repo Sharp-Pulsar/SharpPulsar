@@ -2,6 +2,7 @@
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Stats.Consumer.Api;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,8 +102,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
 		///             
-		IMessage<T> Receive(int timeoutInMs);
-		ValueTask<IMessage<T>> ReceiveAsync(int timeoutInMs);
+		IMessage<T> Receive(TimeSpan timeout);
+		ValueTask<IMessage<T>> ReceiveAsync(TimeSpan timeout);
 
 		/// <summary>
 		/// Batch receiving messages.

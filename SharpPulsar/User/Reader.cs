@@ -67,8 +67,8 @@ namespace SharpPulsar.User
             }
             return m;
         }
-        public IMessage<T> ReadNext(int timeout, TimeUnit unit) => ReadNextAsync(timeout, unit).GetAwaiter().GetResult();
-        public async ValueTask<IMessage<T>> ReadNextAsync(int timeout, TimeUnit unit)
+        public IMessage<T> ReadNext(TimeSpan timeSpan) => ReadNextAsync(timeSpan).GetAwaiter().GetResult();
+        public async ValueTask<IMessage<T>> ReadNextAsync(TimeSpan timeSpan)
         {
             await VerifyConsumerState().ConfigureAwait(false);
             if (_conf.ReceiverQueueSize == 0)
@@ -77,7 +77,7 @@ namespace SharpPulsar.User
             }
             try
             {
-                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeout));
+                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: timeSpan);
                 if (message != null)
                 {
                     _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
@@ -85,7 +85,10 @@ namespace SharpPulsar.User
                     return message;
                 }
             }
-            catch { }
+            catch(Exception ex) 
+            {
+                var e = ex;
+            }
             return null;
         }
         private async ValueTask VerifyConsumerState()

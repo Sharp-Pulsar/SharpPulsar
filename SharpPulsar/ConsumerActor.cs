@@ -530,7 +530,7 @@ namespace SharpPulsar
 			});
 			ReceiveAsync<HasMessageAvailable>(async _ => {
 				var has = await HasMessageAvailable();
-				ConsumerQueue.HasMessageAvailable.Add(has);
+				Push(ConsumerQueue.HasMessageAvailable, has);
 			});
 			ReceiveAsync<GetNumMessagesInQueue>(async _ => {
 				var num = await NumMessagesInQueue();

@@ -346,7 +346,7 @@ namespace SharpPulsar
 			});
 			ReceiveAsync<HasMessageAvailable>(async _ => {
 				var has = await HasMessageAvailable();
-				Sender.Tell(has);
+				ConsumerQueue.HasMessageAvailable.Add(has);
 			});
 			ReceiveAsync<GetNumMessagesInQueue>(async _ => {
 				var num = await NumMessagesInQueue();
@@ -995,9 +995,16 @@ namespace SharpPulsar
 		{
 			foreach (var c in _consumers.Values)
 			{
-				var s = await c.AskFor<bool>(Messages.Consumer.HasMessageAvailable.Instance);
-				if (!s)
+                try
+                {
+					var s = await c.AskFor<bool>(Messages.Consumer.HasMessageAvailable.Instance);
+					if (!s)
+						return false;
+				}
+                catch
+                {
 					return false;
+                }
 			}
 			return true;
 		}
