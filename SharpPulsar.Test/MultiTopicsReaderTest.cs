@@ -80,7 +80,6 @@ namespace SharpPulsar.Test
 			}
 			Assert.True(keys.Count == 0);
 		}
-
 		private ISet<string> PublishMessages(string topic, int count, bool enableBatch)
 		{
 			ISet<string> keys = new HashSet<string>();

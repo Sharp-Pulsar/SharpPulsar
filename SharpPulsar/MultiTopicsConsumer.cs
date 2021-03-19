@@ -174,6 +174,13 @@ namespace SharpPulsar
 					Become(Ready);
 				}
 			});
+			Receive<SendState>(_ =>
+			{
+				StateActor.Tell(new SetConumerState(State.ConnectionState));
+			});
+			ReceiveAsync<ReceivedMessage<T>>(async m => {
+				await ReceiveMessageFromConsumer(Sender, m.Message);
+			});
 		}
 		private void Ready()
 		{			// start track and auto subscribe partition increasement
@@ -201,10 +208,6 @@ namespace SharpPulsar
 			ReceiveAsync<SubscribeAndCreateTopicIfDoesNotExist>(async s =>
 			{
 				await Subscribe(s.TopicName, s.CreateTopicIfDoesNotExist);
-			});
-			Receive<ReceivedMessage<T>>(r =>
-			{
-				IncomingMessages.Post(r.Message);
 			});
 			ReceiveAsync<AcknowledgeMessage<T>>(async m => {
 				try
@@ -675,32 +678,28 @@ namespace SharpPulsar
 			_unAckedMessageTracker.Tell(new Add(topicMessage.MessageId));
 			if (Listener != null)
 			{
-				// Trigger the notification on the message listener in a separate thread to avoid blocking the networking
-				// thread while the message processing happens
-				Task.Run(() =>
+				try
 				{
-					var listener = Listener;
-					var log = _log;
-					try
+					if (_log.IsDebugEnabled)
 					{
-						if (log.IsDebugEnabled)
-						{
-							log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {message.MessageId}");
-						}
-						listener.Received(_self, message);
+						_log.Debug($"[{Topic}][{Subscription}] Calling message listener for message {message.MessageId}");
 					}
-					catch (Exception t)
-					{
-						log.Error($"[{Topic}][{Subscription}] Message listener error in processing message: {message}: {t}");
-					}
-				});
+					Listener.Received(_self, message);
+				}
+				catch (Exception t)
+				{
+					_log.Error($"[{Topic}][{Subscription}] Message listener error in processing message: {message}: {t}");
+				}
 			}
             else
             {
 				IncomingMessages.Post(topicMessage);
             }
 		}
-
+		protected override void Unhandled(object message)
+		{
+			_log.Warning($"Unhandled Message '{message.GetType().FullName}' from '{Sender.Path}'");
+		}
 		private void MessageProcessed(IMessage<T> msg)
 		{
 			_unAckedMessageTracker.Tell(new Add(msg.MessageId));

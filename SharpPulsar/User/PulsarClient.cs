@@ -296,7 +296,7 @@ namespace SharpPulsar.User
         {
             IActorRef state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var queue = new ConsumerQueueCollections<T>();
-            var consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, true, schema, interceptors, _clientConfigurationData, queue));
+            var consumer = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, conf.ForceTopicCreation, _clientConfigurationData, queue)));
             
             _client.Tell(new AddConsumer(consumer));
 

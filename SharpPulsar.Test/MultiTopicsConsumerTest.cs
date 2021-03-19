@@ -1,5 +1,15 @@
-﻿using System;
+﻿using SharpPulsar.Configuration;
+using SharpPulsar.Messages;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading;
+using Xunit;
+using Xunit.Abstractions;
+using SharpPulsar.Extension;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,94 +36,79 @@ namespace SharpPulsar.Test
 	/// <summary>
 	/// Unit Tests of <seealso cref="MultiTopicsConsumerImpl"/>.
 	/// </summary>
+	[Collection(nameof(PulsarTests))]
 	public class MultiTopicsConsumerTest
 	{
+		private const string Subscription = "reader-multi-topics-sub";
+		private readonly ITestOutputHelper _output;
+		private readonly PulsarClient _client;
 
-		public virtual void TestGetStats()
+		public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
-			string topicName = "test-stats";
-			ClientConfigurationData conf = new ClientConfigurationData();
-			conf.ServiceUrl = "pulsar://localhost:6650";
-			conf.StatsIntervalSeconds = 100;
+			_output = output;
+			_client = fixture.Client;
+		}
+		[Fact]
+		public void TestMultiTopicConsumer()
+        {
+			var messageCount = 5;
 
-			ThreadFactory threadFactory = new DefaultThreadFactory("client-test-stats", Thread.CurrentThread.Daemon);
-			EventLoopGroup eventLoopGroup = EventLoopUtil.NewEventLoopGroup(conf.NumIoThreads, threadFactory);
-			ExecutorService listenerExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
+			var builder = new ConsumerConfigBuilder<sbyte[]>()
+				.Topic("one-topic", "two-topic", "three-topic")
+				.ForceTopicCreation(true)
+				.SubscriptionName("multi-topic-sub");
 
-			PulsarClientImpl clientImpl = new PulsarClientImpl(conf, eventLoopGroup);
+			var consumer = _client.NewConsumer(builder);
 
-			ConsumerConfigurationData consumerConfData = new ConsumerConfigurationData();
-			consumerConfData.TopicNames = Sets.newHashSet(topicName);
+			var acks = PublishMessages("one-topic", messageCount, "hello Toba"); 
 
-			assertEquals(long.Parse("100"), clientImpl.Configuration.StatsIntervalSeconds);
-
-			MultiTopicsConsumerImpl impl = new MultiTopicsConsumerImpl(clientImpl, consumerConfData, listenerExecutor, null, null, null, true);
-
-			impl.Stats;
+			for(var i = 0; i < messageCount; i++)
+			{
+				var message = (TopicMessage<sbyte[]>)consumer.Receive();
+				Assert.NotNull(message);
+				var messageId = (MessageId)((TopicMessageId)message.MessageId).InnerMessageId;
+				Assert.Contains("one-topic", message.TopicName);
+            }
+			acks.Clear();
+			acks = PublishMessages("two-topic", messageCount, "hello Toba");
+			for (var i = 0; i < messageCount; i++)
+			{
+				var message = (TopicMessage<sbyte[]>)consumer.Receive();
+				Assert.NotNull(message);
+				var messageId = (MessageId)message.MessageId;
+				var same = acks.FirstOrDefault(x => x.EntryId == messageId.EntryId && x.LedgerId == messageId.LedgerId && x.SequenceId == message.SequenceId);
+				Assert.NotNull(same);
+				Assert.Contains("two-topic", message.TopicName);
+			}
+			acks.Clear();
+			acks = PublishMessages("three-topic", messageCount, "hello Toba");
+			for (var i = 0; i < messageCount; i++)
+			{
+				var message = (TopicMessage<sbyte[]>)consumer.Receive();
+				Assert.NotNull(message);
+				var messageId = (MessageId)message.MessageId;
+				var same = acks.FirstOrDefault(x => x.EntryId == messageId.EntryId && x.LedgerId == messageId.LedgerId && x.SequenceId == message.SequenceId);
+				Assert.NotNull(same);
+				Assert.Contains("three-topic", message.TopicName);
+			}
 		}
 
-		// Test uses a mocked PulsarClientImpl which will complete the getPartitionedTopicMetadata() internal async call
-		// after a delay longer than the interval between the two subscribeAsync() calls in the test method body.
-		//
-		// Code under tests is using CompletableFutures. Theses may hang indefinitely if code is broken.
-		// That's why a test timeout is defined.
-
-		public virtual void TestParallelSubscribeAsync()
+		private List<AckReceived> PublishMessages(string topic, int count, string message)
 		{
-			string topicName = "parallel-subscribe-async-topic";
-			MultiTopicsConsumerImpl<sbyte[]> impl = CreateMultiTopicsConsumer();
-
-			CompletableFuture<Void> firstInvocation = impl.SubscribeAsync(topicName, true);
-			Thread.Sleep(5); // less than completionDelayMillis
-			CompletableFuture<Void> secondInvocation = impl.SubscribeAsync(topicName, true);
-
-			firstInvocation.get(); // does not throw
-			Exception t = expectThrows(typeof(ExecutionException), secondInvocation.get);
-			Exception cause = t.InnerException;
-			assertEquals(cause.GetType(), typeof(PulsarClientException));
-			assertTrue(cause.Message.EndsWith("Topic is already being subscribed for in other thread."));
+			List<AckReceived> keys = new List<AckReceived>();
+			var builder = new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topic);
+			var producer = _client.NewProducer(builder);
+			for (int i = 0; i < count; i++)
+			{
+				string key = "key" + i;
+				sbyte[] data = Encoding.UTF8.GetBytes($"{message}-{i}").ToSBytes();
+				producer.NewMessage().Key(key).Value(data).Send();
+				var receipt = producer.SendReceipt();
+				keys.Add(receipt);
+			}
+			return keys;
 		}
-
-		private MultiTopicsConsumerImpl<sbyte[]> CreateMultiTopicsConsumer()
-		{
-			ExecutorService listenerExecutor = mock(typeof(ExecutorService));
-			ConsumerConfigurationData<sbyte[]> consumerConfData = new ConsumerConfigurationData<sbyte[]>();
-			consumerConfData.SubscriptionName = "subscriptionName";
-			int completionDelayMillis = 100;
-			Schema<sbyte[]> schema = Schema.BYTES;
-			PulsarClientImpl clientMock = createPulsarClientMockWithMockedClientCnx();
-			when(clientMock.GetPartitionedTopicMetadata(any())).thenAnswer(invocation => createDelayedCompletedFuture(new PartitionedTopicMetadata(), completionDelayMillis));
-			when(clientMock.PreProcessSchemaBeforeSubscribe<sbyte[]>(any(), any(), any())).thenReturn(CompletableFuture.completedFuture(schema));
-			MultiTopicsConsumerImpl<sbyte[]> impl = new MultiTopicsConsumerImpl<sbyte[]>(clientMock, consumerConfData, listenerExecutor, new CompletableFuture<sbyte[]>(), schema, null, true);
-			return impl;
-		}
-
-
-		public virtual void TestReceiveAsyncCanBeCancelled()
-		{
-			// given
-			MultiTopicsConsumerImpl<sbyte[]> consumer = CreateMultiTopicsConsumer();
-			CompletableFuture<Message<sbyte[]>> future = consumer.ReceiveAsync();
-			assertEquals(consumer.PeekPendingReceive(), future);
-			// when
-			future.cancel(true);
-			// then
-			assertTrue(consumer.PendingReceives.Empty);
-		}
-
-
-		public virtual void TestBatchReceiveAsyncCanBeCancelled()
-		{
-			// given
-			MultiTopicsConsumerImpl<sbyte[]> consumer = CreateMultiTopicsConsumer();
-			CompletableFuture<Messages<sbyte[]>> future = consumer.BatchReceiveAsync();
-			assertTrue(consumer.HasPendingBatchReceive());
-			// when
-			future.cancel(true);
-			// then
-			assertFalse(consumer.HasPendingBatchReceive());
-		}
-
 	}
 
 }
