@@ -53,7 +53,7 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 namespace SharpPulsar
 {
 
-    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>
+    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>, IWithUnboundedStash
 	{
 
 		internal const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
@@ -153,17 +153,14 @@ namespace SharpPulsar
 			}
             else
             {
-
-				Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames), "Topics is empty or invalid.");
-				foreach(var t in conf.TopicNames)
-                {
-					Self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, createTopicIfDoesNotExist));
-                }
+				Self.Tell(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), createTopicIfDoesNotExist));
 			}
 
-			ReceiveAsync<SubscribeAndCreateTopicIfDoesNotExist>(async s =>
+			ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
 			{
-				await Subscribe(s.TopicName, s.CreateTopicIfDoesNotExist);
+				foreach(var topic in s.Topics )
+					await Subscribe(topic, s.CreateTopicIfDoesNotExist);
+
 				if (AllTopicPartitionsNumber == TopicsMap.Values.Sum())
 				{
 					MaxReceiverQueueSize = AllTopicPartitionsNumber;
@@ -173,14 +170,13 @@ namespace SharpPulsar
 
 					Become(Ready);
 				}
+                else
+                {
+					_log.Warning("[{}] [{}] Failed to create all topics consumer with {} sub-consumers so far", Topic, Subscription, AllTopicPartitionsNumber);
+
+				}
 			});
-			Receive<SendState>(_ =>
-			{
-				StateActor.Tell(new SetConumerState(State.ConnectionState));
-			});
-			ReceiveAsync<ReceivedMessage<T>>(async m => {
-				await ReceiveMessageFromConsumer(Sender, m.Message);
-			});
+			ReceiveAny(_ => Stash.Stash());
 		}
 		private void Ready()
 		{			// start track and auto subscribe partition increasement
@@ -532,6 +528,8 @@ namespace SharpPulsar
 					Push(ConsumerQueue.SeekException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
+
+			Stash.UnstashAll();
 		}
 		// subscribe one more given topic
 		private async ValueTask Subscribe(string topicName, bool createTopicIfDoesNotExist)
@@ -562,7 +560,7 @@ namespace SharpPulsar
 				_log.Warning($"[{fullTopicName}] Failed to get partitioned topic metadata: {failure.Exception}");
 			}
 		}
-		private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe<T>(ISchema<T> schema, string topicName)
+		private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe(ISchema<T> schema, string topicName)
 		{
 			if (schema != null && schema.SupportSchemaVersioning())
 			{
@@ -606,34 +604,7 @@ namespace SharpPulsar
 		{
 			return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
 		}
-		// Check topics are valid.
-		// - each topic is valid,
-		// - topic names are unique.
-		private bool TopicNamesValid(ICollection<string> topics)
-		{
-			if(topics.Count < 1)
-				throw new ArgumentException("topics should contain more than 1 topic");
-
-			Option<string> result = topics.Where(t => !TopicName.IsValid(t)).FirstOrDefault();
-
-			if(result.HasValue)
-			{
-				_log.Warning($"Received invalid topic name: {result}");
-				return false;
-			}
-
-			// check topic names are unique
-			HashSet<string> set = new HashSet<string>(topics);
-			if(set.Count == topics.Count)
-			{
-				return true;
-			}
-			else
-			{
-				_log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
-				return false;
-			}
-		}
+		
 
 		private void StartReceivingMessages(IList<IActorRef> newConsumers)
 		{
@@ -751,7 +722,7 @@ namespace SharpPulsar
 				var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 
 				var innerId = topicMessageId.InnerMessageId;
-				_ = await consumer.Ask(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl));
+				consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl));
 				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
 			await Task.CompletedTask;
@@ -1359,7 +1330,9 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override void Pause()
+        public IStash Stash { get; set; }
+
+        internal override void Pause()
 		{
 			_paused = true;
 			_consumers.ForEach(x => x.Value.Tell(Messages.Consumer.Pause.Instance));

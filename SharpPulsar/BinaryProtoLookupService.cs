@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Exceptions;

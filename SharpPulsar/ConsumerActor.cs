@@ -2752,7 +2752,11 @@ namespace SharpPulsar
 		{
 			var o = (Message<T>)obj;
 			if (_hasParentConsumer)
+            {
 				_context.Parent.Tell(new ReceivedMessage<T>(o));
+				_log.Info($"Pushed message with sequnceid {o.SequenceId} (topic:{Topic}) to consumer parent");
+
+			}
 			else
             {
 				//@davidfowl o.Metadata is the problem.....

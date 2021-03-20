@@ -67,6 +67,7 @@ namespace SharpPulsar.Test
 				var message = (TopicMessage<sbyte[]>)consumer.Receive();
 				Assert.NotNull(message);
 				var messageId = (MessageId)((TopicMessageId)message.MessageId).InnerMessageId;
+				consumer.Acknowledge(message);
 				Assert.Contains("one-topic", message.TopicName);
             }
 			acks.Clear();

@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Event;
+using Akka.Util;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Cache;
 using SharpPulsar.Common;
@@ -294,6 +295,8 @@ namespace SharpPulsar.User
 
         private async ValueTask<Consumer<T>> MultiTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
+            Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames), "Topics is empty or invalid.");
+
             IActorRef state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var queue = new ConsumerQueueCollections<T>();
             var consumer = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, conf.ForceTopicCreation, _clientConfigurationData, queue)));
@@ -650,7 +653,34 @@ namespace SharpPulsar.User
             }
             
         }
+        // Check topics are valid.
+        // - each topic is valid,
+        // - topic names are unique.
+        private bool TopicNamesValid(ICollection<string> topics)
+        {
+            if (topics.Count < 1)
+                throw new ArgumentException("topics should contain more than 1 topic");
 
+            Option<string> result = topics.Where(t => !TopicName.IsValid(t)).FirstOrDefault();
+
+            if (result.HasValue)
+            {
+                _log.Warning($"Received invalid topic name: {result}");
+                return false;
+            }
+
+            // check topic names are unique
+            HashSet<string> set = new HashSet<string>(topics);
+            if (set.Count == topics.Count)
+            {
+                return true;
+            }
+            else
+            {
+                _log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
+                return false;
+            }
+        }
         public ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic)
         {
             throw new NotImplementedException();

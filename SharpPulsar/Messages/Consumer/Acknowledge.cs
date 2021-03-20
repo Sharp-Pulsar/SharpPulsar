@@ -69,6 +69,16 @@ namespace SharpPulsar.Messages.Consumer
             TopicName = topicName;
             CreateTopicIfDoesNotExist = createTopicIfDoesNotExist;
         }
+    } 
+    public sealed class SubscribeAndCreateTopicsIfDoesNotExist
+    {
+        public List<string> Topics { get; }
+        public bool CreateTopicIfDoesNotExist { get; }
+        public SubscribeAndCreateTopicsIfDoesNotExist(List<string> topics, bool createTopicIfDoesNotExist)
+        {
+            Topics = topics;
+            CreateTopicIfDoesNotExist = createTopicIfDoesNotExist;
+        }
     }
     public sealed class AcknowledgeWithTxn
     {
