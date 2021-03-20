@@ -1,6 +1,4 @@
-﻿using System;
-
-/*
+﻿/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +15,7 @@
 //COME BACK TO THIS AND USE https://github.com/dotnet/Kerberos.NET
 namespace SharpPulsar.Presto
 {
-	/*
+    /*
     using ImmutableMap = com.google.common.collect.ImmutableMap;
 	using Krb5LoginModule = com.sun.security.auth.module.Krb5LoginModule;
 	using Duration = io.airlift.units.Duration;

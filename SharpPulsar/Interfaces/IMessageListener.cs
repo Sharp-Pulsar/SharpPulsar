@@ -17,16 +17,15 @@
 /// under the License.
 /// </summary>
 
-using System.Collections.Generic;
 using Akka.Actor;
 
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// A listener that will be called in order for every message received.
-	/// </summary>
-	public interface IMessageListener<T>
+    /// <summary>
+    /// A listener that will be called in order for every message received.
+    /// </summary>
+    public interface IMessageListener<T>
 	{
 		/// <summary>
 		/// This method is called whenever a new message is received.

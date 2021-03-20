@@ -24,8 +24,6 @@ using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
-using Akka.Util.Internal;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Tracker.Messages;

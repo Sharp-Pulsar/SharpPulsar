@@ -1,8 +1,6 @@
 ﻿using Akka.Actor;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
@@ -189,12 +187,12 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(Messages.Consumer.Pause.Instance);
         }
-        public IMessage<T> Receive(TimeSpan timeout)
+        public IMessage<T> Receive(TimeSpan? timeout = null)
         {
             return ReceiveAsync(timeout).GetAwaiter().GetResult();
         }
 
-        public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan timeouts)
+        public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan? timeouts = null)
         {
             await VerifyConsumerState();
             if (_conf.ReceiverQueueSize == 0)
@@ -205,20 +203,19 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            try
+
+            if (_queue.IncomingMessages.TryReceive(out var message))
             {
-                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: timeouts);
-                if (message != null)
-                {
-                    _consumerActor.Tell(new MessageProcessed<T>(message));
-                    return BeforeConsume(message);
-                }
-                return message;
+                _consumerActor.Tell(new MessageProcessed<T>(message));
+                var inteceptedMessage = BeforeConsume(message);
+                return await Task.FromResult(inteceptedMessage);
             }
-            catch
+            else if(timeouts != null)
             {
-                return null;
+                await Task.Delay(TimeSpan.FromMilliseconds(timeouts.Value.TotalMilliseconds));
+                return await ReceiveAsync();
             }
+            return null;
         }
 
         protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
@@ -230,32 +227,6 @@ namespace SharpPulsar.User
             else
             {
                 return message;
-            }
-        }
-        public IMessage<T> Receive(int timeoutMilliseconds = 3000, CancellationToken token = default)
-        {
-            return ReceiveAsync(timeoutMilliseconds, token).GetAwaiter().GetResult();
-        }
-        public async ValueTask<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 3000, CancellationToken token = default)
-        {
-            await VerifyConsumerState().ConfigureAwait(false);
-            if (_conf.MessageListener != null)
-            {
-                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-            }
-            try
-            {
-                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: TimeSpan.FromMilliseconds(timeoutMilliseconds), cancellationToken: token);
-                if (message != null)
-                {
-                    _consumerActor.Tell(new MessageProcessed<T>(message));
-                    return BeforeConsume(message);
-                }
-                return message;
-            }
-            catch
-            {
-                return null;
             }
         }
         /// <summary>
@@ -283,23 +254,13 @@ namespace SharpPulsar.User
 
             if (await HasEnoughMessagesForBatchReceive())
             {
-                IMessage<T> message;
-                try
-                {
-                    message = await _queue.IncomingMessages.ReceiveAsync(TimeSpan.FromSeconds(5));
-                }
-                catch
-                {
-                    message = null;
-                }
-                while (message != null && messages.CanAdd(message))
+                while (_queue.IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
                 {
                     try
                     {
                         _consumerActor.Tell(new MessageProcessed<T>(message));
                         IMessage<T> interceptMsg = BeforeConsume(message);
                         messages.Add(interceptMsg);
-                        message = await _queue.IncomingMessages.ReceiveAsync(TimeSpan.FromSeconds(5));
                     }
                     catch
                     {

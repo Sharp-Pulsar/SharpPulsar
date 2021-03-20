@@ -2,7 +2,6 @@
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
-using SharpPulsar.Extension;
 using System.Collections.Generic;
 using Xunit;
 

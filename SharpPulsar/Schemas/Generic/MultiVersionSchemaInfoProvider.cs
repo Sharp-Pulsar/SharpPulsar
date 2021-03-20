@@ -1,12 +1,9 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
-using SharpPulsar.Common;
+﻿using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Interfaces.ISchema;
 using Akka.Event;
 using Akka.Actor;
-using SharpPulsar.Extension;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Cache;
 using System;

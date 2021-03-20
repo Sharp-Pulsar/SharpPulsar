@@ -1,6 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Transaction;
+﻿using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Transaction
 {

@@ -6,12 +6,9 @@ using System.Text.RegularExpressions;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
-using SharpPulsar.Extension;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Utils;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 using BAMCIS.Util.Concurrent;
 

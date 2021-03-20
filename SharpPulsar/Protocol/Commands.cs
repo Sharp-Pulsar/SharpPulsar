@@ -16,7 +16,6 @@ using SharpPulsar.Common;
 using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
 using SharpPulsar.Extension;
-using System.Collections;
 using SharpPulsar.Batch;
 
 /// <summary>
@@ -39,7 +38,7 @@ using SharpPulsar.Batch;
 /// </summary>
 namespace SharpPulsar.Protocol
 {
-	internal class Commands
+    internal class Commands
 	{
 
 		// default message Size for transfer

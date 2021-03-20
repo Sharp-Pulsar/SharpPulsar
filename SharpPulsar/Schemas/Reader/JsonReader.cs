@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using SharpPulsar.Configuration;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
@@ -28,7 +27,7 @@ using SharpPulsar.Extension;
 namespace SharpPulsar.Schemas.Reader
 {
 
-	public class JsonReader<T> : ISchemaReader<T>
+    public class JsonReader<T> : ISchemaReader<T>
 	{
 		private readonly ObjectMapper _objectMapper;
 

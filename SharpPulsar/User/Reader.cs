@@ -1,11 +1,8 @@
 ﻿using Akka.Actor;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Reader;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Queues;
 using System;
@@ -75,21 +72,17 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
             }
-            try
+            if (_queue.IncomingMessages.TryReceive(out var message))
             {
-                var message = await _queue.IncomingMessages.ReceiveAsync(timeout: timeSpan);
-                if (message != null)
-                {
-                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                    _readerActor.Tell(new MessageProcessed<T>(message));
-                    return message;
-                }
+                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                _readerActor.Tell(new MessageProcessed<T>(message));
+                return await Task.FromResult(message);
             }
-            catch(Exception ex) 
+            else
             {
-                var e = ex;
+                await Task.Delay(timeSpan);
+                return ReadNext();
             }
-            return null;
         }
         private async ValueTask VerifyConsumerState()
         {

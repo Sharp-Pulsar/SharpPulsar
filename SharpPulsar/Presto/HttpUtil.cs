@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -23,7 +21,7 @@ using SharpPulsar.Precondition;
  */
 namespace SharpPulsar.Presto
 {
-	public static class HttpUtil
+    public static class HttpUtil
 	{
 		
 		public static void UserAgent(this HttpClient httpclient, string userAgent)

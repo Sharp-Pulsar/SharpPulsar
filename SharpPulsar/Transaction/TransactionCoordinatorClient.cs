@@ -3,12 +3,10 @@ using Akka.Event;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Model;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
@@ -34,10 +32,10 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Transaction
 {
-	/// <summary>
-	/// Transaction coordinator client based topic assigned.
-	/// </summary>
-	public class TransactionCoordinatorClient : ReceiveActor
+    /// <summary>
+    /// Transaction coordinator client based topic assigned.
+    /// </summary>
+    public class TransactionCoordinatorClient : ReceiveActor
 	{
 
 		private IActorRef _pulsarClient;

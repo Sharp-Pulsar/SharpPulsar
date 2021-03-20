@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 using SharpPulsar.Interfaces;
@@ -25,7 +24,7 @@ using SharpPulsar.Precondition;
 /// </summary>
 namespace SharpPulsar
 {
-	public class Messages<T> : IMessages<T>
+    public class Messages<T> : IMessages<T>
 	{
 
 		private IList<IMessage<T>> _messageList;

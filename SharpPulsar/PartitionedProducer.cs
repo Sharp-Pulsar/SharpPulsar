@@ -1,15 +1,10 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Routing;
-using Akka.Util;
 using Akka.Util.Internal;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common;
-using SharpPulsar.Common.Entity;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
@@ -43,7 +38,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	internal class PartitionedProducer<T> : ProducerActorBase<T>
+    internal class PartitionedProducer<T> : ProducerActorBase<T>
 	{
 		private IList<IActorRef> _producers;
 		private IMessageRouter _routerPolicy;

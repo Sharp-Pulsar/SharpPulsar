@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
@@ -26,12 +24,12 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 /// </summary>
 namespace SharpPulsar
 {
-	/// <summary>
-	/// A MessageId implementation that contains a map of <partitionName, MessageId>.
-	/// This is useful when MessageId is need for partition/multi-topics/pattern consumer.
-	/// e.g. seek(), ackCumulative(), getLastMessageId().
-	/// </summary>
-	public class MultiMessageId : IMessageId
+    /// <summary>
+    /// A MessageId implementation that contains a map of <partitionName, MessageId>.
+    /// This is useful when MessageId is need for partition/multi-topics/pattern consumer.
+    /// e.g. seek(), ackCumulative(), getLastMessageId().
+    /// </summary>
+    public class MultiMessageId : IMessageId
 	{
 		public readonly ImmutableDictionary<string, IMessageId> Map;
 

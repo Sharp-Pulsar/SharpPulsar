@@ -1,15 +1,11 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Impl;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.User;
-using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
-using System;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +27,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Test.Tracker
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class UnAckedMessageTrackerTest
     {
 		private readonly ITestOutputHelper _output;

@@ -3,7 +3,6 @@ using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
-using SharpPulsar.Helpers;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.SocketImpl.Help;
 using System;

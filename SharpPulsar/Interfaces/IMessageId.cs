@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

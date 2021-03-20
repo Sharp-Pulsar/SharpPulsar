@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -20,10 +19,10 @@
 namespace SharpPulsar.Interfaces.Transaction
 {
 
-	/// <summary>
-	/// The class represents a transaction within Pulsar.
-	/// </summary>
-	public interface ITransaction
+    /// <summary>
+    /// The class represents a transaction within Pulsar.
+    /// </summary>
+    public interface ITransaction
 	{
 
 		/// <summary>

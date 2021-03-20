@@ -14,7 +14,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Extension;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -37,10 +36,10 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	/// <summary>
-	/// Handler for transaction meta store.
-	/// </summary>
-	public class TransactionMetaStoreHandler : ReceiveActor
+    /// <summary>
+    /// Handler for transaction meta store.
+    /// </summary>
+    public class TransactionMetaStoreHandler : ReceiveActor
 	{
 		private readonly long _transactionCoordinatorId;
 		private IActorRef _connectionHandler;

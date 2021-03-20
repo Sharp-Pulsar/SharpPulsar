@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
-using SharpPulsar.Auth;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
@@ -15,7 +14,6 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -37,7 +35,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Test.Api
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class KeySharedSubscriptionTest
 	{
         private readonly ITestOutputHelper _output;
@@ -217,7 +215,7 @@ namespace SharpPulsar.Test.Api
 				Message<sbyte[]> noMessages = null;
 				try
 				{
-					noMessages = (Message<sbyte[]>)check.Key.Receive(100);
+					noMessages = (Message<sbyte[]>)check.Key.Receive(TimeSpan.FromMilliseconds(100));
 				}
 				catch (PulsarClientException)
 				{

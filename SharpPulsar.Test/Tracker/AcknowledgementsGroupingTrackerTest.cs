@@ -24,17 +24,15 @@ using SharpPulsar.Test.Fixtures;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.User;
-using SharpPulsar.Extension;
 using SharpPulsar.Utils;
 using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
 using System;
-using System.Threading.Tasks;
 
 namespace SharpPulsar.Test.Tracker
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class AcknowledgementsGroupingTrackerTest
 	{
         private readonly ITestOutputHelper _output;

@@ -1,8 +1,6 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Tracker.Messages;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +22,7 @@ using System.Linq;
 /// </summary>
 namespace SharpPulsar.Tracker
 {
-	public class UnAckedTopicMessageTracker : UnAckedMessageTracker
+    public class UnAckedTopicMessageTracker : UnAckedMessageTracker
 	{
 		public UnAckedTopicMessageTracker(IActorRef consumerBase, long ackTimeoutMillis) : base(ackTimeoutMillis, 0, consumerBase)
 		{

@@ -13,13 +13,12 @@
  */
 
 using System;
-using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
 namespace SharpPulsar.Presto
 {
 
-	public class ServerInfo
+    public class ServerInfo
 	{
 		public NodeVersion NodeVersion {get; set; }
 		public  string Environment {get; set; }

@@ -2,21 +2,13 @@
 using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Auth;
-using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
-using SharpPulsar.Impl.Schema.Generic;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Schema;
-using SharpPulsar.Transaction;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -42,7 +34,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	internal class PulsarClientActor : ReceiveActor
+    internal class PulsarClientActor : ReceiveActor
 	{
 
 		private readonly ClientConfigurationData _conf;

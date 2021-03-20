@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,10 +27,10 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Auth
 {
 
-	/// <summary>
-	/// Token based authentication provider.
-	/// </summary>
-	public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
+    /// <summary>
+    /// Token based authentication provider.
+    /// </summary>
+    public class AuthenticationToken : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
 
 		private Func<string> _tokenSupplier;

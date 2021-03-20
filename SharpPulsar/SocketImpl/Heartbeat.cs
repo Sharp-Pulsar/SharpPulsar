@@ -1,10 +1,8 @@
 ﻿using Akka.Event;
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.SocketImpl

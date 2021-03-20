@@ -4,15 +4,12 @@ using Xunit.Abstractions;
 using SharpPulsar.Common;
 using SharpPulsar.Test.Fixtures;
 using Xunit;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class TxnAckTest
     {
 		private const string TENANT = "public";
@@ -70,7 +67,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2000);
+				var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -81,7 +78,7 @@ namespace SharpPulsar.Test.Transaction
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2000);
+					message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
 					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
@@ -91,7 +88,7 @@ namespace SharpPulsar.Test.Transaction
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 			}
 		}
@@ -138,7 +135,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2000);
+				var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -148,7 +145,7 @@ namespace SharpPulsar.Test.Transaction
 				User.Transaction commitTxn = Txn;
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2000);
+					message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
 					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
@@ -158,7 +155,7 @@ namespace SharpPulsar.Test.Transaction
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 			}
 		}
@@ -202,7 +199,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2000);
+				var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -213,7 +210,7 @@ namespace SharpPulsar.Test.Transaction
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2000);
+					message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
 					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
@@ -223,7 +220,7 @@ namespace SharpPulsar.Test.Transaction
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 			}
 		}
@@ -266,7 +263,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive(2000);
+				var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -277,7 +274,7 @@ namespace SharpPulsar.Test.Transaction
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive(2000);
+					message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 					Assert.NotNull(message);
 					consumer.Acknowledge(message.MessageId, commitTxn);
 					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
@@ -287,7 +284,7 @@ namespace SharpPulsar.Test.Transaction
 				commitTxn.Commit();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 			}
 		}

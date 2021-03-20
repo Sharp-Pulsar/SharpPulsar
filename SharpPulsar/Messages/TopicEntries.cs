@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SharpPulsar.Messages
+﻿namespace SharpPulsar.Messages
 {
     internal sealed class TopicEntries
     {

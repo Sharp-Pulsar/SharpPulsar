@@ -1,12 +1,9 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages.Producer;
-using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Queues;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -30,7 +27,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar
 {
-	internal abstract class ProducerActorBase<T> : ReceiveActor
+    internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
 		internal abstract ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn);
 		internal abstract ValueTask InternalSend(IMessage<T> message);

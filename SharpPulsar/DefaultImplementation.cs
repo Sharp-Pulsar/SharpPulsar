@@ -1,12 +1,9 @@
 ﻿using SharpPulsar.Auth;
-using SharpPulsar.Impl.Schema;
-using SharpPulsar.Impl.Schema.Generic;
 using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Schemas;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
@@ -36,10 +33,10 @@ using SharpPulsar.Schemas.Generic;
 /// </summary>
 namespace SharpPulsar
 {
-	/// <summary>
-	/// Helper class for class instantiations and it also contains methods to work with schemas.
-	/// </summary>
-	public class DefaultImplementation
+    /// <summary>
+    /// Helper class for class instantiations and it also contains methods to work with schemas.
+    /// </summary>
+    public class DefaultImplementation
 	{
 
 		//private static readonly Type CLIENT_BUILDER_IMPL = new ClientBuilderImpl();

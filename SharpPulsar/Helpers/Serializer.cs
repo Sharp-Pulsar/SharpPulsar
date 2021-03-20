@@ -5,7 +5,6 @@ using Microsoft.IO;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Extension;
-using SharpPulsar.Helpers;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Helpers

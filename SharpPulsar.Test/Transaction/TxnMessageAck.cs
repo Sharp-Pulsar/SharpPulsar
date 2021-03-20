@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
@@ -11,7 +10,7 @@ using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class TxnMessageAck
     {
 		private const string TENANT = "public";
@@ -57,7 +56,7 @@ namespace SharpPulsar.Test.Transaction
 			_output.WriteLine("produce transaction messages finished");
 
 			// Can't receive transaction messages before commit.
-			var message = consumer.Receive(5000);
+			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 			_output.WriteLine("transaction messages can't be received before transaction committed");
 
@@ -78,7 +77,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.Equal(messageCnt, receiveCnt);
 
-			message = consumer.Receive(5000);
+			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 
 			consumer.RedeliverUnacknowledgedMessages();
@@ -87,14 +86,14 @@ namespace SharpPulsar.Test.Transaction
 			receiveCnt = 0;
 			for (int i = 0; i < messageCnt - ackedMessageCount; i++)
 			{
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.NotNull(message);
 				consumer.Acknowledge(message);
 				receiveCnt++;
 			}
 			Assert.Equal(messageCnt - ackedMessageCount, receiveCnt);
 
-			message = consumer.Receive(2000);
+			message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}

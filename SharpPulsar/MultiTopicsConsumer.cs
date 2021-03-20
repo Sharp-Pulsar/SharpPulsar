@@ -1,7 +1,5 @@
 ﻿using Akka.Actor;
-using Akka.Util;
 using Akka.Util.Internal;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch;
 using SharpPulsar.Cache;
 using SharpPulsar.Common.Naming;
@@ -870,7 +868,7 @@ namespace SharpPulsar
 				consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
 				consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
 			});
-			await IncomingMessages.Empty();
+			IncomingMessages.Empty();
 			IncomingMessagesSize =  0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
 			ResumeReceivingFromPausedConsumersIfNeeded();
@@ -911,7 +909,7 @@ namespace SharpPulsar
 				_consumers.Values.ForEach(c => c.Tell(new SeekMessageId(targetMessageId)));
 
 				_unAckedMessageTracker.Tell(Clear.Instance);
-				await IncomingMessages .Empty();
+				IncomingMessages.Empty();
 				IncomingMessagesSize = 0;
 			}
 			catch(Exception e)

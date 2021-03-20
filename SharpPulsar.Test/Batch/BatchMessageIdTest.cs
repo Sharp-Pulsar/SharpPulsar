@@ -20,12 +20,11 @@
 using System;
 using System.Text.Json;
 using SharpPulsar.Batch;
-using SharpPulsar.Impl;
 using Xunit;
 
 namespace SharpPulsar.Test.Batch
 {
-	[Collection("SharpPulsar")]
+    [Collection("SharpPulsar")]
 	public class BatchMessageIdTest
 	{
 

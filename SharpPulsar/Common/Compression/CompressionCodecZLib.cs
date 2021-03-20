@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using DotNetty.Common;
-using ICSharpCode.SharpZipLib.Zip.Compression;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 
 /// <summary>
@@ -26,10 +24,10 @@ namespace SharpPulsar.Common.Compression
 {
 
 
-	/// <summary>
-	/// ZLib Compression.
-	/// </summary>
-	public class CompressionCodecZLib : CompressionCodec
+    /// <summary>
+    /// ZLib Compression.
+    /// </summary>
+    public class CompressionCodecZLib : CompressionCodec
 	{
         public byte[] Encode(byte[] raw)
         {

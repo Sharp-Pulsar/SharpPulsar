@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Google.Protobuf;
 
 using SharpPulsar.Batch;
@@ -29,7 +28,7 @@ using SharpPulsar.Protocol.Proto;
 /// </summary>
 namespace SharpPulsar
 {
-	public class MessageId : IMessageId
+    public class MessageId : IMessageId
 	{
 		private  readonly long _ledgerId;
 		private readonly long _entryId;

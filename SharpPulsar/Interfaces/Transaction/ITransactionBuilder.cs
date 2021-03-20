@@ -1,6 +1,4 @@
-﻿using Akka.Actor;
-using BAMCIS.Util.Concurrent;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -22,10 +20,10 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interfaces.Transaction
 {
 
-	/// <summary>
-	/// The builder to build a transaction for Pulsar.
-	/// </summary>
-	public interface ITransactionBuilder
+    /// <summary>
+    /// The builder to build a transaction for Pulsar.
+    /// </summary>
+    public interface ITransactionBuilder
 	{
 
 		/// <summary>

@@ -1,13 +1,12 @@
 ﻿using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace SharpPulsar.Schemas
 {
-	public class KeyValue<TK, TV>
+    public class KeyValue<TK, TV>
 	{
 		private readonly TK _key;
 		private readonly TV _value;

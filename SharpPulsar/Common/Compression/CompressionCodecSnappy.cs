@@ -20,9 +20,7 @@
 
 namespace SharpPulsar.Common.Compression
 {
-    using Microsoft.Extensions.Logging;
     using Snappy;
-    using System.IO;
 
     //using PooledByteBufAllocator = io.netty.buffer.PooledByteBufAllocator;
 

@@ -26,7 +26,6 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar
 {
-    using BAMCIS.Util.Concurrent;
     using global::Akka.Actor;
     using SharpPulsar.Interfaces;
     using SharpPulsar.Messages.Transaction;

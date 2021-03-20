@@ -4,7 +4,6 @@ using SharpPulsar.Protocol.Schema;
 using System;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Text;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Cache;
 

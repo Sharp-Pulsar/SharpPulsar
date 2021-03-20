@@ -12,8 +12,6 @@
  * limitations under the License.
  */
 
-using SharpPulsar.Precondition;
-
 namespace SharpPulsar.Presto
 {
     public class NodeVersion

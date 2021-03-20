@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using SharpPulsar.Common.Naming;
@@ -28,18 +27,18 @@ using SharpPulsar.Protocol.Proto;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// Provides lookup service to find broker which serves given topic. It helps to
-	/// lookup
-	/// <ul>
-	/// <li><b>topic-lookup:</b> lookup to find broker-address which serves given
-	/// topic</li>
-	/// <li><b>Partitioned-topic-Metadata-lookup:</b> lookup to find
-	/// PartitionedMetadata for a given topic</li>
-	/// </ul>
-	/// 
-	/// </summary>
-	public interface ILookupService
+    /// <summary>
+    /// Provides lookup service to find broker which serves given topic. It helps to
+    /// lookup
+    /// <ul>
+    /// <li><b>topic-lookup:</b> lookup to find broker-address which serves given
+    /// topic</li>
+    /// <li><b>Partitioned-topic-Metadata-lookup:</b> lookup to find
+    /// PartitionedMetadata for a given topic</li>
+    /// </ul>
+    /// 
+    /// </summary>
+    public interface ILookupService
 	{
 
 		/// <summary>

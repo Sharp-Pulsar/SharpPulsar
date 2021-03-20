@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using SharpPulsar.Common;
 using SharpPulsar.Interfaces.Schema;
 
 /// <summary>
@@ -24,10 +23,10 @@ using SharpPulsar.Interfaces.Schema;
 /// </summary>
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	/// <summary>
-	/// Generic json record.
-	/// </summary>
-	public class GenericJsonRecord : VersionedGenericRecord
+    /// <summary>
+    /// Generic json record.
+    /// </summary>
+    public class GenericJsonRecord : VersionedGenericRecord
     {
         private readonly JToken _jToken;
 		public GenericJsonRecord(sbyte[] schemaVersion, IList<Field> fields, JToken jd) : base(schemaVersion, fields)

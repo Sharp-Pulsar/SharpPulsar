@@ -46,7 +46,7 @@ namespace SharpPulsar
 			if(IncomingMessages.Count > 0)
 			{
 				_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
-				await IncomingMessages.Empty();
+				IncomingMessages.Empty();
 			}
 
 			IMessage<T> message;
@@ -86,7 +86,7 @@ namespace SharpPulsar
 				// Finally blocked is invoked in case the block on incomingMessages is interrupted
 				_waitingOnReceiveForZeroQueueSize = false;
 				// Clearing the queue in case there was a race with messageReceived
-				await IncomingMessages.Empty();
+				IncomingMessages.Empty();
 			}
 		}
 

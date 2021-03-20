@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SharpPulsar.Extension;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
 /// <summary>
@@ -25,10 +24,10 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 /// </summary>
 namespace SharpPulsar.Protocol
 {
-	/// <summary>
-	/// Helper class to work with new Commands().
-	/// </summary>
-	public sealed class CommandUtils
+    /// <summary>
+    /// Helper class to work with new Commands().
+    /// </summary>
+    public sealed class CommandUtils
 	{
 
 		private CommandUtils()

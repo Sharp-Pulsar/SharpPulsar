@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Extension
 {
@@ -43,17 +40,12 @@ namespace SharpPulsar.Extension
             resultArray.CopyTo(longs, 0);
             return longs;
         }
-        public static async Task Empty<T>(this BufferBlock<IMessage<T>> messages)
+        public static void Empty<T>(this BufferBlock<IMessage<T>> messages)
         {
-            try
+            if (messages.TryReceiveAll(out var m))
             {
-                var m = await messages.ReceiveAsync(TimeSpan.FromMilliseconds(5000));
-                while (m != null)
-                {
-                    m = await messages.ReceiveAsync(TimeSpan.FromMilliseconds(5000));
-                }
+                return;
             }
-            catch { }
         }
         public static BitArray FromLongArray(this IList<long> ackSets, int numMessagesInBatch)
         {

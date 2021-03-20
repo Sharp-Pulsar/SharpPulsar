@@ -6,7 +6,6 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 
 namespace SharpPulsar.Schemas.Generic

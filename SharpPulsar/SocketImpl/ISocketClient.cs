@@ -1,6 +1,5 @@
 ﻿using SharpPulsar.Protocol.Proto;
 using System;
-using System.Threading.Tasks;
 
 namespace SharpPulsar.SocketImpl
 {

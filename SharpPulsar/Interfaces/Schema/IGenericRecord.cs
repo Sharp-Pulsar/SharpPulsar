@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common;
-using SharpPulsar.Interfaces.Schema;
+﻿using SharpPulsar.Interfaces.Schema;
 using System.Collections.Generic;
 
 /// <summary>
@@ -23,10 +22,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Interfaces.ISchema
 {
 
-	/// <summary>
-	/// An interface represents a message with schema.
-	/// </summary>
-	public interface IGenericRecord
+    /// <summary>
+    /// An interface represents a message with schema.
+    /// </summary>
+    public interface IGenericRecord
 	{
 
 		/// <summary>

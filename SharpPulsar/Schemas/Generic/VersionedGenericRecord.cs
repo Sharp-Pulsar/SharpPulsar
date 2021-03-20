@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common;
-using SharpPulsar.Interfaces.ISchema;
+﻿using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces.Schema;
 using System.Collections.Generic;
 
@@ -24,10 +23,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Impl.Schema.Generic
 {
 
-	/// <summary>
-	/// A generic record carrying schema version.
-	/// </summary>
-	public abstract class VersionedGenericRecord : IGenericRecord
+    /// <summary>
+    /// A generic record carrying schema version.
+    /// </summary>
+    public abstract class VersionedGenericRecord : IGenericRecord
 	{
 		public abstract object GetField(string fieldName);
 		public abstract object GetField(Field field);

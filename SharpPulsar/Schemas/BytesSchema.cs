@@ -17,7 +17,6 @@
 /// under the License.
 /// </summary>
 
-using System;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 

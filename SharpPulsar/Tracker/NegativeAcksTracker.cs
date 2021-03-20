@@ -28,7 +28,6 @@ using SharpPulsar.Batch;
 using SharpPulsar.Configuration;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Extension;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks;
 using Akka.Event;
@@ -36,7 +35,7 @@ using Akka.Event;
 namespace SharpPulsar.Tracker
 {
 
-	public class NegativeAcksTracker<T>:ReceiveActor
+    public class NegativeAcksTracker<T>:ReceiveActor
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages;

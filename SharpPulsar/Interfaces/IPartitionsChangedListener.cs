@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// Listener that notified when concerned topic partitions changed.
-	/// </summary>
-	public interface IPartitionsChangedListener
+    /// <summary>
+    /// Listener that notified when concerned topic partitions changed.
+    /// </summary>
+    public interface IPartitionsChangedListener
 	{
 		/// <summary>
 		/// Notified when topic partitions increased.

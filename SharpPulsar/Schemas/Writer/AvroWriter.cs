@@ -1,10 +1,7 @@
 ﻿using Avro.IO;
 using Avro.Reflect;
-using Avro.Specific;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
-using System;
 using System.IO;
 
 namespace SharpPulsar.Schemas.Writer

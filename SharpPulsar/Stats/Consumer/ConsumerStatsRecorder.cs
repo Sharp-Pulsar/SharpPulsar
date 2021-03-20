@@ -5,14 +5,10 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
-using DotNetty.Common.Utilities;
-using Microsoft.Extensions.Logging;
-using SharpPulsar.Impl;
 using SharpPulsar.Configuration;
 using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Interfaces;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -34,7 +30,7 @@ using System.Linq;
 /// </summary>
 namespace SharpPulsar.Stats.Consumer
 {
-	public class ConsumerStatsRecorder<T> : IConsumerStatsRecorder
+    public class ConsumerStatsRecorder<T> : IConsumerStatsRecorder
 	{
 
 		private const long SerialVersionUid = 1L;

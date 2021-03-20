@@ -1,11 +1,8 @@
 ﻿using SharpPulsar.Protocol.Proto;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Model
 {
-	public class LookupDataResult
+    public class LookupDataResult
 	{
 
 		public readonly string BrokerUrl;

@@ -2,11 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Utility;
-using SharpPulsar.Utils;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;

@@ -1,10 +1,7 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Transaction;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 
 namespace SharpPulsar.Messages.Transaction
 {

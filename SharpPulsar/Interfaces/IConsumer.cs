@@ -1,10 +1,6 @@
-﻿using Akka.Actor;
-using BAMCIS.Util.Concurrent;
-using SharpPulsar.Interfaces.Transaction;
-using SharpPulsar.Stats.Consumer.Api;
+﻿using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -28,13 +24,13 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// An interface that abstracts behavior of Pulsar's consumer.
-	/// 
-	/// <para>All the operations on the consumer instance are thread safe.
-	/// </para>
-	/// </summary>
-	public interface IConsumer<T>
+    /// <summary>
+    /// An interface that abstracts behavior of Pulsar's consumer.
+    /// 
+    /// <para>All the operations on the consumer instance are thread safe.
+    /// </para>
+    /// </summary>
+    public interface IConsumer<T>
 	{
 
 		/// <summary>
@@ -69,21 +65,6 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException"> if the operation fails </exception>
 		void Unsubscribe();
 
-		/// <summary>
-		/// Receives a single message.
-		/// 
-		/// <para>This calls blocks until a message is available.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> the received message </returns>
-		/// <exception cref="PulsarClientException.AlreadyClosedException">
-		///             if the consumer was already closed </exception>
-		/// <exception cref="PulsarClientException.InvalidConfigurationException">
-		///             if a message listener was defined in the configuration </exception>
-		///             
-		IMessage<T> Receive(int timeoutMilliseconds = 5000, CancellationToken token = default);
-		ValueTask<IMessage<T>> ReceiveAsync(int timeoutMilliseconds = 5000, CancellationToken token = default);
 
 
 		/// <summary>
@@ -102,8 +83,8 @@ namespace SharpPulsar.Interfaces
 		/// <exception cref="PulsarClientException.InvalidConfigurationException">
 		///             if a message listener was defined in the configuration </exception>
 		///             
-		IMessage<T> Receive(TimeSpan timeout);
-		ValueTask<IMessage<T>> ReceiveAsync(TimeSpan timeout);
+		IMessage<T> Receive(TimeSpan? timeout);
+		ValueTask<IMessage<T>> ReceiveAsync(TimeSpan? timeout);
 
 		/// <summary>
 		/// Batch receiving messages.

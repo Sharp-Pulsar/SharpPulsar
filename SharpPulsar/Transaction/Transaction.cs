@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;

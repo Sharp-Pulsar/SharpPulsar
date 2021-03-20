@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Interfaces;
+﻿using SharpPulsar.Interfaces;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using static SharpPulsar.Protocol.Proto.CommandAck;

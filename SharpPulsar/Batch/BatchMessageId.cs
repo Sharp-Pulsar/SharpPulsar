@@ -1,5 +1,4 @@
 ﻿using System;
-using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +20,7 @@ using SharpPulsar.Impl;
 /// </summary>
 namespace SharpPulsar.Batch
 {
-	public class BatchMessageId : MessageId
+    public class BatchMessageId : MessageId
 	{
         private const int NoBatch = -1;
         public int BatchIndex { get; }

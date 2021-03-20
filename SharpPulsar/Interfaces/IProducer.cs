@@ -1,7 +1,4 @@
-﻿using Akka.Actor;
-using SharpPulsar.Interfaces.Transaction;
-using SharpPulsar.Messages;
-using SharpPulsar.Messages.Producer;
+﻿using SharpPulsar.Messages;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,13 +20,13 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Interfaces
 {
-	/// <summary>
-	/// Producer is used to publish messages on a topic.
-	/// 
-	/// <para>A single producer instance can be used across multiple threads.
-	/// </para>
-	/// </summary>
-	public interface IProducer<T>
+    /// <summary>
+    /// Producer is used to publish messages on a topic.
+    /// 
+    /// <para>A single producer instance can be used across multiple threads.
+    /// </para>
+    /// </summary>
+    public interface IProducer<T>
 	{
 
 		/// <returns> the topic which producer is publishing to </returns>

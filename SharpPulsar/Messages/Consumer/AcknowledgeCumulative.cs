@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Consumer

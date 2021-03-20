@@ -9,7 +9,6 @@ using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
-using System.Threading.Tasks;
 using System.Threading;
 
 /// <summary>
@@ -32,7 +31,7 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Test
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class NegativeAcksTest
 	{
         private readonly ITestOutputHelper _output;
@@ -119,7 +118,7 @@ namespace SharpPulsar.Test
             }
 
 			Assert.Equal(sentMessages, receivedMessages);
-			var nu = consumer.Receive(100);
+			var nu = consumer.Receive(TimeSpan.FromMilliseconds(100));
 			// There should be no more messages
 			Assert.Null(nu);
 		}

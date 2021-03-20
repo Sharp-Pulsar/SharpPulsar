@@ -8,7 +8,6 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Util;
 using System.Threading;
 
@@ -32,7 +31,7 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Test
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class ReaderTest
 	{
 

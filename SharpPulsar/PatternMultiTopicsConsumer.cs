@@ -1,16 +1,13 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Queues;
-using SharpPulsar.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,7 +36,7 @@ using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 namespace SharpPulsar
 {
 
-	internal class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
+    internal class PatternMultiTopicsConsumer<T>: MultiTopicsConsumer<T>
 	{
 		private readonly Regex _topicsPattern;
 		private readonly Mode _subscriptionMode;

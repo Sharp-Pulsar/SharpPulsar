@@ -17,7 +17,6 @@
 /// under the License.
 /// </summary>
 
-using System;
 using System.IO;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
@@ -26,7 +25,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 
 namespace SharpPulsar.Impl.Schema.Generic
 {
-	public class GenericJsonWriter<T> : ISchemaWriter<T>
+    public class GenericJsonWriter<T> : ISchemaWriter<T>
 	{
 
 		private readonly ObjectMapper _objectMapper;

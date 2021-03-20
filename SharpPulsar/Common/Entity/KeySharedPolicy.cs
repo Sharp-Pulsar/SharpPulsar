@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Enum;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Common.Entity
 {
 
-	/// <summary>
-	/// KeyShared policy for KeyShared subscription.
-	/// </summary>
-	public abstract class KeySharedPolicy
+    /// <summary>
+    /// KeyShared policy for KeyShared subscription.
+    /// </summary>
+    public abstract class KeySharedPolicy
 	{
 
 		protected internal KeySharedMode keySharedMode;

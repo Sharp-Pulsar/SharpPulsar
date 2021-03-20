@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using SharpPulsar.Extension;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 
 /// <summary>
@@ -23,10 +22,10 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 namespace SharpPulsar.Common.Naming
 {
 
-	/// <summary>
-	/// Validator for metadata configuration.
-	/// </summary>
-	public class Metadata
+    /// <summary>
+    /// Validator for metadata configuration.
+    /// </summary>
+    public class Metadata
 	{
 
 		private const int MaxMetadataSize = 1024; // 1 Kb

@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
@@ -13,7 +12,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
-using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
@@ -1996,7 +1994,7 @@ namespace SharpPulsar
 				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				var currentSize = IncomingMessages.Count;
 				//possible deadlocks here
-				await IncomingMessages.Empty();
+				IncomingMessages.Empty();
 				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
@@ -2028,10 +2026,11 @@ namespace SharpPulsar
 		private async ValueTask<int> ClearIncomingMessagesAndGetMessageNumber()
 		{
 			int messagesNumber = IncomingMessages.Count;
-			await IncomingMessages.Empty();
+			IncomingMessages.Empty();
 			IncomingMessagesSize = 0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
-			return messagesNumber;
+
+			return await Task.FromResult(messagesNumber);
 		}
 
 		protected internal override async ValueTask RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
@@ -2190,7 +2189,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)messageId);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					await IncomingMessages .Empty();
+					IncomingMessages.Empty();
 					IncomingMessagesSize = 0;
 				}
 				else
@@ -2224,7 +2223,7 @@ namespace SharpPulsar
 					_seekMessageId = new BatchMessageId((MessageId)IMessageId.Earliest);
 					_duringSeek = true;
 					_lastDequeuedMessageId = IMessageId.Earliest;
-					await IncomingMessages.Empty();
+					IncomingMessages.Empty();
 					IncomingMessagesSize = 0;
 				}
                 else

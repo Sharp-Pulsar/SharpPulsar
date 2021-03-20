@@ -13,12 +13,11 @@
  */
 
 using System.Text.Json.Serialization;
-using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
 namespace SharpPulsar.Presto
 {
-	public class ErrorLocation
+    public class ErrorLocation
 	{
         [JsonPropertyName("lineNumber")]
 		public int LineNumber {get; set; }

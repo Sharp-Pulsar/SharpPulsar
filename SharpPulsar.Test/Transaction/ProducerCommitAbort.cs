@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
@@ -9,7 +8,6 @@ using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,10 +29,10 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Test.Transaction
 {
-	/// <summary>
-	/// End to end transaction test.
-	/// </summary>
-	[Collection(nameof(PulsarTests))]
+    /// <summary>
+    /// End to end transaction test.
+    /// </summary>
+    [Collection(nameof(PulsarTests))]
 	public class ProducerCommitAbort
 	{
 
@@ -79,7 +77,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 
 			// Can't receive transaction messages before commit.
-			var message = consumer.Receive(5000);
+			var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 			Assert.Null(message);
 
 			txn.Commit();
@@ -94,7 +92,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.Equal(txnMessageCnt, receiveCnt);
 
-			message = consumer.Receive(5000);
+			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 
 			_output.WriteLine($"message commit test enableBatch {true}");
@@ -127,7 +125,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 
 			// Can't receive transaction messages before commit.
-			var message = consumer.Receive(5000);
+			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 
 			txn.Commit();
@@ -142,7 +140,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.Equal(txnMessageCnt, receiveCnt);
 
-			message = consumer.Receive(5000);
+			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 
 			_output.WriteLine($"message commit test enableBatch {true}");
@@ -174,13 +172,13 @@ namespace SharpPulsar.Test.Transaction
 			var consumer = _client.NewConsumer(consumerBuilder);
 
 			// Can't receive transaction messages before abort.
-			var message = consumer.Receive(5000);
+			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 
 			txn.Abort();
 
 			// Cant't receive transaction messages after abort.
-			message = consumer.Receive(5000);
+			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 		}
 

@@ -1,7 +1,4 @@
-﻿
-using Akka.Actor;
-
-namespace SharpPulsar.Messages
+﻿namespace SharpPulsar.Messages
 {
     public sealed class AckReceived
     {

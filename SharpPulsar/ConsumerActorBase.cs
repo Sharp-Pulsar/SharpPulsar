@@ -12,7 +12,6 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;

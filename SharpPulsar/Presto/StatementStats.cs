@@ -13,12 +13,11 @@
  */
 
 using System.Text.Json.Serialization;
-using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
 namespace SharpPulsar.Presto
 {
-	public class StatementStats
+    public class StatementStats
 	{
 		[JsonPropertyName("state")]
 		public string State {get; set; }

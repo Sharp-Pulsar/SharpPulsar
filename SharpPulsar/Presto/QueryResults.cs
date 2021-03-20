@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
-using Newtonsoft.Json;
 using SharpPulsar.Presto.Facebook.Type;
 
 /*
@@ -21,7 +20,7 @@ using SharpPulsar.Presto.Facebook.Type;
 namespace SharpPulsar.Presto
 {
 
-	public class QueryResults : IQueryStatusInfo, IQueryData
+    public class QueryResults : IQueryStatusInfo, IQueryData
     {
         [JsonPropertyName("columns")]
 		public IList<Column> Columns { get; set; }

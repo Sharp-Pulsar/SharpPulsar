@@ -1,7 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Event;
-using BAMCIS.Util.Concurrent;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
 using System.Threading.Tasks;

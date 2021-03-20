@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using AvroSchemaGenerator;
@@ -31,12 +30,12 @@ using SharpPulsar.Extension;
 /// </summary>
 namespace SharpPulsar.Schemas
 {
-	
 
-	/// <summary>
-	/// Utils for schemas.
-	/// </summary>
-	public sealed class SchemaUtils
+
+    /// <summary>
+    /// Utils for schemas.
+    /// </summary>
+    public sealed class SchemaUtils
 	{
 
 		private static readonly sbyte[] KeyValueSchemaIsPrimitive = new sbyte[0];

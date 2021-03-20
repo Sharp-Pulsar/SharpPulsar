@@ -9,7 +9,6 @@ using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
@@ -71,7 +70,7 @@ namespace SharpPulsar.Test.Transaction
 					_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
 				}
 				// the messages are pending ack state and can't be received
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 
 				abortTxn.Abort();
@@ -87,7 +86,7 @@ namespace SharpPulsar.Test.Transaction
 
 				commitTxn.Commit();
 
-				message = consumer.Receive(1000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 				Assert.Null(message);
 			}
 		}
@@ -139,7 +138,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 				// consumer.AcknowledgeCumulative(message.MessageId, abortTxn);
 				// the messages are pending ack state and can't be received
-				message = consumer.Receive(2000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
 				Assert.Null(message);
 
 				abortTxn.Abort();
@@ -157,7 +156,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				commitTxn.Commit();
-				message = consumer.Receive(1000);
+				message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 				Assert.Null(message);
 			}
 		}

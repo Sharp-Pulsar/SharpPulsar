@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -23,16 +22,16 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// Message builder that constructs a message to be published through a producer.
-	/// 
-	/// <para>Usage example:
-	/// <pre><code>
-	/// producer.newMessage().key(myKey).value(myValue).send();
-	/// </code></pre>
-	/// </para>
-	/// </summary>
-	public interface ITypedMessageBuilder<T>
+    /// <summary>
+    /// Message builder that constructs a message to be published through a producer.
+    /// 
+    /// <para>Usage example:
+    /// <pre><code>
+    /// producer.newMessage().key(myKey).value(myValue).send();
+    /// </code></pre>
+    /// </para>
+    /// </summary>
+    public interface ITypedMessageBuilder<T>
 	{
 
 		/// <summary>

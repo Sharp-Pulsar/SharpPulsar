@@ -17,16 +17,15 @@
 /// under the License.
 /// </summary>
 
-using System;
 using Akka.Actor;
 
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// Listener on the consumer state changes.
-	/// </summary>
-	public interface IConsumerEventListener
+    /// <summary>
+    /// Listener on the consumer state changes.
+    /// </summary>
+    public interface IConsumerEventListener
 	{
 
 		/// <summary>

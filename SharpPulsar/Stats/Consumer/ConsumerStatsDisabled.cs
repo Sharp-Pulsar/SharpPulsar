@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using DotNetty.Common.Utilities;
-using SharpPulsar.Impl;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Stats.Consumer.Api;
 
@@ -27,7 +25,7 @@ using SharpPulsar.Stats.Consumer.Api;
 namespace SharpPulsar.Stats.Consumer
 {
 
-	[Serializable]
+    [Serializable]
 	public class ConsumerStatsDisabled : IConsumerStatsRecorder
 	{
 		private const long SerialVersionUid = 1L;

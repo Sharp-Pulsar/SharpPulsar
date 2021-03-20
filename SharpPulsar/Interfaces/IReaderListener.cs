@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using SharpPulsar.Interfaces;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -21,10 +20,10 @@ using SharpPulsar.Interfaces;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// A listener that will be called in order for every message received.
-	/// </summary>
-	public interface IReaderListener<T>
+    /// <summary>
+    /// A listener that will be called in order for every message received.
+    /// </summary>
+    public interface IReaderListener<T>
 	{
 		/// <summary>
 		/// This method is called whenever a new message is received.

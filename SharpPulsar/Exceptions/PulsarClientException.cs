@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.IO;
 namespace SharpPulsar.Exceptions
 {
 
-	/// <summary>
-	/// Base type of exception thrown by Pulsar client.
-	/// </summary>
-	public class PulsarClientException : Exception
+    /// <summary>
+    /// Base type of exception thrown by Pulsar client.
+    /// </summary>
+    public class PulsarClientException : Exception
 	{
 		private long _sequenceId = -1;
 		/// <summary>

@@ -1,18 +1,15 @@
 ﻿using Avro;
-using Avro.Generic;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
-using SharpPulsar.Interfaces.Schema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Field = SharpPulsar.Interfaces.Schema.Field;
 
 namespace SharpPulsar.Schemas.Generic
 {
-	public abstract class GenericSchema : AvroBaseStructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
+    public abstract class GenericSchema : AvroBaseStructSchema<IGenericRecord>, IGenericSchema<IGenericRecord>
 	{
 		public abstract IGenericRecordBuilder NewRecordBuilder();
 		public abstract IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo);

@@ -9,7 +9,6 @@ using Xunit.Abstractions;
 using SharpPulsar.Extension;
 using System.Threading;
 using SharpPulsar.Interfaces;
-using BAMCIS.Util.Concurrent;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -31,7 +30,7 @@ using BAMCIS.Util.Concurrent;
 namespace SharpPulsar.Test
 {
 
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class MultiTopicsReaderTest
 	{
 

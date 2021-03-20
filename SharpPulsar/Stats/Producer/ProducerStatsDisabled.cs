@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Interfaces;
+﻿using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +20,7 @@ using SharpPulsar.Interfaces;
 /// </summary>
 namespace SharpPulsar.Stats.Producer
 {
-	public sealed class ProducerStatsDisabled : IProducerStatsRecorder
+    public sealed class ProducerStatsDisabled : IProducerStatsRecorder
 	{
 		private const long SerialVersionUid = 1L;
 

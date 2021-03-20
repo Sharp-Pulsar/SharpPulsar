@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// A Reader can be used to scan through all the messages currently available in a topic.
-	/// </summary>
-	public interface IReader<T>
+    /// <summary>
+    /// A Reader can be used to scan through all the messages currently available in a topic.
+    /// </summary>
+    public interface IReader<T>
 	{
 
 		/// <returns> the topic from which this reader is reading from </returns>

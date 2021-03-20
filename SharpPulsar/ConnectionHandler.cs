@@ -1,12 +1,9 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl;
 using System;
-using System.Text;
 using BAMCIS.Util.Concurrent;
 using State = SharpPulsar.HandlerState.State;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Extension;
 using System.Net;
@@ -15,8 +12,8 @@ using SharpPulsar.Common.Naming;
 using System.Threading.Tasks;
 
 namespace SharpPulsar
-{	
-	public class ConnectionHandler:ReceiveActor
+{
+    public class ConnectionHandler:ReceiveActor
 	{
 		private IActorRef _clientCnx = null;
 

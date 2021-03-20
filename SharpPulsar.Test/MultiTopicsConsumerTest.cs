@@ -2,10 +2,8 @@
 using SharpPulsar.Messages;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
-using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Extension;
@@ -33,10 +31,10 @@ namespace SharpPulsar.Test
 {
 
 
-	/// <summary>
-	/// Unit Tests of <seealso cref="MultiTopicsConsumerImpl"/>.
-	/// </summary>
-	[Collection(nameof(PulsarTests))]
+    /// <summary>
+    /// Unit Tests of <seealso cref="MultiTopicsConsumerImpl"/>.
+    /// </summary>
+    [Collection(nameof(PulsarTests))]
 	public class MultiTopicsConsumerTest
 	{
 		private const string Subscription = "reader-multi-topics-sub";

@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
@@ -7,10 +6,7 @@ using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,7 +29,7 @@ using Xunit.Abstractions;
 /// under the License.
 /// </summary>
 namespace SharpPulsar.Test.Api
-{   
+{
     [Collection(nameof(PulsarTests))]
     public class ByteKeysTestBatchTest
     {

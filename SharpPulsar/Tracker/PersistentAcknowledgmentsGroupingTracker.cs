@@ -16,7 +16,6 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Transaction;
 using System.Collections;
-using System.Linq;
 using System.Threading.Tasks;
 
 /// <summary>

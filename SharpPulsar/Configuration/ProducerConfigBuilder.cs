@@ -4,9 +4,7 @@ using System.Linq;
 using SharpPulsar.Messages;
 
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.Interceptor;
-using SharpPulsar.Utils;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;

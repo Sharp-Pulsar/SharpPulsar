@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SharpPulsar.User
+﻿namespace SharpPulsar.User
 {
     public class Admin
     {

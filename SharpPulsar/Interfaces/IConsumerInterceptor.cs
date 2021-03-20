@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Akka.Actor;
-using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,19 +23,19 @@ using SharpPulsar.Impl;
 namespace SharpPulsar.Interfaces
 {
 
-	/// <summary>
-	/// A plugin interface that allows you to intercept (and possibly mutate)
-	/// messages received by the consumer.
-	/// 
-	/// <para>A primary use case is to hook into consumer applications for custom
-	/// monitoring, logging, etc.
-	/// 
-	/// </para>
-	/// <para>Exceptions thrown by interceptor methods will be caught, logged, but
-	/// not propagated further.
-	/// </para>
-	/// </summary>
-	public interface IConsumerInterceptor<T>: IDisposable
+    /// <summary>
+    /// A plugin interface that allows you to intercept (and possibly mutate)
+    /// messages received by the consumer.
+    /// 
+    /// <para>A primary use case is to hook into consumer applications for custom
+    /// monitoring, logging, etc.
+    /// 
+    /// </para>
+    /// <para>Exceptions thrown by interceptor methods will be caught, logged, but
+    /// not propagated further.
+    /// </para>
+    /// </summary>
+    public interface IConsumerInterceptor<T>: IDisposable
 	{
 		/// <summary>
 		/// <para>This method is allowed to modify message, in which case the new message
