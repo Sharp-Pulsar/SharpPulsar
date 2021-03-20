@@ -134,7 +134,7 @@ namespace SharpPulsar.Tracker
         {
             if ((_acknowledgementGroupTimeMicros == 0 || properties.Count > 0) && txn != null)
             {
-                var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                var bits = await txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
                 await DoImmediateBatchIndexAck(msgId, batchIndex, batchSize, ackType, properties, txn == null ? -1 : bits.MostBits, txn == null ? -1 : bits.LeastBits);
             }
             else if (ackType == AckType.Cumulative)
@@ -226,7 +226,7 @@ namespace SharpPulsar.Tracker
             {
                 if (msgId is BatchMessageId && txn != null)
                 {
-                    var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                    var bits = await txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
                     var batchMessageId = (BatchMessageId)msgId;
                     await DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchIndex, ackType, properties, bits.MostBits, bits.LeastBits);
                     return;
@@ -250,7 +250,7 @@ namespace SharpPulsar.Tracker
                 {
                     if (txn != null)
                     {
-                        var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                        var bits = await txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
 
                         _pendingIndividualTransactionAcks.Enqueue((bits.MostBits, bits.LeastBits, (MessageId)msgId));
                     }
@@ -309,7 +309,7 @@ namespace SharpPulsar.Tracker
         {
             if (transaction != null)
             {
-                var bits = await transaction.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                var bits = await transaction.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
                 await NewAckCommand(_consumerId, msgId, null, ackType, null, properties, true, bits.MostBits, bits.LeastBits);
             }
             else
@@ -355,7 +355,7 @@ namespace SharpPulsar.Tracker
                 Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>> transactionEntriesToAck = new Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>>();
                 if (_pendingIndividualAcks.Count > 0)
                 {
-                    var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+                    var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
                     if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
@@ -368,7 +368,7 @@ namespace SharpPulsar.Tracker
 
                             // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                             // them
-                            var result = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
                             var chunkMsgIds = result.MessageIds;
                             if (chunkMsgIds != null && chunkMsgIds.Length > 1)
                             {
@@ -420,7 +420,7 @@ namespace SharpPulsar.Tracker
 
                 if (_pendingIndividualTransactionAcks.Count > 0)
                 {
-                    var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+                    var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
                     if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
@@ -433,7 +433,7 @@ namespace SharpPulsar.Tracker
 
                             // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                             // them
-                            var result = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, entry.MessageId));
+                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, entry.MessageId));
                             var chunkMsgIds = result.MessageIds;
                             long mostSigBits = entry.MostSigBits;
                             long leastSigBits = entry.LeastSigBits;
@@ -506,7 +506,7 @@ namespace SharpPulsar.Tracker
                         while (iterator.MoveNext())
                         {
                             var entry = iterator.Current;
-                            var bits = await entry.Key.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                            var bits = await entry.Key.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
                             var cmd = new Commands().NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), entry.Value);
                             var payload = new Payload(cmd, -1, "NewMultiTransactionMessageAck");
                             cnx.Tell(payload);
@@ -529,7 +529,7 @@ namespace SharpPulsar.Tracker
         private async ValueTask<IActorRef> Cnx()
         {
             if(_conx == null)
-                _conx = await _handler.AskFor<IActorRef>(GetCnx.Instance);
+                _conx = await _handler.Ask<IActorRef>(GetCnx.Instance);
 
             return _conx;
         }
@@ -551,12 +551,12 @@ namespace SharpPulsar.Tracker
         private async ValueTask NewAckCommand(long consumerId, IMessageId msgId, BitSet lastCumulativeAckSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> map, bool flush, long txnidMostBits, long txnidLeastBits)
         {
             var cnx = await Cnx();
-            var result = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
             var chunkMsgIds = result.MessageIds;
             if (chunkMsgIds?.Length > 0 && txnidLeastBits < 0 && txnidMostBits < 0)
             {
                 
-                var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+                var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
                 if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
                 {
                     IList<(long ledger, long entry, BitSet Bits)> entriesToAck = new List<(long ledger, long entry, BitSet Bits)>(chunkMsgIds.Length);

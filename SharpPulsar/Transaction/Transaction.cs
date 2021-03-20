@@ -66,7 +66,7 @@ namespace SharpPulsar.Transaction
 
 			_producedTopics = new HashSet<string>();
 			_ackedTopics = new HashSet<string>();
-			var obj = client.AskFor(GetTcClient.Instance).GetAwaiter().GetResult();
+			var obj = client.Ask(GetTcClient.Instance).GetAwaiter().GetResult();
 			if (obj is TcClient tcp)
 			{
 				var actor = tcp.TCClient;
@@ -170,7 +170,7 @@ namespace SharpPulsar.Transaction
 			{
 				foreach(var c in _cumulativeAckConsumers)
                 {
-					var cleared = await c.Key.AskFor<int>(ClearIncomingMessagesAndGetMessageNumber.Instance);
+					var cleared = await c.Key.Ask<int>(ClearIncomingMessagesAndGetMessageNumber.Instance);
 					_cumulativeAckConsumers[c.Key] = cleared;
                 }
 			}

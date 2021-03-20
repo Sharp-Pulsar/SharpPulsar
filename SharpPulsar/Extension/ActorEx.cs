@@ -8,14 +8,14 @@ namespace SharpPulsar.Extension
 {
     public static class ActorEx
     {
-        public static async Task<T> AskFor<T>(this IActorRef actorRef, object message, int timeoutInSeconds = 120)
+        public static async Task<T> AskFo<T>(this IActorRef actorRef, object message, int timeoutInSeconds = 120)
         {
             //https://stackoverflow.com/questions/17248680/await-works-but-calling-task-result-hangs-deadlocks#answer-32429753
             
             return await actorRef.Ask<T>(message, timeout: TimeSpan.FromSeconds(timeoutInSeconds));
         }
         
-        public static async Task<object> AskFor(this IActorRef actorRef, object message, int timeoutInSeconds = 120)
+        public static async Task<object> AskFo(this IActorRef actorRef, object message, int timeoutInSeconds = 120)
         {
             //https://stackoverflow.com/questions/17248680/await-works-but-calling-task-result-hangs-deadlocks#answer-32429753
             return await actorRef.Ask(message, TimeSpan.FromSeconds(timeoutInSeconds));

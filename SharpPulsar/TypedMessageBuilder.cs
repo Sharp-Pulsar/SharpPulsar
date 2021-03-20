@@ -62,8 +62,8 @@ namespace SharpPulsar
 				return -1L;
 			}
 			
-			var bits = await _txn.Txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).ConfigureAwait(false);
-			var sequence = await _txn.Txn.AskFor<long>(NextSequenceId.Instance).ConfigureAwait(false);
+			var bits = await _txn.Txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).ConfigureAwait(false);
+			var sequence = await _txn.Txn.Ask<long>(NextSequenceId.Instance).ConfigureAwait(false);
 			Metadata.TxnidLeastBits = (ulong)bits.LeastBits;
 			Metadata.TxnidMostBits = (ulong)bits.MostBits;
 			long sequenceId = sequence;

@@ -100,7 +100,7 @@ namespace SharpPulsar
 				Sender.Tell(new TcClient(_tcClient));
 			});
 			ReceiveAsync<GetSchema>(async s => {
-				var response = await _lookup.AskFor(s);
+				var response = await _lookup.Ask(s);
 				Sender.Tell(response);
 			});
 			ReceiveAsync<GetPartitionedTopicMetadata>(async p => 
@@ -175,13 +175,13 @@ namespace SharpPulsar
 
 		private async ValueTask<GetBrokerResponse> GetBroker(TopicName topic)
 		{
-			return await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topic));
+			return await _lookup.Ask<GetBrokerResponse>(new GetBroker(topic));
 		}
 		private async ValueTask<GetConnectionResponse> GetConnection(string topic)
 		{
 			var topicName = TopicName.Get(topic);
-			var broker = await _lookup.AskFor<GetBrokerResponse>(new GetBroker(topicName));
-			var connection = await _cnxPool.AskFor<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+			var broker = await _lookup.Ask<GetBrokerResponse>(new GetBroker(topicName));
+			var connection = await _cnxPool.Ask<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			return connection;
 		}
 
@@ -204,7 +204,7 @@ namespace SharpPulsar
 			try
 			{
 				TopicName topicName = TopicName.Get(topic);
-				var o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+				var o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName));
 				var opTimeoutMs = _conf.OperationTimeoutMs;
 				Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
 
@@ -220,7 +220,7 @@ namespace SharpPulsar
 					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
 					opTimeoutMs -= (int)nextDelay;
 					Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-					o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName));
+					o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName));
 				}
 				return o as PartitionedTopicMetadata;
 			}

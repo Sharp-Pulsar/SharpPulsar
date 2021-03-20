@@ -191,7 +191,7 @@ namespace SharpPulsar.User
         
         private async ValueTask<Consumer<T>> Subscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
-            var state = await _client.AskFor<int>(GetClientState.Instance).ConfigureAwait(false);
+            var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
             {
                 throw new PulsarClientException.AlreadyClosedException("Client already closed");
@@ -276,7 +276,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var consumerId = await _generator.AskFor<long>(NewConsumerId.Instance).ConfigureAwait(false);
+                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     int partitionIndex = TopicName.GetPartitionIndex(topic);
                     consumer = _actorSystem.ActorOf(Props.Create<ConsumerActor<T>>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
                 }
@@ -320,7 +320,7 @@ namespace SharpPulsar.User
             NamespaceName namespaceName = destination.NamespaceObject;
             try
             {
-               var result = await _client.AskFor<GetTopicsOfNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+               var result = await _client.Ask<GetTopicsOfNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
                 var topics = result.Response.Topics;
                 if (_actorSystem.Log.IsDebugEnabled)
                 {
@@ -372,7 +372,7 @@ namespace SharpPulsar.User
             try
             {
                 TopicName topicName = TopicName.Get(topic);
-                var o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);
+                var o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);
                 var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
                 Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
 
@@ -388,7 +388,7 @@ namespace SharpPulsar.User
                     _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
                     opTimeoutMs -= (int)nextDelay;
                     Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-                    o = await _lookup.AskFor(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);
+                    o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);
                 }
                 return o as PartitionedTopicMetadata;
             }
@@ -473,7 +473,7 @@ namespace SharpPulsar.User
 
         private async ValueTask<Reader<T>> DoCreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
-            var state = await _client.AskFor<int>(GetClientState.Instance).ConfigureAwait(false);
+            var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
             { 
                 throw new PulsarClientException.AlreadyClosedException("Client already closed");
@@ -516,7 +516,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var consumerId = await _generator.AskFor<long>(NewConsumerId.Instance).ConfigureAwait(false);
+                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     reader = _actorSystem.ActorOf(Props.Create<ReaderActor<T>>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
                 }
                 _client.Tell(new AddConsumer(reader));
@@ -574,7 +574,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically");
             }
             
-            var state = await _client.AskFor<int>(GetClientState.Instance).ConfigureAwait(false);
+            var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
             {
                 throw new PulsarClientException.AlreadyClosedException($"Client already closed : state = {state}");
@@ -595,7 +595,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var schem = await _client.AskFor(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
+                    var schem = await _client.Ask(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
                     if (schem is Failure fa)
                     {
                         throw fa.Exception;
@@ -641,7 +641,7 @@ namespace SharpPulsar.User
             }
             else
             {
-                var producerId = await _generator.AskFor<long>(NewProducerId.Instance).ConfigureAwait(false);
+                var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
                 var producer = _actorSystem.ActorOf(Props.Create<ProducerActor<T>>(producerId, _client, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue));
                 _client.Tell(new AddProducer(producer));
                 //Improve with trytake for partitioned topic too

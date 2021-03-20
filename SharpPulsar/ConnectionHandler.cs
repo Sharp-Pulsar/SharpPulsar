@@ -105,12 +105,12 @@ namespace SharpPulsar
 			{
 				if(_conf.UseDedicatedConnections)
                 {
-					var broker = await _state.Client.AskFor<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
+					var broker = await _state.Client.Ask<GetBrokerResponse>(new GetBroker(TopicName.Get(_state.Topic)));
 					var connection = CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
 				}
                 else
                 {
-					var obj = await _state.Client.AskFor(new GetConnection(_state.Topic));
+					var obj = await _state.Client.Ask(new GetConnection(_state.Topic));
 					if (obj is GetConnectionResponse cnx)
 						_connection.Tell(new ConnectionOpened(cnx.ClientCnx));
 					else

@@ -80,7 +80,7 @@ namespace SharpPulsar.Tracker
                 {
                     if (unack.Value < now)
                     {
-                        var ms = await _unAckedMessageTracker.AskFor<AddChunkedMessageIdsAndRemoveFromSequnceMapResponse>(new AddChunkedMessageIdsAndRemoveFromSequnceMap(unack.Key, messagesToRedeliver.ToImmutableHashSet()));
+                        var ms = await _unAckedMessageTracker.Ask<AddChunkedMessageIdsAndRemoveFromSequnceMapResponse>(new AddChunkedMessageIdsAndRemoveFromSequnceMap(unack.Key, messagesToRedeliver.ToImmutableHashSet()));
                         ms.MessageIds.ToList().ForEach(x => messagesToRedeliver.Add(x));
                         messagesToRedeliver.Add(unack.Key);
                     }

@@ -94,7 +94,7 @@ namespace SharpPulsar.Transaction
 		{
 			try
 			{
-				var result = await _pulsarClient.AskFor(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+				var result = await _pulsarClient.Ask(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
 				if (result is PartitionedTopicMetadata lkup)
 				{
 
@@ -176,7 +176,7 @@ namespace SharpPulsar.Transaction
 			NewTxnResponse txnid = null;
             try
             {
-				var next = await NextHandler().AskFor<NewTxnResponse>(txn);
+				var next = await NextHandler().Ask<NewTxnResponse>(txn);
 				return next;
 			}
 			catch (Exception ex)

@@ -31,10 +31,10 @@ namespace SharpPulsar.User
             _conf = conf;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> TopicAsync() => await _readerActor.AskFor<string>(GetTopic.Instance).ConfigureAwait(false);
+        public async ValueTask<string> TopicAsync() => await _readerActor.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
-        public async ValueTask<bool> ConnectedAsync() => await _readerActor.AskFor<bool>(IsConnected.Instance).ConfigureAwait(false);
+        public async ValueTask<bool> ConnectedAsync() => await _readerActor.Ask<bool>(IsConnected.Instance).ConfigureAwait(false);
 
 
         public void Stop()
@@ -93,13 +93,13 @@ namespace SharpPulsar.User
         }
         private async ValueTask VerifyConsumerState()
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
 
             var retry = 10;
             while (state == HandlerState.State.Uninitialized && retry > 0)
             {
-                result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+                result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
                 state = result.State;
                 retry--;
                 if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
@@ -127,7 +127,7 @@ namespace SharpPulsar.User
             => SeekAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(IMessageId messageId)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -149,7 +149,7 @@ namespace SharpPulsar.User
             => SeekAsync(timestamp).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(long timestamp)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {

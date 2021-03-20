@@ -754,12 +754,12 @@ namespace SharpPulsar
 				if (await Connected())
 				{
 					State.ConnectionState = HandlerState.State.Closing;
-					var res =  await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+					var res =  await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 					var requestId =  res.Id;
 					var unsubscribe = _commands.NewUnsubscribe(_consumerId, requestId);
 				    var cnx = _connectionHandler;
 					var send = new SendRequestWithId(unsubscribe, requestId);
-                    if (await cnx.AskFor<bool>(send))
+                    if (await cnx.Ask<bool>(send))
                     {
 						CloseConsumerTasks();
 						DeregisterFromClientCnx();
@@ -806,7 +806,7 @@ namespace SharpPulsar
 
 			CloseConsumerTasks();
 
-			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult().Id;
+			long requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult().Id;
             try
             {
 				var cnx = Cnx().GetAwaiter().GetResult();
@@ -817,7 +817,7 @@ namespace SharpPulsar
 				else
 				{
 					byte[] cmd = _commands.NewCloseConsumer(_consumerId, requestId);
-					var response = cnx.AskFor(new SendRequestWithId(cmd, requestId)).GetAwaiter().GetResult();
+					var response = cnx.Ask(new SendRequestWithId(cmd, requestId)).GetAwaiter().GetResult();
 					if (response is ClientExceptions ex)
 					{
 						_log.Debug($"Exception ignored in closing consumer {ex.Exception}");
@@ -903,7 +903,7 @@ namespace SharpPulsar
 
 			if(txn != null)
 			{
-				var bits = await txn.AskFor<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+				var bits = await txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
 				await DoTransactionAcknowledgeForResponse(messageId, ackType, null, properties, new TxnID(bits.MostBits, bits.LeastBits));
 				return;
 			}
@@ -1161,7 +1161,7 @@ namespace SharpPulsar
 			else if(ackType == CommandAck.AckType.Cumulative)
 			{
 				OnAcknowledgeCumulative(messageId, null);
-				var removed = await _unAckedMessageTracker.AskFor<int>(new RemoveMessagesTill(msgId));
+				var removed = await _unAckedMessageTracker.Ask<int>(new RemoveMessagesTill(msgId));
 				_stats.IncrementNumAcksSent(removed);
 			}
 
@@ -1198,7 +1198,7 @@ namespace SharpPulsar
 
 			_log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {cnx.Path.Name}, consumerId {_consumerId}");
 
-			var res = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = res.Id;
 
 			
@@ -1417,7 +1417,7 @@ namespace SharpPulsar
 			bool isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 && Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
 			MessageId msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-			var isDuplicate = await _acknowledgmentsGroupingTracker.AskFor<bool>(new IsDuplicate(msgId));
+			var isDuplicate = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
 			if (isDuplicate)
 			{
 				if(_log.IsDebugEnabled)
@@ -1858,7 +1858,7 @@ namespace SharpPulsar
 
 		internal override async ValueTask<long> LastDisconnectedTimestamp()
 		{
-			return await _connectionHandler.AskFor<long>(LastConnectionClosedTimestamp.Instance);
+			return await _connectionHandler.Ask<long>(LastConnectionClosedTimestamp.Instance);
 		}
 
 		private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, IActorRef currentCnx)
@@ -1920,7 +1920,7 @@ namespace SharpPulsar
 			var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
 			var uncompressedSize = (int)msgMetadata.UncompressedSize;
 			var payloadSize = payload.Length;
-			var maxMessageSize = await currentCnx.AskFor<int>(MaxMessageSize.Instance);
+			var maxMessageSize = await currentCnx.Ask<int>(MaxMessageSize.Instance);
 			if (checkMaxMessageSize && payloadSize > maxMessageSize)
 			{
 				// payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
@@ -1989,15 +1989,13 @@ namespace SharpPulsar
 
 		internal override async ValueTask RedeliverUnacknowledgedMessages()
 		{
-			_log.Info("RedeliverUnacknowledgedMessages()=1");
 			var cnx = await Cnx();
-			_log.Info("RedeliverUnacknowledgedMessages()=2");
-			var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
-			_log.Info("RedeliverUnacknowledgedMessages()=3");
+			var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
 			if (await Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
 				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				var currentSize = IncomingMessages.Count;
+				//possible deadlocks here
 				await IncomingMessages.Empty();
 				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				IncomingMessagesSize = 0;
@@ -2052,7 +2050,7 @@ namespace SharpPulsar
 				return;
 			}
 			var cnx = await Cnx();
-			var protocolversion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+			var protocolversion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
 			if (await Connected() && protocolversion >= (int)ProtocolVersion.V2)
 			{
 				int messagesFromQueue = await RemoveExpiredMessagesFromQueue(messageIds);
@@ -2162,7 +2160,7 @@ namespace SharpPulsar
 			try
 			{
 				
-				var result = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 				long requestId = result.Id;
 				byte[] seek = null;
 				if (messageId is BatchMessageId msgId)
@@ -2184,7 +2182,7 @@ namespace SharpPulsar
 				var cnx = await Cnx();
 
 				_log.Info($"[{Topic}][{Subscription}] Seek subscription to message id {messageId}");
-				var sent = await cnx.AskFor<bool>(new SendRequestWithId(seek, requestId, true));
+				var sent = await cnx.Ask<bool>(new SendRequestWithId(seek, requestId, true));
 				if (sent)
 				{
 					_log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to message id {messageId}");
@@ -2212,13 +2210,13 @@ namespace SharpPulsar
 		{
 			try
 			{
-				var result = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 				long requestId = result.Id;
 				var seek = _commands.NewSeek(_consumerId, requestId, timestamp);
 				var cnx = await Cnx();
 
 				_log.Info($"[{Topic}][{Subscription}] Seek subscription to publish time {timestamp}");
-				var sent = await cnx.AskFor<bool>(new SendRequestWithId(seek, requestId));
+				var sent = await cnx.Ask<bool>(new SendRequestWithId(seek, requestId));
 				if(sent)
                 {
 					_log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to publish time {timestamp}");
@@ -2366,20 +2364,20 @@ namespace SharpPulsar
 			var cnx = await Cnx();
 			if(await Connected() && cnx != null)
 			{
-				var protocolversion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+				var protocolversion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
 				if(!_commands.PeerSupportsGetLastMessageId(protocolversion))
 				{
 					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolversion:D}. The consumer is {ConsumerName}, topic {_topicName}, subscription {Subscription}"));
 				}
 
-				var res = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+				var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 				long requestId = res.Id;
 				var getLastIdCmd = _commands.NewGetLastMessageId(_consumerId, requestId);
 				_log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
 				var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
                 try
                 {
-					var result = await cnx.AskFor<LastMessageIdResponse>(payload);
+					var result = await cnx.Ask<LastMessageIdResponse>(payload);
 					IMessageId lastMessageId;
 					MessageId markDeletePosition = null;
 					if (result.MarkDeletePosition != null)
@@ -2537,7 +2535,7 @@ namespace SharpPulsar
 		// wrapper for connection methods
 		protected async ValueTask<IActorRef> Cnx()
 		{
-			return await _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
+			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
 		}
 
 		private void ResetBackoff()
@@ -2567,7 +2565,7 @@ namespace SharpPulsar
 		}
 		private async ValueTask<IActorRef> ClientCnx()
 		{
-			return await _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
+			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
 		}
 
 
@@ -2778,7 +2776,7 @@ namespace SharpPulsar
 			long ledgerId;
 			long entryId;
 			byte[] cmd;
-			var result = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = result.Id;
 			if(messageId is BatchMessageId batchMessageId)
 			{

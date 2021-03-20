@@ -135,7 +135,7 @@ namespace SharpPulsar.Tracker
             if (messageId is MessageId id)
             {
                 //use ask here
-                var chunkedMsgIds = await _consumer.AskFor<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).ConfigureAwait(false);
+                var chunkedMsgIds = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, id)).ConfigureAwait(false);
                 if (chunkedMsgIds != null && chunkedMsgIds.MessageIds.Length> 0)
                 {
                     foreach (var msgId in chunkedMsgIds.MessageIds)

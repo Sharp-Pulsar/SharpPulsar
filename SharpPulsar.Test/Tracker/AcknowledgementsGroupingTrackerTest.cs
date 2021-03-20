@@ -62,65 +62,65 @@ namespace SharpPulsar.Test.Tracker
 			var msg4 = new MessageId(5, 4, 0);
 			var msg5 = new MessageId(5, 5, 0);
 			var msg6 = new MessageId(5, 6, 0);
-			var isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			var isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.Tell(new AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>(), null));
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			// Flush while disconnected. the internal tracking will not change
 			tracker.Tell(FlushPending.Instance);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.Tell(new AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 			
 			tracker.Tell(FlushPending.Instance);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.GracefulStop(TimeSpan.FromSeconds(1));
@@ -140,21 +140,21 @@ namespace SharpPulsar.Test.Tracker
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);
 
-			var isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			var isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 
 			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 			
 			tracker.Tell(FlushPending.Instance);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.Tell(new AddAcknowledgment(msg2, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
 			// Since we were connected, the ack went out immediately
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 			tracker.GracefulStop(TimeSpan.FromSeconds(1));
 		}
@@ -177,68 +177,68 @@ namespace SharpPulsar.Test.Tracker
 			var msg5 = new MessageId(5, 5, 0);
 			var msg6 = new MessageId(5, 6, 0);
 
-			var isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			var isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.Tell(new AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>(), null));
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			// Flush while disconnected. the internal tracking will not change
 			tracker.Tell(FlushPending.Instance);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.Tell(new AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
 
 			tracker.Tell(FlushPending.Instance);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg3)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg4)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg5)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
-			isDuplicate = tracker.AskFor<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
+			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
 			tracker.GracefulStop(TimeSpan.FromSeconds(1));

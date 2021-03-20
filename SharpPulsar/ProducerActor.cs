@@ -317,7 +317,7 @@ namespace SharpPulsar
 
 			if(_batchMessageContainer != null)
             {
-				var maxMessageSize = await cnx.AskFor<int>(MaxMessageSize.Instance);
+				var maxMessageSize = await cnx.Ask<int>(MaxMessageSize.Instance);
                 _batchMessageContainer.Container = new ProducerContainer(Self, Configuration, maxMessageSize, Context.System)
                 {
                     ProducerId = _producerId
@@ -327,7 +327,7 @@ namespace SharpPulsar
 			cnx.Tell(new RegisterProducer(_producerId, _self)); 
 			_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {cnx.Path.Name}");
 
-			var requestId = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var requestId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 
 			ISchemaInfo schemaInfo = null;
 			if (Schema != null)
@@ -339,7 +339,7 @@ namespace SharpPulsar
 						// for backwards compatibility purposes
 						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
 						// but now we have standardized on every schema to generate an Avro based schema
-						var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+						var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
 						if (_commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
 						{
 							schemaInfo = Schema.SchemaInfo;
@@ -366,11 +366,11 @@ namespace SharpPulsar
 			}
 			try
             {
-				var epoch = await _connectionHandler.AskFor<long>(GetEpoch.Instance);
+				var epoch = await _connectionHandler.Ask<long>(GetEpoch.Instance);
 				var cmd = _commands.NewProducer(Topic, _producerId, requestId.Id, _producerName, Conf.EncryptionEnabled, _metadata, schemaInfo, epoch, _userProvidedProducerName);
 				var payload = new Payload(cmd, requestId.Id, "NewProducer");
 
-				var response = await cnx.AskFor<ProducerResponse>(payload);
+				var response = await cnx.Ask<ProducerResponse>(payload);
 
 				string producerName = response.ProducerName;
 				long lastSequenceId = response.LastSequenceId;
@@ -540,7 +540,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				var registered = await txn.AskFor<bool>(new RegisterProducedTopic(Topic));
+				var registered = await txn.Ask<bool>(new RegisterProducedTopic(Topic));
 				if(registered)
 					await InternalSend(message);
 			}
@@ -550,7 +550,7 @@ namespace SharpPulsar
 		{
 			var cnx = await ClientCnx();
 			Condition.CheckArgument(message is Message<T>);
-			var maxMessageSize = await cnx.AskFor<int>(MaxMessageSize.Instance).ConfigureAwait(false);
+			var maxMessageSize = await cnx.Ask<int>(MaxMessageSize.Instance).ConfigureAwait(false);
 			if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)
 				maxMessageSize = Math.Min(Conf.MaxMessageSize, maxMessageSize);
 			if (!IsValidProducerState(message.SequenceId))
@@ -840,16 +840,16 @@ namespace SharpPulsar
 
 		private async ValueTask<object> GetOrCreateSchema(IActorRef cnx, ISchemaInfo schemaInfo)
 		{
-			var protocolVersion = await cnx.AskFor<int>(RemoteEndpointProtocolVersion.Instance);
+			var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
 			if(!_commands.PeerSupportsGetOrCreateSchema(protocolVersion))
 			{
 				throw new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {protocolVersion}. The producer is {_producerName}, topic is {Topic}");
 			}
-			long requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			long requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var request = _commands.NewGetOrCreateSchema(requestId, Topic, schemaInfo);
 			var payload = new Payload(request, requestId, "SendGetOrCreateSchema");
 			_log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
-			return await cnx.AskFor(payload);
+			return await cnx.Ask(payload);
 		}
 
 		private byte[] EncryptMessage(MessageMetadata msgMetadata, byte[] compressedPayload)
@@ -996,9 +996,9 @@ namespace SharpPulsar
 				_pendingMessages.Clear();
 			}
 
-			var requestId = _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).Id;
 			var cmd = _commands.NewCloseProducer(_producerId, requestId);
-			var response = await cnx.AskFor(new SendRequestWithId(cmd, requestId));
+			var response = await cnx.Ask(new SendRequestWithId(cmd, requestId));
 			if (!(response is Exception))
 			{
 				_log.Info($"[{Topic}] [{_producerName}] Closed Producer", Topic, _producerName);
@@ -1020,7 +1020,7 @@ namespace SharpPulsar
 
 		protected internal override async ValueTask<long> LastDisconnectedTimestamp()
 		{
-			return await _connectionHandler.AskFor<long>(LastConnectionClosedTimestamp.Instance);
+			return await _connectionHandler.Ask<long>(LastConnectionClosedTimestamp.Instance);
 		}
 
 
@@ -1443,7 +1443,7 @@ namespace SharpPulsar
 		// wrapper for connection methods
 		private async ValueTask<IActorRef> Cnx()
 		{
-			return await _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
+			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
 		}
 
 		private void ConnectionClosed(IActorRef cnx)

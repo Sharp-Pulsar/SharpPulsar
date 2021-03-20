@@ -159,7 +159,7 @@ namespace SharpPulsar
 				_log.Debug("New transaction with timeout in ms {}", timeout);
 			}
 
-			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var request = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = request.Id;
 			_pendingRequests.Add(requestId, (new byte[] { (byte)timeout }, Sender));
 			var cmd = new Commands().NewTxn(_transactionCoordinatorId, requestId, timeout);
@@ -203,7 +203,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
-			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var request = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = request.Id;
 			var cmd = new Commands().NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
 			_pendingRequests.Add(requestId, (cmd, Sender));
@@ -242,7 +242,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Add subscription {} to txn {}.", subscriptionList, txnID);
 			}
-			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var request = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = request.Id;
 			var cmd = new Commands().NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
 			_pendingRequests.Add(requestId, (cmd, Sender));
@@ -281,7 +281,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Commit txn {}", txnID);
 			}
-			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var request = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = request.Id;
 			var messageIdDataList = new List<MessageIdData>();
 			foreach(MessageId messageId in sendMessageIdList)
@@ -307,7 +307,7 @@ namespace SharpPulsar
 				_log.Debug("Abort txn {}", txnID);
 			}
 
-			var request = await _generator.AskFor<NewRequestIdResponse>(NewRequestId.Instance);
+			var request = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 			long requestId = request.Id;
 
 			IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
@@ -423,7 +423,7 @@ namespace SharpPulsar
 
 		private async ValueTask<IActorRef> Cnx()
 		{
-			return await _connectionHandler.AskFor<IActorRef>(GetCnx.Instance);
+			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
 		}
 
 		private void HandleConnectionClosed(IActorRef cnx)

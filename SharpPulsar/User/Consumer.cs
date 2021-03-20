@@ -43,31 +43,31 @@ namespace SharpPulsar.User
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
         public async ValueTask<string> TopicAsync() 
-            => await _consumerActor.AskFor<string>(GetTopic.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
 
         public string Subscription => SubscriptionAsync().GetAwaiter().GetResult();
         public async ValueTask<string> SubscriptionAsync() 
-            => await _consumerActor.AskFor<string>(GetSubscription.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<string>(GetSubscription.Instance).ConfigureAwait(false);
 
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
         public async ValueTask<IConsumerStats> StatsAsync() 
-            => await _consumerActor.AskFor<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
 
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
         public async ValueTask<IMessageId> LastMessageIdAsync() 
-            => await _consumerActor.AskFor<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> ConnectedAsync() 
-            => await _consumerActor.AskFor<bool>(IsConnected.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<bool>(IsConnected.Instance).ConfigureAwait(false);
 
         public string ConsumerName => ConsumerNameAsync().GetAwaiter().GetResult();
         public async ValueTask<string> ConsumerNameAsync() 
-            => await _consumerActor.AskFor<string>(GetConsumerName.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<string>(GetConsumerName.Instance).ConfigureAwait(false);
 
         public long LastDisconnectedTimestamp => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
         public async ValueTask<long> LastDisconnectedTimestampAsync() 
-            => await _consumerActor.AskFor<long>(GetLastDisconnectedTimestamp.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance).ConfigureAwait(false);
 
         public void Acknowledge(IMessage<T> message) => AcknowledgeAsync(message).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessage<T> message)
@@ -312,13 +312,13 @@ namespace SharpPulsar.User
 
         private async Task VerifyConsumerState()
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
 
             var retry = 10;
             while(state == HandlerState.State.Uninitialized && retry > 0)
             {
-                result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+                result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
                 state = result.State;
                 retry--;
                 if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
@@ -355,7 +355,7 @@ namespace SharpPulsar.User
         }
         private async ValueTask<bool> HasEnoughMessagesForBatchReceive()
         {
-            var mesageSize = await _consumerActor.AskFor<long>(GetIncomingMessageSize.Instance).ConfigureAwait(false);
+            var mesageSize = await _consumerActor.Ask<long>(GetIncomingMessageSize.Instance).ConfigureAwait(false);
             if (_conf.BatchReceivePolicy.MaxNumMessages <= 0 && _conf.BatchReceivePolicy.MaxNumBytes <= 0)
             {
                 return false;
@@ -412,7 +412,7 @@ namespace SharpPulsar.User
         }
         public async Task SeekAsync(IMessageId messageId)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -437,7 +437,7 @@ namespace SharpPulsar.User
         }
         public async Task SeekAsync(long timestamp)
         {
-            var result = await _stateActor.AskFor<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
             var state = result.State;
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
