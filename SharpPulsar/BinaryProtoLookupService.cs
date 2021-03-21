@@ -41,7 +41,7 @@ using SharpPulsar.ServiceName;
 /// </summary>
 namespace SharpPulsar
 {
-    public class BinaryProtoLookupService : ReceiveActor
+    public class BinaryProtoLookupService : ReceiveActor, IWithUnboundedStash
 	{
 		private IActorRef _pulsarClient;
 		private readonly ServiceNameResolver _serviceNameResolver;
@@ -51,9 +51,14 @@ namespace SharpPulsar
 		private readonly long _operationTimeoutMs;
 		private readonly IActorRef _connectionPool;
 		private readonly IActorRef _generator;
+		private IActorRef _replyTo;
+		private long _requestId;
+		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
 		private IAdvancedScheduler _executor;
 		private IActorContext _context;
+		private Action<object> _nextBecome;
+		private object _invokeArg;
 
 		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
 		{
@@ -68,13 +73,13 @@ namespace SharpPulsar
 			_operationTimeoutMs = operationTimeoutMs;
 			_connectionPool = connectionPool;
 			UpdateServiceUrl(serviceUrl);
-			Receives();
+			Awaiting();
 		}
 		private void UpdateServiceUrl(string serviceUrl)
 		{
 			_serviceNameResolver.UpdateServiceUrl(serviceUrl);
 		}
-		private void Receives()
+		private void Awaiting()
         {
 			Receive<SetClient>(c =>
 			{
@@ -86,25 +91,13 @@ namespace SharpPulsar
 				UpdateServiceUrl(u.ServiceUrl);
 
 			});
-			ReceiveAsync<GetBroker>(async b => 
+			Receive<GetBroker>(b => 
 			{
-				var task = new TaskCompletionSource<GetBrokerResponse>();
-				var pool = _connectionPool;
-				var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-				var xtion = await pool.Ask<GetConnectionResponse>(new GetConnection(address));
-				var connection = xtion.ClientCnx;
-				var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
-				var requestid = id.Id;
-				await GetBroker(b.TopicName, requestid, connection, task);
-                try
-                {
-					var result = await task.Task;
-					Sender.Tell(result);
-				}
-				catch(Exception ex)
-                {
-					Sender.Tell(new ClientExceptions((PulsarClientException)ex.InnerException));
-				}
+				_replyTo = Sender;
+				_invokeArg = b;
+				_nextBecome = GetBroker;
+				Become(GetCnxAndRequestId);
+			
 			});
 			ReceiveAsync<GetPartitionedTopicMetadata>(async p =>
 			{
@@ -135,38 +128,25 @@ namespace SharpPulsar
 				var requestid = id.Id;
 				await GetTopicsUnderNamespace(t, requestid, connection, sender);
 			});
+			Stash.Unstash();
 		}
-		
-		/// <summary>
-		/// Calls broker binaryProto-lookup api to find broker-service address which can serve a given topic.
-		/// </summary>
-		/// <param name="topicName">
-		///            topic-name </param>
-		/// <returns> broker-socket-address that serves given topic </returns>
-		private async ValueTask GetBroker(TopicName topicName, long requestId, IActorRef clientCnx, TaskCompletionSource<GetBrokerResponse> task, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
-		{
-			var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-			if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
+		private void GetBroker(object b)
+        {
+			var broker = b as GetBroker;
+			var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+			NewLookup(broker.TopicName, _requestId);
+			Receive<LookupDataResult>(data => 
 			{
-				var err = new Exception("LookupException: Too many redirects: " + _maxLookupRedirects);
-				_log.Error(err.ToString());
-				task.SetException(err);
-				return;
-			}
-			var request = new Commands().NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
-			var payload = new Payload(request, requestId, "NewLookup");
-			var lk = await clientCnx.Ask(payload);
-			if(lk is LookupDataResult lookup)
-            {
-
-				if (Enum.IsDefined(typeof(ServerError), lookup.Error) && !string.IsNullOrWhiteSpace(lookup.ErrorMessage))
+				var br = broker;
+				if (Enum.IsDefined(typeof(ServerError), data.Error) && !string.IsNullOrWhiteSpace(data.ErrorMessage))
 				{
-					_log.Warning($"[{topicName}] failed to send lookup request: {lookup.Error}:{lookup.ErrorMessage}");
+					_log.Warning($"[{br.TopicName}] failed to send lookup request: {data.Error}:{data.ErrorMessage}");
 					if (_log.IsDebugEnabled)
 					{
-						_log.Warning($"[{topicName}] Lookup response exception> {lookup.Error}:{lookup.ErrorMessage}");
+						_log.Warning($"[{br.TopicName}] Lookup response exception> {data.Error}:{data.ErrorMessage}");
 					}
-					task.SetException(new Exception($"Lookup is not found: {lookup.Error}:{lookup.ErrorMessage}"));
+					_replyTo.Tell(new ClientExceptions(new PulsarClientException(new Exception($"Lookup is not found: {data.Error}:{data.ErrorMessage}")));
+					Become(Awaiting);
 				}
 				else
 				{
@@ -175,49 +155,98 @@ namespace SharpPulsar
 					{
 						if (_useTls)
 						{
-							uri = new Uri(lookup.BrokerUrlTls);
+							uri = new Uri(data.BrokerUrlTls);
 						}
 						else
 						{
-							string serviceUrl = lookup.BrokerUrl;
+							string serviceUrl = data.BrokerUrl;
 							uri = new Uri(serviceUrl);
 						}
 						var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
-						if (lookup.Redirect)
+						if (data.Redirect)
 						{
 							var pool = _connectionPool;
 							var xtion = await pool.Ask<GetConnectionResponse>(new GetConnection(responseBrokerAddress));
 							var connection = xtion.ClientCnx;
 							var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 							requestId = id.Id;
-							await GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
+							await GetBroker(topicName, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
 						}
 						else
 						{
-							if (lookup.ProxyThroughServiceUrl)
-							{
-								var response = new GetBrokerResponse(responseBrokerAddress, socketAddress);
-								task.SetResult(response);
-							}
-							else
-							{
-								var response = new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
-								task.SetResult(response);
-							}
+							var response = data.ProxyThroughServiceUrl ? 
+							new GetBrokerResponse(responseBrokerAddress, socketAddress): 
+							new GetBrokerResponse(responseBrokerAddress, responseBrokerAddress);
+							_replyTo.Tell(response);
+							Become(Awaiting);
 						}
 					}
 					catch (Exception parseUrlException)
 					{
-						_log.Warning($"[{topicName}] invalid url {uri}");
-						task.SetException(parseUrlException);
+						_log.Warning($"[{br.TopicName}] invalid url {uri}");
+						_replyTo.Tell(new ClientExceptions(new PulsarClientException(parseUrlException)));
+						Become(Awaiting);
 					}
 				}
+			});
+			Receive<ClientExceptions>(m => _replyTo.Tell(m));
+			ReceiveAny(_ => Stash.Stash());
+		}
+		private void GetCnxAndRequestId()
+        {
+			_clientCnx = null;
+			_requestId = -1;
+			var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+			_connectionPool.Tell(new GetConnection(address));
+			_generator.Tell(NewRequestId.Instance);
+			Receive<GetConnectionResponse>(m => 
+			{
+				_nextBecome = GetBroker;
+				_clientCnx = m.ClientCnx;
+				if (_requestId > -1)
+					Become(()=>_nextBecome.Invoke(_invokeArg));
+			});
+			Receive<NewRequestIdResponse>(m => 
+			{
+				_requestId = m.Id;
+				if (_clientCnx != null)
+					Become(() => _nextBecome.Invoke(_invokeArg));
+			});
+			ReceiveAny(_=> Stash.Stash());
+        }
+		private void GetTopicsUnderNamespace()
+        {
+
+        }
+		private void GetPartitionedTopicMetadata()
+        {
+
+        }
+		private void GetSchema()
+        {
+
+        }
+		/// <summary>
+		/// Calls broker binaryProto-lookup api to find broker-service address which can serve a given topic.
+		/// </summary>
+		/// <param name="topicName">
+		///            topic-name </param>
+		/// <returns> broker-socket-address that serves given topic </returns>
+		private void NewLookup(TopicName topicName, long requestId, int redirectCount = 0, DnsEndPoint address = null, bool authoritative = false)
+		{
+			var socketAddress = address ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+			if (_maxLookupRedirects > 0 && redirectCount > _maxLookupRedirects)
+			{
+				var err = new Exception("LookupException: Too many redirects: " + _maxLookupRedirects);
+				_log.Error(err.ToString());
+				_replyTo.Tell(new ClientExceptions(new PulsarClientException(err)));
+				Become(Awaiting);
+				return;
 			}
-            else
-            {
-				var e = lk as ClientExceptions;
-				task.SetException(e.Exception);
-            }
+			var request = new Commands().NewLookup(topicName.ToString(), _listenerName, authoritative, requestId);
+			var payload = new Payload(request, requestId, "NewLookup");
+			_clientCnx.Tell(payload);
+
 		}
 
 		/// <summary>
@@ -284,6 +313,8 @@ namespace SharpPulsar
 			}
 		}
 
+        public IStash Stash { get; set; }
+
         private async ValueTask GetTopicsUnderNamespace(GetTopicsUnderNamespace nsn, long requestid, IActorRef clientCnx, IActorRef sender)
 		{
 			var opTimeoutMs = _operationTimeoutMs;
@@ -347,5 +378,4 @@ namespace SharpPulsar
 			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeoutMs));
         }
     }
-
 }
