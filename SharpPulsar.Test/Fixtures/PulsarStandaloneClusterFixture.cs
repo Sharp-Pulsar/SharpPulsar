@@ -124,6 +124,7 @@ namespace SharpPulsar.Test.Fixtures
             var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
             var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
             var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
+            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
 
 
             client.EnableTransaction(enableTxn);
@@ -138,6 +139,7 @@ namespace SharpPulsar.Test.Fixtures
 
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
+            client.UseDedicatedConnections(dedicatedConnection);
             client.ConnectionsPerBroker(connectionsPerBroker);
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);

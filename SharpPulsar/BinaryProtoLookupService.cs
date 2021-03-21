@@ -188,7 +188,7 @@ namespace SharpPulsar
 							var pool = _connectionPool;
 							var xtion = await pool.Ask<GetConnectionResponse>(new GetConnection(responseBrokerAddress));
 							var connection = xtion.ClientCnx;
-							var id = await _pulsarClient.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+							var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 							requestId = id.Id;
 							await GetBroker(topicName, requestId, connection, task, redirectCount + 1, responseBrokerAddress, lookup.Authoritative);
 						}

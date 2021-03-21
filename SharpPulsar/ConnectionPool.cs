@@ -3,6 +3,7 @@ using Akka.Event;
 using Akka.Util.Internal;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
+using SharpPulsar.FSM;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
 using System;
@@ -12,57 +13,102 @@ using System.Net;
 
 namespace SharpPulsar
 {
-    public class ConnectionPool:ReceiveActor
+	internal enum ConnectionPoolState
+	{
+		Waiting,
+		Get,
+		Clean,
+		Close,
+		Release,
+		Pool
+	}
+	internal class ConnectionPool:FSM<ConnectionPoolState, DTO>, IWithUnboundedStash
     {
-		private readonly Dictionary<EndPoint, Dictionary<int, IActorRef/*ClientCnx*/>> _pool;
+		private readonly Dictionary<EndPoint, Dictionary<int, IActorRef>> _pool;
 
 		private readonly ClientConfigurationData _clientConfig;
 		private readonly int _maxConnectionsPerHosts;
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
+		
 		public ConnectionPool(ClientConfigurationData conf)
 		{
 			_context = Context;
 			_log = Context.GetLogger();
 			_clientConfig = conf;
 			_maxConnectionsPerHosts = conf.ConnectionsPerBroker;
-			//_isSniProxy = _clientConfig.UseTls && _clientConfig.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfig.ProxyServiceUrl);
-
 			_pool = new Dictionary<EndPoint, Dictionary<int, IActorRef>>();
-			Receive<GetConnection>(c => 
+
+			StartWith(ConnectionPoolState.Waiting, new DTO(null, null));
+			When(ConnectionPoolState.Waiting, @event =>
 			{
+				switch (@event.FsmEvent)
+				{
+					case GetConnection c:
+						return GoTo(ConnectionPoolState.Get).Using(new DTO(Sender, c));
+					case CleanupConnection c:
+						return GoTo(ConnectionPoolState.Clean).Using(new DTO(Sender, c));
+					case CloseAllConnections c:
+						return GoTo(ConnectionPoolState.Close).Using(new DTO(Sender, c));
+					case ReleaseConnection c:
+						return GoTo(ConnectionPoolState.Release).Using(new DTO(Sender, c));
+					case GetPoolSize p:
+						{
+							return Stay().Replying(new GetPoolSizeResponse(PoolSize));
+						}
+				}
+				return null;
+			});
+			When(ConnectionPoolState.Get, @event =>
+			{
+				var evnt = @event.StateData;
+				var message = evnt.Message as GetConnection;
 				IActorRef connection = ActorRefs.Nobody;
-				if(c.LogicalEndPoint != null && c.PhusicalEndPoint == null)
-                {
-					connection = GetConnection(c.LogicalEndPoint);
-                }
-				else if(c.LogicalEndPoint != null && c.PhusicalEndPoint != null)
-					connection = GetConnection(c.LogicalEndPoint, c.PhusicalEndPoint);
+				if (message.LogicalEndPoint != null && message.PhusicalEndPoint == null)
+				{
+					connection = GetConnection(message.LogicalEndPoint);
+				}
+				else if (message.LogicalEndPoint != null && message.PhusicalEndPoint != null)
+					connection = GetConnection(message.LogicalEndPoint, message.PhusicalEndPoint);
 
-
-				Sender.Tell(new GetConnectionResponse(connection));
-
+				evnt.Sender.Tell(new GetConnectionResponse(connection));
+				return GoTo(ConnectionPoolState.Waiting);
 			});
-			Receive<CleanupConnection>(c =>
+			When(ConnectionPoolState.Clean, @event =>
 			{
+				var evnt = @event.StateData;
+				var c = evnt.Message as CleanupConnection;
 				CleanupConnection(c.Address, c.ConnectionKey);
+				return GoTo(ConnectionPoolState.Waiting);
 			});
-			Receive<CloseAllConnections>(_ =>
+			When(ConnectionPoolState.Close, @event =>
 			{
 				CloseAllConnections();
+				return GoTo(ConnectionPoolState.Waiting);
 			});
-			Receive<ConnectionOpened>(_ =>
+			When(ConnectionPoolState.Release, @event =>
 			{
-				//CloseAllConnections();
-			});
-			Receive<ReleaseConnection>(c =>
-			{
+				var evnt = @event.StateData;
+				var c = evnt.Message as ReleaseConnection;
 				ReleaseConnection(c.ClientCnx);
+				return GoTo(ConnectionPoolState.Waiting);
 			});
-			Receive<GetPoolSize>(c =>
+			OnTransition((initialState, nextState) =>
 			{
-				Sender.Tell(new GetPoolSizeResponse(PoolSize));
+				if (initialState == ConnectionPoolState.Waiting && nextState != ConnectionPoolState.Waiting)
+				{
+					SetTimer("timeout", "", TimeSpan.FromMilliseconds(50), repeat: true);
+				}
+				else if (initialState != ConnectionPoolState.Waiting)
+				{
+					CancelTimer("timeout");
+				}
+				else if (nextState == ConnectionPoolState.Get)
+				{
+					_log.Info("entering Idle from " + initialState);
+				}
 			});
+			Initialize();
 		}
 
 		public static Props Prop(ClientConfigurationData conf)
@@ -173,7 +219,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private int SignSafeMod(long dividend, int divisor)
+        public IStash Stash { get; set; }
+
+        private int SignSafeMod(long dividend, int divisor)
 		{
 			int mod = (int)(dividend % divisor);
 			if (mod < 0)
