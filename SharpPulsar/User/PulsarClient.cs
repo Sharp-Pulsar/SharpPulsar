@@ -276,7 +276,7 @@ namespace SharpPulsar.User
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     int partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(Props.Create<ConsumerActor<T>>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue));
+                    consumer = _actorSystem.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue)));
                 }
                 _client.Tell(new AddConsumer(consumer));
                 var c = queue.ConsumerCreation.Take();
@@ -515,7 +515,7 @@ namespace SharpPulsar.User
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
-                    reader = _actorSystem.ActorOf(Props.Create<ReaderActor<T>>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue));
+                    reader = _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue)));
                 }
                 _client.Tell(new AddConsumer(reader));
 
@@ -629,7 +629,7 @@ namespace SharpPulsar.User
             }
             if (metadata.Partitions > 0)
             {
-                _actorSystem.ActorOf(Props.Create<PartitionedProducer<T>>(_client, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, queue));
+                _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, queue)));
                 var actor = queue.PartitionedProducer.Take();
                 if (actor == null)
                     throw new Exception("Could not create PartitionedProducer - check log for more info.");
@@ -640,7 +640,7 @@ namespace SharpPulsar.User
             else
             {
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
-                var producer = _actorSystem.ActorOf(Props.Create<ProducerActor<T>>(producerId, _client, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue));
+                var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue)));
                 _client.Tell(new AddProducer(producer));
                 //Improve with trytake for partitioned topic too
                 var created = queue.Producer.Take();

@@ -17,7 +17,7 @@ namespace SharpPulsar
 			Failed, // Handler is failed
 			RegisteringSchema // Handler is registering schema
 		}
-		private readonly IActorRef _client;//get get reference to the actor that implements PulsarClientImpl
+		private readonly IActorRef _lookup;//get get reference to the actor that implements PulsarClientImpl
 		private readonly string _topic;
 		private readonly string _name;
 		protected internal string Topic
@@ -30,9 +30,9 @@ namespace SharpPulsar
 
 		
 
-		public HandlerState(IActorRef client, string topic, ActorSystem system, string name)
+		public HandlerState(IActorRef lookup, string topic, ActorSystem system, string name)
 		{
-			_client = client;
+			_lookup = lookup;
 		    _topic = topic;
             _state = State.Uninitialized;
 			_system = system;
@@ -91,11 +91,11 @@ namespace SharpPulsar
         {
 			get => _system;
         }
-		protected internal IActorRef Client
+		protected internal IActorRef Lookup
 		{
 			get
 			{
-				return _client;
+				return _lookup;
 			}
 		}
 	}

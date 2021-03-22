@@ -38,7 +38,7 @@ namespace SharpPulsar.Transaction
     /// much as possible.
     /// </para>
     /// </summary>
-    public class Transaction : ReceiveActor
+    public class Transaction : ReceiveActor, IWithUnboundedStash
 	{
 
 		private readonly IActorRef _client;
@@ -55,7 +55,9 @@ namespace SharpPulsar.Transaction
 
 		private readonly List<IMessageId> _sendList;
 
-		public Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+        public IStash Stash { get; set; }
+
+        public Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
 			_log = Context.System.Log;
 			_client = client;
@@ -65,15 +67,23 @@ namespace SharpPulsar.Transaction
 
 			_producedTopics = new HashSet<string>();
 			_ackedTopics = new HashSet<string>();
-			var obj = client.Ask(GetTcClient.Instance).GetAwaiter().GetResult();
-			if (obj is TcClient tcp)
+			_sendList = new List<IMessageId>();
+			TcClient();
+		}
+		private void TcClient()
+        {
+			Receive<TcClient>(tc => 
 			{
-				var actor = tcp.TCClient;
+				var actor = tc.TCClient;
 				_log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
 				_tcClient = actor;
-			}
-			else
-				_log.Error($"Error while Asking for TC from Client Actor: {obj.GetType().FullName}");
+				Become(Ready);
+			});
+			ReceiveAny(_=> Stash.Stash());
+			_client.Tell(GetTcClient.Instance);
+        }
+		private void Ready()
+        {
 			Receive<NextSequenceId>(_ =>
 			{
 				Sender.Tell(NextSequenceId());
@@ -86,13 +96,17 @@ namespace SharpPulsar.Transaction
 			{
 				Sender.Tell(new GetTxnIdBitsResponse(_txnIdMostBits, _txnIdLeastBits));
 			});
-			ReceiveAsync<Abort>(async _ =>
+			Receive<Abort>(_ =>
 			{
-				await Abort();
+				Abort();
 			});
 			Receive<RegisterAckedTopic>(r =>
 			{
 				RegisterAckedTopic(r.Topic, r.Subscription);
+			});
+			Receive<IncomingMessagesCleared>(c =>
+			{
+				_cumulativeAckConsumers[Sender] = c.Cleared;
 			});
 			Receive<Commit>(_ =>
 			{
@@ -107,7 +121,7 @@ namespace SharpPulsar.Transaction
 				RegisterProducedTopic(p.Topic);
 				Sender.Tell(true);
 			});
-			_sendList = new List<IMessageId>();
+			Stash?.UnstashAll();
 		}
 		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
         {
@@ -162,15 +176,14 @@ namespace SharpPulsar.Transaction
 			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
 		}
 
-		private async ValueTask Abort()
+		private void Abort()
 		{
 			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
 			if (_cumulativeAckConsumers != null)
 			{
 				foreach(var c in _cumulativeAckConsumers)
                 {
-					var cleared = await c.Key.Ask<int>(ClearIncomingMessagesAndGetMessageNumber.Instance);
-					_cumulativeAckConsumers[c.Key] = cleared;
+					c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
                 }
 			}
 			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));

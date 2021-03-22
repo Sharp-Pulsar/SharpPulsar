@@ -35,27 +35,35 @@ namespace SharpPulsar.Transaction
     /// <summary>
     /// Transaction coordinator client based topic assigned.
     /// </summary>
-    public class TransactionCoordinatorClient : ReceiveActor
+    public class TransactionCoordinatorClient : ReceiveActor, IWithUnboundedStash
 	{
-
-		private IActorRef _pulsarClient;
 		private List<IActorRef> _handlers;
 		private Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();
 		private ILoggingAdapter _log;
 		private long _epoch = 0L;
 		private ClientConfigurationData _clientConfigurationData;
 		private IActorRef _generator;
+		private IActorRef _lookup;
+		private IActorRef _replyTo;
 
 		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		public TransactionCoordinatorClient(IActorRef idGenerator, ClientConfigurationData conf)
+		public TransactionCoordinatorClient(IActorRef lookup, IActorRef idGenerator, ClientConfigurationData conf)
 		{
+			_lookup = lookup;
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
-			_log = Context.GetLogger();
-			ReceiveAsync<NewTxn>(async n => {
-				var nt = await NewTransaction(n);
-				Sender.Tell(nt);
+			_log = Context.GetLogger(); 
+			StartCoordinator();
+		}
+
+		private void Ready()
+        {
+
+			Receive<NewTxn>(n => 
+			{
+				_replyTo = Sender;
+				Become(() => CreateTransaction(n));
 			});
 			Receive<AddPublishPartitionToTxn>(n => {
 				AddPublishPartitionToTxn(n);
@@ -69,73 +77,49 @@ namespace SharpPulsar.Transaction
 			Receive<CommitTxnID>(n => {
 				Commit(n);
 			});
-			ReceiveAsync<StartTransactionCoordinatorClient>(async m => 
-			{
-				if (_pulsarClient == null)
-					_pulsarClient = m.Client;
-				await StartCoordinator();
-			});
+			Stash?.UnstashAll();
 		}
-
-		private async ValueTask StartCoordinator()
+		private void StartCoordinator()
 		{
 			_state = TransactionCoordinatorClientState.Starting;
-			var started = await Start();
-			while (!started)
+			Receive<PartitionedTopicMetadata>(p => 
 			{
-				_log.Info("Transaction coordinator not started...retrying");
-				started = await Start();
-			}
-			_state = TransactionCoordinatorClientState.Ready;
-		}
-		private async ValueTask<bool> Start()
-		{
-			try
-			{
-				var result = await _pulsarClient.Ask(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
-				if (result is PartitionedTopicMetadata lkup)
+				var partitionMeta = p;
+				if (_log.IsDebugEnabled)
 				{
-
-					var partitionMeta = lkup;
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
-					}
-					if (partitionMeta.Partitions > 0)
-					{
-						_handlers = new List<IActorRef>(partitionMeta.Partitions);
-						for (int i = 0; i < partitionMeta.Partitions; i++)
-						{
-							var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _pulsarClient, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-							_handlers.Add(handler);
-							_handlerMap.Add(i, handler);
-						}
-					}
-					else
-					{
-						_handlers = new List<IActorRef>(1);
-						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _pulsarClient, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-						_handlers[0] = handler;
-						_handlerMap.Add(0, handler);
-					}
-					return true;
+					_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
 				}
-                else
-                {
-					var ex = result as ClientExceptions;
-					_log.Error(ex.ToString());
-					return false;
-                }
-			}
-			catch(Exception ex)
-            {
+				if (partitionMeta.Partitions > 0)
+				{
+					_handlers = new List<IActorRef>(partitionMeta.Partitions);
+					for (int i = 0; i < partitionMeta.Partitions; i++)
+					{
+						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+						_handlers.Add(handler);
+						_handlerMap.Add(i, handler);
+					}
+				}
+				else
+				{
+					_handlers = new List<IActorRef>(1);
+					var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+					_handlers[0] = handler;
+					_handlerMap.Add(0, handler);
+				}
+				Become(Ready);
+			});
+			Receive<ClientExceptions>(ex => 
+			{
 				_log.Error(ex.ToString());
-				return false;
-			}
+				_log.Info("Transaction coordinator not started...retrying");
+				_lookup.Tell(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+			});
+			ReceiveAny(_=> Stash.Stash());
+			_lookup.Tell(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
 		}
-		public static Props Prop(IActorRef idGenerator, ClientConfigurationData conf)
+		public static Props Prop(IActorRef lookup, IActorRef idGenerator, ClientConfigurationData conf)
         {
-			return Props.Create(() => new TransactionCoordinatorClient(idGenerator, conf));
+			return Props.Create(() => new TransactionCoordinatorClient(lookup, idGenerator, conf));
         }
 		private string GetTCAssignTopicName(int partition)
 		{
@@ -148,7 +132,17 @@ namespace SharpPulsar.Transaction
 				return TopicName.TransactionCoordinatorAssign.ToString();
 			}
 		}
-		
+		private void CreateTransaction(NewTxn txn)
+        {
+			Receive<NewTxnResponse>(ntx => 
+			{
+				_replyTo.Tell(ntx);
+				_replyTo = null;
+				Become(Ready);
+			});
+			ReceiveAny(_ => Stash.Stash());
+			NextHandler().Tell(txn);
+		}
 		protected override void PostStop()
         {
 			Close();
@@ -167,21 +161,6 @@ namespace SharpPulsar.Transaction
 					handler.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
 				}
 			}
-		}
-
-		private async ValueTask<NewTxnResponse> NewTransaction(NewTxn txn)
-		{
-			NewTxnResponse txnid = null;
-            try
-            {
-				var next = await NextHandler().Ask<NewTxnResponse>(txn);
-				return next;
-			}
-			catch (Exception ex)
-            {
-				_log.Error(ex.ToString());
-            }
-			return txnid;
 		}
 
 		private void AddPublishPartitionToTxn(AddPublishPartitionToTxn pub)
@@ -240,7 +219,9 @@ namespace SharpPulsar.Transaction
 			}
 		}
 
-		private IActorRef NextHandler()
+        public IStash Stash { get; set; }
+
+        private IActorRef NextHandler()
 		{
 			int index = MathUtils.SignSafeMod(++_epoch, _handlers.Count);
 			return _handlers[index];

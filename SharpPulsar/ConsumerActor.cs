@@ -160,7 +160,7 @@ namespace SharpPulsar
 		{
 		}
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(stateActor, client, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(stateActor, lookup, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
 		{
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
@@ -344,7 +344,7 @@ namespace SharpPulsar
 			ReceiveAsync<ClearIncomingMessagesAndGetMessageNumber>(async _ => 
 			{
 				var cleared = await ClearIncomingMessagesAndGetMessageNumber();
-				Sender.Tell(cleared);
+				Sender.Tell(new IncomingMessagesCleared(cleared));
 			});				
 			Receive<GetHandlerState>(_ => 
 			{

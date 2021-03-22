@@ -110,7 +110,7 @@ namespace SharpPulsar
 		private readonly IScheduler _scheduler;
 		private readonly Commands _commands;
 
-		public ProducerActor(long producerid, IActorRef client, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, topic, conf, schema, interceptors, clientConfiguration, queue)
+		public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, lookup, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
 			_commands = new Commands();
 			_txnSequence = new Dictionary<long, IActorRef>();

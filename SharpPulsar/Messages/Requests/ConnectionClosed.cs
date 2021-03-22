@@ -16,6 +16,14 @@ namespace SharpPulsar.Messages.Requests
     {
         public static ClearIncomingMessagesAndGetMessageNumber Instance = new ClearIncomingMessagesAndGetMessageNumber();
     }
+    public sealed class IncomingMessagesCleared
+    {
+        public int Cleared { get; }
+        public IncomingMessagesCleared(int cleared)
+        {
+            Cleared = cleared;
+        }
+    }
     public sealed class IncreaseAvailablePermits
     {
         public int Available { get; }
