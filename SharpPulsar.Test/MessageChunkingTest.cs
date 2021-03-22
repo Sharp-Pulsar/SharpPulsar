@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -75,6 +76,7 @@ namespace SharpPulsar.Test
 			IList<IMessage<sbyte[]>> msgIds = new List<IMessage<sbyte[]>>();
 			for (int i = 0; i < totalMessages - 1; i++)
 			{
+				Thread.Sleep(TimeSpan.FromSeconds(10));
 				msg = consumer.Receive();
 				string receivedMessage = Encoding.UTF8.GetString(msg.Data.ToBytes());
 				_output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");

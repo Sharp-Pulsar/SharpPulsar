@@ -264,8 +264,8 @@ namespace SharpPulsar
 			ReceiveAsync<RunSendTimeout>(async _ => {
 				await FailTimedoutMessages();
 			});
-			Receive<BatchTask>(_ => {
-				RunBatchTask();
+			ReceiveAsync<BatchTask>(async _ => {
+				await RunBatchTask();
 			});
 			Receive<ConnectionClosed>(m => {
 				ConnectionClosed(m.ClientCnx);
@@ -482,7 +482,7 @@ namespace SharpPulsar
 		{
 			_connectionHandler.Tell(new ReconnectLater(exception));
 		}
-		private void RunBatchTask()
+		private async ValueTask RunBatchTask()
         {
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
@@ -490,7 +490,7 @@ namespace SharpPulsar
 			}
 			_log.Info($"[{Topic}] [{_producerName}] Batching the messages from the batch container from timer thread");
 
-			BatchMessageAndSend();
+			await BatchMessageAndSend();
 		}
 		private bool BatchMessagingEnabled
 		{
@@ -687,7 +687,7 @@ namespace SharpPulsar
 						{
 							_log.Info($"Message with sequence id {sequenceId} might be a duplicate but cannot be determined at this time.");
 						}
-						DoBatchSendAndAdd(msg, payload);
+						await DoBatchSendAndAdd(msg, payload);
 					}
 					else
 					{
@@ -695,7 +695,7 @@ namespace SharpPulsar
 						// and non-duplicated messages into a batch.
 						if(_isLastSequenceIdPotentialDuplicated)
 						{
-							DoBatchSendAndAdd(msg, payload);
+							await DoBatchSendAndAdd(msg, payload);
 						}
 						else
 						{
@@ -718,7 +718,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					DoBatchSendAndAdd(msg, payload);
+					await DoBatchSendAndAdd (msg, payload);
 				}
 			}
 			else
@@ -748,7 +748,7 @@ namespace SharpPulsar
 					op.TotalChunks = totalChunks;
 					op.ChunkId = chunkId;
 				}
-				ProcessOpSendMsg(op);
+				await ProcessOpSendMsg(op);
 			}
 		}
 
@@ -899,7 +899,7 @@ namespace SharpPulsar
 			return _batchMessageContainer.HaveEnoughSpace(msg) && (!IsMultiSchemaEnabled(false) || _batchMessageContainer.HasSameSchema(msg)) && _batchMessageContainer.HasSameTxn(msg);
 		}
 
-		private void DoBatchSendAndAdd(Message<T> msg, byte[] payload)
+		private async ValueTask DoBatchSendAndAdd(Message<T> msg, byte[] payload)
 		{
 			if(_log.IsDebugEnabled)
 			{
@@ -907,7 +907,7 @@ namespace SharpPulsar
 			}
 			try
 			{
-				BatchMessageAndSend();
+				await BatchMessageAndSend();
 			}
 			catch(Exception ex)
             {

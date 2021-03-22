@@ -51,7 +51,7 @@ namespace SharpPulsar
 		private readonly IActorRef _connectionPool;
 		private readonly IActorRef _generator;
 		private IActorRef _replyTo;
-		private long _requestId;
+		private long _requestId = -1;
 		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
 		private IActorContext _context;
@@ -119,9 +119,9 @@ namespace SharpPulsar
 				_nextBecome = GetTopicsUnderNamespace;
 				Become(() => GetCnxAndRequestId());
 			});
-			Stash.Unstash();
+			Stash?.UnstashAll();
 		}
-		private void GetBroker(object[] b)
+        private void GetBroker(object[] b)
         {
 			var broker = b[0] as GetBroker;
 			var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
@@ -249,13 +249,13 @@ namespace SharpPulsar
 			{
 				_clientCnx = m.ClientCnx;
 				if (_requestId > -1)
-					Become(()=>_nextBecome.Invoke(_invokeArg));
+					Become(()=>_nextBecome(_invokeArg));
 			});
 			Receive<NewRequestIdResponse>(m => 
 			{
 				_requestId = m.Id;
 				if (_clientCnx != null)
-					Become(() => _nextBecome.Invoke(_invokeArg));
+					Become(() => _nextBecome(_invokeArg));
 			});
 			ReceiveAny(_=> Stash.Stash());
 			_connectionPool.Tell(new GetConnection(address));
@@ -297,7 +297,6 @@ namespace SharpPulsar
 				{
 					_log.Warning($"[{topicName}] failed to get Partitioned metadata : {data.Error}:{data.ErrorMessage}");
 					_replyTo.Tell(new PartitionedTopicMetadata(0));
-					return;
 				}
 				else
 				{
