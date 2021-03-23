@@ -52,7 +52,7 @@ namespace SharpPulsar.Test
 		[Fact]
         public void TestNegativeAcksNoBatch()
         {
-			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 10000, 8000);
+			TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 5000, 8000);
         }
 
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)
@@ -103,11 +103,11 @@ namespace SharpPulsar.Test
 
 			ISet<string> receivedMessages = new HashSet<string>();
 
-			Thread.Sleep(TimeSpan.FromSeconds(15));
+			Thread.Sleep(TimeSpan.FromSeconds(10));
 			// All the messages should be received again
 			for (int i = 0; i < n; i++)
 			{
-                var msg = consumer.Receive();
+                var msg = consumer.Receive(TimeSpan.FromSeconds(5));
                 if (msg != null)
                 {
 					var ms = Encoding.UTF8.GetString(msg.Data.ToBytes());

@@ -35,16 +35,16 @@ using Akka.Event;
 namespace SharpPulsar.Tracker
 {
 
-    public class NegativeAcksTracker<T>:ReceiveActor
+    public class NegativeAcksTracker<T>:ReceiveActor, IWithUnboundedStash
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages;
 		private readonly long _nackDelayMs;
 		private readonly long _timerIntervalMs;
-        private IActorRef _unAckedMessageTracker;
-        private IActorRef _parent;
+        private IActorRef _consumer;
         private IActorRef _self;
         private ILoggingAdapter _log;
+        private HashSet<IMessageId> _unAckedChunckedMessageIdSequences;
 
 
         private ICancelable _timeout;
@@ -52,52 +52,61 @@ namespace SharpPulsar.Tracker
 		// Set a min delay to allow for grouping nacks within a single batch
 		private static readonly long MinNackDelayMs = 100;
 
-		public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
+        public IStash Stash { get; set; }
+
+        public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef consumer)
         {
             _log = Context.GetLogger();
-            _parent = Context.Parent;
             _self = Self;
-            _unAckedMessageTracker = unAckedMessageTracker;
+            _consumer = consumer;
 			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
 			_timerIntervalMs = _nackDelayMs / 3;
-            Receive<Add>(a => Add(a.MessageId));
-            ReceiveAsync<Trigger>(async t => await TriggerRedelivery());
-        }
+            Ready();
+            _timeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
 
-        public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef unAckedMessageTracker)
-        {
-            return Props.Create(()=> new NegativeAcksTracker<T>(conf, unAckedMessageTracker));
         }
-		private async ValueTask TriggerRedelivery()
+        private void Ready()
         {
-            try
+            Receive<Add>(a => Add(a.MessageId));
+            Receive<Trigger>(t => 
             {
-                // Group all the nacked messages into one single re-delivery request
-                var messagesToRedeliver = new HashSet<IMessageId>();
+               TriggerRedelivery();
+            });
+
+            Receive<UnAckedChunckedMessageIdSequenceMapCmdResponse>(res =>
+            {
+                var messageIds = _unAckedChunckedMessageIdSequences.ToList();
+                messageIds.AddRange(res.MessageIds);
+                _log.Info($"Number of Negatively Accked Messages to be Redelivered: {messageIds.Count}");
+                if (messageIds.Count > 0)
+                {
+                    messageIds.ForEach(a => _nackedMessages.Remove(a));
+                    _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, messageIds));
+                    _consumer.Tell(new OnNegativeAcksSend(messageIds.ToHashSet()));
+                    _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messageIds.ToHashSet()));
+                }
+            });
+        }
+        public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef consumer)
+        {
+            return Props.Create(()=> new NegativeAcksTracker<T>(conf, consumer));
+        }
+		private void TriggerRedelivery()
+        {
+            _log.Info("Triggering Flush");
+            // Group all the nacked messages into one single re-delivery request
+            _unAckedChunckedMessageIdSequences = new HashSet<IMessageId>();
+            if (_nackedMessages?.Count > 0)
+            {
                 var now = DateTimeHelper.CurrentUnixTimeMillis();
                 foreach (var unack in _nackedMessages)
                 {
                     if (unack.Value < now)
                     {
-                        var ms = await _unAckedMessageTracker.Ask<AddChunkedMessageIdsAndRemoveFromSequnceMapResponse>(new AddChunkedMessageIdsAndRemoveFromSequnceMap(unack.Key, messagesToRedeliver.ToImmutableHashSet()));
-                        ms.MessageIds.ToList().ForEach(x => messagesToRedeliver.Add(x));
-                        messagesToRedeliver.Add(unack.Key);
+                        _unAckedChunckedMessageIdSequences.Add(unack.Key);
                     }
                 }
-                if(messagesToRedeliver.Count > 0)
-                {
-                    messagesToRedeliver.ForEach(a => _nackedMessages.Remove(a));
-                    _parent.Tell(new OnNegativeAcksSend(messagesToRedeliver));
-                    _parent.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
-                }
-            }
-            catch (Exception e)
-            {
-                _log.Error(e.ToString());
-            }
-            finally
-            {
-                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
+                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, _unAckedChunckedMessageIdSequences.ToList()));
             }
         }
 

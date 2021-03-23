@@ -1,18 +1,17 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Tracker.Messages
 {
     public sealed class AddChunkedMessageIdsAndRemoveFromSequnceMap
     {
-        public AddChunkedMessageIdsAndRemoveFromSequnceMap(IMessageId messageId, IImmutableSet<IMessageId> messageIds)
+        public AddChunkedMessageIdsAndRemoveFromSequnceMap(List<IMessageId> messageId)
         {
-            MessageId = messageId;
-            MessageIds = messageIds;
+            MessageIds = messageId.ToImmutableList();
         }
 
-        public IMessageId MessageId { get; } 
-        public IImmutableSet<IMessageId> MessageIds { get; }
+        public ImmutableList<IMessageId> MessageIds { get; } 
     }
     public sealed class AddChunkedMessageIdsAndRemoveFromSequnceMapResponse
     {

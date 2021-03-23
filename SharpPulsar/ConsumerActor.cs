@@ -221,7 +221,7 @@ namespace SharpPulsar
 				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
 			}
 
-			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, _unAckedMessageTracker));
+			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, Self));
 			// Create msgCrypto if not created already
 			if (conf.CryptoKeyReader != null)
 			{
@@ -318,16 +318,31 @@ namespace SharpPulsar
 			});
 			Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
 			{
-				MessageId msgid;
-				if (r.MessageId is BatchMessageId id)
-					msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
-				else msgid = (MessageId)r.MessageId;
-				if (r.Command == UnAckedCommand.Remove)
-					UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
-				else if (UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
-					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(UnAckedChunckedMessageIdSequenceMap[msgid]));
-				else
-					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(Array.Empty<MessageId>()));
+				var ids = new List<MessageId>();
+				var cmd = r.Command;
+				var messageIds = r.MessageId;
+				foreach(var msgId in messageIds)
+                {
+					MessageId msgid;
+					if (msgId is BatchMessageId id)
+						msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
+					else 
+						msgid = (MessageId)msgId;
+
+					if (cmd == UnAckedCommand.Remove)
+                    {
+						if (UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
+							UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
+						continue;
+					}
+					if(cmd == UnAckedCommand.Get && UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
+                    {
+						var mIds = UnAckedChunckedMessageIdSequenceMap[msgid];
+						ids.AddRange(mIds);
+					}
+				}
+				if(cmd == UnAckedCommand.Get)
+					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(ids.ToArray()));
 			});
 
 			Receive<AckTimeoutSend>(ack =>
@@ -1065,7 +1080,7 @@ namespace SharpPulsar
 
 				   if(reconsumetimes > _deadLetterPolicy.MaxRedeliverCount)
 				   {
-					   ProcessPossibleToDLQ((MessageId)messageId);
+					   await ProcessPossibleToDLQ((MessageId)messageId);
 						if(_deadLetterProducer == null)
 						{
 							try
@@ -1991,11 +2006,9 @@ namespace SharpPulsar
 			var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
 			if (await Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
-				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				var currentSize = IncomingMessages.Count;
 				//possible deadlocks here
 				IncomingMessages.Empty();
-				_log.Info("RedeliverUnacknowledgedMessages()=4");
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
 				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);

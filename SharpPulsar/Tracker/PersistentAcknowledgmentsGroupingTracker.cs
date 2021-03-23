@@ -51,6 +51,8 @@ namespace SharpPulsar.Tracker
         private readonly long _consumerId;
         private readonly IActorRef _consumer;
         private IActorRef _conx;
+        private object[] _invokeAgrs;
+        private Action _nextBecome;
 
 		private readonly long _acknowledgementGroupTimeMicros;
 
@@ -97,17 +99,21 @@ namespace SharpPulsar.Tracker
                 Sender.Tell(isd);
             });
             ReceiveAsync<AddAcknowledgment>(async d => 
-            { 
+            {
+                _invokeAgrs = new object[] { d.MessageId, d.AckType, d.Properties, d.Txn };
                 await AddAcknowledgment(d.MessageId, d.AckType, d.Properties, d.Txn); 
             });
             ReceiveAsync<AddBatchIndexAcknowledgment>(async d => 
-            { 
+            {
+                _invokeAgrs = new object[] { d.MessageId, d.BatchIndex, d.BatchSize, d.AckType, d.Properties, d.Txn };
                 await AddBatchIndexAcknowledgment(d.MessageId, d.BatchIndex, d.BatchSize, d.AckType, d.Properties, d.Txn); 
             
             });
             ReceiveAsync<FlushAndClean>( async _ => await FlushAndClean());
             ReceiveAsync<FlushPending>(async _ => await Flush());
-            ReceiveAsync<AddListAcknowledgment>(async a => {
+            ReceiveAsync<AddListAcknowledgment>(async a => 
+            {
+                _invokeAgrs = new object[] { a.MessageIds, a.AckType, a.Properties };
                 await AddListAcknowledgment(a.MessageIds, a.AckType, a.Properties);
             });
         }
@@ -367,7 +373,7 @@ namespace SharpPulsar.Tracker
 
                             // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                             // them
-                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }));
                             var chunkMsgIds = result.MessageIds;
                             if (chunkMsgIds != null && chunkMsgIds.Length > 1)
                             {
@@ -379,7 +385,7 @@ namespace SharpPulsar.Tracker
                                     }
                                 }
                                 // messages will be acked so, remove checked message sequence
-                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, msgId));
+                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { msgId }));
                             }
                             else
                             {
@@ -404,15 +410,14 @@ namespace SharpPulsar.Tracker
                     }
                 }
 
-                if (!_pendingIndividualBatchIndexAcks.IsEmpty)
+                if (_pendingIndividualBatchIndexAcks.Count > 0)
                 {
-                    var iterator = _pendingIndividualBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
+                    var acks = _pendingIndividualBatchIndexAcks.SetOfKeyValuePairs();
 
-                    while (iterator.MoveNext())
+                    foreach(var ack in acks)
                     {
-                        var entry = iterator.Current;
-                        var key = (MessageId)entry.Key;
-                        entriesToAck.Add((key.LedgerId, key.EntryId, entry.Value));
+                        var key = (MessageId)ack.Key;
+                        entriesToAck.Add((key.LedgerId, key.EntryId, ack.Value));
                         _pendingIndividualBatchIndexAcks.Remove(key, out var u);
                     }
                 }
@@ -432,7 +437,7 @@ namespace SharpPulsar.Tracker
 
                             // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                             // them
-                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, entry.MessageId));
+                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId>{entry.MessageId}));
                             var chunkMsgIds = result.MessageIds;
                             long mostSigBits = entry.MostSigBits;
                             long leastSigBits = entry.LeastSigBits;
@@ -448,7 +453,7 @@ namespace SharpPulsar.Tracker
                                 }
                                 // messages will be acked so, remove checked message sequence
 
-                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, messageId));
+                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
                             }
                             else
                             {
@@ -474,23 +479,21 @@ namespace SharpPulsar.Tracker
 
                 if (!_pendingIndividualTransactionBatchIndexAcks.IsEmpty)
                 {
-                    var transactionIterator = _pendingIndividualTransactionBatchIndexAcks.SetOfKeyValuePairs().GetEnumerator();
-                    while (transactionIterator.MoveNext())
+                    var acks = _pendingIndividualTransactionBatchIndexAcks.SetOfKeyValuePairs();
+                    foreach(var ack in acks)
                     {
-                        var transactionEntry = transactionIterator.Current;
-                        var txn = transactionEntry.Key;
+                        var txn = ack.Key;
                         if (_pendingIndividualTransactionBatchIndexAcks.ContainsKey(txn))
                         {
                             var messageIdBitSetList = new List<(long ledger, long entry, BitSet bitSet)>();
                             transactionEntriesToAck[txn] = messageIdBitSetList;
-                            var messageIdIterator = transactionEntry.Value.GetEnumerator();
-                            while (messageIdIterator.MoveNext())
+                            var messageIds = ack.Value;
+                            foreach (var id in messageIds)
                             {
-                                var messageIdEntry = messageIdIterator.Current;
-                                var bitSet = messageIdEntry.Value;
-                                var messageId = messageIdEntry.Key;
+                                var bitSet = id.Value;
+                                var messageId = id.Key;
                                 messageIdBitSetList.Add((messageId.LedgerId, messageId.EntryId, bitSet));
-                                messageIdEntry.Value.Set(0, messageIdEntry.Value.Size());
+                                id.Value.Set(0, id.Value.Size());
 
                                 _pendingIndividualTransactionBatchIndexAcks[txn].Remove(messageId);
 
@@ -498,15 +501,13 @@ namespace SharpPulsar.Tracker
                             }
                         }
                     }
-
                     if (transactionEntriesToAck.Count > 0)
                     {
-                        var iterator = transactionEntriesToAck.SetOfKeyValuePairs().GetEnumerator();
-                        while (iterator.MoveNext())
+                        var toAcks = transactionEntriesToAck.SetOfKeyValuePairs();
+                        foreach(var ack in toAcks)
                         {
-                            var entry = iterator.Current;
-                            var bits = await entry.Key.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-                            var cmd = new Commands().NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), entry.Value);
+                            var bits = await ack.Key.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
+                            var cmd = new Commands().NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), ack.Value);
                             var payload = new Payload(cmd, -1, "NewMultiTransactionMessageAck");
                             cnx.Tell(payload);
                         }
@@ -550,7 +551,7 @@ namespace SharpPulsar.Tracker
         private async ValueTask NewAckCommand(long consumerId, IMessageId msgId, BitSet lastCumulativeAckSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> map, bool flush, long txnidMostBits, long txnidLeastBits)
         {
             var cnx = await Cnx();
-            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, msgId));
+            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }));
             var chunkMsgIds = result.MessageIds;
             if (chunkMsgIds?.Length > 0 && txnidLeastBits < 0 && txnidMostBits < 0)
             {
@@ -577,7 +578,7 @@ namespace SharpPulsar.Tracker
                         cnx.Tell(new Payload(cmd, -1, "NewAck"));
                     }
                 }
-                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, msgId));
+                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { msgId }));
             }
             else
             {

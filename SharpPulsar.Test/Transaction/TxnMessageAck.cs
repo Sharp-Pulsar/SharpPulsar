@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.Transaction
 			int receiveCnt = 0;
 			for (int i = 0; i < messageCnt; i++)
 			{
-				message = consumer.Receive();
+				message = consumer.Receive(TimeSpan.FromSeconds(10));
 				Assert.NotNull(message);
 				receiveCnt++;
 				if (i % 2 == 0)
@@ -86,7 +86,7 @@ namespace SharpPulsar.Test.Transaction
 			receiveCnt = 0;
 			for (int i = 0; i < messageCnt - ackedMessageCount; i++)
 			{
-				message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+				message = consumer.Receive(TimeSpan.FromMilliseconds(10000));
 				Assert.NotNull(message);
 				consumer.Acknowledge(message);
 				receiveCnt++;
