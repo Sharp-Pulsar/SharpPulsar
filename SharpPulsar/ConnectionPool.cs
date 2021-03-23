@@ -12,7 +12,7 @@ using System.Net;
 
 namespace SharpPulsar
 {
-	public class ConnectionPool : ReceiveActor
+	public class ConnectionPool : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly Dictionary<EndPoint, Dictionary<int, IActorRef/*ClientCnx*/>> _pool;
 
@@ -20,6 +20,7 @@ namespace SharpPulsar
 		private readonly int _maxConnectionsPerHosts;
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
+		private IActorRef _replyTo;
 		public ConnectionPool(ClientConfigurationData conf)
 		{
 			_context = Context;
@@ -29,20 +30,17 @@ namespace SharpPulsar
 			//_isSniProxy = _clientConfig.UseTls && _clientConfig.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfig.ProxyServiceUrl);
 
 			_pool = new Dictionary<EndPoint, Dictionary<int, IActorRef>>();
+			Listen();
+		}
+		private void Listen()
+        {
 			Receive<GetConnection>(c =>
 			{
-				IActorRef connection = ActorRefs.Nobody;
-				if (c.LogicalEndPoint != null && c.PhusicalEndPoint == null)
-				{
-					connection = GetConnection(c.LogicalEndPoint);
-				}
-				else if (c.LogicalEndPoint != null && c.PhusicalEndPoint != null)
-					connection = GetConnection(c.LogicalEndPoint, c.PhusicalEndPoint);
-
-
-				Sender.Tell(new GetConnectionResponse(connection));
+				_replyTo = Sender;
+				EstablishConnection(c);
 
 			});
+
 			Receive<CleanupConnection>(c =>
 			{
 				CleanupConnection(c.Address, c.ConnectionKey);
@@ -63,8 +61,22 @@ namespace SharpPulsar
 			{
 				Sender.Tell(new GetPoolSizeResponse(PoolSize));
 			});
+			Stash?.UnstashAll();
 		}
-
+		private void EstablishConnection(GetConnection c)
+        {
+			if (c.LogicalEndPoint != null && c.PhusicalEndPoint == null)
+			{
+				var connection = GetConnection(c.LogicalEndPoint);
+				Sender.Tell(new GetConnectionResponse(connection));
+			}
+			else if (c.LogicalEndPoint != null && c.PhusicalEndPoint != null)
+            {
+				var connection = GetConnection(c.LogicalEndPoint, c.PhusicalEndPoint);
+				Sender.Tell(new GetConnectionResponse(connection));
+			}
+				
+		}
 		public static Props Prop(ClientConfigurationData conf)
 		{
 			return Props.Create(() => new ConnectionPool(conf));
@@ -174,7 +186,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private int SignSafeMod(long dividend, int divisor)
+        public IStash Stash { get; set; }
+
+        private int SignSafeMod(long dividend, int divisor)
 		{
 			int mod = (int)(dividend % divisor);
 			if (mod < 0)

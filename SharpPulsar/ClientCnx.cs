@@ -183,6 +183,7 @@ namespace SharpPulsar
 			_socketClient.SendMessage(NewConnectCommand());
 			_state = State.SentConnectFrame;
 			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
+			_parent.Tell(new ConnectionOpened(_self));
 		}
 		private void OnDisconnected()
 		{
@@ -247,7 +248,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
-			_parent.Tell(new ConnectionOpened(_self));
+			//_parent.Tell(new ConnectionOpened(_self));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)

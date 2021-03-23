@@ -10,10 +10,11 @@ using System.Net;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Naming;
 using System.Threading.Tasks;
+using SharpPulsar.Messages;
 
 namespace SharpPulsar
 {
-    public class ConnectionHandler:ReceiveActor
+    public class ConnectionHandler:ReceiveActor, IWithUnboundedStash
 	{
 		private IActorRef _clientCnx = null;
 
@@ -85,6 +86,8 @@ namespace SharpPulsar
 					await child.GracefulStop(TimeSpan.FromMilliseconds(100));
 				ConnectionClosed(c.ClientCnx);
 			});
+			ReceiveAny(_ => Stash.Stash());
+			Stash?.UnstashAll();
 		}
 		private void GrabCnx()
 		{
@@ -103,9 +106,7 @@ namespace SharpPulsar
 			}
 			Receive<GetBrokerResponse>(broker =>
 			{
-				var connection = CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
-				_connection.Tell(new ConnectionOpened(connection));
-				Become(Listening);
+				Become(() => EstablishConnection(broker));
 			});
 			Receive<GetConnectionResponse>(c =>
 			{
@@ -123,17 +124,48 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_state.Lookup.Tell(new GetConnection(_state.Topic));
+				Become(LookupConnection);
 			}
+			ReceiveAny(_ => Stash.Stash());
 		}
-		private IActorRef CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
+		private void LookupConnection()
+        {
+			Receive<GetBrokerResponse>(broker =>
+			{
+				_state.ConnectionPool.Tell(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+			});
+			Receive<GetConnectionResponse>(c =>
+			{
+				_connection.Tell(new ConnectionOpened(c.ClientCnx));
+				Become(Listening);
+			});
+			Receive<ClientExceptions>(c =>
+			{
+				_log.Error(c.Exception.ToString());
+				Become(Listening);
+			});
+			ReceiveAny(_ => Stash.Stash());
+			var topicName = TopicName.Get(_state.Topic);
+			_state.Lookup.Tell(new GetBroker(topicName));
+		}
+		private void EstablishConnection(GetBrokerResponse broker)
+        {
+			Receive<ConnectionOpened>(r =>
+			{
+				_connection.Tell(new ConnectionOpened(r.ClientCnx));
+				Become(Listening);
+			});
+			ReceiveAny(_ => Stash.Stash());
+			CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
+		}
+		private void CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
 		{
 			string targetBroker = string.Empty;
 
 			if (!logicalAddress.Equals(physicalAddress))
 				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
 
-			return Context.ActorOf(Props.Create(()=> new ClientCnx(_conf, physicalAddress, targetBroker)), $"{logicalAddress.Host}".ToAkkaNaming());
+			Context.ActorOf(Props.Create(()=> new ClientCnx(_conf, physicalAddress, targetBroker)), $"{logicalAddress.Host}".ToAkkaNaming());
 		}
 		private void HandleConnectionError(Exception exception)
 		{
@@ -230,6 +262,7 @@ namespace SharpPulsar
 			}
 		}
 
-	}
+        public IStash Stash { get; set; }
+    }
 
 }

@@ -79,15 +79,6 @@ namespace SharpPulsar
 			Receive<GetClientState>(_ => Sender.Tell((int)_state));
 			Receive<CleanupConsumer>(m => _consumers.Remove(m.Consumer));
 			Receive<CleanupProducer>(m => _producers.Remove(m.Producer));
-			ReceiveAsync<GetBroker>(async m => {
-				var cnx = await GetBroker(m.TopicName);
-				Sender.Tell(cnx);
-			});
-			ReceiveAsync<GetConnection>(async m => 
-			{
-				var cnx = await GetConnection(m.Topic);
-				Sender.Tell(cnx);
-			});
 			Receive<GetTcClient>(_ => {
 				Sender.Tell(new TcClient(_tcClient));
 			});
@@ -163,27 +154,6 @@ namespace SharpPulsar
 			_conf.ServiceUrl = serviceUrl;
 			_lookup.Tell(new UpdateServiceUrl(serviceUrl));
 			_cnxPool.Tell(CloseAllConnections.Instance);
-		}
-
-		private async ValueTask<GetBrokerResponse> GetBroker(TopicName topic)
-		{
-			return await _lookup.Ask<GetBrokerResponse>(new GetBroker(topic));
-		}
-		private async ValueTask<GetConnectionResponse> GetConnection(string topic)
-		{
-			var topicName = TopicName.Get(topic);
-			var broker = await _lookup.Ask<GetBrokerResponse>(new GetBroker(topicName));
-			var connection = await _cnxPool.Ask<GetConnectionResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
-			return connection;
-		}
-
-
-		private IActorRef CnxPool
-		{
-			get
-			{
-				return _cnxPool;
-			}
 		}
 
 		private async ValueTask<int> GetNumberOfPartitions(string topic)

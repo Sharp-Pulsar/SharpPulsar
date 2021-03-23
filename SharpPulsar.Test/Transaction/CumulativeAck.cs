@@ -61,7 +61,7 @@ namespace SharpPulsar.Test.Transaction
 				IMessage<sbyte[]> message = null;
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive();
+					message = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(message);
 					if (i % 3 == 0)
 					{
@@ -75,10 +75,9 @@ namespace SharpPulsar.Test.Transaction
 
 				abortTxn.Abort();
 				User.Transaction commitTxn = Txn;
-				Thread.Sleep(TimeSpan.FromSeconds(60));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive();
+					message = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(message);
 					consumer.AcknowledgeCumulative(message.MessageId, commitTxn);
 					_output.WriteLine($"receive msgId abort: {message.MessageId}, retryCount : {retryCnt}, count : {i}");
@@ -126,7 +125,7 @@ namespace SharpPulsar.Test.Transaction
 
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive();
+					message = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(message);
 					if (i % 3 == 0)
 					{
@@ -143,10 +142,9 @@ namespace SharpPulsar.Test.Transaction
 
 				abortTxn.Abort();
 				User.Transaction commitTxn = Txn;
-				Thread.Sleep(TimeSpan.FromSeconds(60));
 				for (int i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive();
+					message = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(message);
 					if (i % 3 == 0)
 					{

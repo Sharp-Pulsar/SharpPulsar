@@ -46,6 +46,7 @@ namespace SharpPulsar
 		private readonly IActorRef _generator;
 		private readonly IActorRef _self;
 		private readonly IActorRef _lookup;
+		private readonly IActorRef _cnxPool;
 		private readonly ProducerStatsRecorder _stats;
 		private TopicMetadata _topicMetadata;
 
@@ -54,8 +55,9 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 
-		public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, lookup, topic, conf, schema, interceptors, clientConfiguration, queue)
+		public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
+			_cnxPool = cnxPool;
 			_lookup = lookup;
 			_self = Self;
 			_producers = new List<IActorRef>();
@@ -149,7 +151,7 @@ namespace SharpPulsar
 			{
 				var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
+				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 				_producers.Add(producer);
 				var routee = Routee.FromActorRef(producer);
 				_router.Tell(new AddRoutee(routee));
@@ -332,7 +334,7 @@ namespace SharpPulsar
 				{
 					var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
+					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
 					_producers.Add(producer);
 					var routee = Routee.FromActorRef(producer);
 					_router.Tell(new AddRoutee(routee));

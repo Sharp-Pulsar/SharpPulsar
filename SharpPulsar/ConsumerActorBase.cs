@@ -77,13 +77,13 @@ namespace SharpPulsar
 		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
-		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
+		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
 			StateActor = stateActor;
 			_topic = topic;
 			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
-			State = new HandlerState(lookup, topic, Context.System, _consumerName);
+			State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
 			_log = Context.GetLogger();
 			MaxReceiverQueueSize = receiverQueueSize;
 			_subscription = conf.SubscriptionName;

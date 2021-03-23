@@ -55,7 +55,7 @@ namespace SharpPulsar
 		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
 		private IActorContext _context;
-		private Action<object[]> _nextBecome;
+		private Action _nextBecome;
 		private object[] _invokeArg;
 		private Backoff _backOff;
 
@@ -94,21 +94,21 @@ namespace SharpPulsar
 				_replyTo = Sender;
 				_invokeArg = new object[] { b};
 				_nextBecome = GetBroker;
-				Become(()=> GetCnxAndRequestId());			
+				Become(GetCnxAndRequestId);			
 			});
 			Receive<GetPartitionedTopicMetadata>(p =>
 			{
 				_replyTo = Sender;
 				_invokeArg = new object[] { p.TopicName };
 				_nextBecome = GetPartitionedTopicMetadata;
-				Become(() => GetCnxAndRequestId());
+				Become(GetCnxAndRequestId);
 			});
 			Receive<GetSchema>(s => 
 			{
 				_replyTo = Sender;
 				_invokeArg = new object[] { s.TopicName, s.Version};
 				_nextBecome = GetSchema;
-				Become(() => GetCnxAndRequestId());
+				Become(GetCnxAndRequestId);
 			});
 			Receive<GetTopicsUnderNamespace>(t => 
 			{
@@ -117,12 +117,13 @@ namespace SharpPulsar
 				_replyTo = Sender;
 				_invokeArg = new object[] { t, opTimeoutMs };
 				_nextBecome = GetTopicsUnderNamespace;
-				Become(() => GetCnxAndRequestId());
+				Become(GetCnxAndRequestId);
 			});
 			Stash?.UnstashAll();
 		}
-        private void GetBroker(object[] b)
+        private void GetBroker()
         {
+			var b = _invokeArg;
 			var broker = b[0] as GetBroker;
 			var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
 			NewLookup(broker.TopicName);
@@ -180,8 +181,9 @@ namespace SharpPulsar
 			Receive<ClientExceptions>(m => _replyTo.Tell(m));
 			ReceiveAny(_ => Stash.Stash());
 		}
-		private void RedirectedGetBroker(object[] args)
+		private void RedirectedGetBroker()
         {
+			var args = _invokeArg;
 			var topic = (TopicName)args[0];
 			var redirectCount = (int)args[1];
 			var authoritative = (bool)args[3];
@@ -240,26 +242,47 @@ namespace SharpPulsar
 			ReceiveAny(_ => Stash.Stash());
 			NewLookup(topic, redirectCount, socketAddress, authoritative);
 		}
-		private void GetCnxAndRequestId(DnsEndPoint dnsEndPoint = null)
+		private void GetCnxAndRequestId()
         {
 			_clientCnx = null;
 			_requestId = -1;
-			var address = dnsEndPoint ?? _serviceNameResolver.ResolveHost().ToDnsEndPoint();
+			var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
 			Receive<GetConnectionResponse>(m => 
 			{
 				_clientCnx = m.ClientCnx;
-				if (_requestId > -1)
-					Become(()=>_nextBecome(_invokeArg));
+				_generator.Tell(NewRequestId.Instance);
 			});
 			Receive<NewRequestIdResponse>(m => 
 			{
 				_requestId = m.Id;
-				if (_clientCnx != null)
-					Become(() => _nextBecome(_invokeArg));
+				Become(_nextBecome);
 			});
-			ReceiveAny(_=> Stash.Stash());
+			ReceiveAny(_=> 
+			{
+				Stash.Stash();
+			});
 			_connectionPool.Tell(new GetConnection(address));
-			_generator.Tell(NewRequestId.Instance);
+		}
+		private void GetCnxAndRequestId(DnsEndPoint dnsEndPoint)
+        {
+			_clientCnx = null;
+			_requestId = -1;
+			var address = dnsEndPoint;
+			Receive<GetConnectionResponse>(m =>
+			{
+				_clientCnx = m.ClientCnx;
+				_generator.Tell(NewRequestId.Instance);
+			});
+			Receive<NewRequestIdResponse>(m =>
+			{
+				_requestId = m.Id;
+				Become(_nextBecome);
+			});
+			ReceiveAny(_ =>
+			{
+				Stash.Stash();
+			});
+			_connectionPool.Tell(new GetConnection(address));
 		}
 		/// <summary>
 		/// Calls broker binaryProto-lookup api to find broker-service address which can serve a given topic.
@@ -288,8 +311,9 @@ namespace SharpPulsar
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		private void GetPartitionedTopicMetadata(object[] args)
+		private void GetPartitionedTopicMetadata()
 		{
+			var args = _invokeArg;
 			var topicName = (TopicName)args[0];
 			Receive<LookupDataResult>(data=> 
 			{
@@ -316,9 +340,9 @@ namespace SharpPulsar
 		}
 
 
-		private void GetSchema(object[] args)
+		private void GetSchema()
 		{
-			
+			var args = _invokeArg;
 			Receive<Messages.GetSchemaResponse>(schemaResponse =>
 			{
 				var err = schemaResponse.Response.ErrorCode;
@@ -360,8 +384,9 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-        private void GetTopicsUnderNamespace(object[] args)
+        private void GetTopicsUnderNamespace()
 		{
+			var args = _invokeArg;
 			var nsn = (GetTopicsUnderNamespace)args[0];
 			var opTimeoutMs = (long)args[1];
 			Receive<GetTopicsOfNamespaceResponse>(response=> 

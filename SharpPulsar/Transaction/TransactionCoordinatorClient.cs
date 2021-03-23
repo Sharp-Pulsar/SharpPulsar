@@ -44,12 +44,14 @@ namespace SharpPulsar.Transaction
 		private ClientConfigurationData _clientConfigurationData;
 		private IActorRef _generator;
 		private IActorRef _lookup;
+		private IActorRef _cnxPool;
 		private IActorRef _replyTo;
 
 		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		public TransactionCoordinatorClient(IActorRef lookup, IActorRef idGenerator, ClientConfigurationData conf)
+		public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
 		{
+			_cnxPool = cnxPool;
 			_lookup = lookup;
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
@@ -94,7 +96,7 @@ namespace SharpPulsar.Transaction
 					_handlers = new List<IActorRef>(partitionMeta.Partitions);
 					for (int i = 0; i < partitionMeta.Partitions; i++)
 					{
-						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool , _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
 						_handlers.Add(handler);
 						_handlerMap.Add(i, handler);
 					}
@@ -102,7 +104,7 @@ namespace SharpPulsar.Transaction
 				else
 				{
 					_handlers = new List<IActorRef>(1);
-					var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+					var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
 					_handlers[0] = handler;
 					_handlerMap.Add(0, handler);
 				}
@@ -117,9 +119,9 @@ namespace SharpPulsar.Transaction
 			ReceiveAny(_=> Stash.Stash());
 			_lookup.Tell(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
 		}
-		public static Props Prop(IActorRef lookup, IActorRef idGenerator, ClientConfigurationData conf)
+		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
         {
-			return Props.Create(() => new TransactionCoordinatorClient(lookup, idGenerator, conf));
+			return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf));
         }
 		private string GetTCAssignTopicName(int partition)
 		{

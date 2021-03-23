@@ -134,9 +134,10 @@ namespace SharpPulsar.Test.Transaction
 			int receiveCnt = 0;
 			for(int i = 0; i < txnMessageCnt; i++)
 			{
-				message = consumer.Receive();
+				message = consumer.Receive(TimeSpan.FromSeconds(10));
 				Assert.NotNull(message);
 				receiveCnt++;
+				_output.WriteLine($"message receive count: {receiveCnt}");
 			}
 			Assert.Equal(txnMessageCnt, receiveCnt);
 

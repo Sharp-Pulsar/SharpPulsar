@@ -48,7 +48,7 @@ namespace SharpPulsar
 		protected internal HandlerState State;
 		private string _topic;
 
-		public ProducerActorBase(IActorRef client, IActorRef lookup, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
+		public ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
 		{			
 			ClientConfiguration = configurationData;
 			ProducerQueue = queue;
@@ -63,7 +63,7 @@ namespace SharpPulsar
 				_multiSchemaMode = MultiSchemaMode.Disabled;
 			}
 			var pName = ProducerName().GetAwaiter().GetResult();
-			State = new HandlerState(lookup, topic, Context.System, pName);
+			State = new HandlerState(lookup, cnxPool, topic, Context.System, pName);
 
 		}
 

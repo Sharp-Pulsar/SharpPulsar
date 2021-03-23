@@ -48,6 +48,7 @@ namespace SharpPulsar
 		private Action<object[]> _nextBecome;
 		private object[] _invokeArg;
 		private IActorRef _replyTo;
+		private IActorRef _self;
 		private long _requestId = -1;
 		private IActorRef _clientCnx;
 		private readonly Dictionary<long, (byte[] Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (byte[] Command, IActorRef ReplyTo)>();
@@ -73,13 +74,14 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-        public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef lookup, IActorRef idGenerator, string topic, ClientConfigurationData conf)
+        public TransactionMetaStoreHandler(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf)
 		{
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
 			_conf = conf;
+			_self = Self;
 			_log = Context.System.Log;
-			_state = new HandlerState(lookup, topic, Context.System, "Transaction meta store handler [" + _transactionCoordinatorId + "]");
+			_state = new HandlerState(lookup, cnxPool, topic, Context.System, "Transaction meta store handler [" + _transactionCoordinatorId + "]");
 			_transactionCoordinatorId = transactionCoordinatorId;
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			//_blockIfReachMaxPendingOps = true;
@@ -148,22 +150,19 @@ namespace SharpPulsar
 			Receive<IActorRef>(m =>
 			{
 				_clientCnx = m;
-				if (_requestId > -1)
-					Become(() => _nextBecome(_invokeArg));
+				_generator.Tell(NewRequestId.Instance);
 			});
 			Receive<NewRequestIdResponse>(m =>
 			{
 				_requestId = m.Id;
-				if (_clientCnx != null)
-					Become(() => _nextBecome(_invokeArg));
+				Become(() => _nextBecome(_invokeArg));
 			});
 			ReceiveAny(_ => Stash.Stash());
 			_connectionHandler.Tell(GetCnx.Instance);
-			_generator.Tell(NewRequestId.Instance);
 		}
-		public static Props Prop(long transactionCoordinatorId, IActorRef pulsarClient, IActorRef idGenerator, string topic, ClientConfigurationData conf)
+		public static Props Prop(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf)
         {
-			return Props.Create(()=> new TransactionMetaStoreHandler(transactionCoordinatorId, pulsarClient, idGenerator, topic, conf));
+			return Props.Create(()=> new TransactionMetaStoreHandler(transactionCoordinatorId, lookup, cnxPool, idGenerator, topic, conf));
         }
 		public virtual void ConnectionFailed(PulsarClientException exception)
 		{
@@ -236,7 +235,7 @@ namespace SharpPulsar
 		private void AddPublishPartitionToTxn(object[] args)
 		{
 			var txnID = (TxnID)args[0];
-			var partitions = (IList<string>)args[0];
+			var partitions = (IList<string>)args[1];
 
 			Receive<AddPublishPartitionToTxnResponse>(a => 
 			{
@@ -476,7 +475,7 @@ namespace SharpPulsar
 					timeToWaitMs = diff;
 				}
 			}
-			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
+			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), _self, RunRequestTimeout.Instance, Nobody.Instance);
 		}
 
 		private async ValueTask<IActorRef> Cnx()

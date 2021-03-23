@@ -60,7 +60,7 @@ namespace SharpPulsar.Test.Transaction
 				// consume and ack messages with txn
 				for (int i = 0; i < messageCnt; i++)
 				{
-					var msg = consumer.Receive();
+					var msg = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
@@ -128,7 +128,7 @@ namespace SharpPulsar.Test.Transaction
 				// consume and ack messages with txn
 				for (int i = 0; i < messageCnt; i++)
 				{
-					var msg = consumer.Receive();
+					var msg = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
@@ -192,7 +192,7 @@ namespace SharpPulsar.Test.Transaction
 				// consume and ack messages with txn
 				for (int i = 0; i < messageCnt; i++)
 				{
-					var msg = consumer.Receive();
+					var msg = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
@@ -256,7 +256,7 @@ namespace SharpPulsar.Test.Transaction
 				// consume and ack messages with txn
 				for (int i = 0; i < messageCnt; i++)
 				{
-					var msg = consumer.Receive();
+					var msg = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(msg);
 					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
 					consumer.Acknowledge(msg.MessageId, txn);
