@@ -53,7 +53,7 @@ namespace SharpPulsar
 			});
 			Receive<GetEpoch>(g =>
 			{
-				Sender.Tell(_epoch);
+				Sender.Tell(new GetEpochResponse(_epoch));
 			});
 			Receive<ConnectionOpened>(m =>
 			{
@@ -69,7 +69,7 @@ namespace SharpPulsar
 			});
 			Receive<LastConnectionClosedTimestamp>(_ =>
 			{
-				Sender.Tell(LastConnectionClosedTimestamp);
+				Sender.Tell(new LastConnectionClosedTimestampResponse(LastConnectionClosedTimestamp));
 			});
 			Receive<GetCnx>(_ =>
 			{
@@ -108,11 +108,11 @@ namespace SharpPulsar
 			{
 				Become(() => EstablishConnection(broker));
 			});
-			Receive<GetConnectionResponse>(c =>
+			/*Receive<ConnectionOpened>(c =>
 			{
-				_connection.Tell(new ConnectionOpened(c.ClientCnx));
+				_connection.Tell(c);
 				Become(Listening);
-			});
+			});*/
 			Receive<Failure>(c =>
 			{
 				HandleConnectionError(c.Exception);
@@ -134,9 +134,9 @@ namespace SharpPulsar
 			{
 				_state.ConnectionPool.Tell(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			});
-			Receive<GetConnectionResponse>(c =>
+			Receive<ConnectionOpened>(c =>
 			{
-				_connection.Tell(new ConnectionOpened(c.ClientCnx));
+				_connection.Tell(c);
 				Become(Listening);
 			});
 			Receive<ClientExceptions>(c =>
@@ -144,7 +144,10 @@ namespace SharpPulsar
 				_log.Error(c.Exception.ToString());
 				Become(Listening);
 			});
-			ReceiveAny(_ => Stash.Stash());
+			ReceiveAny(a => {
+				var b = a;
+				Stash.Stash();
+			});
 			var topicName = TopicName.Get(_state.Topic);
 			_state.Lookup.Tell(new GetBroker(topicName));
 		}
@@ -152,7 +155,12 @@ namespace SharpPulsar
         {
 			Receive<ConnectionOpened>(r =>
 			{
-				_connection.Tell(new ConnectionOpened(r.ClientCnx));
+				_connection.Tell(r);
+				Become(Listening);
+			});
+			Receive<ClientExceptions>(c =>
+			{
+				_log.Error(c.Exception.ToString());
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());

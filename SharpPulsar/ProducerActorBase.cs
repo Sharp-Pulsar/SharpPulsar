@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Queues;
 using System;
@@ -29,10 +30,10 @@ namespace SharpPulsar
 {
     internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn);
-		internal abstract ValueTask InternalSend(IMessage<T> message);
-		protected internal abstract ValueTask<long> LastDisconnectedTimestamp();
-		protected internal abstract ValueTask<bool> Connected();
+		internal abstract void InternalSendWithTxn(IMessage<T> message, IActorRef txn);
+		internal abstract void InternalSend(IMessage<T> message);
+		protected internal abstract void LastDisconnectedTimestamp();
+		protected internal abstract bool Connected();
 		protected internal abstract ValueTask<IProducerStats> Stats();
 		protected internal abstract ValueTask<long> LastSequenceId();
 		protected internal abstract ValueTask<string> ProducerName();

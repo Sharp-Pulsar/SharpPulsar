@@ -16,7 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Exceptions;
 using SharpPulsar.ServiceName;
@@ -51,13 +50,13 @@ namespace SharpPulsar
 		private readonly long _operationTimeoutMs;
 		private readonly IActorRef _connectionPool;
 		private readonly IActorRef _generator;
-		private IActorRef _replyTo;
-		private long _requestId = -1;
 		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
 		private IActorContext _context;
 		private Action _nextBecome;
 		private object[] _invokeArg;
+		private IActorRef _replyTo;
+		private long _requestId = -1;
 		private Backoff _getTopicsUnderNamespaceBackOff;
 		private Backoff _getPartitionedTopicMetadataBackOff;
 
@@ -281,7 +280,7 @@ namespace SharpPulsar
 			_clientCnx = null;
 			_requestId = -1;
 			var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-			Receive<GetConnectionResponse>(m => 
+			Receive<ConnectionOpened>(m => 
 			{
 				_clientCnx = m.ClientCnx;
 				_generator.Tell(NewRequestId.Instance);

@@ -105,23 +105,23 @@ namespace SharpPulsar
 				await OnTopicsExtended(new List<string> { t });
 			});
 
-			ReceiveAsync<InternalSend<T>>(async m =>
+			Receive<InternalSend<T>>(m =>
 			{
 				try
 				{
 					//get excepyion vai out
-					await InternalSend(m.Message);
+					InternalSend(m.Message);
 				}
 				catch (Exception ex)
 				{
 					_log.Error(ex.ToString());
 				}
 			});
-			ReceiveAsync<InternalSendWithTxn<T>>(async m =>
+			Receive<InternalSendWithTxn<T>>(m =>
 			{
 				try
 				{
-					await InternalSendWithTxn(m.Message, m.Txn);
+					InternalSendWithTxn(m.Message, m.Txn);
 				}
 				catch (Exception ex)
 				{
@@ -181,7 +181,7 @@ namespace SharpPulsar
 
 		}
 
-		internal override async ValueTask InternalSend(IMessage<T> message)
+		internal override void InternalSend(IMessage<T> message)
 		{
 			switch (State.ConnectionState)
 			{
@@ -210,10 +210,9 @@ namespace SharpPulsar
 			{
 				_router.Tell(new InternalSend<T>(message));
 			}
-			await Task.CompletedTask;
 		}
 
-		internal override async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			switch(State.ConnectionState)
 			{
@@ -242,7 +241,6 @@ namespace SharpPulsar
 			{
 				_router.Tell(new InternalSendWithTxn<T>(message, txn));
 			}
-			await Task.CompletedTask;
 		}
 
 		private void Flush()
@@ -255,11 +253,11 @@ namespace SharpPulsar
 			_producers.ForEach(x => x.Tell(Messages.Producer.TriggerFlush.Instance));
 		}
 
-		protected internal override async ValueTask<bool> Connected()
+		protected internal override bool Connected()
 		{
 			foreach(var p in _producers)
             {
-				var x = await p.Ask<bool>(IsConnected.Instance);
+				var x = p.Ask<bool>(IsConnected.Instance).GetAwaiter().GetResult();
 				if (!x)
 					return false;
 
@@ -267,14 +265,16 @@ namespace SharpPulsar
 			return true;
 		}
 
-		protected internal override async ValueTask<long> LastDisconnectedTimestamp()
+		private LastConnectionClosedTimestampResponse DisconnectedTimestamp()
 		{
-			long lastDisconnectedTimestamp = 0;
+			LastConnectionClosedTimestampResponse lastDisconnectedTimestamp = null;
 			foreach(var pr in _producers)
             {
-				var max = await pr.Ask<long>(GetLastDisconnectedTimestamp.Instance);
-				if (max > lastDisconnectedTimestamp)
-					lastDisconnectedTimestamp = max;
+				var x = pr.Ask<LastConnectionClosedTimestampResponse>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
+				if (lastDisconnectedTimestamp == null)
+					lastDisconnectedTimestamp = x;
+				if (x?.TimeStamp > lastDisconnectedTimestamp.TimeStamp)
+					lastDisconnectedTimestamp = x;
 			}
 			return lastDisconnectedTimestamp;
 		}
@@ -369,7 +369,13 @@ namespace SharpPulsar
 				return new List<string> { topicName.ToString() };
 			}
 		}
-		internal sealed class ExtendTopics
+
+        protected internal override void LastDisconnectedTimestamp()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal sealed class ExtendTopics
         {
 			public static ExtendTopics Instance = new ExtendTopics();
         }

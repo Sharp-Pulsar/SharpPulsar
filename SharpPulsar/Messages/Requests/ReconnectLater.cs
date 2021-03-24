@@ -20,6 +20,14 @@ namespace SharpPulsar.Messages.Requests
     {
         public static LastConnectionClosedTimestamp Instance = new LastConnectionClosedTimestamp();
     }
+    public sealed class LastConnectionClosedTimestampResponse
+    {
+        public long TimeStamp { get; }
+        public LastConnectionClosedTimestampResponse(long timeStamp)
+        {
+            TimeStamp = timeStamp;
+        }
+    }
 
     public sealed class GetCnx
     {
@@ -36,6 +44,14 @@ namespace SharpPulsar.Messages.Requests
     public sealed class GetEpoch
     {
         public static GetEpoch Instance = new GetEpoch();
+    }
+    public sealed class GetEpochResponse
+    {
+        public long Epoch { get; }
+        public GetEpochResponse(long epoch)
+        {
+            Epoch = epoch;
+        }
     }
     public sealed class GrabCnx
     {

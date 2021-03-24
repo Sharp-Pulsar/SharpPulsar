@@ -477,9 +477,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			ReceiveAsync<GetLastDisconnectedTimestamp>(async m => 
+			Receive<GetLastDisconnectedTimestamp>( m => 
 			{
-				Push(ConsumerQueue.LastDisconnectedTimestamp, await LastDisconnectedTimestamp());
+				var last = LastDisconnectedTimestamp();
+				Push(ConsumerQueue.LastDisconnectedTimestamp, last.TimeStamp);
 			});
 			ReceiveAsync<ReconsumeLaterCumulative<T>>(async m => 
 			{
@@ -1869,9 +1870,9 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override async ValueTask<long> LastDisconnectedTimestamp()
+		internal override LastConnectionClosedTimestampResponse LastDisconnectedTimestamp()
 		{
-			return await _connectionHandler.Ask<long>(LastConnectionClosedTimestamp.Instance);
+			return _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).Result;
 		}
 
 		private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, IActorRef currentCnx)
@@ -1933,7 +1934,8 @@ namespace SharpPulsar
 			var codec = CompressionCodecProvider.GetCompressionCodec((int)compressionType);
 			var uncompressedSize = (int)msgMetadata.UncompressedSize;
 			var payloadSize = payload.Length;
-			var maxMessageSize = await currentCnx.Ask<int>(MaxMessageSize.Instance);
+			var max= await currentCnx.Ask<MaxMessageSizeResponse>(MaxMessageSize.Instance);
+			var maxMessageSize = max.MessageSize;
 			if (checkMaxMessageSize && payloadSize > maxMessageSize)
 			{
 				// payload size is itself corrupted since it cannot be bigger than the MaxMessageSize
@@ -2003,7 +2005,8 @@ namespace SharpPulsar
 		internal override async ValueTask RedeliverUnacknowledgedMessages()
 		{
 			var cnx = await Cnx();
-			var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
+			var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+			var protocolVersion = version.Version;
 			if (await Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
 				var currentSize = IncomingMessages.Count;
@@ -2062,8 +2065,9 @@ namespace SharpPulsar
 				return;
 			}
 			var cnx = await Cnx();
-			var protocolversion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
-			if (await Connected() && protocolversion >= (int)ProtocolVersion.V2)
+			var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+			var protocolVersion = version.Version;
+			if (await Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
 				int messagesFromQueue = await RemoveExpiredMessagesFromQueue(messageIds);
 
@@ -2376,10 +2380,11 @@ namespace SharpPulsar
 			var cnx = await Cnx();
 			if(await Connected() && cnx != null)
 			{
-				var protocolversion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
-				if(!_commands.PeerSupportsGetLastMessageId(protocolversion))
+				var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+				var protocolVersion = version.Version;
+				if (!_commands.PeerSupportsGetLastMessageId(protocolVersion))
 				{
-					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolversion:D}. The consumer is {ConsumerName}, topic {_topicName}, subscription {Subscription}"));
+					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {ConsumerName}, topic {_topicName}, subscription {Subscription}"));
 				}
 
 				var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);

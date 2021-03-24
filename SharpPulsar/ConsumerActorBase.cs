@@ -8,6 +8,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
@@ -42,7 +43,7 @@ namespace SharpPulsar
 	{
 
 		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
-		internal abstract ValueTask<long> LastDisconnectedTimestamp();
+		internal abstract LastConnectionClosedTimestampResponse LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
 		internal abstract ValueTask Resume();
 		internal abstract void Pause();

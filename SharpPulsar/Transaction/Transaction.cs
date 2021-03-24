@@ -119,7 +119,6 @@ namespace SharpPulsar.Transaction
 			Receive<RegisterProducedTopic>(p =>
 			{
 				RegisterProducedTopic(p.Topic);
-				Sender.Tell(true);
 			});
 			Stash?.UnstashAll();
 		}

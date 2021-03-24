@@ -292,10 +292,10 @@ namespace SharpPulsar
 					Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
 				}
 			});
-			ReceiveAsync<GetLastDisconnectedTimestamp>(async m =>
+			Receive<GetLastDisconnectedTimestamp>(m =>
 			{
-				var l = await LastDisconnectedTimestamp();
-				Push(ConsumerQueue.LastDisconnectedTimestamp, l);
+				var l = LastDisconnectedTimestamp();
+				Push(ConsumerQueue.LastDisconnectedTimestamp, l.TimeStamp);
 			});
 			ReceiveAsync<ReconsumeLaterCumulative<T>>(async m => {
 				try
@@ -1343,13 +1343,15 @@ namespace SharpPulsar
 			await Task.CompletedTask;
 		}
 
-		internal override async ValueTask<long> LastDisconnectedTimestamp()
+		internal override LastConnectionClosedTimestampResponse LastDisconnectedTimestamp()
 		{
-			long lastDisconnectedTimestamp = 0;
+			LastConnectionClosedTimestampResponse lastDisconnectedTimestamp = null;
 			foreach(var c in _consumers.Values)
             {
-				var x = await c.Ask<long>(GetLastDisconnectedTimestamp.Instance);
-				if (x > lastDisconnectedTimestamp)
+				var x = c.Ask<LastConnectionClosedTimestampResponse>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
+				if (lastDisconnectedTimestamp == null)
+					lastDisconnectedTimestamp = x;
+				if (x?.TimeStamp > lastDisconnectedTimestamp.TimeStamp)
 					lastDisconnectedTimestamp = x;
 			}
 			return lastDisconnectedTimestamp;
