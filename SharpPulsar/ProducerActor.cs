@@ -256,6 +256,7 @@ namespace SharpPulsar
 		}
 		private void Ready()
         {
+			//move to become send
 			ReceiveAsync<AckReceived>(async a => 
 			{				
 				await AckReceived(a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
