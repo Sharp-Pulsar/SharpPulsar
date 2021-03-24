@@ -548,7 +548,7 @@ namespace SharpPulsar
 				throw new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed");
 			}
 
-			var result = await _client.Ask(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
+			var result = await _lookup.Ask(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
 			if (result is PartitionedTopicMetadata metadata)
 			{
 				await SubscribeTopicPartitions(fullTopicName, metadata.Partitions, createTopicIfDoesNotExist);
@@ -1356,12 +1356,13 @@ namespace SharpPulsar
 		}
 
 		// subscribe increased partitions for a given topic
-		private async ValueTask SubscribeIncreasedTopicPartitions(string topicName)
-		{			
-			var topics = await _client.Ask<PartitionsForTopic>(new GetPartitionsForTopic(topicName));
-			var list = topics.Topics.ToList();
-			int oldPartitionNumber = TopicsMap.GetValueOrNull(topicName);
-			int currentPartitionNumber = list.Count;
+		private async ValueTask SubscribeIncreasedTopicPartitions(string topic)
+		{
+			TopicName topicName = TopicName.Get(topic);
+			var metadata = await _lookup.Ask<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
+			int oldPartitionNumber = TopicsMap.GetValueOrNull(topic);
+			int currentPartitionNumber = topics.Count;
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{topicName}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
@@ -1373,7 +1374,7 @@ namespace SharpPulsar
 			else if (oldPartitionNumber < currentPartitionNumber)
 			{
 				AllTopicPartitionsNumber = currentPartitionNumber;
-				IList<string> newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
+				IList<string> newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
 				foreach (var partitionName in newPartitions)
 				{
 					var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
@@ -1440,7 +1441,22 @@ namespace SharpPulsar
 				await AcknowledgeCumulative(msg);
 			}
 		}
-
+		private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
+		{
+			if (metadata.Partitions > 0)
+			{
+				IList<string> partitions = new List<string>(metadata.Partitions);
+				for (int i = 0; i < metadata.Partitions; i++)
+				{
+					partitions.Add(topicName.GetPartition(i).ToString());
+				}
+				return partitions;
+			}
+			else
+			{
+				return new List<string> { topicName.ToString() };
+			}
+		}
 		internal sealed class UpdatePartitionSub
         {
 			public static UpdatePartitionSub Instance = new UpdatePartitionSub();

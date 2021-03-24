@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Exceptions;
 using SharpPulsar.ServiceName;
+using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -57,7 +58,8 @@ namespace SharpPulsar
 		private IActorContext _context;
 		private Action _nextBecome;
 		private object[] _invokeArg;
-		private Backoff _backOff;
+		private Backoff _getTopicsUnderNamespaceBackOff;
+		private Backoff _getPartitionedTopicMetadataBackOff;
 
 		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
 		{
@@ -96,12 +98,28 @@ namespace SharpPulsar
 				_nextBecome = GetBroker;
 				Become(GetCnxAndRequestId);			
 			});
-			Receive<GetPartitionedTopicMetadata>(p =>
+			Receive<RetryGetPartitionedTopicMetadate>(p =>
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { p.TopicName };
+				_invokeArg = new object[] { p.TopicName, p.OpTimeOutMs };
 				_nextBecome = GetPartitionedTopicMetadata;
 				Become(GetCnxAndRequestId);
+			});
+			Receive<GetPartitionedTopicMetadata>(p =>
+			{
+				//if we receive GetPartitionedTopicMetadata before the previous request is complete stash it
+				//because of the active backoff
+				if (_getPartitionedTopicMetadataBackOff == null)
+				{
+					var opTimeoutMs = _operationTimeoutMs;
+					_replyTo = Sender;
+					_getPartitionedTopicMetadataBackOff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
+					_invokeArg = new object[] { p.TopicName, opTimeoutMs };
+					_nextBecome = GetPartitionedTopicMetadata;
+					Become(GetCnxAndRequestId);
+				}
+				else
+					Stash.Stash();
 			});
 			Receive<GetSchema>(s => 
 			{
@@ -110,16 +128,32 @@ namespace SharpPulsar
 				_nextBecome = GetSchema;
 				Become(GetCnxAndRequestId);
 			});
-			Receive<GetTopicsUnderNamespace>(t => 
+
+			Receive<RetryGetTopicsUnderNamespace>(t =>
 			{
-				var opTimeoutMs = _operationTimeoutMs;
-				_backOff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
 				_replyTo = Sender;
-				_invokeArg = new object[] { t, opTimeoutMs };
+				_invokeArg = new object[] { t.Namespace, t.Mode, t.OpTimeOutMs };
 				_nextBecome = GetTopicsUnderNamespace;
 				Become(GetCnxAndRequestId);
 			});
-			Stash?.UnstashAll();
+			Receive<GetTopicsUnderNamespace>(t => 
+			{
+				//if we receive GetTopicsUnderNamespace before the previous request is complete stash it
+				//because of the active backoff
+				if (_getTopicsUnderNamespaceBackOff == null)
+				{
+					
+					var opTimeoutMs = _operationTimeoutMs;
+					_getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
+					_replyTo = Sender;
+					_invokeArg = new object[] { t.Namespace, t.Mode, opTimeoutMs };
+					_nextBecome = GetTopicsUnderNamespace;
+					Become(GetCnxAndRequestId);
+				}
+				else
+					Stash.Stash();
+			});
+			Stash?.Unstash();
 		}
         private void GetBroker()
         {
@@ -315,6 +349,7 @@ namespace SharpPulsar
 		{
 			var args = _invokeArg;
 			var topicName = (TopicName)args[0];
+			var opTimeoutMs = (long)args[1];
 			Receive<LookupDataResult>(data=> 
 			{
 				if (Enum.IsDefined(typeof(ServerError), data.Error) && data.ErrorMessage != null)
@@ -326,11 +361,26 @@ namespace SharpPulsar
 				{
 					_replyTo.Tell(new PartitionedTopicMetadata(data.Partitions));
 				}
+				_getPartitionedTopicMetadataBackOff = null;
 				Become(Awaiting);
 			});
-			Receive<ClientExceptions>(ex => 
+			Receive<ClientExceptions>(e => 
 			{
-				_replyTo.Tell(ex);
+				var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeoutMs);
+				var reply = _replyTo;
+				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
+				if (nextDelay <= 0 || isLookupThrottling)
+				{
+					reply.Tell(new Failure { Exception = new PulsarClientException.InvalidConfigurationException(e.Exception) });
+					_log.Error(e.ToString());
+					_getPartitionedTopicMetadataBackOff = null;
+				}
+                else
+                {
+					_log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
+					opTimeoutMs -= nextDelay;
+					_context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromMilliseconds(nextDelay), Self, new RetryGetPartitionedTopicMetadate(topicName, opTimeoutMs), _replyTo);
+				}
 				Become(Awaiting);
 			});
 			ReceiveAny(_ => Stash.Stash());
@@ -387,13 +437,14 @@ namespace SharpPulsar
         private void GetTopicsUnderNamespace()
 		{
 			var args = _invokeArg;
-			var nsn = (GetTopicsUnderNamespace)args[0];
-			var opTimeoutMs = (long)args[1];
+			var nsn = (NamespaceName)args[0];
+			var mode = (Mode)args[1];
+			var opTimeoutMs = (long)args[2];
 			Receive<GetTopicsOfNamespaceResponse>(response=> 
 			{
 				if (_log.IsDebugEnabled)
 				{
-					_log.Debug($"[namespace: {nsn.Namespace}] Success get topics list in request: {_requestId}");
+					_log.Debug($"[namespace: {nsn}] Success get topics list in request: {_requestId}");
 				}
 				var result = new List<string>();
 				foreach(var topic in response.Response.Topics)
@@ -405,34 +456,32 @@ namespace SharpPulsar
 					}
 				}
 				_replyTo.Tell(new GetTopicsUnderNamespaceResponse(result));
+				_getTopicsUnderNamespaceBackOff = null;
 				Become(Awaiting);
 			});
 			Receive<ClientExceptions>(ex => 
 			{
-				var ns = nsn.Namespace;
-				var mde = nsn.Mode;
-				var nextDelay = Math.Min(_backOff.Next(), _operationTimeoutMs);
+				var ns = nsn;
+				var mde = mode;
+				var nextDelay = Math.Min(_getTopicsUnderNamespaceBackOff.Next(), opTimeoutMs);
 				var reply = _replyTo;
 				if (nextDelay <= 0)
 				{
 					reply.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
-					Become(Awaiting);
+					_getTopicsUnderNamespaceBackOff = null;
 				}
 				else
 				{
 					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
 					opTimeoutMs -= nextDelay;
-					var task = Task.Run(() => Task.Delay(TimeSpan.FromMilliseconds(nextDelay)));
-					_invokeArg = new object[] { ns, opTimeoutMs };
-					_nextBecome = GetTopicsUnderNamespace;
-					Become(() => GetCnxAndRequestId());
+					_context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromMilliseconds(nextDelay), Self, new RetryGetTopicsUnderNamespace(ns, mde, opTimeoutMs), _replyTo);
 				}
+				Become(Awaiting);
 			});
 			ReceiveAny(_ => Stash.Stash());
-			var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.Namespace.ToString(), _requestId, nsn.Mode);
+			var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.ToString(), _requestId, mode);
 			var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
 			_clientCnx.Tell(payload);
-
 		}
 
 		protected override void Unhandled(object message)
@@ -445,4 +494,26 @@ namespace SharpPulsar
 			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeoutMs));
         }
     }
+	internal sealed class RetryGetPartitionedTopicMetadate
+    {
+		public TopicName TopicName { get; }
+		public long OpTimeOutMs { get; }
+        public RetryGetPartitionedTopicMetadate(TopicName topicName, long opTimeout)
+        {
+			TopicName = topicName;
+			OpTimeOutMs = opTimeout;
+        }
+    }
+	internal sealed class RetryGetTopicsUnderNamespace
+	{
+		public NamespaceName Namespace { get; }
+		public Mode Mode { get; }
+		public long OpTimeOutMs { get; }
+		public RetryGetTopicsUnderNamespace(NamespaceName nsn, Mode mode, long opTimeout)
+		{
+			Mode = mode;
+			Namespace = nsn;
+			OpTimeOutMs = opTimeout;
+		}
+	}
 }

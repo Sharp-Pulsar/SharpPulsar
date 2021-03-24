@@ -370,24 +370,7 @@ namespace SharpPulsar.User
             try
             {
                 TopicName topicName = TopicName.Get(topic);
-                var o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);
-                var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
-                Backoff backoff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
-
-                while (!(o is PartitionedTopicMetadata))
-                {
-                    var e = o as ClientExceptions;
-                    long nextDelay = Math.Min(backoff.Next(), opTimeoutMs);
-                    bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
-                    if (nextDelay <= 0 || isLookupThrottling)
-                    {
-                        throw new PulsarClientException.InvalidConfigurationException(e.Exception);
-                    }
-                    _actorSystem.Log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Exception.Message}");
-                    opTimeoutMs -= (int)nextDelay;
-                    Thread.Sleep(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)));
-                    o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);
-                }
+                var o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);                
                 return o as PartitionedTopicMetadata;
             }
             catch (ArgumentException e)
@@ -593,7 +576,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var schem = await _client.Ask(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
+                    var schem = await _lookup.Ask(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
                     if (schem is Failure fa)
                     {
                         throw fa.Exception;

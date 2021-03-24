@@ -4,6 +4,7 @@ using Akka.Routing;
 using Akka.Util.Internal;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Client;
@@ -315,10 +316,11 @@ namespace SharpPulsar
 			{
 				return;
 			}
-			var result = await Client.Ask<PartitionsForTopic>(new GetPartitionsForTopic(Topic));
-			var list = result.Topics;
+			TopicName topicName = TopicName.Get(Topic);
+			var metadata = await _lookup.Ask<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
 			int oldPartitionNumber = _topicMetadata.NumPartitions();
-			int currentPartitionNumber = list.Count;
+			int currentPartitionNumber = topics.Count;
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{Topic}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
@@ -329,7 +331,7 @@ namespace SharpPulsar
 			}
 			else if (oldPartitionNumber < currentPartitionNumber)
 			{
-				var newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
+				var newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
 				foreach (var partitionName in newPartitions)
 				{
 					var producerId = await _generator.Ask<long>(NewProducerId.Instance);
@@ -348,6 +350,23 @@ namespace SharpPulsar
 			else
 			{
 				_log.Error($"[{Topic}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+			}
+		}
+
+		private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
+		{
+			if (metadata.Partitions > 0)
+			{
+				IList<string> partitions = new List<string>(metadata.Partitions);
+				for (int i = 0; i < metadata.Partitions; i++)
+				{
+					partitions.Add(topicName.GetPartition(i).ToString());
+				}
+				return partitions;
+			}
+			else
+			{
+				return new List<string> { topicName.ToString() };
 			}
 		}
 		internal sealed class ExtendTopics
