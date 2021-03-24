@@ -40,7 +40,7 @@ namespace SharpPulsar.Tracker
         private readonly long _ackTimeoutMillis;
         private readonly IScheduler _scheduler;
         private SortedSet<IMessageId> _unAckedChunckedMessageIdSequences;
-        private IActorRef _sender;
+        private bool _redeliveringMessages = false;
 
         public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer)
         {
@@ -105,26 +105,34 @@ namespace SharpPulsar.Tracker
                     _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messageIds.ToHashSet()));
                     _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, messageIds));
                 }
+                _redeliveringMessages = false;
             });
         }
         private void RedeliverMessages()
         {
-            _unAckedChunckedMessageIdSequences = new SortedSet<IMessageId>();
-            if(TimePartitions.TryDequeue(out var headPartition))
+            if (!_redeliveringMessages)
             {
-                if (headPartition.Count > 0)
+                _unAckedChunckedMessageIdSequences = new SortedSet<IMessageId>();
+                if (TimePartitions.TryDequeue(out var headPartition))
                 {
-                    _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
-                    foreach (var messageId in headPartition)
+                    if (headPartition.Count > 0)
                     {
-                        _unAckedChunckedMessageIdSequences.Add(messageId);
-                        _ = MessageIdPartitionMap.TryRemove(messageId, out var m);
+                        _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
+                        foreach (var messageId in headPartition)
+                        {
+                            _unAckedChunckedMessageIdSequences.Add(messageId);
+                            _ = MessageIdPartitionMap.TryRemove(messageId, out var m);
+                        }
+                        _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, _unAckedChunckedMessageIdSequences.ToList()));
+                        headPartition?.Clear();
+                        TimePartitions.Enqueue(headPartition);
+                        _redeliveringMessages = true;
                     }
                 }
-                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, _unAckedChunckedMessageIdSequences.ToList()));
-                headPartition?.Clear();
-                TimePartitions.Enqueue(headPartition);
             }
+            else
+                _log.Info("Skipping because of pending redelivery");
+
             _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
 
         }

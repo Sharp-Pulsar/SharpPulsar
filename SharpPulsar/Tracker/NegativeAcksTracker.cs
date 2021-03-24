@@ -45,6 +45,7 @@ namespace SharpPulsar.Tracker
         private IActorRef _self;
         private ILoggingAdapter _log;
         private HashSet<IMessageId> _unAckedChunckedMessageIdSequences;
+        private bool _redeliveringMessages = false;
 
 
         private ICancelable _timeout;
@@ -85,6 +86,7 @@ namespace SharpPulsar.Tracker
                     _consumer.Tell(new OnNegativeAcksSend(messageIds.ToHashSet()));
                     _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messageIds.ToHashSet()));
                 }
+                _redeliveringMessages = false;
             });
         }
         public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef consumer)
@@ -93,20 +95,23 @@ namespace SharpPulsar.Tracker
         }
 		private void TriggerRedelivery()
         {
-            _log.Info("Triggering Flush");
-            // Group all the nacked messages into one single re-delivery request
-            _unAckedChunckedMessageIdSequences = new HashSet<IMessageId>();
-            if (_nackedMessages?.Count > 0)
+            if(!_redeliveringMessages)
             {
-                var now = DateTimeHelper.CurrentUnixTimeMillis();
-                foreach (var unack in _nackedMessages)
+                // Group all the nacked messages into one single re-delivery request
+                _unAckedChunckedMessageIdSequences = new HashSet<IMessageId>();
+                if (_nackedMessages?.Count > 0)
                 {
-                    if (unack.Value < now)
+                    var now = DateTimeHelper.CurrentUnixTimeMillis();
+                    foreach (var unack in _nackedMessages)
                     {
-                        _unAckedChunckedMessageIdSequences.Add(unack.Key);
+                        if (unack.Value < now)
+                        {
+                            _unAckedChunckedMessageIdSequences.Add(unack.Key);
+                        }
                     }
+                    _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, _unAckedChunckedMessageIdSequences.ToList()));
+                    _redeliveringMessages = true;
                 }
-                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, _unAckedChunckedMessageIdSequences.ToList()));
             }
         }
 
