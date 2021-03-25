@@ -21,6 +21,9 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 		private IActorRef _replyTo;
+		private int _randomKey;
+		private bool _getConnectionInProgress = false;
+		private DnsEndPoint _logicalEndpoint;
 		public ConnectionPool(ClientConfigurationData conf)
 		{
 			_context = Context;
@@ -34,12 +37,52 @@ namespace SharpPulsar
 		}
 		private void Listen()
         {
-			Receive<GetConnection>(c =>
+			Receive<GetConnection>(g =>
 			{
-				_replyTo = Sender;
-				Become(()=>EstablishConnection(c));
+				if (!_getConnectionInProgress)
+				{
+					ConnectionOpened connection = null;
+					_randomKey = SignSafeMod(_random.Next(), _maxConnectionsPerHosts);
+					_logicalEndpoint = g.LogicalEndPoint;
+					if (g.LogicalEndPoint != null && g.PhusicalEndPoint == null)
+					{
+						connection = GetConnection(g.LogicalEndPoint, _randomKey);
+					}
+					else if (g.LogicalEndPoint != null && g.PhusicalEndPoint != null)
+					{
+						connection = GetConnection(g.LogicalEndPoint, g.PhusicalEndPoint, _randomKey);
+					}
+					else
+					{
+						connection = GetConnection(g.LogicalEndPoint, _randomKey);
+					}
+					if (connection != null)
+					{
+						Sender.Tell(connection);
+					}
+					else
+					{
+						_getConnectionInProgress = true;
+						_replyTo = Sender;
+					}
+				}
+				else
+					Stash.Stash();
 			});
-
+			Receive<ConnectionOpened>(c =>
+			{
+				if (_pool.TryGetValue(_logicalEndpoint, out var cnx))
+				{
+					_pool[_logicalEndpoint][_randomKey] = c;
+				}
+				else
+				{
+					_pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { _randomKey, c } });
+				}
+				_replyTo.Tell(c);
+				_getConnectionInProgress = false;
+				Stash?.UnstashAll();
+			});
 			Receive<CleanupConnection>(c =>
 			{
 				CleanupConnection(c.Address, c.ConnectionKey);
@@ -57,49 +100,6 @@ namespace SharpPulsar
 				Sender.Tell(new GetPoolSizeResponse(PoolSize));
 			});
 			Stash?.UnstashAll();
-		}
-		private void EstablishConnection(GetConnection g)
-        {
-			ConnectionOpened connection = null;
-
-			int randomKey = SignSafeMod(_random.Next(), _maxConnectionsPerHosts);
-			Receive<ConnectionOpened>(c =>
-			{
-				var key = randomKey;
-				if (_pool.TryGetValue(g.LogicalEndPoint, out var cnx))
-                {
-					_pool[g.LogicalEndPoint][key] = c;
-                }
-                else
-                {
-					_pool.Add(g.LogicalEndPoint, new Dictionary<int, ConnectionOpened> { { key, c } });
-				}
-				_replyTo.Tell(c);
-				Become(Listen);
-			});
-			ReceiveAny(a => 
-			{
-				var b = a;
-				Stash.Stash();
-			});
-			if (g.LogicalEndPoint != null && g.PhusicalEndPoint == null)
-			{
-				connection = GetConnection(g.LogicalEndPoint, randomKey);
-			}
-			else if (g.LogicalEndPoint != null && g.PhusicalEndPoint != null)
-            {
-				connection = GetConnection(g.LogicalEndPoint, g.PhusicalEndPoint, randomKey);
-			}
-            else
-            {
-				connection = GetConnection(g.LogicalEndPoint, randomKey);
-			}
-			if (connection != null)
-			{
-				_replyTo.Tell(connection);
-				Become(Listen);
-            }
-				
 		}
 		public static Props Prop(ClientConfigurationData conf)
 		{

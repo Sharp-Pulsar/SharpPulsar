@@ -202,6 +202,8 @@ namespace SharpPulsar
 				_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.SendTimeoutMs), Self, RunSendTimeout.Instance, ActorRefs.NoSender);
 			}
 
+			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(clientConfiguration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(clientConfiguration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create(), Self));
+
 			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.OperationTimeoutMs;
 			if(conf.BatchingEnabled)
 			{
@@ -234,12 +236,8 @@ namespace SharpPulsar
 			{
 				_metadata = new SortedDictionary<string, string>(Configuration.Properties);
 			}
-			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(clientConfiguration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(clientConfiguration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create(), Self));
+			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {_producerName}"));
 
-			GrabCnx();
-		}
-		internal virtual void GrabCnx()
-		{
 			Connection();
 		}
 		private void Connection()
@@ -261,9 +259,7 @@ namespace SharpPulsar
 				var message = a;
 				Stash.Stash();
 			}); 
-			_connectionHandler.Tell(new GrabCnx($"Create connection from producer: {_producerName}"));
-
-			Stash?.Unstash();
+			Stash?.UnstashAll();
 		}
 		private void Ready()
         {

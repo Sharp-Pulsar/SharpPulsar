@@ -159,7 +159,6 @@ namespace SharpPulsar
 			var b = _invokeArg;
 			var broker = b[0] as GetBroker;
 			var socketAddress = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-			NewLookup(broker.TopicName);
 			Receive<LookupDataResult>(data => 
 			{
 				var br = broker;
@@ -213,6 +212,7 @@ namespace SharpPulsar
 			});
 			Receive<ClientExceptions>(m => _replyTo.Tell(m));
 			ReceiveAny(_ => Stash.Stash());
+			NewLookup(broker.TopicName);
 		}
 		private void RedirectedGetBroker()
         {
@@ -290,8 +290,9 @@ namespace SharpPulsar
 				_requestId = m.Id;
 				Become(_nextBecome);
 			});
-			ReceiveAny(_=> 
+			ReceiveAny(a=> 
 			{
+				var b = a;
 				Stash.Stash();
 			});
 			_connectionPool.Tell(new GetConnection(address));

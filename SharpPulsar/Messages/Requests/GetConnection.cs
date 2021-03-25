@@ -8,6 +8,7 @@ namespace SharpPulsar.Messages.Requests
         public string Topic { get; }
         public DnsEndPoint LogicalEndPoint { get; }
         public DnsEndPoint PhusicalEndPoint { get; }
+        public IActorRef Sender { get; }
         public GetConnection(DnsEndPoint logicalEndPoint)
         {
             LogicalEndPoint = logicalEndPoint;
