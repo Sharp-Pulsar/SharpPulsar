@@ -153,10 +153,7 @@ namespace SharpPulsar
 				_log.Error(c.Exception.ToString());
 				Become(Listening);
 			});
-			ReceiveAny(a => {
-				var b = a;
-				Stash.Stash();
-			});
+			ReceiveAny(_ => Stash.Stash());
 			var topicName = TopicName.Get(_state.Topic);
 			_state.Lookup.Tell(new GetBroker(topicName));
 		}

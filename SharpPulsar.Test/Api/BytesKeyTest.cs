@@ -7,6 +7,7 @@ using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -233,6 +234,8 @@ namespace SharpPulsar.Test.Api
             var sent = producer.SendReceipt();
             if (sent != null)
                 _output.WriteLine($"Highest Sequence Id => {sent.SequenceId}:{sent.HighestSequenceId}");
+
+            Thread.Sleep(TimeSpan.FromSeconds(20));
 
         }
 

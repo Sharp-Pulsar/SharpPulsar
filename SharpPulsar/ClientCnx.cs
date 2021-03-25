@@ -300,7 +300,7 @@ namespace SharpPulsar
 
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
+				_log.Debug($"Got receipt for producer: {producerId} -- msg: S[{sequenceId}]:H[{highestSequenceId}] -- id: {ledgerId}:{entryId}");
 			}
 			if (_producers.TryGetValue(producerId, out var producer))
 				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));

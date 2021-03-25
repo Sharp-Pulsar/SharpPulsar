@@ -1152,7 +1152,6 @@ namespace SharpPulsar
 				{
 					ProducerQueue.Producer.Add(new ProducerCreation(response));
 					Become(Ready);
-					return;
 				}
 				return;
 			}
