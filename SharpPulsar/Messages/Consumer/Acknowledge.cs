@@ -5,7 +5,7 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class AcknowledgeMessage<T>
+    public sealed class AcknowledgeMessage<T> : IAcknowledge
     {
         /// <summary>
         /// Fulfils Acknowledge<T1>(IMessage<T1> message)
@@ -20,7 +20,7 @@ namespace SharpPulsar.Messages.Consumer
             Message = message;
         }
     }
-    public sealed class AcknowledgeMessageId
+    public sealed class AcknowledgeMessageId : IAcknowledge
     {
         /// <summary>
         /// Fulfils Acknowledge(IMessageId messageId)
@@ -35,7 +35,7 @@ namespace SharpPulsar.Messages.Consumer
             MessageId = messageId;
         }
     }
-    public sealed class AcknowledgeMessageIds
+    public sealed class AcknowledgeMessageIds : IAcknowledge
     {
         /// <summary>
         /// Fulfils Acknowledge(IList<IMessageId> messageIdList)
@@ -80,7 +80,7 @@ namespace SharpPulsar.Messages.Consumer
             CreateTopicIfDoesNotExist = createTopicIfDoesNotExist;
         }
     }
-    public sealed class AcknowledgeWithTxn
+    public sealed class AcknowledgeWithTxn : IAcknowledge
     {
         /// <summary>
         /// Fulfils DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
@@ -109,7 +109,7 @@ namespace SharpPulsar.Messages.Consumer
         }
     }
     
-    public sealed class AcknowledgeWithTxnMessages
+    public sealed class AcknowledgeWithTxnMessages : IAcknowledge
     {
         /// <summary>
         /// Fulfils DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
@@ -137,7 +137,7 @@ namespace SharpPulsar.Messages.Consumer
             Txn = txn;
         }
     }
-    public sealed class AcknowledgeMessages<T>
+    public sealed class AcknowledgeMessages<T>:IAcknowledge
     {
         /// <summary>
         /// Fulfils Acknowledge<T1>(IMessages<T1> messages)
@@ -151,5 +151,9 @@ namespace SharpPulsar.Messages.Consumer
         {
             Messages = messages;
         }
+    }
+    public interface IAcknowledge
+    {
+
     }
 }

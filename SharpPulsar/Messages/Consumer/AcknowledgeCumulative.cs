@@ -3,7 +3,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Consumer
 {
-    public sealed class AcknowledgeCumulativeMessage<T>
+    public sealed class AcknowledgeCumulativeMessage<T> : ICumulative
     {
         /// <summary>
         /// Fulfils AcknowledgeCumulative<T1>(IMessage<T1> message)
@@ -18,7 +18,7 @@ namespace SharpPulsar.Messages.Consumer
             Message = message;
         }
     }
-    public sealed class AcknowledgeCumulativeMessageId
+    public sealed class AcknowledgeCumulativeMessageId : ICumulative
     {
         /// <summary>
         /// Fulfils AcknowledgeCumulative(IMessageId messageId)
@@ -33,7 +33,7 @@ namespace SharpPulsar.Messages.Consumer
             MessageId = messageid;
         }
     }
-    public sealed class AcknowledgeCumulativeTxn
+    public sealed class AcknowledgeCumulativeTxn : ICumulative
     {
         /// <summary>
         /// Fulfils AcknowledgeCumulative(IMessageId messageId, IActorRef txn)
@@ -50,7 +50,7 @@ namespace SharpPulsar.Messages.Consumer
             Txn = txn;
         }
     }
-    public sealed class ReconsumeLaterCumulative<T>
+    public sealed class ReconsumeLaterCumulative<T> : ICumulative
     {
         /// <summary>
         /// Fulfils ReconsumeLaterCumulative<T1>(IMessage<T1> message, long delayTime, TimeUnit unit)
@@ -67,4 +67,5 @@ namespace SharpPulsar.Messages.Consumer
             DelayTime = delayTime;
         }
     }
+    public interface ICumulative { }
 }
