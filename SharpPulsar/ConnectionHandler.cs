@@ -53,7 +53,7 @@ namespace SharpPulsar
 			});
 			Receive<GetEpoch>(g =>
 			{
-				Sender.Tell(_epoch);
+				Sender.Tell(new GetEpochResponse(_epoch));
 			});
 			Receive<ConnectionOpened>(m =>
 			{
@@ -69,7 +69,7 @@ namespace SharpPulsar
 			});
 			Receive<LastConnectionClosedTimestamp>(_ =>
 			{
-				Sender.Tell(LastConnectionClosedTimestamp);
+				Sender.Tell(new LastConnectionClosedTimestampResponse(LastConnectionClosedTimestamp));
 			});
 			Receive<GetCnx>(_ =>
 			{
@@ -86,7 +86,6 @@ namespace SharpPulsar
 					await child.GracefulStop(TimeSpan.FromMilliseconds(100));
 				ConnectionClosed(c.ClientCnx);
 			});
-			ReceiveAny(_ => Stash.Stash());
 			Stash?.UnstashAll();
 		}
 		private void GrabCnx()
@@ -104,13 +103,24 @@ namespace SharpPulsar
 				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
 				_connection.Tell(new Failure { Exception = new Exception("Invalid State For Reconnection"), Timestamp = DateTime.UtcNow });
 			}
+			if (_conf.UseDedicatedConnections)
+			{
+				AwaitBrokerResponse();
+			}
+			else
+			{
+				LookupConnection();
+			}
+		}
+		private void AwaitBrokerResponse()
+        {
 			Receive<GetBrokerResponse>(broker =>
 			{
-				Become(() => EstablishConnection(broker));
+				CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
 			});
-			Receive<GetConnectionResponse>(c =>
+			Receive<ConnectionOpened>(r =>
 			{
-				_connection.Tell(new ConnectionOpened(c.ClientCnx));
+				_connection.Tell(r);
 				Become(Listening);
 			});
 			Receive<Failure>(c =>
@@ -118,15 +128,14 @@ namespace SharpPulsar
 				HandleConnectionError(c.Exception);
 				Become(Listening);
 			});
-			if (_conf.UseDedicatedConnections)
+			Receive<ClientExceptions>(c =>
 			{
-				_state.Lookup.Tell(new GetBroker(TopicName.Get(_state.Topic)));
-			}
-			else
-			{
-				Become(LookupConnection);
-			}
+				_log.Error(c.Exception.ToString());
+				_connection.Tell(c);
+				Become(Listening);
+			});
 			ReceiveAny(_ => Stash.Stash());
+			_state.Lookup.Tell(new GetBroker(TopicName.Get(_state.Topic)));
 		}
 		private void LookupConnection()
         {
@@ -134,9 +143,9 @@ namespace SharpPulsar
 			{
 				_state.ConnectionPool.Tell(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
 			});
-			Receive<GetConnectionResponse>(c =>
+			Receive<ConnectionOpened>(c =>
 			{
-				_connection.Tell(new ConnectionOpened(c.ClientCnx));
+				_connection.Tell(c);
 				Become(Listening);
 			});
 			Receive<ClientExceptions>(c =>
@@ -147,16 +156,6 @@ namespace SharpPulsar
 			ReceiveAny(_ => Stash.Stash());
 			var topicName = TopicName.Get(_state.Topic);
 			_state.Lookup.Tell(new GetBroker(topicName));
-		}
-		private void EstablishConnection(GetBrokerResponse broker)
-        {
-			Receive<ConnectionOpened>(r =>
-			{
-				_connection.Tell(new ConnectionOpened(r.ClientCnx));
-				Become(Listening);
-			});
-			ReceiveAny(_ => Stash.Stash());
-			CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
 		}
 		private void CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
 		{

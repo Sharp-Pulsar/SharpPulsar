@@ -360,7 +360,8 @@ namespace SharpPulsar.Tracker
                 Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>> transactionEntriesToAck = new Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>>();
                 if (_pendingIndividualAcks.Count > 0)
                 {
-                    var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
+                    var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+                    var protocolVersion = version.Version;
                     if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
@@ -424,7 +425,8 @@ namespace SharpPulsar.Tracker
 
                 if (_pendingIndividualTransactionAcks.Count > 0)
                 {
-                    var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
+                    var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+                    var protocolVersion = version.Version;
                     if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
@@ -555,8 +557,9 @@ namespace SharpPulsar.Tracker
             var chunkMsgIds = result.MessageIds;
             if (chunkMsgIds?.Length > 0 && txnidLeastBits < 0 && txnidMostBits < 0)
             {
-                
-                var protocolVersion = await cnx.Ask<int>(RemoteEndpointProtocolVersion.Instance);
+
+                var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+                var protocolVersion = version.Version;
                 if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
                 {
                     IList<(long ledger, long entry, BitSet Bits)> entriesToAck = new List<(long ledger, long entry, BitSet Bits)>(chunkMsgIds.Length);

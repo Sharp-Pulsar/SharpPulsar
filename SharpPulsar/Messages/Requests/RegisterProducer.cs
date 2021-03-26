@@ -15,6 +15,14 @@ namespace SharpPulsar.Messages.Requests
     {
         public static MaxMessageSize Instance = new MaxMessageSize();
     }
+    public sealed class MaxMessageSizeResponse
+    {
+        public int MessageSize { get; }
+        public MaxMessageSizeResponse(int messageSize)
+        {
+            MessageSize = messageSize;
+        }
+    }
     public sealed class RegisterProducer
     {
         public long ProducerId { get; }
@@ -36,6 +44,14 @@ namespace SharpPulsar.Messages.Requests
     public sealed class RemoteEndpointProtocolVersion
     {
         public static RemoteEndpointProtocolVersion Instance = new RemoteEndpointProtocolVersion();
+    }
+    public sealed class RemoteEndpointProtocolVersionResponse
+    {
+        public int Version { get; }
+        public RemoteEndpointProtocolVersionResponse(int version)
+        {
+            Version = version;
+        }
     }
     public sealed class SendRequestWithId
     {

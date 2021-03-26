@@ -81,7 +81,7 @@ namespace SharpPulsar.Test
 			}
 			for (var i = 0; i < messageCount; i++)
 			{
-				var message = (TopicMessage<sbyte[]>)consumer.Receive();
+				var message = (TopicMessage<sbyte[]>)consumer.Receive(TimeSpan.FromSeconds(20));
 				Assert.NotNull(message);
 				_output.WriteLine($"message from topic: {message.TopicName}");
 			}

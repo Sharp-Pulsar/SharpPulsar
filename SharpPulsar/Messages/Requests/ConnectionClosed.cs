@@ -39,9 +39,13 @@ namespace SharpPulsar.Messages.Requests
     public sealed class ConnectionOpened
     {
         public IActorRef ClientCnx { get; }
-        public ConnectionOpened(IActorRef clientCnx)
+        public long MaxMessageSize { get; }
+        public int ProtocolVersion { get; }
+        public ConnectionOpened(IActorRef clientCnx, long maxMessageSize, int protocolVersion)
         {
             ClientCnx = clientCnx;
+            MaxMessageSize = maxMessageSize;
+            ProtocolVersion = protocolVersion;
         }
     }
     public sealed class ConnectionFailed

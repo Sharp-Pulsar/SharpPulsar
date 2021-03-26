@@ -141,7 +141,7 @@ namespace SharpPulsar
 			});
 			Receive<MaxMessageSize>(_ => {
 
-				Sender.Tell(_maxMessageSize);
+				Sender.Tell(new MaxMessageSizeResponse(_maxMessageSize));
 			});
 			Receive<RemoveConsumer>(m => {
 				RemoveConsumer(m.ConsumerId);
@@ -159,7 +159,7 @@ namespace SharpPulsar
 				SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
 			});
 			Receive<RemoteEndpointProtocolVersion>(r => {
-				Sender.Tell(_protocolVersion);
+				Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
 			});
 		}
 		private void OnConnected()
@@ -183,7 +183,6 @@ namespace SharpPulsar
 			_socketClient.SendMessage(NewConnectCommand());
 			_state = State.SentConnectFrame;
 			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
-			_parent.Tell(new ConnectionOpened(_self));
 		}
 		private void OnDisconnected()
 		{
@@ -248,7 +247,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
-			//_parent.Tell(new ConnectionOpened(_self));
+			_parent.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
@@ -301,7 +300,7 @@ namespace SharpPulsar
 
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug($"Got receipt for producer: {producerId} -- msg: {sequenceId} -- id: {ledgerId}:{entryId}");
+				_log.Debug($"Got receipt for producer: {producerId} -- msg: S[{sequenceId}]:H[{highestSequenceId}] -- id: {ledgerId}:{entryId}");
 			}
 			if (_producers.TryGetValue(producerId, out var producer))
 				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
@@ -661,9 +660,7 @@ namespace SharpPulsar
 
 		private void SendRequestWithId(byte[] cmd, long requestId, bool reply)
 		{
-			var sent = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
-			if (reply)
-				Sender.Tell(sent);
+			SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
 		}
 
 		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)

@@ -7,6 +7,7 @@ using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -94,7 +95,7 @@ namespace SharpPulsar.Test.Api
             consumerBuilder.Topic(topic);
             consumerBuilder.SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = _client.NewConsumer(consumerBuilder);
-            var message = consumer.Receive();
+            var message = consumer.Receive(TimeSpan.FromSeconds(30));
 
             Assert.Equal(byteKey, message.KeyBytes.ToBytes());
 
@@ -189,7 +190,7 @@ namespace SharpPulsar.Test.Api
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal($"TestMessage-4", receivedMessage);
         }
-
+        
     }
 
 }
