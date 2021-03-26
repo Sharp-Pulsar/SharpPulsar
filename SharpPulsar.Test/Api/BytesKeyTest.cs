@@ -95,7 +95,7 @@ namespace SharpPulsar.Test.Api
             consumerBuilder.Topic(topic);
             consumerBuilder.SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = _client.NewConsumer(consumerBuilder);
-            var message = consumer.Receive();
+            var message = consumer.Receive(TimeSpan.FromSeconds(30));
 
             Assert.Equal(byteKey, message.KeyBytes.ToBytes());
 
@@ -191,54 +191,6 @@ namespace SharpPulsar.Test.Api
             Assert.Equal($"TestMessage-4", receivedMessage);
         }
         
-        [Fact]
-        public void ProduceAndSend()
-		{
-
-            Random r = new Random(0);
-            var byteKey = new byte[1000];
-            r.NextBytes(byteKey);
-
-            var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
-            producerBuilder.Topic($"ProduceAndSend-{Guid.NewGuid()}");
-            producerBuilder.EnableBatching(true);
-            producerBuilder.BatchingMaxPublishDelay(60000);
-            producerBuilder.BatchingMaxMessages(5);
-            var producer = _client.NewProducer(producerBuilder);
-
-            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-0").ToSBytes())
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-1").ToSBytes())
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-2").ToSBytes())
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-3").ToSBytes())
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey.ToSBytes())
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-4").ToSBytes())
-                .Send();
-
-            var sent = producer.SendReceipt();
-            if (sent != null)
-                _output.WriteLine($"Highest Sequence Id => {sent.SequenceId}:{sent.HighestSequenceId}");
-
-            Thread.Sleep(TimeSpan.FromSeconds(20));
-
-        }
-
     }
 
 }

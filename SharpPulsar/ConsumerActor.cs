@@ -315,9 +315,9 @@ namespace SharpPulsar
 
 			_topicNameWithoutPartition = _topicName.PartitionedTopicName;
 
-			Ready();
-
 			_connectionHandler.Tell(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
+
+			Ready();
 		}
 
 		private void Ready()
@@ -338,8 +338,8 @@ namespace SharpPulsar
 					return;
 				}
 				SetCnx(_clientCnx);
-				Become(Connecting);
 				_generator.Tell(NewRequestId.Instance);
+				Become(Connecting);
 			});
 			Receive<SendState>(_ =>
 			{
@@ -411,11 +411,11 @@ namespace SharpPulsar
 			});
 			Receive<IAcknowledge>(ack => 
 			{
-				Become(() => Acknowledge(ack));
+				Acknowledge(ack);
 			});
 			Receive<ICumulative>(cumulative => 
 			{
-				Become(() => Cumulative(cumulative));
+				Cumulative(cumulative);
 			});
 
 			Receive<GetLastDisconnectedTimestamp>(m =>
@@ -437,7 +437,7 @@ namespace SharpPulsar
 			});
 			Receive<MessageReceived>(m => 
 			{
-				MessageReceived(m);
+				Become(() => MessageReceived(m));
 			});
 			Receive<GetSubscription>(m => {
 				Push(ConsumerQueue.Subscription, Subscription);
@@ -654,7 +654,7 @@ namespace SharpPulsar
 					Push(ConsumerQueue.SeekException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Stash.UnstashAll();
+			Stash?.UnstashAll();
         }
 
 
@@ -820,7 +820,6 @@ namespace SharpPulsar
 			{
 				Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
 			}
-			Become(Ready);
 		}
 
 		private void Cumulative(ICumulative cumulative)
@@ -851,7 +850,6 @@ namespace SharpPulsar
 			{
 				Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
 			}
-			Become(Ready);
 		}
 		private void DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
@@ -1491,10 +1489,11 @@ namespace SharpPulsar
 						_log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
 					}
 					IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
-					Become(Ready);
 				}
 				else
 					ProcessMessage(ms);
+
+				Become(Ready);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var messageId = received.MessageId;
@@ -1600,7 +1599,6 @@ namespace SharpPulsar
 					TriggerListener(numMessages);
 				}
 			}
-			Become(Ready);
 		}
 		private bool HasNumMessagesInBatch(MessageMetadata m)
 		{
