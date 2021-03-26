@@ -27,7 +27,7 @@ namespace SharpPulsar.Interfaces
 	/// </summary>
 	public interface IMessageCrypto
 	{
-		public static int IV_LEN = 12;
+		public static int IV_LEN = 16;
 
 		/*
 		 * Encrypt data key using the public key(s) in the argument. <p> If more than one key name is specified, data key is

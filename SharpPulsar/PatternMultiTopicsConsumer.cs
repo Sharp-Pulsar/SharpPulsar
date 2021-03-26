@@ -40,7 +40,7 @@ namespace SharpPulsar
 	{
 		private readonly Regex _topicsPattern;
 		private readonly Mode _subscriptionMode;
-		private readonly IActorRef _client;
+		private readonly IActorRef _lookup;
 		protected internal NamespaceName NamespaceName;
 		private ICancelable _recheckPatternTimeout = null;
 		private IActorContext _context;
@@ -49,42 +49,49 @@ namespace SharpPulsar
 		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
 		{
 			_self = Self;
-			_client = client;
+			_lookup = lookup;
 			_context = Context;
 			_topicsPattern = topicsPattern;
 			_subscriptionMode = subscriptionMode;
-			ReceiveAsync<RecheckTopics>(async _ => 
-			{
-				await TopicReChecker();
-			});
 			if(NamespaceName == null)
 			{
 				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
 			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
 
-			_recheckPatternTimeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), Self, RecheckTopics.Instance, ActorRefs.NoSender);
+			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), async()=> { await TopicReChecker(); });
 		}
 
 		private async ValueTask TopicReChecker()
 		{
-			if(_recheckPatternTimeout.IsCancellationRequested)
+            try
+            {
+				var response = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode));
+				var topicsFound = response.Topics;
+				var topics = _context.GetChildren().ToList();
+				if (_log.IsDebugEnabled)
+				{
+					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
+					TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
+				}
+				IList<string> newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
+				IList<string> oldTopics = Topics;
+				OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
+				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
+			}
+			catch(Exception ex)
+            {
+				_log.Error(ex.ToString());
+            }
+            finally
+            {
+				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
+			}
+			if (_recheckPatternTimeout.IsCancellationRequested)
 			{
 				return;
 			}
-
-			var response = await _client.Ask<GetTopicsOfNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode));
-			var topicsFound = response.Response.Topics;
-			var topics = _context.GetChildren().ToList();
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
-				TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
-			}
-			IList<string> newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
-			IList<string> oldTopics = Topics;
-			OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
-			OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
+			
 		}
 
 		public virtual Regex Pattern
@@ -142,7 +149,7 @@ namespace SharpPulsar
 		}
         protected override void PostStop()
         {
-			_recheckPatternTimeout.Cancel();
+			_recheckPatternTimeout?.Cancel();
 			base.PostStop();
         }
 	}

@@ -159,8 +159,8 @@ namespace SharpPulsar.Utility
                 Key = key,
                 IV = iv,
                 Mode = CipherMode.CBC,
-                Padding = PaddingMode.Zeros
-            };
+                Padding = PaddingMode.ISO10126
+        };
 
             using var encrypt = aes.CreateEncryptor(aes.Key, aes.IV);
             output = encrypt.TransformFinalBlock(data, 0, data.Length);
@@ -178,8 +178,8 @@ namespace SharpPulsar.Utility
                 Key = key,
                 IV = iv,
                 Mode = CipherMode.CBC,
-                Padding = PaddingMode.Zeros
-            };
+                Padding = PaddingMode.ISO10126
+        };
             using var decrypt = aes.CreateDecryptor(aes.Key, aes.IV);
             output = decrypt.TransformFinalBlock(data, 0, data.Length);
             return output;

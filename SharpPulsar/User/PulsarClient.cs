@@ -226,7 +226,7 @@ namespace SharpPulsar.User
             if (conf.TopicsPattern != null)
             {
                 // If use topicsPattern, we should not use topic(), and topics() method.
-                if (conf.TopicNames.Count == 0)
+                if (conf.TopicNames.Count > 0)
                 {
                     throw new ArgumentException("Topic names list must be null when use topicsPattern");
                 }
@@ -318,8 +318,8 @@ namespace SharpPulsar.User
             NamespaceName namespaceName = destination.NamespaceObject;
             try
             {
-               var result = await _client.Ask<GetTopicsOfNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
-                var topics = result.Response.Topics;
+               var result = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+                var topics = result.Topics;
                 if (_actorSystem.Log.IsDebugEnabled)
                 {
                     _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");

@@ -1,7 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using BAMCIS.Util.Concurrent;
+using SharpPulsar.Common;
+using SharpPulsar.Configuration;
+using SharpPulsar.Test.Fixtures;
+using SharpPulsar.User;
+using System;
+using System.Text;
+using System.Text.RegularExpressions;
+using SharpPulsar.Extension;
+using Xunit;
+using Xunit.Abstractions;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,159 +31,79 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Test
 {
+	[Collection(nameof(PulsarTests))]
 	public class PatternTopicsConsumerTest
 	{
-		private const long TestTimeout = 90000; // 1.5 min
-		private static readonly Logger _log = LoggerFactory.getLogger(typeof(PatternTopicsConsumerTest));
-		private readonly long _ackTimeOutMillis = TimeUnit.SECONDS.toMillis(2);
-		public override void Setup()
+		private readonly ITestOutputHelper _output;
+		private readonly PulsarClient _client;
+
+		public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
-			// set isTcpLookup = true, to use BinaryProtoLookupService to get topics for a pattern.
-			IsTcpLookup = true;
-			base.InternalSetup();
-			base.ProducerBaseSetup();
+			_output = output;
+			_client = fixture.Client;
 		}
-
-		public virtual void TestPatternTopicsSubscribeWithBuilderFail()
-		{
-			string key = "PatternTopicsSubscribeWithBuilderFail";
-			string subscriptionName = "my-ex-subscription-" + key;
-			string topicName1 = "persistent://my-property/my-ns/topic-1-" + key;
-
-			string topicName2 = "persistent://my-property/my-ns/topic-2-" + key;
-
-			string topicName3 = "persistent://my-property/my-ns/topic-3-" + key;
-
-			string topicName4 = "non-persistent://my-property/my-ns/topic-4-" + key;
-			IList<string> topicNames = Lists.newArrayList(topicName1, topicName2, topicName3, topicName4);
-			const string patternString = "persistent://my-property/my-ns/pattern-topic.*";
-			Pattern pattern = Pattern.compile(patternString);
-
-			TenantInfo tenantInfo = CreateDefaultTenantInfo();
-			Admin.Tenants().CreateTenant("prop", tenantInfo);
-			Admin.Topics().CreatePartitionedTopic(topicName2, 2);
-			Admin.Topics().CreatePartitionedTopic(topicName3, 3);
-
-			// test failing builder with pattern and topic should fail
-			try
-			{
-				PulsarClient.NewConsumer().TopicsPattern(pattern).Topic(topicName1).SubscriptionName(subscriptionName).SubscriptionType(SubscriptionType.Shared).AckTimeout(_ackTimeOutMillis, TimeUnit.MILLISECONDS).Subscribe();
-				fail("subscribe1 with pattern and topic should fail.");
-			}
-			catch(PulsarClientException)
-			{
-				// expected
-			}
-
-			// test failing builder with pattern and topics should fail
-			try
-			{
-				PulsarClient.NewConsumer().TopicsPattern(pattern).Topics(topicNames).SubscriptionName(subscriptionName).SubscriptionType(SubscriptionType.Shared).AckTimeout(_ackTimeOutMillis, TimeUnit.MILLISECONDS).Subscribe();
-				fail("subscribe2 with pattern and topics should fail.");
-			}
-			catch(PulsarClientException)
-			{
-				// expected
-			}
-
-			// test failing builder with pattern and patternString should fail
-			try
-			{
-				PulsarClient.NewConsumer().TopicsPattern(pattern).TopicsPattern(patternString).SubscriptionName(subscriptionName).SubscriptionType(SubscriptionType.Shared).AckTimeout(_ackTimeOutMillis, TimeUnit.MILLISECONDS).Subscribe();
-				fail("subscribe3 with pattern and patternString should fail.");
-			}
-			catch(System.ArgumentException)
-			{
-				// expected
-			}
-		}
-
+		[Fact]
 		public virtual void TestBinaryProtoToGetTopicsOfNamespacePersistent()
 		{
-			string key = "BinaryProtoToGetTopics";
-			string subscriptionName = "my-ex-subscription-" + key;
-			string topicName1 = "persistent://my-property/my-ns/pattern-topic-1-" + key;
-			string topicName2 = "persistent://my-property/my-ns/pattern-topic-2-" + key;
-			string topicName3 = "persistent://my-property/my-ns/pattern-topic-3-" + key;
-			string topicName4 = "non-persistent://my-property/my-ns/pattern-topic-4-" + key;
-			Pattern pattern = Pattern.compile("my-property/my-ns/pattern-topic.*");
+			string key = Guid.NewGuid().ToString();
+			string subscriptionName = "regex-subscription";
+			string topicName1 = "persistent://public/default/reg-topic-1-" + key;
+			string topicName2 = "persistent://public/default/reg-topic-2-" + key;
+			string topicName3 = "persistent://public/default/reg-topic-3-" + key;
+			string topicName4 = "non-persistent://public/default/reg-topic-4-" + key;
+			Regex pattern = new Regex("public/default/reg-topic.*");
 
-			// 1. create partition
-			TenantInfo tenantInfo = CreateDefaultTenantInfo();
-			Admin.Tenants().CreateTenant("prop", tenantInfo);
-			Admin.Topics().CreatePartitionedTopic(topicName2, 2);
-			Admin.Topics().CreatePartitionedTopic(topicName3, 3);
 
 			// 2. create producer
 			string messagePredicate = "my-message-" + key + "-";
 			int totalMessages = 30;
 
-			Producer<sbyte[]> producer1 = PulsarClient.NewProducer().Topic(topicName1).EnableBatching(false).MessageRoutingMode(MessageRoutingMode.SinglePartition).Create();
-			Producer<sbyte[]> producer2 = PulsarClient.NewProducer().Topic(topicName2).EnableBatching(false).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).Create();
-			Producer<sbyte[]> producer3 = PulsarClient.NewProducer().Topic(topicName3).EnableBatching(false).MessageRoutingMode(MessageRoutingMode.RoundRobinPartition).Create();
-			Producer<sbyte[]> producer4 = PulsarClient.NewProducer().Topic(topicName4).EnableBatching(false).Create();
+			var producer1 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topicName1));
 
-			Consumer<sbyte[]> consumer = PulsarClient.NewConsumer().TopicsPattern(pattern).PatternAutoDiscoveryPeriod(2).SubscriptionName(subscriptionName).SubscriptionType(SubscriptionType.Shared).AckTimeout(_ackTimeOutMillis, TimeUnit.MILLISECONDS).ReceiverQueueSize(4).Subscribe();
-			assertTrue(consumer.Topic.StartsWith(PatternMultiTopicsConsumerImpl.DummyTopicNamePrefix, StringComparison.Ordinal));
+			var producer2 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topicName2));
 
-			// 4. verify consumer get methods, to get right number of partitions and topics.
-			assertSame(pattern, ((PatternMultiTopicsConsumerImpl<object>) consumer).Pattern);
+			var producer3 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topicName3));
 
-			IList<string> topics = ((PatternMultiTopicsConsumerImpl<object>) consumer).PartitionedTopics;
-			IList<ConsumerImpl<sbyte[]>> consumers = ((PatternMultiTopicsConsumerImpl<sbyte[]>) consumer).Consumers;
-
-			assertEquals(topics.Count, 6);
-			assertEquals(consumers.Count, 6);
-
-			assertEquals(((PatternMultiTopicsConsumerImpl<object>) consumer).Topics.Count, 3);
-
-			topics.ForEach(topic => _log.debug("topic: {}", topic));
-			consumers.ForEach(c => _log.debug("consumer: {}", c.Topic));
-
-			Enumerable.Range(0, topics.Count).ForEach(index => assertEquals(consumers[index].Topic, topics[index]));
-
-			((PatternMultiTopicsConsumerImpl<object>) consumer).Topics.ForEach(topic => _log.debug("getTopics topic: {}", topic));
+			var producer4 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+				.Topic(topicName4));
 
 			// 5. produce data
-			for(int i = 0; i < totalMessages / 3; i++)
+			for(int i = 0; i < 10; i++)
 			{
-				producer1.send((messagePredicate + "producer1-" + i).GetBytes());
-				producer2.send((messagePredicate + "producer2-" + i).GetBytes());
-				producer3.send((messagePredicate + "producer3-" + i).GetBytes());
-				producer4.send((messagePredicate + "producer4-" + i).GetBytes());
+				producer1.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer1-" + i).ToSBytes());
+				producer2.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer2-" + i).ToSBytes());
+				producer3.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer3-" + i).ToSBytes());
+				producer4.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer4-" + i).ToSBytes());
 			}
+
+			var consumer = _client.NewConsumer(new ConsumerConfigBuilder<sbyte[]>()
+				.TopicsPattern(pattern)
+				.PatternAutoDiscoveryPeriod(2)
+				.SubscriptionName(subscriptionName)
+				.SubscriptionType(SubType.Shared)
+				.AckTimeout(2000, TimeUnit.MILLISECONDS));
 
 			// 6. should receive all the message
 			int messageSet = 0;
-			Message<sbyte[]> message = consumer.Receive();
+			var message = consumer.Receive(TimeSpan.FromSeconds(10));
 			do
 			{
-				assertTrue(message is TopicMessageImpl);
+				var m = (TopicMessage<sbyte[]>)message;
 				messageSet++;
 				consumer.Acknowledge(message);
-				_log.debug("Consumer acknowledged : " + new string(message.Data));
-				message = consumer.Receive(500, TimeUnit.MILLISECONDS);
+				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data.ToBytes())} from topic: {m.TopicName}");
+				message = consumer.Receive(TimeSpan.FromSeconds(20));
 			} while(message != null);
-			assertEquals(messageSet, totalMessages);
 
 			consumer.Unsubscribe();
-			consumer.close();
-			producer1.close();
-			producer2.close();
-			producer3.close();
-			producer4.close();
-		}
-
-		public virtual void TestPubRateOnNonPersistent()
-		{
-			InternalCleanup();
-			Conf.MaxPublishRatePerTopicInBytes = 10000L;
-			Conf.MaxPublishRatePerTopicInMessages = 100;
-			Thread.Sleep(500);
-			IsTcpLookup = true;
-			base.InternalSetup();
-			base.ProducerBaseSetup();
-			TestBinaryProtoToGetTopicsOfNamespaceNonPersistent();
+			consumer.Close();
+			producer1.Close();
+			producer2.Close();
+			producer3.Close();
+			producer4.Close();
 		}
 
 	}

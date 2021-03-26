@@ -144,23 +144,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				SubscriptionType type = (SubscriptionType)Conf.SubscriptionType;
-				switch (type)
-				{
-					case SubscriptionType.Exclusive:
-						return SubType.Exclusive;
-
-					case SubscriptionType.Shared:
-						return SubType.Shared;
-
-					case SubscriptionType.Failover:
-						return SubType.Failover;
-
-					case SubscriptionType.KeyShared:
-						return SubType.KeyShared;
-					default:
-						return SubType.Exclusive;
-				}
+				return Conf.SubscriptionType;
 
 			}
 		}
