@@ -660,9 +660,7 @@ namespace SharpPulsar
 
 		private void SendRequestWithId(byte[] cmd, long requestId, bool reply)
 		{
-			var sent = SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
-			if (reply)
-				Sender.Tell(sent);
+			SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
 		}
 
 		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)

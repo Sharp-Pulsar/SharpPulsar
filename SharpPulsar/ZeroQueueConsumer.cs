@@ -54,9 +54,9 @@ namespace SharpPulsar
 			{
 				// if cnx is null or if the connection breaks the connectionOpened function will send the flow again
 				_waitingOnReceiveForZeroQueueSize = true;
-				if (await Connected())
+				if (Connected())
 				{
-					IncreaseAvailablePermits(await Cnx());
+					IncreaseAvailablePermits(_clientCnx);
 				}
 				do
 				{
@@ -66,7 +66,7 @@ namespace SharpPulsar
 					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
 					// if message received due to an old flow - discard it and wait for the message from the
 					// latest flow command
-					if (msgCnx == await Cnx())
+					if (msgCnx == _clientCnx)
 					{
 						_waitingOnReceiveForZeroQueueSize = false;
 						break;
@@ -139,7 +139,7 @@ namespace SharpPulsar
 				{
 					log.Error($"[{Topic}][{Subscription}] Message listener error in processing unqueued message: {message.MessageId} => {t}");
 				}
-				IncreaseAvailablePermits(await Cnx());
+				IncreaseAvailablePermits(_clientCnx);
 				_waitingOnListenerForZeroQueueSize = false;
 			});
 		}
@@ -149,7 +149,7 @@ namespace SharpPulsar
 			// Ignore since it was already triggered in the triggerZeroQueueSizeListener() call
 		}
 
-		internal override void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] uncompressedPayload, MessageIdData messageId, IActorRef cnx)
+		private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] uncompressedPayload, MessageIdData messageId, IActorRef cnx)
 		{
 			_log.Warning($"Closing consumer [{Subscription}]-[{ConsumerName}] due to unsupported received batch-message with zero receiver queue size");
 			// close connection
