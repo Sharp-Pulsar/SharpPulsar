@@ -1740,9 +1740,6 @@ namespace SharpPulsar
 					{
 						_log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {i} in batch");
 					}
-					//@davidfowl this the origin - TestReadMessageWithBatching() to test this!
-					//am thinking that the last singleMessageMetadata instance after the iteration
-					//is what is been referenced for all elements in the collection when line 2705 is hit
 					var singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
 					var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
 					
@@ -2729,7 +2726,6 @@ namespace SharpPulsar
 			}
 			else
             {
-				//@davidfowl o.Metadata is the problem.....
 				if (IncomingMessages.Post(o))
 					_log.Info($"Added message with sequnceid {o.SequenceId} (key:{o.Key}) to IncomingMessages. Message Count: {IncomingMessages.Count}");
 				else
