@@ -1189,6 +1189,180 @@
         /// Arguments[string tenant, string namespace]
         /// </summary>
         /// <returns>OffloadPolicies</returns>
-        GetOffloadPolicies
+        GetOffloadPolicies,
+
+        /// <summary>
+        /// Check if the broker is fully initialized
+        /// </summary>
+        /// <param name='operations'>
+        /// The operations group for this extension method.
+        /// </param>
+        IsReady,
+
+        /// <summary>
+        /// Get maxConsumers config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        GetMaxConsumers,
+
+        GetMaxConsumersPersistent,
+
+        /// <summary>
+        /// Set maxConsumers config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='maxCount'>
+        /// The max consumers of the topic
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic, int:maxCount]
+        SetMaxConsumers,
+
+        /// <summary>
+        /// Set maxConsumers config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        RemoveMaxConsumers,
+
+
+        /// <summary>
+        /// Get max consumers per subscription configuration for specified topic.
+        /// </summary> 
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        GetTopicMaxConsumersPerSubscription,
+
+
+        /// <summary>
+        /// Set max consumers per subscription configuration for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='max'>
+        /// Dispatch rate for the specified topic
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic, int:max]
+        SetTopicMaxConsumersPerSubscription,
+
+
+        /// <summary>
+        /// Remove max consumers per subscription configuration for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        RemoveTopicMaxConsumersPerSubscription,
+
+
+        /// <summary>
+        /// Get maxMessageSize config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        GetTopicMaxMessageSize,
+
+
+        /// <summary>
+        /// Set maxMessageSize config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='size'>
+        /// The max message size of the topic
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic, int:size]
+        SetTopicMaxMessageSize,
+
+
+        /// <summary>
+        /// Remove maxMessageSize config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        RemoveTopicMaxMessageSize,
+
+        /// <summary>
+        /// Get maxProducers config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        GetTopicMaxProducers,
+
+
+        /// <summary>
+        /// Set maxProducers config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='count'>
+        /// The max producers of the topic
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic, int:count]
+        SetTopicMaxProducers,
+
+
+        /// <summary>
+        /// Remove maxProducers config for specified topic.
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespace'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// Argument[] :> [string:tenant, string:namespace, string:topic]
+        RemoveTopicMaxProducers
     }
 }

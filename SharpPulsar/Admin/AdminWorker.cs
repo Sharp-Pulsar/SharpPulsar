@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Akka.Actor;
 using PulsarAdmin;
-using PulsarAdmin.Models;
-using SharpPulsar.Admin.Api.Models;
+using SharpPulsar.Admin.Models;
 
 namespace SharpPulsar.Admin
 {
@@ -420,9 +419,8 @@ namespace SharpPulsar.Admin
                         break;
                     case AdminCommands.GetPermissions:
                         var tenant27 = admin.Arguments[0].ToString();
-                        var cluster1 = admin.Arguments[1].ToString();
-                        var nspace27 = admin.Arguments[2].ToString();
-                        response = _adminRestapi.GetPermissions(tenant27, cluster1, nspace27);
+                        var nspace27 = admin.Arguments[1].ToString();
+                        response = _adminRestapi.GetPermissions(tenant27, nspace27);
                         break;
                     case AdminCommands.GrantPermissionOnNamespace:
                         var tenant28 = admin.Arguments[0].ToString();
@@ -502,7 +500,7 @@ namespace SharpPulsar.Admin
                         var tenant40 = admin.Arguments[0].ToString();
                         var nspace40 = admin.Arguments[1].ToString();
                         var strat = (SchemaAutoUpdateCompatibilityStrategy)admin.Arguments[2];
-                        _adminRestapi.SetSchemaAutoUpdateCompatibilityStrategy(tenant40, nspace40, strat);
+                        _adminRestapi.SetSchemaAutoUpdateCompatibilityStrategy(tenant40, nspace40, strat.ToString());
                         admin.Handler("SetSchemaAutoUpdateCompatibilityStrategy");
                         break;
                     case AdminCommands.GetSchemaCompatibilityStrategy:
@@ -514,7 +512,7 @@ namespace SharpPulsar.Admin
                         var tenant42 = admin.Arguments[0].ToString();
                         var nspace42 = admin.Arguments[1].ToString();
                         var compact = (SchemaCompatibilityStrategy)admin.Arguments[2];
-                        _adminRestapi.SetSchemaCompatibilityStrategy(tenant42, nspace42, compact);
+                        _adminRestapi.SetSchemaCompatibilityStrategy(tenant42, nspace42, compact.ToString());
                         admin.Handler("SetSchemaCompatibilityStrategy");
                         break;
                     case AdminCommands.GetSchemaValidtionEnforced:
@@ -545,7 +543,7 @@ namespace SharpPulsar.Admin
                         var tenant47 = admin.Arguments[0].ToString();
                         var nspace47 = admin.Arguments[1].ToString();
                         var authMode = (SubscriptionAuthMode)admin.Arguments[2];
-                        _adminRestapi.SetSubscriptionAuthMode(tenant47, nspace47, authMode);
+                        _adminRestapi.SetSubscriptionAuthMode(tenant47, nspace47, authMode.ToString());
                         admin.Handler("SetSubscriptionAuthMode");
                         break;
                     case AdminCommands.GetSubscriptionDispatchRate:
@@ -574,11 +572,10 @@ namespace SharpPulsar.Admin
                         break;
                     case AdminCommands.UnsubscribeNamespace:
                         var tenant52 = admin.Arguments[0].ToString();
-                        var cluster3 = admin.Arguments[1].ToString();
-                        var nspace52 = admin.Arguments[2].ToString();
-                        var sub2 = admin.Arguments[3].ToString();
-                        var auth4 = (bool)admin.Arguments[4];
-                        _adminRestapi.UnsubscribeNamespace(tenant52, cluster3, nspace52, sub2, auth4);
+                        var nspace52 = admin.Arguments[1].ToString();
+                        var sub2 = admin.Arguments[2].ToString();
+                        var auth4 = (bool)admin.Arguments[3];
+                        _adminRestapi.UnsubscribeNamespace(tenant52, nspace52, sub2, auth4);
                         admin.Handler("UnsubscribeNamespace");
                         break;
                     case AdminCommands.DeleteNamespaceBundle:
@@ -613,7 +610,7 @@ namespace SharpPulsar.Admin
                         var auth8 = (bool)admin.Arguments[3];
                         var unload = (bool)admin.Arguments[4];
                         var algo = admin.Arguments[5].ToString();
-                        _adminRestapi.SplitNamespaceBundle(tenant56, nspace56, bndle4, algo, auth8, unload);
+                        _adminRestapi.SplitNamespaceBundle(tenant56, nspace56, bndle4, auth8, unload, algo);
                         admin.Handler("SplitNamespaceBundle");
                         break;
                     case AdminCommands.UnloadNamespaceBundle:
@@ -996,9 +993,9 @@ namespace SharpPulsar.Admin
                         var nspace83 = admin.Arguments[1].ToString();
                         var topic21 = admin.Arguments[2].ToString();
                         var subName1 = admin.Arguments[3].ToString();
-                        var expireSec = (int)admin.Arguments[4];
-                        var auth26 = (bool)admin.Arguments[5];
-                        _adminRestapi.ExpireTopicMessages(tenant83, nspace83, topic21, subName1, expireSec, auth26);
+                        var auth26 = (bool)admin.Arguments[4];
+                        var reset = admin.Arguments.Length > 6 ? (Models.ResetCursorData)admin.Arguments[5] : null;
+                        _adminRestapi.ExpireTopicMessages(tenant83, nspace83, topic21, subName1, auth26, reset);
                         admin.Handler("ExpireTopicMessages");
                         break;
                     case AdminCommands.ExpirePersistentTopicMessages:
@@ -1037,8 +1034,8 @@ namespace SharpPulsar.Admin
                         var topic23 = admin.Arguments[2].ToString();
                         var subName3 = admin.Arguments[3].ToString();
                         var auth28 = (bool)admin.Arguments[4];
-                        var id = (AdminMessageId)admin.Arguments[5];
-                        _adminRestapi.ResetCursorOnPosition(tenant85, nspace85, topic23, subName3, auth28, id);
+                        var reset1 = admin.Arguments.Length > 6 ? (Models.ResetCursorData)admin.Arguments[5] : null;
+                        _adminRestapi.ResetCursorOnPosition(tenant85, nspace85, topic23, subName3, auth28, reset1);
                         admin.Handler("ResetCursorOnPosition");
                         break;
                     case AdminCommands.ResetCursorOnPersistentPosition:
@@ -1047,8 +1044,8 @@ namespace SharpPulsar.Admin
                         var topic23p = admin.Arguments[2].ToString();
                         var subName3p = admin.Arguments[3].ToString();
                         var auth28p = (bool)admin.Arguments[4];
-                        var idp = (AdminMessageId)admin.Arguments[5];
-                        _adminRestapi.ResetCursorOnPosition1(tenant85p, nspace85p, topic23p, subName3p, auth28p, idp);
+                        var reset2 = admin.Arguments.Length > 6 ? (Models.ResetCursorData)admin.Arguments[5] : null;
+                        _adminRestapi.ResetCursorOnPosition1(tenant85p, nspace85p, topic23p, subName3p, auth28p, reset2);
                         admin.Handler("ResetCursorOnPersistentPosition");
                         break;
                     case AdminCommands.ResetCursor:
@@ -1114,9 +1111,10 @@ namespace SharpPulsar.Admin
                         var nspace89 = admin.Arguments[1].ToString();
                         var topic27 = admin.Arguments[2].ToString();
                         var subName7 = admin.Arguments[3].ToString();
-                        var mId = admin.Arguments[4].ToString();
-                        var auth32 = (bool)admin.Arguments[5];
-                        _adminRestapi.CreateSubscription(tenant89, nspace89, topic27, subName7, mId, auth32);
+                        var auth32 = (bool)admin.Arguments[4];
+                        var mid = admin.Arguments.Length > 6 ? (MessageIdImpl)admin.Arguments[5] : null;
+                        var repl = admin.Arguments.Length > 7 ? (bool)admin.Arguments[6] : false;
+                        _adminRestapi.CreateSubscription(tenant89, nspace89, topic27, subName7, auth32, mid, repl);
                         admin.Handler("CreateSubscription");
                         break;
                     case AdminCommands.CreateSubscriptionPersistent:
@@ -1124,9 +1122,10 @@ namespace SharpPulsar.Admin
                         var nspace89p = admin.Arguments[1].ToString();
                         var topic27p = admin.Arguments[2].ToString();
                         var subName7p = admin.Arguments[3].ToString();
-                        var mIdp = admin.Arguments[4].ToString();
                         var auth32p = (bool)admin.Arguments[5];
-                        _adminRestapi.CreateSubscription1(tenant89p, nspace89p, topic27p, subName7p, mIdp, auth32p);
+                        var mid2 = admin.Arguments.Length > 6 ? (MessageIdImpl)admin.Arguments[5] : null;
+                        var repl1 = admin.Arguments.Length > 7 ? (bool)admin.Arguments[6] : false;
+                        _adminRestapi.CreateSubscription1(tenant89p, nspace89p, topic27p, subName7p, auth32p, mid2, repl1);
                         admin.Handler("CreateSubscriptionPersistent");
                         break;
                     case AdminCommands.GetSubscriptions:
@@ -1232,14 +1231,6 @@ namespace SharpPulsar.Admin
                         var auth39 = (bool)admin.Arguments[3];
                         response = _adminRestapi.DeleteSchema(tenant99, nspace99, topic34, auth39);
                         break;
-                    case AdminCommands.GetSchemaVersion:
-                        var tenant100 = admin.Arguments[0].ToString();
-                        var nspace100 = admin.Arguments[1].ToString();
-                        var topic35 = admin.Arguments[2].ToString();
-                        var version = admin.Arguments[3].ToString();
-                        var auth40 = (bool)admin.Arguments[4];
-                        response = _adminRestapi.GetSchemaVersion(tenant100, nspace100, topic35, version, auth40);
-                        break;
                     case AdminCommands.GetAllSchemas:
                         var tenant101 = admin.Arguments[0].ToString();
                         var nspace101 = admin.Arguments[1].ToString();
@@ -1303,12 +1294,6 @@ namespace SharpPulsar.Admin
                         var ns110 = admin.Arguments[1].ToString();
                         response = _adminRestapi.GetOffloadPolicies(tenant110, ns110);
                         break;
-                    case AdminCommands.GetProxyConnectionStats:
-                        response = _adminRestapi.GetProxyConnectionsStats();
-                        break;
-                    case AdminCommands.GetProxyTopicStats:
-                        response = _adminRestapi.GetProxyTopicsStats();
-                        break;
                     case AdminCommands.GetMessageById:
                         var gmsgT = admin.Arguments[0].ToString();
                         var gmsgN = admin.Arguments[1].ToString();
@@ -1317,6 +1302,85 @@ namespace SharpPulsar.Admin
                         var gmsgE = (long)admin.Arguments[4];
                         var gmsgI = (bool)admin.Arguments[5];
                         response = _adminRestapi.GetMessageById(gmsgT, gmsgN, gmsgTo, gmsgL, gmsgE, gmsgI);
+                        break;
+                    case AdminCommands.IsReady:
+                        response = _adminRestapi.IsReady();
+                        break;
+                    case AdminCommands.GetMaxConsumers:
+                        var maxTenant = admin.Arguments[0].ToString();
+                        var maxNamespace = admin.Arguments[1].ToString();
+                        var maxTopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent? _adminRestapi.GetMaxConsumers1(maxTenant, maxNamespace, maxTopic): _adminRestapi.GetMaxConsumers(maxTenant, maxNamespace, maxTopic);
+                        break;
+                    case AdminCommands.SetMaxConsumers:
+                        var setMaxTenant = admin.Arguments[0].ToString();
+                        var setMaxNamespace = admin.Arguments[1].ToString();
+                        var setMaxTopic = admin.Arguments[2].ToString();
+                        var setMaxCount = (int)admin.Arguments[3];
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.SetMaxConsumers1(setMaxTenant, setMaxNamespace, setMaxTopic, setMaxCount) : _adminRestapi.SetMaxConsumers(setMaxTenant, setMaxNamespace, setMaxTopic, setMaxCount);
+                        break;
+                    case AdminCommands.RemoveMaxConsumers:
+                        var rMaxTenant = admin.Arguments[0].ToString();
+                        var rMaxNamespace = admin.Arguments[1].ToString();
+                        var rMaxTopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ?  _adminRestapi.RemoveMaxConsumers1(rMaxTenant, rMaxNamespace, rMaxTopic) : _adminRestapi.RemoveMaxConsumers(rMaxTenant, rMaxNamespace, rMaxTopic);
+                        break;
+                    case AdminCommands.GetTopicMaxConsumersPerSubscription:
+                        var maxtenant = admin.Arguments[0].ToString();
+                        var maxnspace = admin.Arguments[1].ToString();
+                        var maxtopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.GetMaxConsumersPerSubscription2(maxtenant, maxnspace, maxtopic) : _adminRestapi.GetMaxConsumersPerSubscription1(maxtenant, maxnspace, maxtopic);
+                        break;
+                    case AdminCommands.SetTopicMaxConsumersPerSubscription:
+                        var smaxtenant = admin.Arguments[0].ToString();
+                        var smaxnspace = admin.Arguments[1].ToString();
+                        var smaxtopic = admin.Arguments[2].ToString();
+                        var smax = (int)admin.Arguments[3];
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.SetMaxConsumersPerSubscription2(smaxtenant, smaxnspace, smaxtopic, smax) : _adminRestapi.SetMaxConsumersPerSubscription1(smaxtenant, smaxnspace, smaxtopic, smax);
+                        break;
+                    case AdminCommands.RemoveTopicMaxConsumersPerSubscription:
+                        var rmaxtenant = admin.Arguments[0].ToString();
+                        var rmaxnspace = admin.Arguments[1].ToString();
+                        var rmaxtopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.RemoveMaxConsumersPerSubscription1(rmaxtenant, rmaxnspace, rmaxtopic) : _adminRestapi.RemoveMaxConsumersPerSubscription(rmaxtenant, rmaxnspace, rmaxtopic);
+                        break;
+                    case AdminCommands.GetTopicMaxMessageSize:
+                        var gmaxtenant = admin.Arguments[0].ToString();
+                        var gmaxnspace = admin.Arguments[1].ToString();
+                        var gmaxtopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.GetMaxMessageSize1(gmaxtenant, gmaxnspace, gmaxtopic) : _adminRestapi.GetMaxMessageSize(gmaxtenant, gmaxnspace, gmaxtopic);
+                        break;
+                    case AdminCommands.SetTopicMaxMessageSize:
+                        var semaxtenant = admin.Arguments[0].ToString();
+                        var semaxnspace = admin.Arguments[1].ToString();
+                        var semaxtopic = admin.Arguments[2].ToString();
+                        var semaxtopicsize = (int)admin.Arguments[3];
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.SetMaxMessageSize1(semaxtenant, semaxnspace, semaxtopic, semaxtopicsize) : _adminRestapi.SetMaxMessageSize(semaxtenant, semaxnspace, semaxtopic, semaxtopicsize);
+                        break;
+                    case AdminCommands.RemoveTopicMaxMessageSize:
+                        var remaxtenant = admin.Arguments[0].ToString();
+                        var remaxnspace = admin.Arguments[1].ToString();
+                        var remaxtopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.RemoveMaxMessageSize1(remaxtenant, remaxnspace, remaxtopic) : _adminRestapi.RemoveMaxMessageSize(remaxtenant, remaxnspace, remaxtopic);
+                        break;
+                    case AdminCommands.GetTopicMaxProducers:
+                        var pemaxtenant = admin.Arguments[0].ToString();
+                        var pemaxnspace = admin.Arguments[1].ToString();
+                        var pemaxtopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.GetMaxProducers1(pemaxtenant, pemaxnspace, pemaxtopic) : _adminRestapi.GetMaxProducers(pemaxtenant, pemaxnspace, pemaxtopic);
+                        break;
+                    case AdminCommands.SetTopicMaxProducers:
+                        var pmaxtenant = admin.Arguments[0].ToString();
+                        var pmaxnspace = admin.Arguments[1].ToString();
+                        var pmaxtopic = admin.Arguments[2].ToString();
+                        var pmaxcount = (int)admin.Arguments[3];
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.SetMaxProducers1(pmaxtenant, pmaxnspace, pmaxtopic, pmaxcount) : _adminRestapi.SetMaxProducers(pmaxtenant, pmaxnspace, pmaxtopic, pmaxcount);
+                        break;
+                    case AdminCommands.RemoveTopicMaxProducers:
+                        var rpmaxtenant = admin.Arguments[0].ToString();
+                        var rpmaxnspace = admin.Arguments[1].ToString();
+                        var rpmaxtopic = admin.Arguments[2].ToString();
+                        response = admin.TopicType == Messages.TopicType.Persistent ? _adminRestapi.RemoveMaxProducers1(rpmaxtenant, rpmaxnspace, rpmaxtopic) : _adminRestapi.RemoveMaxProducers(rpmaxtenant, rpmaxnspace, rpmaxtopic);
                         break;
                 }
                 _pulsarManager.Tell(new AdminResponse(response));

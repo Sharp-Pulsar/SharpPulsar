@@ -5,7 +5,7 @@ namespace SharpPulsar.Messages
 {
     public sealed class Admin
     {
-        public Admin(AdminCommands command, object[] arguments, Action<object> handler, Action<Exception> exception, string brokerDestinationUrl, Action<string> log)
+        public Admin(AdminCommands command, object[] arguments, Action<object> handler, Action<Exception> exception, string brokerDestinationUrl, Action<string> log, TopicType? topicType = null)
         {
             Command = command;
             Arguments = arguments;
@@ -13,6 +13,8 @@ namespace SharpPulsar.Messages
             Exception = exception;
             BrokerDestinationUrl = brokerDestinationUrl;
             Log = log;
+            if (topicType.HasValue)
+                TopicType = topicType.Value;
         }
 
         public AdminCommands Command { get; }
@@ -21,5 +23,11 @@ namespace SharpPulsar.Messages
         public Action<Exception> Exception { get; }
         public Action<string> Log { get; }
         public string BrokerDestinationUrl { get; }
+        public TopicType TopicType { get; } = TopicType.Persistent;
+    }
+    public enum TopicType
+    {
+        Persistent,
+        NonPersistent
     }
 }
