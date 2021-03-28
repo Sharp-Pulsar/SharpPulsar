@@ -19,17 +19,14 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageIconUrl />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Admin\Api\Models\**" />
     <Compile Remove="Akka\**" />
     <Compile Remove="EventSource\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
-    <EmbeddedResource Remove="Admin\Api\Models\**" />
     <EmbeddedResource Remove="Akka\**" />
     <EmbeddedResource Remove="EventSource\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
-    <None Remove="Admin\Api\Models\**" />
     <None Remove="Akka\**" />
     <None Remove="EventSource\**" />
     <None Remove="Protocol\Circe\**" />
@@ -47,7 +44,6 @@ Logs to logs.log</PackageReleaseNotes>
 
   <ItemGroup>
     <None Remove="NLog.config" />
-    <None Remove="OpenAPIs\swagger.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -102,7 +98,6 @@ Logs to logs.log</PackageReleaseNotes>
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <OpenApiReference Include="OpenAPIs\swagger.json" ClassName="PulsarAdmin" CodeGenerator="NSwagCSharp" Namespace="SharpPulsar" />
     <Compile Update="Admin\PulsarAdmin.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

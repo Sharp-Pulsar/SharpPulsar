@@ -79,7 +79,7 @@ namespace SharpPulsar.Admin
         /// <exception cref="System.ArgumentNullException">
         /// Thrown when a required parameter is null
         /// </exception>
-        public PulsarAdminRESTAPI(System.Uri baseUri, params System.Net.Http.DelegatingHandler[] handlers) : this(handlers)
+        public PulsarAdminRESTAPI(System.Uri baseUri, params System.Net.Http.DelegatingHandler[] handlers) : this(baseUri.AbsoluteUri, handlers)
         {
             if (baseUri == null)
             {
@@ -103,7 +103,7 @@ namespace SharpPulsar.Admin
         /// <exception cref="System.ArgumentNullException">
         /// Thrown when a required parameter is null
         /// </exception>
-        public PulsarAdminRESTAPI(System.Uri baseUri, System.Net.Http.HttpClientHandler rootHandler, params System.Net.Http.DelegatingHandler[] handlers) : this(rootHandler, handlers)
+        public PulsarAdminRESTAPI(System.Uri baseUri, System.Net.Http.HttpClientHandler rootHandler, params System.Net.Http.DelegatingHandler[] handlers) : this(baseUri.AbsoluteUri, rootHandler, handlers)
         {
             if (baseUri == null)
             {
@@ -67802,7 +67802,7 @@ namespace SharpPulsar.Admin
             public static async System.Threading.Tasks.Task<string> SetMaxConsumers1Async(this IPulsarAdminRESTAPI operations, string tenant, string namespaceParameter, string topic, int? body = default(int?), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
             {
                 using (var response = await operations.SetMaxConsumers1WithHttpMessagesAsync(tenant, namespaceParameter, topic, body, null, cancellationToken).ConfigureAwait(false))
-                    return await response.Response.Content.ReadAsStringAsync().ConfigureAwait();
+                    return await response.Response.Content.ReadAsStringAsync().ConfigureAwait(false);
             }
 
             /// <summary>
