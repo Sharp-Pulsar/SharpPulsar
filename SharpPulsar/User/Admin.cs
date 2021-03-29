@@ -761,625 +761,919 @@ namespace SharpPulsar.User
         }
 
 
-        public Task<HttpOperationResponse<bool?>> GetIsAllowAutoUpdateSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<bool?> GetIsAllowAutoUpdateSchema(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetIsAllowAutoUpdateSchemaAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
 
-        public Task<HttpOperationResponse> GetLastMessageId1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<bool?>> GetIsAllowAutoUpdateSchemaAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetIsAllowAutoUpdateSchemaWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetLastMessageIdWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetLastMessageId(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetLastMessageIdAsync(tenant, namespaceParameter, topic, isPersistent, authoritative, customHeaders).GetAwaiter().GetResult();
+            
         }
-
-        public Task<HttpOperationResponse<IList<string>>> GetList1WithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetLastMessageIdAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (isPersistent)
+                return await _api.GetLastMessageId1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+                
+            return await _api.GetLastMessageIdWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+            
         }
 
-        public Task<HttpOperationResponse<IList<string>>> GetListFromBundleWithHttpMessagesAsync(string tenant, string namespaceParameter, string bundle, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetList(string tenant, string namespaceParameter, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetListAsync(tenant, namespaceParameter, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IList<string>>> GetListWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IList<string>>> GetListAsync(string tenant, string namespaceParameter, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetList1WithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetListWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<LoadReport>> GetLoadReportWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetListFromBundle(string tenant, string namespaceParameter, string bundle, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetListFromBundleAsync(tenant, namespaceParameter, bundle, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetManagedLedgerInfo1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IList<string>>> GetListFromBundleAsync(string tenant, string namespaceParameter, string bundle, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetListFromBundleWithHttpMessagesAsync(tenant, namespaceParameter, bundle, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetManagedLedgerInfoWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<LoadReport> GetLoadReport(Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetLoadReportAsync(customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxConsumers1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<LoadReport>> GetLoadReportAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetLoadReportWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMaxConsumersPerSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetManagedLedgerInfo(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetManagedLedgerInfoAsync(tenant, namespaceParameter, topic, isPersistent, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxConsumersPerSubscription2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetManagedLedgerInfoAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetManagedLedgerInfo1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetManagedLedgerInfoWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<int?>> GetMaxConsumersPerSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMaxConsumers(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxConsumersAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<int?>> GetMaxConsumersPerTopicWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMaxConsumersAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxConsumers1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxConsumersWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMaxConsumersWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMaxConsumersPerSubscription(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxConsumersPerSubscriptionAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxMessageSize1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxConsumersPerSubscription2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxConsumersPerSubscription1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMaxMessageSizeWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetMaxConsumersPerSubscription(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxConsumersPerSubscriptionAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxProducers1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMaxConsumersPerSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<int?>> GetMaxProducersPerTopicWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetMaxConsumersPerTopic(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxConsumersPerTopicAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxProducersWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async  Task<HttpOperationResponse<int?>> GetMaxConsumersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMaxConsumersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMaxSubscriptionsPerTopic1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMaxMessageSize(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxMessageSizeAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxSubscriptionsPerTopic2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        
+        public async Task<HttpOperationResponse> GetMaxMessageSizeAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxMessageSize1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxMessageSizeWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<int?>> GetMaxSubscriptionsPerTopicWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMaxProducers(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxProducersAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxUnackedMessagesOnConsumer1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMaxProducersAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxProducers1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxProducersWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMaxUnackedMessagesOnConsumerWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetMaxProducersPerTopic(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxProducersPerTopicAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMaxUnackedMessagesOnSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetMaxProducersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMaxProducersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMaxUnackedMessagesOnSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMaxSubscriptionsPerTopic(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxSubscriptionsPerTopicAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<int?>> GetMaxUnackedMessagesPerConsumerWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxSubscriptionsPerTopic2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxSubscriptionsPerTopic1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
-        public Task<HttpOperationResponse<int?>> GetMaxUnackedmessagesPerSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        
+        public HttpOperationResponse<int?> GetMaxSubscriptionsPerTopic(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxSubscriptionsPerTopicAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IList<Metrics>>> GetMBeansWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetMaxSubscriptionsPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMaxSubscriptionsPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetMessageById1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, long ledgerId, long entryId, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMaxUnackedMessagesOnConsumer(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxUnackedMessagesOnConsumerAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetMessageByIdWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, long ledgerId, long entryId, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMaxUnackedMessagesOnConsumerAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxUnackedMessagesOnConsumer1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxUnackedMessagesOnConsumerWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<int?>> GetMessageTTL1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
+
+        public HttpOperationResponse GetMaxUnackedMessagesOnSubscription(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        { 
+            return GetMaxUnackedMessagesOnSubscriptionAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders, cancellationToken).GetAwaiter().GetResult();
         }
 
-        public Task<HttpOperationResponse<int?>> GetMessageTTLWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMaxUnackedMessagesOnSubscriptionAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMaxUnackedMessagesOnSubscription1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMaxUnackedMessagesOnSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IList<Metrics>>> GetMetricsWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetMaxUnackedMessagesPerConsumer(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxUnackedMessagesPerConsumerAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<string>> GetNamespaceAntiAffinityGroupWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetMaxUnackedMessagesPerConsumerAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMaxUnackedMessagesPerConsumerWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<ResourceQuota>> GetNamespaceBundleResourceQuotaWithHttpMessagesAsync(string tenant, string namespaceParameter, string bundle, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetMaxUnackedmessagesPerSubscription(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMaxUnackedmessagesPerSubscriptionAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IDictionary<string, NamespaceIsolationData>>> GetNamespaceIsolationPoliciesWithHttpMessagesAsync(string cluster, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetMaxUnackedmessagesPerSubscriptionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMaxUnackedmessagesPerSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(true);
         }
 
-        public Task<HttpOperationResponse<NamespaceIsolationData>> GetNamespaceIsolationPolicyWithHttpMessagesAsync(string cluster, string policyName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<Metrics>> GetMBeans(Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMBeansAsync(customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<int?>> GetNamespaceMessageTTLWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IList<Metrics>>> GetMBeansAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMBeansWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IList<string>>> GetNamespaceReplicationClustersWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetMessageById(string tenant, string namespaceParameter, string topic, long ledgerId, long entryId, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return GetMessageByIdAsync(tenant, namespaceParameter, topic, ledgerId, entryId, isPersistent, authoritative, customHeaders, cancellationToken).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<long?>> GetOffloadDeletionLagWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetMessageByIdAsync(string tenant, string namespaceParameter, string topic, long ledgerId, long entryId, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMessageById1WithHttpMessagesAsync(tenant, namespaceParameter, topic, ledgerId, entryId, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMessageByIdWithHttpMessagesAsync(tenant, namespaceParameter, topic, ledgerId, entryId, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetOffloadPolicies1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetMessageTTL(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMessageTTLAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetOffloadPolicies2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetMessageTTLAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetMessageTTL1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetMessageTTLWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<OffloadPolicies>> GetOffloadPoliciesWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<Metrics>> GetMetrics(Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetMetricsAsync(customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<long?>> GetOffloadThresholdWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IList<Metrics>>> GetMetricsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetMetricsWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IDictionary<string, NamespaceOwnershipStatus>>> GetOwnedNamespacesWithHttpMessagesAsync(string clusterName, string brokerWebserviceurl, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<string> GetNamespaceAntiAffinityGroup(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetNamespaceAntiAffinityGroupAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<PartitionedTopicMetadata>> GetPartitionedMetadata1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, bool? checkAllowAutoCreation = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<string>> GetNamespaceAntiAffinityGroupAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetNamespaceAntiAffinityGroupWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<PartitionedTopicMetadata>> GetPartitionedMetadataWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, bool? checkAllowAutoCreation = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<ResourceQuota> GetNamespaceBundleResourceQuota(string tenant, string namespaceParameter, string bundle, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetNamespaceBundleResourceQuotaAsync(tenant, namespaceParameter, bundle, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetPartitionedStats1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? perPartition = true, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<ResourceQuota>> GetNamespaceBundleResourceQuotaAsync(string tenant, string namespaceParameter, string bundle, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetNamespaceBundleResourceQuotaWithHttpMessagesAsync(tenant, namespaceParameter, bundle, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetPartitionedStatsWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? perPartition = true, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, NamespaceIsolationData>> GetNamespaceIsolationPolicies(string cluster, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetNamespaceIsolationPoliciesAsync(cluster, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IList<string>>> GetPartitionedTopicList1WithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IDictionary<string, NamespaceIsolationData>>> GetNamespaceIsolationPoliciesAsync(string cluster, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetNamespaceIsolationPoliciesWithHttpMessagesAsync(cluster, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IList<string>>> GetPartitionedTopicListWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<NamespaceIsolationData> GetNamespaceIsolationPolicy(string cluster, string policyName, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetNamespaceIsolationPolicyAsync(cluster, policyName, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IList<string>>> GetPeerClusterWithHttpMessagesAsync(string cluster, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<NamespaceIsolationData>> GetNamespaceIsolationPolicyAsync(string cluster, string policyName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetNamespaceIsolationPolicyWithHttpMessagesAsync(cluster, policyName, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IDictionary<string, PendingBookieOpsStats>>> GetPendingBookieOpsStatsWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetNamespaceMessageTTL(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetNamespaceMessageTTLAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IDictionary<string, object>>> GetPermissionsOnTopic1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<int?>> GetNamespaceMessageTTLAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetNamespaceMessageTTLWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IDictionary<string, object>>> GetPermissionsOnTopicWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetNamespaceReplicationClusters(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetNamespaceReplicationClustersAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<IDictionary<string, object>>> GetPermissionsWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IList<string>>> GetNamespaceReplicationClustersAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetNamespaceReplicationClustersWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetPersistence1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<long?> GetOffloadDeletionLag(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetOffloadDeletionLagAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetPersistence2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<long?>> GetOffloadDeletionLagAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetOffloadDeletionLagWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<PersistencePolicies>> GetPersistenceWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetOffloadPolicies(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetOffloadPoliciesAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<Policies>> GetPoliciesWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetOffloadPoliciesAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetOffloadPolicies2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetOffloadPolicies1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetPublishRate1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<OffloadPolicies> GetOffloadPolicies(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetOffloadPoliciesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetPublishRateWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<OffloadPolicies>> GetOffloadPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetOffloadPoliciesWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<DispatchRate>> GetReplicatorDispatchRateWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<long?> GetOffloadThreshold(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetOffloadThresholdAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse> GetRetention1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<long?>> GetOffloadThresholdAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetOffloadThresholdWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetRetention2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, NamespaceOwnershipStatus>> GetOwnedNamespaces(string clusterName, string brokerWebserviceurl, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetOwnedNamespacesAsync(clusterName, brokerWebserviceurl, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<RetentionPolicies>> GetRetentionWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IDictionary<string, NamespaceOwnershipStatus>>> GetOwnedNamespacesAsync(string clusterName, string brokerWebserviceurl, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetOwnedNamespacesWithHttpMessagesAsync(clusterName, brokerWebserviceurl, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IDictionary<string, object>>> GetRuntimeConfigurationWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<PartitionedTopicMetadata> GetPartitionedMetadata(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, bool? checkAllowAutoCreation = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetPartitionedMetadataAsync(tenant, namespaceParameter, topic, isPersistent, authoritative, checkAllowAutoCreation, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<GetSchemaResponse>> GetSchema1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<PartitionedTopicMetadata>> GetPartitionedMetadataAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, bool? checkAllowAutoCreation = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetPartitionedMetadata1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, checkAllowAutoCreation, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetPartitionedMetadataWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, checkAllowAutoCreation, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<string>> GetSchemaAutoUpdateCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetPartitionedStats(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? perPartition = true, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetPartitionedStatsAsync(tenant, namespaceParameter, topic, isPersistent, perPartition, authoritative, getPreciseBacklog, subscriptionBacklogSize, customHeaders).GetAwaiter().GetResult();
         }
-
-        public Task<HttpOperationResponse<string>> GetSchemaCompatibilityStrategyWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> GetPartitionedStatsAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? perPartition = true, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetPartitionedStats1WithHttpMessagesAsync(tenant, namespaceParameter, topic, perPartition, authoritative, getPreciseBacklog, subscriptionBacklogSize, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetPartitionedStatsWithHttpMessagesAsync(tenant, namespaceParameter, topic, perPartition, authoritative, getPreciseBacklog, subscriptionBacklogSize, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<bool?>> GetSchemaValidtionEnforcedWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetPartitionedTopicList(string tenant, string namespaceParameter, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetPartitionedTopicListAsync(tenant, namespaceParameter, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<IList<string>>> GetPartitionedTopicListAsync(string tenant, string namespaceParameter, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if(isPersistent)
+                return await _api.GetPartitionedTopicList1WithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetPartitionedTopicListWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<GetSchemaResponse>> GetSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetPeerCluster(string cluster, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPeerClusterAsync(cluster, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<IList<string>>> GetPeerClusterAsync(string cluster, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetPeerClusterWithHttpMessagesAsync(cluster, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<TopicStats>> GetStats1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, PendingBookieOpsStats>> GetPendingBookieOpsStats(Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetPendingBookieOpsStatsAsync(customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<IDictionary<string, PendingBookieOpsStats>>> GetPendingBookieOpsStatsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetPendingBookieOpsStatsWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<TopicStats>> GetStatsWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, object>> GetPermissionsOnTopic(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetPermissionsOnTopicAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<IDictionary<string, object>>> GetPermissionsOnTopicAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if(isPersistent)
+                return await _api.GetPermissionsOnTopic1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetPermissionsOnTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> GetSubscribeRate1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, object>> GetPermissions(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPermissionsAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<IDictionary<string, object>>> GetPermissionsAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetPermissionsWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetSubscribeRate2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetPersistence(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPersistenceAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GetPersistenceAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetPersistence2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetPersistence1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<SubscribeRate>> GetSubscribeRateWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<PersistencePolicies> GetPersistences(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPersistencesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<PersistencePolicies>> GetPersistencesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetPersistenceWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetSubscriptionDispatchRate1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<Policies> GetPolicies(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPoliciesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<Policies>> GetPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetPoliciesWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetSubscriptionDispatchRate2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetPublishRate(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetPublishRateAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GetPublishRateAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetPublishRate1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetPublishRateWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<DispatchRate>> GetSubscriptionDispatchRateWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<DispatchRate> GetReplicatorDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetReplicatorDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<DispatchRate>> GetReplicatorDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetReplicatorDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<int?>> GetSubscriptionExpirationTimeWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetRetention(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetRetentionAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GetRetentionAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetRetention2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetRetention1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GetSubscriptions1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<RetentionPolicies> GetRetention(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetRetentionAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<RetentionPolicies>> GetRetentionAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetRetentionWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> GetSubscriptionsWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public  HttpOperationResponse<IDictionary<string, object>> GetRuntimeConfiguration(Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetRuntimeConfigurationAsync(customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<IDictionary<string, object>>> GetRuntimeConfigurationAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetRuntimeConfigurationWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<TenantInfo>> GetTenantAdminWithHttpMessagesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<GetSchemaResponse> GetSchema(string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSchemaAsync(tenant, namespaceParameter, topic, version, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<GetSchemaResponse>> GetSchemaAsync(string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetSchema1WithHttpMessagesAsync(tenant, namespaceParameter, topic, version, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IList<string>>> GetTenantNamespacesWithHttpMessagesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<string> GetSchemaAutoUpdateCompatibilityStrategy(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSchemaAutoUpdateCompatibilityStrategyAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<string>> GetSchemaAutoUpdateCompatibilityStrategyAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetSchemaAutoUpdateCompatibilityStrategyWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<IList<string>>> GetTenantsWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<string> GetSchemaCompatibilityStrategy(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSchemaCompatibilityStrategyAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<string>> GetSchemaCompatibilityStrategyAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetSchemaCompatibilityStrategyWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<object>> GetTopics2WithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<bool?> GetSchemaValidtionEnforced(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetSchemaValidtionEnforcedAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<bool?>> GetSchemaValidtionEnforcedAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetSchemaValidtionEnforcedWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<IList<string>>> GetTopicsWithHttpMessagesAsync(string tenant, string namespaceParameter, string mode = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<GetSchemaResponse> GetSchema(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetSchemaAsync(tenant, namespaceParameter, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<GetSchemaResponse>> GetSchemaAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetSchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<LongSchemaVersion>> GetVersionBySchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload body = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TopicStats> GetStats(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetStatsAsync(tenant, namespaceParameter, topic, isPersistent, authoritative, getPreciseBacklog, subscriptionBacklogSize, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<TopicStats>> GetStatsAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, bool? getPreciseBacklog = false, bool? subscriptionBacklogSize = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetStats1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, getPreciseBacklog, subscriptionBacklogSize, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetStatsWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, getPreciseBacklog, subscriptionBacklogSize, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GrantPermissionOnNamespaceWithHttpMessagesAsync(string tenant, string namespaceParameter, string role, IList<string> body = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetSubscribeRate(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSubscribeRateAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GetSubscribeRateAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetSubscribeRate2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetSubscribeRate1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GrantPermissionsOnTopic1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string role, IList<string> body = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<SubscribeRate> GetSubscribeRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSubscribeRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<SubscribeRate>> GetSubscribeRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetSubscribeRateWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> GrantPermissionsOnTopicWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string role, IList<string> body = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetSubscriptionDispatchRate(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSubscriptionDispatchRateAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GetSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetSubscriptionDispatchRate2WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetSubscriptionDispatchRate1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> HealthcheckWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<DispatchRate> GetSubscriptionDispatchRate(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSubscriptionDispatchRateAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<DispatchRate>> GetSubscriptionDispatchRateAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetSubscriptionDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> IsReadyWithHttpMessagesAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<int?> GetSubscriptionExpirationTime(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetSubscriptionExpirationTimeAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<int?>> GetSubscriptionExpirationTimeAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetSubscriptionExpirationTimeWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> ModifyDeduplicationWithHttpMessagesAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GetSubscriptions(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetSubscriptionsAsync(tenant, namespaceParameter, topic, isPersistent, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GetSubscriptionsAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.GetSubscriptions1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GetSubscriptionsWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> ModifyEncryptionRequiredWithHttpMessagesAsync(string tenant, string namespaceParameter, bool body, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TenantInfo> GetTenantAdmin(string tenant, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetTenantAdminAsync(tenant, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<TenantInfo>> GetTenantAdminAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetTenantAdminWithHttpMessagesAsync(tenant, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<OffloadProcessStatus>> OffloadStatus1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetTenantNamespaces(string tenant, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GetTenantNamespacesAsync(tenant, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse<IList<string>>> GetTenantNamespacesAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetTenantNamespacesWithHttpMessagesAsync(tenant, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse<OffloadProcessStatus>> OffloadStatusWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetTenants(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetTenantsAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<IList<string>>> GetTenantsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetTenantsWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> PeekNthMessage1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, int messagePosition, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<object> GetTopics(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetTopicsAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<object>> GetTopicsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetTopics2WithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> PeekNthMessageWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, int messagePosition, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IList<string>> GetTopics(string tenant, string namespaceParameter, string mode = null, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetTopicsAsync(tenant, namespaceParameter, mode, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<IList<string>>> GetTopicsAsync(string tenant, string namespaceParameter, string mode = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetTopicsWithHttpMessagesAsync(tenant, namespaceParameter, mode, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse<PostSchemaResponse>> PostSchemaWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload body = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<LongSchemaVersion> GetVersionBySchema(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetVersionBySchemaAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<LongSchemaVersion>> GetVersionBySchemaAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GetVersionBySchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveAutoSubscriptionCreationWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GrantPermissionOnNamespace(string tenant, string namespaceParameter, string role, IList<string> permissions = null, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GrantPermissionOnNamespaceAsync(tenant, namespaceParameter, role, permissions, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> GrantPermissionOnNamespaceAsync(string tenant, string namespaceParameter, string role, IList<string> permissions = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.GrantPermissionOnNamespaceWithHttpMessagesAsync(tenant, namespaceParameter, role, permissions, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveAutoTopicCreationWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse GrantPermissionsOnTopic(string tenant, string namespaceParameter, string topic, string role, bool isPersistent = true, IList<string> permissions = null, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return GrantPermissionsOnTopicAsync(tenant, namespaceParameter, topic, role, isPersistent, permissions, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> GrantPermissionsOnTopicAsync(string tenant, string namespaceParameter, string topic, string role, bool isPersistent = true, IList<string> permissions = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if(isPersistent)
+                return await _api.GrantPermissionsOnTopic1WithHttpMessagesAsync(tenant, namespaceParameter, topic, role, permissions, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.GrantPermissionsOnTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, role, permissions, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveBacklogQuota1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse Healthcheck(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return HealthcheckAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> HealthcheckAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.HealthcheckWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        public HttpOperationResponse IsReady(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return IsReadyAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> IsReadyAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.IsReadyWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveBacklogQuota2WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse ModifyDeduplication(string tenant, string namespaceParameter, bool deduplicate, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return ModifyDeduplicationAsync(tenant, namespaceParameter, deduplicate, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> ModifyDeduplicationAsync(string tenant, string namespaceParameter, bool deduplicate, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.ModifyDeduplicationWithHttpMessagesAsync(tenant, namespaceParameter, deduplicate, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveBacklogQuotaWithHttpMessagesAsync(string tenant, string namespaceParameter, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse ModifyEncryptionRequired(string tenant, string namespaceParameter, bool encryptionRequired, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return ModifyEncryptionRequiredAsync(tenant, namespaceParameter, encryptionRequired, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> ModifyEncryptionRequiredAsync(string tenant, string namespaceParameter, bool encryptionRequired, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.ModifyEncryptionRequiredWithHttpMessagesAsync(tenant, namespaceParameter, encryptionRequired, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveCompactionThreshold1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<OffloadProcessStatus> OffloadStatus(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return OffloadStatusAsync(tenant, namespaceParameter, topic, isPersistent, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
+        
+        public async Task<HttpOperationResponse<OffloadProcessStatus>> OffloadStatusAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.OffloadStatus1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.OffloadStatusWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveCompactionThresholdWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse PeekNthMessages(string tenant, string namespaceParameter, string topic, string subName, int messagePosition, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {            
+            return PeekNthMessagesAsync(tenant, namespaceParameter, topic, subName, messagePosition, isPersistent, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> PeekNthMessagesAsync(string tenant, string namespaceParameter, string topic, string subName, int messagePosition, bool isPersistent = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.PeekNthMessage1WithHttpMessagesAsync(tenant, namespaceParameter, topic, subName, messagePosition, authoritative, customHeaders, cancellationToken ).ConfigureAwait(false);
+            
+            return await _api.PeekNthMessageWithHttpMessagesAsync(tenant, namespaceParameter, topic, subName, messagePosition, authoritative, customHeaders, cancellationToken ).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveDeduplicationEnabled1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<PostSchemaResponse> PostSchema(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return PostSchemaAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse<PostSchemaResponse>> PostSchemaAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.PostSchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveDeduplicationEnabledWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveAutoSubscriptionCreation(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveAutoSubscriptionCreationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveAutoSubscriptionCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.RemoveAutoSubscriptionCreationWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveDispatchRate1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveAutoTopicCreation(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveAutoTopicCreationAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> RemoveAutoTopicCreationAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.RemoveAutoTopicCreationWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveDispatchRateWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveBacklogQuota(string tenant, string namespaceParameter, string topic, bool isPersistent = true, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveBacklogQuotaAsync(tenant, namespaceParameter, topic, isPersistent, backlogQuotaType, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> RemoveBacklogQuotaAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if(isPersistent)
+                return await _api.RemoveBacklogQuota2WithHttpMessagesAsync(tenant, namespaceParameter, topic, backlogQuotaType, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.RemoveBacklogQuota1WithHttpMessagesAsync(tenant, namespaceParameter, topic, backlogQuotaType, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveInactiveTopicPoliciesWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveBacklogQuota(string tenant, string namespaceParameter, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveBacklogQuotaAsync(tenant, namespaceParameter, backlogQuotaType, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveBacklogQuotaAsync(string tenant, string namespaceParameter, string backlogQuotaType = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.RemoveBacklogQuotaWithHttpMessagesAsync(tenant, namespaceParameter, backlogQuotaType, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveMaxConsumers1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveCompactionThreshold(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveCompactionThresholdAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveCompactionThresholdAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.RemoveCompactionThreshold1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.RemoveCompactionThresholdWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveMaxConsumersPerSubscription1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveDeduplicationEnabled(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveDeduplicationEnabledAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveDeduplicationEnabledAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if(isPersistent)
+                return await _api.RemoveDeduplicationEnabled1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.RemoveDeduplicationEnabledWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveMaxConsumersPerSubscriptionWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveDispatchRate(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveDispatchRateAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> RemoveDispatchRateAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if(isPersistent)
+                return await _api.RemoveDispatchRate1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.RemoveDispatchRateWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveMaxConsumersWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveInactiveTopicPolicies(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveInactiveTopicPoliciesAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveInactiveTopicPoliciesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return await _api.RemoveInactiveTopicPoliciesWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveMaxMessageSize1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveMaxConsumers(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveMaxConsumersAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> RemoveMaxConsumersAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if(isPersistent)
+                return await _api.RemoveMaxConsumers1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+            
+            return await _api.RemoveMaxConsumersWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveMaxMessageSizeWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveMaxConsumersPerSubscription(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveMaxConsumersPerSubscriptionAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveMaxConsumersPerSubscriptionAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if (isPersistent)
+                return await _api.RemoveMaxConsumersPerSubscription1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+
+            return await _api.RemoveMaxConsumersPerSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveMaxProducers1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveMaxMessageSize(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveMaxMessageSizeAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> RemoveMaxMessageSizeAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            if (isPersistent)
+                return await _api.RemoveMaxMessageSize1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+
+            return await _api.RemoveMaxMessageSizeWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
 
-        public Task<HttpOperationResponse> RemoveMaxProducersPerTopicWithHttpMessagesAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+
+        public HttpOperationResponse RemoveMaxProducers(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RemoveMaxProducersAsync(tenant, namespaceParameter, topic, isPersistent, customHeaders).GetAwaiter().GetResult();
+        }
+        public async Task<HttpOperationResponse> RemoveMaxProducersAsync(string tenant, string namespaceParameter, string topic, bool isPersistent = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (isPersistent)
+                return await _api.RemoveMaxProducers1WithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
+
+            return await _api.RemoveMaxProducersWithHttpMessagesAsync(tenant, namespaceParameter, topic, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
-        public Task<HttpOperationResponse> RemoveMaxProducersWithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse RemoveMaxProducersPerTopic(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-            throw new NotImplementedException();
+            return RemoveMaxProducersPerTopicAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
+        public async Task<HttpOperationResponse> RemoveMaxProducersPerTopicAsync(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.RemoveMaxProducersPerTopicWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+
 
         public Task<HttpOperationResponse> RemoveMaxSubscriptionsPerTopic1WithHttpMessagesAsync(string tenant, string namespaceParameter, string topic, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
