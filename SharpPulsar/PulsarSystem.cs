@@ -6,6 +6,7 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace SharpPulsar
@@ -122,9 +123,17 @@ namespace SharpPulsar
         {
             return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
         }
-        public User.Admin Admin() 
+        public static User.Admin Admin(string brokeWebServiceUrl, HttpClient httpClient, bool disposeHttpClient) 
         {
-            return null;
+            return new User.Admin(brokeWebServiceUrl, httpClient, disposeHttpClient);
+        }
+        public static User.Admin Admin(string brokerWebServiceUrl, params DelegatingHandler[] handlers) 
+        {
+            return new User.Admin(brokerWebServiceUrl, handlers);
+        }
+        public static User.Admin Admin(string brokerwebserviceurl, HttpClientHandler rootHandler, params DelegatingHandler[] handlers) 
+        {
+            return new User.Admin(brokerwebserviceurl, rootHandler, handlers);
         }
         public User.Function Function() 
         {
