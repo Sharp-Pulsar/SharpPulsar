@@ -135,9 +135,9 @@ namespace SharpPulsar
         {
             return new User.Admin(brokerwebserviceurl, rootHandler, handlers);
         }
-        public User.Function Function() 
+        public User.Function Function(HttpClient httpClient) 
         {
-            return null;
+            return new User.Function(httpClient);
         }
         public EventSource NewEventSource() 
         {
