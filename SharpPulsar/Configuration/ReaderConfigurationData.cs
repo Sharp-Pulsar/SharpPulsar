@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
 
@@ -24,7 +26,7 @@ namespace SharpPulsar.Configuration
 {
     public sealed class ReaderConfigurationData<T>
 	{
-        public IList<Range> KeyHashRanges { get; set; }
+        public IList<Common.Range> KeyHashRanges { get; set; }
 		public IMessageId StartMessageId { get; set; }
 		public IConsumerEventListener EventListener { get; set; }
 		public long StartMessageFromRollbackDurationInSec { get; set; }
@@ -41,7 +43,24 @@ namespace SharpPulsar.Configuration
 		
         public string SubscriptionRolePrefix { get; set; }
 
-		public string TopicName { get; set; }
+		public string TopicName 
+		{ 
+			get 
+			{
+				if (TopicNames.Count > 1)
+				{
+					throw new ArgumentException("topicNames needs to be = 1");
+				}
+				return TopicNames.FirstOrDefault();
+			} 
+			set
+            {
+				TopicNames.Clear();
+				TopicNames.Add(value);
+			}
+
+		}
+		public List<string> TopicNames { get; set; } = new List<string>();
 
         public string ReaderName { get; set; }
 		

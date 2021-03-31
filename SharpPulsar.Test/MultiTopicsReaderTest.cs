@@ -55,6 +55,58 @@ namespace SharpPulsar.Test
 			string topic = "TestReadMessageWithBatching";
 			TestReadMessages(topic, true);
 		}
+		[Fact]
+		public void TestMultiTopic()
+		{
+			string topic = "persistent://public/default/topic" + Guid.NewGuid();
+
+			string topic2 = "persistent://public/default/topic2" + Guid.NewGuid();
+
+			string topic3 = "persistent://public/default/topic3" + Guid.NewGuid();
+			IList<string> topics = new List<string> { topic, topic2, topic3 };
+			var builder = new ReaderConfigBuilder<string>()
+				.Topics(topics)
+				.StartMessageId(IMessageId.Earliest)
+				.ReaderName("my-reader");
+
+			var reader = _client.NewReader(ISchema<object>.String, builder);
+			// create producer and send msg
+			IList<Producer<string>> producerList = new List<Producer<string>>();
+			foreach (string topicName in topics)
+			{
+                var producer = _client.NewProducer(ISchema<object>.String, new ProducerConfigBuilder<string>().Topic(topicName));
+
+				producerList.Add(producer);
+			}
+			int msgNum = 10;
+			ISet<string> messages = new HashSet<string>();
+			for (int i = 0; i < producerList.Count; i++)
+			{
+				Producer<string> producer = producerList[i];
+				for (int j = 0; j < msgNum; j++)
+				{
+					string msg = i + "msg" + j;
+					producer.Send(msg);
+					messages.Add(msg);
+				}
+			}
+			// receive messagesS
+			var message = reader.ReadNext(TimeSpan.FromSeconds(30));
+			while (message != null)
+			{
+				var value = message.Value;
+				_output.WriteLine(value);
+				Assert.True(messages.Remove(value));
+				message = reader.ReadNext(TimeSpan.FromSeconds(5));
+			}
+			Assert.Equal(0, messages.Count);
+			// clean up
+			foreach (Producer<string> producer in producerList)
+			{
+				producer.Close();
+			}
+			reader.Stop();
+		}
 		private void TestReadMessages(string topic, bool enableBatch)
 		{
 			int numKeys = 10;

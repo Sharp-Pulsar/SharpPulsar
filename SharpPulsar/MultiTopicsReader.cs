@@ -45,13 +45,14 @@ namespace SharpPulsar
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
-			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
+			foreach(var topic in readerConfiguration.TopicNames)
+				consumerConfiguration.TopicNames.Add(topic);
+
 			consumerConfiguration.SubscriptionName = subscription;
 			consumerConfiguration.SubscriptionType = SubType.Exclusive;
 			consumerConfiguration.SubscriptionMode = SubscriptionMode.NonDurable;
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
-			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 
 			if(readerConfiguration.ReaderListener != null)
 			{
@@ -78,7 +79,7 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue)));
+			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue)));
 
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);

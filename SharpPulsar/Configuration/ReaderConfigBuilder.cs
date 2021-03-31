@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Akka.Util.Internal;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Precondition;
 using Range = SharpPulsar.Common.Range;
 
 /// <summary>
@@ -70,13 +73,39 @@ namespace SharpPulsar.Configuration
             _conf.KeyHashRanges = new List<Range>(ranges);
             return this;
         }
+        public ReaderConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+        {
+            _conf.CryptoKeyReader = cryptoKeyReader;
+            return this;
+        }
+        public ReaderConfigBuilder<T> DefaultCryptoKeyReader(string privateKey)
+        {
+            Condition.CheckArgument(!string.IsNullOrWhiteSpace(privateKey), "privateKey cannot be blank");
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().DefaultPrivateKey(privateKey).Build());
+        }
+        public ReaderConfigBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys)
+        {
+            Condition.CheckArgument(privateKeys.Count > 0, "privateKeys cannot be empty");
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().PrivateKeys(privateKeys).Build());
+        }
 
+        public ReaderConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+        {
+            _conf.CryptoFailureAction = action;
+            return this;
+        }
         public ReaderConfigBuilder<T> Topic(string topicName)
         {
             _conf.TopicName = topicName.Trim();
             return this;
         }
-
+        public ReaderConfigBuilder<T> Topics(IList<string> topicNames)
+        {
+            Condition.CheckArgument(topicNames != null && topicNames.Count > 0, "Passed in topicNames should not be null or empty.");
+            topicNames.ForEach(topicName => Condition.CheckArgument(!string.IsNullOrWhiteSpace(topicName), "topicNames cannot have blank topic"));
+            _conf.TopicNames.AddRange(topicNames.Select(x=> x.Trim()).ToList());
+            return this;
+        }
         public ReaderConfigBuilder<T> StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
         {
             _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
@@ -104,18 +133,6 @@ namespace SharpPulsar.Configuration
         public ReaderConfigBuilder<T> ReaderListener(IReaderListener<T> readerListener)
         {
             _conf.ReaderListener = readerListener;
-            return this;
-        }
-
-        public ReaderConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
-        {
-            _conf.CryptoKeyReader = cryptoKeyReader;
-            return this;
-        }
-
-        public ReaderConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
-        {
-            _conf.CryptoFailureAction = action;
             return this;
         }
 
