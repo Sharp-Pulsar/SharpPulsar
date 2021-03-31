@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Akka.Util.Internal;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -23,63 +24,52 @@ using System.Text;
 namespace SharpPulsar.Configuration
 {
 	[Serializable]
-	public class DefaultCryptoKeyReaderConfigurationData : ICloneable
+	public class DefaultCryptoKeyReaderConfigurationData
 	{
 
 		private const long SerialVersionUID = 1L;
 
 		private const string ToStringFormat = "%s(defaultPublicKey=%s, defaultPrivateKey=%s, publicKeys=%s, privateKeys=%s)";
+		
+		public string DefaultPublicKey { get; set; }
+		public string DefaultPrivateKey { get; set; }
 
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @NonNull private String defaultPublicKey;
-		private string _defaultPublicKey;
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @NonNull private String defaultPrivateKey;
-		private string _defaultPrivateKey;
+		public IDictionary<string, string> PublicKeys = new Dictionary<string, string>();
 
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @NonNull private java.util.Map<String, String> publicKeys = new java.util.HashMap<>();
-		private IDictionary<string, string> _publicKeys = new Dictionary<string, string>();
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: @NonNull private java.util.Map<String, String> privateKeys = new java.util.HashMap<>();
-		private IDictionary<string, string> _privateKeys = new Dictionary<string, string>();
+		public IDictionary<string, string> PrivateKeys = new Dictionary<string, string>();
 
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: public void setPublicKey(@NonNull String keyName, @NonNull String publicKey)
 		public virtual void SetPublicKey(string keyName, string publicKey)
 		{
-			_publicKeys[keyName] = publicKey;
+			PublicKeys[keyName] = publicKey;
 		}
 
-		//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-		//ORIGINAL LINE: public void setPrivateKey(@NonNull String keyName, @NonNull String privateKey)
 		public virtual void SetPrivateKey(string keyName, string privateKey)
 		{
-			_privateKeys[keyName] = privateKey;
+			PrivateKeys[keyName] = privateKey;
 		}
 
-		public override DefaultCryptoKeyReaderConfigurationData Clone()
+		public DefaultCryptoKeyReaderConfigurationData Clone()
 		{
 			DefaultCryptoKeyReaderConfigurationData clone = new DefaultCryptoKeyReaderConfigurationData();
 
-			if (!string.ReferenceEquals(_defaultPublicKey, null))
+			if (!string.ReferenceEquals(DefaultPublicKey, null))
 			{
-				clone.DefaultPublicKey = _defaultPublicKey;
+				clone.DefaultPublicKey = DefaultPublicKey;
 			}
 
-			if (!string.ReferenceEquals(_defaultPrivateKey, null))
+			if (!string.ReferenceEquals(DefaultPrivateKey, null))
 			{
-				clone.DefaultPrivateKey = _defaultPrivateKey;
+				clone.DefaultPrivateKey = DefaultPrivateKey;
 			}
 
-			if (_publicKeys != null)
+			if (PublicKeys != null)
 			{
-				clone.PublicKeys = new Dictionary<string, string>(_publicKeys);
+				clone.PublicKeys = new Dictionary<string, string>(PublicKeys);
 			}
 
-			if (_privateKeys != null)
+			if (PrivateKeys != null)
 			{
-				clone.PrivateKeys = new Dictionary<string, string>(_privateKeys);
+				clone.PrivateKeys = new Dictionary<string, string>(PrivateKeys);
 			}
 
 			return clone;
@@ -87,7 +77,7 @@ namespace SharpPulsar.Configuration
 
 		public override string ToString()
 		{
-			return string.format(ToStringFormat, this.GetType().Name, MaskKeyData(_defaultPublicKey), MaskKeyData(_defaultPrivateKey), MaskKeyData(_publicKeys), MaskKeyData(_privateKeys));
+			return string.Format(ToStringFormat, this.GetType().Name, MaskKeyData(DefaultPublicKey), MaskKeyData(DefaultPrivateKey), MaskKeyData(PublicKeys), MaskKeyData(PrivateKeys));
 		}
 
 		private static string MaskKeyData(IDictionary<string, string> keys)
@@ -102,8 +92,8 @@ namespace SharpPulsar.Configuration
 				keysStr.Append("{");
 
 				IList<string> kvList = new List<string>();
-				keys.forEach((k, v) => kvList.Add(k + "=" + maskKeyData(v)));
-				keysStr.Append(string.join(", ", kvList));
+				keys.ForEach(kv => kvList.Add(kv.Key + "=" + MaskKeyData(kv.Value)));
+				keysStr.Append(string.Join(", ", kvList));
 
 				keysStr.Append("}");
 				return keysStr.ToString();
@@ -126,5 +116,5 @@ namespace SharpPulsar.Configuration
 			}
 		}
 
-	}
+    }
 }

@@ -78,18 +78,18 @@ namespace SharpPulsar.Configuration
             _conf.CryptoKeyReader = cryptoKeyReader;
             return this;
         }
-        public override ReaderBuilder<T> DefaultCryptoKeyReader(string privateKey)
+        public ReaderConfigBuilder<T> DefaultCryptoKeyReader(string privateKey)
         {
-            checkArgument(StringUtils.isNotBlank(privateKey), "privateKey cannot be blank");
-            return CryptoKeyReader(DefaultCryptoKeyReader.builder().defaultPrivateKey(privateKey).build());
+            Condition.CheckArgument(!string.IsNullOrWhiteSpace(privateKey), "privateKey cannot be blank");
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().DefaultPrivateKey(privateKey).Build());
         }
-        public override ReaderBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys)
+        public ReaderConfigBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys)
         {
-            checkArgument(privateKeys.Count > 0, "privateKeys cannot be empty");
-            return CryptoKeyReader(DefaultCryptoKeyReader.builder().privateKeys(privateKeys).build());
+            Condition.CheckArgument(privateKeys.Count > 0, "privateKeys cannot be empty");
+            return CryptoKeyReader(Crypto.DefaultCryptoKeyReader.Builder().PrivateKeys(privateKeys).Build());
         }
 
-        public override ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+        public ReaderConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
         {
             _conf.CryptoFailureAction = action;
             return this;
@@ -133,18 +133,6 @@ namespace SharpPulsar.Configuration
         public ReaderConfigBuilder<T> ReaderListener(IReaderListener<T> readerListener)
         {
             _conf.ReaderListener = readerListener;
-            return this;
-        }
-
-        public ReaderConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
-        {
-            _conf.CryptoKeyReader = cryptoKeyReader;
-            return this;
-        }
-
-        public ReaderConfigBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
-        {
-            _conf.CryptoFailureAction = action;
             return this;
         }
 

@@ -79,7 +79,7 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue)));
+			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue)));
 
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m);

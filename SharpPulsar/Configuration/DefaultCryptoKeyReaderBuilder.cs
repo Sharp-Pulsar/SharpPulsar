@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Akka.Util.Internal;
+using SharpPulsar.Crypto;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,9 +23,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-	using DefaultCryptoKeyReaderConfigurationData = Org.Apache.Pulsar.Client.Impl.conf.DefaultCryptoKeyReaderConfigurationData;
-
-	public class DefaultCryptoKeyReaderBuilder : ICloneable
+	public class DefaultCryptoKeyReaderBuilder
 	{
 
 		private DefaultCryptoKeyReaderConfigurationData _conf;
@@ -51,25 +51,25 @@ namespace SharpPulsar.Configuration
 
 		public virtual DefaultCryptoKeyReaderBuilder PublicKey(string keyName, string publicKey)
 		{
-			_conf.setPublicKey(keyName, publicKey);
+			_conf.SetPublicKey(keyName, publicKey);
 			return this;
 		}
 
 		public virtual DefaultCryptoKeyReaderBuilder PrivateKey(string keyName, string privateKey)
 		{
-			_conf.setPrivateKey(keyName, privateKey);
+			_conf.SetPrivateKey(keyName, privateKey);
 			return this;
 		}
 
 		public virtual DefaultCryptoKeyReaderBuilder PublicKeys(IDictionary<string, string> publicKeys)
 		{
-			_conf.PublicKeys.putAll(publicKeys);
+			publicKeys.ForEach(kv => _conf.PublicKeys.Add(kv));
 			return this;
 		}
 
 		public virtual DefaultCryptoKeyReaderBuilder PrivateKeys(IDictionary<string, string> privateKeys)
 		{
-			_conf.PrivateKeys.putAll(privateKeys);
+			privateKeys.ForEach(kv => _conf.PrivateKeys.Add(kv));
 			return this;
 		}
 
@@ -78,9 +78,9 @@ namespace SharpPulsar.Configuration
 			return new DefaultCryptoKeyReader(_conf);
 		}
 
-		public override DefaultCryptoKeyReaderBuilder Clone()
+		public DefaultCryptoKeyReaderBuilder Clone()
 		{
-			return new DefaultCryptoKeyReaderBuilder(_conf.clone());
+			return new DefaultCryptoKeyReaderBuilder(_conf.Clone());
 		}
 
 	}

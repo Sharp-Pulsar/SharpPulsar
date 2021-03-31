@@ -428,42 +428,17 @@ namespace SharpPulsar.User
 
         public async ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
         {
-            var conf = confBuilder.ReaderConfigurationData;
-            if (conf.TopicName == null)
-            {
-                throw new ArgumentException("Topic name must be set on the reader builder");
-            }
-
-            if (conf.StartMessageId != null && conf.StartMessageFromRollbackDurationInSec > 0 || conf.StartMessageId == null && conf.StartMessageFromRollbackDurationInSec <= 0)
-            {
-                throw new ArgumentException("Start message id or start message from roll back must be specified but they cannot be specified at the same time");
-            }
-
-            if (conf.StartMessageFromRollbackDurationInSec > 0)
-            {
-                conf.StartMessageId = IMessageId.Earliest;
-            }
-
-            return await CreateReader(conf, schema).ConfigureAwait(false);
-        }
-        private async ValueTask<Reader<T>> CreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
-        {
-            var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.TopicName).ConfigureAwait(false);
-            return await DoCreateReader(conf, schemaClone).ConfigureAwait(false);
-        }
-
-        private async ValueTask<Reader<T>> CreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
-        {
             var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
-            { 
+            {
                 throw new PulsarClientException.AlreadyClosedException("Client already closed");
             }
 
-            if (conf == null)
+            if (confBuilder == null)
             {
                 throw new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined");
             }
+            var conf = confBuilder.ReaderConfigurationData;
 
             foreach (string topic in conf.TopicNames)
             {
@@ -478,6 +453,17 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Invalid startMessageId");
             }
 
+            if (conf.TopicNames.Count == 1)
+            {
+                var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.TopicName).ConfigureAwait(false); 
+                return await CreateSingleTopicReader(conf, schemaClone).ConfigureAwait(false);
+            }
+            return await CreateMultiTopicReader(conf, schema).ConfigureAwait(false);
+        }
+
+        private async ValueTask<Reader<T>> CreateSingleTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+        {
+            string topic = conf.TopicName;
             try
             {
                 var queue = new ConsumerQueueCollections<T>();
@@ -515,69 +501,19 @@ namespace SharpPulsar.User
                 throw ex;
             }
         }
-        protected internal virtual CompletableFuture<Reader<T>> CreateMultiTopicReaderAsync<T>(ReaderConfigurationData<T> conf, Schema<T> schema)
+        private async ValueTask<Reader<T>> CreateMultiTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
-            CompletableFuture<Reader<T>> readerFuture = new CompletableFuture<Reader<T>>();
-            CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
-            MultiTopicsReaderImpl<T> reader = new MultiTopicsReaderImpl<T>(this, conf, _externalExecutorProvider, consumerSubscribedFuture, schema);
-            ConsumerBase<T> consumer = reader.MultiTopicsConsumer;
-            _consumers.Add(consumer);
-            consumerSubscribedFuture.thenRun(() => readerFuture.complete(reader)).exceptionally(ex =>
-            {
-                _log.warn("Failed to create multiTopicReader", ex);
-                readerFuture.completeExceptionally(ex);
-                return null;
-            });
-            return readerFuture;
-        }
-        private Reader<T> CreateSingleTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
-        {
-            string topic = conf.TopicName;
+            var queue = new ConsumerQueueCollections<T>();
+            IActorRef stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+            var reader = _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue)));
+            
+            _client.Tell(new AddConsumer(reader));
 
-            CompletableFuture<Reader<T>> readerFuture = new CompletableFuture<Reader<T>>();
+            var c = queue.ConsumerCreation.Take();
+            if (c != null)
+                throw c.Exception;
 
-            GetPartitionedTopicMetadata(topic).thenAccept(metadata =>
-            {
-                if (_log.DebugEnabled)
-                {
-                    _log.debug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
-                }
-                if (metadata.partitions > 0 && MultiTopicsConsumerImpl.isIllegalMultiTopicsMessageId(conf.StartMessageId))
-                {
-                    readerFuture.completeExceptionally(new PulsarClientException("The partitioned topic startMessageId is illegal"));
-                    return;
-                }
-                CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
-                Reader<T> reader;
-                ConsumerBase<T> consumer;
-                if (metadata.partitions > 0)
-                {
-                    reader = new MultiTopicsReaderImpl<T>(PulsarClientImpl.this, conf, _externalExecutorProvider, consumerSubscribedFuture, schema);
-                    consumer = ((MultiTopicsReaderImpl<T>)reader).MultiTopicsConsumer;
-                }
-                else
-                {
-                    reader = new ReaderImpl<T>(PulsarClientImpl.this, conf, _externalExecutorProvider, consumerSubscribedFuture, schema);
-                    consumer = ((ReaderImpl<T>)reader).Consumer;
-                }
-                _consumers.Add(consumer);
-                consumerSubscribedFuture.thenRun(() =>
-                {
-                    readerFuture.complete(reader);
-                }).exceptionally(ex =>
-                {
-                    _log.warn("[{}] Failed to get create topic reader", topic, ex);
-                    readerFuture.completeExceptionally(ex);
-                    return null;
-                });
-            }).exceptionally(ex =>
-            {
-                _log.warn("[{}] Failed to get partitioned topic metadata", topic, ex);
-                readerFuture.completeExceptionally(ex);
-                return null;
-            });
-
-            return readerFuture;
+            return await Task.FromResult(new Reader<T>(stateA, reader, queue, schema, conf));
         }
         public TransactionBuilder NewTransaction()
         {
