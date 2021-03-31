@@ -42,6 +42,7 @@ namespace SharpPulsar.Configuration
         public string SubscriptionRolePrefix { get; set; }
 
 		public string TopicName { get; set; }
+		public List<string> TopicNames { get; set; }
 
         public string ReaderName { get; set; }
 		

@@ -45,13 +45,14 @@ namespace SharpPulsar
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
 			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
-			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
+			foreach(var topic in readerConfiguration.TopicNames)
+				consumerConfiguration.TopicNames.Add(topic);
+
 			consumerConfiguration.SubscriptionName = subscription;
 			consumerConfiguration.SubscriptionType = SubType.Exclusive;
 			consumerConfiguration.SubscriptionMode = SubscriptionMode.NonDurable;
 			consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
 			consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
-			consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
 
 			if(readerConfiguration.ReaderListener != null)
 			{

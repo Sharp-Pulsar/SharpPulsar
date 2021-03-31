@@ -452,7 +452,7 @@ namespace SharpPulsar.User
             return await DoCreateReader(conf, schemaClone).ConfigureAwait(false);
         }
 
-        private async ValueTask<Reader<T>> DoCreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+        private async ValueTask<Reader<T>> CreateReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
             var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
@@ -465,11 +465,12 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined");
             }
 
-            string topic = conf.TopicName;
-
-            if (!TopicName.IsValid(topic))
+            foreach (string topic in conf.TopicNames)
             {
-                throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
+                if (!TopicName.IsValid(topic))
+                {
+                    throw new PulsarClientException.InvalidTopicNameException("Invalid topic name: '" + topic + "'");
+                }
             }
 
             if (conf.StartMessageId == null)
@@ -513,6 +514,70 @@ namespace SharpPulsar.User
                 _actorSystem.Log.Warning($"[{topic}] Failed to get create topic reader: {ex}");
                 throw ex;
             }
+        }
+        protected internal virtual CompletableFuture<Reader<T>> CreateMultiTopicReaderAsync<T>(ReaderConfigurationData<T> conf, Schema<T> schema)
+        {
+            CompletableFuture<Reader<T>> readerFuture = new CompletableFuture<Reader<T>>();
+            CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+            MultiTopicsReaderImpl<T> reader = new MultiTopicsReaderImpl<T>(this, conf, _externalExecutorProvider, consumerSubscribedFuture, schema);
+            ConsumerBase<T> consumer = reader.MultiTopicsConsumer;
+            _consumers.Add(consumer);
+            consumerSubscribedFuture.thenRun(() => readerFuture.complete(reader)).exceptionally(ex =>
+            {
+                _log.warn("Failed to create multiTopicReader", ex);
+                readerFuture.completeExceptionally(ex);
+                return null;
+            });
+            return readerFuture;
+        }
+        private Reader<T> CreateSingleTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
+        {
+            string topic = conf.TopicName;
+
+            CompletableFuture<Reader<T>> readerFuture = new CompletableFuture<Reader<T>>();
+
+            GetPartitionedTopicMetadata(topic).thenAccept(metadata =>
+            {
+                if (_log.DebugEnabled)
+                {
+                    _log.debug("[{}] Received topic metadata. partitions: {}", topic, metadata.partitions);
+                }
+                if (metadata.partitions > 0 && MultiTopicsConsumerImpl.isIllegalMultiTopicsMessageId(conf.StartMessageId))
+                {
+                    readerFuture.completeExceptionally(new PulsarClientException("The partitioned topic startMessageId is illegal"));
+                    return;
+                }
+                CompletableFuture<Consumer<T>> consumerSubscribedFuture = new CompletableFuture<Consumer<T>>();
+                Reader<T> reader;
+                ConsumerBase<T> consumer;
+                if (metadata.partitions > 0)
+                {
+                    reader = new MultiTopicsReaderImpl<T>(PulsarClientImpl.this, conf, _externalExecutorProvider, consumerSubscribedFuture, schema);
+                    consumer = ((MultiTopicsReaderImpl<T>)reader).MultiTopicsConsumer;
+                }
+                else
+                {
+                    reader = new ReaderImpl<T>(PulsarClientImpl.this, conf, _externalExecutorProvider, consumerSubscribedFuture, schema);
+                    consumer = ((ReaderImpl<T>)reader).Consumer;
+                }
+                _consumers.Add(consumer);
+                consumerSubscribedFuture.thenRun(() =>
+                {
+                    readerFuture.complete(reader);
+                }).exceptionally(ex =>
+                {
+                    _log.warn("[{}] Failed to get create topic reader", topic, ex);
+                    readerFuture.completeExceptionally(ex);
+                    return null;
+                });
+            }).exceptionally(ex =>
+            {
+                _log.warn("[{}] Failed to get partitioned topic metadata", topic, ex);
+                readerFuture.completeExceptionally(ex);
+                return null;
+            });
+
+            return readerFuture;
         }
         public TransactionBuilder NewTransaction()
         {

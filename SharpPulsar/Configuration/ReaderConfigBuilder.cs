@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Akka.Util.Internal;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Precondition;
 using Range = SharpPulsar.Common.Range;
 
 /// <summary>
@@ -70,13 +73,39 @@ namespace SharpPulsar.Configuration
             _conf.KeyHashRanges = new List<Range>(ranges);
             return this;
         }
+        public ReaderConfigBuilder<T> CryptoKeyReader(ICryptoKeyReader cryptoKeyReader)
+        {
+            _conf.CryptoKeyReader = cryptoKeyReader;
+            return this;
+        }
+        public override ReaderBuilder<T> DefaultCryptoKeyReader(string privateKey)
+        {
+            checkArgument(StringUtils.isNotBlank(privateKey), "privateKey cannot be blank");
+            return CryptoKeyReader(DefaultCryptoKeyReader.builder().defaultPrivateKey(privateKey).build());
+        }
+        public override ReaderBuilder<T> DefaultCryptoKeyReader(IDictionary<string, string> privateKeys)
+        {
+            checkArgument(privateKeys.Count > 0, "privateKeys cannot be empty");
+            return CryptoKeyReader(DefaultCryptoKeyReader.builder().privateKeys(privateKeys).build());
+        }
 
+        public override ReaderBuilder<T> CryptoFailureAction(ConsumerCryptoFailureAction action)
+        {
+            _conf.CryptoFailureAction = action;
+            return this;
+        }
         public ReaderConfigBuilder<T> Topic(string topicName)
         {
             _conf.TopicName = topicName.Trim();
             return this;
         }
-
+        public ReaderConfigBuilder<T> Topics(IList<string> topicNames)
+        {
+            Condition.CheckArgument(topicNames != null && topicNames.Count > 0, "Passed in topicNames should not be null or empty.");
+            topicNames.ForEach(topicName => Condition.CheckArgument(!string.IsNullOrWhiteSpace(topicName), "topicNames cannot have blank topic"));
+            _conf.TopicNames.AddRange(topicNames.Select(x=> x.Trim()).ToList());
+            return this;
+        }
         public ReaderConfigBuilder<T> StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)
         {
             _conf.StartMessageId = new BatchMessageId(ledgerId, entryId, partitionIndex, batchIndex);
