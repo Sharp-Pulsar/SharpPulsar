@@ -1,10 +1,11 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Messages;
 using SharpPulsar.Sql;
 using SharpPulsar.Sql.Live;
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.IO;
 
 namespace SharpPulsar.User
 {
@@ -29,26 +30,65 @@ namespace SharpPulsar.User
             _queue = queue;
             _queryActor = actor;
         }
-        public IEnumerable<T> Read()
+        public IEnumerable<T> ReadQueryResults()
         {
             var data = _queue.Receive();
             while (data != null)
             {
                 yield return data;
+                data = _queue.Receive();
             }
         }
-        public void Query(ISqlQuery query)
+        public void SendQuery(ISqlQuery query)
         {
-            var d = typeof(T).GetType().Name;
-            if(d == "SqlData" && query is SqlSession)
+            var d = typeof(T).Name;
+            if(d == "SqlData" && query is SqlQuery dat)
             {
-                var q = (SqlSession)query;
-                _queryActor.Tell(q);
+                var hasQuery = !string.IsNullOrWhiteSpace(dat.ClientOptions.Execute);
+                if (string.IsNullOrWhiteSpace(dat.ClientOptions.Server) || dat.ExceptionHandler == null || string.IsNullOrWhiteSpace(dat.ClientOptions.Execute) || dat.Log == null)
+                    throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
+                if (hasQuery)
+                {
+                    dat.ClientOptions.Execute.TrimEnd(';');
+                }
+                else
+                {
+                    dat.ClientOptions.Execute = File.ReadAllText(dat.ClientOptions.File);
+                }
+
+                var q = new SqlSession(dat.ClientOptions.ToClientSession(), dat.ClientOptions, dat.ExceptionHandler, dat.Log);
+               _queryActor.Tell(q);
             }
-            else if(d == "LiveSqlData" && query is LiveSqlSession)
+            else if(d == "LiveSqlData" && query is LiveSqlQuery data)
             {
-                var q = (LiveSqlSession)query;
-                _queryActor.Tell(q);
+                var hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+
+                if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
+                    throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
+
+                if (hasQuery)
+                {
+                    data.ClientOptions.Execute.TrimEnd(';');
+                }
+                else
+                {
+                    data.ClientOptions.Execute = File.ReadAllText(data.ClientOptions.File);
+                }
+
+                if (!data.ClientOptions.Execute.Contains("__publish_time__ > {time}"))
+                {
+                    if (data.ClientOptions.Execute.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException("add '__publish_time__ > {time}' to where clause");
+                    }
+                    throw new ArgumentException("add 'where __publish_time__ > {time}' to '" + data.ClientOptions.Execute + "'");
+                }
+                if (!TopicName.IsValid(data.Topic))
+                    throw new ArgumentException($"Topic '{data.Topic}' failed validation");
+
+                var q = new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler);
+           
+                     _queryActor.Tell(q);
             }
             else
             {

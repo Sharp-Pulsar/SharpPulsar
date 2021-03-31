@@ -1,14 +1,16 @@
 ﻿using Akka.Actor;
 using Akka.Configuration;
 using NLog;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Sql;
 using SharpPulsar.Sql.Live;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
+using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -18,14 +20,13 @@ namespace SharpPulsar
     {
         private static PulsarSystem _instance;
         private static readonly object Lock = new object();
-        private readonly ActorSystem _actorSystem;
+        private static ActorSystem _actorSystem;
         private readonly ClientConfigurationData _conf;
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
         private readonly IActorRef _tcClient;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
-        private readonly IActorRef _sqlManager;
         public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
         {
             if (_instance == null)
@@ -147,13 +148,38 @@ namespace SharpPulsar
         {
             return null;
         }
-        public Sql<SqlData> NewSql() 
+        public static Sql<SqlData> NewSql() 
         {
             return Sql<SqlData>.NewSql(_actorSystem);
         }
-        public Sql<LiveSqlData> NewLiveSql(LiveSqlSession session) 
+        public static Sql<LiveSqlData> NewLiveSql(LiveSqlQuery data) 
         {
-            return Sql<LiveSqlData>.NewLiveSql(_actorSystem, session);
+            var hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
+
+            if (string.IsNullOrWhiteSpace(data.ClientOptions.Server) || data.ExceptionHandler == null || string.IsNullOrWhiteSpace(data.ClientOptions.Execute) || data.Log == null || string.IsNullOrWhiteSpace(data.Topic))
+                throw new ArgumentException("'Sql' is in an invalid state: null field not allowed");
+
+            if (hasQuery)
+            {
+                data.ClientOptions.Execute.TrimEnd(';');
+            }
+            else
+            {
+                data.ClientOptions.Execute = File.ReadAllText(data.ClientOptions.File);
+            }
+
+            if (!data.ClientOptions.Execute.Contains("__publish_time__ > {time}"))
+            {
+                if (data.ClientOptions.Execute.Contains("WHERE", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException("add '__publish_time__ > {time}' to where clause");
+                }
+                throw new ArgumentException("add 'where __publish_time__ > {time}' to '" + data.ClientOptions.Execute + "'");
+            }
+            if (!TopicName.IsValid(data.Topic))
+                throw new ArgumentException($"Topic '{data.Topic}' failed validation");
+
+            return Sql<LiveSqlData>.NewLiveSql(_actorSystem, new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler));
         }
         public async Task Shutdown()
         {

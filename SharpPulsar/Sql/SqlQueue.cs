@@ -16,7 +16,8 @@ namespace SharpPulsar.Sql
         }
         public T Receive()
         {
-            return _buffer.Receive();
+            _buffer.TryReceive(out var msg);
+            return msg;
         }
         public IList<T> All()
         {
