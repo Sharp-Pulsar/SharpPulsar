@@ -1,6 +1,7 @@
 ﻿
 using System;
 using SharpPulsar.Presto;
+using SharpPulsar.Sql;
 using SharpPulsar.Sql.Client;
 
 namespace SharpPulsar.Messages
@@ -29,7 +30,7 @@ namespace SharpPulsar.Messages
         public string Topic { get; }
         public ClientOptions ClientOptions { get; }
     }
-    public class LiveSqlSession
+    public class LiveSqlSession : ISqlQuery
     {
         public LiveSqlSession(ClientSession session, ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
         {

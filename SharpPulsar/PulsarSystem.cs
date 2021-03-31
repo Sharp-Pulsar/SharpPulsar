@@ -2,8 +2,11 @@
 using Akka.Configuration;
 using NLog;
 using SharpPulsar.Configuration;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Sql;
+using SharpPulsar.Sql.Live;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using System.Net.Http;
@@ -22,6 +25,7 @@ namespace SharpPulsar
         private readonly IActorRef _tcClient;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
+        private readonly IActorRef _sqlManager;
         public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
         {
             if (_instance == null)
@@ -143,9 +147,13 @@ namespace SharpPulsar
         {
             return null;
         }
-        public User.Sql NewSql() 
+        public Sql<SqlData> NewSql() 
         {
-            return null;
+            return Sql<SqlData>.NewSql(_actorSystem);
+        }
+        public Sql<LiveSqlData> NewLiveSql(LiveSqlSession session) 
+        {
+            return Sql<LiveSqlData>.NewLiveSql(_actorSystem, session);
         }
         public async Task Shutdown()
         {

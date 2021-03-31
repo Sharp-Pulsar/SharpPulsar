@@ -15,7 +15,7 @@ namespace SharpPulsar.Sql.Live
         private readonly IActorContext _context;
         private ICancelable _executeCancelable;
         private readonly IActorRef _self;
-        public LiveQuery(IActorRef pulsar, LiveSqlSession sql)
+        public LiveQuery(SqlQueue<LiveSqlData> queue, LiveSqlSession sql)
         {
             _self = Self;
             _sql = sql;
@@ -24,7 +24,7 @@ namespace SharpPulsar.Sql.Live
             _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
             _executeCancelable = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(_sql.Frequency), Execute);
             _context = Context;
-            Receive<IQueryResponse>(q => { pulsar.Tell(new LiveSqlData(q, _sql.Topic)); });
+            Receive<IQueryResponse>(q => { queue.Post(new LiveSqlData(q, _sql.Topic)); });
             Receive<LiveSqlSession>(l =>
             {
                 _execute = l.ClientOptions.Execute;
@@ -67,9 +67,9 @@ namespace SharpPulsar.Sql.Live
             _executeCancelable?.Cancel();
         }
 
-        public static Props Prop(IActorRef pulsar, LiveSqlSession sql)
+        public static Props Prop(SqlQueue<LiveSqlData> queue, LiveSqlSession sql)
         {
-            return Props.Create(() => new LiveQuery(pulsar, sql));
+            return Props.Create(() => new LiveQuery(queue, sql));
         }
     }
 }

@@ -8,12 +8,12 @@ namespace SharpPulsar.Sql
 {
     public class SqlWorker : ReceiveActor
     {
-        public SqlWorker(IActorRef pulsarManager)
+        public SqlWorker(SqlQueue<SqlData> queue)
         {
             Receive<SqlSession>(Query);
             Receive<IQueryResponse>(q =>
             {
-                pulsarManager.Tell(new SqlData(q));
+                queue.Post(new SqlData(q));
             });
 
         }
@@ -37,9 +37,9 @@ namespace SharpPulsar.Sql
                 query.ExceptionHandler(ex);
             }
         }
-        public static Props Prop(IActorRef pulsarManager)
+        public static Props Prop(SqlQueue<SqlData> queue)
         {
-            return Props.Create(() => new SqlWorker(pulsarManager));
+            return Props.Create(() => new SqlWorker(queue));
         }
     }
 }
