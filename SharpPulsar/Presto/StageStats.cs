@@ -43,12 +43,15 @@ namespace SharpPulsar.Presto
 		public long ProcessedRows {get; set; }
 		[JsonPropertyName("processedBytes")]
 		public long ProcessedBytes {get; set; }
+		[JsonPropertyName("physicalInputBytes")]
+		public long PhysicalInputBytes { get; set; }
+
 		[JsonPropertyName("subStages")]
 		public IList<StageStats> SubStages { get; set; }
 
 		public override string ToString()
 		{
-			return StringHelper.Build(this).Add("state", State).Add("done", Done).Add("nodes", Nodes).Add("totalSplits", TotalSplits).Add("queuedSplits", QueuedSplits).Add("runningSplits", RunningSplits).Add("completedSplits", CompletedSplits).Add("cpuTimeMillis", CpuTimeMillis).Add("wallTimeMillis", WallTimeMillis).Add("processedRows", ProcessedRows).Add("processedBytes", ProcessedBytes).Add("subStages", SubStages).ToString();
+			return StringHelper.Build(this).Add("state", State).Add("done", Done).Add("nodes", Nodes).Add("totalSplits", TotalSplits).Add("queuedSplits", QueuedSplits).Add("runningSplits", RunningSplits).Add("completedSplits", CompletedSplits).Add("cpuTimeMillis", CpuTimeMillis).Add("wallTimeMillis", WallTimeMillis).Add("processedRows", ProcessedRows).Add("processedBytes", ProcessedBytes).Add("physicalInputBytes", PhysicalInputBytes).Add("subStages", SubStages).ToString();
 		}
 
 	}

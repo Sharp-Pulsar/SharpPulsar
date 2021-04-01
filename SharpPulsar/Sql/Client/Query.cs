@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Precondition;
@@ -55,9 +56,9 @@ namespace SharpPulsar.Sql.Client
 
         public virtual bool ClearTransactionId => _client.ClearTransactionId;
 
-        public bool MaterializeQueryOutput()
+        public async ValueTask<bool> MaterializeQueryOutput()
         {
-            ProcessInitialStatusUpdates();
+            await ProcessInitialStatusUpdates ();
 
             // if running or finished
             if (_client.Running || _client.Finished && _client.FinalStatusInfo().Error == null)
@@ -74,7 +75,7 @@ namespace SharpPulsar.Sql.Client
                 }
                 else
                 {
-                    RenderResults(results.Columns.ToList());
+                    await RenderResults(results.Columns.ToList());
                 }
             }
             _handler.Tell(new StatsResponse(_client.Stats));
@@ -107,7 +108,7 @@ namespace SharpPulsar.Sql.Client
             return true;
         }
 
-        private void RenderResults(List<Column> columns)
+        private async ValueTask RenderResults(List<Column> columns)
         {
             while (_client.Running)
             {
@@ -137,17 +138,17 @@ namespace SharpPulsar.Sql.Client
                         _handler.Tell(new DataResponse(data, metadata));
                     }
                 }
-                _client.Advance();
+                await _client.Advance();
             }
         }
-        private void ProcessInitialStatusUpdates()
+        private async ValueTask ProcessInitialStatusUpdates()
         {
             while (_client.Running && _client.CurrentData().Data == null)
             {
                 _log.Debug(JsonSerializer.Serialize(_client.CurrentStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
-                _client.Advance();
+                await _client.Advance();
             }
-            IList<PrestoWarning> warnings;
+            IList<Presto.Warning> warnings;
             if (_client.Running)
             {
                 warnings = _client.CurrentStatusInfo().Warnings;

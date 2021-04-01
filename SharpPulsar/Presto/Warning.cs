@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.Presto
 {
-    public class PrestoWarning
+    public class Warning
     {
         [JsonPropertyName("warningCode")]
         public WarningCode WarningCode { get; set; }

@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Akka.Util;
 using SharpPulsar.Precondition;
 using SharpPulsar.Presto.Facebook.Type;
 
@@ -40,6 +41,19 @@ namespace SharpPulsar.Presto
 		private readonly string _user;
 
 		private State _state = State.Running;
+		//private static readonly MediaType _mediaTypeText = MediaType.parse("text/plain; charset=utf-8");
+		private readonly AtomicReference<string> _setCatalog = new AtomicReference<string>();
+		private readonly AtomicReference<string> _setSchema = new AtomicReference<string>();
+		private readonly AtomicReference<string> _setPath = new AtomicReference<string>();
+		private readonly IDictionary<string, string> _setSessionProperties = new ConcurrentDictionary<string, string>();
+		private readonly ISet<string> _resetSessionProperties = new HashSet<string>();
+		private readonly IDictionary<string, string> _addedPreparedStatements = new ConcurrentDictionary<string, string>();
+		private readonly ISet<string> _deallocatedPreparedStatements = new HashSet<string>();
+		private readonly AtomicReference<string> _startedTransactionId = new AtomicReference<string>();
+		private readonly AtomicBoolean _clearTransactionId = new AtomicBoolean();
+
+		private readonly string _clientCapabilities;
+		private readonly bool _compressionDisabled;
 
 		public StatementClientV1(HttpClient httpClient, ClientSession session, string query)
 		{
@@ -54,12 +68,12 @@ namespace SharpPulsar.Presto
 			TimeZone = session.TimeZone;
 			Query = query;
 			_requestTimeoutNanos = session.ClientRequestTimeout;
+			_clientCapabilities = "PATH,ParametricDatetime";// Joiner.on(",").join((ClientCapabilities[])Enum.GetValues(typeof(ClientCapabilities)));
 			_user = session.User;
 
 			var request = BuildQueryRequest(session, query);
 
-			var responseTask = JsonResponse<QueryResults>.Execute(httpClient, request);
-			var response = Task.Run(async () => await responseTask).Result;
+			var response = JsonResponse<QueryResults>.Execute(httpClient, request).GetAwaiter().GetResult();
 			if ((response.ResponseMessage.StatusCode != HttpStatusCode.OK) || !response.HasValue())
 			{
 				if (_state == State.Running)
@@ -81,67 +95,72 @@ namespace SharpPulsar.Presto
 
 			if (!string.IsNullOrWhiteSpace(session.Source))
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoSource, session.Source);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestSource(), session.Source);
 			}
 			if (!string.IsNullOrWhiteSpace(session.TraceToken))
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoTraceToken, session.TraceToken);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestTraceToken(), session.TraceToken);
 			}
 
 			if (session.ClientTags != null && session.ClientTags.Count > 0)
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoClientTags, string.Join(",", session.ClientTags));
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestClientTags(), string.Join(",", session.ClientTags));
 			}
 			if (!string.IsNullOrWhiteSpace(session.ClientInfo))
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoClientInfo, session.ClientInfo);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestClientInfo(), session.ClientInfo);
 			}
 			if (!ReferenceEquals(session.Catalog, null))
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoCatalog, session.Catalog);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestCatalog(), session.Catalog);
 			}
 			if (!ReferenceEquals(session.Schema, null))
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoSchema, session.Schema);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestSchema(), session.Schema);
 			}
-			builder.Headers.Add(PrestoHeaders.PrestoTimeZone, session.TimeZone.Id);
+
+			if (!string.ReferenceEquals(session.Path, null))
+			{
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestPath(), session.Path);
+			}
+			builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestTimeZone(), session.TimeZone.Id);
 			if (session.Locale != null)
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoLanguage, session.Locale.Name);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestLanguage(), session.Locale.Name);
 			}
 
 			var property = session.Properties;
 			foreach (var entry in property.SetOfKeyValuePairs())
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoSession, entry.Key + "=" + entry.Value);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestSession(), entry.Key + "=" + entry.Value);
 			}
 
 			var resourceEstimates = session.ResourceEstimates;
 			foreach (var entry in resourceEstimates.SetOfKeyValuePairs())
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoResourceEstimate, entry.Key + "=" + entry.Value);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestResourceEstimate(), entry.Key + "=" + entry.Value);
 			}
 
 			var roles = session.Roles;
 			foreach (var entry in roles.SetOfKeyValuePairs())
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoRole, entry.Key + '=' + UrlEncode(entry.Value.ToString()));
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestRole(), entry.Key + '=' + UrlEncode(entry.Value.ToString()));
 			}
 
 			var extraCredentials = session.ExtraCredentials;
 			foreach (var entry in extraCredentials.SetOfKeyValuePairs())
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoExtraCredential, entry.Key + "=" + entry.Value);
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestExtraCredential(), entry.Key + "=" + entry.Value);
 			}
 
 			var statements = session.PreparedStatements;
 			foreach (var entry in statements.SetOfKeyValuePairs())
 			{
-				builder.Headers.Add(PrestoHeaders.PrestoPreparedStatement, UrlEncode(entry.Key) + "=" + UrlEncode(entry.Value));
+				builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestPreparedStatement(), UrlEncode(entry.Key) + "=" + UrlEncode(entry.Value));
 			}
 
-			builder.Headers.Add(PrestoHeaders.PrestoTransactionId, string.IsNullOrWhiteSpace(session.TransactionId) ? "NONE" : session.TransactionId);
-
+			builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestTransactionId(), string.IsNullOrWhiteSpace(session.TransactionId) ? "NONE" : session.TransactionId);
+			builder.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestClientCapabilities(), _clientCapabilities);
 			return builder;
 		}
 
@@ -179,7 +198,9 @@ namespace SharpPulsar.Presto
 
         public string SetSchema { get; set; }
 
-        public IDictionary<string, string> SetSessionProperties { get; set; } = new ConcurrentDictionary<string, string>();
+		public string SetPath{ get; set; }
+
+		public IDictionary<string, string> SetSessionProperties { get; set; } = new ConcurrentDictionary<string, string>();
 
         public ISet<string> ResetSessionProperties { get; set; } = new HashSet<string>();
 
@@ -196,14 +217,17 @@ namespace SharpPulsar.Presto
         private HttpRequestMessage PrepareRequest(HttpMethod mode, Uri uri, string data = "", string mediaType = "")
 		{
 			var request = new HttpRequestMessage(mode, uri);
-			request.Headers.Add(PrestoHeaders.PrestoUser, _user);
+			request.Headers.Add(ProtocolHeaders.TrinoHeaders.RequestUser(), _user);
 			request.Headers.Add("User-Agent", _userAgentValue);
+			if (_compressionDisabled)
+			{
+				request.Headers.Add("Accept-Encoding", "identity");
+			}
 			if (!string.IsNullOrWhiteSpace(data))
 				request.Content = new StringContent(data, Encoding.UTF8, mediaType);
 			return request;
 		}
-
-		public bool Advance()
+		public async ValueTask<bool> Advance()
 		{
 			if (!Running)
 			{
@@ -231,7 +255,7 @@ namespace SharpPulsar.Presto
 				}
 
 				var sinceStart = (DateTime.Now - start).Ticks;
-				if (attempts > 0 && sinceStart.CompareTo(_requestTimeoutNanos) > 0)
+				if (attempts > 0 && sinceStart.CompareTo(_requestTimeoutNanos.Ticks) > 0)
 				{
 					_state = State.ClientError;
 					throw new Exception($"Error fetching next (attempts:{attempts}, duration: {sinceStart})", cause);
@@ -264,8 +288,7 @@ namespace SharpPulsar.Presto
 				JsonResponse<QueryResults> response;
 				try
 				{
-					var responseTask = JsonResponse<QueryResults>.Execute(_httpClient, request);
-					response = Task.Run(async () => await responseTask).Result;
+					response = await JsonResponse<QueryResults>.Execute(_httpClient, request).ConfigureAwait(false);
 				}
 				catch (Exception e)
 				{
@@ -290,16 +313,21 @@ namespace SharpPulsar.Presto
 
 		private void ProcessResponse(HttpResponseHeaders headers, QueryResults results)
 		{
-            if (headers.TryGetValues(PrestoHeaders.PrestoSetCatalog, out var setCat))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseSetCatalog(), out var setCat))
             {
                 SetCatalog = setCat.FirstOrDefault();
 			}
 
-            if (headers.TryGetValues(PrestoHeaders.PrestoSetSchema, out var setSch))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseSetSchema(), out var setSch))
             {
                 SetSchema = setSch.FirstOrDefault();
 			}
-            if (headers.TryGetValues(PrestoHeaders.PrestoSetSession, out var sessions))
+
+			if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseSetPath(), out var path))
+			{
+				SetPath = path.FirstOrDefault();
+			}
+			if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseSetSession(), out var sessions))
             {
 				foreach (var setSession in sessions)
                 {
@@ -308,15 +336,15 @@ namespace SharpPulsar.Presto
                     {
                         continue;
                     }
-                    SetSessionProperties[keyValue[0]] = keyValue[1];
+                    SetSessionProperties[keyValue[0]] = UrlDecode(keyValue[1]);
                 }
 			}
-            if (headers.TryGetValues(PrestoHeaders.PrestoClearSession, out var csessions))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseClearSession(), out var csessions))
             {
                 csessions.ToList().ForEach(x => ResetSessionProperties.Add(x));
 			}
 
-            if (headers.TryGetValues(PrestoHeaders.PrestoSetRole, out var roles))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseSetRole(), out var roles))
             {
 
                 foreach (var setRole in roles)
@@ -330,7 +358,7 @@ namespace SharpPulsar.Presto
                 }
 			}
 
-            if (headers.TryGetValues(PrestoHeaders.PrestoAddedPrepare, out var prepares))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseAddedPrepare(), out var prepares))
             {
                 foreach (var entry in prepares)
                 {
@@ -343,7 +371,7 @@ namespace SharpPulsar.Presto
                 }
 			}
 
-            if (headers.TryGetValues(PrestoHeaders.PrestoDeallocatedPrepare, out var deAllocs))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseDeallocatedPrepare(), out var deAllocs))
             {
                 foreach (var entry in deAllocs)
                 {
@@ -351,7 +379,7 @@ namespace SharpPulsar.Presto
                 }
 			}
 
-            if (headers.TryGetValues(PrestoHeaders.PrestoStartedTransactionId, out var trans))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseStartedTransactionId(), out var trans))
             {
                 var startedTransactionId = trans.FirstOrDefault();
                 if (!string.IsNullOrWhiteSpace(startedTransactionId))
@@ -360,7 +388,7 @@ namespace SharpPulsar.Presto
                 }
 			}
 
-            if (headers.TryGetValues(PrestoHeaders.PrestoClearTransactionId, out var clr))
+            if (headers.TryGetValues(ProtocolHeaders.TrinoHeaders.ResponseClearTransactionId(), out var clr))
             {
                 var clearedTransactionId = clr.FirstOrDefault();
                 if (clearedTransactionId != null)

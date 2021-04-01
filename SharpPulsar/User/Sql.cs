@@ -6,6 +6,7 @@ using SharpPulsar.Sql.Live;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.User
 {
@@ -38,6 +39,20 @@ namespace SharpPulsar.User
                 yield return data;
                 data = _queue.Receive();
             }
+        }
+        public T ReadQueryResult(TimeSpan? timeOut = null)
+        {
+            return ReadQueryResultAsync(timeOut).GetAwaiter().GetResult();
+        }
+        public async ValueTask<T> ReadQueryResultAsync(TimeSpan? timeOut = null)
+        {
+            var data = _queue.Receive();
+            if(data == null && timeOut.HasValue)
+            {
+                await Task.Delay((int)timeOut.Value.TotalMilliseconds).ConfigureAwait(false);
+                data = _queue.Receive();
+            }
+            return data;
         }
         public void SendQuery(ISqlQuery query)
         {

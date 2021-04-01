@@ -38,6 +38,7 @@ Logs to logs.log</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Presto\TrinoHeaders.cs" />
     <Compile Remove="Schemas\GenerateSchema.cs" />
     <Compile Remove="Presto\FixJsonDataUtils.cs" />
   </ItemGroup>

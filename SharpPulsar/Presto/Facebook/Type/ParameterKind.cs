@@ -6,8 +6,9 @@ namespace SharpPulsar.Presto.Facebook.Type
 
     public enum ParameterKind
     {
-        LONG_LITERAL,
-        TYPE_SIGNATURE,
-        NAMED_TYPE_SIGNATURE
+        TYPE,
+        NamedType,
+        LONG,
+        VARIABLE
     }
 }

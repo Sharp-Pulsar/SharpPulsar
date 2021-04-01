@@ -19,7 +19,8 @@ namespace SharpPulsar.Presto
 	public class ClientTypeSignatureParameter
 	{
         [JsonPropertyName("kind")]
-        public  ParameterKind Kind {get; set; }
+        public ParameterKind Kind {get; set; }
+
         [JsonPropertyName("value")]
         public object Value {get; set; }
 	}

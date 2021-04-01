@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using SharpPulsar.Presto.Facebook.Type;
 
 /*
@@ -41,7 +42,9 @@ namespace SharpPulsar.Presto
 
 		string SetCatalog {get;}
         
-        string SetSchema {get;}
+        string SetSchema {get; }
+
+		string SetPath { get; }
 
 		IDictionary<string, string> SetSessionProperties {get;}
 
@@ -57,7 +60,7 @@ namespace SharpPulsar.Presto
 
 		bool ClearTransactionId {get;}
 
-		bool Advance();
+		ValueTask<bool> Advance();
 
 		void CancelLeafStage();
 

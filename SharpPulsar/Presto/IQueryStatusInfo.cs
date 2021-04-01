@@ -32,7 +32,7 @@ namespace SharpPulsar.Presto
 
 		QueryError Error {get;}
 
-		IList<PrestoWarning> Warnings {get;}
+		IList<Warning> Warnings {get;}
 
 		string UpdateType {get;}
 

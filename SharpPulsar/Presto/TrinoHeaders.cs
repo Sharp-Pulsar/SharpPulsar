@@ -13,7 +13,7 @@
  */
 namespace SharpPulsar.Presto
 {
-	public sealed class PrestoHeaders
+	public sealed class TrinoHeaders
 	{
 		public const string PrestoUser = "X-Presto-User";
 		public const string PrestoSource = "X-Presto-Source";
@@ -48,7 +48,7 @@ namespace SharpPulsar.Presto
 		public const string PrestoPageNextToken = "X-Presto-Page-End-Sequence-Id";
 		public const string PrestoBufferComplete = "X-Presto-Buffer-Complete";
 
-		private PrestoHeaders()
+		private TrinoHeaders()
 		{
 		}
 	}

@@ -33,20 +33,23 @@ namespace SharpPulsar.Test.Sql
 		[Fact]
 		public virtual void TestQuerySql()
 		{
-			string topic = $"presto-topics-aef6d294-d12c-46db-b551-5f5abbcd4cda";
-			//PublishMessages(topic, 50);
+			string topic = $"presto-topics-{Guid.NewGuid()}";
+			PublishMessages(topic, 50);
 			var sql = PulsarSystem.NewSql();
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 			var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
 			sql.SendQuery(query);
-			Thread.Sleep(TimeSpan.FromSeconds(30));
-			foreach (var m in sql.ReadQueryResults())
+			var receivedCount = 0;
+			for (var i = 0; i < 45; i++)
 			{
-				var data = m.Response;
+				var response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
+				var data = response.Response;
 				switch (data)
 				{
 					case DataResponse dr:
-						_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
+						var ob = dr.Data["text"].ToString();
+						_output.WriteLine(ob);
+						receivedCount++;
 						break;
 					case StatsResponse sr:
 						_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
@@ -55,7 +58,9 @@ namespace SharpPulsar.Test.Sql
 						_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
 						break;
 				}
+
 			}
+			Assert.Equal(45, receivedCount);
 		}
 		private ISet<string> PublishMessages(string topic, int count)
 		{
