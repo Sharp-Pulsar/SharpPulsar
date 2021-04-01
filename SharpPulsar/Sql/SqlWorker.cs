@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Messages;
 using SharpPulsar.Sql.Client;
@@ -8,12 +9,12 @@ namespace SharpPulsar.Sql
 {
     public class SqlWorker : ReceiveActor
     {
-        public SqlWorker(IActorRef pulsarManager)
+        public SqlWorker(SqlQueue<SqlData> queue)
         {
-            Receive<SqlSession>(Query);
+            ReceiveAsync<SqlSession>(async s=> await Query(s));
             Receive<IQueryResponse>(q =>
             {
-                pulsarManager.Tell(new SqlData(q));
+                queue.Post(new SqlData(q));
             });
 
         }
@@ -23,23 +24,24 @@ namespace SharpPulsar.Sql
 
         }
 
-        private void Query(SqlSession query)
+        private async ValueTask Query(SqlSession query)
         {
             try
             {
                 var q = query;
                 var executor = new Executor(q.ClientSession, q.ClientOptions, Self, Context.System.Log);
                 q.Log($"Executing: {q.ClientOptions.Execute}");
-                executor.Run();
+                await executor.Run();
             }
             catch (Exception ex)
             {
                 query.ExceptionHandler(ex);
+                Context.System.Log.Error(ex.ToString());
             }
         }
-        public static Props Prop(IActorRef pulsarManager)
+        public static Props Prop(SqlQueue<SqlData> queue)
         {
-            return Props.Create(() => new SqlWorker(pulsarManager));
+            return Props.Create(() => new SqlWorker(queue));
         }
     }
 }

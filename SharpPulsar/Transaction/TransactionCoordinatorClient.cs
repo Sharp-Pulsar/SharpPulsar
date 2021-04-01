@@ -158,9 +158,12 @@ namespace SharpPulsar.Transaction
 			}
 			else
 			{
-				foreach(var handler in _handlers)
-				{
-					handler.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+				if(_handlers != null)
+                {
+					foreach (var handler in _handlers)
+					{
+						handler.GracefulStop(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+					}
 				}
 			}
 		}

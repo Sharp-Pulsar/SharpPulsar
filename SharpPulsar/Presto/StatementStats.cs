@@ -45,18 +45,25 @@ namespace SharpPulsar.Presto
 		public long ElapsedTimeMillis { get; set; }
 		[JsonPropertyName("processedRows")]
 		public long ProcessedRows { get; set; }
+
 		[JsonPropertyName("processedBytes")]
 		public long ProcessedBytes { get; set; }
+
+		[JsonPropertyName("physicalInputBytes")]
+		public long PhysicalInputBytes { get; set; }
+
 		[JsonPropertyName("peakMemoryBytes")]
 		public long PeakMemoryBytes { get; set; }
+
 		[JsonPropertyName("spilledBytes")]
 		public long SpilledBytes { get; set; }
+
 		[JsonPropertyName("rootStage")]
 		public StageStats RootStage { get; set; }
 
 		public override string ToString()
 		{
-			return StringHelper.Build(this).Add("state", State).Add("queued", Queued).Add("scheduled", Scheduled).Add("nodes", Nodes).Add("totalSplits", TotalSplits).Add("queuedSplits", QueuedSplits).Add("runningSplits", RunningSplits).Add("completedSplits", CompletedSplits).Add("cpuTimeMillis", CpuTimeMillis).Add("wallTimeMillis", WallTimeMillis).Add("queuedTimeMillis", QueuedTimeMillis).Add("elapsedTimeMillis", ElapsedTimeMillis).Add("processedRows", ProcessedRows).Add("processedBytes", ProcessedBytes).Add("peakMemoryBytes", PeakMemoryBytes).Add("spilledBytes", SpilledBytes).Add("rootStage", RootStage).ToString();
+			return StringHelper.Build(this).Add("state", State).Add("queued", Queued).Add("scheduled", Scheduled).Add("nodes", Nodes).Add("totalSplits", TotalSplits).Add("queuedSplits", QueuedSplits).Add("runningSplits", RunningSplits).Add("completedSplits", CompletedSplits).Add("cpuTimeMillis", CpuTimeMillis).Add("wallTimeMillis", WallTimeMillis).Add("queuedTimeMillis", QueuedTimeMillis).Add("elapsedTimeMillis", ElapsedTimeMillis).Add("processedRows", ProcessedRows).Add("processedBytes", ProcessedBytes).Add("physicalInputBytes", PhysicalInputBytes).Add("peakMemoryBytes", PeakMemoryBytes).Add("spilledBytes", SpilledBytes).Add("rootStage", RootStage).ToString();
 		}
 		
 	}

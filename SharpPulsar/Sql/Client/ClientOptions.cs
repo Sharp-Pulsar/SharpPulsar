@@ -31,6 +31,7 @@ namespace SharpPulsar.Sql.Client
         public string AccessToken;
 
         public string User = Environment.UserName;
+        public string Principal = Environment.UserName;
 
         public string Password;
 
@@ -48,6 +49,8 @@ namespace SharpPulsar.Sql.Client
 
         public string Execute;
 
+        public string SessionUser;
+
         public readonly IList<ClientResourceEstimate> ResourceEstimates = new List<ClientResourceEstimate>();
 
         public readonly IList<ClientSessionProperty> SessionProperties = new List<ClientSessionProperty>();
@@ -60,11 +63,14 @@ namespace SharpPulsar.Sql.Client
 
         public TimeSpan ClientRequestTimeout = TimeSpan.FromMinutes(2);
 
+        public bool ExternalAuthentication;
+        public bool DisableCompression;
+
 
         public virtual ClientSession ToClientSession()
         {
             var timeZoneId = DateTimeZoneProviders.Tzdb.GetSystemDefault().ToString();
-            return new ClientSession(ParseServer(Server), User, Source, null, ParseClientTags(ClientTags), ClientInfo, Catalog, Schema, timeZoneId, CultureInfo.CurrentCulture, ToResourceEstimates(ResourceEstimates), ToProperties(SessionProperties), new Dictionary<string, string>(), new Dictionary<string, SelectedRole>(), ToExtraCredentials(ExtraCredentials), null, ClientRequestTimeout);
+            return new ClientSession(ParseServer(Server), SessionUser, User, Source, null, ParseClientTags(ClientTags), ClientInfo, Catalog, Schema, null, timeZoneId, CultureInfo.CurrentCulture, ToResourceEstimates(ResourceEstimates), ToProperties(SessionProperties), new Dictionary<string, string>(), new Dictionary<string, SelectedRole>(), ToExtraCredentials(ExtraCredentials), null, ClientRequestTimeout, DisableCompression);
         }
 
         public static Uri ParseServer(string server)

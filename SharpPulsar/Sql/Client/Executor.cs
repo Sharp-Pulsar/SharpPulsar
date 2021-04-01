@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
@@ -24,24 +25,24 @@ namespace SharpPulsar.Sql.Client
             _log = log;
         }
 
-        public bool Run()
+        public async ValueTask<bool> Run()
         {
             var session = _clientSession;
             var queryRunner = new QueryRunner(session, _clientOptions.AccessToken, _clientOptions.User, _clientOptions.Password);
-            return ExecuteCommand(queryRunner, _clientOptions.Execute);
+            return await ExecuteCommand(queryRunner, _clientOptions.Execute);
         }
 
-        private bool ExecuteCommand(QueryRunner queryRunner, string query)
+        private async ValueTask<bool> ExecuteCommand(QueryRunner queryRunner, string query)
         {
-            return Process(queryRunner, query);
+            return await Process(queryRunner, query);
         }
 
-        private bool Process(QueryRunner queryRunner, string sql)
+        private async ValueTask<bool> Process(QueryRunner queryRunner, string sql)
         {
             try
             {
                 var query = queryRunner.StartQuery(sql, _handler, _log);
-                var success = query.MaterializeQueryOutput();
+                var success = await query.MaterializeQueryOutput();
 
                 var session = queryRunner.Session;
 

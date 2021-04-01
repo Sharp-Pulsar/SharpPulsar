@@ -1,13 +1,14 @@
 ﻿
 using System;
 using SharpPulsar.Presto;
+using SharpPulsar.Sql;
 using SharpPulsar.Sql.Client;
 
 namespace SharpPulsar.Messages
 {
-    public class LiveSql
+    public class LiveSqlQuery : ISqlQuery
     {
-        public LiveSql(ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
+        public LiveSqlQuery(ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
         {
             ClientOptions = options;
             Frequency = frequency;
@@ -29,7 +30,7 @@ namespace SharpPulsar.Messages
         public string Topic { get; }
         public ClientOptions ClientOptions { get; }
     }
-    public class LiveSqlSession
+    public class LiveSqlSession 
     {
         public LiveSqlSession(ClientSession session, ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
         {

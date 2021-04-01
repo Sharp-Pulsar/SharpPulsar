@@ -1,12 +1,13 @@
 ﻿using System;
 using SharpPulsar.Presto;
+using SharpPulsar.Sql;
 using SharpPulsar.Sql.Client;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class Sql
+    public sealed class SqlQuery : ISqlQuery
     {
-        public Sql(ClientOptions options, Action<Exception> exceptionHandler, Action<string> log)
+        public SqlQuery(ClientOptions options, Action<Exception> exceptionHandler, Action<string> log)
         {
             ExceptionHandler = exceptionHandler;
             ClientOptions = options;
@@ -17,7 +18,7 @@ namespace SharpPulsar.Messages
         public Action<string> Log { get; }
         public ClientOptions ClientOptions { get; }
     }
-    internal sealed class SqlSession
+    internal sealed class SqlSession 
     {
         public SqlSession(ClientSession session, ClientOptions options, Action<Exception> exceptionHandler, Action<string> log)
         {

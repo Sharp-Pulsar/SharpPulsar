@@ -127,7 +127,7 @@ class Build : NukeBuild
             .SetDetach(true)
             .SetInteractive(true)
             .SetName("pulsar_test")
-            .SetPublish("6650:6650", "8080:8080", "2181:2181")
+            .SetPublish("6650:6650", "8080:8080","8081:8081", "2181:2181")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
             .SetImage("apachepulsar/pulsar-all:2.7.1")
@@ -214,6 +214,11 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithoutBatching", "--partitions", "3")
+            );
+           DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar_test")
+                .SetCommand("bin/pulsar")
+                .SetArgs("sql-worker", "run")
             );
        });
     Target CheckDockerVersion => _ => _

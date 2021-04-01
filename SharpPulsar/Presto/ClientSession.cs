@@ -24,8 +24,11 @@ namespace SharpPulsar.Presto
 	{
 		public Uri Server { get; }
 		public string User { get; }
+		public string Principal { get; }
 		public string Source { get; }
 		private readonly string _traceToken;
+		public string Path { get; }
+		public bool CompressionDisabled { get; }
 		private readonly ISet<string> _clientTags;
 		public string ClientInfo { get; }
 		public string Catalog { get; }
@@ -47,10 +50,12 @@ namespace SharpPulsar.Presto
 			return NewBuilder(session).WithoutTransactionId().Build();
 		}
 
-		public ClientSession(Uri server, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, TimeSpan clientRequestTimeout)
+		public ClientSession(Uri server, string principal, string user, string source, string traceToken, ISet<string> clientTags, string clientInfo, string catalog, string schema, string path, string timeZoneId, CultureInfo locale, IDictionary<string, string> resourceEstimates, IDictionary<string, string> properties, IDictionary<string, string> preparedStatements, IDictionary<string, SelectedRole> roles, IDictionary<string, string> extraCredentials, string transactionId, TimeSpan clientRequestTimeout, bool compressionDisabled)
 		{
 			Server = Condition.RequireNonNull(server, "Server", "server is null");
+			Principal = principal;
 			User = user;
+			Path = path;
 			Source = source;
             _traceToken = traceToken;
 			_clientTags = clientTags;
@@ -66,6 +71,7 @@ namespace SharpPulsar.Presto
 			Roles = roles;
 			ExtraCredentials = extraCredentials;
 			ClientRequestTimeout = clientRequestTimeout;
+			CompressionDisabled = compressionDisabled;
 
 			foreach (var clientTag in clientTags)
 			{
@@ -136,12 +142,17 @@ namespace SharpPulsar.Presto
 
 		public override string ToString()
         {
-            return StringHelper.Build(this).Add("server", Server).Add("user", User)
-                .Add("clientTags", ClientTags)
+            return StringHelper
+			.Build(this)
+			.Add("server", Server)
+			.Add("principal", Principal)
+			.Add("user", User)
+            .Add("clientTags", ClientTags)
             .Add("clientInfo", ClientInfo)
             .Add("catalog", Catalog)
             .Add("schema", Schema)
-            .Add("traceToken", TraceToken)
+			.Add("path", Path)
+			.Add("traceToken", TraceToken)
             .Add("timeZone", TimeZone)
             .Add("locale", Locale.Name)
             .Add("properties", Properties)
@@ -153,6 +164,8 @@ namespace SharpPulsar.Presto
 		{
 			internal Uri Server;
 			internal string User;
+			internal string Principal;
+			internal string Path;
 			internal string Source;
 			internal string TraceToken;
 			internal ISet<string> ClientTags;
@@ -168,12 +181,16 @@ namespace SharpPulsar.Presto
 			internal IDictionary<string, string> Credentials;
 			internal string TransactionId;
 			internal TimeSpan ClientRequestTimeout;
+			internal bool CompressionDisabled;
 
 			public Builder(ClientSession clientSession)
 			{
 				Condition.RequireNonNull(clientSession, "clientSession", "clientSession is null");
 				Server = clientSession.Server;
+				Principal = clientSession.Principal;
+				CompressionDisabled = clientSession.CompressionDisabled;
 				User = clientSession.User;
+				Path = clientSession.Path;
 				Source = clientSession.Source;
 				TraceToken = clientSession.TraceToken;
 				ClientTags = clientSession.ClientTags;
@@ -241,7 +258,7 @@ namespace SharpPulsar.Presto
 
 			public ClientSession Build()
 			{
-				return new ClientSession(Server, User, Source, TraceToken, ClientTags, ClientInfo, Catalog, Schema, TimeZone.Id, Locale, ResourceEstimates, Properties, PreparedStatements, Roles, Credentials, TransactionId, ClientRequestTimeout);
+				return new ClientSession(Server, Principal, User, Source, TraceToken, ClientTags, ClientInfo, Catalog, Schema, Path, TimeZone.Id, Locale, ResourceEstimates, Properties, PreparedStatements, Roles, Credentials, TransactionId, ClientRequestTimeout, CompressionDisabled);
 			}
 
 		}

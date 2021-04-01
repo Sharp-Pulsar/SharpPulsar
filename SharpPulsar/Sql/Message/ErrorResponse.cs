@@ -5,13 +5,13 @@ namespace SharpPulsar.Sql.Message
 {
     public class ErrorResponse : IQueryResponse
     {
-        public ErrorResponse(QueryError error, List<PrestoWarning> warnings)
+        public ErrorResponse(QueryError error, List<Warning> warnings)
         {
             Error = error;
             Warnings = warnings;
         }
 
         public QueryError Error { get; }
-        public List<PrestoWarning> Warnings { get; }
+        public List<Warning> Warnings { get; }
     }
 }

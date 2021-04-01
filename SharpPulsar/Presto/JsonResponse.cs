@@ -90,14 +90,14 @@ namespace SharpPulsar.Presto
 		public static async Task<JsonResponse<T>> Execute(HttpClient client, HttpRequestMessage request)
 		{
             var req = request;
-            using var response = await client.SendAsync(req);
+            using var response = await client.SendAsync(req).ConfigureAwait(false);
             if ((response.StatusCode == HttpStatusCode.RedirectKeepVerb) || (response.StatusCode == HttpStatusCode.PermanentRedirect))
             {
                 var location = response.Headers.Location;
                 if (!ReferenceEquals(location, null))
                 {
                     req.RequestUri = location;
-                    return await Execute(client, req);
+                    return await Execute(client, req).ConfigureAwait(false);
                 }
             }
 

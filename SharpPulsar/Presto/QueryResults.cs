@@ -29,7 +29,7 @@ namespace SharpPulsar.Presto
         public IEnumerable<IList<object>> Data { get; set; }
 
         [JsonPropertyName("warnings")]
-        public IList<PrestoWarning> Warnings { get; set; }
+        public IList<Warning> Warnings { get; set; }
 
         [JsonPropertyName("updateCount")]
         public long? UpdateCount { get; set; }
