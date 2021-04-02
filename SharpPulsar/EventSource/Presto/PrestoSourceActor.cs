@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
-using Nito.AsyncEx;
-using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
-using SharpPulsar.Akka.Sql.Client;
-using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
+using SharpPulsar.EventSource;
+using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
 
 namespace SharpPulsar.Akka.EventSource.Presto
 {
@@ -99,7 +96,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
         }
         private EventMessageId NextFlow()
         {
-            var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
+            var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient, true);
             var statsTask = adminRestapi.GetInternalStats1Async(_message.Tenant, _message.Namespace, _message.Topic);
             var stats = SynchronizationContextSwitcher.NoContext(async()=> await statsTask).Result;
             var start = MessageIdHelper.NextFlow(stats);

@@ -20,15 +20,12 @@ Logs to logs.log</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Akka\**" />
-    <Compile Remove="EventSource\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
     <EmbeddedResource Remove="Akka\**" />
-    <EmbeddedResource Remove="EventSource\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
     <None Remove="Akka\**" />
-    <None Remove="EventSource\**" />
     <None Remove="Protocol\Circe\**" />
     <None Remove="Protocol\Proto\Partial\**" />
     <None Include="SharpPulsar.jpg">

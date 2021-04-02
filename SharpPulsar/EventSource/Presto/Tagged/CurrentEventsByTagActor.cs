@@ -3,8 +3,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;

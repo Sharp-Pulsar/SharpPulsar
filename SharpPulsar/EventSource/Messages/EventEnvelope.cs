@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using SharpPulsar.Akka.Sql.Message;
+﻿using SharpPulsar.Sql.Message;
+using System.Collections.Generic;
 
 namespace SharpPulsar.Akka.EventSource.Messages
 {

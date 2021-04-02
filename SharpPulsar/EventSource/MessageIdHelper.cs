@@ -1,8 +1,8 @@
-﻿using System;
+﻿using SharpPulsar.Admin.Models;
+using System;
 using System.Linq;
-using PulsarAdmin.Models;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.EventSource
 {
     public sealed class MessageIdHelper
     {

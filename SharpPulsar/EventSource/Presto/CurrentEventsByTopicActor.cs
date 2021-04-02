@@ -3,8 +3,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
@@ -26,7 +24,7 @@ namespace SharpPulsar.Akka.EventSource.Presto
             _pulsarManager = pulsarManager;
             var partitions = NewPartitionMetadataRequest($"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}");
             Setup(partitions);
-            Receive<Terminated>(t =>
+            Receive<Akka.Actor.Terminated>(t =>
             {
                 var children =  Context.GetChildren();
                 if (!children.Any())

@@ -1,7 +1,7 @@
 ﻿
 using System.Collections.Immutable;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Sql.Client;
 
 namespace SharpPulsar.Akka.EventSource.Messages.Presto
 {

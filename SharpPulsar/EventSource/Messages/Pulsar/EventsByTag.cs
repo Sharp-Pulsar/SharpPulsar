@@ -5,7 +5,7 @@ using SharpPulsar.Configuration;
 namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
 {
     
-    public sealed class EventsByTag : IPulsarEventSourceMessage
+    public sealed class EventsByTag<T> : IPulsarEventSourceMessage
     {
         public EventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
         {
@@ -27,7 +27,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public string AdminUrl { get; }
-        public ReaderConfigurationData Configuration { get; }
+        public ReaderConfigurationData<T> Configuration { get; }
         public ClientConfigurationData ClientConfiguration { get; }
         public string Topic { get; }
     }

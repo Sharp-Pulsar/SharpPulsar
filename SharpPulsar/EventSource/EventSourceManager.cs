@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Akka.Actor;
-using PulsarAdmin;
 using SharpPulsar.Akka.EventSource.Messages;
 using SharpPulsar.Akka.EventSource.Messages.Presto;
 using SharpPulsar.Akka.EventSource.Messages.Pulsar;
@@ -37,7 +36,7 @@ namespace SharpPulsar.Akka.EventSource
                         Context.ActorOf(TopicUpdater.Prop(_network, message, _pulsarManager), ns);
                     break;
                 case CurrentEventTopics _:
-                    var topics = TopicsHelper.Topics(message, new PulsarAdminRESTAPI(message.AdminUri, _httpClient, true));
+                    var topics = TopicsHelper.Topics(message, new User.Admin(message.AdminUri, _httpClient, true));
                     _pulsarManager.Tell(new ActiveTopics(message.Namespace, topics.ToImmutableList()));
                     break;
                 default:
@@ -79,10 +78,10 @@ namespace SharpPulsar.Akka.EventSource
         private readonly IEventTopics _message;
         private ICancelable _updaterCancelable;
         private readonly IAdvancedScheduler _scheduler;
-        private readonly PulsarAdminRESTAPI _adminRestapi;
+        private readonly User.Admin _adminRestapi;
         public TopicUpdater(IActorRef network, IEventTopics message, IActorRef pulsarManager)
         {
-            _adminRestapi = new PulsarAdminRESTAPI(message.AdminUri, new HttpClient(), true);
+            _adminRestapi = new User.Admin(message.AdminUri, new HttpClient(), true);
             _message = message;
             _pulsarManager = pulsarManager;
             _scheduler = Context.System.Scheduler.Advanced;
@@ -115,12 +114,13 @@ namespace SharpPulsar.Akka.EventSource
 
     public static class TopicsHelper
     {
-        public static IList<string> Topics(IEventTopics message, PulsarAdminRESTAPI adminRestapi)
+        public static IList<string> Topics(IEventTopics message, User.Admin adminRestapi)
         {
             var response = adminRestapi.GetTopics(message.Tenant, message.Namespace, "ALL");
+            var statusCode = response.Response.StatusCode;
             if(response == null)
                 return new List<string>();
-            return response;
+            return response.Body;
         }
         
     }
