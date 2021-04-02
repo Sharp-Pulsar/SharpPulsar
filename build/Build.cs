@@ -215,11 +215,11 @@ class Build : NukeBuild
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithoutBatching", "--partitions", "3")
             );
-           DockerTasks.DockerExec(x => x
+           /*DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar")
                 .SetArgs("sql-worker", "run")
-            );
+            );*/
        });
     Target CheckDockerVersion => _ => _
       .DependsOn(CheckBranch)

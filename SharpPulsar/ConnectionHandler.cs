@@ -103,39 +103,7 @@ namespace SharpPulsar
 				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
 				_connection.Tell(new Failure { Exception = new Exception("Invalid State For Reconnection"), Timestamp = DateTime.UtcNow });
 			}
-			if (_conf.UseDedicatedConnections)
-			{
-				AwaitBrokerResponse();
-			}
-			else
-			{
-				LookupConnection();
-			}
-		}
-		private void AwaitBrokerResponse()
-        {
-			Receive<GetBrokerResponse>(broker =>
-			{
-				CreateConnection(broker.LogicalAddress, broker.PhysicalAddress);
-			});
-			Receive<ConnectionOpened>(r =>
-			{
-				_connection.Tell(r);
-				Become(Listening);
-			});
-			Receive<Failure>(c =>
-			{
-				HandleConnectionError(c.Exception);
-				Become(Listening);
-			});
-			Receive<ClientExceptions>(c =>
-			{
-				_log.Error(c.Exception.ToString());
-				_connection.Tell(c);
-				Become(Listening);
-			});
-			ReceiveAny(_ => Stash.Stash());
-			_state.Lookup.Tell(new GetBroker(TopicName.Get(_state.Topic)));
+			LookupConnection();
 		}
 		private void LookupConnection()
         {
@@ -156,15 +124,6 @@ namespace SharpPulsar
 			ReceiveAny(_ => Stash.Stash());
 			var topicName = TopicName.Get(_state.Topic);
 			_state.Lookup.Tell(new GetBroker(topicName));
-		}
-		private void CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress)
-		{
-			string targetBroker = string.Empty;
-
-			if (!logicalAddress.Equals(physicalAddress))
-				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
-
-			Context.ActorOf(Props.Create(()=> new ClientCnx(_conf, physicalAddress, targetBroker)), $"{logicalAddress.Host}".ToAkkaNaming());
 		}
 		private void HandleConnectionError(Exception exception)
 		{
