@@ -2,10 +2,6 @@
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
-using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 
