@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.User.Events
 {
-    internal class SqlSourceBuilder : ISourceBuilder
+    internal class SqlSourceBuilder : ISourceBuilder<object>
     {
         private readonly string _tenant;
         private readonly string _namespace;
@@ -30,7 +30,7 @@ namespace SharpPulsar.User.Events
             _options = options;
             _selectedColumns = selectedColumns;
         }
-        public ISourceMethodBuilder SourceMethod()
+        public ISourceMethodBuilder<object> SourceMethod()
         {
             return new SqlSourceMethod(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _options, _selectedColumns);
         }

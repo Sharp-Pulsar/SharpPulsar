@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Sql.Client;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,11 @@ namespace SharpPulsar.User.Events
         private long _toSequenceId;
         private string _brokerWebServiceUrl;
         private readonly ActorSystem _actorSystem;
-        public EventSourceBuilder(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl)
+        private readonly IActorRef _cnxPool;
+        private readonly IActorRef _client;
+        private readonly IActorRef _lookup;
+        private readonly IActorRef _generator;
+        public EventSourceBuilder(ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl)
         {
             if (actorSystem == null)
                 throw new ArgumentException("actorSystem is null");
@@ -41,6 +46,10 @@ namespace SharpPulsar.User.Events
             if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
+            _client = client;
+            _lookup = lookup;
+            _cnxPool = cnxPool;
+            _generator = generator;
             _actorSystem = actorSystem;
             _fromSequenceId = fromSequenceId;
             _toSequenceId = toSequenceId;
@@ -50,15 +59,18 @@ namespace SharpPulsar.User.Events
             _brokerWebServiceUrl = brokerWebServiceUrl;
         }
 
-        public ISourceBuilder Reader<T>(ReaderConfigBuilder<T> readerConfigBuilder)
+        public ISourceBuilder<T> Reader<T>(ReaderConfigBuilder<T> readerConfigBuilder, ISchema<T> schema)
         {
+            if(schema == null)
+                throw new NullReferenceException(nameof(schema));
+
             if (readerConfigBuilder == null)
                 throw new NullReferenceException(nameof(readerConfigBuilder));
 
-            return new ReaderSourceBuilder<T>(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, readerConfigBuilder);
+            return new ReaderSourceBuilder<T>(schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, readerConfigBuilder);
         }
 
-        public ISourceBuilder Sql(ClientOptions options, HashSet<string> selectedColumns)
+        public ISourceBuilder<object> Sql(ClientOptions options, HashSet<string> selectedColumns)
         {
             if (selectedColumns == null)
                 throw new ArgumentException("Columns cannot be null");

@@ -18,7 +18,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly HttpClient _httpClient;
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
-        public CurrentEventsByTagActor(CurrentEventsByTag message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        public CurrentEventsByTagActor(CurrentEventsByTag message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator)
         {
             _message = message;
             _httpClient = httpClient;

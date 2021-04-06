@@ -6,14 +6,14 @@ using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.User.Events
 {
-    public class EventSource
+    public class EventSource<T>
     {
         private IActorRef _eventSource;
         private HttpClient _httpclient;
         private readonly Admin _admin;
-        private readonly BufferBlock<object> _buffer;
+        private readonly BufferBlock<T> _buffer;
 
-        public EventSource(string brokerWebServiceUrl, BufferBlock<object> buffer, IActorRef sourceActor)
+        public EventSource(string brokerWebServiceUrl, BufferBlock<T> buffer, IActorRef sourceActor)
         {
             _buffer = buffer;
             _eventSource = sourceActor;

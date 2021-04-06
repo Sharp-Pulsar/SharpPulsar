@@ -1,8 +1,8 @@
 ﻿
 namespace SharpPulsar.User.Events
 {
-    public interface ISourceBuilder
+    public interface ISourceBuilder<T>
     {
-       ISourceMethodBuilder SourceMethod();
+       ISourceMethodBuilder<T> SourceMethod();
     }
 }

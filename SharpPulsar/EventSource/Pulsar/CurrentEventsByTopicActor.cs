@@ -9,16 +9,17 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
+using SharpPulsar.Configuration;
 
 namespace SharpPulsar.EventSource.Pulsar
 {
-    public class CurrentEventsByTopicActor : ReceiveActor
+    public class CurrentEventsByTopicActor<T> : ReceiveActor
     {
         private readonly CurrentEventsByTopic _message;
         private readonly HttpClient _httpClient;
         private readonly IActorRef _network;
         private readonly IActorRef _pulsarManager;
-        public CurrentEventsByTopicActor(CurrentEventsByTopic message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        public CurrentEventsByTopicActor(CurrentEventsByTopic message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator)
         {
             _message = message;
             _httpClient = httpClient;
@@ -68,14 +69,14 @@ namespace SharpPulsar.EventSource.Pulsar
             var ask = _network.Ask<Partitions>(pay);
             return SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
-        private ConsumerConfigurationData PrepareConsumerConfiguration(ReaderConfigurationData readerConfiguration, string topic, EventMessageId start, int permits)
+        private ConsumerConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, EventMessageId start, int permits)
         {
             var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
             if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
             {
                 subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
             }
-            var consumerConfiguration = new ConsumerConfigurationData();
+            var consumerConfiguration = new ConsumerConfigurationData<T>();
             consumerConfiguration.TopicNames.Add(topic);
             consumerConfiguration.SubscriptionName = subscription;
             consumerConfiguration.SubscriptionType = CommandSubscribe.SubType.Exclusive;

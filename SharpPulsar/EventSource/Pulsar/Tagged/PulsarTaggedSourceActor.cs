@@ -3,15 +3,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using PulsarAdmin;
-using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
-    public class PulsarTaggedSourceActor : ReceiveActor
+    public class PulsarTaggedSourceActor<T> : ReceiveActor
     {
         private readonly IActorRef _pulsarManager;
         private readonly EventMessageId _endId;
@@ -24,7 +22,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
         private long _sequenceId;
-        public PulsarTaggedSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag, long fromSequenceId)
+        public PulsarTaggedSourceActor(ClientConfigurationData client, ConsumerConfigurationData<T> configuration, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag, long fromSequenceId)
         {
             _sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
@@ -112,9 +110,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag, long fromSequenceId)
+        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData<T> configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag, long fromSequenceId)
         {
-            return Props.Create(() => new PulsarTaggedSourceActor(client, configuration, pulsarManager, network, endId, isLive, httpClient, message, tag, fromSequenceId));
+            return Props.Create(() => new PulsarTaggedSourceActor<T>(client, configuration, pulsarManager, network, endId, isLive, httpClient, message, tag, fromSequenceId));
         }
         public IStash Stash { get; set; }
     }

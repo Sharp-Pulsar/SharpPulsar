@@ -12,7 +12,7 @@ using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.User.Events
 {
-    internal class SqlSourceMethod : ISourceMethodBuilder
+    internal class SqlSourceMethod : ISourceMethodBuilder<object>
     {
         private readonly string _tenant;
         private readonly string _namespace;
@@ -36,17 +36,17 @@ namespace SharpPulsar.User.Events
             _options = options;
             _selectedColumns = selectedColumns;
         }
-        public EventSource CurrentEvents()
+        public EventSource<object> CurrentEvents()
         {
             var buffer = new BufferBlock<object>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
             var msg = new CurrentEventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _options);
             var actor = _actorSystem.ActorOf(CurrentEventsByTopicActor.Prop(msg, new HttpClient(), buffer), actorName);
             
-            return new EventSource(_brokerWebServiceUrl, buffer, actor);
+            return new EventSource<object>(_brokerWebServiceUrl, buffer, actor);
         }
 
-        public EventSource CurrentTaggedEvents(Tag tag)
+        public EventSource<object> CurrentTaggedEvents(Tag tag)
         {
             if (tag == null)
                 throw new ArgumentException("Tag is null");
@@ -56,20 +56,20 @@ namespace SharpPulsar.User.Events
             var msg = new CurrentEventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, tag, _options, _brokerWebServiceUrl);
             var actor = _actorSystem.ActorOf(CurrentEventsByTagActor.Prop(msg, new HttpClient(), buffer), actorName);
 
-            return new EventSource(_brokerWebServiceUrl, buffer, actor);
+            return new EventSource<object>(_brokerWebServiceUrl, buffer, actor);
         }
 
-        public EventSource Events()
+        public EventSource<object> Events()
         {
             var buffer = new BufferBlock<object>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
             var msg = new EventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, _options, _brokerWebServiceUrl);
             var actor = _actorSystem.ActorOf(EventsByTopicActor.Prop(msg, new HttpClient(), buffer), actorName);
 
-            return new EventSource(_brokerWebServiceUrl, buffer, actor);
+            return new EventSource<object>(_brokerWebServiceUrl, buffer, actor);
         }
 
-        public EventSource TaggedEvents(Tag tag)
+        public EventSource<object> TaggedEvents(Tag tag)
         {
             if (tag == null)
                 throw new ArgumentException("Tag is null");
@@ -79,7 +79,7 @@ namespace SharpPulsar.User.Events
             var msg = new EventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, tag, _options, _brokerWebServiceUrl);
             var actor = _actorSystem.ActorOf(EventsByTagActor.Prop(msg, new HttpClient(), buffer), actorName);
 
-            return new EventSource(_brokerWebServiceUrl, buffer, actor);
+            return new EventSource<object>(_brokerWebServiceUrl, buffer, actor);
         }
     }
 }

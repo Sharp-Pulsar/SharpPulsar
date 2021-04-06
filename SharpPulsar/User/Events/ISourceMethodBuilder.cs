@@ -2,7 +2,7 @@
 
 namespace SharpPulsar.User.Events
 {
-    public interface ISourceMethodBuilder
+    public interface ISourceMethodBuilder<T>
     {
         /// <summary>
         /// EventsByTopicReader is used for retrieving events for a specific topics 
@@ -21,13 +21,13 @@ namespace SharpPulsar.User.Events
         /// stored events is provided by CurrentEventsByTopicReader.
         /// </para>
         /// </summary>
-        public EventSource Events();
+        public EventSource<T> Events();
         /// <summary>
         /// Same type of query as EventsByTopicReader but the event query
         /// is completed immediately when it reaches the end of the "result set". Events that are
         /// stored after the query is completed are not included in the event stream.
         /// </summary>
-        EventSource CurrentEvents();
+        EventSource<T> CurrentEvents();
 
         /// <summary>
         /// EventsByTagReader is used for retrieving events that were marked with
@@ -39,12 +39,12 @@ namespace SharpPulsar.User.Events
         /// Corresponding query that is completed when it reaches the end of the currently
         /// stored events is provided by CurrentEventsByTagReader.
         /// </summary>
-        EventSource TaggedEvents(Tag tag);
+        EventSource<T> TaggedEvents(Tag tag);
         /// <summary>
         /// Same type of query as EventsByTagReader but the event stream
         /// is completed immediately when it reaches the end of the "result set". Events that are
         /// stored after the query is completed are not included in the event stream.
         /// </summary>
-        EventSource CurrentTaggedEvents(Tag tag);
+        EventSource<T> CurrentTaggedEvents(Tag tag);
     }
 }
