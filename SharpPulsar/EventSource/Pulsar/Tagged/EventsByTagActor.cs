@@ -4,7 +4,7 @@ using System.Threading;
 using Akka.Actor;
 using Nito.AsyncEx;
 using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
+using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Impl;
@@ -13,7 +13,7 @@ using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
+namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
     public class EventsByTagActor : ReceiveActor
     {

@@ -4,13 +4,13 @@ using System.Collections.Immutable;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Akka.EventSource.Messages;
-using SharpPulsar.Akka.EventSource.Messages.Presto;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
-using SharpPulsar.Akka.EventSource.Presto;
-using SharpPulsar.Akka.EventSource.Pulsar;
+using SharpPulsar.EventSource.Messages;
+using SharpPulsar.EventSource.Messages.Presto;
+using SharpPulsar.EventSource.Messages.Pulsar;
+using SharpPulsar.EventSource.Presto;
+using SharpPulsar.EventSource.Pulsar;
 
-namespace SharpPulsar.Akka.EventSource
+namespace SharpPulsar.EventSource
 {
     public class EventSourceManager:ReceiveActor
     {

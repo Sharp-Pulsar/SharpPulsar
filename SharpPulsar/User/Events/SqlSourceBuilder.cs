@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Sql.Client;
+﻿using Akka.Actor;
+using SharpPulsar.Sql.Client;
 using System;
 using System.Collections.Generic;
 
@@ -15,9 +16,11 @@ namespace SharpPulsar.User.Events
         private readonly string _brokerWebServiceUrl;
         private readonly ClientOptions _options;
         private readonly HashSet<string> _selectedColumns;
+        private readonly ActorSystem _actorSystem;
         
-        public SqlSourceBuilder(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ClientOptions options, HashSet<string> selectedColumns)
+        public SqlSourceBuilder(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ClientOptions options, HashSet<string> selectedColumns)
         {
+            _actorSystem = actorSystem;
             _fromSequenceId = fromSequenceId;
             _toSequenceId = toSequenceId;
             _tenant = tenant;
@@ -29,7 +32,7 @@ namespace SharpPulsar.User.Events
         }
         public ISourceMethodBuilder SourceMethod()
         {
-            throw new NotImplementedException();
+            return new SqlSourceMethod(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _options, _selectedColumns);
         }
     }
 }

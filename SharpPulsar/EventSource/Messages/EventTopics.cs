@@ -1,5 +1,5 @@
 ﻿
-namespace SharpPulsar.Akka.EventSource.Messages
+namespace SharpPulsar.EventSource.Messages
 {
 
     /// <summary>

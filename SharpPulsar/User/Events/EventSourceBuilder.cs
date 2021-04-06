@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Configuration;
+﻿using Akka.Actor;
+using SharpPulsar.Configuration;
 using SharpPulsar.Sql.Client;
 using System;
 using System.Collections.Generic;
@@ -16,8 +17,12 @@ namespace SharpPulsar.User.Events
         private long _fromSequenceId;
         private long _toSequenceId;
         private string _brokerWebServiceUrl;
-        public EventSourceBuilder(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl)
+        private readonly ActorSystem _actorSystem;
+        public EventSourceBuilder(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl)
         {
+            if (actorSystem == null)
+                throw new ArgumentException("actorSystem is null");
+
             if (string.IsNullOrWhiteSpace(_brokerWebServiceUrl))
                 throw new ArgumentException("AdminUrl is missing");
 
@@ -36,6 +41,7 @@ namespace SharpPulsar.User.Events
             if (toSequenceId <= fromSequenceId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
+            _actorSystem = actorSystem;
             _fromSequenceId = fromSequenceId;
             _toSequenceId = toSequenceId;
             _tenant = tenant;
@@ -49,7 +55,7 @@ namespace SharpPulsar.User.Events
             if (readerConfigBuilder == null)
                 throw new NullReferenceException(nameof(readerConfigBuilder));
 
-            return new ReaderSourceBuilder<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, readerConfigBuilder);
+            return new ReaderSourceBuilder<T>(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, readerConfigBuilder);
         }
 
         public ISourceBuilder Sql(ClientOptions options, HashSet<string> selectedColumns)
@@ -68,7 +74,7 @@ namespace SharpPulsar.User.Events
             if (!string.IsNullOrWhiteSpace(options.Execute))
                 throw new ArgumentException("Please leave the Execute empty");
 
-            return new SqlSourceBuilder(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, options, selectedColumns);
+            return new SqlSourceBuilder(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, options, selectedColumns);
         }
     }
 }

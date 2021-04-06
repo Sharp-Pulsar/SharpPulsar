@@ -3,14 +3,14 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
+using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Utility;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar
+namespace SharpPulsar.EventSource.Pulsar
 {
     public class EventsByTopicActor : ReceiveActor
     {

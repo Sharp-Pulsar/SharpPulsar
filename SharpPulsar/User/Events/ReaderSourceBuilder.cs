@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Configuration;
+﻿using Akka.Actor;
+using SharpPulsar.Configuration;
 using System;
 
 namespace SharpPulsar.User.Events
@@ -13,8 +14,10 @@ namespace SharpPulsar.User.Events
         private long _toSequenceId;
         private string _brokerWebServiceUrl;
         private readonly ReaderConfigBuilder<T> _conf;
-        public ReaderSourceBuilder(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
-        {            
+        private readonly ActorSystem _actorSystem;
+        public ReaderSourceBuilder(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
+        {
+            _actorSystem = actorSystem;
             _fromSequenceId = fromSequenceId;
             _toSequenceId = toSequenceId;
             _tenant = tenant;
@@ -26,7 +29,7 @@ namespace SharpPulsar.User.Events
 
         public ISourceMethodBuilder SourceMethod()
         {
-            return new ReaderSourceMethod<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf);
+            return new ReaderSourceMethod<T>(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf);
         }
     }
 }

@@ -1,71 +1,61 @@
 ﻿using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using Nito.AsyncEx;
-using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Presto;
+using SharpPulsar.EventSource.Messages.Presto;
 using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
+using System.Threading.Tasks.Dataflow;
 
-namespace SharpPulsar.Akka.EventSource.Presto
+namespace SharpPulsar.EventSource.Presto
 {
     public class EventsByTopicActor : ReceiveActor
     {
         private readonly EventsByTopic _message;
         private readonly HttpClient _httpClient;
-        private readonly IActorRef _network;
-        private readonly IActorRef _pulsarManager;
-        public EventsByTopicActor(EventsByTopic message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        private readonly BufferBlock<object> _buffer;
+        private readonly User.Admin _admin;
+        public EventsByTopicActor(EventsByTopic message, HttpClient httpClient, BufferBlock<object> buffer)
         {
+            _admin = new User.Admin(message.AdminUrl, httpClient);
+            _buffer = buffer;
             _message = message;
             _httpClient = httpClient;
-            _network = network;
-            _pulsarManager = pulsarManager;
-            var partitions = NewPartitionMetadataRequest($"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}");
-            Setup(partitions);
+            var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
+            var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
+            Setup(partitions.Body, topic);
         }
 
-        private void Setup(Partitions p)
+        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
         {
-            if (p.Partition > 0)
+            if (p.Partitions > 0)
             {
-                for (var i = 0; i < p.Partition; i++)
+                for (var i = 0; i < p.Partitions; i++)
                 {
-                    var partitionTopic = TopicName.Get(p.Topic).GetPartition(i);
+                    var partitionTopic = TopicName.Get(topic).GetPartition(i);
                     var msgId = GetMessageIds(partitionTopic);
-                    Context.ActorOf(PrestoSourceActor.Prop(_pulsarManager, msgId.Start, msgId.End, true, _httpClient, _message));
+                    Context.ActorOf(PrestoSourceActor.Prop(_buffer, msgId.Start, msgId.End, true, _httpClient, _message));
                     
                 }
             }
             else
             {
-                var msgId = GetMessageIds(TopicName.Get(p.Topic));
-                Context.ActorOf(PrestoSourceActor.Prop(_pulsarManager, msgId.Start, msgId.End, true, _httpClient, _message));
+                var msgId = GetMessageIds(TopicName.Get(topic));
+                Context.ActorOf(PrestoSourceActor.Prop(_buffer, msgId.Start, msgId.End, true, _httpClient, _message));
             }
-        }
-        private Partitions NewPartitionMetadataRequest(string topic)
-        {
-            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewPartitionMetadataRequest(topic, requestId);
-            var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
-            var ask = _network.Ask<Partitions>(pay);
-            return SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
         }
         private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
         {
-            var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-            var statsTask = adminRestapi.GetInternalStats1Async(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
-            var stats = SynchronizationContextSwitcher.NoContext(async () => await statsTask).Result;
-            var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats);
+            var stats = _admin.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
+            var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats.Body);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats);
+            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats.Body);
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(EventsByTopic message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        public static Props Prop(EventsByTopic message, HttpClient httpClient, BufferBlock<object> buffer)
         {
-            return Props.Create(() => new EventsByTopicActor(message, httpClient, network, pulsarManager));
+            return Props.Create(() => new EventsByTopicActor(message, httpClient, buffer));
         }
     }
 }

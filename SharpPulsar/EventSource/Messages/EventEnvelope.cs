@@ -1,7 +1,7 @@
 ﻿using SharpPulsar.Sql.Message;
 using System.Collections.Generic;
 
-namespace SharpPulsar.Akka.EventSource.Messages
+namespace SharpPulsar.EventSource.Messages
 {
     public interface IEventEnvelope
     {

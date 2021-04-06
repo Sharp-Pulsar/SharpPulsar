@@ -2,7 +2,7 @@
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Configuration;
 
-namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
+namespace SharpPulsar.EventSource.Messages.Pulsar
 {
     /// <summary>
     /// Same type of query as <see cref="EventsByTopic"/> but the event query

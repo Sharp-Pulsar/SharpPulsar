@@ -2,7 +2,7 @@
 using SharpPulsar.Sql.Client;
 using System.Collections.Immutable;
 
-namespace SharpPulsar.Akka.EventSource.Messages.Presto
+namespace SharpPulsar.EventSource.Messages.Presto
 {
     public interface IPrestoEventSourceMessage:IEventSourceMessage
     {

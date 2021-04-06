@@ -147,7 +147,7 @@ namespace SharpPulsar
         }
         public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl) 
         {
-            return new EventSourceBuilder(tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
+            return new EventSourceBuilder(_actorSystem, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
         }
         public static Sql<SqlData> NewSql() 
         {

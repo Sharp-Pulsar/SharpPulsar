@@ -5,7 +5,7 @@ using Akka.Actor;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar
+namespace SharpPulsar.EventSource.Pulsar
 {
     public class PulsarSourceActor : ReceiveActor
     {

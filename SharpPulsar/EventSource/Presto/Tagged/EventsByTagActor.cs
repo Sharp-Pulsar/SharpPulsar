@@ -1,23 +1,23 @@
 ﻿using System.Net.Http;
 using Akka.Actor;
-using SharpPulsar.Akka.EventSource.Messages.Presto;
+using SharpPulsar.EventSource.Messages.Presto;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.EventSource;
+using System.Threading.Tasks.Dataflow;
 
-namespace SharpPulsar.Akka.EventSource.Presto.Tagged
+namespace SharpPulsar.EventSource.Presto.Tagged
 {
     public class EventsByTagActor : ReceiveActor
     {
         private readonly EventsByTag _message;
         private readonly HttpClient _httpClient;
         private readonly User.Admin _admin;
-        private readonly IActorRef _pulsarManager;
-        public EventsByTagActor(EventsByTag message, HttpClient httpClient, IActorRef pulsarManager)
+        private readonly BufferBlock<object> _buffer;
+        public EventsByTagActor(EventsByTag message, HttpClient httpClient, BufferBlock<object> buffer)
         {
-            _admin = new User.Admin(message.AdminUrl, new HttpClient(), true);
+            _admin = new User.Admin(message.AdminUrl, httpClient);
             _message = message;
             _httpClient = httpClient;
-            _pulsarManager = pulsarManager;
+            _buffer = buffer;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic, true);
             Setup(partitions.Body, topic);
@@ -31,14 +31,14 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                 {
                     var partitionTopic = TopicName.Get(topic).GetPartition(i);
                     var msgId = GetMessageIds(partitionTopic);
-                    Context.ActorOf(PrestoTaggedSourceActor.Prop(_pulsarManager, msgId.Start, msgId.End, true, _httpClient, _message, _message.Tag));
+                    Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, msgId.Start, msgId.End, true, _httpClient, _message, _message.Tag));
 
                 }
             }
             else
             {
                 var msgId = GetMessageIds(TopicName.Get(topic));
-                Context.ActorOf(PrestoTaggedSourceActor.Prop(_pulsarManager, msgId.Start, msgId.End, true, _httpClient, _message, _message.Tag));
+                Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, msgId.Start, msgId.End, true, _httpClient, _message, _message.Tag));
             }
         }        
         private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
@@ -50,9 +50,9 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(EventsByTag message, HttpClient httpClient, IActorRef pulsarManager)
+        public static Props Prop(EventsByTag message, HttpClient httpClient, BufferBlock<object> buffer)
         {
-            return Props.Create(() => new EventsByTagActor(message, httpClient, pulsarManager));
+            return Props.Create(() => new EventsByTagActor(message, httpClient, buffer));
         }
     }
 }

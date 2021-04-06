@@ -2,7 +2,7 @@
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Configuration;
 
-namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
+namespace SharpPulsar.EventSource.Messages.Pulsar
 {
     
     public sealed class EventsByTopic : IPulsarEventSourceMessage

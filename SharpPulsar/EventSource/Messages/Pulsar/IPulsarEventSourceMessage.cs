@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Configuration;
 
-namespace SharpPulsar.Akka.EventSource.Messages.Pulsar
+namespace SharpPulsar.EventSource.Messages.Pulsar
 {
     public interface IPulsarEventSourceMessage<T>: IEventSourceMessage
     {

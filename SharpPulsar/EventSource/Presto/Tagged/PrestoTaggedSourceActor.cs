@@ -1,24 +1,20 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
-using Nito.AsyncEx;
-using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages;
-using SharpPulsar.Akka.EventSource.Messages.Presto;
+using SharpPulsar.EventSource.Messages;
+using SharpPulsar.EventSource.Messages.Presto;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Akka.Sql.Client;
-using SharpPulsar.Akka.Sql.Message;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
+using SharpPulsar.Sql.Client;
+using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Sql.Message;
 
-namespace SharpPulsar.Akka.EventSource.Presto.Tagged
+namespace SharpPulsar.EventSource.Presto.Tagged
 {
     public class PrestoTaggedSourceActor : ReceiveActor
     {
-        private readonly IActorRef _pulsarManager;
         private readonly EventMessageId _endId;
         private EventMessageId _lastEventMessageId;
         private ICancelable _queryCancelable;
@@ -30,8 +26,10 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
         private readonly IActorRef _self;
         private long _sequenceId;
         private Tag _tag;
-        public PrestoTaggedSourceActor(IActorRef pulsarManager, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
+        private readonly BufferBlock<object> _buffer;
+        public PrestoTaggedSourceActor(BufferBlock<object> buffer, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
+            _buffer = buffer;
             _tag = tag;
             _self = Self;
             _log = Context.GetLogger();
@@ -42,7 +40,6 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             _endId = endId;
             _lastEventMessageId = endId;
             _sequenceId = startId.Index;
-            _pulsarManager = pulsarManager;
             FirstQuery(startId, endId, isLive);
         }
         private void FirstQuery(EventMessageId start, EventMessageId end, bool isLive)
@@ -59,7 +56,7 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                 var session = options.ToClientSession();
                 var executor = new Executor(session, options, _self, _log);
                 _log.Info($"Executing: {options.Execute}");
-                executor.Run();
+                _ = executor.Run().GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -86,7 +83,7 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                     var session = options.ToClientSession();
                     var executor = new Executor(session, options, _self, _log);
                     _log.Info($"Executing: {options.Execute}");
-                    executor.Run();
+                    _ = executor.Run().GetAwaiter().GetResult();
                     _lastEventMessageId = ids;
                 }
             }
@@ -101,10 +98,9 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
         }
         private EventMessageId NextFlow()
         {
-            var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-            var statsTask = adminRestapi.GetInternalStats1Async(_message.Tenant, _message.Namespace, _message.Topic);
-            var stats = SynchronizationContextSwitcher.NoContext(async () => await statsTask).Result;
-            var start = MessageIdHelper.NextFlow(stats);
+            var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+            var statsResponse = adminRestapi.GetInternalStats(_message.Tenant, _message.Namespace, _message.Topic);
+            var start = MessageIdHelper.NextFlow(statsResponse.Body);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
             return startMessageId;
         }
@@ -117,7 +113,7 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
                     var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
-                    _pulsarManager.Tell(eventMessage);
+                    _buffer.Post(eventMessage);
                     _sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
@@ -125,12 +121,12 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             Receive<StatsResponse>(s =>
             {
                 var stats = new EventStats(s);
-                _pulsarManager.Tell(stats);
+                _buffer.Post(stats);
             });
             Receive<ErrorResponse>(s =>
             {
                 var error = new EventError(s);
-                _pulsarManager.Tell(error);
+                _buffer.Post(error);
             });
             Receive<ReceiveTimeout>(t => { Self.GracefulStop(TimeSpan.FromSeconds(5)); });
             //to track last sequence id for lagging player
@@ -141,18 +137,18 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             Receive<DataResponse>(c =>
             {
                 var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
-                _pulsarManager.Tell(eventMessage); 
+                _buffer.Post(eventMessage); 
                 _sequenceId++;
             });
             Receive<StatsResponse>(s =>
             {
                 var stats = new EventStats(s);
-                _pulsarManager.Tell(stats);
+                _buffer.Post(stats);
             });
             Receive<ErrorResponse>(s =>
             {
                 var error = new EventError(s);
-                _pulsarManager.Tell(error);
+                _buffer.Post(error);
             });
             _queryCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), Query);
         }
@@ -168,9 +164,9 @@ namespace SharpPulsar.Akka.EventSource.Presto.Tagged
             _queryCancelable?.Cancel();
         }
 
-        public static Props Prop(IActorRef pulsarManager, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
+        public static Props Prop(BufferBlock<object> buffer, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
-            return Props.Create(() => new PrestoTaggedSourceActor(pulsarManager, start, endId, isLive, httpClient, message, tag));
+            return Props.Create(() => new PrestoTaggedSourceActor(buffer, start, endId, isLive, httpClient, message, tag));
         }
 
         public IStash Stash { get; set; }

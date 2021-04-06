@@ -4,12 +4,12 @@ using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
 using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
+using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
+namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
     public class PulsarTaggedSourceActor : ReceiveActor
     {

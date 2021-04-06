@@ -1,10 +1,10 @@
 ﻿using System.Net.Http;
 using System.Text.RegularExpressions;
 using Akka.Actor;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
-using SharpPulsar.Akka.EventSource.Pulsar.Tagged;
+using SharpPulsar.EventSource.Messages.Pulsar;
+using SharpPulsar.EventSource.Pulsar.Tagged;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar
+namespace SharpPulsar.EventSource.Pulsar
 {
     public class PulsarSourceCoordinator: ReceiveActor, IWithUnboundedStash
     {
