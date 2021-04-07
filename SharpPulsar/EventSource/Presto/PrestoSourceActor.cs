@@ -9,13 +9,12 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.EventSource.Pulsar;
 
 namespace SharpPulsar.EventSource.Presto
 {
     public class PrestoSourceActor : ReceiveActor
     {
-        private readonly BufferBlock<object> _buffer;
+        private readonly BufferBlock<IEventEnvelope> _buffer;
         private readonly EventMessageId _endId;
         private EventMessageId _lastEventMessageId;
         private ICancelable _queryCancelable;
@@ -26,7 +25,7 @@ namespace SharpPulsar.EventSource.Presto
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _self;
         private long _sequenceId;
-        public PrestoSourceActor(BufferBlock<object> buffer, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message)
+        public PrestoSourceActor(BufferBlock<IEventEnvelope> buffer, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message)
         {
             _buffer = buffer;
             _self = Self;
@@ -163,7 +162,7 @@ namespace SharpPulsar.EventSource.Presto
             _queryCancelable?.Cancel();
         }
 
-        public static Props Prop(BufferBlock<object> buffer, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message)
+        public static Props Prop(BufferBlock<IEventEnvelope> buffer, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message)
         {
             return Props.Create(()=> new PrestoSourceActor(buffer, start, endId, isLive, httpClient, message));
         }

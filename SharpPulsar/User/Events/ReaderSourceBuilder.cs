@@ -4,7 +4,7 @@ using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.User.Events
 {
-    internal class ReaderSourceBuilder<T> : ISourceBuilder<T>
+    public class ReaderSourceBuilder<T>
     {
         private readonly string _tenant;
         private readonly string _namespace;
@@ -39,7 +39,7 @@ namespace SharpPulsar.User.Events
             _conf = readerConfigBuilder;
         }
 
-        public ISourceMethodBuilder<T> SourceMethod()
+        public ReaderSourceMethod<T> SourceMethod()
         {
             return new ReaderSourceMethod<T>(_clientConfiguration, _schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf);
         }

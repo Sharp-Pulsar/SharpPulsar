@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Sql.Client;
 using System;
@@ -9,7 +10,7 @@ using System.Linq;
 
 namespace SharpPulsar.User.Events
 {
-    public class EventSourceBuilder: IEventSourceBuilder
+    public class EventSourceBuilder
     {
         private readonly string _tenant;
         private readonly string _namespace;
@@ -59,7 +60,7 @@ namespace SharpPulsar.User.Events
             _brokerWebServiceUrl = brokerWebServiceUrl;
         }
 
-        public ISourceBuilder<T> Reader<T>(ClientConfigurationData clientConfiguration, ReaderConfigBuilder<T> readerConfigBuilder, ISchema<T> schema)
+        public ReaderSourceBuilder<T> Reader<T>(ClientConfigurationData clientConfiguration, ReaderConfigBuilder<T> readerConfigBuilder, ISchema<T> schema)
         {
             if(schema == null)
                 throw new NullReferenceException(nameof(schema));
@@ -70,7 +71,7 @@ namespace SharpPulsar.User.Events
             return new ReaderSourceBuilder<T>(clientConfiguration, schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, readerConfigBuilder);
         }
 
-        public ISourceBuilder<object> Sql(ClientOptions options, HashSet<string> selectedColumns)
+        public SqlSourceBuilder Sql(ClientOptions options, HashSet<string> selectedColumns)
         {
             if (selectedColumns == null)
                 throw new ArgumentException("Columns cannot be null");

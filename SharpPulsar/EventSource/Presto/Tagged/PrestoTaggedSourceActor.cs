@@ -27,8 +27,8 @@ namespace SharpPulsar.EventSource.Presto.Tagged
         private readonly IActorRef _self;
         private long _sequenceId;
         private Tag _tag;
-        private readonly BufferBlock<object> _buffer;
-        public PrestoTaggedSourceActor(BufferBlock<object> buffer, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
+        private readonly BufferBlock<IEventEnvelope> _buffer;
+        public PrestoTaggedSourceActor(BufferBlock<IEventEnvelope> buffer, EventMessageId startId, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
             _buffer = buffer;
             _tag = tag;
@@ -165,7 +165,7 @@ namespace SharpPulsar.EventSource.Presto.Tagged
             _queryCancelable?.Cancel();
         }
 
-        public static Props Prop(BufferBlock<object> buffer, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
+        public static Props Prop(BufferBlock<IEventEnvelope> buffer, EventMessageId start, EventMessageId endId, bool isLive, HttpClient httpClient, IPrestoEventSourceMessage message, Tag tag)
         {
             return Props.Create(() => new PrestoTaggedSourceActor(buffer, start, endId, isLive, httpClient, message, tag));
         }

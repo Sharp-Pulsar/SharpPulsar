@@ -1,11 +1,12 @@
 ﻿using Akka.Actor;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Sql.Client;
 using System;
 using System.Collections.Generic;
 
 namespace SharpPulsar.User.Events
 {
-    internal class SqlSourceBuilder : ISourceBuilder<object>
+    public class SqlSourceBuilder
     {
         private readonly string _tenant;
         private readonly string _namespace;
@@ -30,7 +31,7 @@ namespace SharpPulsar.User.Events
             _options = options;
             _selectedColumns = selectedColumns;
         }
-        public ISourceMethodBuilder<object> SourceMethod()
+        public SqlSourceMethod SourceMethod()
         {
             return new SqlSourceMethod(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _options, _selectedColumns);
         }

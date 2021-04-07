@@ -7,6 +7,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.EventSource.Pulsar;
+using SharpPulsar.EventSource.Messages;
 
 namespace SharpPulsar.EventSource.Presto
 {
@@ -14,9 +15,9 @@ namespace SharpPulsar.EventSource.Presto
     {
         private readonly EventsByTopic _message;
         private readonly HttpClient _httpClient;
-        private readonly BufferBlock<object> _buffer;
+        private readonly BufferBlock<IEventEnvelope> _buffer;
         private readonly User.Admin _admin;
-        public EventsByTopicActor(EventsByTopic message, HttpClient httpClient, BufferBlock<object> buffer)
+        public EventsByTopicActor(EventsByTopic message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
         {
             _admin = new User.Admin(message.AdminUrl, httpClient);
             _buffer = buffer;
@@ -54,7 +55,7 @@ namespace SharpPulsar.EventSource.Presto
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(EventsByTopic message, HttpClient httpClient, BufferBlock<object> buffer)
+        public static Props Prop(EventsByTopic message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
         {
             return Props.Create(() => new EventsByTopicActor(message, httpClient, buffer));
         }

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace SharpPulsar.EventSource.Messages
 {
+    /// <summary>
+    /// implemented by EventEnvelope, EventStats & EventError
+    /// </summary>
     public interface IEventEnvelope
     {
 
