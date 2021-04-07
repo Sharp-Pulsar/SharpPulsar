@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Interfaces;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -29,7 +30,14 @@ namespace SharpPulsar.User.Events
             _httpclient = new HttpClient();
             _admin = new Admin(brokerWebServiceUrl, _httpclient, true);
         }
-
+        public IList<string> Topics(IEventTopics message)
+        {
+            var response = _admin.GetTopics(message.Tenant, message.Namespace, "ALL");
+            var statusCode = response.Response.StatusCode;
+            if (response == null)
+                return new List<string>();
+            return response.Body;
+        }
         /// <summary>
         /// Reads existing events and future events from Presto
         /// </summary>
