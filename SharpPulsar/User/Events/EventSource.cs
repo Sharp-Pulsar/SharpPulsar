@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Interfaces;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -12,10 +13,18 @@ namespace SharpPulsar.User.Events
         private HttpClient _httpclient;
         private readonly Admin _admin;
         private readonly BufferBlock<T> _buffer;
+        private readonly BufferBlock<IMessage<T>> _readerBuffer;
 
         public EventSource(string brokerWebServiceUrl, BufferBlock<T> buffer, IActorRef sourceActor)
         {
             _buffer = buffer;
+            _eventSource = sourceActor;
+            _httpclient = new HttpClient();
+            _admin = new Admin(brokerWebServiceUrl, _httpclient, true);
+        }
+        public EventSource(string brokerWebServiceUrl, BufferBlock<IMessage<T>> buffer, IActorRef sourceActor)
+        {
+            _readerBuffer = buffer;
             _eventSource = sourceActor;
             _httpclient = new HttpClient();
             _admin = new Admin(brokerWebServiceUrl, _httpclient, true);

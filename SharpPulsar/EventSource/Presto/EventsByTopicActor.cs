@@ -6,6 +6,7 @@ using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.EventSource.Pulsar;
 
 namespace SharpPulsar.EventSource.Presto
 {

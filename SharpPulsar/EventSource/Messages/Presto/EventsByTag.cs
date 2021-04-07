@@ -15,7 +15,7 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// Corresponding query that is completed when it reaches the end of the currently
     /// stored events is provided by <see cref="CurrentEventsByTag"/>.
     /// </summary>
-    public sealed class EventsByTag 
+    public sealed class EventsByTag : IPrestoEventSourceMessage
     {
         public EventsByTag(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, ClientOptions options, string adminUrl)
         {

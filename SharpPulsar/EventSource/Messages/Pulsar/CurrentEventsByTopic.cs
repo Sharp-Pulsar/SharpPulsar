@@ -9,9 +9,9 @@ namespace SharpPulsar.EventSource.Messages.Pulsar
     /// is completed immediately when it reaches the end of the "result set". Events that are
     /// stored after the query is completed are not included in the event stream.
     /// </summary>
-    public sealed class CurrentEventsByTopic : IPulsarEventSourceMessage
+    public sealed class CurrentEventsByTopic<T> : IPulsarEventSourceMessage<T>
     {
-        public CurrentEventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
+        public CurrentEventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, string adminUrl, ReaderConfigurationData<T> configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -31,7 +31,7 @@ namespace SharpPulsar.EventSource.Messages.Pulsar
         public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
-        public ReaderConfigurationData Configuration { get; }
+        public ReaderConfigurationData<T> Configuration { get; }
         public ClientConfigurationData ClientConfiguration { get; }
     }
 }

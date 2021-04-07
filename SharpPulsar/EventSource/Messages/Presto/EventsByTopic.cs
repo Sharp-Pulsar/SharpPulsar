@@ -23,7 +23,7 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// stored events is provided by <see cref="CurrentEventsByTopic"/>.
     /// </para>
     /// </summary>
-    public sealed class EventsByTopic 
+    public sealed class EventsByTopic : IPrestoEventSourceMessage
     {
         public EventsByTopic(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, ClientOptions options, string adminUrl)
         {

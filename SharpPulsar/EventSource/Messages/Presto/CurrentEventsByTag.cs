@@ -1,6 +1,5 @@
 ﻿
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Sql.Client;
 
@@ -11,7 +10,7 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// is completed immediately when it reaches the end of the "result set". Events that are
     /// stored after the query is completed are not included in the event stream.
     /// </summary>
-    public sealed class CurrentEventsByTag
+    public sealed class CurrentEventsByTag: IPrestoEventSourceMessage
     {
         public CurrentEventsByTag(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, ClientOptions options, string adminUrl)
         {

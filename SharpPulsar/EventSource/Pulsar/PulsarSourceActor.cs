@@ -82,7 +82,15 @@ namespace SharpPulsar.EventSource.Pulsar
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
             _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client, queue)));
-
+            Receive<ICumulative>(m => {
+                _child.Tell(m);
+            });
+            Receive<IAcknowledge>(m => {
+                _child.Tell(m);
+            });
+            Receive<MessageProcessed<T>>(m => {
+                _child.Tell(m);
+            });
             if (isLive)
                 LiveConsume();
             else Consume();

@@ -1,8 +1,13 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages.Pulsar;
+using SharpPulsar.EventSource.Pulsar;
+using SharpPulsar.EventSource.Pulsar.Tagged;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Queues;
 using System;
+using System.Text.RegularExpressions;
 
 namespace SharpPulsar.User.Events
 {
@@ -16,6 +21,7 @@ namespace SharpPulsar.User.Events
         private long _toSequenceId;
         private string _brokerWebServiceUrl;
         private readonly ReaderConfigBuilder<T> _conf;
+        private readonly ClientConfigurationData _clientConfiguration;
         private ActorSystem _actorSystem;
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
@@ -23,8 +29,9 @@ namespace SharpPulsar.User.Events
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
 
-        public ReaderSourceMethod(ISchema<T> schema, ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
+        public ReaderSourceMethod(ClientConfigurationData clientConfiguration, ISchema<T> schema, ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
         {
+            _clientConfiguration = clientConfiguration;
             _schema = schema;
             _client = client;
             _lookup = lookup;
@@ -42,13 +49,21 @@ namespace SharpPulsar.User.Events
 
         public EventSource<T> Events()
         {
-            //_pulsarManager.Tell(new EventSource.Messages.Pulsar.EventsByTopic(tenant, ns, topic, fromSequenceId, toSequenceId, adminUrl, configuration, _conf));
-            return null;
+            var buffer = new ConsumerQueueCollections<T>();
+            var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
+            var msg = new EventsByTopic<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(EventsByTopicActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema, buffer), actorName);
+
+            return new EventSource<T>(_brokerWebServiceUrl, buffer.IncomingMessages, actor);           
         }
         public EventSource<T> CurrentEvents()
         {
-            //_pulsarManager.Tell(new EventSource.Messages.Pulsar.CurrentEventsByTopic(tenant, ns, topic, fromSequenceId, toSequenceId, adminUrl, configuration, _conf));
-            return null;
+            var buffer = new ConsumerQueueCollections<T>();
+            var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
+            var msg = new CurrentEventsByTopic<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(CurrentEventsByTopicActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema, buffer), actorName);
+
+            return new EventSource<T>(_brokerWebServiceUrl, buffer.IncomingMessages, actor);
         }
 
         public EventSource<T> TaggedEvents(Tag tag)
@@ -56,16 +71,24 @@ namespace SharpPulsar.User.Events
             if (tag == null)
                 throw new ArgumentException("Tag is null");
 
-            //_pulsarManager.Tell(new EventSource.Messages.Pulsar.EventsByTag(tenant, ns, topic, fromSequenceId, toSequenceId, tag, adminUrl, configuration, _conf));
-            return null;
+            var buffer = new ConsumerQueueCollections<T>();
+            var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
+            var msg = new EventsByTag<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, tag, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(EventsByTagActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema, buffer), actorName);
+
+            return new EventSource<T>(_brokerWebServiceUrl, buffer.IncomingMessages, actor);
         }
         public EventSource<T> CurrentTaggedEvents(Tag tag)
         {
             if (tag == null)
                 throw new ArgumentException("Tag is null");
 
-            //_pulsarManager.Tell(new EventSource.Messages.Pulsar.CurrentEventsByTag(tenant, ns, topic, fromSequenceId, toSequenceId, tag, adminUrl, configuration, _conf));
-            return null;
+            var buffer = new ConsumerQueueCollections<T>();
+            var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
+            var msg = new CurrentEventsByTag<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, tag, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(CurrentEventsByTagActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema, buffer), actorName);
+
+            return new EventSource<T>(_brokerWebServiceUrl, buffer.IncomingMessages, actor);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// is completed immediately when it reaches the end of the "result set". Events that are
     /// stored after the query is completed are not included in the event stream.
     /// </summary>
-    public sealed class CurrentEventsByTopic
+    public sealed class CurrentEventsByTopic : IPrestoEventSourceMessage
     {
         public CurrentEventsByTopic(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, string adminUrl, ClientOptions options)
         {

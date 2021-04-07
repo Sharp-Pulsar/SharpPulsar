@@ -5,9 +5,9 @@ using SharpPulsar.Configuration;
 namespace SharpPulsar.EventSource.Messages.Pulsar
 {
     
-    public sealed class EventsByTag<T> : IPulsarEventSourceMessage
+    public sealed class EventsByTag<T> : IPulsarEventSourceMessage<T>
     {
-        public EventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, string adminUrl, ReaderConfigurationData configuration, ClientConfigurationData clientConfiguration)
+        public EventsByTag(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, Tag tag, string adminUrl, ReaderConfigurationData<T> configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
