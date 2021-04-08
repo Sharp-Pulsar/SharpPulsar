@@ -3,15 +3,21 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using Akka.Actor;
-using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages.Pulsar;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Queues;
+using SharpPulsar.Common;
+using SharpPulsar.Utility;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
+using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Messages.Requests;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
+namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
-    public class PulsarTaggedSourceActor : ReceiveActor
+    public class PulsarTaggedSourceActor<T> : ReceiveActor
     {
         private readonly IActorRef _pulsarManager;
         private readonly EventMessageId _endId;
@@ -19,13 +25,15 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
         private EventMessageId _lastEventMessageId;
         private ICancelable _flowSenderCancelable;
         private readonly HttpClient _httpClient;
-        private readonly IPulsarEventSourceMessage _message;
+        private readonly IPulsarEventSourceMessage<T> _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
         private long _sequenceId;
-        public PulsarTaggedSourceActor(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag, long fromSequenceId)
+        private BufferBlock<IMessage<T>> _buffer;
+        public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
+            _buffer = queue.IncomingMessages;
             _sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
@@ -34,9 +42,58 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
             _tag = tag;
             _endId = endId;
             _lastEventMessageId = endId;
-            var topicName = TopicName.Get(configuration.SingleTopic);
-            _pulsarManager = pulsarManager;
-            _child = Context.ActorOf(Consumer.Consumer.Prop(client, topicName.ToString(), configuration, Interlocked.Increment(ref IdGenerators.ConsumerId), network, true, topicName.PartitionIndex, SubscriptionMode.NonDurable, null, _pulsarManager, true));
+
+            var topicName = TopicName.Get(readerConfiguration.TopicName);
+            IActorRef stateA = Context.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+            var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
+            if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
+            {
+                subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
+            }
+
+            ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
+            consumerConfiguration.TopicNames.Add(readerConfiguration.TopicName);
+            consumerConfiguration.SubscriptionName = subscription;
+            consumerConfiguration.SubscriptionType = SubType.Exclusive;
+            consumerConfiguration.SubscriptionMode = SubscriptionMode.NonDurable;
+            consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
+            consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
+            consumerConfiguration.StartMessageId = readerConfiguration.StartMessageId;
+
+            if (readerConfiguration.ReaderName != null)
+            {
+                consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
+            }
+
+            if (readerConfiguration.ResetIncludeHead)
+            {
+                consumerConfiguration.ResetIncludeHead = true;
+            }
+
+            consumerConfiguration.CryptoFailureAction = readerConfiguration.CryptoFailureAction;
+            if (readerConfiguration.CryptoKeyReader != null)
+            {
+                consumerConfiguration.CryptoKeyReader = readerConfiguration.CryptoKeyReader;
+            }
+
+            if (readerConfiguration.KeyHashRanges != null)
+            {
+                consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
+            }
+
+            var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
+            var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
+            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client, queue)));
+
+            Receive<ICumulative>(m => {
+                _child.Tell(m);
+            });
+            Receive<IAcknowledge>(m => {
+                _child.Tell(m);
+            });
+            Receive<MessageProcessed<T>>(m => {
+                _child.Tell(m);
+            });
             if (isLive)
                 LiveConsume();
             else Consume();
@@ -44,17 +101,17 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
 
         private void Consume()
         {
-            Receive<ConsumedMessage>(c =>
+            Receive<ReceivedMessage<T>>(m =>
             {
-                var messageId = (MessageId)c.Message.MessageId;
+                var c = m.Message;
+                var messageId = (MessageId)c.MessageId;
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
-                    var props = c.Message.Properties;
+                    var props = c.Properties;
                     var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
                     if (!string.IsNullOrWhiteSpace(tagged.Value))
                     {
-                        var eventMessage = new EventMessage(c.Message, _sequenceId);
-                        _pulsarManager.Tell(eventMessage);
+                        _buffer.Post(c);
                     }
                     _sequenceId++;
                 }
@@ -66,14 +123,13 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
         }
         private void LiveConsume()
         {
-            Receive<ConsumedMessage>(c =>
+            Receive<IMessage<T>>(c =>
             {
-                var props = c.Message.Properties;
+                var props = c.Properties;
                 var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
                 if (!string.IsNullOrWhiteSpace(tagged.Value))
                 {
-                    var eventMessage = new EventMessage(c.Message, _sequenceId);
-                    _pulsarManager.Tell(eventMessage);
+                    _buffer.Post(c);
                 }
 
                 _sequenceId++;
@@ -85,14 +141,14 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
         {
             try
             {
-                var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-                var stats = adminRestapi.GetInternalStats1(_topicName.NamespaceObject.Tenant,
+                var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+                var stats = adminRestapi.GetInternalStats(_topicName.NamespaceObject.Tenant,
                     _topicName.NamespaceObject.LocalName, _topicName.LocalName);
-                var start = MessageIdHelper.NextFlow(stats);
+                var start = MessageIdHelper.NextFlow(stats.Body);
                 if (start.Index > _lastEventMessageId.Index)
                 {
                     var permits = start.Index - _lastEventMessageId.Index;
-                    _child.Tell(new SendFlow(permits));
+                    _child.Tell(new IncreaseAvailablePermits((int)permits));
                     _lastEventMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
                 }
             }
@@ -112,9 +168,9 @@ namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ConsumerConfigurationData configuration, IActorRef pulsarManager, IActorRef network, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage message, Tag tag, long fromSequenceId)
+        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
-            return Props.Create(() => new PulsarTaggedSourceActor(client, configuration, pulsarManager, network, endId, isLive, httpClient, message, tag, fromSequenceId));
+            return Props.Create(() => new PulsarTaggedSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, tag, fromSequenceId, schema, queue));
         }
         public IStash Stash { get; set; }
     }

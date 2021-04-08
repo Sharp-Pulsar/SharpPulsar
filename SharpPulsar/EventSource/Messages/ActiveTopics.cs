@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace SharpPulsar.Akka.EventSource.Messages
+namespace SharpPulsar.EventSource.Messages
 {
     public sealed class ActiveTopics
     {

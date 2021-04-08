@@ -1,13 +1,13 @@
 ﻿
-using System.Collections.Immutable;
-using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Sql.Client;
+using System.Collections.Generic;
 
-namespace SharpPulsar.Akka.EventSource.Messages.Presto
+namespace SharpPulsar.EventSource.Messages.Presto
 {
     public interface IPrestoEventSourceMessage:IEventSourceMessage
     {
         public ClientOptions Options { get; }
-        public ImmutableHashSet<string> Columns { get; }
+        public HashSet<string> Columns { get; }
         public string AdminUrl { get; }
     }
 }

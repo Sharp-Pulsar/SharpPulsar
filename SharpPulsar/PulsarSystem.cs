@@ -9,6 +9,7 @@ using SharpPulsar.Sql;
 using SharpPulsar.Sql.Live;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
+using SharpPulsar.User.Events;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -144,9 +145,9 @@ namespace SharpPulsar
         {
             return new User.Function(httpClient);
         }
-        public EventSource NewEventSource() 
+        public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl) 
         {
-            return null;
+            return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
         }
         public static Sql<SqlData> NewSql() 
         {

@@ -20,15 +20,12 @@ Logs to logs.log</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Akka\**" />
-    <Compile Remove="EventSource\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
     <EmbeddedResource Remove="Akka\**" />
-    <EmbeddedResource Remove="EventSource\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
     <None Remove="Akka\**" />
-    <None Remove="EventSource\**" />
     <None Remove="Protocol\Circe\**" />
     <None Remove="Protocol\Proto\Partial\**" />
     <None Include="SharpPulsar.jpg">
@@ -54,14 +51,14 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
     <PackageReference Include="avroschemagenerator" Version="1.8.0" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.15.6" />
+    <PackageReference Include="Google.Protobuf" Version="3.15.7" />
     <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
-    <PackageReference Include="IdentityModel" Version="5.0.1" />
+    <PackageReference Include="IdentityModel" Version="5.1.0" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.6" />
     <PackageReference Include="Mail.dll" Version="3.0.21008.1129" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="3.0.0">
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="5.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -72,7 +69,7 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageReference Include="Nager.PublicSuffix" Version="2.2.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NodaTime" Version="3.0.5" />
-    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.0.5">
+    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.10.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -88,7 +85,7 @@ Logs to logs.log</PackageReleaseNotes>
     <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="5.0.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-    <PackageReference Include="System.Text.Json" Version="5.0.1" />
+    <PackageReference Include="System.Text.Json" Version="5.0.2" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0" />
     <PackageReference Include="TimeUnit" Version="1.0.2" />
     <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />

@@ -1,6 +1,6 @@
 ﻿using SharpPulsar.Messages.Consumer;
 
-namespace SharpPulsar.Akka.EventSource.Messages
+namespace SharpPulsar.EventSource.Messages
 {
     public interface IEventSourceMessage
     {

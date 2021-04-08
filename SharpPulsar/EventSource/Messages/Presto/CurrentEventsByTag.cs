@@ -1,9 +1,9 @@
 ﻿
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Akka.Sql.Client;
+using SharpPulsar.Sql.Client;
 
-namespace SharpPulsar.Akka.EventSource.Messages.Presto
+namespace SharpPulsar.EventSource.Messages.Presto
 {
     /// <summary>
     /// Same type of query as <see cref="EventsByTag"/> but the event stream
@@ -12,7 +12,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
     /// </summary>
     public sealed class CurrentEventsByTag: IPrestoEventSourceMessage
     {
-        public CurrentEventsByTag(string tenant, string ns, string topic, ImmutableHashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, ClientOptions options, string adminUrl)
+        public CurrentEventsByTag(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, ClientOptions options, string adminUrl)
         {
             Tenant = tenant;
             Namespace = ns;
@@ -33,7 +33,7 @@ namespace SharpPulsar.Akka.EventSource.Messages.Presto
         public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ClientOptions Options { get; }
-        public ImmutableHashSet<string> Columns { get; }
+        public HashSet<string> Columns { get; }
         public string AdminUrl { get; }
     }
 }

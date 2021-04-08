@@ -1,117 +1,82 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading;
+﻿using System.Net.Http;
 using Akka.Actor;
-using Nito.AsyncEx;
-using PulsarAdmin;
-using SharpPulsar.Akka.EventSource.Messages.Pulsar;
-using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Impl;
+using SharpPulsar.EventSource.Messages.Pulsar;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
-using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Utility;
 
-namespace SharpPulsar.Akka.EventSource.Pulsar.Tagged
+namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
-    public class EventsByTagActor : ReceiveActor
+    public class EventsByTagActor<T> : ReceiveActor
     {
-        private readonly EventsByTag _message;
+        private readonly EventsByTag<T> _message;
         private readonly HttpClient _httpClient;
-        private readonly IActorRef _network;
-        private readonly IActorRef _pulsarManager;
-        public EventsByTagActor(EventsByTag message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        private readonly IActorRef _cnxPool;
+        private readonly IActorRef _client;
+        private readonly IActorRef _lookup;
+        private readonly IActorRef _generator;
+        private readonly ISchema<T> _schema;
+        private readonly ConsumerQueueCollections<T> _buffer;
+        private readonly User.Admin _admin;
+        public EventsByTagActor(EventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
+            _admin = new User.Admin(message.AdminUrl, httpClient);
             _message = message;
             _httpClient = httpClient;
-            _network = network;
-            _pulsarManager = pulsarManager;
-            var partitions = NewPartitionMetadataRequest($"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}");
-            Setup(partitions);
+            _schema = schema;
+            _client = client;
+            _cnxPool = cnxPool;
+            _lookup = lookup;
+            _generator = generator;
+            _buffer = queue;
+            var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
+            var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
+            Setup(partitions.Body, topic);
         }
 
-        private void Setup(Partitions p)
+        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
         {
-            if (p.Partition > 0)
+            if (p.Partitions > 0)
             {
-                for (var i = 0; i < p.Partition; i++)
+                for (var i = 0; i < p.Partitions; i++)
                 {
-                    var partitionTopic = TopicName.Get(p.Topic).GetPartition(i);
+                    var partitionTopic = TopicName.Get(topic).GetPartition(i);
                     var partitionName = partitionTopic.ToString();
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int)(msgId.End.Index - msgId.Start.Index));
-                    Context.ActorOf(PulsarTaggedSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index));
+                    Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema, _buffer));
 
                 }
             }
             else
             {
-                var msgId = GetMessageIds(TopicName.Get(p.Topic));
-                var config = PrepareConsumerConfiguration(_message.Configuration, p.Topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
-                Context.ActorOf(PulsarTaggedSourceActor.Prop(_message.ClientConfiguration, config, _pulsarManager, _network, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index));
+                var msgId = GetMessageIds(TopicName.Get(topic));
+                var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
+                Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema, _buffer));
             }
         }
-        private Partitions NewPartitionMetadataRequest(string topic)
+        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, EventMessageId start, int permits)
         {
-            var requestId = Interlocked.Increment(ref IdGenerators.RequestId);
-            var request = Commands.NewPartitionMetadataRequest(topic, requestId);
-            var pay = new Payload(request, requestId, "CommandPartitionedTopicMetadata", topic);
-            var ask = _network.Ask<Partitions>(pay);
-            return SynchronizationContextSwitcher.NoContext(async () => await ask).Result;
+            readerConfiguration.TopicName = topic;
+            readerConfiguration.StartMessageId = new MessageId(start.LedgerId, start.EntryId, -1);
+            readerConfiguration.ReceiverQueueSize = permits;
+            return readerConfiguration;
         }
-        private ConsumerConfigurationData PrepareConsumerConfiguration(ReaderConfigurationData readerConfiguration, string topic, EventMessageId start, int permits)
-        {
-            var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
-            if (!string.IsNullOrWhiteSpace(readerConfiguration.SubscriptionRolePrefix))
-            {
-                subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
-            }
-            var consumerConfiguration = new ConsumerConfigurationData();
-            consumerConfiguration.TopicNames.Add(topic);
-            consumerConfiguration.SubscriptionName = subscription;
-            consumerConfiguration.SubscriptionType = CommandSubscribe.SubType.Exclusive;
-            consumerConfiguration.ReceiverQueueSize = readerConfiguration.ReceiverQueueSize;
-            consumerConfiguration.ReadCompacted = readerConfiguration.ReadCompacted;
-            consumerConfiguration.Schema = readerConfiguration.Schema;
-            consumerConfiguration.ConsumerEventListener = readerConfiguration.EventListener;
-            consumerConfiguration.StartMessageId = new MessageId(start.LedgerId, start.EntryId, -1);
-            consumerConfiguration.ReceiverQueueSize = permits;
-
-            if (readerConfiguration.ReaderName != null)
-            {
-                consumerConfiguration.ConsumerName = readerConfiguration.ReaderName;
-            }
-
-            if (readerConfiguration.ResetIncludeHead)
-            {
-                consumerConfiguration.ResetIncludeHead = true;
-            }
-
-            consumerConfiguration.CryptoFailureAction = readerConfiguration.CryptoFailureAction;
-            if (readerConfiguration.CryptoKeyReader != null)
-            {
-                consumerConfiguration.CryptoKeyReader = readerConfiguration.CryptoKeyReader;
-            }
-
-            return consumerConfiguration;
-        }
-
         private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
         {
-            var adminRestapi = new PulsarAdminRESTAPI(_message.AdminUrl, _httpClient, true);
-            var statsTask = adminRestapi.GetInternalStats1Async(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
-            var stats = SynchronizationContextSwitcher.NoContext(async () => await statsTask).Result;
-            var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats);
+            var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+            var statsResponse = adminRestapi.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
+            var start = MessageIdHelper.Calculate(_message.FromSequenceId, statsResponse.Body);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats);
+            var end = MessageIdHelper.Calculate(_message.ToSequenceId, statsResponse.Body);
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(EventsByTag message, HttpClient httpClient, IActorRef network, IActorRef pulsarManager)
+        public static Props Prop(EventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
-            return Props.Create(() => new EventsByTagActor(message, httpClient, network, pulsarManager));
+            return Props.Create(() => new EventsByTagActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema, queue));
         }
     }
 }
