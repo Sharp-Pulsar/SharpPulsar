@@ -29,7 +29,7 @@ namespace SharpPulsar.User.Events
             if (actorSystem == null)
                 throw new ArgumentException("actorSystem is null");
 
-            if (string.IsNullOrWhiteSpace(_brokerWebServiceUrl))
+            if (string.IsNullOrWhiteSpace(brokerWebServiceUrl))
                 throw new ArgumentException("AdminUrl is missing");
 
             if (string.IsNullOrWhiteSpace(topic))

@@ -101,8 +101,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
 
         private void Consume()
         {
-            Receive<IMessage<T>>(c =>
+            Receive<ReceivedMessage<T>>(m =>
             {
+                var c = m.Message;
                 var messageId = (MessageId)c.MessageId;
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {

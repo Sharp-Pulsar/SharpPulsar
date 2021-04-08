@@ -35,7 +35,7 @@ namespace SharpPulsar.EventSource.Pulsar
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
             Setup(partitions.Body, topic);
-            Receive<Akka.Actor.Terminated>(t =>
+            Receive<Terminated>(t =>
             {
                 var children =  Context.GetChildren();
                 if (!children.Any())
@@ -64,14 +64,15 @@ namespace SharpPulsar.EventSource.Pulsar
             else
             {
                 var msgId = GetMessageIds(TopicName.Get(topic));
-                var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
+                var permits = (int)(msgId.End.Index - msgId.Start.Index);
+                var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, permits);
                 var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema, _buffer));
                 Context.Watch(child);
             }
         }
         private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, EventMessageId start, int permits)
         {
-            readerConfiguration.TopicNames.Add(topic);
+            readerConfiguration.TopicName = topic;
             readerConfiguration.StartMessageId = new MessageId(start.LedgerId, start.EntryId, -1);
             readerConfiguration.ReceiverQueueSize = permits;
             return readerConfiguration;

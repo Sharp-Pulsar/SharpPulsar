@@ -1,12 +1,16 @@
 ﻿using SharpPulsar.Configuration;
+using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,62 +33,142 @@ namespace SharpPulsar.Test.EventSource
 			_clientConfigurationData = fixture.ClientConfigurationData;
         }
 		[Fact(Skip = "Issue with sql-worker on github action")]
+		//[Fact]
 		public virtual void SqlSourceTest()
 		{
 			string topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
-			var sql = PulsarSystem.NewSql();
-			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
-			var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
-			sql.SendQuery(query);
+			var cols = new HashSet<string> { "text", "EventTime" };
+			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
+			var source = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+				.Sql(option, cols)
+				.SourceMethod()
+				.CurrentEvents();
 			var receivedCount = 0;
+
 			for (var i = 0; i < 45; i++)
 			{
-				var response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
-				var data = response.Response;
-				switch (data)
+				var response = source.CurrentEvents();
+				foreach (var data in response)
 				{
-					case DataResponse dr:
-						var ob = dr.Data["text"].ToString();
-						_output.WriteLine(ob);
-						receivedCount++;
-						break;
-					case StatsResponse sr:
-						_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
-						break;
-					case ErrorResponse er:
-						_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
-						break;
-				}
+					i++;
+					receivedCount++;
+					switch (data)
+					{
+						case EventEnvelope dr:
+							_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
+							break;
+						case StatsResponse sr:
+							_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+							break;
+						case ErrorResponse er:
+							_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+							break;
+					}
 
+				}
+				if (receivedCount == 0)
+					Thread.Sleep(TimeSpan.FromSeconds(10));
 			}
-			Assert.Equal(45, receivedCount);
+			Assert.True(receivedCount > 0);
+		}
+		[Fact(Skip = "Issue with sql-worker on github action")]
+		//[Fact]
+		public virtual void SqlSourceTaggedTest()
+		{
+			string topic = $"presto-topics-{Guid.NewGuid()}";
+			PublishMessages(topic, 50);
+			var cols = new HashSet<string> { "text", "EventTime" };
+			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
+			var source = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+				.Sql(option, cols)
+				.SourceMethod()
+				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
+			var receivedCount = 0;
+
+			for (var i = 0; i < 45; i++)
+			{
+				var response = source.CurrentEvents();
+				foreach (var data in response)
+				{
+					i++;
+					receivedCount++;
+					switch (data)
+					{
+						case EventEnvelope dr:
+							_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
+							break;
+						case StatsResponse sr:
+							_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+							break;
+						case ErrorResponse er:
+							_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+							break;
+					}
+
+				}
+				if (receivedCount == 0)
+					Thread.Sleep(TimeSpan.FromSeconds(10));
+			}
+			Assert.True(receivedCount > 0);
 		}
 		[Fact]
 		public virtual void ReaderSourceTest()
 		{
-			string topic = $"presto-topics-{Guid.NewGuid()}";
+			string topic = $"reader-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
 
 			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 1000, "http://127.0.0.1:8080")
 				.Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
 				.SourceMethod()
 				.CurrentEvents();
 
 			var receivedCount = 0;
-
-			for (var i = 0; i < 45; i++)
+			for (var i = 0; i < 50; i++)
 			{
 				var response = reader.CurrentEvents();
 				foreach(var data in response)
                 {
 					i++;
-					receivedCount++;
-                }					
+					receivedCount++; 
+					_output.WriteLine(JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+
+				}
+				if (receivedCount == 0)
+					Thread.Sleep(TimeSpan.FromSeconds(10));
 			}
-			Assert.Equal(45, receivedCount);
+			Assert.True(receivedCount > 0);
+		}
+		[Fact]
+		public virtual void ReaderSourceTaggedTest()
+		{
+			string topic = $"reader-topics-{Guid.NewGuid()}";
+			PublishMessages(topic, 50);
+
+			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
+
+			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 1000, "http://127.0.0.1:8080")
+				.Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
+				.SourceMethod()
+				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
+
+			var receivedCount = 0;
+			for (var i = 0; i < 50; i++)
+			{
+				var response = reader.CurrentEvents();
+				foreach(var data in response)
+                {
+					i++;
+					receivedCount++; 
+					_output.WriteLine(JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+
+				}
+				if (receivedCount == 0)
+					Thread.Sleep(TimeSpan.FromSeconds(10));
+			}
+			Assert.True(receivedCount > 0);
 		}
 		private ISet<string> PublishMessages(string topic, int count)
 		{
@@ -95,7 +179,10 @@ namespace SharpPulsar.Test.EventSource
 			for (int i = 0; i < count; i++)
 			{
 				string key = "key" + i;
-				producer.NewMessage().Key(key).Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
+				if(i % 2 == 0)
+					producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
+				else
+					producer.NewMessage().Key(key).Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
 				keys.Add(key);
 			}
 			return keys;

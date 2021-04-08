@@ -26,7 +26,7 @@ namespace SharpPulsar.EventSource.Presto
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
             Setup(partitions.Body, topic);
-            Receive<Akka.Actor.Terminated>(t =>
+            Receive<Terminated>(t =>
             {
                 var children =  Context.GetChildren();
                 if (!children.Any())

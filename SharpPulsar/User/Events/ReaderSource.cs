@@ -44,8 +44,6 @@ namespace SharpPulsar.User.Events
                 if (_readerBuffer.TryReceive(out var msg))
                 {
                     yield return msg.Value;
-                    _eventSource.Tell(new AcknowledgeMessage<T>(msg));
-                    _eventSource.Tell(new MessageProcessed<T>(msg));
 
                 }
             }
@@ -63,8 +61,6 @@ namespace SharpPulsar.User.Events
                 if (msg != null)
                 {
                     yield return msg.Value;
-                    _eventSource.Tell(new AcknowledgeMessage<T>(msg));
-                    _eventSource.Tell(new MessageProcessed<T>(msg));
                 }
             }
         }
@@ -81,8 +77,6 @@ namespace SharpPulsar.User.Events
                 if (_readerBuffer.TryReceive(out var msg))
                 {
                     yield return msg.Value;
-                    _eventSource.Tell(new AcknowledgeMessage<T>(msg));
-                    _eventSource.Tell(new MessageProcessed<T>(msg));
                 }
                 else
                 {
@@ -103,8 +97,6 @@ namespace SharpPulsar.User.Events
                 if (msg != null)
                 {
                     yield return msg.Value;
-                    _eventSource.Tell(new AcknowledgeMessage<T>(msg));
-                    _eventSource.Tell(new MessageProcessed<T>(msg));
                 }
                 else
                 {

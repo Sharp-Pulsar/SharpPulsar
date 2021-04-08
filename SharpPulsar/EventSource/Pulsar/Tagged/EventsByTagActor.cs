@@ -59,7 +59,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         }
         private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, EventMessageId start, int permits)
         {
-            readerConfiguration.TopicNames.Add(topic);
+            readerConfiguration.TopicName = topic;
             readerConfiguration.StartMessageId = new MessageId(start.LedgerId, start.EntryId, -1);
             readerConfiguration.ReceiverQueueSize = permits;
             return readerConfiguration;

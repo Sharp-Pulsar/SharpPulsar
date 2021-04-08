@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks.Dataflow;
 using Akka.Actor;
-using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
@@ -20,7 +18,6 @@ namespace SharpPulsar.EventSource.Pulsar
 {
     public class PulsarSourceActor<T> : ReceiveActor
     {
-        private readonly IActorRef _pulsarManager;
         private readonly EventMessageId _endId;
         private readonly IActorRef _child;
         private EventMessageId _lastEventMessageId;
@@ -82,15 +79,7 @@ namespace SharpPulsar.EventSource.Pulsar
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
             _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client, queue)));
-            Receive<ICumulative>(m => {
-                _child.Tell(m);
-            });
-            Receive<IAcknowledge>(m => {
-                _child.Tell(m);
-            });
-            Receive<MessageProcessed<T>>(m => {
-                _child.Tell(m);
-            });
+           
             if (isLive)
                 LiveConsume();
             else Consume();
@@ -98,12 +87,15 @@ namespace SharpPulsar.EventSource.Pulsar
         
         private void Consume()
         {
-            Receive<IMessage<T>>(c =>
+            Receive<ReceivedMessage<T>>(m =>
             {
+                var c = m.Message;
                 var messageId = (MessageId)c.MessageId;
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
                     _buffer.Post(c);
+                    _child.Tell(new AcknowledgeMessage<T>(c));
+                    _child.Tell(new MessageProcessed<T>(c));
                     //_sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));

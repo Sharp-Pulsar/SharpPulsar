@@ -165,7 +165,7 @@ namespace SharpPulsar
 		public ITypedMessageBuilder<T> Property(string name, string value)
 		{
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(name), "Need Non-Null name");
-			Condition.CheckArgument(string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);
+			Condition.CheckArgument(!string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);
 			Metadata.Properties.Add(new KeyValue { Key = name, Value = value });
 			return this;
 		}
