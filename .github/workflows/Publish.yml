@@ -19,10 +19,10 @@ name: Publish
 on:
   push:
     branches:
-      - beta
+      - beta-1-release
   pull_request:
     branches:
-      - beta
+      - beta-1-release
 
 jobs:
   ubuntu-latest:
@@ -38,6 +38,6 @@ jobs:
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Push'
-        run: ./build.cmd Push
+        run: ./build.cmd Push --NugetApiKey ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
         env:
           SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
