@@ -62,7 +62,8 @@ class Build : NukeBuild
     [GitVersion] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; //default
-    [Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
+    //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
+    [Parameter] string NugetApiKey;
 
 
     AbsolutePath TestsDirectory => RootDirectory / "tests";
