@@ -77,6 +77,38 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 ### Getting Started (for 2.0 coming soon)
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar) and follow the [Tutorials](https://github.com/eaba/SharpPulsar/tree/dev/Tutorials).
 
+````csharp
+			//pulsar client settings builder
+            var clientConfig = new PulsarClientConfigBuilder()
+                .ServiceUrl("pulsar://localhost:6650");
+
+            //pulsar actor system
+            var pulsarSystem = PulsarSystem.GetInstance(clientConfig);
+
+            var pulsarClient = pulsarSystem.NewClient();
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<sbyte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub"));
+
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+                .Topic(myTopic));
+
+            for (var i = 0; i < 10; i++)
+            {
+                var data = Encoding.UTF8.GetBytes($"tuts-{i}").ToSBytes();
+                producer.NewMessage().Value(data).Send();
+            }
+            for (var i = 0; i < 10; i++)
+            {
+                var message = (Message<sbyte[]>)consumer.Receive(TimeSpan.FromSeconds(30));
+                consumer.Acknowledge(message);
+                var res = Encoding.UTF8.GetString(message.Data.ToBytes());
+                Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+            }
+
+````
 
 
 ## License
