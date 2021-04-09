@@ -35,6 +35,14 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     OnPushBranches = new[] { "master", "dev" },
     OnPullRequestBranches = new[] { "master", "dev" },
     InvokedTargets = new[] { nameof(Test) })]
+
+[GitHubActions("Publish",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "beta" },
+    OnPullRequestBranches = new[] { "beta" },
+    InvokedTargets = new[] { nameof(Push) },
+    ImportSecrets = new[] { "SHARP_PULSAR_NUGET_API_KEY" })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -43,7 +51,8 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
-    public static int Main () => Execute<Build>(x => x.Test);
+    //public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.Push);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
@@ -51,6 +60,10 @@ class Build : NukeBuild
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
     [GitVersion] readonly GitVersion GitVersion;
+
+    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; //default
+    [Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
+
 
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath OutputDirectory => RootDirectory / "output";
@@ -108,8 +121,9 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
+                        .SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .SetVerbosity(verbosity: DotNetVerbosity.Diagnostic)
                         .EnableNoBuild()); ;
                 }
                 catch(Exception ex)
@@ -250,6 +264,44 @@ class Build : NukeBuild
         }
 
     });
+    Target Pack => _ => _
+      .DependsOn(Compile)
+      .Executes(() =>
+      {
+          var project = Solution.GetProject("SharpPulsar");
+          DotNetPack(s => s
+              .SetProject(project)
+              .SetConfiguration(Configuration)
+              .EnableNoBuild()
+              .EnableNoRestore()
+              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
+              .AddAuthors("Ebere Abanonu (@mestical)")
+              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
+              .SetOutputDirectory(ArtifactsDirectory / "nuget"));
+
+      });
+    Target Push => _ => _
+      .DependsOn(Pack)
+      .Requires(() => NugetApiUrl)
+      .Requires(() => NugetApiKey)
+      .Requires(() => Configuration.Equals(Configuration.Release))
+      .Executes(() =>
+      {
+          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
+              .NotEmpty()
+              .Where(x => !x.EndsWith("symbols.nupkg"))
+              .ForEach(x =>
+              {
+                  DotNetNuGetPush(s => s
+                      .SetTargetPath(x)
+                      .SetSource(NugetApiUrl)
+                      .SetApiKey(NugetApiKey)
+                  );
+              });
+      });
+
+
     static void Information(string info)
     {
         Logger.Info(info);

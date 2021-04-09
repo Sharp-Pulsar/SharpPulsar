@@ -9,38 +9,22 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_Build --host GitHubActions
+#         nuke --generate-configuration GitHubActions_Publish --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Build
+name: Publish
 
 on:
   push:
     branches:
-      - master
-      - dev
+      - beta
   pull_request:
     branches:
-      - master
-      - dev
+      - beta
 
 jobs:
-  windows-latest:
-    name: windows-latest
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            .tmp
-            ~/.nuget/packages
-          key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Compile'
-        run: ./build.cmd Compile
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
@@ -53,5 +37,7 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Compile'
-        run: ./build.cmd Compile
+      - name: Run './build.cmd Push'
+        run: ./build.cmd Push
+        env:
+          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
