@@ -74,11 +74,11 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 
 
 
-### Getting Started (for 2.0 coming soon)
+### Getting Started
 Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPulsar) and follow the [Tutorials](https://github.com/eaba/SharpPulsar/tree/dev/Tutorials).
 
 ````csharp
-			//pulsar client settings builder
+//pulsar client settings builder
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650");
 
