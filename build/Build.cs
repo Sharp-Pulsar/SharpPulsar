@@ -19,6 +19,7 @@ using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
+//https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions("Build",
@@ -290,28 +291,29 @@ class Build : NukeBuild
       });
     Target Push => _ => _
       .DependsOn(Pack)
-      //.Requires(() => NugetApiUrl)
+      .Requires(() => NugetApiUrl)
+      .Requires(() => !NugetApiKey.IsNullOrEmpty())
       .Requires(() => !GitHubApiKey.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {
           GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
               .NotEmpty()
-              //.Where(x => !x.EndsWith("symbols.nupkg"))
+              .Where(x => !x.EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
-                  /*DotNetNuGetPush(s => s
+                  DotNetNuGetPush(s => s
                       .SetTargetPath(x)
                       .SetSource(NugetApiUrl)
                       .SetApiKey(NugetApiKey)
                   );
-                  */
-                  DotNetNuGetPush(s => s
+                  
+                  /*DotNetNuGetPush(s => s
                       .SetApiKey(GitHubApiKey)
                       .SetSymbolApiKey(GitHubApiKey)
                       .SetTargetPath(x)
                       .SetSource(GithubSource)
-                      .SetSymbolSource(GithubSource));
+                      .SetSymbolSource(GithubSource));*/
               });
       });
 
