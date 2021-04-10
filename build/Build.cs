@@ -68,6 +68,9 @@ class Build : NukeBuild
     //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
     [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
     readonly string NugetApiKey;
+    
+    [Parameter("GitHub Build Number", Name = "BUILD_NUMBER")]
+    readonly string BuildNumber;
 
     [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
     readonly string GitHubApiKey;
@@ -282,11 +285,14 @@ class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
+              .SetVersionPrefix("2.0.0")
+              .SetPackageReleaseNotes("Reworked from scratch with breaking changes")
+              .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
               .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(ArtifactsDirectory / "nuget"));
+              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
       });
     Target Push => _ => _
