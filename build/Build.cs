@@ -42,8 +42,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "beta" },
     OnPullRequestBranches = new[] { "beta" },
-    InvokedTargets = new[] { nameof(Push) },
-    ImportSecrets = new[] { "SHARP_PULSAR_NUGET_API_KEY" })]
+    InvokedTargets = new[] { nameof(Push) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -62,9 +61,14 @@ class Build : NukeBuild
     [GitRepository] readonly GitRepository GitRepository;
     [GitVersion(Framework = "net5.0")] readonly GitVersion GitVersion;
 
-    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; //default
+    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
+    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
     //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
-    [Parameter] string NugetApiKey { get; set; }
+    [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
+    readonly string NugetApiKey;
+
+    [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
+    readonly string GitHubApiKey;
 
 
     AbsolutePath TestsDirectory => RootDirectory / "tests";
@@ -292,7 +296,7 @@ class Build : NukeBuild
       {
           GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
               .NotEmpty()
-              .Where(x => !x.EndsWith("symbols.nupkg"))
+              //.Where(x => !x.EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
                   DotNetNuGetPush(s => s
@@ -300,6 +304,13 @@ class Build : NukeBuild
                       .SetSource(NugetApiUrl)
                       .SetApiKey(NugetApiKey)
                   );
+
+                  DotNetNuGetPush(s => s
+                      .SetApiKey(GitHubApiKey)
+                      .SetSymbolApiKey(GitHubApiKey)
+                      .SetTargetPath(x)
+                      .SetSource(GithubSource)
+                      .SetSymbolSource(GithubSource));
               });
       });
 
