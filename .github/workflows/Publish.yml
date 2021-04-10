@@ -52,7 +52,7 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Push --NugetApiKey "$SHARP_PULSAR_NUGET_API_KEY"'
+      - name: Run './build.cmd Push --NugetApiKey ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}'
         run: ./build.cmd Push
         env:
           SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
