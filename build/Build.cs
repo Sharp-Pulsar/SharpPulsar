@@ -42,7 +42,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "beta" },
-    OnPullRequestBranches = new[] { "beta" },
     InvokedTargets = new[] { nameof(Push) })]
 class Build : NukeBuild
 {
@@ -300,6 +299,7 @@ class Build : NukeBuild
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
       .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+      .Requires(() => !BuildNumber.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {

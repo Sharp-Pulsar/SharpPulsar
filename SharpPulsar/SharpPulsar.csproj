@@ -2,10 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
-    <Version>2.0-beta</Version>
-    <Authors>Ebere Abanonu</Authors>
-    <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
-    <PackageTags>Apache Pulsar, Akka.Net</PackageTags>
     
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
