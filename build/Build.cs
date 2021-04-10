@@ -63,9 +63,10 @@ class Build : NukeBuild
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
     [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
-    //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
-    [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
-    readonly string NugetApiKey;
+
+    [Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
+    //[Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
+    //readonly string NugetApiKey;
 
     [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
     readonly string GitHubApiKey;
