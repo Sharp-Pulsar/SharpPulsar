@@ -53,6 +53,6 @@ jobs:
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Push'
-        run: ./build.cmd Push --nuget_api_key $SHARP_PULSAR_NUGET_API_KEY --gh_api_key ${{ secrets.GITHUB_TOKEN }}
+        run: ./build.cmd Push --nuget_api_key ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }}
         env:
           SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
