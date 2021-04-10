@@ -290,8 +290,8 @@ class Build : NukeBuild
       });
     Target Push => _ => _
       .DependsOn(Pack)
-      .Requires(() => NugetApiUrl)
-      .Requires(() => !NugetApiKey.IsNullOrEmpty())
+      //.Requires(() => NugetApiUrl)
+      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {
@@ -300,12 +300,12 @@ class Build : NukeBuild
               //.Where(x => !x.EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
-                  DotNetNuGetPush(s => s
+                  /*DotNetNuGetPush(s => s
                       .SetTargetPath(x)
                       .SetSource(NugetApiUrl)
                       .SetApiKey(NugetApiKey)
                   );
-
+                  */
                   DotNetNuGetPush(s => s
                       .SetApiKey(GitHubApiKey)
                       .SetSymbolApiKey(GitHubApiKey)
