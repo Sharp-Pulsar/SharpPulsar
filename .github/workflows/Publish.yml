@@ -9,22 +9,17 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_Tests --host GitHubActions
+#         nuke --generate-configuration GitHubActions_Publish --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Tests
+name: Publish
 
 on:
   push:
     branches:
-      - master
-      - dev
-  pull_request:
-    branches:
-      - master
-      - dev
+      - beta
 
 jobs:
   ubuntu-latest:
@@ -54,5 +49,7 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Test'
-        run: ./build.cmd Test
+      - name: Run './build.cmd Push'
+        run: ./build.cmd Push --nuget_api_key ${{ secrets.NUGET_API_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
+        env:
+          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

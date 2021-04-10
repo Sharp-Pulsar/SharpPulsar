@@ -6,14 +6,9 @@
     <Authors>Ebere Abanonu</Authors>
     <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
     <PackageTags>Apache Pulsar, Akka.Net</PackageTags>
-    <PackageReleaseNotes>[Default] NLog Archive Every one hour
-
-Pass in NLog configurattion from outside
-
-Logs to logs.log</PackageReleaseNotes>
+    
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <PackageIcon>SharpPulsar.jpg</PackageIcon>
     <PackageIconUrl />
