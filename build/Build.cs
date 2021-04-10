@@ -13,6 +13,7 @@ using Nuke.Common.Tools.Docker;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
+using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
@@ -59,7 +60,7 @@ class Build : NukeBuild
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
-    [GitVersion] readonly GitVersion GitVersion;
+    [GitVersion(Framework = "net5.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; //default
     //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
@@ -285,7 +286,7 @@ class Build : NukeBuild
     Target Push => _ => _
       .DependsOn(Pack)
       .Requires(() => NugetApiUrl)
-      .Requires(() => NugetApiKey)
+      .Requires(() => !NugetApiKey.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {

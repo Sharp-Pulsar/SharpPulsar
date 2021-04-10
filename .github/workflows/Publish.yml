@@ -19,16 +19,31 @@ name: Publish
 on:
   push:
     branches:
-      - beta-1-release
+      - beta
   pull_request:
     branches:
-      - beta-1-release
+      - beta
 
 jobs:
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
+      - name: Setup dotnet 2.1
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 2.1.*
+
+      - name: Setup dotnet 3.1
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.*
+
+      - name: Setup dotnet 5.0
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
+
       - uses: actions/checkout@v1
       - name: Cache .tmp, ~/.nuget/packages
         uses: actions/cache@v2
@@ -37,7 +52,7 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Push'
-        run: ./build.cmd Push --NugetApiKey ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
+      - name: Run './build.cmd Push --NugetApiKey "$SHARP_PULSAR_NUGET_API_KEY"'
+        run: ./build.cmd Push
         env:
           SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
