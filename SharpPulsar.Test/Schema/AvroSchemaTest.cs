@@ -1,4 +1,7 @@
-﻿using AvroSchemaGenerator;
+﻿using Avro;
+using Avro.Specific;
+using AvroSchemaGenerator;
+using AvroSchemaGenerator.Attributes;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
@@ -115,6 +118,20 @@ namespace SharpPulsar.Test.Schema
 
         }
         [Fact]
+        public void TestDateTimeDecimalLogicalType()
+        {
+            AvroSchema<LogicalMessage> avroSchema = AvroSchema<LogicalMessage>.Of(ISchemaDefinition<LogicalMessage>.Builder().WithPojo(typeof(LogicalMessage)).WithJSR310ConversionEnabled(true).Build());
+
+            var logMsg = new LogicalMessage { Schema = Avro.Schema.Parse(avroSchema.SchemaInfo.SchemaDefinition), CreatedTime = DateTime.Now, DayOfWeek = "Saturday", Size = new AvroDecimal(102.65M) };
+
+            sbyte[] bytes1 = avroSchema.Encode(logMsg);
+            Assert.True(bytes1.Length > 0);
+
+            var msg = avroSchema.Decode(bytes1);
+            Assert.NotNull(msg);
+            Assert.True(msg.Size == 102.65M);
+        }
+        [Fact]
         public void TestAvroSchemaUserDefinedReadAndWriter()
         {
             var reader = new JsonReader<Foo>();
@@ -169,5 +186,36 @@ namespace SharpPulsar.Test.Schema
         RED,
         BLUE,
         GREEN
+    }
+    public class LogicalMessage : ISpecificRecord
+    {
+        public DateTime CreatedTime { get; set; }
+        public AvroDecimal Size { get; set; }
+        public string DayOfWeek { get; set; }
+
+        [Ignore]
+        public Avro.Schema Schema { get; set; }
+
+        public object Get(int fieldPos)
+        {
+            switch (fieldPos)
+            {
+                case 0: return CreatedTime;
+                case 1: return Size;
+                case 2: return DayOfWeek;
+                default: throw new AvroRuntimeException("Bad index " + fieldPos + " in Get()");
+            };
+        }
+
+        public void Put(int fieldPos, object fieldValue)
+        {
+            switch (fieldPos)
+            {
+                case 0: CreatedTime = (DateTime)fieldValue; break;
+                case 1: Size = (AvroDecimal)fieldValue; break;
+                case 2: DayOfWeek = (String)fieldValue; break;
+                default: throw new AvroRuntimeException("Bad index " + fieldPos + " in Put()");
+            };
+        }
     }
 }
