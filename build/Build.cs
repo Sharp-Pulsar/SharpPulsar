@@ -285,7 +285,7 @@ class Build : NukeBuild
               .EnableNoBuild()
               .EnableNoRestore()
               .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("Reworked from scratch with breaking changes")
+              .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
               .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
