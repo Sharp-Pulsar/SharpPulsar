@@ -14,12 +14,12 @@
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Publish
+name: Beta
 
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   ubuntu-latest:

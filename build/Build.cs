@@ -26,22 +26,28 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "master", "dev" },
-    OnPullRequestBranches = new[] { "master", "dev" },
+    OnPushBranches = new[] { "main", "dev" },
+    OnPullRequestBranches = new[] { "main", "dev" },
     
     InvokedTargets = new[] { nameof(Compile) })]
 
 [GitHubActions("Tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "master", "dev" },
-    OnPullRequestBranches = new[] { "master", "dev" },
+    OnPushBranches = new[] { "main", "dev" },
+    OnPullRequestBranches = new[] { "main", "dev" },
     InvokedTargets = new[] { nameof(Test) })]
+
+[GitHubActions("Beta",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "dev" },
+    InvokedTargets = new[] { nameof(PushBeta) })]
 
 [GitHubActions("Publish",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "beta" },
+    OnPushBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Push) })]
 class Build : NukeBuild
 {
@@ -264,7 +270,7 @@ class Build : NukeBuild
 
         try
         {
-            DockerTasks.DockerRm(b => b
+           DockerTasks.DockerRm(b => b
           .SetContainers("pulsar_test")
           .SetForce(true));
         }
@@ -284,6 +290,25 @@ class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
+              .SetVersion("2.0.0")
+              .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
+              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
+              .AddAuthors("Ebere Abanonu (@mestical)")
+              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
+              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
+
+      });
+    Target PackBeta => _ => _
+      .DependsOn(Compile)
+      .Executes(() =>
+      {
+          var project = Solution.GetProject("SharpPulsar");
+          DotNetPack(s => s
+              .SetProject(project)
+              .SetConfiguration(Configuration)
+              .EnableNoBuild()
+              .EnableNoRestore()
               .SetVersionPrefix("2.0.0")
               .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
               .SetVersionSuffix($"beta.{BuildNumber}")
@@ -293,6 +318,34 @@ class Build : NukeBuild
               .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
               .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
+      });
+    Target PushBeta => _ => _
+      .DependsOn(PackBeta)
+      .Requires(() => NugetApiUrl)
+      .Requires(() => !NugetApiKey.IsNullOrEmpty())
+      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+      .Requires(() => !BuildNumber.IsNullOrEmpty())
+      .Requires(() => Configuration.Equals(Configuration.Release))
+      .Executes(() =>
+      {
+          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
+              .NotEmpty()
+              .Where(x => !x.EndsWith("symbols.nupkg"))
+              .ForEach(x =>
+              {
+                  DotNetNuGetPush(s => s
+                      .SetTargetPath(x)
+                      .SetSource(NugetApiUrl)
+                      .SetApiKey(NugetApiKey)
+                  );
+                  
+                  DotNetNuGetPush(s => s
+                      .SetApiKey(GitHubApiKey)
+                      .SetSymbolApiKey(GitHubApiKey)
+                      .SetTargetPath(x)
+                      .SetSource(GithubSource)
+                      .SetSymbolSource(GithubSource));
+              });
       });
     Target Push => _ => _
       .DependsOn(Pack)

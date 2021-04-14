@@ -189,7 +189,9 @@ namespace SharpPulsar.Test.Schema
     }
     public class LogicalMessage : ISpecificRecord
     {
+        [LogicalType(LogicalTypeKind.Date)]
         public DateTime CreatedTime { get; set; }
+        
         public AvroDecimal Size { get; set; }
         public string DayOfWeek { get; set; }
 
