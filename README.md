@@ -143,9 +143,9 @@ Avro Logical Types are supported. Message object MUST implement `ISpecificRecord
             switch (fieldPos)
             {
                 case 0: return CreatedTime; 
-				case 1: return StampMicros;
+	        case 1: return StampMicros;
                 case 2: return StampMillis;
-				case 3: return TimeMicros;
+	        case 3: return TimeMicros;
                 case 4: return TimeMillis;
                 case 5: return Size;
                 case 6: return DayOfWeek;
@@ -158,9 +158,9 @@ Avro Logical Types are supported. Message object MUST implement `ISpecificRecord
             switch (fieldPos)
             {
                 case 0: CreatedTime = (DateTime)fieldValue; break;
-				case 1: StampMicros = (DateTime)fieldValue; break;
+		case 1: StampMicros = (DateTime)fieldValue; break;
                 case 2: StampMillis = (DateTime)fieldValue; break;
-				case 3: TimeMicros = (TimeSpan)fieldValue; break;
+	        case 3: TimeMicros = (TimeSpan)fieldValue; break;
                 case 4: TimeMillis = (TimeSpan)fieldValue; break;
                 case 5: Size = (AvroDecimal)fieldValue; break;
                 case 6: DayOfWeek = (String)fieldValue; break;
