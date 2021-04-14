@@ -13,28 +13,42 @@ using Nuke.Common.Tools.Docker;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Xunit;
+using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
+//https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
 [GitHubActions("Build",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "master", "dev" },
-    OnPullRequestBranches = new[] { "master", "dev" },
+    OnPushBranches = new[] { "main", "dev" },
+    OnPullRequestBranches = new[] { "main", "dev" },
     
     InvokedTargets = new[] { nameof(Compile) })]
 
 [GitHubActions("Tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "master", "dev" },
-    OnPullRequestBranches = new[] { "master", "dev" },
+    OnPushBranches = new[] { "main", "dev" },
+    OnPullRequestBranches = new[] { "main", "dev" },
     InvokedTargets = new[] { nameof(Test) })]
+
+[GitHubActions("Beta",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "dev" },
+    InvokedTargets = new[] { nameof(PushBeta) })]
+
+[GitHubActions("Publish",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "main" },
+    InvokedTargets = new[] { nameof(Push) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -43,14 +57,29 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
-    public static int Main () => Execute<Build>(x => x.Test);
+    //public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.Push);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
-    [GitVersion] readonly GitVersion GitVersion;
+    [GitVersion(Framework = "net5.0")] readonly GitVersion GitVersion;
+
+    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
+    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
+
+    //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
+    [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
+    readonly string NugetApiKey;
+    
+    [Parameter("GitHub Build Number", Name = "BUILD_NUMBER")]
+    readonly string BuildNumber;
+
+    [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
+    readonly string GitHubApiKey;
+
 
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath OutputDirectory => RootDirectory / "output";
@@ -108,6 +137,7 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
+                        //.SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                         .EnableNoBuild()); ;
@@ -240,7 +270,7 @@ class Build : NukeBuild
 
         try
         {
-            DockerTasks.DockerRm(b => b
+           DockerTasks.DockerRm(b => b
           .SetContainers("pulsar_test")
           .SetForce(true));
         }
@@ -250,6 +280,103 @@ class Build : NukeBuild
         }
 
     });
+    Target Pack => _ => _
+      .DependsOn(Compile)
+      .Executes(() =>
+      {
+          var project = Solution.GetProject("SharpPulsar");
+          DotNetPack(s => s
+              .SetProject(project)
+              .SetConfiguration(Configuration)
+              .EnableNoBuild()
+              .EnableNoRestore()
+              .SetVersion("2.0.0")
+              .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
+              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
+              .AddAuthors("Ebere Abanonu (@mestical)")
+              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
+              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
+
+      });
+    Target PackBeta => _ => _
+      .DependsOn(Compile)
+      .Executes(() =>
+      {
+          var project = Solution.GetProject("SharpPulsar");
+          DotNetPack(s => s
+              .SetProject(project)
+              .SetConfiguration(Configuration)
+              .EnableNoBuild()
+              .EnableNoRestore()
+              .SetVersionPrefix("2.0.0")
+              .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
+              .SetVersionSuffix($"beta.{BuildNumber}")
+              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
+              .AddAuthors("Ebere Abanonu (@mestical)")
+              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
+              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
+
+      });
+    Target PushBeta => _ => _
+      .DependsOn(PackBeta)
+      .Requires(() => NugetApiUrl)
+      .Requires(() => !NugetApiKey.IsNullOrEmpty())
+      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+      .Requires(() => !BuildNumber.IsNullOrEmpty())
+      .Requires(() => Configuration.Equals(Configuration.Release))
+      .Executes(() =>
+      {
+          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
+              .NotEmpty()
+              .Where(x => !x.EndsWith("symbols.nupkg"))
+              .ForEach(x =>
+              {
+                  DotNetNuGetPush(s => s
+                      .SetTargetPath(x)
+                      .SetSource(NugetApiUrl)
+                      .SetApiKey(NugetApiKey)
+                  );
+                  
+                  DotNetNuGetPush(s => s
+                      .SetApiKey(GitHubApiKey)
+                      .SetSymbolApiKey(GitHubApiKey)
+                      .SetTargetPath(x)
+                      .SetSource(GithubSource)
+                      .SetSymbolSource(GithubSource));
+              });
+      });
+    Target Push => _ => _
+      .DependsOn(Pack)
+      .Requires(() => NugetApiUrl)
+      .Requires(() => !NugetApiKey.IsNullOrEmpty())
+      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+      .Requires(() => !BuildNumber.IsNullOrEmpty())
+      .Requires(() => Configuration.Equals(Configuration.Release))
+      .Executes(() =>
+      {
+          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
+              .NotEmpty()
+              .Where(x => !x.EndsWith("symbols.nupkg"))
+              .ForEach(x =>
+              {
+                  DotNetNuGetPush(s => s
+                      .SetTargetPath(x)
+                      .SetSource(NugetApiUrl)
+                      .SetApiKey(NugetApiKey)
+                  );
+                  
+                  DotNetNuGetPush(s => s
+                      .SetApiKey(GitHubApiKey)
+                      .SetSymbolApiKey(GitHubApiKey)
+                      .SetTargetPath(x)
+                      .SetSource(GithubSource)
+                      .SetSymbolSource(GithubSource));
+              });
+      });
+
+
     static void Information(string info)
     {
         Logger.Info(info);

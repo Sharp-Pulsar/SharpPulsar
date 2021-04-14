@@ -109,7 +109,66 @@ Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPuls
             }
 
 ````
+## Logical Types
+Avro Logical Types are supported. Message object MUST implement `ISpecificRecord`
+```csharp
+    AvroSchema<LogicalMessage> avroSchema = AvroSchema<LogicalMessage>.Of(ISchemaDefinition<LogicalMessage>.Builder().WithPojo(typeof(LogicalMessage)).WithJSR310ConversionEnabled(true).Build());
 
+    public class LogicalMessage : ISpecificRecord
+    {
+        [LogicalType(LogicalTypeKind.Date)]
+        public DateTime CreatedTime { get; set; }
+		
+		[LogicalType(LogicalTypeKind.TimestampMicrosecond)]
+        public DateTime StampMicros { get; set; }
+
+        [LogicalType(LogicalTypeKind.TimestampMillisecond)]
+        public DateTime StampMillis { get; set; }
+		
+		[LogicalType(LogicalTypeKind.TimeMicrosecond)]
+        public TimeSpan TimeMicros { get; set; }
+
+        [LogicalType(LogicalTypeKind.TimeMillisecond)]
+        public TimeSpan TimeMillis { get; set; }
+        
+        public AvroDecimal Size { get; set; }
+		
+        public string DayOfWeek { get; set; }
+
+        [Ignore]
+        public Avro.Schema Schema { get; set; }
+
+        public object Get(int fieldPos)
+        {
+            switch (fieldPos)
+            {
+                case 0: return CreatedTime; 
+				case 1: return StampMicros;
+                case 2: return StampMillis;
+				case 3: return TimeMicros;
+                case 4: return TimeMillis;
+                case 5: return Size;
+                case 6: return DayOfWeek;
+                default: throw new AvroRuntimeException("Bad index " + fieldPos + " in Get()");
+            };
+        }
+
+        public void Put(int fieldPos, object fieldValue)
+        {
+            switch (fieldPos)
+            {
+                case 0: CreatedTime = (DateTime)fieldValue; break;
+				case 1: StampMicros = (DateTime)fieldValue; break;
+                case 2: StampMillis = (DateTime)fieldValue; break;
+				case 3: TimeMicros = (TimeSpan)fieldValue; break;
+                case 4: TimeMillis = (TimeSpan)fieldValue; break;
+                case 5: Size = (AvroDecimal)fieldValue; break;
+                case 6: DayOfWeek = (String)fieldValue; break;
+                default: throw new AvroRuntimeException("Bad index " + fieldPos + " in Put()");
+            };
+        }
+    }
+```
 
 ## License
 

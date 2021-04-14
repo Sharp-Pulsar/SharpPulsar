@@ -1,5 +1,7 @@
-﻿using Avro.IO;
+﻿using Avro.Generic;
+using Avro.IO;
 using Avro.Reflect;
+using Avro.Specific;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using System.IO;
@@ -9,13 +11,16 @@ namespace SharpPulsar.Schemas.Writer
     public class AvroWriter<T> : ISchemaWriter<T>
     {
         private readonly Avro.Schema _schema;
-        private ReflectWriter<T> _writer;
-
+        private DatumWriter<T> _writer;
 
         public AvroWriter(Avro.Schema avroSchema)
         {
             _schema = avroSchema;
-            _writer = new ReflectWriter<T>(_schema);
+            var type = typeof(T);
+            if(typeof(ISpecificRecord).IsAssignableFrom(type))
+                _writer = new SpecificDatumWriter<T>(avroSchema);
+            else
+                _writer = new ReflectWriter<T>(_schema);
         }
 
 		public sbyte[] Write(T message)
