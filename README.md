@@ -119,13 +119,13 @@ Avro Logical Types are supported. Message object MUST implement `ISpecificRecord
         [LogicalType(LogicalTypeKind.Date)]
         public DateTime CreatedTime { get; set; }
 		
-		[LogicalType(LogicalTypeKind.TimestampMicrosecond)]
+        [LogicalType(LogicalTypeKind.TimestampMicrosecond)]
         public DateTime StampMicros { get; set; }
 
         [LogicalType(LogicalTypeKind.TimestampMillisecond)]
         public DateTime StampMillis { get; set; }
 		
-		[LogicalType(LogicalTypeKind.TimeMicrosecond)]
+	[LogicalType(LogicalTypeKind.TimeMicrosecond)]
         public TimeSpan TimeMicros { get; set; }
 
         [LogicalType(LogicalTypeKind.TimeMillisecond)]
