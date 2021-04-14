@@ -137,9 +137,9 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
-                        .SetDiagnosticsFile(TestsDirectory)
+                        //.SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Diagnostic)
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                         .EnableNoBuild()); ;
                 }
                 catch(Exception ex)
