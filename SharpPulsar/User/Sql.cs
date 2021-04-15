@@ -31,9 +31,19 @@ namespace SharpPulsar.User
             _queue = queue;
             _queryActor = actor;
         }
-        public IEnumerable<T> ReadQueryResults()
+        /// <summary>
+        /// Reads query results as IAsyncEnumerable<T>
+        /// </summary>
+        /// <param name="timeOut">The query may not have finished before this method is call. TimeSpan can be supplied to wait</param>
+        /// <returns></returns>
+        public async IAsyncEnumerable<T> ReadResults(TimeSpan? timeOut = null)
         {
-            var data = _queue.Receive();
+            var data = _queue.Receive(); 
+            if (data == null && timeOut.HasValue)
+            {
+                await Task.Delay((int)timeOut.Value.TotalMilliseconds).ConfigureAwait(false);
+                data = _queue.Receive();
+            }
             while (data != null)
             {
                 yield return data;
