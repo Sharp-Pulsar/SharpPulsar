@@ -152,6 +152,7 @@ namespace SharpPulsar.Schema
 				case SchemaType.InnerEnum.BOOLEAN:
 					return BooleanSchema.Of();
 				case SchemaType.InnerEnum.BYTES:
+				case SchemaType.InnerEnum.NONE:
 					return BytesSchema.Of();
 				case SchemaType.InnerEnum.DATE:
 					return DateSchema.Of();

@@ -149,8 +149,11 @@ namespace SharpPulsar
         {
             return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
         }
-        public static Sql<SqlData> NewSql() 
+        public static Sql<SqlData> NewSql(ActorSystem actorSystem = null) 
         {
+            if(actorSystem != null)
+                return Sql<SqlData>.NewSql(actorSystem);
+
             return Sql<SqlData>.NewSql(_actorSystem);
         }
         public static Sql<LiveSqlData> NewLiveSql(LiveSqlQuery data) 
