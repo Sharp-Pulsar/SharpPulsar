@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SharpPulsar.Precondition;
@@ -47,7 +49,15 @@ namespace SharpPulsar.Presto.Facebook.Type
 					[UtcKey.Id.ToLower(CultureInfo.GetCultureInfo("en-US"))] = UtcKey
 				};
 				short maxZoneKey = 0;
-				var lines = File.ReadAllLines("Presto\\Facebook\\Type\\zone-index.properties");
+                var lines = ReadLines(() => Assembly.GetExecutingAssembly()
+                                    .GetManifestResourceStream("SharpPulsar.Presto.Facebook.Type.zone-index.properties"),
+                      Encoding.UTF8)
+                .ToList();
+                //var assembly = typeof(TimeZoneKey).GetTypeInfo().Assembly;
+                //var resource = assembly.GetManifestResourceStream("SharpPulsar.Presto.Facebook.Type.zone-index.properties");
+                //var reader = new StreamReader(resource);
+                //string text = reader.ReadToEnd(); //hello world!
+                //var lines = File.ReadAllLines("Presto\\Facebook\\Type\\zone-index.properties");
                 foreach (var line in lines)
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
@@ -268,8 +278,18 @@ namespace SharpPulsar.Presto.Facebook.Type
 
 			return "" + signChar + hourTens + hourOnes + ":00";
 		}
-
-		private static bool IsUtcEquivalentName(string zoneId)
+        private static IEnumerable<string> ReadLines(Func<Stream> streamProvider,
+                                     Encoding encoding)
+        {
+            using var stream = streamProvider();
+            using var reader = new StreamReader(stream, encoding);
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                yield return line;
+            }
+        }
+        private static bool IsUtcEquivalentName(string zoneId)
 		{
 			return zoneId.Equals("utc") || zoneId.Equals("z") || zoneId.Equals("ut") || zoneId.Equals("uct") || zoneId.Equals("ut") || zoneId.Equals("gmt") || zoneId.Equals("gmt0") || zoneId.Equals("greenwich") || zoneId.Equals("universal") || zoneId.Equals("zulu");
 		}

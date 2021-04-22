@@ -33,6 +33,13 @@
 
   <ItemGroup>
     <None Remove="NLog.config" />
+    <None Remove="Presto\Facebook\Type\zone-index.properties" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Presto\Facebook\Type\zone-index.properties">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -104,9 +111,6 @@
     <None Update="Function\PulsarFunction.json">
       <Generator>NSwagCodeGenerator</Generator>
       <LastGenOutput>PulsarFunction.cs</LastGenOutput>
-    </None>
-    <None Update="Presto\Facebook\Type\zone-index.properties">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
