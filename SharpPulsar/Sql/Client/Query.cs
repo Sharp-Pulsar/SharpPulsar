@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -75,41 +76,46 @@ namespace SharpPulsar.Sql.Client
                 }
                 else
                 {
-                    await RenderResults(results.Columns.ToList());
+                    await RenderResults(results.Columns.ToList(), _client.Stats);
                 }
+
+                return true;
             }
-            _handler.Tell(new StatsResponse(_client.Stats));
-            Condition.CheckArgument(!_client.Running);
-
-            // Print all warnings at the end of the query
-            _log.Debug(JsonSerializer.Serialize(_client.FinalStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
-
-            if (_client.ClientAborted)
+            else
             {
-                _log.Debug("Query aborted by user");
-                return false;
-            }
-            if (_client.ClientError)
-            {
-                _log.Debug("Query is gone (server restarted?)");
-                return false;
-            }
+                _handler.Tell(new StatsResponse(_client.Stats));
+                Condition.CheckArgument(!_client.Running);
 
-            if (_client.FinalStatusInfo().Error != null || _client.FinalStatusInfo().Warnings != null)
-            {
-                var error = _client.FinalStatusInfo().Error;
-                var warning = _client.FinalStatusInfo().Warnings;
-                _log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions { WriteIndented = true }));
+                // Print all warnings at the end of the query
+                _log.Debug(JsonSerializer.Serialize(_client.FinalStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
 
-                _handler.Tell(new ErrorResponse(error, warning?.ToList()));
-                return false;
+                if (_client.ClientAborted)
+                {
+                    _log.Debug("Query aborted by user");
+                    return false;
+                }
+                if (_client.ClientError)
+                {
+                    _log.Debug("Query is gone (server restarted?)");
+                    return false;
+                }
+
+                if (_client.FinalStatusInfo().Error != null || _client.FinalStatusInfo().Warnings != null)
+                {
+                    var error = _client.FinalStatusInfo().Error;
+                    var warning = _client.FinalStatusInfo().Warnings;
+                    _log.Warning(JsonSerializer.Serialize(error, new JsonSerializerOptions { WriteIndented = true }));
+
+                    _handler.Tell(new ErrorResponse(error, warning?.ToList()));
+                    return false;
+                }
+                return true;
             }
-
-            return true;
         }
 
-        private async ValueTask RenderResults(List<Column> columns)
+        private async ValueTask RenderResults(List<Column> columns, StatementStats stats)
         {
+            var dataList = new List<Dictionary<string, object>>();
             while (_client.Running)
             {
                 var cData = _client.CurrentData().Data;
@@ -119,34 +125,32 @@ namespace SharpPulsar.Sql.Client
                     for (var i = 0; i < currentData.Count; i++)
                     {
                         var data = new Dictionary<string, object>();
-                        var metadata = new Dictionary<string, object>();
                         var value = currentData[i];
                         for (var y = 0; y < value.Count; y++)
                         {
-                            var col = columns[y].Name;
-                            if (col.StartsWith("__") && col.EndsWith("__"))
-                            {
-                                if (col.Equals("__i_d__") || col.Equals("__pro_ps__"))
-                                    continue;
-                                metadata[col.Trim('_')] = value[y];
-                            }
-                            else
-                            {
-                                data[col] = value[y];
-                            }
+                            var col = columns[y].Name; 
+                            data[col] = value[y];
                         }
-                        _handler.Tell(new DataResponse(data, metadata));
+                        dataList.Add(data);
                     }
                 }
                 await _client.Advance();
             }
+            _handler.Tell(new DataResponse(dataList, stats));
         }
         private async ValueTask ProcessInitialStatusUpdates()
         {
             while (_client.Running && _client.CurrentData().Data == null)
             {
-                _log.Debug(JsonSerializer.Serialize(_client.CurrentStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
-                await _client.Advance();
+                try
+                {
+                    _log.Debug(JsonSerializer.Serialize(_client.CurrentStatusInfo().Warnings, new JsonSerializerOptions { WriteIndented = true }));
+                    await _client.Advance();
+                }
+                catch(Exception ex)
+                {
+                    _log.Error(ex.ToString());
+                }
             }
             IList<Presto.Warning> warnings;
             if (_client.Running)
@@ -157,7 +161,7 @@ namespace SharpPulsar.Sql.Client
             {
                 warnings = _client.FinalStatusInfo().Warnings;
             }
-            _log.Debug(JsonSerializer.Serialize(warnings, new JsonSerializerOptions { WriteIndented = true }));
+            _log.Warning(JsonSerializer.Serialize(warnings, new JsonSerializerOptions { WriteIndented = true }));
         }
 
         private void RenderUpdate(IQueryStatusInfo results)

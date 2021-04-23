@@ -1,16 +1,17 @@
 ﻿using System.Collections.Generic;
+using SharpPulsar.Presto;
 
 namespace SharpPulsar.Sql.Message
 {
     public sealed class DataResponse : IQueryResponse
     {
-        public DataResponse(Dictionary<string, object> data, Dictionary<string, object> metadata)
+        public DataResponse(IList<Dictionary<string, object>> data, StatementStats statementStats)
         {
             Data = data;
-            Metadata = metadata;
+            StatementStats = statementStats;
         }
 
-        public Dictionary<string, object> Data { get; }
-        public Dictionary<string, object> Metadata { get; }
+        public IList<Dictionary<string, object>> Data { get; }
+        public StatementStats StatementStats { get; }
     }
 }

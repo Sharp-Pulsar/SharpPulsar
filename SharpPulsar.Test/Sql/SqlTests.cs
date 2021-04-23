@@ -36,32 +36,37 @@ namespace SharpPulsar.Test.Sql
 		{
 			string topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
+            Thread.Sleep(TimeSpan.FromSeconds(30));
 			var sql = PulsarSystem.NewSql();
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 			var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
 			sql.SendQuery(query);
 			var receivedCount = 0;
-			for (var i = 0; i < 45; i++)
-			{
-				var response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
-				var data = response.Response;
-				switch (data)
-				{
-					case DataResponse dr:
-						var ob = dr.Data["text"].ToString();
-						_output.WriteLine(ob);
-						receivedCount++;
-						break;
-					case StatsResponse sr:
-						_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
-						break;
-					case ErrorResponse er:
-						_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
-						break;
-				}
-
-			}
-			Assert.Equal(45, receivedCount);
+            var response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
+            var data = response.Response;
+            switch (data)
+            {
+                case DataResponse dr:
+                    {
+                        for(var i = 0; i < dr.Data.Count; i++)
+                        {
+                            var ob = dr.Data.ElementAt(i)["text"].ToString();
+                            _output.WriteLine(ob);
+                            receivedCount++;
+                        }
+                        _output.WriteLine(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
+                    }
+                    break;
+                case StatsResponse sr:
+                    _output.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                    break;
+                case ErrorResponse er:
+                    _output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+                    break;
+            }
+            sql.SendQuery(query);
+            response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
+            Assert.Equal(45, receivedCount);
 		}
 		private ISet<string> PublishMessages(string topic, int count)
 		{
