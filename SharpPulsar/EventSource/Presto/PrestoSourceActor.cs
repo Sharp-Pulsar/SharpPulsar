@@ -105,15 +105,20 @@ namespace SharpPulsar.EventSource.Presto
         {
             Receive<DataResponse>(c =>
             {
-                var msg = c.Metadata["message_id"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
-                var messageId = new MessageId(msg[0], msg[1], msg[2]);
-                if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
+                for(var i = 0; i < c.Data.Count; i++)
                 {
-                    var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
-                    _buffer.Post(eventMessage);
-                    _sequenceId++;
+                    var msgData = c.Data.ElementAt(i);
+                    var msg = msgData["__message_id__"].ToString().Trim('(', ')').Split(',').Select(int.Parse).ToArray();
+                    var messageId = new MessageId(msg[0], msg[1], msg[2]);
+                    if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
+                    {
+                        var eventMessage = new EventEnvelope(msgData, _sequenceId, _topicName.ToString());
+                        _buffer.Post(eventMessage);
+                        _sequenceId++;
+                    }
+                    else Self.GracefulStop(TimeSpan.FromSeconds(5));
                 }
-                else Self.GracefulStop(TimeSpan.FromSeconds(5));
+                _buffer.Post(new EventStats(new StatsResponse(c.StatementStats)));
             });
             Receive<StatsResponse>(s =>
             {
@@ -133,9 +138,14 @@ namespace SharpPulsar.EventSource.Presto
         {
             Receive<DataResponse>(c =>
             {
-                var eventMessage = new EventEnvelope(c.Data, c.Metadata, _sequenceId, _topicName.ToString());
-                _buffer.Post(eventMessage); 
-                _sequenceId++;
+                for (var i = 0; i < c.Data.Count; i++)
+                {
+                    var msgData = c.Data.ElementAt(i);
+                    var eventMessage = new EventEnvelope(msgData, _sequenceId, _topicName.ToString());
+                    _buffer.Post(eventMessage);
+                    _sequenceId++;
+                }
+                _buffer.Post(new EventStats(new StatsResponse(c.StatementStats)));
             });
             Receive<StatsResponse>(s =>
             {
