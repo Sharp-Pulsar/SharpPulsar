@@ -921,7 +921,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					byte[] cmd = _commands.NewCloseConsumer(_consumerId, requestId);
+					var cmd = _commands.NewCloseConsumer(_consumerId, requestId);
 					cnx.Tell(new SendRequestWithId(cmd, requestId));
 				}
 
@@ -1518,7 +1518,7 @@ namespace SharpPulsar
 		private void ProcessMessage(MessageReceived received)
         {
 			var messageId = received.MessageId;
-			var data = new ReadOnlySequence<byte>(received.Payload);
+			var data = received.Payload;
 			var redeliveryCount = received.RedeliveryCount;
 			IList<long> ackSet = messageId.AckSets;
 			if (_log.IsDebugEnabled)
@@ -2242,7 +2242,7 @@ namespace SharpPulsar
 				
 				var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
 				long requestId = result.Id;
-				byte[] seek = null;
+                ReadOnlySequence<byte> seek = ReadOnlySequence<byte>.Empty;
 				if (messageId is BatchMessageId msgId)
 				{
 					// Initialize ack set
@@ -2743,7 +2743,7 @@ namespace SharpPulsar
 		{
 			long ledgerId;
 			long entryId;
-			byte[] cmd;
+            ReadOnlySequence<byte> cmd;
 			if(messageId is BatchMessageId batchMessageId)
 			{
 				var bitSet = new BitSet(batchMessageId.BatchSize);

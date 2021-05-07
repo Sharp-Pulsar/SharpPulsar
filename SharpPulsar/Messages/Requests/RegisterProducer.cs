@@ -1,4 +1,5 @@
-﻿using Akka.Actor;
+﻿using System.Buffers;
+using Akka.Actor;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Requests
@@ -55,10 +56,10 @@ namespace SharpPulsar.Messages.Requests
     }
     public sealed class SendRequestWithId
     {
-        public byte[] Message { get; }
+        public ReadOnlySequence<byte> Message { get; }
         public long RequestId { get; }
         public bool NeedsResponse { get; }
-        public SendRequestWithId(byte[] message,  long requestid, bool needsResponse = false)
+        public SendRequestWithId(ReadOnlySequence<byte> message,  long requestid, bool needsResponse = false)
         {
             Message = message;
             RequestId = requestid;

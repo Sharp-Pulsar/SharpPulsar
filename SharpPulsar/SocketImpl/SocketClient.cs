@@ -112,11 +112,11 @@ namespace SharpPulsar.SocketImpl
         }
 
 
-        public IObservable<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)> ReceiveMessageObservable =>
-               Observable.Create<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
+        public IObservable<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> ReceiveMessageObservable =>
+               Observable.Create<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
 
 
-        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)> observer, CancellationToken cancellationToken = default)
+        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> observer, CancellationToken cancellationToken = default)
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
@@ -139,26 +139,26 @@ namespace SharpPulsar.SocketImpl
                             var frameLength = totalength + 4;
                             if (length >= frameLength)
                             {
-                                var command = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
+                                var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
                                 var consumed = buffer.GetPosition(frameLength);
                                 if(command.type == BaseCommand.Type.Message)
                                 {
                                     var magicNumber = reader.ReadInt16().Int16FromBigEndian();
                                     var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
                                     var metadataPointer = stream.Position;
-                                    var metadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                    var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
                                     var payloadPointer = stream.Position;
                                     var metadataLength = (int)(payloadPointer - metadataPointer);
                                     var payloadLength = frameLength - (int)payloadPointer;
                                     var payload = reader.ReadBytes(payloadLength);
                                     stream.Seek(metadataPointer, SeekOrigin.Begin);
                                     var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-                                    observer.OnNext((command, metadata, payload, messageCheckSum == calculatedCheckSum, magicNumber));
+                                    observer.OnNext((command, metadata, new ReadOnlySequence<byte>(payload), messageCheckSum == calculatedCheckSum, magicNumber));
                                     //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                 }
                                 else
                                 {
-                                    observer.OnNext((command, null, null, false, 0));
+                                    observer.OnNext((command, null, ReadOnlySequence<byte>.Empty, false, 0));
                                 }
                                 if (readresult.IsCompleted)
                                     _pipeReader.AdvanceTo(buffer.Start, buffer.End);
@@ -179,9 +179,9 @@ namespace SharpPulsar.SocketImpl
             });
         }
 
-        public void SendMessage(byte[] message)
+        public void SendMessage(ReadOnlySequence<byte> message)
         {
-            _ = _pipeline.Send(new ReadOnlySequence<byte>(message));
+            _ = _pipeline.Send(message);
         }
 
         public void Dispose()

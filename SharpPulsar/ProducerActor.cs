@@ -32,6 +32,7 @@ using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Producer;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -759,7 +760,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					op = OpSendMsg<T>.Create(msg, null, sequenceId);
+					op = OpSendMsg<T>.Create(msg, ReadOnlySequence<byte>.Empty, sequenceId);
 					op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
 				}
 				op.NumMessagesInBatch = numMessages;
@@ -840,15 +841,15 @@ namespace SharpPulsar
 			return encryptedPayload;
 		}
 
-		private byte[] SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
+		private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
 			_log.Info($"Send message with {_producerName}:{producerId}");
-			return new Commands().NewSend(producerId, sequenceId, numMessages, msgMetadata, compressedPayload);
+			return new Commands().NewSend(producerId, sequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
 		}
 
-		private byte[] SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
+		private ReadOnlySequence<byte> SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
-			return _commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, compressedPayload);
+			return _commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
 		}
 
         public IStash Stash { get; set; }
@@ -1524,7 +1525,7 @@ namespace SharpPulsar
 		{
 			internal Message<T1> Msg;
 			internal IList<Message<T1>> Msgs;
-			internal byte[] Cmd;
+			internal ReadOnlySequence<byte> Cmd;
 			internal long SequenceId;
 			internal long CreatedAt;
 			internal long FirstSentAt;
@@ -1535,7 +1536,7 @@ namespace SharpPulsar
 			internal int TotalChunks = 0;
 			internal int ChunkId = -1;
 
-			internal static OpSendMsg<T1> Create(Message<T1> msg, byte[] cmd, long sequenceId)
+			internal static OpSendMsg<T1> Create(Message<T1> msg, ReadOnlySequence<byte> cmd, long sequenceId)
 			{
 				var op = new OpSendMsg<T1>
 				{
@@ -1555,7 +1556,7 @@ namespace SharpPulsar
 				}
 				++RetryCount;
 			}
-			internal static OpSendMsg<T1> Create(IList<Message<T1>> msgs, byte[] cmd, long sequenceId)
+			internal static OpSendMsg<T1> Create(IList<Message<T1>> msgs, ReadOnlySequence<byte> cmd, long sequenceId)
 			{
 				var op = new OpSendMsg<T1>
 				{
@@ -1567,7 +1568,7 @@ namespace SharpPulsar
 				return op;
 			}
 
-			internal static OpSendMsg<T1> Create(IList<Message<T1>> msgs, byte[] cmd, long lowestSequenceId, long highestSequenceId)
+			internal static OpSendMsg<T1> Create(IList<Message<T1>> msgs, ReadOnlySequence<byte> cmd, long lowestSequenceId, long highestSequenceId)
 			{
 				var op = new OpSendMsg<T1>
 				{
@@ -1604,7 +1605,7 @@ namespace SharpPulsar
 			{
 				Msg = null;
 				Msgs = null;
-				Cmd = null;
+				Cmd = ReadOnlySequence<byte>.Empty;
 				SequenceId = -1L;
 				CreatedAt = -1L;
 				HighestSequenceId = -1L;
