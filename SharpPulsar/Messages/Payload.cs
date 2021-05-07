@@ -1,11 +1,13 @@
-﻿namespace SharpPulsar.Messages
+﻿using System.Buffers;
+
+namespace SharpPulsar.Messages
 {
     public class Payload
     {
-        public byte[] Bytes { get; }
+        public ReadOnlySequence<byte> Bytes { get; }
         public long RequestId { get; }
         public string Command { get; }
-        public Payload(byte[] bytes, long requestId, string command)
+        public Payload(ReadOnlySequence<byte> bytes, long requestId, string command)
         {
             Bytes = bytes;
             RequestId = requestId;

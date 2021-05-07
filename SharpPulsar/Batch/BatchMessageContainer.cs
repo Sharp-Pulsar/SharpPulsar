@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using Akka.Actor;
@@ -207,7 +208,7 @@ namespace SharpPulsar.Batch
 			{
 				_messageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = new Commands().NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, encryptedPayload);
+			var cmd = new Commands().NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
 
 			var op = ProducerActor<T>.OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId);
 

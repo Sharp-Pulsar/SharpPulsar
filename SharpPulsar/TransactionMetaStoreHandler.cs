@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using SharpPulsar.Messages.Client;
 using System.Threading.Tasks;
+using System.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -51,7 +52,7 @@ namespace SharpPulsar
 		private IActorRef _self;
 		private long _requestId = -1;
 		private IActorRef _clientCnx;
-		private readonly Dictionary<long, (byte[] Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (byte[] Command, IActorRef ReplyTo)>();
+		private readonly Dictionary<long, (ReadOnlySequence<byte> Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Command, IActorRef ReplyTo)>();
 		private readonly ConcurrentQueue<RequestTime> _timeoutQueue;
 
 		private class RequestTime
@@ -197,7 +198,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("New transaction with timeout in ms {}", timeout);
 			}
-			_pendingRequests.Add(_requestId, (new byte[] { (byte)timeout }, _replyTo));
+			_pendingRequests.Add(_requestId, (new ReadOnlySequence<byte>(new byte[] { (byte)timeout }), _replyTo));
 			var cmd = new Commands().NewTxn(_transactionCoordinatorId, _requestId, timeout);
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewTxn"));

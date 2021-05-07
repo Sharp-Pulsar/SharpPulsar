@@ -34,7 +34,7 @@ namespace SharpPulsar
 
 		private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
 		// LookupRequests that waiting in client side.
-		private readonly LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>> _waitingLookupRequests;
+		private readonly LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>> _waitingLookupRequests;
 
 		private readonly ConcurrentDictionary<long, IActorRef> _producers = new ConcurrentDictionary<long, IActorRef>();
 
@@ -55,7 +55,7 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 
 		private string _proxyToTargetBrokerAddress;
-		private readonly byte[] _pong = new Commands().NewPong();
+		private readonly ReadOnlySequence<byte> _pong = new Commands().NewPong();
 		private List<byte> _pendingReceive;
 
 		private string _remoteHostName;
@@ -89,7 +89,7 @@ namespace SharpPulsar
 			_socketClient.OnConnect += OnConnected;
 			_socketClient.OnDisconnect += OnDisconnected;
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
-			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<byte[], LookupDataResult>>>();
+			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>>();
 			_authentication = conf.Authentication;
 			_maxNumberOfRejectedRequestPerConnection = conf.MaxNumberOfRejectedRequestPerConnection;
 			_operationTimeoutMs = conf.OperationTimeoutMs;
@@ -227,6 +227,7 @@ namespace SharpPulsar
 		{
 			_timeoutTask?.Cancel();
 			_sendPing?.Cancel();
+            _socketClient.Dispose();
 			base.PostStop();
 		}
 		private void HandleConnected(CommandConnected connected)
@@ -306,7 +307,7 @@ namespace SharpPulsar
 				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
-		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber)
+		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -601,13 +602,13 @@ namespace SharpPulsar
 			}
 		}
 
-		private void NewLookup(byte[] request, long requestId)
+		private void NewLookup(ReadOnlySequence<byte> request, long requestId)
 		{
-			AddPendingLookupRequests(requestId, new ReadOnlySequence<byte>(request));
+			AddPendingLookupRequests(requestId, request);
 			_socketClient.SendMessage(request);
 		}
 
-		private void NewGetTopicsOfNamespace(byte[] request, long requestId)
+		private void NewGetTopicsOfNamespace(ReadOnlySequence<byte> request, long requestId)
 		{
 			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
 		}
@@ -658,14 +659,14 @@ namespace SharpPulsar
 				_log.Warning($"Received unknown request id from server: {requestId}");
 		}
 
-		private void SendRequestWithId(byte[] cmd, long requestId, bool reply)
+		private void SendRequestWithId(ReadOnlySequence<byte> cmd, long requestId, bool reply)
 		{
 			SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
 		}
 
-		private bool SendRequestAndHandleTimeout(byte[] requestMessage, long requestId, RequestType requestType)
+		private bool SendRequestAndHandleTimeout(ReadOnlySequence<byte> requestMessage, long requestId, RequestType requestType)
 		{
-			_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+			_pendingRequests.Add(requestId, (requestMessage, Sender));
 			_socketClient.SendMessage(requestMessage);
 			/*var task = _socketClient.Execute(requestMessage); 
 			if (task.IsFaulted)
@@ -677,25 +678,25 @@ namespace SharpPulsar
 			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
 			return true;
 		}
-		private void SendRequest(byte[] requestMessage, long requestId)
+		private void SendRequest(ReadOnlySequence<byte> requestMessage, long requestId)
 		{
 			if (requestId >= 0)
-				_pendingRequests.Add(requestId, (new ReadOnlySequence<byte>(requestMessage), Sender));
+				_pendingRequests.Add(requestId, (requestMessage, Sender));
 
 			_socketClient.SendMessage(requestMessage);
 		}
 
-		private void SendGetLastMessageId(byte[] request, long requestId)
+		private void SendGetLastMessageId(ReadOnlySequence<byte> request, long requestId)
 		{
 			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
 		}
 
-		private void SendGetRawSchema(byte[] request, long requestId)
+		private void SendGetRawSchema(ReadOnlySequence<byte> request, long requestId)
 		{
 			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
 		}
 
-		private void SendGetOrCreateSchema(byte[] request, long requestId)
+		private void SendGetOrCreateSchema(ReadOnlySequence<byte> request, long requestId)
 		{
 			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
 		}
@@ -776,7 +777,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, byte[] payload, bool checkSum, short magicNumber) args)
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber) args)
 		{
 			var cmd = args.command;
 			switch (cmd.type)
@@ -959,7 +960,7 @@ namespace SharpPulsar
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
 		}
-		public byte[] NewConnectCommand()
+		public ReadOnlySequence<byte> NewConnectCommand()
 		{
 			// mutual authentication is to auth between `remoteHostName` and this client for this channel.
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
