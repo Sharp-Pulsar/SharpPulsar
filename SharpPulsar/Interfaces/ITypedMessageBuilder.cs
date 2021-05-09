@@ -72,7 +72,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="key"> routing key for message, in byte array form </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> KeyBytes(sbyte[] key);
+		ITypedMessageBuilder<T> KeyBytes(byte[] key);
 
 		/// <summary>
 		/// Sets the ordering key of the message for message dispatch in <seealso cref="SubscriptionType.Key_Shared"/> mode.
@@ -80,7 +80,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <param name="orderingKey"> the ordering key for the message </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey);
+		ITypedMessageBuilder<T> OrderingKey(byte[] orderingKey);
 
 		/// <summary>
 		/// Set a domain object on the message.

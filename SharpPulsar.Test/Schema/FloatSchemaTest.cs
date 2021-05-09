@@ -31,7 +31,7 @@ namespace SharpPulsar.Test.Schema
         {
             FloatSchema schema = FloatSchema.Of();
             float data = 12345678.1234F;
-            sbyte[] expected = BitConverter.GetBytes(data).Reverse().ToArray().ToSBytes();
+            byte[] expected = BitConverter.GetBytes(data).Reverse().ToArray();
             Assert.Equal(expected, schema.Encode(data));
         }
         [Fact]
@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Schema
         {
             FloatSchema schema = FloatSchema.Of();
             float dbl = 1234578.8754321F;
-            sbyte[] bytes = schema.Encode(dbl);
+            byte[] bytes = schema.Encode(dbl);
             Assert.Equal(dbl, schema.Decode(bytes));
         }
 

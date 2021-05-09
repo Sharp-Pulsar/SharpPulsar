@@ -30,7 +30,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// </summary>
 		/// <param name="schemaVersion"> schema version </param>
 		/// <returns> schema info of the provided <tt>schemaVersion</tt> </returns>
-		ISchemaInfo GetSchemaByVersion(sbyte[] schemaVersion);
+		ISchemaInfo GetSchemaByVersion(byte[] schemaVersion);
 
 		/// <summary>
 		/// Retrieve the latest schema info.

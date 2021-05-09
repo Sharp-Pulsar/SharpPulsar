@@ -13,17 +13,17 @@ namespace SharpPulsar.Schemas
         }
         public override ISchemaInfo SchemaInfo => _schemaInfo;
 
-        public override sbyte[] Encode(T message)
+        public override byte[] Encode(T message)
         {
             return _writer.Write(message);
         }
 
-        public override T Decode(sbyte[] bytes)
+        public override T Decode(byte[] bytes)
         {
             return _reader.Read(bytes);
         }
 
-        public override T Decode(sbyte[] bytes, sbyte[] schemaVersion)
+        public override T Decode(byte[] bytes, byte[] schemaVersion)
         {
             return _reader.Read(bytes, schemaVersion);
         }

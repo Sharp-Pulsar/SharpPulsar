@@ -39,7 +39,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "Date",
 				Type = SchemaType.DATE,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new DateSchema();
@@ -50,15 +50,15 @@ namespace SharpPulsar.Schemas
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(DateTime message)
+	   public override byte[] Encode(DateTime message)
 	   {
 		  long date = message.ConvertToMsTimestamp().LongToBigEndian();
-		  return BitConverter.GetBytes(date).ToSBytes();
+		  return BitConverter.GetBytes(date);
 	   }
 
-		public override DateTime Decode(sbyte[] bytes)
+		public override DateTime Decode(byte[] bytes)
 		{
-			var decode = BitConverter.ToInt64(bytes.ToBytes(), 0).LongFromBigEndian();
+			var decode = BitConverter.ToInt64(bytes, 0).LongFromBigEndian();
 			return decode.ConvertToDateTime();
 		}
 

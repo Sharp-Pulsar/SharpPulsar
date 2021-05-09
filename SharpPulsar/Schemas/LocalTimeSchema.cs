@@ -37,7 +37,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "LocalTime",
 				Type = SchemaType.LocalDateTime,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new LocalTimeSchema();
@@ -48,13 +48,13 @@ namespace SharpPulsar.Schemas
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(LocalTime message)
+	   public override byte[] Encode(LocalTime message)
 	   {
 		  var nanoOfDay = message.NanosecondOfDay;
 		  return LongSchema.Of().Encode(nanoOfDay);
 	   }
 
-	   public override LocalTime Decode(sbyte[] bytes)
+	   public override LocalTime Decode(byte[] bytes)
 	   {
 		  var decode = LongSchema.Of().Decode(bytes);
 		  return LocalTime.FromNanosecondsSinceMidnight(decode);

@@ -27,7 +27,7 @@ namespace SharpPulsar.Auth
 	{
 
 		public IDictionary<string, EncryptionKey> Keys { get; set; }
-		public sbyte[] Param { get; set; }
+		public byte[] Param { get; set; }
 		public string Algorithm;
 		public int CompressionType { get; set; }//hack
 		public int UncompressedMessageSize { get; set; }
@@ -38,7 +38,7 @@ namespace SharpPulsar.Auth
 		/// </summary>
 		public class EncryptionKey
 		{
-			public sbyte[] KeyValue { get; set; }
+			public byte[] KeyValue { get; set; }
 			public IDictionary<string, string> Metadata { get; set; }
 		}
 

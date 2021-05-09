@@ -21,7 +21,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "Timestamp",
 				Type = SchemaType.TIMESTAMP,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new TimestampSchema();
@@ -32,15 +32,15 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override sbyte[] Encode(DateTimeOffset message)
+		public override byte[] Encode(DateTimeOffset message)
 		{
 			long time = message.ToUnixTimeMilliseconds().LongToBigEndian();
-			return BitConverter.GetBytes(time).ToSBytes();
+			return BitConverter.GetBytes(time);
 		}
 
-		public override DateTimeOffset Decode(sbyte[] bytes)
+		public override DateTimeOffset Decode(byte[] bytes)
 		{
-			return DateTimeOffset.FromUnixTimeMilliseconds(BitConverter.ToInt64(bytes.ToBytes(), 0).LongFromBigEndian());
+			return DateTimeOffset.FromUnixTimeMilliseconds(BitConverter.ToInt64(bytes, 0).LongFromBigEndian());
 		}
 
 		public override ISchemaInfo SchemaInfo

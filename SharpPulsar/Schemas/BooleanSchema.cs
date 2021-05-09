@@ -36,7 +36,7 @@ namespace SharpPulsar.Schemas
             {
                 Name = "Boolean",
                 Type = SchemaType.BOOLEAN,
-                Schema = new sbyte[0]
+                Schema = new byte[0]
             };
             _schemaInfo = info;
 			_instance = new BooleanSchema();
@@ -47,7 +47,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 1)
 			{
@@ -55,12 +55,12 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public override sbyte[] Encode(bool message)
+		public override byte[] Encode(bool message)
 		{
-			return new sbyte[] { (sbyte)(message ? 1 : 0) };
+			return new byte[] { (byte)(message ? 1 : 0) };
 		}
 
-		public override bool Decode(sbyte[] bytes)
+		public override bool Decode(byte[] bytes)
         {
 			Validate(bytes);
 			return bytes[0] != 0;

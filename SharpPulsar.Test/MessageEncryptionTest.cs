@@ -26,18 +26,18 @@ namespace SharpPulsar.Test
 		{
 			var messageCount = 10;
 			var topic = "encrypted-message-test-long-string";
-			var producer = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+			var producer = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
 				.AddEncryptionKey("Ebere"));
 
 			for (var i = 0; i < messageCount; i++)
 			{
-				producer.Send(Encoding.UTF8.GetBytes($"Shhhh, a secret: my is Ebere Abanonu and am a Nigerian based in Abeokuta, Ogun (a neighbouring State to Lagos - about 2 hours drive) [{i}]").ToSBytes());
+				producer.Send(Encoding.UTF8.GetBytes($"Shhhh, a secret: my is Ebere Abanonu and am a Nigerian based in Abeokuta, Ogun (a neighbouring State to Lagos - about 2 hours drive) [{i}]"));
 			}
 			var receivedCount = 0;
 
-			var consumer = _client.NewConsumer(new ConsumerConfigBuilder<sbyte[]>()
+			var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
 				.TopicsPattern(topic)
 				.CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
 				.SubscriptionName("encrypted-sub"));
@@ -47,7 +47,7 @@ namespace SharpPulsar.Test
 				var message = consumer.Receive(TimeSpan.FromSeconds(10));
 				if(message != null)
                 {
-					var decrypted = Encoding.UTF8.GetString(message.Data.ToBytes());
+					var decrypted = Encoding.UTF8.GetString(message.Data);
 					_output.WriteLine(decrypted);
 					Assert.Equal($"Shhhh, a secret: my is Ebere Abanonu and am a Nigerian based in Abeokuta, Ogun (a neighbouring State to Lagos - about 2 hours drive) [{i}]", decrypted);
 					consumer.Acknowledge(message);

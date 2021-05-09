@@ -40,7 +40,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "Float",
 				Type = SchemaType.FLOAT,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new FloatSchema();
@@ -51,7 +51,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -59,15 +59,15 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public override sbyte[] Encode(float message)
+		public override byte[] Encode(float message)
 		{
-			return BitConverter.GetBytes(message).Reverse().ToArray().ToSBytes();
+			return BitConverter.GetBytes(message).Reverse().ToArray();
 		}
 
-		public override float Decode(sbyte[] bytes)
+		public override float Decode(byte[] bytes)
 		{
 			Validate(bytes);
-			return BitConverter.ToSingle(bytes.ToBytes().Reverse().ToArray(), 0);
+			return BitConverter.ToSingle(bytes.Reverse().ToArray(), 0);
 		}
 
 		public override ISchemaInfo SchemaInfo

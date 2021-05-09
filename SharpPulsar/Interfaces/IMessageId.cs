@@ -40,10 +40,10 @@ namespace SharpPulsar.Interfaces
 		/// Serialize the message ID into a byte array.
 		/// 
 		/// <para>The serialized message id can be stored away and later get deserialized by
-		/// using <seealso cref="fromByteArray(sbyte[])"/>.
+		/// using <seealso cref="fromByteArray(byte[])"/>.
 		/// </para>
 		/// </summary>
-		sbyte[] ToByteArray();
+		byte[] ToByteArray();
 
 		/// <summary>
 		/// De-serialize a message id from a byte array.
@@ -53,7 +53,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the de-serialized messageId object </returns>
 		/// <exception cref="IOException"> if the de-serialization fails </exception>
 		/// 
-		static IMessageId FromByteArray(sbyte[] data)
+		static IMessageId FromByteArray(byte[] data)
 		{
 			return DefaultImplementation.NewMessageIdFromByteArray(data);
 		}
@@ -72,7 +72,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="IMessageId instance"/> </returns>
 		/// <exception cref="IOException"> if the de-serialization fails </exception>
 		/// 
-		static IMessageId FromByteArrayWithTopic(sbyte[] data, string topicName)
+		static IMessageId FromByteArrayWithTopic(byte[] data, string topicName)
 		{
 			return DefaultImplementation.NewMessageIdFromByteArrayWithTopic(data, topicName);
 		}

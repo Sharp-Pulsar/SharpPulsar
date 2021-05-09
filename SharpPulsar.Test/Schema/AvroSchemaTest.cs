@@ -73,11 +73,11 @@ namespace SharpPulsar.Test.Schema
             var schema2 = AvroSchema<StructWithAnnotations>.Of(typeof(StructWithAnnotations));
 
             string schemaDef1 = schema1.ToString();
-            string schemaDef2 = Encoding.UTF8.GetString(schema2.SchemaInfo.Schema.ToBytes());
+            string schemaDef2 = Encoding.UTF8.GetString(schema2.SchemaInfo.Schema);
             Assert.NotEqual(schemaDef1, schemaDef2);
 
             AvroSchema<StructWithAnnotations> schema3 = AvroSchema<StructWithAnnotations>.Of(ISchemaDefinition<StructWithAnnotations>.Builder().WithJsonDef(schemaDef1).Build());
-            string schemaDef3 = Encoding.UTF8.GetString(schema3.SchemaInfo.Schema.ToBytes());
+            string schemaDef3 = Encoding.UTF8.GetString(schema3.SchemaInfo.Schema);
             Assert.True(schemaDef1.Contains("DefaultStruct") && schemaDef3.Contains("DefaultStruct"));
             Assert.NotEqual(schemaDef2, schemaDef3);
 
@@ -109,7 +109,7 @@ namespace SharpPulsar.Test.Schema
                 TimeMillis = (DateTime.Now - DateTime.Today).Ticks
             };
 
-            sbyte[] bytes1 = avroSchema.Encode(schemaLogicalType);
+            byte[] bytes1 = avroSchema.Encode(schemaLogicalType);
             Assert.True(bytes1.Length > 0);
 
             SchemaLogicalType object1 = avroSchema.Decode(bytes1);
@@ -124,7 +124,7 @@ namespace SharpPulsar.Test.Schema
 
             var logMsg = new LogicalMessage { Schema = Avro.Schema.Parse(avroSchema.SchemaInfo.SchemaDefinition), CreatedTime = DateTime.Now, DayOfWeek = "Saturday", Size = new AvroDecimal(102.65M) };
 
-            sbyte[] bytes1 = avroSchema.Encode(logMsg);
+            byte[] bytes1 = avroSchema.Encode(logMsg);
             Assert.True(bytes1.Length > 0);
 
             var msg = avroSchema.Decode(bytes1);

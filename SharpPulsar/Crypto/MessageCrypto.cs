@@ -127,8 +127,8 @@ namespace SharpPulsar.Crypto
 
 			// Read the public key and its info using callback
 			var keyInfo = keyReader.GetPublicKey(keyName, null);
-			var encryptedKey = CryptoHelper.Encrypt(_dataKey, keyInfo.Key.ToBytes());
-			var eki = new EncryptionKeyInfo(encryptedKey.ToSBytes(), keyInfo.Metadata);
+			var encryptedKey = CryptoHelper.Encrypt(_dataKey, keyInfo.Key);
+			var eki = new EncryptionKeyInfo(encryptedKey, keyInfo.Metadata);
 			_encryptedDataKeyMap[keyName] = eki;
 		}
 		/*
@@ -196,13 +196,13 @@ namespace SharpPulsar.Crypto
 								Value = m.Value
 							});
 						});
-						var encKey = new EncryptionKeys { Key = keyName, Value = keyInfo.Key.ToBytes()};
+						var encKey = new EncryptionKeys { Key = keyName, Value = keyInfo.Key};
 						encKey.Metadatas.AddRange(kvList);
 						msgMetadata.EncryptionKeys.Add(encKey);
 					}
 					else
 					{
-						msgMetadata.EncryptionKeys.Add(new EncryptionKeys { Key = keyName, Value = keyInfo.Key.ToBytes() });
+						msgMetadata.EncryptionKeys.Add(new EncryptionKeys { Key = keyName, Value = keyInfo.Key });
 					}
 				}
 				else
@@ -251,7 +251,7 @@ namespace SharpPulsar.Crypto
 			{
 
 				// Decrypt data key using private key
-				dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, keyInfo.Key.ToBytes());
+				dataKeyValue = CryptoHelper.Decrypt(encryptedDataKey, keyInfo.Key);
 				keyDigest = Convert.ToBase64String(_hash.ComputeHash(encryptedDataKey));
 
 			}

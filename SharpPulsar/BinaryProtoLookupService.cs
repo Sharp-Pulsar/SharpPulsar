@@ -407,7 +407,7 @@ namespace SharpPulsar
 					var schema = schemaResponse.Response.Schema;
 					var info = new SchemaInfo
 					{
-						Schema = schema.SchemaData.ToSBytes(),
+						Schema = schema.SchemaData,
 						Name = schema.Name,
 						Properties = schema.Properties.ToDictionary(k => k.Key, v => v.Value),
 						Type = SchemaType.ValueOf((int)schema.type)
@@ -418,7 +418,7 @@ namespace SharpPulsar
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var topicName = (TopicName)args[0];
-			var version = (sbyte[])args[1];
+			var version = (byte[])args[1];
 			var request = new Commands().NewGetSchema(_requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, _requestId, "SendGetRawSchema");
 			_clientCnx.Tell(payload);
@@ -469,14 +469,25 @@ namespace SharpPulsar
 				{
 					reply.Tell(new Failure { Exception = new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout") });
 					_getTopicsUnderNamespaceBackOff = null;
-				}
+                    Become(Awaiting);
+                }
 				else
 				{
+                    //still thinking the best option here
 					_log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
 					opTimeoutMs -= nextDelay;
-					_context.System.Scheduler.ScheduleTellOnce(TimeSpan.FromMilliseconds(nextDelay), Self, new RetryGetTopicsUnderNamespace(ns, mde, opTimeoutMs), _replyTo);
+					_context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(nextDelay), async()=> 
+                    {
+                        var client = _clientCnx;
+                        var mde = mode;
+                        var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                        var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.ToString(), reqId.Id, mde);
+                        var payload = new Payload(request, reqId.Id, "NewGetTopicsOfNamespaceRequest");
+                        client.Tell(payload);
+                        _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {nextDelay} ms delay with requestid '{reqId.Id}'");
+
+                    });
 				}
-				Become(Awaiting);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.ToString(), _requestId, mode);

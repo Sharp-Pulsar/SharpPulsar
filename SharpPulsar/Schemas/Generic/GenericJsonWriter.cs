@@ -35,11 +35,11 @@ namespace SharpPulsar.Impl.Schema.Generic
 			_objectMapper = new ObjectMapper();
 		}
 
-		public sbyte[] Write(T message)
+		public byte[] Write(T message)
 		{
 			try
 			{
-				return _objectMapper.WriteValueAsBytes(message).ToSBytes();
+				return _objectMapper.WriteValueAsBytes(message);
 			}
 			catch (IOException ioe)
 			{

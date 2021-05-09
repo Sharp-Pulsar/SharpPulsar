@@ -20,7 +20,7 @@ namespace SharpPulsar.Schemas
 		/// <summary>
 		/// The schema data in AVRO JSON format.
 		/// </summary>
-		public sbyte[] Schema { get; set; }
+		public byte[] Schema { get; set; }
 
 		/// <summary>
 		/// The type of schema (AVRO, JSON, PROTOBUF, etc..).
@@ -54,7 +54,7 @@ namespace SharpPulsar.Schemas
 					    KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(this);
 					    return DefaultImplementation.JsonifyKeyValueSchemaInfo(schemaInfoKeyValue);
 					default:
-						return Convert.ToBase64String(Schema.ToBytes());
+						return Convert.ToBase64String(Schema);
 				}
 			}
 		}

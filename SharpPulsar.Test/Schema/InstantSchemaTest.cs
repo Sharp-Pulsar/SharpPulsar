@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Schema
         {
             InstantSchema schema = InstantSchema.Of();
             Instant instant = Instant.FromDateTimeUtc(DateTime.UtcNow);
-            sbyte[] bytes = schema.Encode(instant);
+            byte[] bytes = schema.Encode(instant);
             _testOutputHelper.WriteLine($"{instant}");
             Assert.Equal(instant.ToString(), schema.Decode(bytes).ToString());
         }

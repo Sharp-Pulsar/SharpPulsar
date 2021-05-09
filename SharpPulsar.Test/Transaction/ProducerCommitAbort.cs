@@ -54,17 +54,17 @@ namespace SharpPulsar.Test.Transaction
 		public void ProduceCommitTest()
 		{
 			var topic = $"{_topicOutput}-{Guid.NewGuid()}";
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName($"test-{Guid.NewGuid()}");
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SendTimeout(0);
 
-			Producer<sbyte[]> producer = _client.NewProducer(producerBuilder);
+			Producer<byte[]> producer = _client.NewProducer(producerBuilder);
 
 			User.Transaction txn = Txn;
 
@@ -72,7 +72,7 @@ namespace SharpPulsar.Test.Transaction
 			int messageCnt = 40;
 			for(int i = 0; i < messageCnt; i++)
 			{
-				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
+				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 				txnMessageCnt++;
 			}
 
@@ -100,18 +100,18 @@ namespace SharpPulsar.Test.Transaction
 		public void ProduceCommitBatchedTest()
 		{
 			var topic = $"{_topicOutput}-{Guid.NewGuid()}";
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
 				.EnableBatchIndexAcknowledgment(true);
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.EnableBatching(true)
 				.SendTimeout(0);
 
-			Producer<sbyte[]> producer = _client.NewProducer(producerBuilder);
+			Producer<byte[]> producer = _client.NewProducer(producerBuilder);
 
 			User.Transaction txn = Txn;
 
@@ -119,7 +119,7 @@ namespace SharpPulsar.Test.Transaction
 			int messageCnt = 40;
 			for(int i = 0; i < messageCnt; i++)
 			{
-				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
+				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 				txnMessageCnt++;
 			}
 
@@ -151,7 +151,7 @@ namespace SharpPulsar.Test.Transaction
 			User.Transaction txn = Txn;
 			
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>();
+			var producerBuilder = new ProducerConfigBuilder<byte[]>();
 			producerBuilder.Topic(_topicOutput);
 			producerBuilder.EnableBatching(true);
 			producerBuilder.SendTimeout(0);
@@ -161,10 +161,10 @@ namespace SharpPulsar.Test.Transaction
 			int messageCnt = 10;
 			for(int i = 0; i < messageCnt; i++)
 			{
-				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
+				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 			}
 
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>();
+			var consumerBuilder = new ConsumerConfigBuilder<byte[]>();
 			consumerBuilder.Topic(_topicOutput);
 			consumerBuilder.SubscriptionName("test");
 			consumerBuilder.EnableBatchIndexAcknowledgment(true);

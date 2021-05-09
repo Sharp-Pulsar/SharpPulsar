@@ -60,7 +60,7 @@ namespace SharpPulsar.Test
 			_output.WriteLine($"Test negative acks batching={batching} partitions={usePartition} subType={subscriptionType} negAckDelayMs={negAcksDelayMillis}");
 			string topic = "testNegativeAcks-" + DateTime.Now.Ticks;
 
-			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topic);
 			builder.SubscriptionName($"sub1-{Guid.NewGuid()}");
 			builder.AckTimeout(ackTimeout, TimeUnit.MILLISECONDS);
@@ -70,7 +70,7 @@ namespace SharpPulsar.Test
 			builder.SubscriptionType(subscriptionType);
 			var consumer = _client.NewConsumer(builder);
 
-			var pBuilder = new ProducerConfigBuilder<sbyte[]>();
+			var pBuilder = new ProducerConfigBuilder<byte[]>();
 			pBuilder.Topic(topic);
 			if(batching)
             {
@@ -86,7 +86,7 @@ namespace SharpPulsar.Test
 			for (int i = 0; i < n; i++)
 			{
 				string value = "test-" + i;
-				producer.Send(Encoding.UTF8.GetBytes(value).ToSBytes());
+				producer.Send(Encoding.UTF8.GetBytes(value));
 				sentMessages.Add(value);
 			}
 
@@ -95,7 +95,7 @@ namespace SharpPulsar.Test
 				var msg = consumer.Receive();
 				if(msg != null)
                 {
-					var ms = Encoding.UTF8.GetString(msg.Data.ToBytes());
+					var ms = Encoding.UTF8.GetString(msg.Data);
 					consumer.NegativeAcknowledge(msg);
 					_output.WriteLine(ms);
 				}
@@ -110,7 +110,7 @@ namespace SharpPulsar.Test
                 var msg = consumer.Receive(TimeSpan.FromSeconds(5));
                 if (msg != null)
                 {
-					var ms = Encoding.UTF8.GetString(msg.Data.ToBytes());
+					var ms = Encoding.UTF8.GetString(msg.Data);
 					_output.WriteLine(ms);
 					receivedMessages.Add(ms);
                     consumer.Acknowledge(msg);

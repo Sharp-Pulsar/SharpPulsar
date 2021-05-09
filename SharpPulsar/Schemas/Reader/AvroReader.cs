@@ -39,9 +39,9 @@ namespace SharpPulsar.Schemas.Reader
             return _reader.Read(default, new BinaryDecoder(stream));
         }
 
-        public T Read(sbyte[] bytes, int offset, int length)
+        public T Read(byte[] bytes, int offset, int length)
         {
-            using var stream = new MemoryStream(bytes.ToBytes());
+            using var stream = new MemoryStream(bytes);
             stream.Seek(offset, SeekOrigin.Begin);
             return _reader.Read(default, new BinaryDecoder(stream));
         }

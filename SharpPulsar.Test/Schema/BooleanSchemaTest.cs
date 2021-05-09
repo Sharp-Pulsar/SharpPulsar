@@ -27,8 +27,8 @@ namespace SharpPulsar.Test.Schema
         public void TestSchemaEncode()
         {
             BooleanSchema schema = BooleanSchema.Of();
-            sbyte[] expectedTrue = new sbyte[] { 1 };
-            sbyte[] expectedFalse = new sbyte[] { 0 };
+            byte[] expectedTrue = new byte[] { 1 };
+            byte[] expectedFalse = new byte[] { 0 };
             Assert.Equal(expectedTrue, schema.Encode(true));
             Assert.Equal(expectedFalse, schema.Encode(false));
         }
@@ -42,8 +42,8 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public void TestSchemaDecode()
         {
-            sbyte[] trueBytes = new sbyte[] { 1 };
-            sbyte[] falseBytes = new sbyte[] { 0 };
+            byte[] trueBytes = new byte[] { 1 };
+            byte[] falseBytes = new byte[] { 0 };
             BooleanSchema schema = BooleanSchema.Of();
             Assert.Equal(new bool?(true), schema.Decode(trueBytes));
             Assert.Equal(new bool?(false), schema.Decode(falseBytes));

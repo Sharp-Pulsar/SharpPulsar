@@ -23,7 +23,7 @@ namespace SharpPulsar.Interfaces.ISchema
         /// <summary>
         /// Serialize messages into bytes.
         /// </summary>
-        public sbyte[] Write(T message);
+        public byte[] Write(T message);
 
     }
 }

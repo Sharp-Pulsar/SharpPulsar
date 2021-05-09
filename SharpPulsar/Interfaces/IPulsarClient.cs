@@ -62,8 +62,8 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder);
-		ValueTask<Producer<sbyte[]>> NewProducerAsync(ProducerConfigBuilder<sbyte[]> producerConfigBuilder);
+		Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder);
+		ValueTask<Producer<byte[]>> NewProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder);
 
 		/// <summary>
 		/// Create a producer builder that can be used to configure
@@ -109,8 +109,8 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
 		/// 
 		/// @since 2.0.0 </returns>
-		Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf);
-		ValueTask<Consumer<sbyte[]>> NewConsumerAsync(ConsumerConfigBuilder<sbyte[]> conf);
+		Consumer<byte[]> NewConsumer(ConsumerConfigBuilder<byte[]> conf);
+		ValueTask<Consumer<byte[]>> NewConsumerAsync(ConsumerConfigBuilder<byte[]> conf);
 
 		/// <summary>
 		/// Create a consumer builder with a specific schema for subscribing on a specific topic
@@ -179,8 +179,8 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
 		/// @since 2.0.0 </returns>
-		Reader<sbyte[]> NewReader(ReaderConfigBuilder<sbyte[]> conf);
-		ValueTask<Reader<sbyte[]>> NewReaderAsync(ReaderConfigBuilder<sbyte[]> conf);
+		Reader<byte[]> NewReader(ReaderConfigBuilder<byte[]> conf);
+		ValueTask<Reader<byte[]>> NewReaderAsync(ReaderConfigBuilder<byte[]> conf);
 
 		/// <summary>
 		/// Create a topic reader builder with a specific <seealso cref="Schema"/>) to read from the specified topic.

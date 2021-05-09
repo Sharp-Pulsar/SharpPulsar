@@ -33,8 +33,8 @@ namespace SharpPulsar.Messages.Requests
     public sealed class GetSchema
     {
         public TopicName TopicName { get; }
-        public sbyte[] Version { get; }
-        public GetSchema(TopicName topicName, sbyte[] version = null)
+        public byte[] Version { get; }
+        public GetSchema(TopicName topicName, byte[] version = null)
         {
             TopicName = topicName;
             Version = version;

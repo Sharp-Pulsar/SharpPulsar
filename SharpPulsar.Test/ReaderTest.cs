@@ -47,7 +47,7 @@ namespace SharpPulsar.Test
 		private ISet<string> PublishMessages(string topic, int count, bool enableBatch)
 		{
 			ISet<string> keys = new HashSet<string>();
-			var builder = new ProducerConfigBuilder<sbyte[]>()
+			var builder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.MessageRoutingMode(Common.MessageRoutingMode.RoundRobinMode)
 				.MaxPendingMessages(count)
@@ -66,7 +66,7 @@ namespace SharpPulsar.Test
 			for (int i = 0; i < count; i++)
 			{
 				string key = "key" + i;
-				sbyte[] data = Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes();
+				byte[] data = Encoding.UTF8.GetBytes("my-message-" + i);
 				producer.NewMessage().Key(key).Value(data).Send();
 				keys.Add(key);
 			}
@@ -91,7 +91,7 @@ namespace SharpPulsar.Test
 			int numKeys = 10;
 
 			ISet<string> keys = PublishMessages(topic, numKeys, enableBatch);
-			var builder = new ReaderConfigBuilder<sbyte[]>()
+			var builder = new ReaderConfigBuilder<byte[]>()
 				.Topic(topic)
 				.StartMessageId(IMessageId.Earliest)
 				.ReaderName(Subscription);
@@ -99,10 +99,10 @@ namespace SharpPulsar.Test
 			Thread.Sleep(TimeSpan.FromSeconds(30));
 			for (var i = 0; i < numKeys; i++)
 			{
-				var message = (Message<sbyte[]>)reader.ReadNext();
+				var message = (Message<byte[]>)reader.ReadNext();
 				if(message != null)
 				{
-					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data.ToBytes())}");
+					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");
 					Assert.True(keys.Remove(message.Key));
 				}
 				else
@@ -118,7 +118,7 @@ namespace SharpPulsar.Test
 			int numKeys = 10;
 
 			ISet<string> keys = PublishMessages(partition0, numKeys, false);
-			var builder = new ReaderConfigBuilder<sbyte[]>()
+			var builder = new ReaderConfigBuilder<byte[]>()
 				.Topic(partition0)
 				.StartMessageId(IMessageId.Earliest)
 				.ReaderName(Subscription);
@@ -141,7 +141,7 @@ namespace SharpPulsar.Test
 
 			try
 			{
-				_ = _client.NewReader(new ReaderConfigBuilder<sbyte[]>()
+				_ = _client.NewReader(new ReaderConfigBuilder<byte[]>()
 					.Topic(topic)
 					.StartMessageId(IMessageId.Earliest)
 					.KeyHashRange(Common.Range.Of(0, 10000), Common.Range.Of(8000, 12000)));
@@ -154,7 +154,7 @@ namespace SharpPulsar.Test
 
 			try
 			{
-				_ = _client.NewReader(new ReaderConfigBuilder<sbyte[]>()
+				_ = _client.NewReader(new ReaderConfigBuilder<byte[]>()
 					.Topic(topic)
 					.StartMessageId(IMessageId.Earliest)
 					.KeyHashRange(Common.Range.Of(30000, 20000)));
@@ -168,7 +168,7 @@ namespace SharpPulsar.Test
 			try
 			{
 
-				_ = _client.NewReader(new ReaderConfigBuilder<sbyte[]>()
+				_ = _client.NewReader(new ReaderConfigBuilder<byte[]>()
 					.Topic(topic)
 					.StartMessageId(IMessageId.Earliest)
 					.KeyHashRange(Common.Range.Of(80000, 90000)));
@@ -189,7 +189,7 @@ namespace SharpPulsar.Test
 			
 			foreach (string key in keys)
 			{
-				int slot = Murmur332Hash.Instance.MakeHash(Encoding.UTF8.GetBytes(key).ToSBytes()) % rangeSize;
+				int slot = Murmur332Hash.Instance.MakeHash(Encoding.UTF8.GetBytes(key)) % rangeSize;
 				producer.NewMessage().Key(key).Value(key).Send();
 				_output.WriteLine($"Publish message to slot {slot}");
 			}

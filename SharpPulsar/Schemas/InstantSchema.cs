@@ -37,7 +37,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "Instant",
 				Type = SchemaType.INSTANT,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new InstantSchema();
@@ -48,13 +48,13 @@ namespace SharpPulsar.Schemas
 		  return _instance;
 	   }
 
-		public override sbyte[] Encode(Instant message)
+		public override byte[] Encode(Instant message)
 		{
 			long epochDay = message.ToDateTimeOffset().ToUnixTimeMilliseconds();
 			return LongSchema.Of().Encode(epochDay);
 		}
 
-	   public override Instant Decode(sbyte[] bytes)
+	   public override Instant Decode(byte[] bytes)
 	   {
 			//ByteBuffer buffer = ByteBuffer.wrap(bytes);
 			//long epochSecond = buffer.Long;

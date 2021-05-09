@@ -261,7 +261,7 @@ namespace SharpPulsar
 			return messageTTLInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + TimeUnit.SECONDS.ToMilliseconds(messageTTLInSeconds));
 		}
 
-		public virtual sbyte[] Data
+		public virtual byte[] Data
 		{
 			get
 			{
@@ -271,7 +271,7 @@ namespace SharpPulsar
 					return null;
 				}
 
-				sbyte[] data = _payload.ToSBytes();
+				byte[] data = _payload;
 				return data;
 			}
 		}
@@ -282,13 +282,13 @@ namespace SharpPulsar
 		}
 
         public ISchema<T> Schema => _schema;
-		public virtual sbyte[] SchemaVersion
+		public virtual byte[] SchemaVersion
 		{
 			get
 			{
 				if (_metadata != null && _metadata.SchemaVersion?.Length > 0)
 				{
-					return _metadata.SchemaVersion.ToSBytes();
+					return _metadata.SchemaVersion;
 				}
 				else
 				{
@@ -323,7 +323,7 @@ namespace SharpPulsar
 					// this is an optimization to only get schema version when necessary
 					if (_schema.SupportSchemaVersioning())
 					{
-						sbyte[] schemaVersion = SchemaVersion;
+						byte[] schemaVersion = SchemaVersion;
 						if (null == schemaVersion)
 						{
 							return _schema.Decode(Data);
@@ -348,7 +348,7 @@ namespace SharpPulsar
 				var schemaType = _schema.GetType();
 				var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
 				
-				sbyte[] schemaVersion = SchemaVersion;
+				byte[] schemaVersion = SchemaVersion;
 				if (keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
 					var decode = schemaType
@@ -490,16 +490,16 @@ namespace SharpPulsar
 			return _metadata.PartitionKeyB64Encoded;
 		}
 
-		public sbyte[] KeyBytes
+		public byte[] KeyBytes
 		{
 			get
 			{
 				if (HasBase64EncodedKey())
 				{
-					return Convert.FromBase64String(Key).ToSBytes();
+					return Convert.FromBase64String(Key);
 				}
 
-				return Encoding.UTF8.GetBytes(Key).ToSBytes();
+				return Encoding.UTF8.GetBytes(Key);
 			}
 		}
 
@@ -509,14 +509,14 @@ namespace SharpPulsar
 			return OrderingKey?.Length > 0;
 		}
 		
-		public sbyte[] OrderingKey
+		public byte[] OrderingKey
 		{
 			get
 			{
 				if(_mtadata != null)
-					return _mtadata.OrderingKey.ToSBytes();
+					return _mtadata.OrderingKey;
 
-				return _metadata.OrderingKey.ToSBytes();
+				return _metadata.OrderingKey;
 			}
 		}
 

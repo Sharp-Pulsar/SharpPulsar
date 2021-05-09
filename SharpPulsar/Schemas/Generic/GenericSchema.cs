@@ -14,14 +14,14 @@ namespace SharpPulsar.Schemas.Generic
 		public abstract IGenericRecordBuilder NewRecordBuilder();
 		public abstract IGenericSchema<IGenericRecord> Generic(ISchemaInfo schemaInfo);
 		public abstract ISchema<object> GetSchema(ISchemaInfo schemaInfo);
-		public abstract ISchema<sbyte[]> AutoProduceBytes<T>(ISchema<T> schema);
-		public abstract ISchema<sbyte[]> AutoProduceBytes();
+		public abstract ISchema<byte[]> AutoProduceBytes<T>(ISchema<T> schema);
+		public abstract ISchema<byte[]> AutoProduceBytes();
 		public abstract ISchema<IGenericRecord> AutoConsume();
 		public abstract ISchema<IGenericRecord> Auto();
 		public abstract ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> key, ISchema<V> value, KeyValueEncodingType keyValueEncodingType);
 		public abstract ISchema<KeyValue<K, V>> KeyValue<K, V>(ISchema<K> key, ISchema<V> value);
 		public abstract ISchema<KeyValue<K, V>> KeyValue<K, V>(Type key, Type value);
-		public abstract ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes();
+		public abstract ISchema<KeyValue<byte[], byte[]>> KvBytes();
 		public abstract ISchema<KeyValue<K, V>> KeyValue<K, V>(Type key, Type value, SchemaType type);
 		public abstract ISchema<T> Json<T>(ISchemaDefinition<T> schemaDefinition);
 		public abstract ISchema<T> Json<T>(Type pojo);
@@ -30,7 +30,7 @@ namespace SharpPulsar.Schemas.Generic
 		public abstract void ConfigureSchemaInfo(string topic, string componentName, SchemaInfo schemaInfo);
 		public abstract bool RequireFetchingSchemaInfo();
 		public override abstract bool SupportSchemaVersioning();
-		public override abstract void Validate(sbyte[] message);
+		public override abstract void Validate(byte[] message);
 
 		private readonly IList<Field> _fields;
 

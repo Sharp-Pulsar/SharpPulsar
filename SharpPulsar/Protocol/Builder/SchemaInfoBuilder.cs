@@ -21,7 +21,7 @@ namespace SharpPulsar.Protocol.Builder
             _info.Properties = props;
             return this;
         }
-        public SchemaInfoBuilder SetSchema(sbyte[] schema)
+        public SchemaInfoBuilder SetSchema(byte[] schema)
         {
             _info.Schema = schema;
             return this;

@@ -23,7 +23,7 @@ namespace SharpPulsar.Schemas
 
 		public AvroBaseStructSchema(ISchemaInfo schemaInfo) : base(schemaInfo)
 		{
-			schema = SchemaUtils.ParseAvroSchema(Encoding.UTF8.GetString(schemaInfo.Schema.ToBytes()));
+			schema = SchemaUtils.ParseAvroSchema(Encoding.UTF8.GetString(schemaInfo.Schema));
 		}
 
 

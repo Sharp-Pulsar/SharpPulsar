@@ -101,7 +101,7 @@ namespace SharpPulsar
 
 		private readonly IDictionary<string, string> _metadata;
 
-		private Option<sbyte[]> _schemaVersion = null;
+		private Option<byte[]> _schemaVersion = null;
 
 		private readonly IActorRef _connectionHandler;
 		private readonly IActorRef _self;
@@ -387,7 +387,7 @@ namespace SharpPulsar
 				string producerName = response.ProducerName;
 				long lastSequenceId = response.LastSequenceId;
 
-				_schemaVersion = new Option<sbyte[]>(response.SchemaVersion.ToSBytes());
+				_schemaVersion = new Option<byte[]>(response.SchemaVersion);
 
 				if (_schemaVersion.HasValue)
 					SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);
@@ -585,7 +585,7 @@ namespace SharpPulsar
 			// If a message has a delayed delivery time, we'll always send it individually
 			if(!BatchMessagingEnabled || msgMetadata.ShouldSerializeDeliverAtTime())
 			{
-				compressedPayload = _compressor.Encode(payload.ToBytes()).ToSBytes();
+				compressedPayload = _compressor.Encode(payload);
 
 				// validate msg-size (For batching this will be check at the batch completion size)
 				int compressedSize = compressedPayload.Length;
@@ -631,7 +631,7 @@ namespace SharpPulsar
 				string uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
 				for (int chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
-					SerializeAndSendMessage(msg, msgMetadata, payload.ToBytes(), sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload.ToBytes(), compressedPayload.Length, uncompressedSize);
+					SerializeAndSendMessage(msg, msgMetadata, payload, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressedPayload.Length, uncompressedSize);
 					readStartIndex = ((chunkId + 1) * (int)maxMessageSize);
 				}
 			}
@@ -781,7 +781,7 @@ namespace SharpPulsar
 			if(msg.Schema == Schema)
 			{
 				if (_schemaVersion.HasValue)
-					msgMetadata.SchemaVersion = _schemaVersion.Value.ToBytes();
+					msgMetadata.SchemaVersion = _schemaVersion.Value;
 				msg.SetSchemaState(Message<T>.SchemaState.Ready);
 				return true;
 			}
@@ -793,7 +793,7 @@ namespace SharpPulsar
 			SchemaHash schemaHash = SchemaHash.Of(msg.Schema);
 			if(SchemaCache.TryGetValue(schemaHash, out var schemaVersion))
             {
-				msgMetadata.SchemaVersion = schemaVersion.ToBytes();
+				msgMetadata.SchemaVersion = schemaVersion;
 				msg.SetSchemaState(Message<T>.SchemaState.Ready);
 			}
 			return true;
@@ -806,7 +806,7 @@ namespace SharpPulsar
             {
 				return false;
             }
-			msg.Metadata.SchemaVersion = schemaVersion.ToBytes();
+			msg.Metadata.SchemaVersion = schemaVersion;
 			msg.SetSchemaState(Message<T>.SchemaState.Ready);
 			return true;
 		}
@@ -1421,7 +1421,7 @@ namespace SharpPulsar
 						 _log.Warning($"[{Topic}] [{_producerName}] GetOrCreateSchema succeed");
 						 SchemaHash schemaHash = SchemaHash.Of(msg.Schema);
 						 if (!SchemaCache.ContainsKey(schemaHash))
-							 SchemaCache.Add(schemaHash, r.Response.SchemaVersion.ToSBytes());
+							 SchemaCache.Add(schemaHash, r.Response.SchemaVersion);
 						 msg.Metadata.SchemaVersion = r.Response.SchemaVersion;
 						 msg.SetSchemaState(Message<T>.SchemaState.Ready);
 					 }

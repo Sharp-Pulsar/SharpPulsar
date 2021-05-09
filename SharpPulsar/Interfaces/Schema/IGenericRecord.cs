@@ -32,7 +32,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// Return schema version.
 		/// </summary>
 		/// <returns> schema version. </returns>
-		sbyte[] SchemaVersion {get;}
+		byte[] SchemaVersion {get;}
 
 		/// <summary>
 		/// Returns the list of fields associated with the record.

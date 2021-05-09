@@ -61,7 +61,7 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> the byte array with the message payload </returns>
-		sbyte[] Data { get; }
+		byte[] Data { get; }
 
 		/// <summary>
 		/// Get the de-serialized value of the message, according the configured <seealso cref="Schema"/>.
@@ -142,7 +142,7 @@ namespace SharpPulsar.Interfaces
 		/// Get bytes in key. If the key has been base64 encoded, it is decoded before being returned.
 		/// Otherwise, if the key is a plain string, this method returns the UTF_8 encoded bytes of the string. </summary>
 		/// <returns> the key in byte[] form </returns>
-		sbyte[] KeyBytes { get; }
+		byte[] KeyBytes { get; }
 
 		/// <summary>
 		/// Check whether the message has a ordering key.
@@ -155,7 +155,7 @@ namespace SharpPulsar.Interfaces
 		/// Get the ordering key of the message.
 		/// </summary>
 		/// <returns> the ordering key of the message </returns>
-		sbyte[] OrderingKey { get; }
+		byte[] OrderingKey { get; }
 
 		/// <summary>
 		/// Get the topic the message was published to.
@@ -187,7 +187,7 @@ namespace SharpPulsar.Interfaces
 		/// Get schema version of the message.
 		/// @since 2.4.0 </summary>
 		/// <returns> Schema version of the message if the message is produced with schema otherwise null. </returns>
-		sbyte[] SchemaVersion { get; }
+		byte[] SchemaVersion { get; }
 
 		/// <summary>
 		/// Check whether the message is replicated from other cluster.

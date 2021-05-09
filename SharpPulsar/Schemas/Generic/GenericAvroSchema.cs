@@ -20,7 +20,7 @@ namespace SharpPulsar.Schemas.Generic
         public GenericAvroSchema(ISchemaInfo schemaInfo):base(schemaInfo)
         {
             _schemaInfo = schemaInfo;
-            _stringSchema = Encoding.UTF8.GetString(_schemaInfo.Schema.ToBytes());
+            _stringSchema = Encoding.UTF8.GetString(_schemaInfo.Schema);
             _avroSchema = (RecordSchema)Avro.Schema.Parse(_stringSchema);
             _avroReader = new GenericDatumReader<GenericRecord>(_avroSchema, _avroSchema);
             _schemaFields = _avroSchema.Fields;
@@ -48,12 +48,12 @@ namespace SharpPulsar.Schemas.Generic
             throw new NotImplementedException();
         }
 
-        public override ISchema<sbyte[]> AutoProduceBytes<T>(ISchema<T> schema)
+        public override ISchema<byte[]> AutoProduceBytes<T>(ISchema<T> schema)
         {
             throw new NotImplementedException();
         }
 
-        public override ISchema<sbyte[]> AutoProduceBytes()
+        public override ISchema<byte[]> AutoProduceBytes()
         {
             throw new NotImplementedException();
         }
@@ -83,7 +83,7 @@ namespace SharpPulsar.Schemas.Generic
             throw new NotImplementedException();
         }
 
-        public override ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+        public override ISchema<KeyValue<byte[], byte[]>> KvBytes()
         {
             throw new NotImplementedException();
         }
@@ -128,7 +128,7 @@ namespace SharpPulsar.Schemas.Generic
             throw new NotImplementedException();
         }
 
-        public override void Validate(sbyte[] message)
+        public override void Validate(byte[] message)
         {
             throw new NotImplementedException();
         }

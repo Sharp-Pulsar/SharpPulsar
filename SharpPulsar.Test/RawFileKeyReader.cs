@@ -22,7 +22,7 @@ namespace SharpPulsar.Test
             EncryptionKeyInfo keyInfo = new EncryptionKeyInfo();
             try
             {
-                keyInfo.Key = (sbyte[])(object)File.ReadAllBytes(Path.GetFullPath(_publicKeyFile));
+                keyInfo.Key = (byte[])(object)File.ReadAllBytes(Path.GetFullPath(_publicKeyFile));
                 keyInfo.Metadata = metadata;
             }
             catch (IOException e)
@@ -37,7 +37,7 @@ namespace SharpPulsar.Test
             EncryptionKeyInfo keyInfo = new EncryptionKeyInfo();
             try
             {
-                keyInfo.Key = (sbyte[])(object)File.ReadAllBytes(Path.GetFullPath(_privateKeyFile));
+                keyInfo.Key = (byte[])(object)File.ReadAllBytes(Path.GetFullPath(_privateKeyFile));
                 keyInfo.Metadata = metadata;
             }
             catch (IOException e)

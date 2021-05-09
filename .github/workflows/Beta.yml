@@ -20,6 +20,9 @@ on:
   push:
     branches:
       - dev
+    paths-ignore:
+      - "Tutorials/**"
+      - "README.md"
 
 jobs:
   ubuntu-latest:

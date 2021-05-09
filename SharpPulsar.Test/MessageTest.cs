@@ -41,7 +41,7 @@ namespace SharpPulsar.Test
 			builder.Properties.Add(new KeyValue { Key = "key3", Value = "value3" });
 			var payload = new byte[0];
 			
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 			Assert.Equal("value1", msg.GetProperty("key1"));
 			Assert.Equal("value3", msg.GetProperty("key3"));
 		}
@@ -55,7 +55,7 @@ namespace SharpPulsar.Test
             };
 
             var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
 			Assert.Equal(1234, msg.SequenceId);
 		}
@@ -65,7 +65,7 @@ namespace SharpPulsar.Test
 			var builder = new MessageMetadata();
 			var payload = new byte[0];
 
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
 			Assert.Null(msg.ProducerName);
 		}
@@ -76,7 +76,7 @@ namespace SharpPulsar.Test
 			builder.ProducerName = "test-producer";
 
 			var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<object>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
 			Assert.Equal("test-producer", msg.ProducerName);
 		}
@@ -100,7 +100,7 @@ namespace SharpPulsar.Test
             };
 
             // // Check kv.encoding.type default, not set value
-            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar)).ToBytes();
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar));
 			var builder = new MessageMetadata();
 			builder.ProducerName = "default";
 
@@ -130,7 +130,7 @@ namespace SharpPulsar.Test
             };
 
             // Check kv.encoding.type INLINE
-            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar)).ToBytes();
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar));
 			var builder = new MessageMetadata();
 			builder.ProducerName = "inline";
 			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
@@ -158,10 +158,10 @@ namespace SharpPulsar.Test
             };
 
             // Check kv.encoding.type SPRAERATE
-            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar)).ToBytes();
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar));
 			var builder = new MessageMetadata();
 			builder.ProducerName = "separated";
-			builder.PartitionKey = Convert.ToBase64String(fooSchema.Encode(foo).ToBytes());
+			builder.PartitionKey = Convert.ToBase64String(fooSchema.Encode(foo));
 			builder.PartitionKeyB64Encoded = true;
 			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
 			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
@@ -176,7 +176,7 @@ namespace SharpPulsar.Test
 			var builder = new MessageMetadata();
 			builder.ReplicatedFrom = from;
 			var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
 			Assert.True(msg.Replicated);
 			Assert.Equal(msg.ReplicatedFrom, from);
@@ -186,7 +186,7 @@ namespace SharpPulsar.Test
 		{
 			var builder = new MessageMetadata();
 			var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
 			Assert.False(msg.Replicated);
 			Assert.True(msg.ReplicatedFrom.Length == 0);
@@ -199,9 +199,9 @@ namespace SharpPulsar.Test
 			var builder = new MessageMetadata();
 			builder.ReplicatedFrom = from;
 			var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 			msg.SetMessageId(new MessageId(-1, -1, -1));
-			var topicMessage = new TopicMessage<sbyte[]>(topicName, topicName, msg);
+			var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
 
 			Assert.True(topicMessage.Replicated);
 			Assert.Equal(msg.ReplicatedFrom, from);
@@ -213,9 +213,9 @@ namespace SharpPulsar.Test
 			string topicName = "myTopic";
 			var builder = new MessageMetadata();
 			var payload = new byte[0];
-			var msg = Message<sbyte[]>.Create(builder, payload, ISchema<int>.Bytes);
+			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 			msg.SetMessageId(new MessageId(-1, -1, -1));
-			var topicMessage = new TopicMessage<sbyte[]>(topicName, topicName, msg);
+			var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
 
 			Assert.False(topicMessage.Replicated);
 			Assert.True(topicMessage.ReplicatedFrom.Length == 0);

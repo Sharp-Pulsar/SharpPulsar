@@ -33,7 +33,7 @@ namespace SharpPulsar.Protocol.Schema
 		public  bool IsDeleted { get; set; }
 		public  long Timestamp { get; set; }
 		public  string User { get; set; }
-		public  sbyte[] Data { get; set; }
+		public  byte[] Data { get; set; }
 		public IDictionary<string, string> Properties = new Dictionary<string, string>();
 
 		/// <summary>

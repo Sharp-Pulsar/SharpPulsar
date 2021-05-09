@@ -258,7 +258,7 @@ namespace SharpPulsar
 			{
 				var assemblyName = Assembly.GetCallingAssembly().GetName();
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
-				var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
+				var auth = new AuthData { auth_data = (authData.Bytes) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 				var request = new Commands().NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
@@ -951,11 +951,12 @@ namespace SharpPulsar
 					break;
 				}
 				req = _requestTimeoutQueue.TryDequeue(out request);
-				if (_pendingRequests.Remove(request.RequestId))
+				if (_pendingRequests.Remove(request.RequestId, out var val))
 				{
-					string timeoutMessage = string.Format("{0:D} {1} timedout after ms {2:D}", request.RequestId, request.RequestType.Description, _operationTimeoutMs);
+					var timeoutMessage = string.Format("{0:D} {1} timedout after ms {2:D}", request.RequestId, request.RequestType.Description, _operationTimeoutMs);
 					_log.Warning(timeoutMessage);
-				}
+                    val.Requester.Tell(new ClientExceptions(new PulsarClientException(new Exception(timeoutMessage))));
+                }
 			}
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
@@ -968,7 +969,7 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(_authentication.AuthMethodName.ToLower() == "sts" ? null : new Auth.AuthData(Auth.AuthData.InitAuthData));
 			var assemblyName = Assembly.GetCallingAssembly().GetName();
-			var auth = new AuthData { auth_data = (authData.Bytes.ToBytes()) };
+			var auth = new AuthData { auth_data = (authData.Bytes) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
 			return new Commands().NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);

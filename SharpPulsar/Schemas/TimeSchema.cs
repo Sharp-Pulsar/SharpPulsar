@@ -37,7 +37,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "Time",
 				Type = SchemaType.TIME,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new TimeSchema();
@@ -48,15 +48,15 @@ namespace SharpPulsar.Schemas
 		  return _instance;
 	   }
 
-	   public override sbyte[] Encode(TimeSpan message)
+	   public override byte[] Encode(TimeSpan message)
 	   {
 			long time = ((long)message.TotalMilliseconds).LongToBigEndian();
-		  return BitConverter.GetBytes(time).ToSBytes();
+		  return BitConverter.GetBytes(time);
 	   }
 
-	   public override TimeSpan Decode(sbyte[] bytes)
+	   public override TimeSpan Decode(byte[] bytes)
 	   {
-			return TimeSpan.FromMilliseconds(BitConverter.ToInt64(bytes.ToBytes(), 0).LongFromBigEndian());
+			return TimeSpan.FromMilliseconds(BitConverter.ToInt64(bytes, 0).LongFromBigEndian());
 	   }
 
 	   public override ISchemaInfo SchemaInfo

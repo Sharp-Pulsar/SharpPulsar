@@ -47,7 +47,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "String",
 				Type = SchemaType.STRING,
-				Schema = new sbyte[0],
+				Schema = new byte[0],
 				Properties = new Dictionary<string, string>()
 			};
 			DefaultSchemaInfo = info;
@@ -101,7 +101,7 @@ namespace SharpPulsar.Schemas
 			_schemaInfo = info;
 		}
 
-		public override sbyte[] Encode(string message)
+		public override byte[] Encode(string message)
 		{
 			if (null == message)
 			{
@@ -109,11 +109,11 @@ namespace SharpPulsar.Schemas
 			}
 			else
 			{
-				return _encoding.GetBytes(message).ToSBytes();
+				return _encoding.GetBytes(message);
 			}
 		}
 
-		public override string Decode(sbyte[] bytes)
+		public override string Decode(byte[] bytes)
 		{
 			if (null == bytes)
 			{
@@ -121,7 +121,7 @@ namespace SharpPulsar.Schemas
 			}
 			else
 			{
-				return _encoding.GetString(bytes.ToBytes());
+				return _encoding.GetString(bytes);
 			}
 		}
 

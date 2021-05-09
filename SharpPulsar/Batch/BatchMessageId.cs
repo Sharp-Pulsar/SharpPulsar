@@ -112,7 +112,7 @@ namespace SharpPulsar.Batch
 		}
 
 		// Serialization
-		public override sbyte[] ToByteArray()
+		public override byte[] ToByteArray()
 		{
 			return ToByteArray(BatchIndex, BatchSize);
 		}

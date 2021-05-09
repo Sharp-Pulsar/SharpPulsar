@@ -66,9 +66,9 @@ namespace SharpPulsar.Crypto
 
 			return keyInfo;
 		}
-		private sbyte[] LoadKey(string keyFilePath)
+		private byte[] LoadKey(string keyFilePath)
 		{
-			return (sbyte[])(object)File.ReadAllBytes(Path.GetFullPath(keyFilePath));
+			return (byte[])(object)File.ReadAllBytes(Path.GetFullPath(keyFilePath));
 		}
 
 	}

@@ -50,7 +50,7 @@ namespace SharpPulsar
 		public  string TopicPartitionName => _topicPartitionName;
 
 
-        public sbyte[] ToByteArray()
+        public byte[] ToByteArray()
 		{
 			return InnerMessageId.ToByteArray();
 		}

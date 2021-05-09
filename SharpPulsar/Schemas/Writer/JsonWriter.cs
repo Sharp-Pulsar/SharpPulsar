@@ -40,11 +40,11 @@ namespace SharpPulsar.Schemas.Writer
 			_objectMapper = objectMapper;
 		}
 
-		public sbyte[] Write(T message)
+		public byte[] Write(T message)
 		{
 			try
 			{
-				return _objectMapper.WriteValueAsBytes(message).ToSBytes();
+				return _objectMapper.WriteValueAsBytes(message);
 			}
 			catch (Exception e)
 			{

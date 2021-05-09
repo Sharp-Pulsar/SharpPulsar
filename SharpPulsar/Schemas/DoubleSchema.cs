@@ -40,7 +40,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "Double",
 				Type = SchemaType.DOUBLE,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new DoubleSchema();
@@ -51,7 +51,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -60,14 +60,14 @@ namespace SharpPulsar.Schemas
 		}
 
 
-		public override sbyte[] Encode(double message)
+		public override byte[] Encode(double message)
 		{
-			return BitConverter.GetBytes(message).Reverse().ToArray().ToSBytes();
+			return BitConverter.GetBytes(message).Reverse().ToArray();
 		}
 
-		public override double Decode(sbyte[] bytes)
+		public override double Decode(byte[] bytes)
 		{
-			var val = bytes.Reverse().ToArray().ToBytes();
+			var val = bytes.Reverse().ToArray();
 			Validate(bytes);
 			return BitConverter.ToDouble(val, 0);
 		}

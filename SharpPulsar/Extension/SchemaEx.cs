@@ -37,14 +37,6 @@ namespace SharpPulsar.Extension
         {
             return IPAddress.HostToNetworkOrder(num);
         }
-        public static sbyte[] ToSBytes(this byte[] bytes)
-        {
-            return (sbyte[])(Array)bytes;
-        }
-        public static byte[] ToBytes(this sbyte[] bytes)
-        {
-            return (byte[])(Array)bytes;
-        }
         public static short Int16FromBigEndian(this short num)
         {
             return IPAddress.HostToNetworkOrder(num);

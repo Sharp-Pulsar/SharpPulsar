@@ -32,7 +32,7 @@ namespace SharpPulsar.Test.Schema
             DateSchema schema = DateSchema.Of();
             DateTime data = DateTime.Now;
             var ms = data.ConvertToMsTimestamp().LongToBigEndian();
-            sbyte[] expected = BitConverter.GetBytes(ms).ToSBytes();
+            byte[] expected = BitConverter.GetBytes(ms);
             Assert.Equal(expected, schema.Encode(data));
         }
         [Fact]
@@ -40,7 +40,7 @@ namespace SharpPulsar.Test.Schema
         {
             DateSchema schema = DateSchema.Of();
             DateTime date = DateTime.UtcNow;
-            sbyte[] bytes = schema.Encode(date);
+            byte[] bytes = schema.Encode(date);
             Assert.Equal(date.ToString("yyyy-MM-ddTHH:mm:ss"), schema.Decode(bytes).ToString("yyyy-MM-ddTHH:mm:ss"));
         }
     }

@@ -113,13 +113,13 @@ namespace SharpPulsar.User
             }
             return schema;
         }
-        public Consumer<sbyte[]> NewConsumer(ConsumerConfigBuilder<sbyte[]> conf)
+        public Consumer<byte[]> NewConsumer(ConsumerConfigBuilder<byte[]> conf)
         {
-            return NewConsumerAsync(ISchema<sbyte[]>.Bytes, conf).GetAwaiter().GetResult();
+            return NewConsumerAsync(ISchema<byte[]>.Bytes, conf).GetAwaiter().GetResult();
         }
-        public async ValueTask<Consumer<sbyte[]>> NewConsumerAsync(ConsumerConfigBuilder<sbyte[]> conf)
+        public async ValueTask<Consumer<byte[]>> NewConsumerAsync(ConsumerConfigBuilder<byte[]> conf)
         {
-            return await NewConsumerAsync(ISchema<sbyte[]>.Bytes, conf).ConfigureAwait(false);
+            return await NewConsumerAsync(ISchema<byte[]>.Bytes, conf).ConfigureAwait(false);
         }
         public Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> confBuilder)
         {
@@ -379,11 +379,11 @@ namespace SharpPulsar.User
             } 
         }
 
-        public Producer<sbyte[]> NewProducer(ProducerConfigBuilder<sbyte[]> producerConfigBuilder)
+        public Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
             return NewProducer(ISchema<object>.Bytes, producerConfigBuilder);
         }
-        public async ValueTask<Producer<sbyte[]>> NewProducerAsync(ProducerConfigBuilder<sbyte[]> producerConfigBuilder)
+        public async ValueTask<Producer<byte[]>> NewProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
             return await NewProducerAsync(ISchema<object>.Bytes, producerConfigBuilder).ConfigureAwait(false);
         }
@@ -412,11 +412,11 @@ namespace SharpPulsar.User
             }
         }
 
-        public Reader<sbyte[]> NewReader(ReaderConfigBuilder<sbyte[]> conf)
+        public Reader<byte[]> NewReader(ReaderConfigBuilder<byte[]> conf)
         {
             return NewReaderAsync(conf).GetAwaiter().GetResult();
         }
-        public async ValueTask<Reader<sbyte[]>> NewReaderAsync(ReaderConfigBuilder<sbyte[]> conf)
+        public async ValueTask<Reader<byte[]>> NewReaderAsync(ReaderConfigBuilder<byte[]> conf)
         {
             return await NewReaderAsync(ISchema<object>.Bytes, conf).ConfigureAwait(false);
         }
@@ -535,7 +535,7 @@ namespace SharpPulsar.User
             _client.Tell(new UpdateServiceUrl(serviceUrl));
         }
         #region private matters
-        private async ValueTask<Producer<sbyte[]>> CreateProducer(ProducerConfigurationData conf)
+        private async ValueTask<Producer<byte[]>> CreateProducer(ProducerConfigurationData conf)
         {
             return await CreateProducer(conf, ISchema<object>.Bytes, null).ConfigureAwait(false);
         }

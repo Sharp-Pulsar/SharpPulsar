@@ -29,7 +29,7 @@ namespace SharpPulsar.Impl.Schema.Generic
     public class GenericJsonRecord : VersionedGenericRecord
     {
         private readonly JToken _jToken;
-		public GenericJsonRecord(sbyte[] schemaVersion, IList<Field> fields, JToken jd) : base(schemaVersion, fields)
+		public GenericJsonRecord(byte[] schemaVersion, IList<Field> fields, JToken jd) : base(schemaVersion, fields)
 		{
 			_jToken = jd;
 		}

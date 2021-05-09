@@ -75,7 +75,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="topicName"> topic-name </param>
 		/// <param name="version"> schema info version </param>
 		/// <returns> SchemaInfo </returns>
-		ValueTask<ISchemaInfo> GetSchema(TopicName topicName, sbyte[] version);
+		ValueTask<ISchemaInfo> GetSchema(TopicName topicName, byte[] version);
 
 		/// <summary>
 		/// Returns broker-service lookup api url.

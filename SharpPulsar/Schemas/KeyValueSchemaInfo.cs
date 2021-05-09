@@ -37,7 +37,7 @@ namespace SharpPulsar.Schemas
 
 		private class SchemaAnonymousInnerClass : ISchema<ISchemaInfo>
 		{
-			public sbyte[] Encode(ISchemaInfo si)
+			public byte[] Encode(ISchemaInfo si)
 			{
 				return si.Schema;
 			}
@@ -132,7 +132,7 @@ namespace SharpPulsar.Schemas
 			}
 
 			// process key/value schema data
-			sbyte[] schemaData = KeyValue<ISchemaInfo, ISchemaInfo>.Encode(keySchemaInfo, _schemaInfoWriter, valueSchemaInfo, _schemaInfoWriter);
+			byte[] schemaData = KeyValue<ISchemaInfo, ISchemaInfo>.Encode(keySchemaInfo, _schemaInfoWriter, valueSchemaInfo, _schemaInfoWriter);
 
 			// process key/value schema properties
 			IDictionary<string, string> Properties = new Dictionary<string, string>();
@@ -175,7 +175,7 @@ namespace SharpPulsar.Schemas
 			});
 		}
 
-		private static ISchemaInfo DecodeSubSchemaInfo(ISchemaInfo parentSchemaInfo, string schemaNameProperty, string schemaTypeProperty, string schemaPropsProperty, sbyte[] schemaData)
+		private static ISchemaInfo DecodeSubSchemaInfo(ISchemaInfo parentSchemaInfo, string schemaNameProperty, string schemaTypeProperty, string schemaPropsProperty, byte[] schemaData)
 		{
 			var parentSchemaProps = parentSchemaInfo.Properties;
 			var schemaName = parentSchemaProps.GetOrDefault(schemaNameProperty, "");

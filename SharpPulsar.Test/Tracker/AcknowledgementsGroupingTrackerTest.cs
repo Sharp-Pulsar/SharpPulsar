@@ -46,13 +46,13 @@ namespace SharpPulsar.Test.Tracker
 		[Fact]
 		public void TestAckTracker()
 		{
-			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.AcknowledgmentGroupTime(10000);
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
-            var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
+            var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
 
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);
@@ -127,13 +127,13 @@ namespace SharpPulsar.Test.Tracker
 		[Fact]
 		public  void TestImmediateAckingTracker()
 		{
-			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.AcknowledgmentGroupTime(0);
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
-			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
+			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
 
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);
@@ -160,13 +160,13 @@ namespace SharpPulsar.Test.Tracker
 		[Fact]
 		public void TestAckTrackerMultiAck()
 		{
-			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.AcknowledgmentGroupTime((long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000));
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
 			var consumer = _client.NewConsumer(builder);
-			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<sbyte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
+			var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(consumer.ConsumerActor, 1, consumer.ConsumerActor, conf));
 
 			var msg1 = new MessageId(5, 1, 0);
 			var msg2 = new MessageId(5, 2, 0);

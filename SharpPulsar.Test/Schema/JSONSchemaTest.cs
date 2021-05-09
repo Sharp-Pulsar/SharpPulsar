@@ -61,10 +61,10 @@ namespace SharpPulsar.Test.Schema
                 Field2 = "bar2"
             };
 
-            sbyte[] bytes1 = jsonSchema.Encode(foo1);
+            byte[] bytes1 = jsonSchema.Encode(foo1);
             Assert.True(bytes1.Length > 0);
 
-            sbyte[] bytes2 = jsonSchema.Encode(foo2);
+            byte[] bytes2 = jsonSchema.Encode(foo2);
             Assert.True(bytes2.Length > 0);
 
             Foo object1 = jsonSchema.Decode(bytes1);
@@ -91,7 +91,7 @@ namespace SharpPulsar.Test.Schema
                 Field2 = "bar2"
             };
 
-            sbyte[] bytes1 = jsonSchema.Encode(foo1);
+            byte[] bytes1 = jsonSchema.Encode(foo1);
             Foo object1 = jsonSchema.Decode(bytes1);
             Assert.True(bytes1.Length > 0);
             Assert.True(object1.Equals(foo1));

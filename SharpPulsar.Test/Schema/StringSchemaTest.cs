@@ -40,8 +40,8 @@ namespace SharpPulsar.Test.Schema
             Assert.False(si.Properties.ContainsKey(StringSchema.CHARSET_KEY));
 
             string myString = "my string for test";
-            sbyte[] data = schema.Encode(myString);
-            sbyte[] actualBytes = Encoding.UTF8.GetBytes(myString).ToSBytes();
+            byte[] data = schema.Encode(myString);
+            byte[] actualBytes = Encoding.UTF8.GetBytes(myString);
             for(var i = 0; i < actualBytes.Length; i++)
             {
                 var expected = actualBytes[i];
@@ -60,8 +60,8 @@ namespace SharpPulsar.Test.Schema
             Assert.Equal(si.Properties[StringSchema.CHARSET_KEY], Encoding.ASCII.WebName);
 
             string myString = "my string for test";
-            sbyte[] data = schema.Encode(myString);
-            sbyte[] actualBytes = Encoding.ASCII.GetBytes(myString).ToSBytes();
+            byte[] data = schema.Encode(myString);
+            byte[] actualBytes = Encoding.ASCII.GetBytes(myString);
             for (var i = 0; i < actualBytes.Length; i++)
             {
                 var expected = actualBytes[i];
@@ -79,14 +79,14 @@ namespace SharpPulsar.Test.Schema
             {
                 Name = "test-schema-info-without-charset",
                 Type = SchemaType.STRING,
-                Schema = new sbyte[0],
+                Schema = new byte[0],
                 Properties = new Dictionary<string,string>()
             };
             StringSchema schema = StringSchema.FromSchemaInfo(si);
 
             string myString = "my string for test";
-            sbyte[] data = schema.Encode(myString);
-            sbyte[] actualBytes = Encoding.UTF8.GetBytes(myString).ToSBytes();
+            byte[] data = schema.Encode(myString);
+            byte[] actualBytes = Encoding.UTF8.GetBytes(myString);
             for (var i = 0; i < actualBytes.Length; i++)
             {
                 var expected = actualBytes[i];
@@ -108,14 +108,14 @@ namespace SharpPulsar.Test.Schema
             {
                 Name = "test-schema-info-without-charset",
                 Type = SchemaType.STRING,
-                Schema = new sbyte[0],
+                Schema = new byte[0],
                 Properties = properties
             };
             StringSchema schema = StringSchema.FromSchemaInfo(si);
 
             string myString = "my string for test";
-            sbyte[] data = schema.Encode(myString);
-            sbyte[] actualBytes = charset.GetBytes(myString).ToSBytes();
+            byte[] data = schema.Encode(myString);
+            byte[] actualBytes = charset.GetBytes(myString);
             for (var i = 0; i < actualBytes.Length; i++)
             {
                 var expected = actualBytes[i];
@@ -137,14 +137,14 @@ namespace SharpPulsar.Test.Schema
             {
                 Name = "test-schema-info-without-charset",
                 Type = SchemaType.STRING,
-                Schema = new sbyte[0],
+                Schema = new byte[0],
                 Properties = properties
             };
             StringSchema schema = StringSchema.FromSchemaInfo(si);
 
             string myString = "my string for test";
-            sbyte[] data = schema.Encode(myString);
-            sbyte[] actualBytes = charset.GetBytes(myString).ToSBytes();
+            byte[] data = schema.Encode(myString);
+            byte[] actualBytes = charset.GetBytes(myString);
             for (var i = 0; i < actualBytes.Length; i++)
             {
                 var expected = actualBytes[i];
@@ -160,7 +160,7 @@ namespace SharpPulsar.Test.Schema
         public virtual void TestStringSchema()
         {
             string testString = "hello world";
-            sbyte[] testBytes = Encoding.UTF8.GetBytes(testString).ToSBytes();
+            byte[] testBytes = Encoding.UTF8.GetBytes(testString);
             StringSchema stringSchema = new StringSchema();
             Assert.Equal(testString, stringSchema.Decode(testBytes));
             var act = stringSchema.Encode(testString);
@@ -171,7 +171,7 @@ namespace SharpPulsar.Test.Schema
                 Assert.Equal(expected, actual);
             }
 
-            sbyte[] bytes2 = Encoding.Unicode.GetBytes(testString).ToSBytes();
+            byte[] bytes2 = Encoding.Unicode.GetBytes(testString);
             StringSchema stringSchemaUtf16 = new StringSchema(Encoding.Unicode);
             Assert.Equal(testString, stringSchemaUtf16.Decode(bytes2));
             var act2 = stringSchemaUtf16.Encode(testString);

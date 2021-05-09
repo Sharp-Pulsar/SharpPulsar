@@ -38,7 +38,7 @@ namespace SharpPulsar.Schemas
     public sealed class SchemaUtils
 	{
 
-		private static readonly sbyte[] KeyValueSchemaIsPrimitive = new sbyte[0];
+		private static readonly byte[] KeyValueSchemaIsPrimitive = new byte[0];
 
 		private const string KeyValueSchemaNullString = @"""""";
 
@@ -61,9 +61,9 @@ namespace SharpPulsar.Schemas
 			// string
 			SchemaTypeClasses[SchemaType.STRING] = new List<Type>{ typeof(string) };
 			// bytes
-			SchemaTypeClasses[SchemaType.BYTES] = new List<Type>{typeof(sbyte[]), typeof(byte[])};
+			SchemaTypeClasses[SchemaType.BYTES] = new List<Type>{typeof(byte[]), typeof(byte[])};
 			// build the reverse mapping
-			SchemaTypeClasses.ToList().ForEach((x => x.Value.ToList().ForEach(clz => JavaClassSchemaTypes.Add(clz, x.Key))));
+			SchemaTypeClasses.ToList().ForEach((x => x.Value.ToList().ForEach(clz => JavaClassSchemaTypes.TryAdd(clz, x.Key))));
 		}
 
 		public static void ValidateFieldSchema(string name, SchemaType type, object val)
@@ -113,7 +113,7 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public static string GetStringSchemaVersion(sbyte[] schemaVersionBytes)
+		public static string GetStringSchemaVersion(byte[] schemaVersionBytes)
 		{
 			if (null == schemaVersionBytes)
 			{
@@ -122,14 +122,14 @@ namespace SharpPulsar.Schemas
 
             if (schemaVersionBytes.Length == sizeof(long) || schemaVersionBytes.Length == (sizeof(long) * 8))
             {
-                var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap(schemaVersionBytes.ToBytes());
+                var bb = ByteBuffer.Allocate(schemaVersionBytes.Length).Wrap(schemaVersionBytes);
                 return bb.GetLong().ToString();
             }
             if (schemaVersionBytes.Length == 0)
             {
                 return "EMPTY";
             }
-            return Convert.ToBase64String(schemaVersionBytes.ToBytes());
+            return Convert.ToBase64String(schemaVersionBytes);
         }
 
 		/// <summary>
@@ -173,9 +173,9 @@ namespace SharpPulsar.Schemas
 			return JsonSerializer.Serialize(keyValue);
 		}
 
-		private static sbyte[] GetKeyOrValueSchemaBytes(JsonElement jsonElement)
+		private static byte[] GetKeyOrValueSchemaBytes(JsonElement jsonElement)
 		{
-			return KeyValueSchemaNullString.Equals(jsonElement.ToString()) ? KeyValueSchemaIsPrimitive : Encoding.UTF8.GetBytes(jsonElement.ToString()).ToSBytes();
+			return KeyValueSchemaNullString.Equals(jsonElement.ToString()) ? KeyValueSchemaIsPrimitive : Encoding.UTF8.GetBytes(jsonElement.ToString());
 		}
 		
 		/// <summary>

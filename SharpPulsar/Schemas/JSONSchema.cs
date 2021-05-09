@@ -67,7 +67,7 @@ namespace SharpPulsar.Schemas
                         Name = "",
                         Properties = SchemaInfo.Properties,
                         Type = SchemaType.JSON,
-                        Schema = _jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema).ToSBytes()
+                        Schema = _jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
                     };
                 }
 				catch (Exception ex)

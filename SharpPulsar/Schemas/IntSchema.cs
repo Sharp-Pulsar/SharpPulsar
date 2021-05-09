@@ -38,7 +38,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "INT32",
 				Type = SchemaType.INT32,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new IntSchema();
@@ -49,7 +49,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 4)
 			{
@@ -57,13 +57,13 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public override sbyte[] Encode(int message)
+		public override byte[] Encode(int message)
 		{
-			return BitConverter.GetBytes(message.IntToBigEndian()).ToSBytes();
-			//return new sbyte[] { (sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message };
+			return BitConverter.GetBytes(message.IntToBigEndian());
+			//return new byte[] { (sbyte)((int)((uint)message >> 24)), (sbyte)((int)((uint)message >> 16)), (sbyte)((int)((uint)message >> 8)), (sbyte)message };
 		}
 
-		public override int Decode(sbyte[] bytes)
+		public override int Decode(byte[] bytes)
 		{
 			Validate(bytes);
 			/*int value = 0;
@@ -73,7 +73,7 @@ namespace SharpPulsar.Schemas
 				value |= b & 0xFF;
 			}
 			return value;*/
-			return BitConverter.ToInt32(bytes.ToBytes(), 0).IntFromBigEndian();
+			return BitConverter.ToInt32(bytes, 0).IntFromBigEndian();
 		}
 
 		public override ISchemaInfo SchemaInfo

@@ -7,7 +7,7 @@ namespace SharpPulsar.Schemas
 	/// <summary>
 	/// A schema for 'Byte'.
 	/// </summary>
-	public class ByteSchema : AbstractSchema<sbyte>
+	public class ByteSchema : AbstractSchema<byte>
 	{
 
 		private static readonly ByteSchema _instance;
@@ -19,7 +19,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "INT8",
 				Type = SchemaType.INT8,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new ByteSchema();
@@ -30,7 +30,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 1)
 			{
@@ -38,12 +38,12 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public override sbyte[] Encode(sbyte message)
+		public override byte[] Encode(byte message)
 		{
-			return new sbyte[] { message };
+			return new byte[] { message };
 		}
 
-		public override sbyte Decode(sbyte[] bytes)
+		public override byte Decode(byte[] bytes)
 		{
 			Validate(bytes);
 			return bytes[0];

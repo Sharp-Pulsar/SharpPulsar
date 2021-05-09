@@ -58,28 +58,28 @@ namespace SharpPulsar.Test
 			string messagePredicate = "my-message-" + key + "-";
 			int totalMessages = 30;
 
-			var producer1 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+			var producer1 = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName1));
 
-			var producer2 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+			var producer2 = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName2));
 
-			var producer3 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+			var producer3 = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName3));
 
-			var producer4 = _client.NewProducer(new ProducerConfigBuilder<sbyte[]>()
+			var producer4 = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName4));
 
 			// 5. produce data
 			for(int i = 0; i < 10; i++)
 			{
-				producer1.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer1-" + i).ToSBytes());
-				producer2.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer2-" + i).ToSBytes());
-				producer3.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer3-" + i).ToSBytes());
-				producer4.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer4-" + i).ToSBytes());
+				producer1.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer1-" + i));
+				producer2.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer2-" + i));
+				producer3.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer3-" + i));
+				producer4.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer4-" + i));
 			}
 
-			var consumer = _client.NewConsumer(new ConsumerConfigBuilder<sbyte[]>()
+			var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
 				.TopicsPattern(pattern)
 				.PatternAutoDiscoveryPeriod(2)
 				.SubscriptionName(subscriptionName)
@@ -91,10 +91,10 @@ namespace SharpPulsar.Test
 			var message = consumer.Receive(TimeSpan.FromSeconds(10));
 			do
 			{
-				var m = (TopicMessage<sbyte[]>)message;
+				var m = (TopicMessage<byte[]>)message;
 				messageSet++;
 				consumer.Acknowledge(message);
-				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data.ToBytes())} from topic: {m.TopicName}");
+				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.TopicName}");
 				message = consumer.Receive(TimeSpan.FromSeconds(20));
 			} while(message != null);
 
