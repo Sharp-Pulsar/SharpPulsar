@@ -764,7 +764,7 @@ namespace SharpPulsar.Protocol
             var schema = new CommandGetSchema {RequestId = (ulong) requestId, Topic = topic};
             if (version != null)
 			{
-				schema.SchemaVersion = version.Bytes().ToBytes();
+				schema.SchemaVersion = version.Bytes();
 			}
 			
 			return Serializer.Serialize(schema.ToBaseCommand());

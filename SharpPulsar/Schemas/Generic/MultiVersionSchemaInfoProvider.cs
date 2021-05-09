@@ -51,7 +51,7 @@ namespace SharpPulsar.Schemas.Generic
             _lookup = lookup;
         }
 
-        public ISchemaInfo GetSchemaByVersion(sbyte[] schemaVersion)
+        public ISchemaInfo GetSchemaByVersion(byte[] schemaVersion)
         {
             try
             {
@@ -77,7 +77,7 @@ namespace SharpPulsar.Schemas.Generic
 
         public virtual string TopicName => _topicName.LocalName;
 
-        private ISchemaInfo LoadSchema(sbyte[] schemaVersion)
+        private ISchemaInfo LoadSchema(byte[] schemaVersion)
         {
             return null;
         }

@@ -39,7 +39,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "LocalDate",
 				Type = SchemaType.LocalDate,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new LocalDateSchema();
@@ -50,13 +50,13 @@ namespace SharpPulsar.Schemas
 		  return _instance;
 	   }
 
-		public override sbyte[] Encode(LocalDate message)
+		public override byte[] Encode(LocalDate message)
 		{
 			long epochDay = (long)(message.ToDateTimeUnspecified() - _epoch).TotalMilliseconds;
 			return LongSchema.Of().Encode(epochDay);
 		}
 
-	   public override LocalDate Decode(sbyte[] bytes)
+	   public override LocalDate Decode(byte[] bytes)
 	   {
 		  var decode = LongSchema.Of().Decode(bytes);
 		  return LocalDate.FromDateTime(DateTimeOffset.FromUnixTimeMilliseconds(decode).DateTime);

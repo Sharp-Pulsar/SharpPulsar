@@ -65,29 +65,29 @@ namespace SharpPulsar.Schemas
 			return _schema != null;
 		}
 
-		public void Validate(sbyte[] message)
+		public void Validate(byte[] message)
 		{
 			EnsureSchemaInitialized();
 
 			_schema.Validate(message);
 		}
 
-		public sbyte[] Encode(byte[] message)
+		public byte[] Encode(byte[] message)
 		{
-			if(!(message is sbyte[]))
-				throw new ArgumentException($"{message.GetType()} is not sbyte[]");
+			if(!(message is byte[]))
+				throw new ArgumentException($"{message.GetType()} is not byte[]");
 			EnsureSchemaInitialized();
 
 			if (_requireSchemaValidation)
 			{
 				// verify if the message can be decoded by the underlying schema
-				_schema.Validate(message.ToSBytes());
+				_schema.Validate(message);
 			}
 
-			return message.ToSBytes();
+			return message;
 		}
 
-		public sbyte[] Decode(sbyte[] bytes, sbyte[] schemaVersion)
+		public byte[] Decode(byte[] bytes, byte[] schemaVersion)
 		{
 			EnsureSchemaInitialized();
 

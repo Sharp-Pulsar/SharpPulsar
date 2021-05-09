@@ -6,6 +6,10 @@
     "build": {
       "type": "object",
       "properties": {
+        "BUILD_NUMBER": {
+          "type": "string",
+          "description": "GitHub Build Number"
+        },
         "Configuration": {
           "type": "string",
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)",
@@ -17,6 +21,13 @@
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
+        },
+        "GH_API_KEY": {
+          "type": "string",
+          "description": "GitHub Access Token for Packages"
+        },
+        "GithubSource": {
+          "type": "string"
         },
         "Help": {
           "type": "boolean",
@@ -43,8 +54,9 @@
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
         },
-        "NugetApiKey": {
-          "type": "string"
+        "NUGET_API_KEY": {
+          "type": "string",
+          "description": "NuGet API Key"
         },
         "NugetApiUrl": {
           "type": "string"
@@ -76,7 +88,9 @@
               "Clean",
               "Compile",
               "Pack",
+              "PackBeta",
               "Push",
+              "PushBeta",
               "Restore",
               "StartPulsar",
               "StopPulsar",
@@ -100,7 +114,9 @@
               "Clean",
               "Compile",
               "Pack",
+              "PackBeta",
               "Push",
+              "PushBeta",
               "Restore",
               "StartPulsar",
               "StopPulsar",

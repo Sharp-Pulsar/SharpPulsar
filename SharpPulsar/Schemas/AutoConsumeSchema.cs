@@ -51,7 +51,7 @@ namespace SharpPulsar.Schema
                 throw new NullReferenceException("Schema is not initialized before used");
 		}
 
-		public void Validate(sbyte[] message)
+		public void Validate(byte[] message)
 		{
 			EnsureSchemaInitialized();
 
@@ -63,7 +63,7 @@ namespace SharpPulsar.Schema
 			return true;
 		}
 
-		public sbyte[] Encode(IGenericRecord message)
+		public byte[] Encode(IGenericRecord message)
 		{
 			if(!(message is IGenericRecord))
 				throw  new ArgumentException($"{message.GetType()} is not IGenericRecord");

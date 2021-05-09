@@ -101,7 +101,7 @@ namespace SharpPulsar
 			Metadata.PartitionKeyB64Encoded = false;
 			return this;
 		}
-		public ITypedMessageBuilder<T> KeyBytes(sbyte[] key)
+		public ITypedMessageBuilder<T> KeyBytes(byte[] key)
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
@@ -113,13 +113,13 @@ namespace SharpPulsar
 					return this;
 				}
 			}
-			Metadata.PartitionKey = Convert.ToBase64String(key.ToBytes());
+			Metadata.PartitionKey = Convert.ToBase64String(key);
 			Metadata.PartitionKeyB64Encoded = true;
 			return this;
 		}
-		public ITypedMessageBuilder<T> OrderingKey(sbyte[] orderingKey)
+		public ITypedMessageBuilder<T> OrderingKey(byte[] orderingKey)
 		{
-			Metadata.OrderingKey = orderingKey.ToBytes();
+			Metadata.OrderingKey = orderingKey;
 			return this;
 		}
 
@@ -139,7 +139,7 @@ namespace SharpPulsar
 					// set key as the message key
 					if (kv.Key != null)
 					{
-						Metadata.PartitionKey = Convert.ToBase64String(kvSchema.KeySchema.Encode(kv.Key).ToBytes());
+						Metadata.PartitionKey = Convert.ToBase64String(kvSchema.KeySchema.Encode(kv.Key));
 						Metadata.PartitionKeyB64Encoded = true;
 					}
 					else
@@ -150,7 +150,7 @@ namespace SharpPulsar
 					// set value as the payload
 					if (kv.Value != null)
 					{
-						_content = kvSchema.ValueSchema.Encode(kv.Value).ToBytes();
+						_content = kvSchema.ValueSchema.Encode(kv.Value);
 					}
 					else
 					{
@@ -159,7 +159,7 @@ namespace SharpPulsar
 					return this;
 				}
 			}
-			_content = _schema.Encode(value).ToBytes();
+			_content = _schema.Encode(value);
 			return this;
 		}
 		public ITypedMessageBuilder<T> Property(string name, string value)

@@ -55,7 +55,7 @@ namespace SharpPulsar.Test
 			var first = $"one-topic-{Guid.NewGuid()}";
 			var second = $"two-topic-{Guid.NewGuid()}";
 			var third = $"three-topic-{Guid.NewGuid()}";
-			var builder = new ConsumerConfigBuilder<sbyte[]>()
+			var builder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(first, second, third)
 				.ForceTopicCreation(true)
 				.SubscriptionName("multi-topic-sub");
@@ -68,20 +68,20 @@ namespace SharpPulsar.Test
 
 			for (var i = 0; i < messageCount; i++)
 			{
-				var message = (TopicMessage<sbyte[]>)consumer.Receive();
+				var message = (TopicMessage<byte[]>)consumer.Receive();
 				Assert.NotNull(message);
 				consumer.Acknowledge(message);
 				_output.WriteLine($"message from topic: {message.TopicName}");
 			}
 			for (var i = 0; i < messageCount; i++)
 			{
-				var message = (TopicMessage<sbyte[]>)consumer.Receive();
+				var message = (TopicMessage<byte[]>)consumer.Receive();
 				Assert.NotNull(message);
 				_output.WriteLine($"message from topic: {message.TopicName}");
 			}
 			for (var i = 0; i < messageCount; i++)
 			{
-				var message = (TopicMessage<sbyte[]>)consumer.Receive(TimeSpan.FromSeconds(20));
+				var message = (TopicMessage<byte[]>)consumer.Receive(TimeSpan.FromSeconds(20));
 				Assert.NotNull(message);
 				_output.WriteLine($"message from topic: {message.TopicName}");
 			}
@@ -90,13 +90,13 @@ namespace SharpPulsar.Test
 		private List<AckReceived> PublishMessages(string topic, int count, string message)
 		{
 			List<AckReceived> keys = new List<AckReceived>();
-			var builder = new ProducerConfigBuilder<sbyte[]>()
+			var builder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic);
 			var producer = _client.NewProducer(builder);
 			for (int i = 0; i < count; i++)
 			{
 				string key = "key" + i;
-				sbyte[] data = Encoding.UTF8.GetBytes($"{message}-{i}").ToSBytes();
+				byte[] data = Encoding.UTF8.GetBytes($"{message}-{i}");
 				producer.NewMessage().Key(key).Value(data).Send();
 				var receipt = producer.SendReceipt();
 				keys.Add(receipt);

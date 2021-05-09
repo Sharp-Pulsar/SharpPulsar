@@ -41,7 +41,7 @@ namespace SharpPulsar
 		protected internal readonly ProducerConfigurationData Conf;
 		protected internal readonly ISchema<T> Schema;
 		protected internal readonly ProducerInterceptors<T> Interceptors;
-		protected internal readonly Dictionary<SchemaHash, sbyte[]> SchemaCache;
+		protected internal readonly Dictionary<SchemaHash, byte[]> SchemaCache;
 		protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
 		protected internal IActorRef Client;
 		protected internal readonly ClientConfigurationData ClientConfiguration;
@@ -58,7 +58,7 @@ namespace SharpPulsar
 			Conf = conf;
 			Schema = schema;
 			Interceptors = interceptors;
-			SchemaCache = new Dictionary<SchemaHash, sbyte[]>();
+			SchemaCache = new Dictionary<SchemaHash, byte[]>();
 			if(!conf.MultiSchema)
 			{
 				_multiSchemaMode = MultiSchemaMode.Disabled;

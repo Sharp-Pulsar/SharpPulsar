@@ -40,7 +40,7 @@ namespace SharpPulsar
 
 		// TODO: Add support for Serialization and Deserialization
 		//  https://github.com/apache/pulsar/issues/4940
-		public sbyte[] ToByteArray()
+		public byte[] ToByteArray()
 		{
 			throw new NotImplementedException();
 		}

@@ -39,7 +39,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "INT16",
 				Type = SchemaType.INT16,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new ShortSchema();
@@ -50,7 +50,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 2)
 			{
@@ -58,17 +58,17 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public override sbyte[] Encode(short message)
+		public override byte[] Encode(short message)
 		{
-			return BitConverter.GetBytes(message.Int16ToBigEndian()).ToSBytes();
-			//return new sbyte[] { (sbyte)((int)((uint)message >> 8)), (sbyte)message };
+			return BitConverter.GetBytes(message.Int16ToBigEndian());
+			//return new byte[] { (sbyte)((int)((uint)message >> 8)), (sbyte)message };
 		}
 
-		public override short Decode(sbyte[] bytes)
+		public override short Decode(byte[] bytes)
 		{
 			Validate(bytes);
 
-			return BitConverter.ToInt16(bytes.ToBytes(), 0).Int16FromBigEndian();
+			return BitConverter.ToInt16(bytes, 0).Int16FromBigEndian();
 		}
 
 		public override ISchemaInfo SchemaInfo

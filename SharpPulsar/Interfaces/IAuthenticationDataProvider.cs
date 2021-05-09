@@ -100,7 +100,7 @@ namespace SharpPulsar.Interfaces
 		/// </summary>
 		virtual AuthData Authenticate(AuthData auth)
 		{
-            var bytes = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : "")).ToSBytes();
+            var bytes = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
 			return new AuthData(bytes);
         }
 	}

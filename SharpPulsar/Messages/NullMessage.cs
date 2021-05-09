@@ -16,7 +16,7 @@ namespace SharpPulsar.Messages
         }
         public IDictionary<string, string> Properties => throw new NotImplementedException();
 
-        public sbyte[] Data => throw new NotImplementedException();
+        public byte[] Data => throw new NotImplementedException();
 
         public T Value => throw new NotImplementedException();
 
@@ -32,9 +32,9 @@ namespace SharpPulsar.Messages
 
         public string Key => throw new NotImplementedException();
 
-        public sbyte[] KeyBytes => throw new NotImplementedException();
+        public byte[] KeyBytes => throw new NotImplementedException();
 
-        public sbyte[] OrderingKey => throw new NotImplementedException();
+        public byte[] OrderingKey => throw new NotImplementedException();
 
         public string TopicName => throw new NotImplementedException();
 
@@ -42,7 +42,7 @@ namespace SharpPulsar.Messages
 
         public int RedeliveryCount => throw new NotImplementedException();
 
-        public sbyte[] SchemaVersion => throw new NotImplementedException();
+        public byte[] SchemaVersion => throw new NotImplementedException();
 
         public bool Replicated => throw new NotImplementedException();
 

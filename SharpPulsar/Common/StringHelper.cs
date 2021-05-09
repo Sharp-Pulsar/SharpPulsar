@@ -57,43 +57,43 @@ namespace SharpPulsar.Common
         //-----------------------------------------------------------------------------
         //	These methods are used to replace calls to some Java String constructors.
         //-----------------------------------------------------------------------------
-        public static string NewString(sbyte[] bytes)
+        public static string NewString(byte[] bytes)
         {
             return NewString(bytes, 0, bytes.Length);
         }
-        public static string NewString(sbyte[] bytes, int index, int count)
+        public static string NewString(byte[] bytes, int index, int count)
         {
-            return System.Text.Encoding.UTF8.GetString(bytes.ToBytes(), index, count);
+            return System.Text.Encoding.UTF8.GetString(bytes, index, count);
         }
-        public static string NewString(sbyte[] bytes, string encoding)
+        public static string NewString(byte[] bytes, string encoding)
         {
             return NewString(bytes, 0, bytes.Length, encoding);
         }
-        public static string NewString(sbyte[] bytes, int index, int count, string encoding)
+        public static string NewString(byte[] bytes, int index, int count, string encoding)
         {
-            return System.Text.Encoding.GetEncoding(encoding).GetString(bytes.ToBytes(), index, count);
+            return System.Text.Encoding.GetEncoding(encoding).GetString(bytes, index, count);
         }
 
         //--------------------------------------------------------------------------------
         //	These methods are used to replace calls to the Java String.getBytes methods.
         //--------------------------------------------------------------------------------
-        public static sbyte[] GetBytes(this string self)
+        public static byte[] GetBytes(this string self)
         {
             return GetSBytesForEncoding(System.Text.Encoding.UTF8, self);
         }
-        public static sbyte[] GetBytes(this string self, System.Text.Encoding encoding)
+        public static byte[] GetBytes(this string self, System.Text.Encoding encoding)
         {
             return GetSBytesForEncoding(encoding, self);
         }
-        public static sbyte[] GetBytes(this string self, string encoding)
+        public static byte[] GetBytes(this string self, string encoding)
         {
             return GetSBytesForEncoding(System.Text.Encoding.GetEncoding(encoding), self);
         }
-        private static sbyte[] GetSBytesForEncoding(System.Text.Encoding encoding, string s)
+        private static byte[] GetSBytesForEncoding(System.Text.Encoding encoding, string s)
         {
-            var sbytes = new sbyte[encoding.GetByteCount(s)];
-            encoding.GetBytes(s, 0, s.Length, sbytes.ToBytes(), 0);
-            return sbytes;
+            var bytes = new byte[encoding.GetByteCount(s)];
+            encoding.GetBytes(s, 0, s.Length, bytes, 0);
+            return bytes;
         }
 
     }

@@ -52,12 +52,12 @@ namespace SharpPulsar
 			return new BatchMessageId(ledgerId, entryId, partitionIndex, batch);
 		}
 
-		public static IMessageId NewMessageIdFromByteArray(sbyte[] data)
+		public static IMessageId NewMessageIdFromByteArray(byte[] data)
 		{
 			return MessageId.FromByteArray(data);
 		}
 
-		public static IMessageId NewMessageIdFromByteArrayWithTopic(sbyte[] data, string topicName)
+		public static IMessageId NewMessageIdFromByteArrayWithTopic(byte[] data, string topicName)
 		{
 			return MessageId.FromByteArrayWithTopic(data, topicName);
 		}
@@ -90,7 +90,7 @@ namespace SharpPulsar
 			return AuthenticationUtil.Create(authPluginClassName, authParams);
 		}
 
-		public static ISchema<sbyte[]> NewBytesSchema()
+		public static ISchema<byte[]> NewBytesSchema()
 		{
 			return new BytesSchema();
 		}
@@ -124,7 +124,7 @@ namespace SharpPulsar
 						"org.apache.pulsar.client.impl.schema.StringSchema", Charset.class)
                         .newInstance(charset));*/
 		}
-		public static ISchema<sbyte> NewByteSchema()
+		public static ISchema<byte> NewByteSchema()
 		{
 			return new ByteSchema();
 		}
@@ -179,7 +179,7 @@ namespace SharpPulsar
 		public static ISchema<byte[]> NewAutoProduceSchema<T>(ISchema<T> schema)
 		{
 			return new AutoProduceBytesSchema<T>(schema);
-			//return catchExceptions(() => (Schema<sbyte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
+			//return catchExceptions(() => (Schema<byte[]>) getConstructor("SharpPulsar.Impl.Schema.AutoProduceBytesSchema", typeof(Schema)).newInstance(schema));
 		}
 
 		public static ISchema<object> GetSchema(ISchemaInfo schemaInfo)
@@ -207,9 +207,9 @@ namespace SharpPulsar
 		{
 			return KeyValueSchema<K, V>.Of(key, value, type);
 		}
-		public static ISchema<KeyValue<sbyte[], sbyte[]>> NewKeyValueBytesSchema()
+		public static ISchema<KeyValue<byte[], byte[]>> NewKeyValueBytesSchema()
 		{
-			return KeyValueSchema<sbyte[], sbyte[]>.KvBytes();
+			return KeyValueSchema<byte[], byte[]>.KvBytes();
 		}
 
 		/// <summary>

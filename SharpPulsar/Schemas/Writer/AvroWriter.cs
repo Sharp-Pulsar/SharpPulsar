@@ -23,7 +23,7 @@ namespace SharpPulsar.Schemas.Writer
                 _writer = new ReflectWriter<T>(_schema);
         }
 
-		public sbyte[] Write(T message)
+		public byte[] Write(T message)
 		{
             var ms = new MemoryStream();
             Encoder e = new BinaryEncoder(ms);
@@ -31,7 +31,7 @@ namespace SharpPulsar.Schemas.Writer
             ms.Flush();
             ms.Position = 0;
             var b = ms.ToArray();
-            return b.ToSBytes();
+            return b;
         }
 	}
 }

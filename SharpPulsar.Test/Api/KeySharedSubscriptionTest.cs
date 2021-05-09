@@ -69,7 +69,7 @@ namespace SharpPulsar.Test.Api
 				producer.NewMessage().Value(i.ToString().GetBytes())
 					.Send();
             }
-			Receive(new List<Consumer<sbyte[]>>{ consumer1, consumer2, consumer3 });
+			Receive(new List<Consumer<byte[]>>{ consumer1, consumer2, consumer3 });
 		}
 
 		[Fact]
@@ -83,9 +83,9 @@ namespace SharpPulsar.Test.Api
 
 			NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", true);
         }
-		private Producer<sbyte[]> CreateProducer(string topic, bool enableBatch, int batchSize = 500)
+		private Producer<byte[]> CreateProducer(string topic, bool enableBatch, int batchSize = 500)
         {
-			var pBuilder = new ProducerConfigBuilder<sbyte[]>();
+			var pBuilder = new ProducerConfigBuilder<byte[]>();
 			pBuilder.Topic(topic);
 			if (enableBatch)
             {
@@ -98,9 +98,9 @@ namespace SharpPulsar.Test.Api
 			return _client.NewProducer(pBuilder);
         }
 
-        private Consumer<sbyte[]> CreateConsumer(string topic, string consumerSub, KeySharedPolicy keySharedPolicy = null)
+        private Consumer<byte[]> CreateConsumer(string topic, string consumerSub, KeySharedPolicy keySharedPolicy = null)
         {
-			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topic);
 			builder.SubscriptionName(consumerSub);
 			builder.AckTimeout(30000, TimeUnit.MILLISECONDS);
@@ -111,11 +111,11 @@ namespace SharpPulsar.Test.Api
 			return _client.NewConsumer(builder);
 		}
 
-        private void Receive(IList<Consumer<sbyte[]>> consumers)
+        private void Receive(IList<Consumer<byte[]>> consumers)
 		{
 			// Add a key so that we know this key was already assigned to one consumer
 
-            IDictionary<string, Consumer<sbyte[]>> keyToConsumer = new Dictionary<string, Consumer<sbyte[]>>();
+            IDictionary<string, Consumer<byte[]>> keyToConsumer = new Dictionary<string, Consumer<byte[]>>();
 
             foreach (var c in consumers)
 			{
@@ -149,9 +149,9 @@ namespace SharpPulsar.Test.Api
 			}
 		}
 
-        private void ReceiveAndCheck(IEnumerable<KeyValue<Consumer<sbyte[]>, int>> checkList)
+        private void ReceiveAndCheck(IEnumerable<KeyValue<Consumer<byte[]>, int>> checkList)
 		{
-			var consumerKeys = new Dictionary<Consumer<sbyte[]>, ISet<string>>();
+			var consumerKeys = new Dictionary<Consumer<byte[]>, ISet<string>>();
 			foreach (var check in checkList)
 			{
 				if (check.Value % 2 != 0)
@@ -159,7 +159,7 @@ namespace SharpPulsar.Test.Api
 					throw new ArgumentException();
 				}
 				var received = 0;
-				var lastMessageForKey = new Dictionary<string, Message<sbyte[]>>();
+				var lastMessageForKey = new Dictionary<string, Message<byte[]>>();
 				for (int? i = 0; i.Value < check.Value; i++)
 				{
 					var message = check.Key.Receive();
@@ -180,7 +180,7 @@ namespace SharpPulsar.Test.Api
 						var o = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)message.Data));
 						Assert.True(o.CompareTo(l) > 0);
 					}
-					lastMessageForKey[key] = (Message<sbyte[]>)message;
+					lastMessageForKey[key] = (Message<byte[]>)message;
 					if (!consumerKeys.ContainsKey(check.Key)) 
                         consumerKeys.Add(check.Key, new HashSet<string>());
 					consumerKeys[check.Key].Add(key);
@@ -191,7 +191,7 @@ namespace SharpPulsar.Test.Api
 				_output.WriteLine($"[{check.Key}] Consumer wait for {redeliveryCount} messages redelivery ...");
 				Thread.Sleep(TimeSpan.FromSeconds(redeliveryCount));
 				// messages not acked, test redelivery
-				lastMessageForKey = new Dictionary<string, Message<sbyte[]>>();
+				lastMessageForKey = new Dictionary<string, Message<byte[]>>();
 				for (var i = 0; i < redeliveryCount; i++)
 				{
                     var message = check.Key.Receive();
@@ -210,12 +210,12 @@ namespace SharpPulsar.Test.Api
                         var o = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)message.Data));
                         Assert.True(o.CompareTo(l) > 0);
                     }
-                    lastMessageForKey[key] = (Message<sbyte[]>)message;
+                    lastMessageForKey[key] = (Message<byte[]>)message;
 				}
-				Message<sbyte[]> noMessages = null;
+				Message<byte[]> noMessages = null;
 				try
 				{
-					noMessages = (Message<sbyte[]>)check.Key.Receive(TimeSpan.FromMilliseconds(100));
+					noMessages = (Message<byte[]>)check.Key.Receive(TimeSpan.FromMilliseconds(100));
 				}
 				catch (PulsarClientException)
 				{

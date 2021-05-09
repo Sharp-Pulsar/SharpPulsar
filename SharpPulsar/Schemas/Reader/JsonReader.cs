@@ -40,11 +40,11 @@ namespace SharpPulsar.Schemas.Reader
 			_objectMapper = objectMapper;
 		}
 
-		public  T Read(sbyte[] bytes, int offset, int length)
+		public  T Read(byte[] bytes, int offset, int length)
 		{
 			try
 			{
-				return (T)_objectMapper.ReadValue(bytes.ToBytes(), offset, length);
+				return (T)_objectMapper.ReadValue(bytes, offset, length);
 			}
 			catch (Exception e)
 			{

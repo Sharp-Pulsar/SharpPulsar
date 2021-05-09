@@ -34,7 +34,7 @@ namespace SharpPulsar.Test.Transaction
 		{
 
 			string normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
 				.SubscriptionType(SubType.Failover)
@@ -44,7 +44,7 @@ namespace SharpPulsar.Test.Transaction
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(normalTopic);
 
 			var producer = _client.NewProducer(producerBuilder);
@@ -56,9 +56,9 @@ namespace SharpPulsar.Test.Transaction
 				// produce normal messages
 				for (int i = 0; i < messageCnt; i++)
 				{
-					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello").ToSBytes()).Send();
+					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).Send();
 				}
-				IMessage<sbyte[]> message = null;
+				IMessage<byte[]> message = null;
 				for (int i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(TimeSpan.FromSeconds(5));
@@ -94,7 +94,7 @@ namespace SharpPulsar.Test.Transaction
 		{
 
 			string normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
 				.EnableBatchIndexAcknowledgment(true)
@@ -104,7 +104,7 @@ namespace SharpPulsar.Test.Transaction
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.EnableBatching(true)
 				.BatchingMaxMessages(50)
@@ -119,9 +119,9 @@ namespace SharpPulsar.Test.Transaction
 				// produce normal messages
 				for (int i = 0; i < messageCnt; i++)
 				{
-					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello").ToSBytes()).Send();
+					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).Send();
 				}
-				IMessage<sbyte[]> message = null;
+				IMessage<byte[]> message = null;
 
 				for (int i = 0; i < messageCnt; i++)
 				{

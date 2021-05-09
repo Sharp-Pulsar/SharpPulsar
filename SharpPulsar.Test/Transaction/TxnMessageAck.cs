@@ -31,7 +31,7 @@ namespace SharpPulsar.Test.Transaction
 			string topic = $"{_topicMessageAckTest}-{Guid.NewGuid()}";
 			var subName = $"test-{Guid.NewGuid()}";
 
-			var consumerBuilder = new ConsumerConfigBuilder<sbyte[]>()
+			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName(subName)
 				.EnableBatchIndexAcknowledgment(true)
@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Transaction
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 
-			var producerBuilder = new ProducerConfigBuilder<sbyte[]>()
+			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.EnableBatching(false)
 				.SendTimeout(0);
@@ -51,7 +51,7 @@ namespace SharpPulsar.Test.Transaction
 			int messageCnt = 10;
 			for (int i = 0; i < messageCnt; i++)
 			{
-				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i).ToSBytes()).Send();
+				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 			}
 			_output.WriteLine("produce transaction messages finished");
 

@@ -30,7 +30,7 @@ namespace SharpPulsar.Test.Schema
             long start = 348592040;
             for (int i = 0; i < 100; ++i)
             {
-                sbyte[] encode = longSchema.Encode(start + i);
+                byte[] encode = longSchema.Encode(start + i);
                 long decoded = longSchema.Decode(encode);
                 Assert.Equal(decoded, start + i);
             }

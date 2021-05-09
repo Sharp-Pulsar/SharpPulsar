@@ -6,7 +6,7 @@ namespace SharpPulsar.Interfaces.ISchema
     public interface ISchemaInfo
     {
         string Name { get; set; }
-        sbyte[] Schema { get; set; }
+        byte[] Schema { get; set; }
         string SchemaDefinition { get; }
         SchemaType Type { get; set; }
 

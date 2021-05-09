@@ -79,8 +79,8 @@ namespace SharpPulsar.Test.Schema
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema2).KeySchema.SchemaInfo.Type, SchemaType.AVRO);
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema2).ValueSchema.SchemaInfo.Type, SchemaType.AVRO);
 
-            string schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema.ToBytes());
-            string schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema.ToBytes());
+            string schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema);
+            string schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema);
             Assert.Equal(schemaInfo1, schemaInfo2);
         }
 
@@ -106,9 +106,9 @@ namespace SharpPulsar.Test.Schema
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema3).KeySchema.SchemaInfo.Type, SchemaType.JSON);
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema3).ValueSchema.SchemaInfo.Type, SchemaType.JSON);
 
-            string schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema.ToBytes());
-            string schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema.ToBytes());
-            string schemaInfo3 = Encoding.UTF8.GetString(keyValueSchema3.SchemaInfo.Schema.ToBytes());
+            string schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema);
+            string schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema);
+            string schemaInfo3 = Encoding.UTF8.GetString(keyValueSchema3.SchemaInfo.Schema);
             Assert.Equal(schemaInfo1, schemaInfo2);
             Assert.Equal(schemaInfo1, schemaInfo3);
         }
@@ -131,7 +131,7 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.RED
             };
 
-            sbyte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
 
             KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
@@ -161,7 +161,7 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.RED
             };
 
-            sbyte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
 
             KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
@@ -194,7 +194,7 @@ namespace SharpPulsar.Test.Schema
             };
 
             // Check kv.encoding.type default not set value
-            sbyte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
 
             KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
@@ -229,7 +229,7 @@ namespace SharpPulsar.Test.Schema
             };
 
             // Check kv.encoding.type INLINE
-            sbyte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
             KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
             Foo fooBack = keyValue.Key;
@@ -262,7 +262,7 @@ namespace SharpPulsar.Test.Schema
             };
 
             // Check kv.encoding.type SEPARATED
-            sbyte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
             try
             {
@@ -300,11 +300,11 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.RED
             };
 
-            sbyte[] fooBytes = fooAvroSchema.Encode(foo);
-            sbyte[] barBytes = barAvroSchema.Encode(bar);
+            byte[] fooBytes = fooAvroSchema.Encode(foo);
+            byte[] barBytes = barAvroSchema.Encode(bar);
 
-            sbyte[] encodeBytes = ISchema<object>.KvBytes().Encode(new KeyValue<sbyte[], sbyte[]>(fooBytes, barBytes));
-            KeyValue<sbyte[], sbyte[]> decodeKV = ISchema<object>.KvBytes().Decode(encodeBytes);
+            byte[] encodeBytes = ISchema<object>.KvBytes().Encode(new KeyValue<byte[], byte[]>(fooBytes, barBytes));
+            KeyValue<byte[], byte[]> decodeKV = ISchema<object>.KvBytes().Decode(encodeBytes);
 
             Foo fooBack = fooAvroSchema.Decode(decodeKV.Key);
             Bar barBack = barAvroSchema.Decode(decodeKV.Value);

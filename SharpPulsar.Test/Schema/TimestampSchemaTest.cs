@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaDecode()
         {
-            sbyte[] byteData = new sbyte[] { 0, 0, 0, 0, 0, 10, 24, 42 };
+            byte[] byteData = new byte[] { 0, 0, 0, 0, 0, 10, 24, 42 };
             long expected = 10 * 65536 + 24 * 256 + 42;
             TimestampSchema schema = TimestampSchema.Of();
             Assert.Equal(expected, schema.Decode(byteData).TimeOfDay.TotalMilliseconds);

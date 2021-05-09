@@ -33,7 +33,7 @@ namespace SharpPulsar.Interfaces
 	 /// Check if the message is a valid object for this schema.
 	 /// 
 	 /// <para>The implementation can choose what its most efficient approach to validate the schema.
-	 /// If the implementation doesn't provide it, it will attempt to use <seealso cref="decode(sbyte[])"/>
+	 /// If the implementation doesn't provide it, it will attempt to use <seealso cref="decode(byte[])"/>
 	 /// to see if this schema can decode this message or not as a validation mechanism to verify
 	 /// the bytes.
 	 /// 
@@ -41,7 +41,7 @@ namespace SharpPulsar.Interfaces
 	 /// </summary>
 	 /// <param name="message"> the messages to verify </param>
 	 /// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		virtual void Validate([NotNull] sbyte[] message)
+		virtual void Validate([NotNull] byte[] message)
 		{
 			Decode(message);
 		}
@@ -54,7 +54,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> a byte array with the serialized content </returns>
 		/// <exception cref="SchemaSerializationException">
 		///             if the serialization fails </exception>
-		sbyte[] Encode([NotNull]T message);
+		byte[] Encode([NotNull]T message);
 
 		/// <summary>
 		/// Returns whether this schema supports versioning.
@@ -64,8 +64,8 @@ namespace SharpPulsar.Interfaces
 		/// <seealso cref="GenericRecord"/> should support schema versioning.
 		/// 
 		/// </para>
-		/// <para>If a schema implementation returns <tt>false</tt>, it should implement <seealso cref="decode(sbyte[])"/>;
-		/// while a schema implementation returns <tt>true</tt>, it should implement <seealso cref="decode(sbyte[], sbyte[])"/>
+		/// <para>If a schema implementation returns <tt>false</tt>, it should implement <seealso cref="decode(byte[])"/>;
+		/// while a schema implementation returns <tt>true</tt>, it should implement <seealso cref="decode(byte[], byte[])"/>
 		/// instead.
 		/// 
 		/// </para>
@@ -89,7 +89,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="bytes">
 		///            the byte array to decode </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode([NotNull]sbyte[] bytes)
+		virtual T Decode([NotNull]byte[] bytes)
 		{
 			// use `null` to indicate ignoring schema version
 			return Decode(bytes, null);
@@ -103,7 +103,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		virtual T Decode([NotNull]sbyte[] bytes, [NotNull]sbyte[] schemaVersion)
+		virtual T Decode([NotNull]byte[] bytes, [NotNull]byte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(bytes);
@@ -142,7 +142,7 @@ namespace SharpPulsar.Interfaces
 		/// <summary>
 		/// Schema that doesn't perform any encoding on the message payloads. Accepts a byte array and it passes it through.
 		/// </summary>
-		public static ISchema<sbyte[]> Bytes = DefaultImplementation.NewBytesSchema();
+		public static ISchema<byte[]> Bytes = DefaultImplementation.NewBytesSchema();
 
 
 		/// <summary>
@@ -153,7 +153,7 @@ namespace SharpPulsar.Interfaces
 		/// <summary>
 		/// INT8 Schema.
 		/// </summary>
-		public static ISchema<sbyte> Int8 = DefaultImplementation.NewByteSchema();
+		public static ISchema<byte> Int8 = DefaultImplementation.NewByteSchema();
 
 		/// <summary>
 		/// INT16 Schema.
@@ -258,7 +258,7 @@ namespace SharpPulsar.Interfaces
 		/// <summary>
 		/// Schema that can be used to encode/decode KeyValue.
 		/// </summary>
-		static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+		static ISchema<KeyValue<byte[], byte[]>> KvBytes()
 		{
 			return DefaultImplementation.NewKeyValueBytesSchema();
 		}

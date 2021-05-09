@@ -32,7 +32,7 @@ namespace SharpPulsar.Impl.Schema.Generic
 	{
 
 		private readonly ObjectMapper _objectMapper;
-		private readonly sbyte[] _schemaVersion;
+		private readonly byte[] _schemaVersion;
 		private readonly IList<Field> _fields;
 		public GenericJsonReader(IList<Field> fields)
 		{
@@ -41,13 +41,13 @@ namespace SharpPulsar.Impl.Schema.Generic
 			_objectMapper = new ObjectMapper();
 		}
 
-		public GenericJsonReader(sbyte[] schemaVersion, IList<Field> fields)
+		public GenericJsonReader(byte[] schemaVersion, IList<Field> fields)
 		{
 			_objectMapper = new ObjectMapper();
 			_fields = fields;
 			_schemaVersion = schemaVersion;
 		}
-		public GenericJsonRecord Read(sbyte[] bytes, int offset, int length)
+		public GenericJsonRecord Read(byte[] bytes, int offset, int length)
 		{
 			try
 			{

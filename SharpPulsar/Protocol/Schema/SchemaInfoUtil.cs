@@ -48,7 +48,7 @@ namespace SharpPulsar.Protocol.Schema
             var si = new SchemaInfo
             {
                 Name = schema.Name,
-                Schema = schema.SchemaData.ToSBytes(),
+                Schema = schema.SchemaData,
                 Type = new Commands().GetSchemaType(schema.type)
             };
             if (schema.Properties.Count == 0)
@@ -72,7 +72,7 @@ namespace SharpPulsar.Protocol.Schema
 			return new SchemaInfo
 			{
 				Name = name,
-				Schema = Encoding.UTF8.GetBytes(schema.Data).ToSBytes(),
+				Schema = Encoding.UTF8.GetBytes(schema.Data),
 				Type = schema.Type,
 				Properties = schema.Properties
 			};

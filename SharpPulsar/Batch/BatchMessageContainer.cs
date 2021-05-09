@@ -113,7 +113,7 @@ namespace SharpPulsar.Batch
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
 						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-						messageWriter.Write(msg.Data.ToBytes());
+						messageWriter.Write(msg.Data);
 					}
 					catch (Exception ex)
 					{
@@ -197,7 +197,7 @@ namespace SharpPulsar.Batch
 			_messageMetadata.SequenceId = (ulong)_messages[0].SequenceId;
 			_messageMetadata.HighestSequenceId = (ulong)_highestSequenceId;
 			_messageMetadata.PartitionKey = _messages[0].Key;
-			_messageMetadata.OrderingKey = _messages[0].OrderingKey.ToBytes();
+			_messageMetadata.OrderingKey = _messages[0].OrderingKey;
 			_messageMetadata.ProducerName = Container.ProducerName;
 			_messageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			if (CurrentTxnidMostBits != -1)

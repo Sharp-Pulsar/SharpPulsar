@@ -37,7 +37,7 @@ namespace SharpPulsar.Schemas
 		{
 			return true;
 		}
-		public abstract sbyte[] Encode(T message);
+		public abstract byte[] Encode(T message);
 		
 		/// <summary>
 		/// Check if the message read able Length Length is a valid object for this schema.
@@ -52,7 +52,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="byteBuf"> the messages to verify </param>
 		/// <returns> true if it is a valid message </returns>
 		/// <exception cref="SchemaSerializationException"> if it is not a valid message </exception>
-		public virtual void Validate(sbyte[] byteBuf)
+		public virtual void Validate(byte[] byteBuf)
 		{
 			throw new SchemaSerializationException("This method is not supported");
 		}
@@ -63,7 +63,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="byteBuf">
 		///            the byte buffer to decode </param>
 		/// <returns> the deserialized object </returns>
-		public abstract T Decode(sbyte[] byteBuf);
+		public abstract T Decode(byte[] byteBuf);
 		/// <summary>
 		/// Decode a byteBuf into an object using a given version.
 		/// </summary>
@@ -72,7 +72,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="schemaVersion">
 		///            the schema version to decode the object. null indicates using latest version. </param>
 		/// <returns> the deserialized object </returns>
-		public virtual T Decode(sbyte[] byteBuf, sbyte[] schemaVersion)
+		public virtual T Decode(byte[] byteBuf, byte[] schemaVersion)
 		{
 			// ignore version by default (most of the primitive schema implementations ignore schema version)
 			return Decode(byteBuf);

@@ -26,7 +26,7 @@ namespace SharpPulsar.Messages.Consumer
             throw new NotImplementedException();
         }
 
-        public sbyte[] ToByteArray()
+        public byte[] ToByteArray()
         {
             throw new NotImplementedException();
         }

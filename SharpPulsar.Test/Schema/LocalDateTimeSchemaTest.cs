@@ -31,7 +31,7 @@ namespace SharpPulsar.Test.Schema
         {
             LocalDateTimeSchema schema = LocalDateTimeSchema.Of();
             LocalDateTime localDateTime = LocalDateTime.FromDateTime(DateTime.UtcNow);
-            sbyte[] bytes = schema.Encode(localDateTime);
+            byte[] bytes = schema.Encode(localDateTime);
             var actual = schema.Decode(bytes);
             Assert.Equal(localDateTime.Date, actual.Date);
             Assert.Equal(localDateTime.Hour, actual.Hour);

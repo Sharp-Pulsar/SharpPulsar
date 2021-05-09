@@ -30,7 +30,7 @@ namespace SharpPulsar.Test.Schema
             short start = 3440;
             for (short i = 0; i < 100; ++i)
             {
-                sbyte[] encode = schema.Encode((short)(start + i));
+                byte[] encode = schema.Encode((short)(start + i));
                 int decoded = schema.Decode(encode);
                 Assert.Equal(decoded, start + i);
             }
@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaDecode()
         {
-            sbyte[] byteData = new sbyte[] { 24, 42 };
+            byte[] byteData = new byte[] { 24, 42 };
             short? expected = 24 * 256 + 42;
             ShortSchema schema = ShortSchema.Of();
             Assert.Equal(expected, schema.Decode(byteData));

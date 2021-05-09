@@ -94,13 +94,13 @@ namespace SharpPulsar.Presto
 		{
 			string hostName = request.url().host();
 			string principal = makeServicePrincipal(remoteServiceName, hostName, useCanonicalHostname);
-			sbyte[] token = generateToken(principal);
+			byte[] token = generateToken(principal);
 
 			string credential = format("%s %s", NEGOTIATE, Base64.Encoder.encodeToString(token));
 			return request.newBuilder().header(AUTHORIZATION, credential).build();
 		}
 
-		private sbyte[] generateToken(string servicePrincipal)
+		private byte[] generateToken(string servicePrincipal)
 		{
 			GSSContext context = null;
 			try
@@ -116,7 +116,7 @@ namespace SharpPulsar.Presto
 				return result;
 				});
 
-				sbyte[] token = context.initSecContext(new sbyte[0], 0, 0);
+				byte[] token = context.initSecContext(new byte[0], 0, 0);
 				if (token == null)
 				{
 					throw new LoginException("No token generated from GSS context");

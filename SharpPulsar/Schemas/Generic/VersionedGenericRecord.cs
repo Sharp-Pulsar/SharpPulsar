@@ -31,13 +31,13 @@ namespace SharpPulsar.Impl.Schema.Generic
 		public abstract object GetField(string fieldName);
 		public abstract object GetField(Field field);
 
-        protected VersionedGenericRecord(sbyte[] schemaVersion, IList<Field> fields)
+        protected VersionedGenericRecord(byte[] schemaVersion, IList<Field> fields)
 		{
             SchemaVersion = schemaVersion;
 			Fields = fields;
 		}
 
-		public virtual sbyte[] SchemaVersion { get; }
+		public virtual byte[] SchemaVersion { get; }
 
         public virtual IList<Field> Fields { get; }
     }

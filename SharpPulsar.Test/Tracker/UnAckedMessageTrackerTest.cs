@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.Tracker
 		[Fact]
         public void TestAddAndRemove()
 		{
-			var builder = new ConsumerConfigBuilder<sbyte[]>();
+			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic("TestAckTracker");
 			builder.SubscriptionName("TestAckTracker-sub");
 			var consumer = _client.NewConsumer(builder);

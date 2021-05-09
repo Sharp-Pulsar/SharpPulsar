@@ -202,7 +202,7 @@ namespace SharpPulsar.Batch
 		{
 			if (msg.HasOrderingKey())
 			{
-				return Convert.ToBase64String(msg.OrderingKey.ToBytes());
+				return Convert.ToBase64String(msg.OrderingKey);
 			}
 			return msg.Key;
 		}
@@ -234,7 +234,7 @@ namespace SharpPulsar.Batch
 					{
 						var msgMetadata = msg.Metadata;
 						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-						messageWriter.Write(msg.Data.ToBytes());
+						messageWriter.Write(msg.Data);
 					}
 					var batchedMessageMetadataAndPayload = stream.ToArray();
 					var uncompressedSize = batchedMessageMetadataAndPayload.Length;
@@ -258,7 +258,7 @@ namespace SharpPulsar.Batch
 				if (Messages.Count == 0)
 				{
 					SequenceId = new Commands().InitBatchMessageMetadata(MessageMetadata);
-					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToBytes());
+					BatchedMessageMetadataAndPayload.AddRange(msg.Data);
 					FirstCallback = callback;
 				}
 ;

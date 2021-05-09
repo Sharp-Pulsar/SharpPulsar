@@ -30,14 +30,14 @@ namespace Tutorials
 
             for (var i = 0; i < 10; i++)
             {
-                var data = Encoding.UTF8.GetBytes($"tuts-{i}").ToSBytes();
+                var data = (sbyte[])(object)Encoding.UTF8.GetBytes($"tuts-{i}");
                 producer.NewMessage().Value(data).Send();
             }
             for (var i = 0; i < 10; i++)
             {
                 var message = (Message<sbyte[]>)consumer.Receive(TimeSpan.FromSeconds(30));
                 consumer.Acknowledge(message);
-                var res = Encoding.UTF8.GetString(message.Data.ToBytes());
+                var res = Encoding.UTF8.GetString((byte[])(object)message.Data);
                 Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
             }
         }

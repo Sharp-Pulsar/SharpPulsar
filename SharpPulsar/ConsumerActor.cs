@@ -2519,7 +2519,7 @@ namespace SharpPulsar
 				{
 					var neC = new EncryptionContext.EncryptionKey
 					{
-						KeyValue = kv.Value.ToSBytes(),
+						KeyValue = kv.Value,
 						Metadata = new Dictionary<string, string>()
 					};
 					foreach (var m in kv.Metadatas)
@@ -2535,7 +2535,7 @@ namespace SharpPulsar
 						keys.Add(kv.Key, neC);
 					}
 				}
-				sbyte[] encParam = new sbyte[IMessageCrypto.IV_LEN];
+				byte[] encParam = new byte[IMessageCrypto.IV_LEN];
 				msgMetadata.EncryptionParam.CopyTo(encParam, 0);
 				int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
 				encryptionCtx.Keys = keys;

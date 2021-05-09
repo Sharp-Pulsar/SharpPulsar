@@ -28,7 +28,7 @@ namespace SharpPulsar.Common.Util
 		/// Generate the hash of a given byte array.
 		/// </summary>
 		/// <returns> The hash of {@code b}, which is non-negative integer. </returns>
-		int MakeHash(sbyte[] b);
+		int MakeHash(byte[] b);
 	}
 
 }

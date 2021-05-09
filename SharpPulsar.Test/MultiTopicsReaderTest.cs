@@ -112,7 +112,7 @@ namespace SharpPulsar.Test
 			int numKeys = 10;
 
 			ISet<string> keys = PublishMessages(topic, numKeys, enableBatch);
-			var builder = new ReaderConfigBuilder<sbyte[]>()
+			var builder = new ReaderConfigBuilder<byte[]>()
 				.Topic(topic)
 				.StartMessageId(IMessageId.Earliest)
 				.ReaderName(Subscription);
@@ -120,10 +120,10 @@ namespace SharpPulsar.Test
 			Thread.Sleep(TimeSpan.FromSeconds(30));
 			for (var i = 0; i < numKeys; i++)
 			{
-				var message = (TopicMessage<sbyte[]>)reader.ReadNext();
+				var message = (TopicMessage<byte[]>)reader.ReadNext();
 				if (message != null)
 				{
-					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data.ToBytes())}");
+					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");
 					Assert.True(keys.Remove(message.Key));
 				}
 				else
@@ -134,7 +134,7 @@ namespace SharpPulsar.Test
 		private ISet<string> PublishMessages(string topic, int count, bool enableBatch)
 		{
 			ISet<string> keys = new HashSet<string>();
-			var builder = new ProducerConfigBuilder<sbyte[]>()
+			var builder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.MessageRoutingMode(Common.MessageRoutingMode.RoundRobinMode)
 				.MaxPendingMessages(count)
@@ -153,7 +153,7 @@ namespace SharpPulsar.Test
 			for (int i = 0; i < count; i++)
 			{
 				string key = "key" + i;
-				sbyte[] data = Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes();
+				byte[] data = Encoding.UTF8.GetBytes("my-message-" + i);
 				producer.NewMessage().Key(key).Value(data).Send();
 				keys.Add(key);
 			}

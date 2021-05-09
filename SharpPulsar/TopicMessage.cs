@@ -77,7 +77,7 @@ namespace SharpPulsar
 			return _msg.GetProperty(name);
 		}
 
-		public virtual sbyte[] Data => _msg.Data;
+		public virtual byte[] Data => _msg.Data;
 
         public virtual long PublishTime => _msg.PublishTime;
 
@@ -99,14 +99,14 @@ namespace SharpPulsar
 			return _msg.HasBase64EncodedKey();
 		}
 
-		public virtual sbyte[] KeyBytes => _msg.KeyBytes;
+		public virtual byte[] KeyBytes => _msg.KeyBytes;
 
         public bool HasOrderingKey()
 		{
 			return _msg.HasOrderingKey();
 		}
 
-		public virtual sbyte[] OrderingKey => _msg.OrderingKey;
+		public virtual byte[] OrderingKey => _msg.OrderingKey;
 
         public virtual T Value => _msg.Value;
 
@@ -114,7 +114,7 @@ namespace SharpPulsar
 
         public virtual int RedeliveryCount => _msg.RedeliveryCount;
 
-        public virtual sbyte[] SchemaVersion => _msg.SchemaVersion;
+        public virtual byte[] SchemaVersion => _msg.SchemaVersion;
 
         public virtual bool Replicated => _msg.Replicated;
 

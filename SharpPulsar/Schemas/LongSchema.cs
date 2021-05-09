@@ -38,7 +38,7 @@ namespace SharpPulsar.Schemas
 			{
 				Name = "INT64",
 				Type = SchemaType.INT64,
-				Schema = new sbyte[0]
+				Schema = new byte[0]
 			};
 			_schemaInfo = info;
 			_instance = new LongSchema();
@@ -49,7 +49,7 @@ namespace SharpPulsar.Schemas
 			return _instance;
 		}
 
-		public override void Validate(sbyte[] message)
+		public override void Validate(byte[] message)
 		{
 			if (message.Length != 8)
 			{
@@ -57,16 +57,16 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public override sbyte[] Encode(long data)
+		public override byte[] Encode(long data)
 		{
-			return BitConverter.GetBytes(data.LongToBigEndian()).ToSBytes();
-			//return new sbyte[] { (sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data };
+			return BitConverter.GetBytes(data.LongToBigEndian());
+			//return new byte[] { (sbyte)((int)((uint)data >> 56)), (sbyte)((int)((uint)data >> 48)), (sbyte)((int)((uint)data >> 40)), (sbyte)((int)((uint)data >> 32)), (sbyte)((int)((uint)data >> 24)), (sbyte)((int)((uint)data >> 16)), (sbyte)((int)((uint)data >> 8)), (sbyte)data };
 		}
 
-		public override long Decode(sbyte[] bytes)
+		public override long Decode(byte[] bytes)
 		{
 			Validate(bytes);
-			var val = BitConverter.ToInt64(bytes.ToBytes(), 0);
+			var val = BitConverter.ToInt64(bytes, 0);
 			return val.LongFromBigEndian();
 		}
 

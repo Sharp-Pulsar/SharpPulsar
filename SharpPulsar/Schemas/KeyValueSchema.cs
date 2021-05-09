@@ -73,9 +73,9 @@ namespace SharpPulsar.Schemas
 			return new KeyValueSchema<K, V>(KeySchema, ValueSchema, KeyValueEncodingType);
 		}
 
-		private static readonly ISchema<KeyValue<sbyte[], sbyte[]>> _kvBytes = new KeyValueSchema<sbyte[], sbyte[]>(BytesSchema.Of(), BytesSchema.Of());
+		private static readonly ISchema<KeyValue<byte[], byte[]>> _kvBytes = new KeyValueSchema<byte[], byte[]>(BytesSchema.Of(), BytesSchema.Of());
 
-		public static ISchema<KeyValue<sbyte[], sbyte[]>> KvBytes()
+		public static ISchema<KeyValue<byte[], byte[]>> KvBytes()
 		{
 			return _kvBytes;
 		}
@@ -113,7 +113,7 @@ namespace SharpPulsar.Schemas
 				_outerInstance = OuterInstance;
 			}
 
-			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
+			public ISchemaInfo GetSchemaByVersion(byte[] SchemaVersion)
 			{
 				return _outerInstance._schemaInfo;
 			}
@@ -133,7 +133,7 @@ namespace SharpPulsar.Schemas
 		}
 
 		// encode as bytes: [key.length][key.bytes][value.length][value.bytes] or [value.bytes]
-		public virtual sbyte[] Encode(KeyValue<K, V> Message)
+		public virtual byte[] Encode(KeyValue<K, V> Message)
 		{
 			if (_keyValueEncodingType == KeyValueEncodingType.INLINE)
 			{
@@ -149,12 +149,12 @@ namespace SharpPulsar.Schemas
 			}
 		}
 
-		public virtual KeyValue<K, V> Decode(sbyte[] Bytes)
+		public virtual KeyValue<K, V> Decode(byte[] Bytes)
 		{
 			return Decode(Bytes, null);
 		}
 
-		public virtual KeyValue<K, V> Decode(sbyte[] Bytes, sbyte[] SchemaVersion)
+		public virtual KeyValue<K, V> Decode(byte[] Bytes, byte[] SchemaVersion)
 		{
 			if (_keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 			{
@@ -164,7 +164,7 @@ namespace SharpPulsar.Schemas
 			return KeyValue<K, V>.Decode(Bytes, (keyBytes, valueBytes) => Decode(keyBytes, valueBytes, SchemaVersion));
 		}
 
-		public virtual KeyValue<K, V> Decode(sbyte[] KeyBytes, sbyte[] ValueBytes, sbyte[] SchemaVersion)
+		public virtual KeyValue<K, V> Decode(byte[] KeyBytes, byte[] ValueBytes, byte[] SchemaVersion)
 		{
 			K K;
 			if (KeyBytes == null)
@@ -271,7 +271,7 @@ namespace SharpPulsar.Schemas
 				_outerInstance = OuterInstance;
 			}
 
-			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
+			public ISchemaInfo GetSchemaByVersion(byte[] SchemaVersion)
 			{
 				var si = _outerInstance._schemaInfoProvider.GetSchemaByVersion(SchemaVersion);
 				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Key;
@@ -302,7 +302,7 @@ namespace SharpPulsar.Schemas
 				_outerInstance = OuterInstance;
 			}
 
-			public ISchemaInfo GetSchemaByVersion(sbyte[] SchemaVersion)
+			public ISchemaInfo GetSchemaByVersion(byte[] SchemaVersion)
 			{
 				var si = _outerInstance._schemaInfoProvider.GetSchemaByVersion(SchemaVersion);
 				return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(si).Value;

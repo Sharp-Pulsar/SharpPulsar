@@ -46,7 +46,7 @@ namespace SharpPulsar.Test.Api
         public void TestUnAckMessageRedeliveryWithReceive()
         {
             var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
-            var builder = new ConsumerConfigBuilder<sbyte[]>();
+            var builder = new ConsumerConfigBuilder<byte[]>();
             builder.Topic(topic);
             builder.SubscriptionName("sub-TestUnAckMessageRedeliveryWithReceive");
             builder.AckTimeout(8000, TimeUnit.MILLISECONDS);
@@ -55,7 +55,7 @@ namespace SharpPulsar.Test.Api
             builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);
             var consumer = _client.NewConsumer(builder);
 
-            var pBuilder = new ProducerConfigBuilder<sbyte[]>();
+            var pBuilder = new ProducerConfigBuilder<byte[]>();
             pBuilder.Topic(topic);
             var producer = _client.NewProducer(pBuilder);
 
@@ -63,7 +63,7 @@ namespace SharpPulsar.Test.Api
 
             for (var i = 0; i < messageCount; i++)
             {
-                var receipt = producer.Send(Encoding.UTF8.GetBytes("my-message-" + i).ToSBytes());
+                var receipt = producer.Send(Encoding.UTF8.GetBytes("my-message-" + i));
                 _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
             }
 

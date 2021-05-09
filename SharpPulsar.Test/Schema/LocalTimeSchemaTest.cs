@@ -30,7 +30,7 @@ namespace SharpPulsar.Test.Schema
         {
             LocalTimeSchema schema = LocalTimeSchema.Of();
             LocalTime localTime = LocalTime.FromMillisecondsSinceMidnight((int)(DateTime.Now - DateTime.Today).TotalMilliseconds);
-            sbyte[] bytes = schema.Encode(localTime);
+            byte[] bytes = schema.Encode(localTime);
             Assert.Equal(localTime, schema.Decode(bytes));
         }
 

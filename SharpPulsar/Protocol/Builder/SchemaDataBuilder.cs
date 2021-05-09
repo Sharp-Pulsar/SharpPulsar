@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Builder
         {
             _data = new SchemaData();
         }
-        public SchemaDataBuilder SetData(sbyte[] data)
+        public SchemaDataBuilder SetData(byte[] data)
         {
             _data.Data = data;
             return this;

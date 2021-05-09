@@ -30,7 +30,7 @@ namespace SharpPulsar.Test.Schema
         {
             LocalDateSchema schema = LocalDateSchema.Of();
             LocalDate localDate = LocalDate.FromDateTime(DateTime.UtcNow);
-            sbyte[] bytes = schema.Encode(localDate);
+            byte[] bytes = schema.Encode(localDate);
             Assert.Equal(localDate, schema.Decode(bytes));
         }
     }

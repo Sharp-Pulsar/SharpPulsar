@@ -79,11 +79,11 @@ namespace SharpPulsar
 
 		// / Serialization
 
-		public static IMessageId FromByteArray(sbyte[] data)
+		public static IMessageId FromByteArray(byte[] data)
 		{
 			if(data == null)
 				throw new ArgumentException();
-			var inputStream = new CodedInputStream(data.ToBytes());
+			var inputStream = new CodedInputStream(data);
 			var builder = new MessageIdData();
 
             MessageIdData idData = builder;
@@ -116,12 +116,12 @@ namespace SharpPulsar
 			return messageId;
 		}
 
-		public static IMessageId FromByteArrayWithTopic(sbyte[] data, string topicName)
+		public static IMessageId FromByteArrayWithTopic(byte[] data, string topicName)
 		{
 			return FromByteArrayWithTopic(data, TopicName.Get(topicName));
 		}
 
-		public static IMessageId FromByteArrayWithTopic(sbyte[] data, TopicName topicName)
+		public static IMessageId FromByteArrayWithTopic(byte[] data, TopicName topicName)
 		{
             if (data == null)
                 throw new ArgumentException();
@@ -164,7 +164,7 @@ namespace SharpPulsar
 			return null;
 		}
 		// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
-		public virtual sbyte[] ToByteArray(int batchIndex, int batchSize)
+		public virtual byte[] ToByteArray(int batchIndex, int batchSize)
 		{
 			MessageIdData msgId = new MessageIdData { ledgerId = (ulong)(_ledgerId), entryId = (ulong)(_entryId) };
 			if (_partitionIndex >= 0)
@@ -182,9 +182,9 @@ namespace SharpPulsar
 				msgId.BatchSize = batchSize;
 			}
 
-			return msgId.ToByteArrays().ToSBytes();
+			return msgId.ToByteArrays();
 		}
-		public virtual sbyte[] ToByteArray()
+		public virtual byte[] ToByteArray()
 		{
 			// there is no message batch so we pass -1
 			return ToByteArray(-1, 0);

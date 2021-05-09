@@ -25,7 +25,7 @@ namespace SharpPulsar.Schemas
     /// <summary>
 	/// A schema for bytes array.
 	/// </summary>
-	public class BytesSchema : AbstractSchema<sbyte[]>
+	public class BytesSchema : AbstractSchema<byte[]>
 	{
 
 		private static readonly BytesSchema Instance = new BytesSchema();
@@ -34,7 +34,7 @@ namespace SharpPulsar.Schemas
         public override ISchemaInfo SchemaInfo {get;}
         public BytesSchema()
 		{
-            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.BYTES, Schema = new sbyte[0]};
+            var s = new SchemaInfo {Name = "Bytes", Type = SchemaType.BYTES, Schema = new byte[0]};
             SchemaInfo = s;
 		}
 
@@ -43,12 +43,12 @@ namespace SharpPulsar.Schemas
 			return Instance;
 		}
 
-		public override sbyte[] Encode(sbyte[] message)
+		public override byte[] Encode(byte[] message)
 		{
 			return message;
 		}
 
-        public override sbyte[] Decode(sbyte[] bytes)
+        public override byte[] Decode(byte[] bytes)
 		{
 			return bytes;
 		}

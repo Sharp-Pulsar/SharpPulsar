@@ -89,7 +89,7 @@ namespace SharpPulsar.Auth
 
                     ClientId = _clientId,
                     ClientSecret = _clientSecret,
-                    Token = Encoding.UTF8.GetString(data.Bytes.ToBytes())
+                    Token = Encoding.UTF8.GetString(data.Bytes)
                 });
                 var result = Task.Run(async () => await resultTask).Result;
                 if (result.IsError)
@@ -99,13 +99,13 @@ namespace SharpPulsar.Auth
 
                 if (result.IsActive)
                 {
-                    var bytes = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : "")).ToSBytes();
+                    var bytes = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
                     return new AuthData(bytes);
                 }
 
                 throw new PulsarClientException("token is not active");
             }
-            var bytesAuth = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : "")).ToSBytes();
+            var bytesAuth = Encoding.UTF8.GetBytes((HasDataFromCommand() ? CommandData : ""));
             return new AuthData(bytesAuth);
         }
     }
