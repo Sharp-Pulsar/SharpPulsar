@@ -20,24 +20,26 @@ namespace Tutorials
 
             var pulsarClient = pulsarSystem.NewClient();
 
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<sbyte[]>()
+
+
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
                 .Topic(myTopic)
                 .ForceTopicCreation(true)
                 .SubscriptionName("myTopic-sub"));
 
-            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<sbyte[]>()
-                .Topic(myTopic));
-
             for (var i = 0; i < 10; i++)
             {
-                var data = (sbyte[])(object)Encoding.UTF8.GetBytes($"tuts-{i}");
+                var data = Encoding.UTF8.GetBytes($"tuts-{i}");
                 producer.NewMessage().Value(data).Send();
             }
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<sbyte[]>)consumer.Receive(TimeSpan.FromSeconds(30));
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(30));
                 consumer.Acknowledge(message);
-                var res = Encoding.UTF8.GetString((byte[])(object)message.Data);
+                var res = Encoding.UTF8.GetString(message.Data);
                 Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
             }
         }
