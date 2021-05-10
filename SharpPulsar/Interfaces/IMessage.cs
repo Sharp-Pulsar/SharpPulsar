@@ -1,5 +1,6 @@
 ﻿using Akka.Util;
 using SharpPulsar.Auth;
+using System.Buffers;
 using System.Collections.Generic;
 
 /// <summary>
@@ -52,16 +53,16 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the value of the property or null if the property was not defined </returns>
 		string GetProperty(string name);
 
-		/// <summary>
-		/// Get the raw payload of the message.
-		/// 
-		/// <para>Even when using the Schema and type-safe API, an application
-		/// has access to the underlying raw message payload.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> the byte array with the message payload </returns>
-		byte[] Data { get; }
+        /// <summary>
+        /// Get the raw payload of the message.
+        /// 
+        /// <para>Even when using the Schema and type-safe API, an application
+        /// has access to the underlying raw message payload.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> the byte array with the message payload </returns>
+        ReadOnlySequence<byte> Data { get; }
 
 		/// <summary>
 		/// Get the de-serialized value of the message, according the configured <seealso cref="Schema"/>.

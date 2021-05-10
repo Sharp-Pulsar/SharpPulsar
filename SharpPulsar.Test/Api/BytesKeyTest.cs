@@ -100,7 +100,7 @@ namespace SharpPulsar.Test.Api
             Assert.Equal(byteKey, message.KeyBytes);
 
             Assert.True(message.HasBase64EncodedKey());
-            var receivedMessage = Encoding.UTF8.GetString((byte[])(Array)message.Data);
+            var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
         }

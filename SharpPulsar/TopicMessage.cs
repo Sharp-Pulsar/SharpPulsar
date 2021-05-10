@@ -22,6 +22,7 @@ using SharpPulsar.Auth;
 
 namespace SharpPulsar
 {
+    using System.Buffers;
     using global::Akka.Util;
     using SharpPulsar.Interfaces;
 
@@ -77,7 +78,7 @@ namespace SharpPulsar
 			return _msg.GetProperty(name);
 		}
 
-		public virtual byte[] Data => _msg.Data;
+		public virtual ReadOnlySequence<byte> Data => _msg.Data;
 
         public virtual long PublishTime => _msg.PublishTime;
 

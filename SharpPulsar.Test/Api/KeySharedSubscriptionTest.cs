@@ -127,7 +127,7 @@ namespace SharpPulsar.Test.Api
 						// Go to next consumer
 						break;
 					}
-					_output.WriteLine(Encoding.UTF8.GetString((byte[])(Array)msg.Data));
+					_output.WriteLine(Encoding.UTF8.GetString(msg.Data));
 
 					c.Acknowledge(msg);
 
@@ -168,7 +168,7 @@ namespace SharpPulsar.Test.Api
 						check.Key.Acknowledge(message);
 					}
 					var key = message.HasOrderingKey() ? Encoding.UTF8.GetString((byte[])(Array)message.OrderingKey) : message.Key;
-					_output.WriteLine($"[{check.Key}] Receive message key: {key} value: {Encoding.UTF8.GetString((byte[])(Array)message.Data)} messageId: {message.MessageId}");
+					_output.WriteLine($"[{check.Key}] Receive message key: {key} value: {Encoding.UTF8.GetString(message.Data)} messageId: {message.MessageId}");
 					// check messages is order by key
 					if (!lastMessageForKey.TryGetValue(key, out var msgO))
 					{
@@ -176,8 +176,8 @@ namespace SharpPulsar.Test.Api
 					}
 					else
                     {
-						var l = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)msgO.Data));
-						var o = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)message.Data));
+						var l = Convert.ToInt32(Encoding.UTF8.GetString(msgO.Data));
+						var o = Convert.ToInt32(Encoding.UTF8.GetString(message.Data));
 						Assert.True(o.CompareTo(l) > 0);
 					}
 					lastMessageForKey[key] = (Message<byte[]>)message;
@@ -198,7 +198,7 @@ namespace SharpPulsar.Test.Api
 					received++;
 					check.Key.Acknowledge(message);
 					var key = message.HasOrderingKey() ? Encoding.UTF8.GetString((byte[])(Array)message.OrderingKey) : message.Key;
-                    _output.WriteLine($"[{check.Key}] Receive message key: {key} value: {Encoding.UTF8.GetString((byte[])(Array)message.Data)} messageId: {message.MessageId}");
+                    _output.WriteLine($"[{check.Key}] Receive message key: {key} value: {Encoding.UTF8.GetString(message.Data)} messageId: {message.MessageId}");
 					// check redelivery messages is order by key
 					if (!lastMessageForKey.TryGetValue(key, out var msgO))
                     {
@@ -206,8 +206,8 @@ namespace SharpPulsar.Test.Api
                     }
                     else
                     {
-                        var l = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)msgO.Data));
-                        var o = Convert.ToInt32(Encoding.UTF8.GetString((byte[])(Array)message.Data));
+                        var l = Convert.ToInt32(Encoding.UTF8.GetString(msgO.Data));
+                        var o = Convert.ToInt32(Encoding.UTF8.GetString(message.Data));
                         Assert.True(o.CompareTo(l) > 0);
                     }
                     lastMessageForKey[key] = (Message<byte[]>)message;

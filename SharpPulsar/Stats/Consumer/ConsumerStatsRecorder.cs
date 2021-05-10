@@ -229,7 +229,7 @@ namespace SharpPulsar.Stats.Consumer
 			if (message != null)
 			{
 				_numMsgsReceived.Increment();
-				_numBytesReceived.Add(message.Data == null ? 0 : message.Data.Length);
+				_numBytesReceived.Add(message.Data.Length);
 			}
 		}
 
