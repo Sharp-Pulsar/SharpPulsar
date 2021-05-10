@@ -579,13 +579,13 @@ namespace SharpPulsar
 			var payload = msg.Data;
 
 			// If compression is enabled, we are compressing, otherwise it will simply use the same buffer
-			int uncompressedSize = payload.Length;
-			var compressedPayload = payload;
+			int uncompressedSize = (int)payload.Length;
+			var compressedPayload = payload.ToArray();
 			// Batch will be compressed when closed
 			// If a message has a delayed delivery time, we'll always send it individually
 			if(!BatchMessagingEnabled || msgMetadata.ShouldSerializeDeliverAtTime())
 			{
-				compressedPayload = _compressor.Encode(payload);
+				compressedPayload = _compressor.Encode(payload.ToArray());
 
 				// validate msg-size (For batching this will be check at the batch completion size)
 				int compressedSize = compressedPayload.Length;
@@ -631,7 +631,7 @@ namespace SharpPulsar
 				string uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
 				for (int chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
-					SerializeAndSendMessage(msg, msgMetadata, payload, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressedPayload.Length, uncompressedSize);
+					SerializeAndSendMessage(msg, msgMetadata, payload.ToArray(), sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressedPayload.Length, uncompressedSize);
 					readStartIndex = ((chunkId + 1) * (int)maxMessageSize);
 				}
 			}

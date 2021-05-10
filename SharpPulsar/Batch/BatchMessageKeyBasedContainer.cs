@@ -233,8 +233,8 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-						messageWriter.Write(msg.Data);
+						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						messageWriter.Write(msg.Data.ToArray());
 					}
 					var batchedMessageMetadataAndPayload = stream.ToArray();
 					var uncompressedSize = batchedMessageMetadataAndPayload.Length;
@@ -258,7 +258,7 @@ namespace SharpPulsar.Batch
 				if (Messages.Count == 0)
 				{
 					SequenceId = new Commands().InitBatchMessageMetadata(MessageMetadata);
-					BatchedMessageMetadataAndPayload.AddRange(msg.Data);
+					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToArray());
 					FirstCallback = callback;
 				}
 ;

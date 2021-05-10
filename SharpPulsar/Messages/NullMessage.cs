@@ -2,6 +2,7 @@
 using SharpPulsar.Auth;
 using SharpPulsar.Interfaces;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -16,7 +17,7 @@ namespace SharpPulsar.Messages
         }
         public IDictionary<string, string> Properties => throw new NotImplementedException();
 
-        public byte[] Data => throw new NotImplementedException();
+        public ReadOnlySequence<byte> Data => throw new NotImplementedException();
 
         public T Value => throw new NotImplementedException();
 

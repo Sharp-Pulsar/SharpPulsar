@@ -1854,7 +1854,7 @@ namespace SharpPulsar
 			Stats.UpdateNumMsgsReceived(msg);
 
 			TrackMessage(msg);
-			IncomingMessagesSize -= (msg.Data == null ? 0 : msg.Data.Length);
+			IncomingMessagesSize -= msg.Data.Length;
 		}
 
 		protected internal virtual void TrackMessage(IMessage<T> msg)

@@ -112,8 +112,8 @@ namespace SharpPulsar.Batch
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-						messageWriter.Write(msg.Data);
+						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						messageWriter.Write(msg.Data.ToArray());
 					}
 					catch (Exception ex)
 					{

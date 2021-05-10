@@ -34,6 +34,7 @@ namespace SharpPulsar
     using SharpPulsar.Shared;
     using SharpPulsar.Schemas;
     using SharpPulsar.Extension;
+    using System.Buffers;
 
     public class Message<T> : IMessage<T>
 	{
@@ -42,7 +43,7 @@ namespace SharpPulsar
 
 		private readonly MessageMetadata _metadata;
 		private readonly Metadata _mtadata;
-		private byte[] _payload { get; set; }
+		private ReadOnlySequence<byte> _payload { get; set; }
 		private ISchema<T> _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
@@ -53,7 +54,7 @@ namespace SharpPulsar
 		public Message(MessageMetadata msgMetadata, byte[] payload, ISchema<T> schema)
         {
 			_metadata = msgMetadata;
-			_payload = payload;
+			_payload = new ReadOnlySequence<byte>(payload);
 			_schema = schema;
         }
 		// Constructor for out-going message
@@ -87,7 +88,7 @@ namespace SharpPulsar
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
-			_payload = payload;
+			_payload = new ReadOnlySequence<byte>(payload);
             EncryptionCtx = encryptionCtx;
 
 			if (msgMetadata.Properties.Count > 0)
@@ -125,7 +126,7 @@ namespace SharpPulsar
 			_cnx = cnx;
 			_redeliveryCount = redeliveryCount;
 
-			_payload = payload;
+			_payload = new ReadOnlySequence<byte>(payload);
 			EncryptionCtx = encryptionCtx;
 
 			if (singleMessageMetadata.Properties.Count > 0)
@@ -201,7 +202,7 @@ namespace SharpPulsar
 				_messageId = new MessageId(ledgerId, entryId, -1);
 			}
 			_topic = topic;
-			_payload = payload;
+			_payload = new ReadOnlySequence<byte>(payload);
 			_properties = properties;
 			_schema = schema;
 			_redeliveryCount = 0;
@@ -261,18 +262,16 @@ namespace SharpPulsar
 			return messageTTLInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + TimeUnit.SECONDS.ToMilliseconds(messageTTLInSeconds));
 		}
 
-		public virtual byte[] Data
+		public virtual ReadOnlySequence<byte> Data
 		{
 			get
 			{
 				Condition.CheckNotNull(_metadata);
 				if (_metadata.NullValue)
 				{
-					return null;
+					return ReadOnlySequence<byte>.Empty;
 				}
-
-				byte[] data = _payload;
-				return data;
+				return _payload;
 			}
 		}
 		
@@ -326,16 +325,16 @@ namespace SharpPulsar
 						byte[] schemaVersion = SchemaVersion;
 						if (null == schemaVersion)
 						{
-							return _schema.Decode(Data);
+							return _schema.Decode(Data.ToArray());
 						}
 						else
 						{
-							return _schema.Decode(Data, schemaVersion);
+							return _schema.Decode(Data.ToArray(), schemaVersion);
 						}
 					}
 					else
 					{
-						return _schema.Decode(Data);
+						return _schema.Decode(Data.ToArray());
 					}
 				}
 			}
@@ -356,12 +355,12 @@ namespace SharpPulsar
 						.Where(x=> x.Name == "Decode")
 						.FirstOrDefault(x=> x.GetParameters().Length == 3);
 					var k = _metadata.NullPartitionKey ? null : KeyBytes;
-					var v = _metadata.NullValue ? null : Data;
+					var v = Data.ToArray();
 					return (T)decode.Invoke(_schema, new object[] { k, v, schemaVersion });
 				}
 				else
 				{
-					return _schema.Decode(Data, schemaVersion);
+					return _schema.Decode(Data.ToArray(), schemaVersion);
 				}
 			}
 		}
@@ -381,12 +380,12 @@ namespace SharpPulsar
 						.Where(x => x.Name == "Decode")
 						.FirstOrDefault(x => x.GetParameters().Length == 3);
 					var k = _metadata.NullPartitionKey ? null : KeyBytes;
-					var v = _metadata.NullValue ? null : Data;
+					var v = Data.ToArray();
 					return (T)decode.Invoke(_schema, new object[] { k, v, null });
 				}
 				else
 				{
-					return _schema.Decode(Data);
+					return _schema.Decode(Data.ToArray());
 				}
 			}
 		}
