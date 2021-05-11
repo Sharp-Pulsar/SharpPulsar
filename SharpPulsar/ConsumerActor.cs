@@ -1399,7 +1399,7 @@ namespace SharpPulsar
 		/// </summary>
 		private void SendFlowPermitsToBroker(IActorRef cnx, int numMessages)
 		{
-			if(cnx != null)
+			if(cnx != null && numMessages > 0)
 			{
 				if(_log.IsDebugEnabled)
 				{
