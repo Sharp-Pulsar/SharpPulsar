@@ -170,7 +170,7 @@ namespace SharpPulsar.Schema
 					return LocalDateTimeSchema.Of();
 				case SchemaType.InnerEnum.JSON:
 				case SchemaType.InnerEnum.AVRO:
-					return GenericAvroSchema.Of(schemaInfo);
+					return GenericSchema.Of(schemaInfo, false);
 				case SchemaType.InnerEnum.KeyValue:
 					KeyValue<ISchemaInfo, ISchemaInfo> kvSchemaInfo = KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
 					var keySchema = (ISchema<object>)GetSchema(kvSchemaInfo.Key);
