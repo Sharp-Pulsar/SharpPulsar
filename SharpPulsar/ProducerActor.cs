@@ -771,7 +771,7 @@ namespace SharpPulsar
 		{
 			exception = new Exception();
 			var msgMetadata = new MessageMetadata();
-			if(msg.Schema == Schema)
+			if(msg.SchemaInternal() == Schema)
 			{
 				if (_schemaVersion.HasValue)
 					msgMetadata.SchemaVersion = _schemaVersion.Value;
@@ -1377,9 +1377,9 @@ namespace SharpPulsar
 					{
 						return;
 					}
-					if (msg.Schema != null && msg.Schema.SchemaInfo.Type.Value > 0)
+					if (msg.SchemaInternal() != null && msg.SchemaInternal().SchemaInfo.Type.Value > 0)
 					{
-						_schemaInfo = (SchemaInfo)msg.Schema.SchemaInfo;
+						_schemaInfo = (SchemaInfo)msg.SchemaInternal().SchemaInfo;
 					}
 					else
 					{
