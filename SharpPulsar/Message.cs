@@ -35,6 +35,7 @@ namespace SharpPulsar
     using SharpPulsar.Schemas;
     using SharpPulsar.Extension;
     using System.Buffers;
+    using SharpPulsar.Schema;
 
     public class Message<T> : IMessage<T>
 	{
@@ -250,7 +251,11 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual bool IsExpired(int messageTTLInSeconds)
+        public ISchema<T> SchemaInternal()
+        {
+            return _schema;
+        }
+        public virtual bool IsExpired(int messageTTLInSeconds)
 		{
 			return messageTTLInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + TimeUnit.SECONDS.ToMilliseconds(messageTTLInSeconds));
 		}
@@ -473,8 +478,35 @@ namespace SharpPulsar
 			}
 		}
 
-
-		public bool HasBase64EncodedKey()
+        public Option<ISchema<T>> ReaderSchema()
+        {
+            EnsureSchemaIsLoaded();
+            if (_schema == null)
+            {
+                return Option<ISchema<object>>.None;
+            }
+            if (_schema is AutoConsumeSchema) 
+            {
+                byte[] schemaVersion = SchemaVersion;
+                return new Option<ISchema<object>>(((AutoConsumeSchema)_schema).AtSchemaVersion(schemaVersion));
+            } else if (_schema is AbstractSchema<T>) 
+            {
+                byte[] schemaVersion = SchemaVersion;
+                return Optional.of(((AbstractSchema)schema)
+                        .atSchemaVersion(schemaVersion));
+            } else
+            {
+                return Optional.of(schema);
+            }
+        }
+        private void EnsureSchemaIsLoaded()
+        {
+            if (_schema is AutoConsumeSchema) 
+            {
+                ((AutoConsumeSchema)_schema).FetchSchemaIfNeeded();
+            }
+        }
+        public bool HasBase64EncodedKey()
 		{
 			if(_mtadata != null)
 				return _mtadata.HasBase64EncodedKey;
