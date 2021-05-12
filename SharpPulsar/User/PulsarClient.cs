@@ -517,6 +517,9 @@ namespace SharpPulsar.User
         }
         public TransactionBuilder NewTransaction()
         {
+            if(!_clientConfigurationData.EnableTransaction)
+                throw new PulsarClientException.InvalidConfigurationException("Transactions are not enabled");
+
             return new TransactionBuilder(_actorSystem, _client, _transactionCoordinatorClient, _actorSystem.Log);
         }
 
