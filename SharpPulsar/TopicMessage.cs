@@ -122,6 +122,27 @@ namespace SharpPulsar
         public virtual string ReplicatedFrom => _msg.ReplicatedFrom;
 
         public virtual IMessage<T> Message => _msg;
+        public virtual ISchema<T> SchemaInternal
+        {
+            get
+            {
+                if (_msg is Message<T>)
+                {
+                    var message = (Message<T>)_msg;
+                    return message.SchemaInternal();
+                }
+                return null;
+            }
+        }
+
+        public  Option<ISchema<object>> ReaderSchema
+        {
+            get
+            {
+                return _msg.ReaderSchema;
+            }
+        }
+
 
     }
 
