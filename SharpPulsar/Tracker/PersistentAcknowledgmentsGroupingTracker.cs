@@ -336,7 +336,7 @@ namespace SharpPulsar.Tracker
             {
                 bitSet[batchIndex] = false;
             }
-            var cmd = new Commands().NewAck(_consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray(), ackType, null, properties, txnidLeastBits, txnidMostBits, -1);
+            var cmd = Commands.NewAck(_consumerId, msgId.LedgerId, msgId.EntryId, bitSet.ToLongArray(), ackType, null, properties, txnidLeastBits, txnidMostBits, -1);
             var payload = new Payload(cmd, -1, "NewAck");
             cnx.Tell(payload);
             return true;
@@ -362,7 +362,7 @@ namespace SharpPulsar.Tracker
                 {
                     var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
                     var protocolVersion = version.Version;
-                    if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                    if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
                         while (true)
@@ -427,7 +427,7 @@ namespace SharpPulsar.Tracker
                 {
                     var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
                     var protocolVersion = version.Version;
-                    if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion))
+                    if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
                         // We can send 1 single protobuf command with all individual acks
                         while (true)
@@ -509,7 +509,7 @@ namespace SharpPulsar.Tracker
                         foreach(var ack in toAcks)
                         {
                             var bits = await ack.Key.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-                            var cmd = new Commands().NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), ack.Value);
+                            var cmd = Commands.NewMultiTransactionMessageAck(_consumerId, new TxnID(bits.MostBits, bits.LeastBits), ack.Value);
                             var payload = new Payload(cmd, -1, "NewMultiTransactionMessageAck");
                             cnx.Tell(payload);
                         }
@@ -517,7 +517,7 @@ namespace SharpPulsar.Tracker
 
                     if (entriesToAck.Count > 0)
                     {
-                        var cmd = new Commands().NewMultiMessageAck(_consumerId, entriesToAck);
+                        var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);
                         var payload = new Payload(cmd, -1, "NewMultiMessageAck");
                         cnx.Tell(payload);
                     }
@@ -560,7 +560,7 @@ namespace SharpPulsar.Tracker
 
                 var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
                 var protocolVersion = version.Version;
-                if (new Commands().PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
+                if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
                 {
                     IList<(long ledger, long entry, BitSet Bits)> entriesToAck = new List<(long ledger, long entry, BitSet Bits)>(chunkMsgIds.Length);
                     foreach (var cMsgId in chunkMsgIds)
@@ -570,14 +570,14 @@ namespace SharpPulsar.Tracker
                             entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
                         }
                     }
-                    var cmd = new Commands().NewMultiMessageAck(_consumerId, entriesToAck);
+                    var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);
                     cnx.Tell(new Payload(cmd, -1, "NewMultiMessageAck"));
                 }
                 else
                 {
                     foreach (var cMsgId in chunkMsgIds)
                     {
-                        var cmd = new Commands().NewAck(consumerId, cMsgId.LedgerId, cMsgId.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map);
+                        var cmd = Commands.NewAck(consumerId, cMsgId.LedgerId, cMsgId.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map);
                         cnx.Tell(new Payload(cmd, -1, "NewAck"));
                     }
                 }
@@ -592,7 +592,7 @@ namespace SharpPulsar.Tracker
 
                 var mid = (MessageId)msgId;
 
-                var cmd = new Commands().NewAck(consumerId, mid.LedgerId, mid.EntryId, sets, ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
+                var cmd = Commands.NewAck(consumerId, mid.LedgerId, mid.EntryId, sets, ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
                 cnx.Tell(new Payload(cmd, -1, "NewAck"));
             }
         }

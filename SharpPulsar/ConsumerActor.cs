@@ -159,7 +159,6 @@ namespace SharpPulsar
 		protected IActorRef _clientCnx;
 
 		private IActorRef _clientCnxUsedForConsumerRegistration;
-		private readonly Commands _commands;
 		private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
 
 		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue):this
@@ -172,7 +171,6 @@ namespace SharpPulsar
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
 			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
-			_commands = new Commands();
 			_generator = idGenerator;
 			_topicName = TopicName.Get(topic);
 			_cnxPool = cnxPool;
@@ -669,7 +667,7 @@ namespace SharpPulsar
 					_possibleSendToDeadLetterTopicMessages.Clear();
 				}
 
-				bool isDurable = _subscriptionMode == SubscriptionMode.Durable;
+				var isDurable = _subscriptionMode == SubscriptionMode.Durable;
 				MessageIdData startMessageIdData = null;
 				if (isDurable)
 				{
@@ -691,15 +689,15 @@ namespace SharpPulsar
 
 				}
 
-				ISchemaInfo si = Schema.SchemaInfo;
+				var si = Schema.SchemaInfo;
 				if (si != null && (SchemaType.BYTES == si.Type || SchemaType.NONE == si.Type))
 				{
 					// don't set schema for Schema.BYTES
 					si = null;
 				}
 				// startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
-				long startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-				var request = _commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+				var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
+				var request = Commands.NewSubscribe(base.Topic, base.Subscription, _consumerId, requestId, base.SubType, _priorityLevel, base.ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
 
 				_log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
 
@@ -708,7 +706,7 @@ namespace SharpPulsar
 			Receive<CommandSuccessResponse>(result =>
 			{
 				int currentSize;
-				bool isDurable = _subscriptionMode == SubscriptionMode.Durable;
+				var isDurable = _subscriptionMode == SubscriptionMode.Durable;
 				currentSize = IncomingMessages.Count;
 				if (State.ChangeToReadyState())
 				{
@@ -872,7 +870,7 @@ namespace SharpPulsar
 					State.ConnectionState = HandlerState.State.Closing;
 					var res =  _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
 					var requestId =  res.Id;
-					var unsubscribe = _commands.NewUnsubscribe(_consumerId, requestId);
+					var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId);
 				    var cnx = _clientCnx;
 					cnx.Tell(new SendRequestWithId(unsubscribe, requestId)); 
 					CloseConsumerTasks();
@@ -911,7 +909,7 @@ namespace SharpPulsar
 
 			CloseConsumerTasks();
 
-			long requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult().Id;
+			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult().Id;
             try
             {
 				var cnx = _clientCnx;
@@ -921,7 +919,7 @@ namespace SharpPulsar
 				}
 				else
 				{
-					var cmd = _commands.NewCloseConsumer(_consumerId, requestId);
+					var cmd = Commands.NewCloseConsumer(_consumerId, requestId);
 					cnx.Tell(new SendRequestWithId(cmd, requestId));
 				}
 
@@ -949,7 +947,7 @@ namespace SharpPulsar
 			}
 			catch (Exception e)
 			{
-				Exception t = e.InnerException;
+				var t = e.InnerException;
 				if (t is PulsarClientException)
 				{
 					throw (PulsarClientException)t;
@@ -984,13 +982,13 @@ namespace SharpPulsar
 			{
 				isAllMsgsAcked = batchMessageId.AckCumulative();
 			}
-			int outstandingAcks = 0;
+			var outstandingAcks = 0;
 			if(_log.IsDebugEnabled)
 			{
 				outstandingAcks = batchMessageId.OutstandingAcksInSameBatch;
 			}
 
-			int batchSize = batchMessageId.BatchSize;
+			var batchSize = batchMessageId.BatchSize;
 			// all messages in this batch have been acked
 			if(isAllMsgsAcked)
 			{
@@ -1025,7 +1023,7 @@ namespace SharpPulsar
 			if(State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
 			{
 				Stats.IncrementNumAcksFailed();
-				PulsarClientException exception = new PulsarClientException("Consumer not ready. State: " + State);
+				var exception = new PulsarClientException("Consumer not ready. State: " + State);
 				if(AckType.Individual.Equals(ackType))
 				{
 					OnAcknowledge(messageId, exception);
@@ -1087,7 +1085,7 @@ namespace SharpPulsar
 				if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
 				{
 					Stats.IncrementNumAcksFailed();
-					PulsarClientException exception = new PulsarClientException("Consumer not ready. State: " + State);
+					var exception = new PulsarClientException("Consumer not ready. State: " + State);
 					foreach (var messageId in messageIdList)
 					{
 						OnAcknowledge(messageId, exception);
@@ -1102,7 +1100,7 @@ namespace SharpPulsar
 						var marked = MarkAckForBatchMessage((BatchMessageId)messageId, ackType, properties, txn);
 						if (messageId is BatchMessageId && !marked)
 						{
-							BatchMessageId batchMessageId = (BatchMessageId)messageId;
+							var batchMessageId = (BatchMessageId)messageId;
 							messageIdImpl = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
 							_acknowledgmentsGroupingTracker.Tell(new AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties, txn));
 							Stats.IncrementNumAcksSent(batchMessageId.BatchSize);
@@ -1129,7 +1127,7 @@ namespace SharpPulsar
 		}
         private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime)
 		{
-			IMessageId messageId = message.MessageId;
+			var messageId = message.MessageId;
 			if(messageId is TopicMessageId)
 			{
 				messageId = ((TopicMessageId)messageId).InnerMessageId;
@@ -1138,7 +1136,7 @@ namespace SharpPulsar
 			if(State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
 			{
 				Stats.IncrementNumAcksFailed();
-				PulsarClientException exception = new PulsarClientException("Consumer not ready. State: " + State);
+				var exception = new PulsarClientException("Consumer not ready. State: " + State);
 				if(AckType.Individual.Equals(ackType))
 				{
 					OnAcknowledge(messageId, exception);
@@ -1190,8 +1188,8 @@ namespace SharpPulsar
 						originMessageIdStr = m.MessageId.ToString();
 						originTopicNameStr = m.TopicName;
 					}
-					SortedDictionary<string, string> propertiesMap = new SortedDictionary<string, string>();
-					int reconsumetimes = 1;
+					var propertiesMap = new SortedDictionary<string, string>();
+					var reconsumetimes = 1;
 					if(message.Properties != null)
 					{
 						message.Properties.ForEach(x=> new KeyValuePair<string, string>(x.Key, x.Value));
@@ -1237,7 +1235,7 @@ namespace SharpPulsar
 						{
 							propertiesMap[RetryMessageUtil.SystemPropertyRealTopic] = originTopicNameStr;
 							propertiesMap[RetryMessageUtil.SystemPropertyOriginMessageId] = originMessageIdStr;
-							TypedMessageBuilder<T> typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
+							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
 							typedMessageBuilderNew.Value(retryMessage.Value);
 							typedMessageBuilderNew.Properties(propertiesMap);
 							typedMessageBuilderNew.Send(true);
@@ -1246,7 +1244,7 @@ namespace SharpPulsar
 				   }
 					else
 					{
-						TypedMessageBuilder<T> typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema);
+						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema);
 						typedMessageBuilderNew.Value(retryMessage.Value);
 						typedMessageBuilderNew.Properties(propertiesMap);
 						if (delayTime > 0)
@@ -1405,7 +1403,7 @@ namespace SharpPulsar
 				{
 					_log.Debug($"[{Topic}] [{Subscription}] Adding {numMessages} additional permits");
 				}
-				var cmd = _commands.NewFlow(_consumerId, numMessages);
+				var cmd = Commands.NewFlow(_consumerId, numMessages);
 				var pay = new Payload(cmd, -1, "NewFlow");
 				cnx.Tell(pay);
 			}
@@ -1413,8 +1411,8 @@ namespace SharpPulsar
 
 		internal virtual void ConnectionFailed(PulsarClientException exception)
 		{
-			bool nonRetriableError = !PulsarClientException.IsRetriableError(exception);
-			bool timeout = DateTimeHelper.CurrentUnixTimeMillis() > _subscribeTimeout;
+			var nonRetriableError = !PulsarClientException.IsRetriableError(exception);
+			var timeout = DateTimeHelper.CurrentUnixTimeMillis() > _subscribeTimeout;
 			if((nonRetriableError || timeout))
 			{
 				State.ConnectionState = HandlerState.State.Failed;
@@ -1481,7 +1479,7 @@ namespace SharpPulsar
 			{
 				var ms = received;
 				var messageId = ms.MessageId;
-				MessageId msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+				var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 				if (isDup)
 				{
 					if (_log.IsDebugEnabled)
@@ -1509,7 +1507,7 @@ namespace SharpPulsar
 			}
             else
             {
-				MessageId msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+				var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 				_acknowledgmentsGroupingTracker.Tell(new IsDuplicate(msgId));				
 			}	
 			
@@ -1525,15 +1523,15 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
 			}
-			MessageMetadata msgMetadata = received.Metadata;
-			int numMessages = msgMetadata.NumMessagesInBatch;
-			bool isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 
+			var msgMetadata = received.Metadata;
+			var numMessages = msgMetadata.NumMessagesInBatch;
+			var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 
 				&& Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
-			MessageId msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-			byte[] decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
+			var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+			var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
 
-			bool isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
+			var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
 			if (decryptedPayload != null)
 			{
@@ -1687,7 +1685,7 @@ namespace SharpPulsar
 
 		protected internal virtual void TriggerListener(int numMessages)
 		{
-			for (int i = 0; i < numMessages; i++)
+			for (var i = 0; i < numMessages; i++)
 			{
 				if (!IncomingMessages.TryReceive(out var msg))
 				{
@@ -1713,7 +1711,7 @@ namespace SharpPulsar
 		}
 		private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
 		{
-			int batchSize = msgMetadata.NumMessagesInBatch;
+			var batchSize = msgMetadata.NumMessagesInBatch;
 			// create ack tracker for entry aka batch
 			var batchMessage = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 			IList<IMessage<T>> possibleToDeadLetter = null;
@@ -1722,7 +1720,7 @@ namespace SharpPulsar
 				possibleToDeadLetter = new List<IMessage<T>>();
 			}
 
-			BatchMessageAcker acker = BatchMessageAcker.NewAcker(batchSize);
+			var acker = BatchMessageAcker.NewAcker(batchSize);
 			BitSet ackBitSet = null;
 			if (ackSet != null && ackSet.Count > 0)
 			{
@@ -1731,10 +1729,10 @@ namespace SharpPulsar
 
 			using var stream = new MemoryStream(payload);
 			using var binaryReader = new BinaryReader(stream);
-			int skippedMessages = 0;
+			var skippedMessages = 0;
 			try
 			{
-				for (int i = 0; i < batchSize; ++i)
+				for (var i = 0; i < batchSize; ++i)
 				{
 					if (_log.IsDebugEnabled)
 					{
@@ -1841,7 +1839,7 @@ namespace SharpPulsar
 		private void MessageProcessed(IMessage<T> msg)
 		{
 			var currentCnx = _clientCnx;
-			IActorRef msgCnx = ((Message<T>)msg).Cnx();
+			var msgCnx = ((Message<T>)msg).Cnx();
 			_lastDequeuedMessageId = msg.MessageId;
 
 			if (msgCnx != currentCnx)
@@ -1899,7 +1897,7 @@ namespace SharpPulsar
 		protected internal virtual void IncreaseAvailablePermits(IActorRef currentCnx, int delta)
 		{
 			_availablePermits += delta;
-			int available = _availablePermits;
+			var available = _availablePermits;
 
 			while(available >= _receiverQueueRefillThreshold && !Paused)
 			{
@@ -1963,7 +1961,7 @@ namespace SharpPulsar
 						DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
 						return null;
 					case ConsumerCryptoFailureAction.Fail:
-						MessageId m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
+						var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
 						_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since CryptoKeyReader interface is not implemented to consume encrypted message");
 						_unAckedMessageTracker.Tell(new Add(m));
 						return null;
@@ -1987,7 +1985,7 @@ namespace SharpPulsar
 					DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
 					return null;
 				case ConsumerCryptoFailureAction.Fail:
-					MessageId m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
+					var m = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, _partitionIndex);
 					_log.Error($"[{Topic}][{Subscription}][{ConsumerName}][{m}] Message delivery failed since unable to decrypt incoming message");
 					_unAckedMessageTracker.Tell(new Add(m));
 					return null;
@@ -2032,7 +2030,7 @@ namespace SharpPulsar
 
 		private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, CommandAck.ValidationError validationError)
 		{
-			var cmd = _commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
+			var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
 			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
 			IncreaseAvailablePermits(currentCnx);
 			Stats.IncrementNumReceiveFailed();
@@ -2079,7 +2077,7 @@ namespace SharpPulsar
 				IncomingMessages.Empty();
 				IncomingMessagesSize = 0;
 				_unAckedMessageTracker.Tell(new Clear());
-				var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId);
+				var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId);
 				var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 				cnx.Tell(payload);
 
@@ -2106,7 +2104,7 @@ namespace SharpPulsar
 
 		private int ClearIncomingMessagesAndGetMessageNumber()
 		{
-			int messagesNumber = IncomingMessages.Count;
+			var messagesNumber = IncomingMessages.Count;
 			IncomingMessages.Empty();
 			IncomingMessagesSize = 0;
 			_unAckedMessageTracker.Tell(Clear.Instance);
@@ -2133,7 +2131,7 @@ namespace SharpPulsar
 			var protocolVersion = _protocolVersion;
 			if (Connected() && protocolVersion >= (int)ProtocolVersion.V2)
 			{
-				int messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
+				var messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
 
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
 				foreach(var batch in batches)
@@ -2155,7 +2153,7 @@ namespace SharpPulsar
 
 					if (messageIdDatas.Count > 0)
 					{
-						var cmd = _commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdDatas);
+						var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdDatas);
 						var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
 						cnx.Tell(payload);
 					}
@@ -2218,7 +2216,7 @@ namespace SharpPulsar
 					{
 						foreach(var message in deadLetterMessages)
 						{
-							TypedMessageBuilder<T> typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
+							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
 							typedMessageBuilderNew.Value(message.Value);
 							typedMessageBuilderNew.Properties(message.Properties);
 							typedMessageBuilderNew.Send(true);
@@ -2241,22 +2239,22 @@ namespace SharpPulsar
 			{
 				
 				var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				long requestId = result.Id;
-                ReadOnlySequence<byte> seek = ReadOnlySequence<byte>.Empty;
+				var requestId = result.Id;
+                var seek = ReadOnlySequence<byte>.Empty;
 				if (messageId is BatchMessageId msgId)
 				{
 					// Initialize ack set
 					var ackSet = BitSet.Create();
 					ackSet.Set(0, msgId.BatchSize);
 					ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
-					long[] ackSetArr = ackSet.ToLongArray();
+					var ackSetArr = ackSet.ToLongArray();
 
-					seek = _commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
+					seek = Commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
 				}
 				else
 				{
 					var msgid = (MessageId)messageId;
-					seek = _commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
+					seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
 				}
 
 				var cnx = _clientCnx;
@@ -2281,8 +2279,8 @@ namespace SharpPulsar
 			try
 			{
 				var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				long requestId = result.Id;
-				var seek = _commands.NewSeek(_consumerId, requestId, timestamp);
+				var requestId = result.Id;
+				var seek = Commands.NewSeek(_consumerId, requestId, timestamp);
 				var cnx = _clientCnx;
 
 				_log.Info($"[{Topic}][{Subscription}] Seek subscription to publish time {timestamp}");
@@ -2320,7 +2318,7 @@ namespace SharpPulsar
 						var markDeletePosition = MessageId.ConvertToMessageId(response.MarkDeletePosition);
 						if (markDeletePosition != null)
 						{
-							int result = markDeletePosition.CompareTo(lastMessageId);
+							var result = markDeletePosition.CompareTo(lastMessageId);
 							if (lastMessageId.EntryId < 0)
 							{
 								return false;
@@ -2410,7 +2408,7 @@ namespace SharpPulsar
 			}
 
 			var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
-			Backoff backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMax(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create();
+			var backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMax(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create();
 
 			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
@@ -2426,14 +2424,14 @@ namespace SharpPulsar
 			if(Connected() && cnx != null)
 			{
 				var protocolVersion = _protocolVersion;
-				if (!_commands.PeerSupportsGetLastMessageId(protocolVersion))
+				if (!Commands.PeerSupportsGetLastMessageId(protocolVersion))
 				{
-					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {ConsumerName}, topic {_topicName}, subscription {Subscription}"));
+					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {base.ConsumerName}, topic {_topicName}, subscription {base.Subscription}"));
 				}
 
 				var res = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				long requestId = res.Id;
-				var getLastIdCmd = _commands.NewGetLastMessageId(_consumerId, requestId);
+				var requestId = res.Id;
+				var getLastIdCmd = Commands.NewGetLastMessageId(_consumerId, requestId);
 				_log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
 				var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
                 try
@@ -2467,7 +2465,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				long nextDelay = Math.Min(backoff.Next(), remainingTime);
+				var nextDelay = Math.Min(backoff.Next(), remainingTime);
 				if(nextDelay <= 0)
 				{
 					source.SetException(new PulsarClientException.TimeoutException($"The subscription {Subscription} of the topic {_topicName} could not get the last message id " + "withing configured timeout"));
@@ -2535,7 +2533,7 @@ namespace SharpPulsar
 						keys.Add(kv.Key, neC);
 					}
 				}
-				byte[] encParam = new byte[IMessageCrypto.IV_LEN];
+				var encParam = new byte[IMessageCrypto.IV_LEN];
 				msgMetadata.EncryptionParam.CopyTo(encParam, 0);
 				int? batchSize = msgMetadata.NumMessagesInBatch > 0 ? msgMetadata.NumMessagesInBatch : 0;
 				encryptionCtx.Keys = keys;
@@ -2550,7 +2548,7 @@ namespace SharpPulsar
 
 		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
-			int messagesFromQueue = 0;
+			var messagesFromQueue = 0;
 			if (IncomingMessages.TryReceive(out var peek))
 			{
 				var messageId = GetMessageId(peek);
@@ -2691,7 +2689,7 @@ namespace SharpPulsar
 			_chunkedMessagesMap.Remove(msgUUID);
 			if(chunkedMsgCtx.ChunkedMessageIds != null)
 			{
-				foreach(MessageId msgId in chunkedMsgCtx.ChunkedMessageIds)
+				foreach(var msgId in chunkedMsgCtx.ChunkedMessageIds)
 				{
 					if(msgId == null)
 					{
@@ -2760,14 +2758,14 @@ namespace SharpPulsar
 					bitSet.Set(0, batchMessageId.BatchSize);
 					bitSet.Clear(batchMessageId.BatchIndex);
 				}
-				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
+				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, bitSet.ToLongArray(), ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId, batchMessageId.BatchSize);
 			}
 			else
 			{
 				var singleMessage = (MessageId) messageId;
 				ledgerId = singleMessage.LedgerId;
 				entryId = singleMessage.EntryId;
-				cmd = _commands.NewAck(_consumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
+				cmd = Commands.NewAck(_consumerId, ledgerId, entryId, new long[]{ }, ackType, validationError, properties, txnID.LeastSigBits, txnID.MostSigBits, requestId);
 			}
 
 			_ackRequests.Add(requestId, (messageId, txnID));

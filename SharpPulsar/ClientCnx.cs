@@ -55,7 +55,7 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 
 		private string _proxyToTargetBrokerAddress;
-		private readonly ReadOnlySequence<byte> _pong = new Commands().NewPong();
+		private readonly ReadOnlySequence<byte> _pong = Commands.NewPong();
 		private List<byte> _pendingReceive;
 
 		private string _remoteHostName;
@@ -71,7 +71,7 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, new Commands().CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
 		{
 		}
 
@@ -260,7 +260,7 @@ namespace SharpPulsar
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
 				var auth = new AuthData { auth_data = (authData.Bytes) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
-				var request = new Commands().NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
+				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
 				if (_log.IsDebugEnabled)
 				{
@@ -972,7 +972,7 @@ namespace SharpPulsar
 			var auth = new AuthData { auth_data = (authData.Bytes) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-			return new Commands().NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State
