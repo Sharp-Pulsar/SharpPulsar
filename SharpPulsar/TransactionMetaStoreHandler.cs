@@ -199,7 +199,7 @@ namespace SharpPulsar
 				_log.Debug("New transaction with timeout in ms {}", timeout);
 			}
 			_pendingRequests.Add(_requestId, (new ReadOnlySequence<byte>(new byte[] { (byte)timeout }), _replyTo));
-			var cmd = new Commands().NewTxn(_transactionCoordinatorId, _requestId, timeout);
+			var cmd = Commands.NewTxn(_transactionCoordinatorId, _requestId, timeout);
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewTxn"));
 		}
@@ -248,7 +248,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
-			var cmd = new Commands().NewAddPartitionToTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
+			var cmd = Commands.NewAddPartitionToTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
 			_pendingRequests.Add(_requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
@@ -293,7 +293,7 @@ namespace SharpPulsar
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
-			var cmd = new Commands().NewAddSubscriptionToTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
+			var cmd = Commands.NewAddSubscriptionToTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
 			_pendingRequests.Add(_requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewAddSubscriptionToTxn"));
@@ -348,7 +348,7 @@ namespace SharpPulsar
 					Partition = messageId.PartitionIndex
 				});
 			}
-			var cmd = new Commands().NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit, messageIdDataList);
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit, messageIdDataList);
 			_pendingRequests.Add(_requestId, (cmd, _replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
@@ -381,7 +381,7 @@ namespace SharpPulsar
 				};
 				messageIdDataList.Add(msgIdData);
 			}
-			var cmd = new Commands().NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort, messageIdDataList);
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort, messageIdDataList);
 			_pendingRequests.Add(_requestId, (cmd, _replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));

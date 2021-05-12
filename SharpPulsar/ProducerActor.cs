@@ -111,7 +111,6 @@ namespace SharpPulsar
 		private Dictionary<long, IActorRef> _txnSequence;
 
 		private readonly IScheduler _scheduler;
-		private readonly Commands _commands;
 		private Action _nextBecome;
 		private object[] _invokeArg;
 		private IActorRef _replyTo;
@@ -121,7 +120,6 @@ namespace SharpPulsar
 
 		public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
-			_commands = new Commands();
 			_txnSequence = new Dictionary<long, IActorRef>();
 			_self = Self;
 			_generator = idGenerator;
@@ -345,17 +343,17 @@ namespace SharpPulsar
 						// JSONSchema originally generated a schema for pojo based of of the JSON schema standard
 						// but now we have standardized on every schema to generate an Avro based schema
 						var protocolVersion = _protocolVersion;
-						if (_commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
+						if (Commands.PeerSupportJsonSchemaAvroFormat(protocolVersion))
 						{
-							_schemaInfo = Schema.SchemaInfo;
+                            _schemaInfo = Schema.SchemaInfo;
 						}
 						else if (Schema is JSONSchema<T> jsonSchema)
 						{
-							_schemaInfo = jsonSchema.BackwardsCompatibleJsonSchemaInfo;
+                            _schemaInfo = jsonSchema.BackwardsCompatibleJsonSchemaInfo;
 						}
 						else
 						{
-							_schemaInfo = Schema.SchemaInfo;
+                            _schemaInfo = Schema.SchemaInfo;
 						}
 					}
 					else if (Schema.SchemaInfo.Type == SchemaType.BYTES || Schema.SchemaInfo.Type == SchemaType.NONE)
@@ -378,7 +376,7 @@ namespace SharpPulsar
 			Receive<GetEpochResponse>(epoch =>
 			{
 				_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-				var cmd = _commands.NewProducer(Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch.Epoch, _userProvidedProducerName);
+				var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch.Epoch, _userProvidedProducerName);
 				var payload = new Payload(cmd, _requestId, "NewProducer");
 				_cnx.Tell(payload);
 			});
@@ -844,12 +842,12 @@ namespace SharpPulsar
 		private ReadOnlySequence<byte> SendMessage(long producerId, long sequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
 			_log.Info($"Send message with {_producerName}:{producerId}");
-			return new Commands().NewSend(producerId, sequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+			return Commands.NewSend(producerId, sequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
 		}
 
 		private ReadOnlySequence<byte> SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
 		{
-			return _commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
+			return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
 		}
 
         public IStash Stash { get; set; }
@@ -968,7 +966,7 @@ namespace SharpPulsar
 			}
 
 			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).Id;
-			var cmd = _commands.NewCloseProducer(_producerId, requestId);
+			var cmd = Commands.NewCloseProducer(_producerId, requestId);
 			var response = await cnx.Ask(new SendRequestWithId(cmd, requestId));
 			if (!(response is Exception))
 			{
@@ -1405,11 +1403,11 @@ namespace SharpPulsar
 					{
 						_schemaInfo = (SchemaInfo)ISchema<T>.Bytes.SchemaInfo;
 					}
-					if (!_commands.PeerSupportsGetOrCreateSchema(response.Version))
+					if (!Commands.PeerSupportsGetOrCreateSchema(response.Version))
 					{
-						throw new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {_protocolVersion}. The producer is {_producerName}, topic is {Topic}");
+						throw new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {_protocolVersion}. The producer is {_producerName}, topic is {base.Topic}");
 					}
-					var request = _commands.NewGetOrCreateSchema(_requestId, Topic, _schemaInfo);
+					var request = Commands.NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
 					var payload = new Payload(request, _requestId, "SendGetOrCreateSchema");
 					_log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
 					Sender.Tell(payload);

@@ -71,7 +71,7 @@ namespace SharpPulsar.Batch
 				// some properties are common amongst the different messages in the batch, hence we just pick it up from
 				// the first message
 				_messageMetadata.SequenceId = (ulong)msg.SequenceId;
-				_lowestSequenceId = new Commands().InitBatchMessageMetadata(_messageMetadata);
+				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
 				_firstCallback = callback;
 				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
 				if(msg.Metadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
@@ -112,7 +112,7 @@ namespace SharpPulsar.Batch
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToArray());
 					}
 					catch (Exception ex)
@@ -208,7 +208,7 @@ namespace SharpPulsar.Batch
 			{
 				_messageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = new Commands().NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
+			var cmd = Commands.NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
 
 			var op = ProducerActor<T>.OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId);
 
