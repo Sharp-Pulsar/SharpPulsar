@@ -43,20 +43,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.19" />
+    <PackageReference Include="akka" Version="1.4.20" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.10.2" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.2.0" />
     <PackageReference Include="avroschemagenerator" Version="1.9.0" />
     <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.16.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.17.0" />
     <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
     <PackageReference Include="IdentityModel" Version="5.1.0" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.6" />
     <PackageReference Include="Mail.dll" Version="3.0.21008.1129" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="5.0.5">
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="5.0.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

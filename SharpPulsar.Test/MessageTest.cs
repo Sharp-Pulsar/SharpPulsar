@@ -5,6 +5,7 @@ using SharpPulsar.Schemas;
 using Xunit;
 using SharpPulsar.Extension;
 using System;
+using System.Buffers;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -39,7 +40,7 @@ namespace SharpPulsar.Test
 			builder.Properties.Add(new KeyValue { Key = "key1", Value = "value1" });
 			builder.Properties.Add(new KeyValue { Key = "key2", Value = "value2" });
 			builder.Properties.Add(new KeyValue { Key = "key3", Value = "value3" });
-			var payload = new byte[0];
+			var payload = ReadOnlySequence<byte>.Empty;
 			
 			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 			Assert.Equal("value1", msg.GetProperty("key1"));
@@ -54,8 +55,8 @@ namespace SharpPulsar.Test
                 SequenceId = 1234
             };
 
-            var payload = new byte[0];
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
+            var payload = ReadOnlySequence<byte>.Empty;
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
 			Assert.Equal(1234, msg.SequenceId);
 		}
@@ -63,9 +64,9 @@ namespace SharpPulsar.Test
 		public virtual void TestGetProducerNameNotAssigned()
 		{
 			var builder = new MessageMetadata();
-			var payload = new byte[0];
+            var payload = ReadOnlySequence<byte>.Empty;
 
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
 			Assert.Null(msg.ProducerName);
 		}
@@ -74,9 +75,8 @@ namespace SharpPulsar.Test
 		{
 			var builder = new MessageMetadata();
 			builder.ProducerName = "test-producer";
-
-			var payload = new byte[0];
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
+            var payload = ReadOnlySequence<byte>.Empty;
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<object>.Bytes);
 
 			Assert.Equal("test-producer", msg.ProducerName);
 		}
@@ -104,7 +104,7 @@ namespace SharpPulsar.Test
 			var builder = new MessageMetadata();
 			builder.ProducerName = "default";
 
-			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
+			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, new ReadOnlySequence<byte>(encodeBytes), keyValueSchema);
 			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
 			Assert.Equal(keyValue.Key, foo);
 			Assert.Equal(keyValue.Value, bar);
@@ -133,7 +133,7 @@ namespace SharpPulsar.Test
             var encodeBytes = keyValueSchema.Encode(new KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>(foo, bar));
 			var builder = new MessageMetadata();
 			builder.ProducerName = "inline";
-			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
+			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, new ReadOnlySequence<byte>(encodeBytes), keyValueSchema);
 			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
 			Assert.Equal(keyValue.Key, foo);
 			Assert.Equal(keyValue.Value, bar);
@@ -163,7 +163,7 @@ namespace SharpPulsar.Test
 			builder.ProducerName = "separated";
 			builder.PartitionKey = Convert.ToBase64String(fooSchema.Encode(foo));
 			builder.PartitionKeyB64Encoded = true;
-			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, encodeBytes, keyValueSchema);
+			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, new ReadOnlySequence<byte>(encodeBytes), keyValueSchema);
 			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
 			Assert.Equal(keyValue.Key, foo);
 			Assert.Equal(keyValue.Value, bar);
@@ -175,8 +175,8 @@ namespace SharpPulsar.Test
 			string from = "ClusterNameOfReplicatedFrom";
 			var builder = new MessageMetadata();
 			builder.ReplicatedFrom = from;
-			var payload = new byte[0];
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
+            var payload = ReadOnlySequence<byte>.Empty;
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
 			Assert.True(msg.Replicated);
 			Assert.Equal(msg.ReplicatedFrom, from);
@@ -185,8 +185,8 @@ namespace SharpPulsar.Test
 		public virtual void TestMessageImplNoReplicatedInfo()
 		{
 			var builder = new MessageMetadata();
-			var payload = new byte[0];
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
+            var payload = ReadOnlySequence<byte>.Empty;
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
 			Assert.False(msg.Replicated);
 			Assert.True(msg.ReplicatedFrom.Length == 0);
@@ -198,8 +198,8 @@ namespace SharpPulsar.Test
 			string topicName = "myTopic";
 			var builder = new MessageMetadata();
 			builder.ReplicatedFrom = from;
-			var payload = new byte[0];
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
+            var payload = ReadOnlySequence<byte>.Empty;
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 			msg.SetMessageId(new MessageId(-1, -1, -1));
 			var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
 
@@ -212,8 +212,8 @@ namespace SharpPulsar.Test
 		{
 			string topicName = "myTopic";
 			var builder = new MessageMetadata();
-			var payload = new byte[0];
-			var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
+            var payload = ReadOnlySequence<byte>.Empty;
+            var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 			msg.SetMessageId(new MessageId(-1, -1, -1));
 			var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
 

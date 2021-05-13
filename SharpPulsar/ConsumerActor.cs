@@ -13,7 +13,6 @@ using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
@@ -1476,22 +1475,32 @@ namespace SharpPulsar
 		private void MessageReceived(MessageReceived received)
 		{
 			Receive<bool>(isDup =>
-			{
-				var ms = received;
-				var messageId = ms.MessageId;
-				var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-				if (isDup)
-				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
-					}
-					IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
-				}
-				else
-					ProcessMessage(ms);
+            {
+                try
+                {
+                    var ms = received;
+                    var messageId = ms.MessageId;
+                    var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+                    if (isDup)
+                    {
+                        if (_log.IsDebugEnabled)
+                        {
+                            _log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
+                        }
+                        IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
+                    }
+                    else
+                        ProcessMessage(ms);
+                }
+                catch(Exception ex)
+                {
+                    _log.Error(ex.ToString());
+                }
+                finally
+                {
+                    Become(Ready);
 
-				Become(Ready);
+                }
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var messageId = received.MessageId;
@@ -1516,7 +1525,7 @@ namespace SharpPulsar
 		private void ProcessMessage(MessageReceived received)
         {
 			var messageId = received.MessageId;
-			var data = received.Payload;
+            var data = received.Payload.ToArray();
 			var redeliveryCount = received.RedeliveryCount;
 			IList<long> ackSet = messageId.AckSets;
 			if (_log.IsDebugEnabled)
@@ -1568,7 +1577,7 @@ namespace SharpPulsar
 						}
 						return;
 					}
-					var message = new Message<T>(_topicName.ToString(), msgId, msgMetadata, uncompressedPayload, CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount);
+					var message = new Message<T>(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount);
 
 					try
 					{
@@ -1775,7 +1784,7 @@ namespace SharpPulsar
 
 					var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex, i, batchSize, acker);
 
-					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, singleMessagePayload.ToArray(), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
+					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
 					if(possibleToDeadLetter != null)
 					{
 						possibleToDeadLetter.Add(message);
@@ -1940,12 +1949,12 @@ namespace SharpPulsar
 			return _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).Result;
 		}
 
-		private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, IActorRef currentCnx)
+		private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, IActorRef currentCnx)
 		{
 
 			if(msgMetadata.EncryptionKeys.Count == 0)
 			{
-				return payload.ToArray();
+				return payload;
 			}
 
 			// If KeyReader is not configured throw exception based on config param
@@ -1955,7 +1964,7 @@ namespace SharpPulsar
 				{
 					case ConsumerCryptoFailureAction.Consume:
 						_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}] CryptoKeyReader interface is not implemented. Consuming encrypted message.");
-						return payload.ToArray();
+						return payload;
 					case ConsumerCryptoFailureAction.Discard:
 						_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}] Skipping decryption since CryptoKeyReader interface is not implemented and config is set to discard");
 						DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);
@@ -1968,7 +1977,7 @@ namespace SharpPulsar
 				}
 			}
 
-			var decryptedData = _msgCrypto.Decrypt(msgMetadata, payload.ToArray(), Conf.CryptoKeyReader);
+			var decryptedData = _msgCrypto.Decrypt(msgMetadata, payload, Conf.CryptoKeyReader);
 			if(decryptedData != null)
 			{
 				return decryptedData;
@@ -1979,7 +1988,7 @@ namespace SharpPulsar
 				case ConsumerCryptoFailureAction.Consume:
 					// Note, batch message will fail to consume even if config is set to consume
 					_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}][{messageId}] Decryption failed. Consuming encrypted message since config is set to consume.");
-					return payload.ToArray();
+					return payload;
 				case ConsumerCryptoFailureAction.Discard:
 					_log.Warning($"[{Topic}][{Subscription}][{ConsumerName}][{messageId}] Discarding message since decryption failed and config is set to discard");
 					DiscardMessage(messageId, currentCnx, ValidationError.DecryptionError);

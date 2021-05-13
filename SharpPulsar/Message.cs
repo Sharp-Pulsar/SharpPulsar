@@ -51,31 +51,31 @@ namespace SharpPulsar
 
 		private string _topic;
 		public MessageMetadata Metadata => _metadata;
-		public Message(MessageMetadata msgMetadata, byte[] payload, ISchema<T> schema)
+		public Message(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
         {
 			_metadata = msgMetadata;
-			_payload = new ReadOnlySequence<byte>(payload);
+			_payload = payload;
 			_schema = schema;
         }
 		// Constructor for out-going message
-		public static Message<T> Create(MessageMetadata msgMetadata, byte[] payload, ISchema<T> schema)
+		public static Message<T> Create(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
 		{
 			return new Message<T>(msgMetadata, payload, schema);
 		}
 
 		// Constructor for incoming message
 		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata,
-				byte[] payload, IActorRef cnx, ISchema<T> schema)
+                ReadOnlySequence<byte> payload, IActorRef cnx, ISchema<T> schema)
 		{
 			new Message<T>(topic, messageId, msgMetadata, payload, Option<EncryptionContext>.None, cnx, schema);
 		}
-		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, byte[] payload,
+		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema)
 		{
 			new Message<T>(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0);
 		}
 		
-		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, byte[] payload,
+		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount)
 		{
             _properties = new Dictionary<string, string>();
@@ -88,7 +88,7 @@ namespace SharpPulsar
 			// Need to make a copy since the passed payload is using a ref-count buffer that we don't know when could
 			// release, since the Message is passed to the user. Also, the passed ByteBuf is coming from network and is
 			// backed by a direct buffer which we could not expose as a byte[]
-			_payload = new ReadOnlySequence<byte>(payload);
+			_payload = payload;
             EncryptionCtx = encryptionCtx;
 
 			if (msgMetadata.Properties.Count > 0)
@@ -107,16 +107,9 @@ namespace SharpPulsar
 			}
 			_schema = schema;
 		}
-
-        Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata,
-				SingleMessageMetadata singleMessageMetadata, byte[] payload,
-				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema)
-		{
-			new Message<T>(topic, batchMessageId, msgMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, 0);
-		}
-		
+        		
 		public Message(string topic, BatchMessageId batchMessageId, MessageMetadata msgMetadata,
-				SingleMessageMetadata singleMessageMetadata, byte[] payload,
+				SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount)
         {
 			_metadata = msgMetadata;
@@ -126,7 +119,7 @@ namespace SharpPulsar
 			_cnx = cnx;
 			_redeliveryCount = redeliveryCount;
 
-			_payload = new ReadOnlySequence<byte>(payload);
+			_payload = payload;
 			EncryptionCtx = encryptionCtx;
 
 			if (singleMessageMetadata.Properties.Count > 0)
@@ -188,11 +181,11 @@ namespace SharpPulsar
 			_schema = schema;
 		}
 		public Message(string topic, string msgId, Dictionary<string, string> properties,
-						   byte[] payload, ISchema<T> schema, MessageMetadata msgMetadata)
+                           ReadOnlySequence<byte> payload, ISchema<T> schema, MessageMetadata msgMetadata)
 		{
-			string[] data = msgId.Split(":");
-			long ledgerId = long.Parse(data[0]);
-			long entryId = long.Parse(data[1]);
+			var data = msgId.Split(":");
+			var ledgerId = long.Parse(data[0]);
+			var entryId = long.Parse(data[1]);
 			if (data.Length == 3)
 			{
 				_messageId = new BatchMessageId(ledgerId, entryId, -1, int.Parse(data[2]));
@@ -202,7 +195,7 @@ namespace SharpPulsar
 				_messageId = new MessageId(ledgerId, entryId, -1);
 			}
 			_topic = topic;
-			_payload = new ReadOnlySequence<byte>(payload);
+			_payload = payload;
 			_properties = properties;
 			_schema = schema;
 			_redeliveryCount = 0;
@@ -322,7 +315,7 @@ namespace SharpPulsar
 					// this is an optimization to only get schema version when necessary
 					if (_schema.SupportSchemaVersioning())
 					{
-						byte[] schemaVersion = SchemaVersion;
+						var schemaVersion = SchemaVersion;
 						if (null == schemaVersion)
 						{
 							return _schema.Decode(Data.ToArray());
@@ -347,7 +340,7 @@ namespace SharpPulsar
 				var schemaType = _schema.GetType();
 				var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
 				
-				byte[] schemaVersion = SchemaVersion;
+				var schemaVersion = SchemaVersion;
 				if (keyValueEncodingType == KeyValueEncodingType.SEPARATED)
 				{
 					var decode = schemaType

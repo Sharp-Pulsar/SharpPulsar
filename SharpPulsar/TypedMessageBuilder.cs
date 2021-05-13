@@ -31,6 +31,7 @@ namespace SharpPulsar
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
+    using System.Buffers;
     using System.Threading.Tasks;
 
     [Serializable]
@@ -39,7 +40,7 @@ namespace SharpPulsar
 		private readonly IActorRef _producer;//topic
 		public readonly MessageMetadata Metadata  = new MessageMetadata();
 		private readonly ISchema<T> _schema;
-		private byte[] _content;
+		private ReadOnlySequence<byte> _content;
 		private readonly User.Transaction _txn;
 
 		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema) : this(producer, schema, null)
@@ -50,7 +51,7 @@ namespace SharpPulsar
 		{
 			_producer = producer;
 			_schema = schema;
-			_content = new byte[0] { };
+			_content = ReadOnlySequence<byte>.Empty;
 			_txn = txn;
 		}
 
@@ -150,7 +151,7 @@ namespace SharpPulsar
 					// set value as the payload
 					if (kv.Value != null)
 					{
-						_content = kvSchema.ValueSchema.Encode(kv.Value);
+						_content = new ReadOnlySequence<byte>(kvSchema.ValueSchema.Encode(kv.Value));
 					}
 					else
 					{
@@ -159,7 +160,7 @@ namespace SharpPulsar
 					return this;
 				}
 			}
-			_content = _schema.Encode(value);
+			_content = new ReadOnlySequence<byte>(_schema.Encode(value));
 			return this;
 		}
 		public ITypedMessageBuilder<T> Property(string name, string value)
