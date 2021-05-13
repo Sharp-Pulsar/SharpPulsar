@@ -79,6 +79,11 @@ namespace SharpPulsar.Configuration
             _conf.ProducerName = producerName;
             return this;
         }
+        public ProducerConfigBuilder<T> AccessMode(Common.ProducerAccessMode accessMode)
+        {
+            _conf.AccessMode = accessMode;
+            return this;
+        }
         public ProducerConfigBuilder<T> EnableBatching(bool enableBatching)
         {
             _conf.BatchingEnabled = enableBatching;
