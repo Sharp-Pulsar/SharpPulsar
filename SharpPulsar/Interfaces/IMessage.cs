@@ -59,6 +59,9 @@ namespace SharpPulsar.Interfaces
         /// <para>Even when using the Schema and type-safe API, an application
         /// has access to the underlying raw message payload.
         /// 
+        /// To avoid allocation: 
+        /// var pool = ArrayPool<byte>.Shared;
+        /// var payload = pool.Rent((int)msg.Data.Length);
         /// </para>
         /// </summary>
         /// <returns> the byte array with the message payload </returns>

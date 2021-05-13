@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Text;
 using SharpPulsar;
 using SharpPulsar.Configuration;
@@ -35,12 +36,20 @@ namespace Tutorials
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
                 producer.NewMessage().Value(data).Send();
             }
+
+            var pool = ArrayPool<byte>.Shared;
             for (var i = 0; i < 10; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(30));
-                consumer.Acknowledge(message);
-                var res = Encoding.UTF8.GetString(message.Data);
-                Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                if(message != null)
+                {
+                    var payload = pool.Rent((int)message.Data.Length);
+                    Array.Copy(sourceArray: message.Data.ToArray(), destinationArray: payload, length: (int)message.Data.Length);
+
+                    consumer.Acknowledge(message);
+                    var res = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                }
             }
         }
     }
