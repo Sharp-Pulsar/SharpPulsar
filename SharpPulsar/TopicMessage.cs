@@ -135,7 +135,7 @@ namespace SharpPulsar
             }
         }
 
-        public  Option<ISchema<object>> ReaderSchema
+        public  Option<ISchema<T>> ReaderSchema
         {
             get
             {

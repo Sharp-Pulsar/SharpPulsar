@@ -483,20 +483,21 @@ namespace SharpPulsar
             EnsureSchemaIsLoaded();
             if (_schema == null)
             {
-                return Option<ISchema<object>>.None;
+                return Option<ISchema<T>>.None;
             }
             if (_schema is AutoConsumeSchema) 
             {
-                byte[] schemaVersion = SchemaVersion;
-                return new Option<ISchema<object>>(((AutoConsumeSchema)_schema).AtSchemaVersion(schemaVersion));
-            } else if (_schema is AbstractSchema<T>) 
+                var schemaVersion = SchemaVersion;
+                return new Option<ISchema<T>>(((AutoConsumeSchema)_schema).AtSchemaVersion(schemaVersion));
+            } 
+            else if (_schema is AbstractSchema<T>) 
             {
-                byte[] schemaVersion = SchemaVersion;
-                return Optional.of(((AbstractSchema)schema)
-                        .atSchemaVersion(schemaVersion));
-            } else
+               var schemaVersion = SchemaVersion;
+                return new Option<ISchema<T>>(((AbstractSchema<T>)_schema).AtSchemaVersion(schemaVersion));
+            } 
+            else
             {
-                return Optional.of(schema);
+                return new Option<ISchema<T>>(_schema); 
             }
         }
         private void EnsureSchemaIsLoaded()

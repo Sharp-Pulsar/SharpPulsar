@@ -95,11 +95,11 @@ namespace SharpPulsar.Interfaces
         /// this method will return the schema associated with the message. </summary>
         /// <returns> The schema used to decode the payload of message. </returns>
         /// <seealso cref= Schema#AUTO_CONSUME() </seealso>
-        virtual Option<ISchema<object>> ReaderSchema
+        virtual Option<ISchema<T>> ReaderSchema
         {
             get
             {
-                return Option<ISchema<object>>.None;
+                return Option<ISchema<T>>.None;
             }
         }
 
