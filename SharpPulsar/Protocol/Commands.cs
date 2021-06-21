@@ -458,7 +458,7 @@ namespace SharpPulsar.Protocol
 
 		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata)
 		{
-			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false);
+			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Common.ProducerAccessMode.Shared);
 		}
 
 		private static Proto.Schema.Type GetSchemaType(SchemaType type)
@@ -510,11 +510,15 @@ namespace SharpPulsar.Protocol
 			return schema;
 		}
 
-		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName)
+		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode)
 		{
             var producer = new CommandProducer
             {
-                Topic = topic, ProducerId = (ulong) producerId, RequestId = (ulong) requestId, Epoch = (ulong) epoch
+                Topic = topic, 
+                ProducerId = (ulong) producerId, 
+                RequestId = (ulong) requestId, 
+                Epoch = (ulong) epoch,
+                ProducerAccessMode = ConvertProducerAccessMode(accessMode)
             };
 			
             if (!ReferenceEquals(producerName, null))
@@ -827,7 +831,7 @@ namespace SharpPulsar.Protocol
 			
 		}
 
-		public static ReadOnlySequence<byte> NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction, IList<MessageIdData> messageIdDatas)
+		public static ReadOnlySequence<byte> NewEndTxn(long requestId, long txnIdLeastBits, long txnIdMostBits, TxnAction txnAction)
 		{
             var commandEndTxn = new CommandEndTxn
             {
@@ -836,7 +840,6 @@ namespace SharpPulsar.Protocol
                 TxnidMostBits = (ulong) txnIdMostBits,
                 TxnAction = txnAction
             };
-			commandEndTxn.MessageIds.AddRange(messageIdDatas);
             return Serializer.Serialize(commandEndTxn.ToBaseCommand());
 			
 			
@@ -978,6 +981,10 @@ namespace SharpPulsar.Protocol
 		{
 			return peerVersion >= (int)ProtocolVersion.V12;
 		}
+		public static bool PeerSupportsAckReceipt(int peerVersion)
+		{
+			return peerVersion >= (int)ProtocolVersion.V17;
+		}
 
 		public static bool PeerSupportsMultiMessageAcknowledgment(int peerVersion)
 		{
@@ -993,6 +1000,36 @@ namespace SharpPulsar.Protocol
 		{
 			return peerVersion >= (int)ProtocolVersion.V15;
 		}
-	}
+        private static Proto.ProducerAccessMode ConvertProducerAccessMode(Common.ProducerAccessMode accessMode)
+        {
+            switch (accessMode)
+            {
+                case Common.ProducerAccessMode.Exclusive:
+                    return Proto.ProducerAccessMode.Exclusive;
+                case Common.ProducerAccessMode.Shared:
+                    return Proto.ProducerAccessMode.Shared;
+                case Common.ProducerAccessMode.WaitForExclusive:
+                    return Proto.ProducerAccessMode.WaitForExclusive;
+                default:
+                    throw new ArgumentException("Unknonw access mode: " + accessMode);
+            }
+        }
+
+        public static Common.ProducerAccessMode ConvertProducerAccessMode(Proto.ProducerAccessMode accessMode)
+        {
+            switch (accessMode)
+            {
+                case Proto.ProducerAccessMode.Exclusive:
+                    return Common.ProducerAccessMode.Exclusive;
+                case Proto.ProducerAccessMode.Shared:
+                    return Common.ProducerAccessMode.Shared;
+                case Proto.ProducerAccessMode.WaitForExclusive:
+                    return Common.ProducerAccessMode.WaitForExclusive;
+                default:
+                    throw new ArgumentException("Unknonw access mode: " + accessMode);
+            }
+        }
+
+    }
 
 }

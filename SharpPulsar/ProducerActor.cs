@@ -374,7 +374,7 @@ namespace SharpPulsar
 			Receive<GetEpochResponse>(epoch =>
 			{
 				_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-				var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch.Epoch, _userProvidedProducerName);
+				var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch.Epoch, _userProvidedProducerName, Conf.AccessMode);
 				var payload = new Payload(cmd, _requestId, "NewProducer");
 				_cnx.Tell(payload);
 			});
@@ -771,7 +771,7 @@ namespace SharpPulsar
 		{
 			exception = new Exception();
 			var msgMetadata = new MessageMetadata();
-			if(msg.Schema == Schema)
+			if(msg.SchemaInternal() == Schema)
 			{
 				if (_schemaVersion.HasValue)
 					msgMetadata.SchemaVersion = _schemaVersion.Value;
@@ -1377,9 +1377,9 @@ namespace SharpPulsar
 					{
 						return;
 					}
-					if (msg.Schema != null && msg.Schema.SchemaInfo.Type.Value > 0)
+					if (msg.SchemaInternal() != null && msg.SchemaInternal().SchemaInfo.Type.Value > 0)
 					{
-						_schemaInfo = (SchemaInfo)msg.Schema.SchemaInfo;
+						_schemaInfo = (SchemaInfo)msg.SchemaInternal().SchemaInfo;
 					}
 					else
 					{
