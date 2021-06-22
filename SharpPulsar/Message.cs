@@ -488,7 +488,8 @@ namespace SharpPulsar
             if (_schema is AutoConsumeSchema) 
             {
                 var schemaVersion = SchemaVersion;
-                return new Option<ISchema<T>>(((AutoConsumeSchema)_schema).AtSchemaVersion(schemaVersion));
+                //return new Option<ISchema<T>>(((AutoConsumeSchema)_schema).AtSchemaVersion(schemaVersion));
+                return new Option<ISchema<T>>();
             } 
             else if (_schema is AbstractSchema<T>) 
             {

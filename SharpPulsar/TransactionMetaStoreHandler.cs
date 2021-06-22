@@ -338,7 +338,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Commit txn {}", txnID);
 			}
-			var messageIdDataList = new List<MessageIdData>();
+			/*var messageIdDataList = new List<MessageIdData>();
 			foreach(MessageId messageId in sendMessageIdList)
 			{
 				messageIdDataList.Add(new MessageIdData 
@@ -347,8 +347,8 @@ namespace SharpPulsar
 					entryId = (ulong)messageId.EntryId,
 					Partition = messageId.PartitionIndex
 				});
-			}
-			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit, messageIdDataList);
+			}*/
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit/*, messageIdDataList*/);
 			_pendingRequests.Add(_requestId, (cmd, _replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
@@ -369,7 +369,7 @@ namespace SharpPulsar
 			{
 				_log.Debug("Abort txn {}", txnID);
 			}
-			IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
+			/*IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
 			foreach(IMessageId messageId in sendMessageIdList)
 			{
 				var msgIdData = new MessageIdData
@@ -380,8 +380,8 @@ namespace SharpPulsar
 
 				};
 				messageIdDataList.Add(msgIdData);
-			}
-			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort, messageIdDataList);
+			}*/
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort/*, messageIdDataList*/);
 			_pendingRequests.Add(_requestId, (cmd, _replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));

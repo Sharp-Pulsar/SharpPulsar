@@ -462,7 +462,7 @@ namespace SharpPulsar.User
         /// <param name="functionName">The name of a Pulsar Function</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public FunctionStats GetFunctionStats(string tenant, string @namespace, string functionName)
+        public FunctionStatsImpl GetFunctionStats(string tenant, string @namespace, string functionName)
         {
             return GetFunctionStatsAsync(tenant, @namespace, functionName).GetAwaiter().GetResult();
         }
@@ -473,7 +473,7 @@ namespace SharpPulsar.User
         /// <param name="functionName">The name of a Pulsar Function</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async Task<FunctionStats> GetFunctionStatsAsync(string tenant, string @namespace, string functionName, CancellationToken cancellationToken = default)
+        public async Task<FunctionStatsImpl> GetFunctionStatsAsync(string tenant, string @namespace, string functionName, CancellationToken cancellationToken = default)
         {
             return await _api.GetFunctionStatsAsync(tenant, @namespace, functionName, cancellationToken).ConfigureAwait(false);
         }
@@ -593,7 +593,7 @@ namespace SharpPulsar.User
         /// <param name="instanceId">The instanceId of a Pulsar Function (if instance-id is not provided, the stats of all instances is returned</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public FunctionInstanceStatsData GetFunctionInstanceStats(string tenant, string @namespace, string functionName, string instanceId)
+        public FunctionInstanceStatsDataImpl GetFunctionInstanceStats(string tenant, string @namespace, string functionName, string instanceId)
         {
             return GetFunctionInstanceStatsAsync(tenant, @namespace, functionName, instanceId).GetAwaiter().GetResult();
         }       
@@ -605,7 +605,7 @@ namespace SharpPulsar.User
         /// <param name="instanceId">The instanceId of a Pulsar Function (if instance-id is not provided, the stats of all instances is returned</param>
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async Task<FunctionInstanceStatsData> GetFunctionInstanceStatsAsync(string tenant, string @namespace, string functionName, string instanceId, CancellationToken cancellationToken = default)
+        public async Task<FunctionInstanceStatsDataImpl> GetFunctionInstanceStatsAsync(string tenant, string @namespace, string functionName, string instanceId, CancellationToken cancellationToken = default)
         {
             return await _api.GetFunctionInstanceStatsAsync(tenant, @namespace, functionName, instanceId, cancellationToken).ConfigureAwait(false);
         }

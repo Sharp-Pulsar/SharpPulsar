@@ -17,7 +17,7 @@ namespace SharpPulsar.Admin
     /// <summary>
     /// This provides the REST API for admin operations
     /// </summary>
-    public partial class PulsarAdminRESTAPI : Microsoft.Rest.ServiceClient<PulsarAdminRESTAPI>, IPulsarAdminRESTAPI, ITransactions
+    public partial class PulsarAdminRESTAPI : Microsoft.Rest.ServiceClient<PulsarAdminRESTAPI>, IPulsarAdminRESTAPI//, ITransactions
     {
         /// <summary>
         /// The base URI of the service.
@@ -50007,64 +50007,832 @@ namespace SharpPulsar.Admin
             return GetTransactionMetadataAsync(txnID, authoritative, customHeaders, cancellationToken).GetAwaiter().GetResult();
         }
 
-        public Task<TransactionBufferStats> GetTransactionBufferStatsAsync(string topic, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<Microsoft.Rest.HttpOperationResponse<TransactionBufferStats>> GetTransactionBufferStatsAsync(string tenant, string namesparameter, string topic, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (tenant == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+            }
+            if (namesparameter == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespace");
+            }
+            if (topic == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "topic");
+            }
+            // Tracing
+            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
+            string _invocationId = null;
+            if (_shouldTrace)
+            {
+                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
+                System.Collections.Generic.Dictionary<string, object> tracingParameters = new System.Collections.Generic.Dictionary<string, object>();
+
+                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("tenant", tenant);
+                tracingParameters.Add("namespace", namesparameter);
+                tracingParameters.Add("topic", topic);
+                tracingParameters.Add("cancellationToken", cancellationToken);
+                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetTransactionBufferStats", tracingParameters);
+            }
+            // Construct URL
+            var _baseUrl = new System.Uri($"{_urlBase.TrimEnd('/')}/admin/v3").AbsoluteUri;
+            var _url = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "transactions/transactionBufferStats/{tenant}/{namespace}/{topic}").ToString();
+
+            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namesparameter));
+            _url = _url.Replace("{topic}", System.Uri.EscapeDataString(topic));
+            System.Collections.Generic.List<string> _queryParameters = new System.Collections.Generic.List<string>();
+            if (authoritative != null)
+            {
+                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+            }
+            if (_queryParameters.Count > 0)
+            {
+                _url += "?" + string.Join("&", _queryParameters);
+            }
+            // Create HTTP transport objects
+            var _httpRequest = new System.Net.Http.HttpRequestMessage();
+            System.Net.Http.HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new System.Net.Http.HttpMethod("GET");
+            _httpRequest.RequestUri = new System.Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            // Serialize Request
+            string _requestContent = null;
+            // Send Request
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
+            }
+            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412 && (int)_statusCode != 500)
+            {
+                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
+                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
+                if (_shouldTrace)
+                {
+                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
+                }
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            var _result = new Microsoft.Rest.HttpOperationResponse<TransactionBufferStats>();
+            _result.Request = _httpRequest;
+            _result.Response = _httpResponse;
+            // Deserialize Response
+            if ((int)_statusCode == 200)
+            {
+                _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<TransactionBufferStats>(_responseContent, this.DeserializationSettings);
+                }
+                catch (Newtonsoft.Json.JsonException ex)
+                {
+                    _httpRequest.Dispose();
+                    if (_httpResponse != null)
+                    {
+                        _httpResponse.Dispose();
+                    }
+                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                }
+            }
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+            }
+            return _result;
         }
 
-        public TransactionBufferStats GetTransactionBufferStats(string topic, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public Microsoft.Rest.HttpOperationResponse<TransactionBufferStats> GetTransactionBufferStats(string tenant, string namesparameter, string topic, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return GetTransactionBufferStatsAsync(tenant, namesparameter, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
 
-        public Task<TransactionPendingAckStats> GetPendingAckStatsAsync(string topic, string subName, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<Microsoft.Rest.HttpOperationResponse<TransactionPendingAckStats>> GetPendingAckStatsAsync(string tenant, string namesparameter, string topic, string subName, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (tenant == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+            }
+            if (namesparameter == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespace");
+            }
+            if (topic == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "topic");
+            }
+            if (subName == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subName");
+            }
+            // Tracing
+            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
+            string _invocationId = null;
+            if (_shouldTrace)
+            {
+                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
+                System.Collections.Generic.Dictionary<string, object> tracingParameters = new System.Collections.Generic.Dictionary<string, object>();
+
+                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("tenant", tenant);
+                tracingParameters.Add("namespace", namesparameter);
+                tracingParameters.Add("topic", topic);
+                tracingParameters.Add("subName", topic);
+                tracingParameters.Add("cancellationToken", cancellationToken);
+                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPendingAckStats", tracingParameters);
+            }
+            // Construct URL
+            var _baseUrl = new System.Uri($"{_urlBase.TrimEnd('/')}/admin/v3").AbsoluteUri;
+            var _url = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "transactions/pendingAckStats/{tenant}/{namespace}/{topic}/{subName}").ToString();
+
+            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namesparameter));
+            _url = _url.Replace("{topic}", System.Uri.EscapeDataString(topic));
+            _url = _url.Replace("{subName}", System.Uri.EscapeDataString(subName));
+            System.Collections.Generic.List<string> _queryParameters = new System.Collections.Generic.List<string>();
+            if (authoritative != null)
+            {
+                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+            }
+            if (_queryParameters.Count > 0)
+            {
+                _url += "?" + string.Join("&", _queryParameters);
+            }
+            // Create HTTP transport objects
+            var _httpRequest = new System.Net.Http.HttpRequestMessage();
+            System.Net.Http.HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new System.Net.Http.HttpMethod("GET");
+            _httpRequest.RequestUri = new System.Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            // Serialize Request
+            string _requestContent = null;
+            // Send Request
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
+            }
+            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412 && (int)_statusCode != 500)
+            {
+                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
+                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
+                if (_shouldTrace)
+                {
+                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
+                }
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            var _result = new Microsoft.Rest.HttpOperationResponse<TransactionPendingAckStats>();
+            _result.Request = _httpRequest;
+            _result.Response = _httpResponse;
+            // Deserialize Response
+            if ((int)_statusCode == 200)
+            {
+                _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<TransactionPendingAckStats>(_responseContent, this.DeserializationSettings);
+                }
+                catch (Newtonsoft.Json.JsonException ex)
+                {
+                    _httpRequest.Dispose();
+                    if (_httpResponse != null)
+                    {
+                        _httpResponse.Dispose();
+                    }
+                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                }
+            }
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+            }
+            return _result;
         }
 
-        public TransactionPendingAckStats GetPendingAckStats(string topic, string subName, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public Microsoft.Rest.HttpOperationResponse<TransactionPendingAckStats> GetPendingAckStats(string tenant, string namesparameter, string topic, string subName, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return GetPendingAckStatsAsync(tenant, namesparameter, topic, subName, authoritative, customHeaders).GetAwaiter().GetResult();
         }
 
-        public Task<System.Collections.Generic.IDictionary<string, TransactionMetadata>> GetSlowTransactionsByCoordinatorIdAsync(int? coordinatorId, long timeout, long timeUnit, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<Microsoft.Rest.HttpOperationResponse<System.Collections.Generic.IDictionary<string, TransactionMetadata>>> GetSlowTransactionsByCoordinatorIdAsync(int? coordinatorId = default(int?), long? timeout = default(long?), bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (timeout == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "timeout");
+            }
+            // Tracing
+            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
+            string _invocationId = null;
+            if (_shouldTrace)
+            {
+                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
+                System.Collections.Generic.Dictionary<string, object> tracingParameters = new System.Collections.Generic.Dictionary<string, object>();
+
+                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("coordinatorId", coordinatorId);
+                tracingParameters.Add("timeout", timeout.ToString());
+                tracingParameters.Add("cancellationToken", cancellationToken);
+                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSlowTransactions", tracingParameters);
+            }
+            // Construct URL
+            var _baseUrl = new System.Uri($"{_urlBase.TrimEnd('/')}/admin/v3").AbsoluteUri;
+            var _url = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "transactions/slowTransactions/{timeout}").ToString();
+
+            _url = _url.Replace("{timeout}", System.Uri.EscapeDataString(timeout.Value.ToString()));
+            System.Collections.Generic.List<string> _queryParameters = new System.Collections.Generic.List<string>();
+            if (coordinatorId != null)
+            {
+                _queryParameters.Add(string.Format("coordinatorId={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(coordinatorId, this.SerializationSettings).Trim('"'))));
+            }
+            if (authoritative != null)
+            {
+                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+            }
+            if (_queryParameters.Count > 0)
+            {
+                _url += "?" + string.Join("&", _queryParameters);
+            }
+            // Create HTTP transport objects
+            var _httpRequest = new System.Net.Http.HttpRequestMessage();
+            System.Net.Http.HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new System.Net.Http.HttpMethod("GET");
+            _httpRequest.RequestUri = new System.Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            // Serialize Request
+            string _requestContent = null;
+            // Send Request
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
+            }
+            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412 && (int)_statusCode != 500)
+            {
+                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
+                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
+                if (_shouldTrace)
+                {
+                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
+                }
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            var _result = new Microsoft.Rest.HttpOperationResponse<IDictionary<string, TransactionMetadata>>();
+            _result.Request = _httpRequest;
+            _result.Response = _httpResponse;
+            // Deserialize Response
+            if ((int)_statusCode == 200)
+            {
+                _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IDictionary<string, TransactionMetadata>>(_responseContent, this.DeserializationSettings);
+                }
+                catch (Newtonsoft.Json.JsonException ex)
+                {
+                    _httpRequest.Dispose();
+                    if (_httpResponse != null)
+                    {
+                        _httpResponse.Dispose();
+                    }
+                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                }
+            }
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+            }
+            return _result;
         }
 
-        public System.Collections.Generic.IDictionary<string, TransactionMetadata> GetSlowTransactionsByCoordinatorId(int? coordinatorId, long timeout, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public Microsoft.Rest.HttpOperationResponse<System.Collections.Generic.IDictionary<string, TransactionMetadata>> GetSlowTransactionsByCoordinatorId(int? coordinatorId = default(int?), long? timeout = default(long?), bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return GetSlowTransactionsByCoordinatorIdAsync(coordinatorId, timeout, authoritative, customHeaders).GetAwaiter().GetResult();
         }
 
-        public Task<System.Collections.Generic.IDictionary<string, TransactionMetadata>> GetSlowTransactionsAsync(long timeout, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<Microsoft.Rest.HttpOperationResponse<System.Collections.Generic.IDictionary<string, TransactionMetadata>>> GetSlowTransactionsAsync(long? timeout = default(long?), bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (timeout == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "timeout");
+            }
+            // Tracing
+            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
+            string _invocationId = null;
+            if (_shouldTrace)
+            {
+                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
+                System.Collections.Generic.Dictionary<string, object> tracingParameters = new System.Collections.Generic.Dictionary<string, object>();
+
+                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("timeout", timeout.ToString());
+                tracingParameters.Add("cancellationToken", cancellationToken);
+                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetSlowTransactions", tracingParameters);
+            }
+            // Construct URL
+            var _baseUrl = new System.Uri($"{_urlBase.TrimEnd('/')}/admin/v3").AbsoluteUri;
+            var _url = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "transactions/slowTransactions/{timeout}").ToString();
+
+            _url = _url.Replace("{timeout}", System.Uri.EscapeDataString(timeout.Value.ToString()));
+            System.Collections.Generic.List<string> _queryParameters = new System.Collections.Generic.List<string>();
+            
+            if (authoritative != null)
+            {
+                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+            }
+            if (_queryParameters.Count > 0)
+            {
+                _url += "?" + string.Join("&", _queryParameters);
+            }
+            // Create HTTP transport objects
+            var _httpRequest = new System.Net.Http.HttpRequestMessage();
+            System.Net.Http.HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new System.Net.Http.HttpMethod("GET");
+            _httpRequest.RequestUri = new System.Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            // Serialize Request
+            string _requestContent = null;
+            // Send Request
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
+            }
+            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412 && (int)_statusCode != 500)
+            {
+                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
+                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
+                if (_shouldTrace)
+                {
+                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
+                }
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            var _result = new Microsoft.Rest.HttpOperationResponse<IDictionary<string, TransactionMetadata>>();
+            _result.Request = _httpRequest;
+            _result.Response = _httpResponse;
+            // Deserialize Response
+            if ((int)_statusCode == 200)
+            {
+                _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<IDictionary<string, TransactionMetadata>>(_responseContent, this.DeserializationSettings);
+                }
+                catch (Newtonsoft.Json.JsonException ex)
+                {
+                    _httpRequest.Dispose();
+                    if (_httpResponse != null)
+                    {
+                        _httpResponse.Dispose();
+                    }
+                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                }
+            }
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+            }
+            return _result;
         }
 
-        public System.Collections.Generic.IDictionary<string, TransactionMetadata> GetSlowTransactions(long timeout, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public Microsoft.Rest.HttpOperationResponse<System.Collections.Generic.IDictionary<string, TransactionMetadata>> GetSlowTransactions(long? timeout = default(long?), bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null)
         {
-            throw new System.NotImplementedException();
+            return GetSlowTransactionsAsync(timeout, authoritative, customHeaders).GetAwaiter().GetResult();
         }
 
-        public Task<TransactionCoordinatorInternalStats> GetCoordinatorInternalStatsAsync(int coordinatorId, bool metadata, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<Microsoft.Rest.HttpOperationResponse<TransactionCoordinatorInternalStats>> GetCoordinatorInternalStatsAsync(int? coordinatorId = default(int?), bool? metadata = false, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (coordinatorId == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "coordinatorId");
+            }
+            // Tracing
+            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
+            string _invocationId = null;
+            if (_shouldTrace)
+            {
+                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
+                System.Collections.Generic.Dictionary<string, object> tracingParameters = new System.Collections.Generic.Dictionary<string, object>();
+
+                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("coordinatorId", coordinatorId.Value.ToString());
+                tracingParameters.Add("metadata", metadata);
+                tracingParameters.Add("cancellationToken", cancellationToken);
+                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetCoordinatorInternalStats", tracingParameters);
+            }
+            // Construct URL
+            var _baseUrl = new System.Uri($"{_urlBase.TrimEnd('/')}/admin/v3").AbsoluteUri;
+            var _url = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "transactions/coordinatorInternalStats/{coordinatorId}").ToString();
+
+            _url = _url.Replace("{coordinatorId}", System.Uri.EscapeDataString(coordinatorId.Value.ToString()));
+            System.Collections.Generic.List<string> _queryParameters = new System.Collections.Generic.List<string>();
+
+            if (metadata != null)
+            {
+                _queryParameters.Add(string.Format("metadata={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(metadata, this.SerializationSettings).Trim('"'))));
+            }
+            if (authoritative != null)
+            {
+                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+            }
+            if (_queryParameters.Count > 0)
+            {
+                _url += "?" + string.Join("&", _queryParameters);
+            }
+            // Create HTTP transport objects
+            var _httpRequest = new System.Net.Http.HttpRequestMessage();
+            System.Net.Http.HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new System.Net.Http.HttpMethod("GET");
+            _httpRequest.RequestUri = new System.Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            // Serialize Request
+            string _requestContent = null;
+            // Send Request
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
+            }
+            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412 && (int)_statusCode != 500)
+            {
+                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
+                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
+                if (_shouldTrace)
+                {
+                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
+                }
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            var _result = new Microsoft.Rest.HttpOperationResponse<TransactionCoordinatorInternalStats>();
+            _result.Request = _httpRequest;
+            _result.Response = _httpResponse;
+            // Deserialize Response
+            if ((int)_statusCode == 200)
+            {
+                _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<TransactionCoordinatorInternalStats>(_responseContent, this.DeserializationSettings);
+                }
+                catch (Newtonsoft.Json.JsonException ex)
+                {
+                    _httpRequest.Dispose();
+                    if (_httpResponse != null)
+                    {
+                        _httpResponse.Dispose();
+                    }
+                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                }
+            }
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+            }
+            return _result;
         }
 
-        public TransactionCoordinatorInternalStats GetCoordinatorInternalStats(int coordinatorId, bool metadata, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public Microsoft.Rest.HttpOperationResponse<TransactionCoordinatorInternalStats> GetCoordinatorInternalStats(int? coordinatorId = default(int?), bool? metadata = false, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null)
         {
-            throw new System.NotImplementedException();
+            return GetCoordinatorInternalStatsAsync(coordinatorId, metadata, authoritative, customHeaders).GetAwaiter().GetResult();
         }
 
-        public Task<TransactionPendingAckInternalStats> GetPendingAckInternalStatsAsync(string topic, string subName, bool metadata, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<Microsoft.Rest.HttpOperationResponse<TransactionPendingAckInternalStats>> GetPendingAckInternalStatsAsync(string tenant, string namespaceParameter, string topic, string subName, bool? metadata = false, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (tenant == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "tenant");
+            }
+            if (namespaceParameter == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "namespaceParameter");
+            }
+            if (topic == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "topic");
+            }
+            if (subName == null)
+            {
+                throw new Microsoft.Rest.ValidationException(Microsoft.Rest.ValidationRules.CannotBeNull, "subName");
+            }
+            // Tracing
+            bool _shouldTrace = Microsoft.Rest.ServiceClientTracing.IsEnabled;
+            string _invocationId = null;
+            if (_shouldTrace)
+            {
+                _invocationId = Microsoft.Rest.ServiceClientTracing.NextInvocationId.ToString();
+                System.Collections.Generic.Dictionary<string, object> tracingParameters = new System.Collections.Generic.Dictionary<string, object>();
+
+                tracingParameters.Add("authoritative", authoritative);
+                tracingParameters.Add("tenant", tenant);
+                tracingParameters.Add("namespace", namespaceParameter);
+                tracingParameters.Add("topic", topic);
+                tracingParameters.Add("subName", subName);
+                tracingParameters.Add("metadata", metadata);
+                tracingParameters.Add("cancellationToken", cancellationToken);
+                Microsoft.Rest.ServiceClientTracing.Enter(_invocationId, this, "GetPendingAckInternalStats", tracingParameters);
+            }
+            // Construct URL
+            var _baseUrl = new System.Uri($"{_urlBase.TrimEnd('/')}/admin/v3").AbsoluteUri;
+            var _url = new System.Uri(new System.Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "transactions/pendingAckInternalStats/{tenant}/{namespace}/{topic}/{subName}").ToString();
+
+            _url = _url.Replace("{tenant}", System.Uri.EscapeDataString(tenant));
+            _url = _url.Replace("{namespace}", System.Uri.EscapeDataString(namespaceParameter));
+            _url = _url.Replace("{topic}", System.Uri.EscapeDataString(topic));
+            _url = _url.Replace("{subName}", System.Uri.EscapeDataString(subName));
+            System.Collections.Generic.List<string> _queryParameters = new System.Collections.Generic.List<string>();
+
+            if (metadata != null)
+            {
+                _queryParameters.Add(string.Format("metadata={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(metadata, this.SerializationSettings).Trim('"'))));
+            }
+            if (authoritative != null)
+            {
+                _queryParameters.Add(string.Format("authoritative={0}", System.Uri.EscapeDataString(Microsoft.Rest.Serialization.SafeJsonConvert.SerializeObject(authoritative, this.SerializationSettings).Trim('"'))));
+            }
+            if (_queryParameters.Count > 0)
+            {
+                _url += "?" + string.Join("&", _queryParameters);
+            }
+            // Create HTTP transport objects
+            var _httpRequest = new System.Net.Http.HttpRequestMessage();
+            System.Net.Http.HttpResponseMessage _httpResponse = null;
+            _httpRequest.Method = new System.Net.Http.HttpMethod("GET");
+            _httpRequest.RequestUri = new System.Uri(_url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var _header in customHeaders)
+                {
+                    if (_httpRequest.Headers.Contains(_header.Key))
+                    {
+                        _httpRequest.Headers.Remove(_header.Key);
+                    }
+                    _httpRequest.Headers.TryAddWithoutValidation(_header.Key, _header.Value);
+                }
+            }
+
+            // Serialize Request
+            string _requestContent = null;
+            // Send Request
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.SendRequest(_invocationId, _httpRequest);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            _httpResponse = await this.HttpClient.SendAsync(_httpRequest, cancellationToken).ConfigureAwait(false);
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.ReceiveResponse(_invocationId, _httpResponse);
+            }
+            System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string _responseContent = null;
+            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404 && (int)_statusCode != 412 && (int)_statusCode != 500)
+            {
+                var ex = new Microsoft.Rest.HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", _statusCode));
+                if (_httpResponse.Content != null)
+                {
+                    _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _responseContent = string.Empty;
+                }
+                ex.Request = new Microsoft.Rest.HttpRequestMessageWrapper(_httpRequest, _requestContent);
+                ex.Response = new Microsoft.Rest.HttpResponseMessageWrapper(_httpResponse, _responseContent);
+                if (_shouldTrace)
+                {
+                    Microsoft.Rest.ServiceClientTracing.Error(_invocationId, ex);
+                }
+                _httpRequest.Dispose();
+                if (_httpResponse != null)
+                {
+                    _httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            var _result = new Microsoft.Rest.HttpOperationResponse<TransactionPendingAckInternalStats>();
+            _result.Request = _httpRequest;
+            _result.Response = _httpResponse;
+            // Deserialize Response
+            if ((int)_statusCode == 200)
+            {
+                _responseContent = await _httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    _result.Body = Microsoft.Rest.Serialization.SafeJsonConvert.DeserializeObject<TransactionPendingAckInternalStats>(_responseContent, this.DeserializationSettings);
+                }
+                catch (Newtonsoft.Json.JsonException ex)
+                {
+                    _httpRequest.Dispose();
+                    if (_httpResponse != null)
+                    {
+                        _httpResponse.Dispose();
+                    }
+                    throw new Microsoft.Rest.SerializationException("Unable to deserialize the response.", _responseContent, ex);
+                }
+            }
+            if (_shouldTrace)
+            {
+                Microsoft.Rest.ServiceClientTracing.Exit(_invocationId, _result);
+            }
+            return _result;
         }
 
-        public TransactionPendingAckInternalStats GetPendingAckInternalStats(string topic, string subName, bool metadata, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public Microsoft.Rest.HttpOperationResponse<TransactionPendingAckInternalStats> GetPendingAckInternalStats(string tenant, string namespaceParameter, string topic, string subName, bool? metadata = false, bool? authoritative = false, System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return GetPendingAckInternalStatsAsync(tenant, namespaceParameter, topic, subName, metadata, authoritative, customHeaders).GetAwaiter().GetResult();
         }
     }
 }
