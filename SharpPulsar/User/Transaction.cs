@@ -14,11 +14,13 @@ namespace SharpPulsar.User
         public void Abort()
         {
             _txn.Tell(Messages.Transaction.Abort.Instance);
+            _txn.Tell(PoisonPill.Instance);
         }
 
         public void Commit()
         {
             _txn.Tell(Messages.Transaction.Commit.Instance);
+            _txn.Tell(PoisonPill.Instance);
         }
         internal IActorRef Txn => _txn;
     }

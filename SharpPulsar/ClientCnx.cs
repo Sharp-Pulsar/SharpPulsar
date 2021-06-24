@@ -734,7 +734,7 @@ namespace SharpPulsar
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new EndTxnResponse(command));
+				handler.Tell(new EndTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, command.Error, command.Message));
 			}
 		}
 

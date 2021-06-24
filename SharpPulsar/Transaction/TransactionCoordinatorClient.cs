@@ -201,7 +201,8 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(commit.TxnID.MostSigBits).ToString());
-			}
+                Sender.Tell(new EndTxnResponse(0, 0, 0, Protocol.Proto.ServerError.UnknownError, ""));
+            }
 			else
 				handler.Tell(commit);
 		}

@@ -121,8 +121,7 @@ namespace SharpPulsar
 			});
 			Receive<CommitTxnID>(c => 
 			{
-				_replyTo = Sender;
-				_invokeArg = new object[] { c.TxnID, c.MessageIds };
+				_invokeArg = new object[] { c.TxnID, c.ReplyTo};
 				_nextBecome = Commit;
 				Become(GetCnxAndRequestId);
 			});
@@ -326,30 +325,20 @@ namespace SharpPulsar
 		private void Commit(object[] args)
 		{
 
-			Receive<EndTxnResponse>(r =>
+			Receive<EndTxnResponse>(response =>
 			{
-				HandleEndTxnResponse(r.Response);
+				HandleEndTxnResponse(response);
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var txnID = (TxnID)args[0];
-			var sendMessageIdList = (IList<IMessageId>)args[1];
+            var replyTo = (IActorRef)args[1];
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug("Commit txn {}", txnID);
 			}
-			/*var messageIdDataList = new List<MessageIdData>();
-			foreach(MessageId messageId in sendMessageIdList)
-			{
-				messageIdDataList.Add(new MessageIdData 
-				{ 
-					ledgerId = (ulong)messageId.LedgerId,
-					entryId = (ulong)messageId.EntryId,
-					Partition = messageId.PartitionIndex
-				});
-			}*/
-			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit/*, messageIdDataList*/);
-			_pendingRequests.Add(_requestId, (cmd, _replyTo));
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit);
+			_pendingRequests.Add(_requestId, (cmd, replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));
@@ -357,9 +346,9 @@ namespace SharpPulsar
 
 		private void Abort(object[] args)
 		{
-			Receive<EndTxnResponse>(r =>
+			Receive<EndTxnResponse>(response =>
 			{
-				HandleEndTxnResponse(r.Response);
+				HandleEndTxnResponse(response);
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
@@ -387,14 +376,14 @@ namespace SharpPulsar
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));
 		}
 
-		private void HandleEndTxnResponse(CommandEndTxnResponse response)
+		private void HandleEndTxnResponse(EndTxnResponse response)
 		{
-			var request = (long)response.RequestId;
-			if (!_pendingRequests.TryGetValue(request, out var s))
+			var request = response.RequestId;
+			if (!_pendingRequests.TryGetValue(request, out var msg))
 			{
 				if(_log.IsDebugEnabled)
 				{
-					_log.Debug("Got end txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
+					_log.Debug("Got end txn response for timeout {} - {}", response.MostBits, response.LeastBits);
 				}
 				return;
 			}
@@ -409,6 +398,8 @@ namespace SharpPulsar
 			{
 				_log.Error("Got end txn response for request {} error {}", response.RequestId, response.Error);
 			}
+            //callback
+            msg.ReplyTo.Tell(response);
 			_pendingRequests.Remove(request);
 		}
 

@@ -20,10 +20,19 @@ namespace SharpPulsar.Messages.Transaction
     }
     public sealed class EndTxnResponse
     {
-        public CommandEndTxnResponse Response { get; }
-        public EndTxnResponse(CommandEndTxnResponse response)
+        public long LeastBits { get; }
+        public long MostBits { get; }
+        public long RequestId { get; }
+
+        public ServerError Error { get; }
+        public string Message { get; }
+        public EndTxnResponse(long requestId, long leastBits, long mostBits, ServerError error, string message)
         {
-            Response = response;
+            RequestId = requestId;
+            LeastBits = leastBits;
+            MostBits = mostBits;
+            Error = error;
+            Message = message;
         }
     }
     public sealed class AddPublishPartitionToTxnResponse

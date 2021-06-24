@@ -7,6 +7,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -47,8 +48,11 @@ namespace SharpPulsar.Transaction
 		private readonly long _txnIdMostBits;
 		private readonly ILoggingAdapter _log;
 		private long _sequenceId = 0L;
+        private volatile State _state;
+        private readonly IDictionary<string, CompletableFuture<Void>> registerPartitionMap;
+        private readonly IDictionary<Pair<string, string>, CompletableFuture<Void>> registerSubscriptionMap;
 
-		private readonly ISet<string> _producedTopics;
+        private readonly ISet<string> _registerPartitionMaps;
 		private readonly ISet<string> _ackedTopics;
 		private IActorRef _tcClient; //TransactionCoordinatorClientImpl
 		private IDictionary<IActorRef, int> _cumulativeAckConsumers;
@@ -59,13 +63,14 @@ namespace SharpPulsar.Transaction
 
         public Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
-			_log = Context.System.Log;
+            _state = State.OPEN;
+            _log = Context.System.Log;
 			_client = client;
 			_transactionTimeoutMs = transactionTimeoutMs;
 			_txnIdLeastBits = txnIdLeastBits;
 			_txnIdMostBits = txnIdMostBits;
 
-			_producedTopics = new HashSet<string>();
+			_registerPartitionMaps = new HashSet<string>();
 			_ackedTopics = new HashSet<string>();
 			_sendList = new List<IMessageId>();
 			TcClient();
@@ -110,8 +115,9 @@ namespace SharpPulsar.Transaction
 			});
 			Receive<Commit>(_ =>
 			{
-				Commit();
-			});
+                if(CheckIfOpen())
+                    Become(Commit);
+            });
 			Receive<RegisterSendOp>(s =>
 			{
 				RegisterSendOp(s.MessageId);
@@ -134,11 +140,14 @@ namespace SharpPulsar.Transaction
 		// register the topics that will be modified by this transaction
 		private void RegisterProducedTopic(string topic)
 		{
-			if (_producedTopics.Add(topic))
-			{
-				// we need to issue the request to TC to register the produced topic
-				_tcClient.Tell(new AddPublishPartitionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), new List<string> { topic }));
-			}
+            if(CheckIfOpen())
+            {
+                if (_registerPartitionMaps.Add(topic))
+                {
+                    // we need to issue the request to TC to register the produced topic
+                    _tcClient.Tell(new AddPublishPartitionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), new List<string> { topic }));
+                }
+            }
 		}
 
 		private void RegisterSendOp(IMessageId send)
@@ -167,12 +176,23 @@ namespace SharpPulsar.Transaction
 
 		private void Commit()
 		{
-			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
-			foreach (var msgid in _sendList)
-			{
-				sendMessageIdList.Add(msgid);
-			}
-			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
+            Receive<EndTxnResponse>(e =>
+            {
+                if(e.Error != Protocol.Proto.ServerError.UnknownError)
+                {
+                    var error = e.Error;
+                    if (error == Protocol.Proto.ServerError.TransactionNotFound || error == Protocol.Proto.ServerError.InvalidTxnStatus)
+                        _state = State.ERROR;
+                    else
+                    {
+                        _state = State.COMMITTED;
+                    }
+                }
+                Become(Ready);
+                Stash.UnstashAll();
+            });
+            ReceiveAny(any => Stash.Stash());
+			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), Self));
 		}
 
 		private void Abort()
@@ -191,8 +211,24 @@ namespace SharpPulsar.Transaction
 				_cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
 				_cumulativeAckConsumers.Clear();
 			}
-		}
+        }
+        private bool CheckIfOpen()
+        {
+            if (_state == State.OPEN)
+                return true;
+
+            _log.Error($"InvalidTxnStatusException({_txnIdMostBits}: {_txnIdLeastBits}] with unexpected state : {_state}, expect OPEN state!");
+            return false;
+        }
 
     }
-
+    public enum State
+    {
+        OPEN,
+        COMMITTING,
+        ABORTING,
+        COMMITTED,
+        ABORTED,
+        ERROR
+    }
 }

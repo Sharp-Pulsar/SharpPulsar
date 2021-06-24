@@ -1,4 +1,5 @@
 ﻿
+using Akka.Actor;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Transaction;
 using System.Collections.Generic;
@@ -32,11 +33,11 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class CommitTxnID
     {
         public TxnID TxnID { get; }
-        public IList<IMessageId> MessageIds { get; }
-        public CommitTxnID(TxnID txnID, IList<IMessageId> messageIds)
+        public IActorRef ReplyTo { get; }
+        public CommitTxnID(TxnID txnID, IActorRef replyto)
         {
             TxnID = txnID;
-            MessageIds = messageIds;
+            ReplyTo = replyto;
         }
     }
     public sealed class Commit
