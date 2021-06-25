@@ -25,7 +25,7 @@ namespace SharpPulsar.Interfaces.Transaction
     /// <summary>
 	/// Transaction coordinator client.
 	/// </summary>
-	public interface TransactionCoordinatorClient : System.IDisposable
+	public interface ITransactionCoordinatorClient : System.IDisposable
 	{
 
 		/// <summary>

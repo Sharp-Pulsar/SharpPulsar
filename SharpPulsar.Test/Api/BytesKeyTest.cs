@@ -76,8 +76,8 @@ namespace SharpPulsar.Test.Api
         {
             var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
 
-            Random r = new Random(0);
-            byte[] byteKey = new byte[1000];
+            var r = new Random(0);
+            var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
@@ -108,7 +108,7 @@ namespace SharpPulsar.Test.Api
         public void ProduceAndConsumeBatch()
 		{
 
-            Random r = new Random(0);
+            var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 

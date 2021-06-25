@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Api
 		public void TestExclusiveHashRange()
 		{
 
-			KeySharedPolicy.KeySharedPolicySticky policy = KeySharedPolicy.StickyHashRange();
+			var policy = KeySharedPolicy.StickyHashRange();
 			Assert.Equal(2 << 15, policy.HashRangeTotal);
 
 			policy.GetRanges(Range.Of(0, 1), Range.Of(1, 2));
@@ -48,7 +48,7 @@ namespace SharpPulsar.Test.Api
 		public void TestExclusiveHashRangeInvalid()
 		{
 
-			KeySharedPolicy.KeySharedPolicySticky policy = KeySharedPolicy.StickyHashRange();
+			var policy = KeySharedPolicy.StickyHashRange();
             Assert.Throws<System.ArgumentException>(() => policy.Validate());
 			policy.GetRanges(Range.Of(0, 9), Range.Of(0, 5));
             Assert.Throws<System.ArgumentException>(() => policy.Validate());

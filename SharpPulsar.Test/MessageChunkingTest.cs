@@ -64,9 +64,9 @@ namespace SharpPulsar.Test
 			var producer = _client.NewProducer(pBuilder);
 
 			IList<string> publishedMessages = new List<string>();
-			for (int i = 1; i < totalMessages; i++)
+			for (var i = 1; i < totalMessages; i++)
 			{
-				string message = CreateMessagePayload(i * 10);
+				var message = CreateMessagePayload(i * 10);
 				publishedMessages.Add(message);
 				producer.Send(Encoding.UTF8.GetBytes(message));
 			}
@@ -74,12 +74,12 @@ namespace SharpPulsar.Test
 			IMessage<byte[]> msg = null;
 			ISet<string> messageSet = new HashSet<string>();
 			IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
-			for (int i = 0; i < totalMessages - 1; i++)
+			for (var i = 0; i < totalMessages - 1; i++)
 			{
 				msg = consumer.Receive();
-				string receivedMessage = Encoding.UTF8.GetString(msg.Data);
+				var receivedMessage = Encoding.UTF8.GetString(msg.Data);
 				_output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
-				string expectedMessage = publishedMessages[i];
+				var expectedMessage = publishedMessages[i];
 				TestMessageOrderAndDuplicates(messageSet, receivedMessage, expectedMessage);
 				msgIds.Add(msg);
 			}

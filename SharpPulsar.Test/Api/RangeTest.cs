@@ -37,16 +37,16 @@ namespace SharpPulsar.Test.Api
         [Fact]
 		public void TestOf()
 		{
-			Range range = Range.Of(0, 3);
+			var range = Range.Of(0, 3);
 			Assert.Equal(0, range.Start);
 			Assert.Equal(3, range.End);
 		}
 		[Fact]
 		public void TestIntersect()
 		{
-			Range range1 = Range.Of(0, 9);
-			Range range2 = Range.Of(0, 2);
-			Range intersectRange = range1.Intersect(range2);
+			var range1 = Range.Of(0, 9);
+			var range2 = Range.Of(0, 2);
+			var intersectRange = range1.Intersect(range2);
 			Assert.Equal(0, intersectRange.Start);
 			Assert.Equal(2, intersectRange.End);
 

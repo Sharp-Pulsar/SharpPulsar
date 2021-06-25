@@ -87,11 +87,25 @@ namespace SharpPulsar
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			//_blockIfReachMaxPendingOps = true;
 			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.OperationTimeoutMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
-			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, _state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
-			Listening(); 
-			_connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
+            GrabCnx();
 
 		}
+        private void GrabCnx()
+        {
+            Receive<ConnectionOpened>(o => {
+                HandleConnectionOpened(o.ClientCnx);
+            });
+            Receive<ConnectionClosed>(o => {
+                HandleConnectionClosed(o.ClientCnx);
+            });
+            Receive<ConnectionFailed>(f => {
+                HandleConnectionFailed(f.Exception);
+            });
+            ReceiveAny(x => Stash.Stash());
+            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(_conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(_conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
+
+            _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
+        }
 		private void Listening()
         {
 			Receive<RunRequestTimeout>(t =>
@@ -115,7 +129,7 @@ namespace SharpPulsar
 			Receive<AbortTxnID>(a => 
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { a.TxnID, a.MessageIds };
+				_invokeArg = new object[] { a.TxnID, a.ReplyTo };
 				_nextBecome = Abort;
 				Become(GetCnxAndRequestId);
 			});
@@ -131,15 +145,6 @@ namespace SharpPulsar
 				_invokeArg = new object[] { s.TxnID, s.Subscriptions };
 				_nextBecome = AddSubscriptionToTxn;
 				Become(GetCnxAndRequestId);
-			});
-			Receive<ConnectionOpened>(o => {
-				HandleConnectionOpened(o.ClientCnx);
-			});
-			Receive<ConnectionClosed>(o => {
-				HandleConnectionClosed(o.ClientCnx);
-			});
-			Receive<ConnectionFailed>(f => {
-				HandleConnectionFailed(f.Exception);
 			});
 			Stash?.UnstashAll();
 		}
@@ -177,10 +182,12 @@ namespace SharpPulsar
 			_log.Info($"Transaction meta handler with transaction coordinator id {_transactionCoordinatorId} connection opened.");
 			_connectionHandler.Tell(new SetCnx(cnx));
 			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, Self));
-			if(!_state.ChangeToReadyState())
-			{
-				cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-			}
+            if (!_state.ChangeToReadyState())
+            {
+                cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            }
+            else
+                Become(Listening);
 		}
 
 		private void NewTransaction(object[] args)
@@ -353,25 +360,13 @@ namespace SharpPulsar
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var txnID = (TxnID)args[0];
-			var sendMessageIdList = (IList<IMessageId>)args[1];
-			if (_log.IsDebugEnabled)
+            var replyTo = (IActorRef)args[1];
+            if (_log.IsDebugEnabled)
 			{
 				_log.Debug("Abort txn {}", txnID);
 			}
-			/*IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
-			foreach(IMessageId messageId in sendMessageIdList)
-			{
-				var msgIdData = new MessageIdData
-				{
-					ledgerId = (ulong)((MessageId)messageId).LedgerId,
-					entryId = (ulong)((MessageId)messageId).EntryId,
-					Partition = ((MessageId)messageId).PartitionIndex,
-
-				};
-				messageIdDataList.Add(msgIdData);
-			}*/
-			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort/*, messageIdDataList*/);
-			_pendingRequests.Add(_requestId, (cmd, _replyTo));
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort);
+			_pendingRequests.Add(_requestId, (cmd, replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));
 		}

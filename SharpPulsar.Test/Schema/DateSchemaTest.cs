@@ -29,18 +29,18 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncode()
         {
-            DateSchema schema = DateSchema.Of();
-            DateTime data = DateTime.Now;
+            var schema = DateSchema.Of();
+            var data = DateTime.Now;
             var ms = data.ConvertToMsTimestamp().LongToBigEndian();
-            byte[] expected = BitConverter.GetBytes(ms);
+            var expected = BitConverter.GetBytes(ms);
             Assert.Equal(expected, schema.Encode(data));
         }
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            DateSchema schema = DateSchema.Of();
-            DateTime date = DateTime.UtcNow;
-            byte[] bytes = schema.Encode(date);
+            var schema = DateSchema.Of();
+            var date = DateTime.UtcNow;
+            var bytes = schema.Encode(date);
             Assert.Equal(date.ToString("yyyy-MM-ddTHH:mm:ss"), schema.Decode(bytes).ToString("yyyy-MM-ddTHH:mm:ss"));
         }
     }

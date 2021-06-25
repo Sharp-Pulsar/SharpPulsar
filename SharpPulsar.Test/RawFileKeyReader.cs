@@ -19,7 +19,7 @@ namespace SharpPulsar.Test
 
         public EncryptionKeyInfo GetPublicKey(string keyName, IDictionary<string, string> metadata)
         {
-            EncryptionKeyInfo keyInfo = new EncryptionKeyInfo();
+            var keyInfo = new EncryptionKeyInfo();
             try
             {
                 keyInfo.Key = (byte[])(object)File.ReadAllBytes(Path.GetFullPath(_publicKeyFile));
@@ -34,7 +34,7 @@ namespace SharpPulsar.Test
 
         public EncryptionKeyInfo GetPrivateKey(string keyName, IDictionary<string, string> metadata)
         {
-            EncryptionKeyInfo keyInfo = new EncryptionKeyInfo();
+            var keyInfo = new EncryptionKeyInfo();
             try
             {
                 keyInfo.Key = (byte[])(object)File.ReadAllBytes(Path.GetFullPath(_privateKeyFile));

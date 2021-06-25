@@ -58,7 +58,7 @@ namespace SharpPulsar.Test
 		private void TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)
 		{
 			_output.WriteLine($"Test negative acks batching={batching} partitions={usePartition} subType={subscriptionType} negAckDelayMs={negAcksDelayMillis}");
-			string topic = "testNegativeAcks-" + DateTime.Now.Ticks;
+			var topic = "testNegativeAcks-" + DateTime.Now.Ticks;
 
 			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topic);
@@ -83,14 +83,14 @@ namespace SharpPulsar.Test
 			ISet<string> sentMessages = new HashSet<string>();
 
 			const int n = 10;
-			for (int i = 0; i < n; i++)
+			for (var i = 0; i < n; i++)
 			{
-				string value = "test-" + i;
+				var value = "test-" + i;
 				producer.Send(Encoding.UTF8.GetBytes(value));
 				sentMessages.Add(value);
 			}
 
-			for (int i = 0; i < n; i++)
+			for (var i = 0; i < n; i++)
 			{
 				var msg = consumer.Receive();
 				if(msg != null)
@@ -105,7 +105,7 @@ namespace SharpPulsar.Test
 
 			Thread.Sleep(TimeSpan.FromSeconds(10));
 			// All the messages should be received again
-			for (int i = 0; i < n; i++)
+			for (var i = 0; i < n; i++)
 			{
                 var msg = consumer.Receive(TimeSpan.FromSeconds(5));
                 if (msg != null)

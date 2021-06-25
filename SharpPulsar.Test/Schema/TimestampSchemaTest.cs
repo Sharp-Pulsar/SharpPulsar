@@ -27,8 +27,8 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            TimestampSchema schema = TimestampSchema.Of();
-            DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeMilliseconds(DateTimeHelper.CurrentUnixTimeMillis());
+            var schema = TimestampSchema.Of();
+            var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(DateTimeHelper.CurrentUnixTimeMillis());
             var encoded = schema.Encode(timestamp);
             var decoded = schema.Decode(encoded);
             Assert.Equal(timestamp, decoded);
@@ -36,9 +36,9 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaDecode()
         {
-            byte[] byteData = new byte[] { 0, 0, 0, 0, 0, 10, 24, 42 };
+            var byteData = new byte[] { 0, 0, 0, 0, 0, 10, 24, 42 };
             long expected = 10 * 65536 + 24 * 256 + 42;
-            TimestampSchema schema = TimestampSchema.Of();
+            var schema = TimestampSchema.Of();
             Assert.Equal(expected, schema.Decode(byteData).TimeOfDay.TotalMilliseconds);
         }
     }

@@ -64,26 +64,31 @@ namespace SharpPulsar.Test.Transaction
 				.Topic(topic)
 				.SendTimeout(0);
 
-			Producer<byte[]> producer = _client.NewProducer(producerBuilder);
+			var producer = _client.NewProducer(producerBuilder);
 
-			User.Transaction txn = Txn;
+			var txn1 = Txn;
+			var txn2 = Txn;
 
-			int txnMessageCnt = 0;
-			int messageCnt = 40;
-			for(int i = 0; i < messageCnt; i++)
+			var txnMessageCnt = 0;
+			var messageCnt = 1000;
+			for(var i = 0; i < messageCnt; i++)
 			{
-				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
-				txnMessageCnt++;
+                if(i % 5 == 0)
+                    producer.NewMessage(txn1).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
+                else
+                    producer.NewMessage(txn2).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
+                txnMessageCnt++;
 			}
 
 			// Can't receive transaction messages before commit.
 			var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
-			Assert.Null(message);
+			//Assert.Null(message);
 
-			txn.Commit();
+			txn1.Commit();
+			txn2.Commit();
 			// txn1 messages could be received after txn1 committed
-			int receiveCnt = 0;
-			for(int i = 0; i < txnMessageCnt; i++)
+			var receiveCnt = 0;
+			for(var i = 0; i < txnMessageCnt; i++)
 			{
 				message = consumer.Receive(TimeSpan.FromSeconds(10));
 				Assert.NotNull(message);
@@ -111,13 +116,13 @@ namespace SharpPulsar.Test.Transaction
 				.EnableBatching(true)
 				.SendTimeout(0);
 
-			Producer<byte[]> producer = _client.NewProducer(producerBuilder);
+			var producer = _client.NewProducer(producerBuilder);
 
-			User.Transaction txn = Txn;
+			var txn = Txn;
 
-			int txnMessageCnt = 0;
-			int messageCnt = 40;
-			for(int i = 0; i < messageCnt; i++)
+			var txnMessageCnt = 0;
+			var messageCnt = 40;
+			for(var i = 0; i < messageCnt; i++)
 			{
 				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 				txnMessageCnt++;
@@ -130,8 +135,8 @@ namespace SharpPulsar.Test.Transaction
 			txn.Commit();
 
 			// txn1 messages could be received after txn1 committed
-			int receiveCnt = 0;
-			for(int i = 0; i < txnMessageCnt; i++)
+			var receiveCnt = 0;
+			for(var i = 0; i < txnMessageCnt; i++)
 			{
 				message = consumer.Receive(TimeSpan.FromSeconds(10));
 				Assert.NotNull(message);
@@ -148,7 +153,7 @@ namespace SharpPulsar.Test.Transaction
 		[Fact]
 		public void ProduceAbortTest()
 		{
-			User.Transaction txn = Txn;
+			var txn = Txn;
 			
 
 			var producerBuilder = new ProducerConfigBuilder<byte[]>();
@@ -158,8 +163,8 @@ namespace SharpPulsar.Test.Transaction
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			int messageCnt = 10;
-			for(int i = 0; i < messageCnt; i++)
+			var messageCnt = 10;
+			for(var i = 0; i < messageCnt; i++)
 			{
 				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 			}

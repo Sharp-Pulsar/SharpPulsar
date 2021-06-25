@@ -34,9 +34,9 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            InstantSchema schema = InstantSchema.Of();
-            Instant instant = Instant.FromDateTimeUtc(DateTime.UtcNow);
-            byte[] bytes = schema.Encode(instant);
+            var schema = InstantSchema.Of();
+            var instant = Instant.FromDateTimeUtc(DateTime.UtcNow);
+            var bytes = schema.Encode(instant);
             _testOutputHelper.WriteLine($"{instant}");
             Assert.Equal(instant.ToString(), schema.Decode(bytes).ToString());
         }

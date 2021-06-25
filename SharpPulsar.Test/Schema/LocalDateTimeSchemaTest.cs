@@ -29,9 +29,9 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            LocalDateTimeSchema schema = LocalDateTimeSchema.Of();
-            LocalDateTime localDateTime = LocalDateTime.FromDateTime(DateTime.UtcNow);
-            byte[] bytes = schema.Encode(localDateTime);
+            var schema = LocalDateTimeSchema.Of();
+            var localDateTime = LocalDateTime.FromDateTime(DateTime.UtcNow);
+            var bytes = schema.Encode(localDateTime);
             var actual = schema.Decode(bytes);
             Assert.Equal(localDateTime.Date, actual.Date);
             Assert.Equal(localDateTime.Hour, actual.Hour);

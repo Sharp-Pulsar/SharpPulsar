@@ -34,8 +34,8 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestFillParametersToSchemainfo()
         {
-            AvroSchema<Foo> fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
-            AvroSchema<Bar> barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
+            var fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
             fooSchema.SchemaInfo.Name = "foo";
             fooSchema.SchemaInfo.Type = SchemaType.AVRO;
@@ -52,7 +52,7 @@ namespace SharpPulsar.Test.Schema
                 ["bar.key"] = "key"
             };
             barSchema.SchemaInfo.Properties = valueProperties;
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
+            var keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
 
             Assert.Equal("foo", keyValueSchema1.SchemaInfo.Properties["key.schema.name"]);
             Assert.Equal(SchemaType.AVRO.ToString(), keyValueSchema1.SchemaInfo.Properties["key.schema.type"]);
@@ -65,11 +65,11 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestAvroSchemaCreate()
         {
-            AvroSchema<Foo> fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
-            AvroSchema<Bar> barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build());
+            var fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+            var barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build());
 
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema2 = ISchema<object>.KeyValue(AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build()), AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
+            var keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
+            var keyValueSchema2 = ISchema<object>.KeyValue(AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build()), AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
 
             Assert.Equal(keyValueSchema1.SchemaInfo.Type, SchemaType.KeyValue);
             Assert.Equal(keyValueSchema2.SchemaInfo.Type, SchemaType.KeyValue);
@@ -79,21 +79,21 @@ namespace SharpPulsar.Test.Schema
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema2).KeySchema.SchemaInfo.Type, SchemaType.AVRO);
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema2).ValueSchema.SchemaInfo.Type, SchemaType.AVRO);
 
-            string schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema);
-            string schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema);
+            var schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema);
+            var schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema);
             Assert.Equal(schemaInfo1, schemaInfo2);
         }
 
         [Fact]
         public virtual void TestJsonSchemaCreate()
         {
-            JSONSchema<Foo> fooSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
-            JSONSchema<Bar> barSchema = JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build());
+            var fooSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+            var barSchema = JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build());
 
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema2 = ISchema<object>.KeyValue(JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build()), JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
+            var keyValueSchema1 = ISchema<object>.KeyValue(fooSchema, barSchema);
+            var keyValueSchema2 = ISchema<object>.KeyValue(JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build()), JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
 
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema3 = ISchema<object>.KeyValue(JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build()), JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
+            var keyValueSchema3 = ISchema<object>.KeyValue(JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build()), JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
 
             Assert.Equal(keyValueSchema1.SchemaInfo.Type, SchemaType.KeyValue);
             Assert.Equal(keyValueSchema2.SchemaInfo.Type, SchemaType.KeyValue);
@@ -106,9 +106,9 @@ namespace SharpPulsar.Test.Schema
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema3).KeySchema.SchemaInfo.Type, SchemaType.JSON);
             Assert.Equal(((KeyValueSchema<Foo, Bar>)keyValueSchema3).ValueSchema.SchemaInfo.Type, SchemaType.JSON);
 
-            string schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema);
-            string schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema);
-            string schemaInfo3 = Encoding.UTF8.GetString(keyValueSchema3.SchemaInfo.Schema);
+            var schemaInfo1 = Encoding.UTF8.GetString(keyValueSchema1.SchemaInfo.Schema);
+            var schemaInfo2 = Encoding.UTF8.GetString(keyValueSchema2.SchemaInfo.Schema);
+            var schemaInfo3 = Encoding.UTF8.GetString(keyValueSchema3.SchemaInfo.Schema);
             Assert.Equal(schemaInfo1, schemaInfo2);
             Assert.Equal(schemaInfo1, schemaInfo3);
         }
@@ -117,12 +117,12 @@ namespace SharpPulsar.Test.Schema
         {
             var keyValueSchema = ISchema<object>.KeyValue<Foo, Bar>(typeof(Foo), typeof(Bar));
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo = new Foo
+            var foo = new Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
@@ -131,12 +131,12 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.RED
             };
 
-            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
 
-            KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
-            Foo fooBack = keyValue.Key;
-            Bar barBack = keyValue.Value;
+            var keyValue = keyValueSchema.Decode(encodeBytes);
+            var fooBack = keyValue.Key;
+            var barBack = keyValue.Value;
 
             Assert.True(foo.Equals(fooBack));
             Assert.True(bar.Equals(barBack));
@@ -147,12 +147,12 @@ namespace SharpPulsar.Test.Schema
             var keyValueSchema = ISchema<object>.KeyValue(JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build())
                 , JSONSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).WithAlwaysAllowNull(false).Build()));
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo = new Foo
+            var foo = new Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
@@ -161,12 +161,12 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.RED
             };
 
-            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
 
-            KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
-            Foo fooBack = keyValue.Key;
-            Bar barBack = keyValue.Value;
+            var keyValue = keyValueSchema.Decode(encodeBytes);
+            var fooBack = keyValue.Key;
+            var barBack = keyValue.Value;
 
             Assert.True(foo.Equals(fooBack));
             Assert.True(bar.Equals(barBack));
@@ -174,17 +174,17 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestDefaultKeyValueEncodingTypeSchemaEncodeAndDecode()
         {
-            AvroSchema<Foo> fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
-            AvroSchema<Bar> barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
+            var fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema);
+            var keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema);
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo = new Foo
+            var foo = new Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
@@ -194,12 +194,12 @@ namespace SharpPulsar.Test.Schema
             };
 
             // Check kv.encoding.type default not set value
-            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
 
-            KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
-            Foo fooBack = keyValue.Key;
-            Bar barBack = keyValue.Value;
+            var keyValue = keyValueSchema.Decode(encodeBytes);
+            var fooBack = keyValue.Key;
+            var barBack = keyValue.Value;
 
             Assert.True(foo.Equals(fooBack));
             Assert.True(bar.Equals(barBack));
@@ -208,18 +208,18 @@ namespace SharpPulsar.Test.Schema
         public virtual void TestInlineKeyValueEncodingTypeSchemaEncodeAndDecode()
         {
 
-            AvroSchema<Foo> fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
-            AvroSchema<Bar> barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
+            var fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.INLINE);
+            var keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.INLINE);
 
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo = new Foo
+            var foo = new Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
@@ -229,11 +229,11 @@ namespace SharpPulsar.Test.Schema
             };
 
             // Check kv.encoding.type INLINE
-            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
-            KeyValue<Foo, Bar> keyValue = keyValueSchema.Decode(encodeBytes);
-            Foo fooBack = keyValue.Key;
-            Bar barBack = keyValue.Value;
+            var keyValue = keyValueSchema.Decode(encodeBytes);
+            var fooBack = keyValue.Key;
+            var barBack = keyValue.Value;
             Assert.True(foo.Equals(fooBack));
             Assert.True(bar.Equals(barBack));
 
@@ -241,18 +241,18 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSeparatedKeyValueEncodingTypeSchemaEncodeAndDecode()
         {
-            AvroSchema<Foo> fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
-            AvroSchema<Bar> barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
+            var fooSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var barSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
 
-            ISchema<KeyValue<Foo, Bar>> keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.SEPARATED);
+            var keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.SEPARATED);
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo = new Foo
+            var foo = new Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
@@ -262,7 +262,7 @@ namespace SharpPulsar.Test.Schema
             };
 
             // Check kv.encoding.type SEPARATED
-            byte[] encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
+            var encodeBytes = keyValueSchema.Encode(new KeyValue<Foo, Bar>(foo, bar));
             Assert.True(encodeBytes.Length > 0);
             try
             {
@@ -273,9 +273,9 @@ namespace SharpPulsar.Test.Schema
             {
                 Assert.Contains("This method cannot be used under this SEPARATED encoding type", e.Message);
             }
-            KeyValue<Foo, Bar> keyValue = ((KeyValueSchema<Foo, Bar>)keyValueSchema).Decode(fooSchema.Encode(foo), encodeBytes, null);
-            Foo fooBack = keyValue.Key;
-            Bar barBack = keyValue.Value;
+            var keyValue = ((KeyValueSchema<Foo, Bar>)keyValueSchema).Decode(fooSchema.Encode(foo), encodeBytes, null);
+            var fooBack = keyValue.Key;
+            var barBack = keyValue.Value;
             Assert.True(foo.Equals(fooBack));
             Assert.True(bar.Equals(barBack));
         }
@@ -283,15 +283,15 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestAllowNullBytesSchemaEncodeAndDecode()
         {
-            AvroSchema<Foo> fooAvroSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
-            AvroSchema<Bar> barAvroSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
+            var fooAvroSchema = AvroSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var barAvroSchema = AvroSchema<Bar>.Of(ISchemaDefinition<Bar>.Builder().WithPojo(typeof(Bar)).Build());
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo = new Foo
+            var foo = new Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
@@ -300,14 +300,14 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.RED
             };
 
-            byte[] fooBytes = fooAvroSchema.Encode(foo);
-            byte[] barBytes = barAvroSchema.Encode(bar);
+            var fooBytes = fooAvroSchema.Encode(foo);
+            var barBytes = barAvroSchema.Encode(bar);
 
-            byte[] encodeBytes = ISchema<object>.KvBytes().Encode(new KeyValue<byte[], byte[]>(fooBytes, barBytes));
-            KeyValue<byte[], byte[]> decodeKV = ISchema<object>.KvBytes().Decode(encodeBytes);
+            var encodeBytes = ISchema<object>.KvBytes().Encode(new KeyValue<byte[], byte[]>(fooBytes, barBytes));
+            var decodeKV = ISchema<object>.KvBytes().Decode(encodeBytes);
 
-            Foo fooBack = fooAvroSchema.Decode(decodeKV.Key);
-            Bar barBack = barAvroSchema.Decode(decodeKV.Value);
+            var fooBack = fooAvroSchema.Decode(decodeKV.Key);
+            var barBack = barAvroSchema.Decode(decodeKV.Value);
 
             Assert.True(foo.Equals(fooBack));
             Assert.True(bar.Equals(barBack));

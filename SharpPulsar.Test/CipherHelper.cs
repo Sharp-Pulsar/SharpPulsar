@@ -21,8 +21,8 @@ namespace SharpPulsar.Test
         public void EncryDecrpt()
         {
             var t = "Hello Word!";
-            AesManaged keyGen = new AesManaged();
-            SecureRandom rand = new SecureRandom();
+            var keyGen = new AesManaged();
+            var rand = new SecureRandom();
             var ivLen = 256;
             //var iv = 16;
             var tag = 256;

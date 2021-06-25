@@ -29,17 +29,17 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncode()
         {
-            FloatSchema schema = FloatSchema.Of();
-            float data = 12345678.1234F;
-            byte[] expected = BitConverter.GetBytes(data).Reverse().ToArray();
+            var schema = FloatSchema.Of();
+            var data = 12345678.1234F;
+            var expected = BitConverter.GetBytes(data).Reverse().ToArray();
             Assert.Equal(expected, schema.Encode(data));
         }
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            FloatSchema schema = FloatSchema.Of();
-            float dbl = 1234578.8754321F;
-            byte[] bytes = schema.Encode(dbl);
+            var schema = FloatSchema.Of();
+            var dbl = 1234578.8754321F;
+            var bytes = schema.Encode(dbl);
             Assert.Equal(dbl, schema.Decode(bytes));
         }
 

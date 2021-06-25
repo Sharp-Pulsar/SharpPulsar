@@ -26,12 +26,12 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            IntSchema schema = IntSchema.Of();
-            int start = 348592040;
-            for (int i = 0; i < 100; ++i)
+            var schema = IntSchema.Of();
+            var start = 348592040;
+            for (var i = 0; i < 100; ++i)
             {
-                byte[] encode = schema.Encode(start + i);
-                int decoded = schema.Decode(encode);
+                var encode = schema.Encode(start + i);
+                var decoded = schema.Decode(encode);
                 Assert.Equal(decoded, start + i);
             }
         }
@@ -39,9 +39,9 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaDecode()
         {
-            byte[] byteData = new byte[] { 0, 10, 24, 42 };
+            var byteData = new byte[] { 0, 10, 24, 42 };
             int? expected = 10 * 65536 + 24 * 256 + 42;
-            IntSchema schema = IntSchema.Of();
+            var schema = IntSchema.Of();
             Assert.Equal(expected, schema.Decode(byteData));
         }
 

@@ -3,6 +3,7 @@ using Akka.Event;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
@@ -201,7 +202,7 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(commit.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, Protocol.Proto.ServerError.UnknownError, ""));
+                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
             }
 			else
 				handler.Tell(commit);
@@ -212,7 +213,8 @@ namespace SharpPulsar.Transaction
 			if(!_handlerMap.TryGetValue(abort.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(abort.TxnID.MostSigBits).ToString());
-			}
+                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
+            }
 			else
 				handler.Tell(abort);
 		}

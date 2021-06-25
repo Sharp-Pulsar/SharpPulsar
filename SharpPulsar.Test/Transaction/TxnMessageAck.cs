@@ -28,7 +28,7 @@ namespace SharpPulsar.Test.Transaction
 		[Fact]
 		public void TxnMessageAckTest()
 		{
-			string topic = $"{_topicMessageAckTest}-{Guid.NewGuid()}";
+			var topic = $"{_topicMessageAckTest}-{Guid.NewGuid()}";
 			var subName = $"test-{Guid.NewGuid()}";
 
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
@@ -46,10 +46,10 @@ namespace SharpPulsar.Test.Transaction
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			User.Transaction txn = Txn;
+			var txn = Txn;
 
-			int messageCnt = 10;
-			for (int i = 0; i < messageCnt; i++)
+			var messageCnt = 10;
+			for (var i = 0; i < messageCnt; i++)
 			{
 				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 			}
@@ -62,9 +62,9 @@ namespace SharpPulsar.Test.Transaction
 
 			txn.Commit();
 
-			int ackedMessageCount = 0;
-			int receiveCnt = 0;
-			for (int i = 0; i < messageCnt; i++)
+			var ackedMessageCount = 0;
+			var receiveCnt = 0;
+			for (var i = 0; i < messageCnt; i++)
 			{
 				message = consumer.Receive(TimeSpan.FromSeconds(10));
 				Assert.NotNull(message);
@@ -84,7 +84,7 @@ namespace SharpPulsar.Test.Transaction
 
 			Thread.Sleep(TimeSpan.FromSeconds(30));
 			receiveCnt = 0;
-			for (int i = 0; i < messageCnt - ackedMessageCount; i++)
+			for (var i = 0; i < messageCnt - ackedMessageCount; i++)
 			{
 				message = consumer.Receive(TimeSpan.FromMilliseconds(10000));
 				Assert.NotNull(message);

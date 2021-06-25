@@ -31,23 +31,23 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestNotAllowNullSchema()
         {
-            JSONSchema<Foo> jsonSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+            var jsonSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
             Assert.Equal(jsonSchema.SchemaInfo.Type, SchemaType.JSON);
-            string schemaJson = jsonSchema.SchemaInfo.SchemaDefinition;
-            Avro.Schema schema = Avro.Schema.Parse(schemaJson);
+            var schemaJson = jsonSchema.SchemaInfo.SchemaDefinition;
+            var schema = Avro.Schema.Parse(schemaJson);
             Assert.NotNull(schema);
         }
         [Fact]
         public virtual void TestAllowNullEncodeAndDecode()
         {
-            JSONSchema<Foo> jsonSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
+            var jsonSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).Build());
 
-            Bar bar = new Bar
+            var bar = new Bar
             {
                 Field1 = true
             };
 
-            Foo foo1 = new Foo
+            var foo1 = new Foo
             {
                 Field1 = "foo1",
                 Field2 = "bar1",
@@ -55,20 +55,20 @@ namespace SharpPulsar.Test.Schema
                 Color = Color.BLUE
             };
 
-            Foo foo2 = new Foo
+            var foo2 = new Foo
             {
                 Field1 = "foo2",
                 Field2 = "bar2"
             };
 
-            byte[] bytes1 = jsonSchema.Encode(foo1);
+            var bytes1 = jsonSchema.Encode(foo1);
             Assert.True(bytes1.Length > 0);
 
-            byte[] bytes2 = jsonSchema.Encode(foo2);
+            var bytes2 = jsonSchema.Encode(foo2);
             Assert.True(bytes2.Length > 0);
 
-            Foo object1 = jsonSchema.Decode(bytes1);
-            Foo object2 = jsonSchema.Decode(bytes2);
+            var object1 = jsonSchema.Decode(bytes1);
+            var object2 = jsonSchema.Decode(bytes2);
 
             Assert.True(object1.Equals(foo1));
             Assert.True(object2.Equals(foo2));
@@ -76,23 +76,23 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestNotAllowNullEncodeAndDecode()
         {
-            JSONSchema<Foo> jsonSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
+            var jsonSchema = JSONSchema<Foo>.Of(ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Foo)).WithAlwaysAllowNull(false).Build());
 
-            Foo foo1 = new Foo
+            var foo1 = new Foo
             {
                 Field1 = "foo1",
                 Field2 = "bar1",
                 Field4 = new Bar()
             };
 
-            Foo foo2 = new Foo
+            var foo2 = new Foo
             {
                 Field1 = "foo2",
                 Field2 = "bar2"
             };
 
-            byte[] bytes1 = jsonSchema.Encode(foo1);
-            Foo object1 = jsonSchema.Decode(bytes1);
+            var bytes1 = jsonSchema.Encode(foo1);
+            var object1 = jsonSchema.Decode(bytes1);
             Assert.True(bytes1.Length > 0);
             Assert.True(object1.Equals(foo1));
 

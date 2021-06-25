@@ -89,14 +89,14 @@ namespace SharpPulsar.Test
 
 		private List<AckReceived> PublishMessages(string topic, int count, string message)
 		{
-			List<AckReceived> keys = new List<AckReceived>();
+			var keys = new List<AckReceived>();
 			var builder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic);
 			var producer = _client.NewProducer(builder);
-			for (int i = 0; i < count; i++)
+			for (var i = 0; i < count; i++)
 			{
-				string key = "key" + i;
-				byte[] data = Encoding.UTF8.GetBytes($"{message}-{i}");
+				var key = "key" + i;
+				var data = Encoding.UTF8.GetBytes($"{message}-{i}");
 				producer.NewMessage().Key(key).Value(data).Send();
 				var receipt = producer.SendReceipt();
 				keys.Add(receipt);

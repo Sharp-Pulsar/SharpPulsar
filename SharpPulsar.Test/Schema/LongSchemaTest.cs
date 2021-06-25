@@ -26,12 +26,12 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            LongSchema longSchema = LongSchema.Of();
+            var longSchema = LongSchema.Of();
             long start = 348592040;
-            for (int i = 0; i < 100; ++i)
+            for (var i = 0; i < 100; ++i)
             {
-                byte[] encode = longSchema.Encode(start + i);
-                long decoded = longSchema.Decode(encode);
+                var encode = longSchema.Encode(start + i);
+                var decoded = longSchema.Decode(encode);
                 Assert.Equal(decoded, start + i);
             }
         }

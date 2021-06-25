@@ -84,17 +84,17 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestDefaultGetProducerDataAssigned()
 		{
-			AvroSchema<SchemaTestUtils.Foo> fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
-			AvroSchema<SchemaTestUtils.Bar> barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
+			var fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
+			var barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
 
-			ISchema<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>> keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema);
-            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+			var keyValueSchema = ISchema<object>.KeyValue(fooSchema, barSchema);
+            var foo = new SchemaTestUtils.Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
                 Field3 = 3
             };
-            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            var bar = new SchemaTestUtils.Bar
             {
                 Field1 = true
             };
@@ -105,7 +105,7 @@ namespace SharpPulsar.Test
 			builder.ProducerName = "default";
 
 			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, new ReadOnlySequence<byte>(encodeBytes), keyValueSchema);
-			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
+			var keyValue = msg.Value;
 			Assert.Equal(keyValue.Key, foo);
 			Assert.Equal(keyValue.Value, bar);
 			Assert.False(builder.ShouldSerializePartitionKey());
@@ -114,17 +114,17 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestInlineGetProducerDataAssigned()
 		{
-			AvroSchema<SchemaTestUtils.Foo> fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
-			AvroSchema<SchemaTestUtils.Bar> barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
+			var fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
+			var barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
 
 			var keyValueSchema = ISchema<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.INLINE);
-            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+            var foo = new SchemaTestUtils.Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
                 Field3 = 3
             };
-            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            var bar = new SchemaTestUtils.Bar
             {
                 Field1 = true
             };
@@ -134,7 +134,7 @@ namespace SharpPulsar.Test
 			var builder = new MessageMetadata();
 			builder.ProducerName = "inline";
 			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, new ReadOnlySequence<byte>(encodeBytes), keyValueSchema);
-			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
+			var keyValue = msg.Value;
 			Assert.Equal(keyValue.Key, foo);
 			Assert.Equal(keyValue.Value, bar);
 			Assert.False(builder.ShouldSerializePartitionKey());
@@ -142,17 +142,17 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestSeparatedGetProducerDataAssigned()
 		{
-			AvroSchema<SchemaTestUtils.Foo> fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
-			AvroSchema<SchemaTestUtils.Bar> barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
+			var fooSchema = AvroSchema<SchemaTestUtils.Foo>.Of(ISchemaDefinition<SchemaTestUtils.Foo>.Builder().WithPojo(typeof(SchemaTestUtils.Foo)).Build());
+			var barSchema = AvroSchema<SchemaTestUtils.Bar>.Of(ISchemaDefinition<SchemaTestUtils.Bar>.Builder().WithPojo(typeof(SchemaTestUtils.Bar)).Build());
 
 			var keyValueSchema = ISchema<int>.KeyValue(fooSchema, barSchema, KeyValueEncodingType.SEPARATED);
-            SchemaTestUtils.Foo foo = new SchemaTestUtils.Foo
+            var foo = new SchemaTestUtils.Foo
             {
                 Field1 = "field1",
                 Field2 = "field2",
                 Field3 = 3
             };
-            SchemaTestUtils.Bar bar = new SchemaTestUtils.Bar
+            var bar = new SchemaTestUtils.Bar
             {
                 Field1 = true
             };
@@ -164,7 +164,7 @@ namespace SharpPulsar.Test
 			builder.PartitionKey = Convert.ToBase64String(fooSchema.Encode(foo));
 			builder.PartitionKeyB64Encoded = true;
 			var msg = Message<KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar>>.Create(builder, new ReadOnlySequence<byte>(encodeBytes), keyValueSchema);
-			KeyValue<SchemaTestUtils.Foo, SchemaTestUtils.Bar> keyValue = msg.Value;
+			var keyValue = msg.Value;
 			Assert.Equal(keyValue.Key, foo);
 			Assert.Equal(keyValue.Value, bar);
 			Assert.True(builder.ShouldSerializePartitionKey());
@@ -172,7 +172,7 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestMessageImplReplicatedInfo()
 		{
-			string from = "ClusterNameOfReplicatedFrom";
+			var from = "ClusterNameOfReplicatedFrom";
 			var builder = new MessageMetadata();
 			builder.ReplicatedFrom = from;
             var payload = ReadOnlySequence<byte>.Empty;
@@ -194,8 +194,8 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestTopicMessageImplReplicatedInfo()
 		{
-			string from = "ClusterNameOfReplicatedFromForTopicMessage";
-			string topicName = "myTopic";
+			var from = "ClusterNameOfReplicatedFromForTopicMessage";
+			var topicName = "myTopic";
 			var builder = new MessageMetadata();
 			builder.ReplicatedFrom = from;
             var payload = ReadOnlySequence<byte>.Empty;
@@ -210,7 +210,7 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestTopicMessageImplNoReplicatedInfo()
 		{
-			string topicName = "myTopic";
+			var topicName = "myTopic";
 			var builder = new MessageMetadata();
             var payload = ReadOnlySequence<byte>.Empty;
             var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);

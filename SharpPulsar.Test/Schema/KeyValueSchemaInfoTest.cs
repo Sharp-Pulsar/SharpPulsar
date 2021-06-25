@@ -49,11 +49,11 @@ namespace SharpPulsar.Test.Schema
         public void EncodeDecodeKeyValueSchemaInfoINLINE()
         {
             var encodingType = KeyValueEncodingType.INLINE;
-            ISchema<KeyValue<Foo, Bar>> kvSchema = ISchema<object>.KeyValue(FooSchema, BarSchema, encodingType);
-            ISchemaInfo kvSchemaInfo = kvSchema.SchemaInfo;
+            var kvSchema = ISchema<object>.KeyValue(FooSchema, BarSchema, encodingType);
+            var kvSchemaInfo = kvSchema.SchemaInfo;
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(kvSchemaInfo));
 
-            ISchemaInfo encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, BarSchema, encodingType);
+            var encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, BarSchema, encodingType);
             for (var i = 0; i < kvSchemaInfo.Schema.Length; i++)
             {
                 var expected = kvSchemaInfo.Schema[i];
@@ -62,7 +62,7 @@ namespace SharpPulsar.Test.Schema
             }
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(encodedSchemaInfo));
 
-            KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
+            var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
 
             for (var i = 0; i < FooSchema.SchemaInfo.Schema.Length; i++)
             {
@@ -83,11 +83,11 @@ namespace SharpPulsar.Test.Schema
         public void EncodeDecodeKeyValueSchemaInfoSEPARATED()
         {
             var encodingType = KeyValueEncodingType.SEPARATED;
-            ISchema<KeyValue<Foo, Bar>> kvSchema = ISchema<object>.KeyValue(FooSchema, BarSchema, encodingType);
-            ISchemaInfo kvSchemaInfo = kvSchema.SchemaInfo;
+            var kvSchema = ISchema<object>.KeyValue(FooSchema, BarSchema, encodingType);
+            var kvSchemaInfo = kvSchema.SchemaInfo;
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(kvSchemaInfo));
 
-            ISchemaInfo encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, BarSchema, encodingType);
+            var encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, BarSchema, encodingType);
             for (var i = 0; i < kvSchemaInfo.Schema.Length; i++)
             {
                 var expected = kvSchemaInfo.Schema[i];
@@ -96,7 +96,7 @@ namespace SharpPulsar.Test.Schema
             }
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(encodedSchemaInfo));
 
-            KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
+            var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
 
             for (var i = 0; i < FooSchema.SchemaInfo.Schema.Length; i++)
             {
@@ -118,12 +118,12 @@ namespace SharpPulsar.Test.Schema
         public void EncodeDecodeNestedKeyValueSchemaInfo()
         {
             var encodingType = KeyValueEncodingType.INLINE;
-            ISchema<KeyValue<string, Bar>> nestedSchema = ISchema<object>.KeyValue(ISchema<object>.String, BarSchema, KeyValueEncodingType.INLINE);
-            ISchema<KeyValue<Foo, KeyValue<string, Bar>>> kvSchema = ISchema<object>.KeyValue(FooSchema, nestedSchema, encodingType);
-            ISchemaInfo kvSchemaInfo = kvSchema.SchemaInfo;
+            var nestedSchema = ISchema<object>.KeyValue(ISchema<object>.String, BarSchema, KeyValueEncodingType.INLINE);
+            var kvSchema = ISchema<object>.KeyValue(FooSchema, nestedSchema, encodingType);
+            var kvSchemaInfo = kvSchema.SchemaInfo;
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(kvSchemaInfo));
 
-            ISchemaInfo encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, nestedSchema, encodingType);
+            var encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, nestedSchema, encodingType);
             for (var i = 0; i < kvSchemaInfo.Schema.Length; i++)
             {
                 var expected = kvSchemaInfo.Schema[i];
@@ -132,7 +132,7 @@ namespace SharpPulsar.Test.Schema
             }
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(encodedSchemaInfo));
 
-            KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
+            var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
 
             
             for (var i = 0; i < FooSchema.SchemaInfo.Schema.Length; i++)
@@ -142,7 +142,7 @@ namespace SharpPulsar.Test.Schema
                 Assert.Equal(expected, actual);
             }
             Assert.Equal(schemaInfoKeyValue.Value.Type, SchemaType.KeyValue);
-            KeyValue<ISchemaInfo, ISchemaInfo> nestedSchemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(schemaInfoKeyValue.Value);
+            var nestedSchemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(schemaInfoKeyValue.Value);
                         
             var stringSchema = ISchema<object>.String.SchemaInfo.Schema;
             for (var i = 0; i < stringSchema.Length; i++)
@@ -163,12 +163,12 @@ namespace SharpPulsar.Test.Schema
         public void EncodeDecodeNestedKeyValueSchemaInfoSEPARATED()
         {
             var encodingType = KeyValueEncodingType.SEPARATED;
-            ISchema<KeyValue<string, Bar>> nestedSchema = ISchema<object>.KeyValue(ISchema<object>.String, BarSchema, KeyValueEncodingType.INLINE);
-            ISchema<KeyValue<Foo, KeyValue<string, Bar>>> kvSchema = ISchema<object>.KeyValue(FooSchema, nestedSchema, encodingType);
-            ISchemaInfo kvSchemaInfo = kvSchema.SchemaInfo;
+            var nestedSchema = ISchema<object>.KeyValue(ISchema<object>.String, BarSchema, KeyValueEncodingType.INLINE);
+            var kvSchema = ISchema<object>.KeyValue(FooSchema, nestedSchema, encodingType);
+            var kvSchemaInfo = kvSchema.SchemaInfo;
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(kvSchemaInfo));
 
-            ISchemaInfo encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, nestedSchema, encodingType);
+            var encodedSchemaInfo = DefaultImplementation.EncodeKeyValueSchemaInfo(FooSchema, nestedSchema, encodingType);
             for (var i = 0; i < kvSchemaInfo.Schema.Length; i++)
             {
                 var expected = kvSchemaInfo.Schema[i];
@@ -177,7 +177,7 @@ namespace SharpPulsar.Test.Schema
             }
             Assert.Equal(encodingType, DefaultImplementation.DecodeKeyValueEncodingType(encodedSchemaInfo));
 
-            KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
+            var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(kvSchemaInfo);
 
             for (var i = 0; i < FooSchema.SchemaInfo.Schema.Length; i++)
             {
@@ -186,7 +186,7 @@ namespace SharpPulsar.Test.Schema
                 Assert.Equal(expected, actual);
             }
             Assert.Equal(schemaInfoKeyValue.Value.Type, SchemaType.KeyValue);
-            KeyValue<ISchemaInfo, ISchemaInfo> nestedSchemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(schemaInfoKeyValue.Value);
+            var nestedSchemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(schemaInfoKeyValue.Value);
 
             var stringSchema = ISchema<object>.String.SchemaInfo.Schema;
             for (var i = 0; i < stringSchema.Length; i++)
@@ -206,9 +206,9 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestKeyValueSchemaInfoBackwardCompatibility()
         {
-            ISchema<KeyValue<Foo, Bar>> kvSchema = ISchema<object>.KeyValue(FooSchema, BarSchema, KeyValueEncodingType.SEPARATED);
+            var kvSchema = ISchema<object>.KeyValue(FooSchema, BarSchema, KeyValueEncodingType.SEPARATED);
 
-            SchemaInfo oldSchemaInfo = new SchemaInfo {
+            var oldSchemaInfo = new SchemaInfo {
             
                 Name = "",
                 Type = SchemaType.KeyValue,
@@ -218,9 +218,9 @@ namespace SharpPulsar.Test.Schema
 
             Assert.Equal(KeyValueEncodingType.INLINE, DefaultImplementation.DecodeKeyValueEncodingType(oldSchemaInfo));
 
-            KeyValue<ISchemaInfo, ISchemaInfo> schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(oldSchemaInfo);
+            var schemaInfoKeyValue = DefaultImplementation.DecodeKeyValueSchemaInfo(oldSchemaInfo);
             // verify the key schemaS
-            ISchemaInfo keySchemaInfo = schemaInfoKeyValue.Key;
+            var keySchemaInfo = schemaInfoKeyValue.Key;
             Assert.Equal(SchemaType.BYTES, keySchemaInfo.Type);
 
             for(var i = 0; i < FooSchema.SchemaInfo.Schema.Length; i++)
@@ -233,7 +233,7 @@ namespace SharpPulsar.Test.Schema
             Assert.False(FooSchema.SchemaInfo.Properties.Count == 0);
             Assert.True(keySchemaInfo.Properties.Count == 0);
             // verify the value schema
-            ISchemaInfo valueSchemaInfo = schemaInfoKeyValue.Value;
+            var valueSchemaInfo = schemaInfoKeyValue.Value;
             Assert.Equal(SchemaType.BYTES, valueSchemaInfo.Type);
             for (var i = 0; i < BarSchema.SchemaInfo.Schema.Length; i++)
             {

@@ -119,7 +119,9 @@ namespace SharpPulsar
 					case "NewAddSubscriptionToTxn":
 					case "NewAddPartitionToTxn":
 					case "NewTxn":
-					case "NewEndTxn":
+                        _socketClient.SendMessage(p.Bytes);
+                        break;
+                    case "NewEndTxn":
 						_socketClient.SendMessage(p.Bytes);
 						break;
 					default:
@@ -734,7 +736,7 @@ namespace SharpPulsar
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new EndTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, command.Error, command.Message));
+				handler.Tell(new EndTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
 			}
 		}
 
@@ -923,7 +925,22 @@ namespace SharpPulsar
 					return new PulsarClientException(errorMsg);
 			}
 		}
-		private void RegisterProducer(long producerId, IActorRef producer)
+
+        private TransactionCoordinatorClientException GetExceptionByServerError(ServerError serverError, string msg)
+        {
+            switch (serverError)
+            {
+                case ServerError.TransactionCoordinatorNotFound:
+                    return new TransactionCoordinatorClientException.CoordinatorNotFoundException(msg);
+                case ServerError.InvalidTxnStatus:
+                    return new TransactionCoordinatorClientException.InvalidTxnStatusException(msg);
+                case ServerError.TransactionNotFound:
+                    return new TransactionCoordinatorClientException.TransactionNotFoundException(msg);
+                default:
+                    return new TransactionCoordinatorClientException(msg);
+            }
+        }
+        private void RegisterProducer(long producerId, IActorRef producer)
 		{
 			_producers.TryAdd(producerId, producer);
 		}

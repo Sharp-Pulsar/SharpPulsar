@@ -72,16 +72,16 @@ namespace SharpPulsar.Test.Schema
             var schema1 = typeof(DefaultStruct).GetSchema();
             var schema2 = AvroSchema<StructWithAnnotations>.Of(typeof(StructWithAnnotations));
 
-            string schemaDef1 = schema1.ToString();
-            string schemaDef2 = Encoding.UTF8.GetString(schema2.SchemaInfo.Schema);
+            var schemaDef1 = schema1.ToString();
+            var schemaDef2 = Encoding.UTF8.GetString(schema2.SchemaInfo.Schema);
             Assert.NotEqual(schemaDef1, schemaDef2);
 
-            AvroSchema<StructWithAnnotations> schema3 = AvroSchema<StructWithAnnotations>.Of(ISchemaDefinition<StructWithAnnotations>.Builder().WithJsonDef(schemaDef1).Build());
-            string schemaDef3 = Encoding.UTF8.GetString(schema3.SchemaInfo.Schema);
+            var schema3 = AvroSchema<StructWithAnnotations>.Of(ISchemaDefinition<StructWithAnnotations>.Builder().WithJsonDef(schemaDef1).Build());
+            var schemaDef3 = Encoding.UTF8.GetString(schema3.SchemaInfo.Schema);
             Assert.True(schemaDef1.Contains("DefaultStruct") && schemaDef3.Contains("DefaultStruct"));
             Assert.NotEqual(schemaDef2, schemaDef3);
 
-            StructWithAnnotations @struct = new StructWithAnnotations
+            var @struct = new StructWithAnnotations
             {
                 Field1 = 5678
             };
@@ -97,9 +97,9 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public void TestLogicalType()
         {
-            AvroSchema<SchemaLogicalType> avroSchema = AvroSchema<SchemaLogicalType>.Of(ISchemaDefinition<SchemaLogicalType>.Builder().WithPojo(typeof(SchemaLogicalType)).WithJSR310ConversionEnabled(true).Build());
+            var avroSchema = AvroSchema<SchemaLogicalType>.Of(ISchemaDefinition<SchemaLogicalType>.Builder().WithPojo(typeof(SchemaLogicalType)).WithJSR310ConversionEnabled(true).Build());
             
-            SchemaLogicalType schemaLogicalType = new SchemaLogicalType
+            var schemaLogicalType = new SchemaLogicalType
             {
                 TimestampMicros = DateTimeHelper.CurrentUnixTimeMillis() * 1000,
                 TimestampMillis = DateTime.Parse("2019-03-26T04:39:58.469Z").Ticks,
@@ -109,10 +109,10 @@ namespace SharpPulsar.Test.Schema
                 TimeMillis = (DateTime.Now - DateTime.Today).Ticks
             };
 
-            byte[] bytes1 = avroSchema.Encode(schemaLogicalType);
+            var bytes1 = avroSchema.Encode(schemaLogicalType);
             Assert.True(bytes1.Length > 0);
 
-            SchemaLogicalType object1 = avroSchema.Decode(bytes1);
+            var object1 = avroSchema.Decode(bytes1);
 
             Assert.True(schemaLogicalType.Equals(object1));
 
@@ -120,11 +120,11 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public void TestDateTimeDecimalLogicalType()
         {
-            AvroSchema<LogicalMessage> avroSchema = AvroSchema<LogicalMessage>.Of(ISchemaDefinition<LogicalMessage>.Builder().WithPojo(typeof(LogicalMessage)).WithJSR310ConversionEnabled(true).Build());
+            var avroSchema = AvroSchema<LogicalMessage>.Of(ISchemaDefinition<LogicalMessage>.Builder().WithPojo(typeof(LogicalMessage)).WithJSR310ConversionEnabled(true).Build());
 
             var logMsg = new LogicalMessage { Schema = Avro.Schema.Parse(avroSchema.SchemaInfo.SchemaDefinition), CreatedTime = DateTime.Now, DayOfWeek = "Saturday", Size = new AvroDecimal(102.65M) };
 
-            byte[] bytes1 = avroSchema.Encode(logMsg);
+            var bytes1 = avroSchema.Encode(logMsg);
             Assert.True(bytes1.Length > 0);
 
             var msg = avroSchema.Decode(bytes1);
@@ -138,10 +138,10 @@ namespace SharpPulsar.Test.Schema
             var writer = new JsonWriter<Foo>();
             var schemaDefinition = ISchemaDefinition<Foo>.Builder().WithPojo(typeof(Bar)).WithSchemaReader(reader).WithSchemaWriter(writer).Build();
 
-            AvroSchema<Foo> schema = AvroSchema<Foo>.Of(schemaDefinition);
-            Foo foo = new Foo();
+            var schema = AvroSchema<Foo>.Of(schemaDefinition);
+            var foo = new Foo();
             foo.Color = Color.RED;
-            string field1 = "test";
+            var field1 = "test";
             foo.Field1 = field1;
             var encoded = schema.Encode(foo);
             foo = schema.Decode(encoded);

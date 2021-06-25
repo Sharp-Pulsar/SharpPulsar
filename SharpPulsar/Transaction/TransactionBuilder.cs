@@ -1,7 +1,9 @@
 ﻿using Akka.Actor;
 using Akka.Event;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -56,15 +58,17 @@ namespace SharpPulsar.Transaction
 		}
 		public async Task<ITransaction> BuildAsync()
 		{
-			// talk to TC to begin a transaction
-			//       the builder is responsible for locating the transaction coorindator (TC)
-			//       and start the transaction to get the transaction id.
-			//       After getting the transaction id, all the operations are handled by the
-			//       `Transaction`
-			var result = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs)).ConfigureAwait(false);
+            // talk to TC to begin a transaction
+            //       the builder is responsible for locating the transaction coorindator (TC)
+            //       and start the transaction to get the transaction id.
+            //       After getting the transaction id, all the operations are handled by the
+            //       `Transaction`
+            var queue = new BlockingCollection<TransactionCoordinatorClientException>();
+
+            var result = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs)).ConfigureAwait(false);
 			var txnID = result.Response;
-			var transaction = _actorSystem.ActorOf(Transaction.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
-			return new User.Transaction(transaction);	
+			var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits, queue));
+			return new User.Transaction(transaction, queue);	
 		}
 	}
 

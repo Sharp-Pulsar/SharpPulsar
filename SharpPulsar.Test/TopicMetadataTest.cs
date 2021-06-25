@@ -28,7 +28,7 @@ namespace SharpPulsar.Test
 		[Fact]
 		public void TestNumPartitions()
 		{
-			TopicMetadata metadata = new TopicMetadata(1234);
+			var metadata = new TopicMetadata(1234);
 			Assert.Equal(1234, metadata.NumPartitions());
 		}
 

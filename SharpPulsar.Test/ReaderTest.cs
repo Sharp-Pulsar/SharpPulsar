@@ -63,10 +63,10 @@ namespace SharpPulsar.Test
 			}
 			
 			var producer = _client.NewProducer(builder); 
-			for (int i = 0; i < count; i++)
+			for (var i = 0; i < count; i++)
 			{
-				string key = "key" + i;
-				byte[] data = Encoding.UTF8.GetBytes("my-message-" + i);
+				var key = "key" + i;
+				var data = Encoding.UTF8.GetBytes("my-message-" + i);
 				producer.NewMessage().Key(key).Value(data).Send();
 				keys.Add(key);
 			}
@@ -76,21 +76,21 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestReadMessageWithoutBatching()
 		{
-			string topic = $"my-reader-topic-{Guid.NewGuid()}";
+			var topic = $"my-reader-topic-{Guid.NewGuid()}";
 			TestReadMessages(topic, false);
 		}
 
 		[Fact]
 		public virtual void TestReadMessageWithBatching()
 		{
-			string topic = $"my-reader-topic-with-batching-{Guid.NewGuid()}";
+			var topic = $"my-reader-topic-with-batching-{Guid.NewGuid()}";
 			TestReadMessages(topic, true);
 		}
 		private void TestReadMessages(string topic, bool enableBatch)
 		{
-			int numKeys = 10;
+			var numKeys = 10;
 
-			ISet<string> keys = PublishMessages(topic, numKeys, enableBatch);
+			var keys = PublishMessages(topic, numKeys, enableBatch);
 			var builder = new ReaderConfigBuilder<byte[]>()
 				.Topic(topic)
 				.StartMessageId(IMessageId.Earliest)
@@ -113,11 +113,11 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestReadFromPartition()
 		{
-			string topic = "testReadFromPartition";
-			string partition0 = topic + "-partition-0";
-			int numKeys = 10;
+			var topic = "testReadFromPartition";
+			var partition0 = topic + "-partition-0";
+			var numKeys = 10;
 
-			ISet<string> keys = PublishMessages(partition0, numKeys, false);
+			var keys = PublishMessages(partition0, numKeys, false);
 			var builder = new ReaderConfigBuilder<byte[]>()
 				.Topic(partition0)
 				.StartMessageId(IMessageId.Earliest)
@@ -137,7 +137,7 @@ namespace SharpPulsar.Test
 		{
 			var rangeSize = (2 << 15);
 			IList<string> keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-			string topic = $"testKeyHashRangeReader-{Guid.NewGuid()}";
+			var topic = $"testKeyHashRangeReader-{Guid.NewGuid()}";
 
 			try
 			{
@@ -187,9 +187,9 @@ namespace SharpPulsar.Test
 			var producer = _client.NewProducer(ISchema<object>.String, new ProducerConfigBuilder<string>()
 				.Topic(topic).EnableBatching(false));
 			
-			foreach (string key in keys)
+			foreach (var key in keys)
 			{
-				int slot = Murmur332Hash.Instance.MakeHash(Encoding.UTF8.GetBytes(key)) % rangeSize;
+				var slot = Murmur332Hash.Instance.MakeHash(Encoding.UTF8.GetBytes(key)) % rangeSize;
 				producer.NewMessage().Key(key).Value(key).Send();
 				_output.WriteLine($"Publish message to slot {slot}");
 			}
@@ -209,7 +209,7 @@ namespace SharpPulsar.Test
 
 			Assert.True(receivedMessages.Count > 0);
 
-			foreach (string receivedMessage in receivedMessages)
+			foreach (var receivedMessage in receivedMessages)
 			{
 				_output.WriteLine($"Receive message {receivedMessage}");
 				Assert.True(Convert.ToInt32(receivedMessage) <= rangeSize / 2);

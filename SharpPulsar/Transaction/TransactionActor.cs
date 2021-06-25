@@ -1,12 +1,13 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
@@ -39,7 +40,7 @@ namespace SharpPulsar.Transaction
     /// much as possible.
     /// </para>
     /// </summary>
-    public class Transaction : ReceiveActor, IWithUnboundedStash
+    public class TransactionActor : ReceiveActor, IWithUnboundedStash
 	{
 
 		private readonly IActorRef _client;
@@ -49,20 +50,20 @@ namespace SharpPulsar.Transaction
 		private readonly ILoggingAdapter _log;
 		private long _sequenceId = 0L;
         private volatile State _state;
-        private readonly IDictionary<string, CompletableFuture<Void>> registerPartitionMap;
-        private readonly IDictionary<Pair<string, string>, CompletableFuture<Void>> registerSubscriptionMap;
 
         private readonly ISet<string> _registerPartitionMaps;
-		private readonly ISet<string> _ackedTopics;
+		private readonly ISet<string> _registerSubscriptionMap;
 		private IActorRef _tcClient; //TransactionCoordinatorClientImpl
 		private IDictionary<IActorRef, int> _cumulativeAckConsumers;
 
 		private readonly List<IMessageId> _sendList;
+        private readonly BlockingCollection<TransactionCoordinatorClientException> _queue;
 
         public IStash Stash { get; set; }
 
-        public Transaction(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+        public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits, BlockingCollection<TransactionCoordinatorClientException> queue)
 		{
+            _queue = queue;
             _state = State.OPEN;
             _log = Context.System.Log;
 			_client = client;
@@ -71,7 +72,7 @@ namespace SharpPulsar.Transaction
 			_txnIdMostBits = txnIdMostBits;
 
 			_registerPartitionMaps = new HashSet<string>();
-			_ackedTopics = new HashSet<string>();
+			_registerSubscriptionMap = new HashSet<string>();
 			_sendList = new List<IMessageId>();
 			TcClient();
 		}
@@ -103,7 +104,8 @@ namespace SharpPulsar.Transaction
 			});
 			Receive<Abort>(_ =>
 			{
-				Abort();
+                if (CheckIfOpen())
+                    Become(Abort);//Aborting
 			});
 			Receive<RegisterAckedTopic>(r =>
 			{
@@ -128,9 +130,9 @@ namespace SharpPulsar.Transaction
 			});
 			Stash?.UnstashAll();
 		}
-		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
+		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits, BlockingCollection<TransactionCoordinatorClientException> queue)
         {
-			return Props.Create(() => new Transaction(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits));
+			return Props.Create(() => new TransactionActor(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits, queue));
         }
 		private long NextSequenceId()
 		{
@@ -158,7 +160,7 @@ namespace SharpPulsar.Transaction
 		// register the topics that will be modified by this transaction
 		private void RegisterAckedTopic(string topic, string subscription)
 		{
-			if (_ackedTopics.Add(topic))
+			if (CheckIfOpen() && _registerSubscriptionMap.Add(topic))
 			{
 				// we need to issue the request to TC to register the acked topic
 				_tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription));
@@ -167,50 +169,81 @@ namespace SharpPulsar.Transaction
 
 		private void RegisterCumulativeAckConsumer(IActorRef consumer)
 		{
-			if (_cumulativeAckConsumers == null)
-			{
-				_cumulativeAckConsumers = new Dictionary<IActorRef, int>();
-			}
-			_cumulativeAckConsumers[consumer] = 0;
+            if(CheckIfOpen())
+            {
+                if (_cumulativeAckConsumers == null)
+                {
+                    _cumulativeAckConsumers = new Dictionary<IActorRef, int>();
+                }
+                _cumulativeAckConsumers[consumer] = 0;
+            }
 		}
 
 		private void Commit()
 		{
+            _state = State.COMMITTING;
             Receive<EndTxnResponse>(e =>
             {
-                if(e.Error != Protocol.Proto.ServerError.UnknownError)
+                if(e.Error != null)
                 {
                     var error = e.Error;
-                    if (error == Protocol.Proto.ServerError.TransactionNotFound || error == Protocol.Proto.ServerError.InvalidTxnStatus)
+                    if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
+                    {
                         _state = State.ERROR;
+                        _queue.Add(error);
+                    }                        
                     else
                     {
                         _state = State.COMMITTED;
+                        _queue.Add(null);
                     }
                 }
+                else
+                    _queue.Add(null);
                 Become(Ready);
-                Stash.UnstashAll();
             });
             ReceiveAny(any => Stash.Stash());
 			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), Self));
 		}
 
 		private void Abort()
-		{
-			IList<IMessageId> sendMessageIdList = new List<IMessageId>(_sendList.Count);
-			if (_cumulativeAckConsumers != null)
-			{
+        {
+            _state = State.ABORTING;
+            Receive<EndTxnResponse>(e =>
+            {
+                if (_cumulativeAckConsumers != null)
+                {
+                    _cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
+                    _cumulativeAckConsumers.Clear();
+                }
+                if (e.Error != null)
+                {
+                    var error = e.Error;
+                    if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
+                    {
+                        _state = State.ERROR;
+                        _queue.Add(error);
+                    }
+                    else
+                    {
+                        _state = State.ABORTED;
+                        _queue.Add(null);
+                    }
+                }
+                else
+                    _queue.Add(null);
+                Become(Ready);
+            });
+            ReceiveAny(any => Stash.Stash());
+            if (_cumulativeAckConsumers != null)
+			{                
 				foreach(var c in _cumulativeAckConsumers)
                 {
 					c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
                 }
 			}
-			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), sendMessageIdList));
-			if (_cumulativeAckConsumers != null)
-			{
-				_cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
-				_cumulativeAckConsumers.Clear();
-			}
+			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), Self));
+			
         }
         private bool CheckIfOpen()
         {

@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Exceptions;
+using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Transaction
 {
@@ -24,15 +25,13 @@ namespace SharpPulsar.Messages.Transaction
         public long MostBits { get; }
         public long RequestId { get; }
 
-        public ServerError Error { get; }
-        public string Message { get; }
-        public EndTxnResponse(long requestId, long leastBits, long mostBits, ServerError error, string message)
+        public TransactionCoordinatorClientException Error { get; }
+        public EndTxnResponse(long requestId, long leastBits, long mostBits, TransactionCoordinatorClientException error)
         {
             RequestId = requestId;
             LeastBits = leastBits;
             MostBits = mostBits;
             Error = error;
-            Message = message;
         }
     }
     public sealed class AddPublishPartitionToTxnResponse

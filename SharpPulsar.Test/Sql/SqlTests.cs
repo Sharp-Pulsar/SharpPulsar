@@ -34,7 +34,7 @@ namespace SharpPulsar.Test.Sql
 		//[Fact]
 		public virtual void TestQuerySql()
 		{
-			string topic = $"presto-topics-{Guid.NewGuid()}";
+			var topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
             Thread.Sleep(TimeSpan.FromSeconds(30));
 			var sql = PulsarSystem.NewSql();
@@ -74,9 +74,9 @@ namespace SharpPulsar.Test.Sql
 			var builder = new ProducerConfigBuilder<DataOp>()
 				.Topic(topic);
 			var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
-			for (int i = 0; i < count; i++)
+			for (var i = 0; i < count; i++)
 			{
-				string key = "key" + i;
+				var key = "key" + i;
 				producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).Send();
 				keys.Add(key);
 			}

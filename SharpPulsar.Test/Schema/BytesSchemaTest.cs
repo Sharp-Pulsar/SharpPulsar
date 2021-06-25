@@ -43,12 +43,12 @@ namespace SharpPulsar.Test.Schema
 
         private void TestBytesSchema(ISchema<byte[]> schema)
         {
-            byte[] data = Encoding.UTF8.GetBytes("hello world");
+            var data = Encoding.UTF8.GetBytes("hello world");
 
-            byte[] serializedData = schema.Encode(data);
+            var serializedData = schema.Encode(data);
             Assert.Same(data, serializedData);
 
-            byte[] deserializedData = schema.Decode(serializedData);
+            var deserializedData = schema.Decode(serializedData);
             Assert.Same(data, deserializedData);
 
         }

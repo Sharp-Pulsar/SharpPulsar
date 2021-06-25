@@ -33,11 +33,11 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestEqual()
 		{
-			MessageId MessageId1 = new MessageId(123L, 345L, 567);
-			MessageId MessageId2 = new MessageId(123L, 345L, 567);
+			var MessageId1 = new MessageId(123L, 345L, 567);
+			var MessageId2 = new MessageId(123L, 345L, 567);
 
-			BatchMessageId batchMessageId1 = new BatchMessageId(234L, 345L, 456, 567);
-			BatchMessageId batchMessageId2 = new BatchMessageId(234L, 345L, 456, 567);
+			var batchMessageId1 = new BatchMessageId(234L, 345L, 456, 567);
+			var batchMessageId2 = new BatchMessageId(234L, 345L, 456, 567);
 
 			Assert.Equal(0, MessageId1.CompareTo(MessageId2));
 			Assert.Equal(0, batchMessageId1.CompareTo(batchMessageId2));
@@ -45,16 +45,16 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestGreaterThan()
 		{
-			MessageId MessageId1 = new MessageId(124L, 345L, 567);
-			MessageId MessageId2 = new MessageId(123L, 345L, 567);
-			MessageId MessageId3 = new MessageId(123L, 344L, 567);
-			MessageId MessageId4 = new MessageId(123L, 344L, 566);
+			var MessageId1 = new MessageId(124L, 345L, 567);
+			var MessageId2 = new MessageId(123L, 345L, 567);
+			var MessageId3 = new MessageId(123L, 344L, 567);
+			var MessageId4 = new MessageId(123L, 344L, 566);
 
-			BatchMessageId batchMessageId1 = new BatchMessageId(235L, 345L, 456, 567);
-			BatchMessageId batchMessageId2 = new BatchMessageId(234L, 346L, 456, 567);
-			BatchMessageId batchMessageId3 = new BatchMessageId(234L, 345L, 456, 568);
-			BatchMessageId batchMessageId4 = new BatchMessageId(234L, 345L, 457, 567);
-			BatchMessageId batchMessageId5 = new BatchMessageId(234L, 345L, 456, 567);
+			var batchMessageId1 = new BatchMessageId(235L, 345L, 456, 567);
+			var batchMessageId2 = new BatchMessageId(234L, 346L, 456, 567);
+			var batchMessageId3 = new BatchMessageId(234L, 345L, 456, 568);
+			var batchMessageId4 = new BatchMessageId(234L, 345L, 457, 567);
+			var batchMessageId5 = new BatchMessageId(234L, 345L, 456, 567);
 
 			Assert.True(MessageId1.CompareTo(MessageId2) > 0, "Expected to be greater than");
 			Assert.True(MessageId1.CompareTo(MessageId3) > 0, "Expected to be greater than");
@@ -77,16 +77,16 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestLessThan()
 		{
-			MessageId MessageId1 = new MessageId(124L, 345L, 567);
-			MessageId MessageId2 = new MessageId(123L, 345L, 567);
-			MessageId MessageId3 = new MessageId(123L, 344L, 567);
-			MessageId MessageId4 = new MessageId(123L, 344L, 566);
+			var MessageId1 = new MessageId(124L, 345L, 567);
+			var MessageId2 = new MessageId(123L, 345L, 567);
+			var MessageId3 = new MessageId(123L, 344L, 567);
+			var MessageId4 = new MessageId(123L, 344L, 566);
 
-			BatchMessageId batchMessageId1 = new BatchMessageId(235L, 345L, 456, 567);
-			BatchMessageId batchMessageId2 = new BatchMessageId(234L, 346L, 456, 567);
-			BatchMessageId batchMessageId3 = new BatchMessageId(234L, 345L, 456, 568);
-			BatchMessageId batchMessageId4 = new BatchMessageId(234L, 345L, 457, 567);
-			BatchMessageId batchMessageId5 = new BatchMessageId(234L, 345L, 456, 567);
+			var batchMessageId1 = new BatchMessageId(235L, 345L, 456, 567);
+			var batchMessageId2 = new BatchMessageId(234L, 346L, 456, 567);
+			var batchMessageId3 = new BatchMessageId(234L, 345L, 456, 568);
+			var batchMessageId4 = new BatchMessageId(234L, 345L, 457, 567);
+			var batchMessageId5 = new BatchMessageId(234L, 345L, 456, 567);
 
 			Assert.True(MessageId2.CompareTo(MessageId1) < 0, "Expected to be less than");
 			Assert.True(MessageId3.CompareTo(MessageId1) < 0, "Expected to be less than");
@@ -109,10 +109,10 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestCompareDifferentType()
 		{
-			MessageId MessageId = new MessageId(123L, 345L, 567);
-			BatchMessageId batchMessageId1 = new BatchMessageId(123L, 345L, 566, 789);
-			BatchMessageId batchMessageId2 = new BatchMessageId(123L, 345L, 567, 789);
-			BatchMessageId batchMessageId3 = new BatchMessageId(MessageId);
+			var MessageId = new MessageId(123L, 345L, 567);
+			var batchMessageId1 = new BatchMessageId(123L, 345L, 566, 789);
+			var batchMessageId2 = new BatchMessageId(123L, 345L, 567, 789);
+			var batchMessageId3 = new BatchMessageId(MessageId);
 			Assert.True(MessageId.CompareTo(batchMessageId1) > 0, "Expected to be greater than");
 			Assert.True(MessageId.CompareTo(batchMessageId2) < 0, "Expected to be less than");
 			Assert.Equal(0, MessageId.CompareTo(batchMessageId3));
@@ -123,12 +123,12 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void CompareToSymmetricTest()
 		{
-			MessageId simpleMessageId = new MessageId(123L, 345L, 567);
+			var simpleMessageId = new MessageId(123L, 345L, 567);
 			// batchIndex is -1 if message is non-batched message and has the batchIndex for a batch message
-			BatchMessageId batchMessageId1 = new BatchMessageId(123L, 345L, 567, -1);
-			BatchMessageId batchMessageId2 = new BatchMessageId(123L, 345L, 567, 1);
-			BatchMessageId batchMessageId3 = new BatchMessageId(123L, 345L, 566, 1);
-			BatchMessageId batchMessageId4 = new BatchMessageId(123L, 345L, 566, -1);
+			var batchMessageId1 = new BatchMessageId(123L, 345L, 567, -1);
+			var batchMessageId2 = new BatchMessageId(123L, 345L, 567, 1);
+			var batchMessageId3 = new BatchMessageId(123L, 345L, 566, 1);
+			var batchMessageId4 = new BatchMessageId(123L, 345L, 566, -1);
 
 			Assert.Equal(0, simpleMessageId.CompareTo(batchMessageId1));
 			Assert.Equal(0, batchMessageId1.CompareTo(simpleMessageId));
@@ -142,10 +142,10 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestMessageIdCompareToTopicMessageId()
 		{
-			MessageId MessageId = new MessageId(123L, 345L, 567);
-			TopicMessageId topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(123L, 345L, 566, 789));
-			TopicMessageId topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(123L, 345L, 567, 789));
-			TopicMessageId topicMessageId3 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(MessageId));
+			var MessageId = new MessageId(123L, 345L, 567);
+			var topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(123L, 345L, 566, 789));
+			var topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(123L, 345L, 567, 789));
+			var topicMessageId3 = new TopicMessageId("test-topic-partition-0", "test-topic", new BatchMessageId(MessageId));
 			Assert.True(MessageId.CompareTo(topicMessageId1) > 0, "Expected to be greater than");
 			Assert.True(MessageId.CompareTo(topicMessageId2) < 0, "Expected to be less than");
 			Assert.Equal(0, MessageId.CompareTo(topicMessageId3));
@@ -156,11 +156,11 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestBatchMessageIdCompareToTopicMessageId()
 		{
-			BatchMessageId MessageId1 = new BatchMessageId(123L, 345L, 567, 789);
-			BatchMessageId MessageId2 = new BatchMessageId(123L, 345L, 567, 0);
-			BatchMessageId MessageId3 = new BatchMessageId(123L, 345L, 567, -1);
-			TopicMessageId topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageId(123L, 345L, 566));
-			TopicMessageId topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageId(123L, 345L, 567));
+			var MessageId1 = new BatchMessageId(123L, 345L, 567, 789);
+			var MessageId2 = new BatchMessageId(123L, 345L, 567, 0);
+			var MessageId3 = new BatchMessageId(123L, 345L, 567, -1);
+			var topicMessageId1 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageId(123L, 345L, 566));
+			var topicMessageId2 = new TopicMessageId("test-topic-partition-0", "test-topic", new MessageId(123L, 345L, 567));
 			Assert.True(MessageId1.CompareTo(topicMessageId1) > 0, "Expected to be greater than");
 			Assert.True(MessageId1.CompareTo(topicMessageId2) > 0, "Expected to be greater than");
 			Assert.True(MessageId2.CompareTo(topicMessageId2) > 0, "Expected to be greater than");
@@ -174,13 +174,13 @@ namespace SharpPulsar.Test
 		public virtual void TestMultiMessageIdEqual()
 		{
 			// null
-			MultiMessageId null1 = new MultiMessageId(null);
-			MultiMessageId null2 = new MultiMessageId(null);
+			var null1 = new MultiMessageId(null);
+			var null2 = new MultiMessageId(null);
 			Assert.Equal(null1, null2);
 
 			// empty
-			MultiMessageId empty1 = new MultiMessageId(new Dictionary<string, IMessageId>());
-			MultiMessageId empty2 = new MultiMessageId(new Dictionary<string, IMessageId>());
+			var empty1 = new MultiMessageId(new Dictionary<string, IMessageId>());
+			var empty2 = new MultiMessageId(new Dictionary<string, IMessageId>());
 			Assert.Equal(empty1, empty2);
 
 			// null empty
@@ -188,13 +188,13 @@ namespace SharpPulsar.Test
 			Assert.Equal(empty2, null1);
 
 			// 1 item
-			string topic1 = "topicName1";
-			MessageId MessageId1 = new MessageId(123L, 345L, 567);
-			MessageId MessageId2 = new MessageId(123L, 345L, 567);
-			MessageId MessageId3 = new MessageId(345L, 456L, 567);
+			var topic1 = "topicName1";
+			var MessageId1 = new MessageId(123L, 345L, 567);
+			var MessageId2 = new MessageId(123L, 345L, 567);
+			var MessageId3 = new MessageId(345L, 456L, 567);
 
-			MultiMessageId item1 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId1 } });
-			MultiMessageId item2 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId2 } });
+			var item1 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId1 } });
+			var item2 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId2 } });
 			Assert.Equal(item1, item2);
 
 			// 1 item, empty not equal
@@ -202,13 +202,13 @@ namespace SharpPulsar.Test
 			Assert.NotEqual(null1, item1);
 
 			// key not equal
-			string topic2 = "topicName2";
-			MultiMessageId item3 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic2, MessageId2 } });
+			var topic2 = "topicName2";
+			var item3 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic2, MessageId2 } });
 			Assert.NotEqual(item1, item3);
 			Assert.NotEqual(item3, item1);
 
 			// value not equal
-			MultiMessageId item4 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId3 } });
+			var item4 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId3 } });
 			Assert.NotEqual(item1, item4);
 			Assert.NotEqual(item4, item1);
 
@@ -224,8 +224,8 @@ namespace SharpPulsar.Test
 			map2[topic2] = MessageId2;
 			map2[topic1] = MessageId1;
 
-			MultiMessageId item5 = new MultiMessageId(map1);
-			MultiMessageId item6 = new MultiMessageId(map2);
+			var item5 = new MultiMessageId(map1);
+			var item6 = new MultiMessageId(map2);
 
 			Assert.Equal(item5, item6);
 
@@ -242,7 +242,7 @@ namespace SharpPulsar.Test
 			Assert.NotEqual(item4, item5);
 
 			map2[topic1] = MessageId3;
-			MultiMessageId item7 = new MultiMessageId(map2);
+			var item7 = new MultiMessageId(map2);
 			Assert.NotEqual(item5, item7);
 			Assert.NotEqual(item7, item5);
 		}
@@ -250,13 +250,13 @@ namespace SharpPulsar.Test
 		public virtual void TestMultiMessageIdCompareto()
 		{
 			// null
-			MultiMessageId null1 = new MultiMessageId(null);
-			MultiMessageId null2 = new MultiMessageId(null);
+			var null1 = new MultiMessageId(null);
+			var null2 = new MultiMessageId(null);
 			Assert.Equal(0, null1.CompareTo(null2));
 
 			// empty
-			MultiMessageId empty1 = new MultiMessageId(new Dictionary<string, IMessageId>());
-			MultiMessageId empty2 = new MultiMessageId(new Dictionary<string, IMessageId>());
+			var empty1 = new MultiMessageId(new Dictionary<string, IMessageId>());
+			var empty2 = new MultiMessageId(new Dictionary<string, IMessageId>());
 			Assert.Equal(0, empty1.CompareTo(empty2));
 
 			// null empty
@@ -264,13 +264,13 @@ namespace SharpPulsar.Test
 			Assert.Equal(0, empty2.CompareTo(null1));
 
 			// 1 item
-			string topic1 = "topicName1";
-			MessageId MessageId1 = new MessageId(123L, 345L, 567);
-			MessageId MessageId2 = new MessageId(123L, 345L, 567);
-			MessageId MessageId3 = new MessageId(345L, 456L, 567);
+			var topic1 = "topicName1";
+			var MessageId1 = new MessageId(123L, 345L, 567);
+			var MessageId2 = new MessageId(123L, 345L, 567);
+			var MessageId3 = new MessageId(345L, 456L, 567);
 
-			MultiMessageId item1 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId1 } });
-			MultiMessageId item2 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId2 } });
+			var item1 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId1 } });
+			var item2 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId2 } });
 			Assert.Equal(0, item1.CompareTo(item2));
 
 			// 1 item, empty not equal
@@ -294,8 +294,8 @@ namespace SharpPulsar.Test
 			}
 
 			// key not equal
-			string topic2 = "topicName2";
-			MultiMessageId item3 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic2, MessageId2 } });
+			var topic2 = "topicName2";
+			var item3 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic2, MessageId2 } });
 			try
 			{
 				item1.CompareTo(item3);
@@ -316,7 +316,7 @@ namespace SharpPulsar.Test
 			}
 
 			// value not equal
-			MultiMessageId item4 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId3 } });
+			var item4 = new MultiMessageId(new Dictionary<string, IMessageId> { { topic1, MessageId3 } });
 			Assert.True(item1.CompareTo(item4) < 0);
 			Assert.True(item4.CompareTo(item1) > 0);
 
@@ -348,8 +348,8 @@ namespace SharpPulsar.Test
 			map2[topic2] = MessageId2;
 			map2[topic1] = MessageId1;
 
-			MultiMessageId item5 = new MultiMessageId(map1);
-			MultiMessageId item6 = new MultiMessageId(map2);
+			var item5 = new MultiMessageId(map1);
+			var item6 = new MultiMessageId(map2);
 
 			Assert.True(item5.CompareTo(item6) == 0);
 
@@ -404,7 +404,7 @@ namespace SharpPulsar.Test
 			}
 
 			map2[topic1] = MessageId3;
-			MultiMessageId item7 = new MultiMessageId(map2);
+			var item7 = new MultiMessageId(map2);
 
 			Assert.True(item7.CompareTo(item5) > 0);
 			Assert.True(item5.CompareTo(item7) < 0);
@@ -412,7 +412,7 @@ namespace SharpPulsar.Test
 			IDictionary<string, IMessageId> map3 = new Dictionary<string, IMessageId>();
 			map3[topic1] = MessageId3;
 			map3[topic2] = MessageId3;
-			MultiMessageId item8 = new MultiMessageId(map3);
+			var item8 = new MultiMessageId(map3);
 			Assert.True(item8.CompareTo(item5) > 0);
 			Assert.True(item8.CompareTo(item7) > 0);
 

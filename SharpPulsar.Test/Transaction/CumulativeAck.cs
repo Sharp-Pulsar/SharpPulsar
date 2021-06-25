@@ -33,11 +33,11 @@ namespace SharpPulsar.Test.Transaction
 		public void TxnCumulativeAckTest()
 		{
 
-			string normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
+			var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
-				.SubscriptionType(SubType.Failover)
+				//.SubscriptionType(SubType.Failover)
 				.EnableBatchIndexAcknowledgment(true)
 				.AcknowledgmentGroupTime(3000)
 				.AckTimeout(10000, TimeUnit.MILLISECONDS);
@@ -49,17 +49,17 @@ namespace SharpPulsar.Test.Transaction
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			for (int retryCnt = 0; retryCnt < 2; retryCnt++)
+			for (var retryCnt = 0; retryCnt < 2; retryCnt++)
 			{
-				User.Transaction abortTxn = Txn;
-				int messageCnt = 50;
+				var abortTxn = Txn;
+				var messageCnt = 50;
 				// produce normal messages
-				for (int i = 0; i < messageCnt; i++)
+				for (var i = 0; i < messageCnt; i++)
 				{
 					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).Send();
 				}
 				IMessage<byte[]> message = null;
-				for (int i = 0; i < messageCnt; i++)
+				for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(message);
@@ -74,8 +74,8 @@ namespace SharpPulsar.Test.Transaction
 				Assert.Null(message);
 
 				abortTxn.Abort();
-				User.Transaction commitTxn = Txn;
-				for (int i = 0; i < messageCnt; i++)
+				var commitTxn = Txn;
+				for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(TimeSpan.FromSeconds(20));
 					Assert.NotNull(message);
@@ -93,7 +93,7 @@ namespace SharpPulsar.Test.Transaction
 		public void TxnCumulativeAckTestBatched()
 		{
 
-			string normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
+			var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
@@ -112,18 +112,18 @@ namespace SharpPulsar.Test.Transaction
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			for (int retryCnt = 0; retryCnt < 2; retryCnt++)
+			for (var retryCnt = 0; retryCnt < 2; retryCnt++)
 			{
-				User.Transaction abortTxn = Txn;
-				int messageCnt = 100;
+				var abortTxn = Txn;
+				var messageCnt = 100;
 				// produce normal messages
-				for (int i = 0; i < messageCnt; i++)
+				for (var i = 0; i < messageCnt; i++)
 				{
 					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).Send();
 				}
 				IMessage<byte[]> message = null;
 
-				for (int i = 0; i < messageCnt; i++)
+				for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(TimeSpan.FromSeconds(5));
 					Assert.NotNull(message);
@@ -141,8 +141,8 @@ namespace SharpPulsar.Test.Transaction
 				Assert.Null(message);
 
 				abortTxn.Abort();
-				User.Transaction commitTxn = Txn;
-				for (int i = 0; i < messageCnt; i++)
+				var commitTxn = Txn;
+				for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive(TimeSpan.FromSeconds(30));
 					Assert.NotNull(message);

@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.EventSource
 		//[Fact]
 		public virtual void SqlSourceTest()
 		{
-			string topic = $"presto-topics-{Guid.NewGuid()}";
+			var topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
 			var cols = new HashSet<string> { "text", "EventTime" };
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
@@ -76,7 +76,7 @@ namespace SharpPulsar.Test.EventSource
 		//[Fact]
 		public virtual void SqlSourceTaggedTest()
 		{
-			string topic = $"presto-topics-{Guid.NewGuid()}";
+			var topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
 			var cols = new HashSet<string> { "text", "EventTime" };
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
@@ -115,7 +115,7 @@ namespace SharpPulsar.Test.EventSource
 		[Fact]
 		public virtual void ReaderSourceTest()
 		{
-			string topic = $"reader-topics-{Guid.NewGuid()}";
+			var topic = $"reader-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
 
 			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
@@ -144,7 +144,7 @@ namespace SharpPulsar.Test.EventSource
 		[Fact]
 		public virtual void ReaderSourceTaggedTest()
 		{
-			string topic = $"reader-topics-{Guid.NewGuid()}";
+			var topic = $"reader-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
 
 			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
@@ -176,9 +176,9 @@ namespace SharpPulsar.Test.EventSource
 			var builder = new ProducerConfigBuilder<DataOp>()
 				.Topic(topic);
 			var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
-			for (int i = 0; i < count; i++)
+			for (var i = 0; i < count; i++)
 			{
-				string key = "key" + i;
+				var key = "key" + i;
 				if(i % 2 == 0)
 					producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
 				else

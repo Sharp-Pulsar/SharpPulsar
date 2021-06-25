@@ -27,8 +27,8 @@ namespace SharpPulsar.Test.Schema
         [Fact]
         public virtual void TestSchemaEncodeDecodeFidelity()
         {
-            TimeSchema schema = TimeSchema.Of();
-            TimeSpan time = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis());
+            var schema = TimeSchema.Of();
+            var time = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis());
             var encoded = schema.Encode(time);
             var decoded = schema.Decode(encoded);
             Assert.Equal(time, decoded);
