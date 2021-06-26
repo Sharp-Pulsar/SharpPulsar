@@ -108,7 +108,16 @@ namespace SharpPulsar
         }
 		private void Listening()
         {
-			Receive<RunRequestTimeout>(t =>
+            Receive<ConnectionOpened>(o => {
+                HandleConnectionOpened(o.ClientCnx);
+            });
+            Receive<ConnectionClosed>(o => {
+                HandleConnectionClosed(o.ClientCnx);
+            });
+            Receive<ConnectionFailed>(f => {
+                HandleConnectionFailed(f.Exception);
+            });
+            Receive<RunRequestTimeout>(t =>
 			{
 				RunRequestTime();
 			});
@@ -272,7 +281,7 @@ namespace SharpPulsar
 					return;
 				}
 			}
-			if(response?.Error != null)
+			if(response?.Error == ServerError.UnknownError)
 			{
 				if(_log.IsDebugEnabled)
 				{
@@ -281,7 +290,10 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_log.Error($"Add publish partition for request {response.RequestId} error {response.Error}.");
+                if (response.Error == ServerError.TransactionCoordinatorNotFound)
+                    _connectionHandler.Tell(new ReconnectLater(new TransactionCoordinatorClientException.CoordinatorNotFoundException(response.Message)));
+
+                _log.Error($"Add publish partition for request {response.RequestId} error {response.Error}.");
 			}
 		}
 

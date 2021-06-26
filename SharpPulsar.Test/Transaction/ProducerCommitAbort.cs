@@ -77,6 +77,7 @@ namespace SharpPulsar.Test.Transaction
                     producer.NewMessage(txn1).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
                 else
                     producer.NewMessage(txn2).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
+
                 txnMessageCnt++;
 			}
 
@@ -85,7 +86,6 @@ namespace SharpPulsar.Test.Transaction
 			//Assert.Null(message);
 
 			txn1.Commit();
-			txn2.Commit();
 			// txn1 messages could be received after txn1 committed
 			var receiveCnt = 0;
 			for(var i = 0; i < txnMessageCnt; i++)
@@ -94,7 +94,16 @@ namespace SharpPulsar.Test.Transaction
 				Assert.NotNull(message);
 				receiveCnt++;
 			}
-			Assert.Equal(txnMessageCnt, receiveCnt);
+
+            txn2.Commit();
+
+            for (var i = 0; i < txnMessageCnt; i++)
+            {
+                message = consumer.Receive(TimeSpan.FromSeconds(10));
+                Assert.NotNull(message);
+                receiveCnt++;
+            }
+            Assert.Equal(txnMessageCnt, receiveCnt);
 
 			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);

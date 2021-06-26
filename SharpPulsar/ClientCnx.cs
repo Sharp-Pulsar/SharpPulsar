@@ -118,9 +118,9 @@ namespace SharpPulsar
 						break;
 					case "NewAddSubscriptionToTxn":
 					case "NewAddPartitionToTxn":
-					case "NewTxn":
                         _socketClient.SendMessage(p.Bytes);
                         break;
+                    case "NewTxn":
                     case "NewEndTxn":
 						_socketClient.SendMessage(p.Bytes);
 						break;
