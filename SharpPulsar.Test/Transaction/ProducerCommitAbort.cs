@@ -8,6 +8,7 @@ using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
+using System.Net.Http;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -45,15 +46,25 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-		public ProducerCommitAbort(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        private readonly User.Admin _admin;
+        public ProducerCommitAbort(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
-		}
-		[Fact]
+            _admin = new User.Admin("http://localhost:8080/", new HttpClient());
+
+            try
+            {
+                var response = _admin.SetRetention("public", "default", retentionPolicies: new SharpPulsar.Admin.Models.RetentionPolicies(retentionTimeInMinutes: 3600, retentionSizeInMB: 1000));
+                var bla = response;
+            }
+            catch { }
+        }
+        [Fact]
 		public void ProduceCommitTest()
 		{
-			var topic = $"{_topicOutput}-{Guid.NewGuid()}";
+			var guid = Guid.NewGuid();
+			var topic = $"{_topicOutput}-{guid}";
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName($"test-{Guid.NewGuid()}");
@@ -66,11 +77,11 @@ namespace SharpPulsar.Test.Transaction
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			var txn1 = Txn;
+            var txn1 = Txn;
 			var txn2 = Txn;
 
 			var txnMessageCnt = 0;
-			var messageCnt = 1000;
+			var messageCnt = 40;
 			for(var i = 0; i < messageCnt; i++)
 			{
                 if(i % 5 == 0)
@@ -86,8 +97,9 @@ namespace SharpPulsar.Test.Transaction
 			//Assert.Null(message);
 
 			txn1.Commit();
-			// txn1 messages could be received after txn1 committed
-			var receiveCnt = 0;
+            txn2.Commit();
+            // txn1 messages could be received after txn1 committed
+            var receiveCnt = 0;
 			for(var i = 0; i < txnMessageCnt; i++)
 			{
 				message = consumer.Receive(TimeSpan.FromSeconds(10));
@@ -95,7 +107,6 @@ namespace SharpPulsar.Test.Transaction
 				receiveCnt++;
 			}
 
-            txn2.Commit();
 
             for (var i = 0; i < txnMessageCnt; i++)
             {

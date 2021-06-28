@@ -189,7 +189,7 @@ namespace SharpPulsar
 		private void OnDisconnected()
 		{
 			_log.Info($"{_remoteHostName} Disconnected");
-			PulsarClientException e = new PulsarClientException("Disconnected from server at " + _remoteHostName);
+			var e = new PulsarClientException("Disconnected from server at " + _remoteHostName);
 
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
@@ -285,9 +285,9 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(_state == State.Ready);
 
-			long producerId = (long)sendReceipt.ProducerId;
-			long sequenceId = (long)sendReceipt.SequenceId;
-			long highestSequenceId = (long)sendReceipt.HighestSequenceId;
+			var producerId = (long)sendReceipt.ProducerId;
+			var sequenceId = (long)sendReceipt.SequenceId;
+			var highestSequenceId = (long)sendReceipt.HighestSequenceId;
 			long ledgerId = -1;
 			long entryId = -1;
 			if (sendReceipt.MessageId != null)
@@ -315,7 +315,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received a message from the server: {msg}");
 			}
-			MessageIdData id = new MessageIdData
+			var id = new MessageIdData
 			{
 				AckSets = msg.AckSets,
 				ledgerId = msg.MessageId.ledgerId,
@@ -353,7 +353,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received success response from server: {success.RequestId}");
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var req))
 			{
 				_pendingRequests.Remove(requestId);
@@ -373,7 +373,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received success GetLastMessageId response from server: {success.RequestId}");
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
 				var consumer = request.Requester;
@@ -394,7 +394,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received producer success response from server: {success.RequestId} - producer-name: {success.ProducerName}");
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var producer))
 			{
 				_pendingRequests.Remove(requestId);
@@ -413,7 +413,7 @@ namespace SharpPulsar
 				_log.Debug($"Received Broker lookup response: {lookupResult.Response}");
 			}
 
-			long requestId = (long)lookupResult.RequestId;
+			var requestId = (long)lookupResult.RequestId;
 			if (RemovePendingLookupRequest(requestId, out var requester))
 			{
 
@@ -457,7 +457,7 @@ namespace SharpPulsar
 				_log.Debug($"Received Broker Partition response: {lookupResult.Partitions}");
 			}
 
-			long requestId = (long)lookupResult.RequestId;
+			var requestId = (long)lookupResult.RequestId;
 			if (RemovePendingLookupRequest(requestId, out var requester))
 			{
 				if (CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult.Response))
@@ -488,7 +488,7 @@ namespace SharpPulsar
 
 		private void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
 		{
-			long consumerId = (long)commandReachedEndOfTopic.ConsumerId;
+			var consumerId = (long)commandReachedEndOfTopic.ConsumerId;
 
 			_log.Info($"[{_remoteHostName}] Broker notification reached the end of topic: {consumerId}");
 			if (_consumers.TryGetValue(consumerId, out var consumer))
@@ -518,17 +518,21 @@ namespace SharpPulsar
 		{
 			_log.Warning($"Received send error from server: {sendError.Error} : {sendError.Message}");
 
-			long producerId = (long)sendError.ProducerId;
-			long sequenceId = (long)sendError.SequenceId;
+			var producerId = (long)sendError.ProducerId;
+			var sequenceId = (long)sendError.SequenceId;
 
 			switch (sendError.Error)
 			{
 				case ServerError.ChecksumError:
-					_producers[producerId].Tell(new RecoverChecksumError(Self, sequenceId));
+					_producers[producerId].Tell(new RecoverChecksumError(_self, sequenceId));
 					break;
 
 				case ServerError.TopicTerminatedError:
-					_producers[producerId].Tell(new Messages.Terminated(Self));
+					_producers[producerId].Tell(new Messages.Terminated(_self));
+					break;
+
+				case ServerError.NotAllowedError:
+					_producers[producerId].Tell(new RecoverNotAllowedError(sequenceId));
 					break;
 
 				default:
@@ -544,7 +548,7 @@ namespace SharpPulsar
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Ready);
 
 			_log.Warning($"Received error from server: {error.Message}");
-			long requestId = (long)error.RequestId;
+			var requestId = (long)error.RequestId;
 
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
@@ -570,7 +574,7 @@ namespace SharpPulsar
 		private void HandleCloseProducer(CommandCloseProducer closeProducer)
 		{
 			_log.Info($"[{_remoteHostName}] Broker notification of Closed producer: {closeProducer.ProducerId}");
-			long producerId = (long)closeProducer.ProducerId;
+			var producerId = (long)closeProducer.ProducerId;
 			if (_producers.TryGetValue(producerId, out var producer))
 			{
 				producer.Tell(new ConnectionClosed(_self));
@@ -585,7 +589,7 @@ namespace SharpPulsar
 		{
 			_log.Info($"[{_remoteHostName}] Broker notification of Closed consumer: {closeConsumer.ConsumerId}");
 
-			long consumerId = (long)closeConsumer.ConsumerId;
+			var consumerId = (long)closeConsumer.ConsumerId;
 			if (_consumers.TryGetValue(consumerId, out var consumer))
 			{
 				consumer.Tell(new ConnectionClosed(_self));
@@ -619,7 +623,7 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(_state == State.Ready);
 
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 
 			if (_log.IsDebugEnabled)
 			{
@@ -639,7 +643,7 @@ namespace SharpPulsar
 		private void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
 		{
 			Condition.CheckArgument(_state == State.Ready);
-			long requestId = (long)commandGetSchemaResponse.RequestId;
+			var requestId = (long)commandGetSchemaResponse.RequestId;
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
@@ -652,7 +656,7 @@ namespace SharpPulsar
 		private void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
 		{
 			Condition.CheckArgument(_state == State.Ready);
-			long requestId = (long)commandGetOrCreateSchemaResponse.RequestId;
+			var requestId = (long)commandGetOrCreateSchemaResponse.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
 				requester.Requester.Tell(new GetOrCreateSchemaResponse(commandGetOrCreateSchemaResponse));
@@ -867,7 +871,7 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(_state == State.Ready);
 			Condition.CheckArgument(ackResponse.RequestId >= 0);
-			long consumerId = (long)ackResponse.ConsumerId;
+			var consumerId = (long)ackResponse.ConsumerId;
 			if (ackResponse?.Error == ServerError.UnknownError && string.IsNullOrWhiteSpace(ackResponse.Message))
 			{
 				_consumers[consumerId].Tell(new AckReceipt((long)ackResponse.RequestId));
@@ -1087,7 +1091,7 @@ namespace SharpPulsar
 
 			public static RequestType ValueOf(string name)
 			{
-				foreach (RequestType enumInstance in valueList)
+				foreach (var enumInstance in valueList)
 				{
 					if (enumInstance.nameValue == name)
 					{

@@ -21,4 +21,12 @@ namespace SharpPulsar.Messages
             ClientCnx = clientCnx;
         }
     }
+    public sealed class RecoverNotAllowedError
+    {
+        public long SequenceId { get; }
+        public RecoverNotAllowedError(long sequenceId)
+        {
+            SequenceId = sequenceId;
+        }
+    }
 }

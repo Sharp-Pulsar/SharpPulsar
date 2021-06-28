@@ -52,7 +52,7 @@ namespace SharpPulsar.Transaction
         private volatile State _state;
 
         private readonly ISet<string> _registerPartitionMaps;
-		private readonly ISet<string> _registerSubscriptionMap;
+		private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
 		private IActorRef _tcClient; //TransactionCoordinatorClientImpl
 		private IDictionary<IActorRef, int> _cumulativeAckConsumers;
 
@@ -72,7 +72,7 @@ namespace SharpPulsar.Transaction
 			_txnIdMostBits = txnIdMostBits;
 
 			_registerPartitionMaps = new HashSet<string>();
-			_registerSubscriptionMap = new HashSet<string>();
+			_registerSubscriptionMap = new Dictionary<string, List<string>>();
 			_sendList = new List<IMessageId>();
 			TcClient();
 		}
@@ -160,10 +160,16 @@ namespace SharpPulsar.Transaction
 		// register the topics that will be modified by this transaction
 		private void RegisterAckedTopic(string topic, string subscription)
 		{
-			if (CheckIfOpen() && _registerSubscriptionMap.Add(topic))
+			if (CheckIfOpen())
 			{
-				// we need to issue the request to TC to register the acked topic
-				_tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription));
+                if (!_registerSubscriptionMap.TryGetValue(topic, out var subs))
+                    _registerSubscriptionMap.Add(topic, new List<string> { subscription });
+                else if(!subs.Contains(subscription))
+                {
+                    _registerSubscriptionMap[topic].Add(subscription);
+                    // we need to issue the request to TC to register the acked topic
+                    _tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription));
+                }
 			}
 		}
 

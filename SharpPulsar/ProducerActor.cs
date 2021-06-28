@@ -269,6 +269,21 @@ namespace SharpPulsar
 			Receive<RunSendTimeout>( _ => {
 				FailTimedoutMessages();
 			});
+            Receive<Messages.Terminated>(x =>
+                {
+                    Terminated(x.ClientCnx);
+                }
+            );
+            Receive<Messages.RecoverChecksumError>(x =>
+                {
+                    RecoverChecksumError(x.ClientCnx, x.SequenceId);
+                }
+            );
+            Receive<RecoverNotAllowedError>(x =>
+                {
+                    RecoverNotAllowedError(x.SequenceId);
+                }
+            );
 			Receive<BatchTask>( _ => {
 				RunBatchTask();
 			});
@@ -1005,11 +1020,93 @@ namespace SharpPulsar
 				FailPendingMessages(cnx, new TopicTerminatedException($"The topic {Topic} that the producer {_producerName} produces to has been terminated"));
 			}
 		}
-		/// <summary>
-		/// This fails and clears the pending messages with the given exception. This method should be called from within the
-		/// ProducerImpl object mutex.
-		/// </summary>
-		private void FailPendingMessages(IActorRef cnx, PulsarClientException ex)
+        /// <summary>
+        /// Checks message checksum to retry if message was corrupted while sending to broker. Recomputes checksum of the
+        /// message header-payload again.
+        /// <ul>
+        /// <li><b>if matches with existing checksum</b>: it means message was corrupt while sending to broker. So, resend
+        /// message</li>
+        /// <li><b>if doesn't match with existing checksum</b>: it means message is already corrupt and can't retry again.
+        /// So, fail send-message by failing callback</li>
+        /// </ul>
+        /// </summary>
+        /// <param name="cnx"> </param>
+        /// <param name="sequenceId"> </param>
+        private void RecoverChecksumError(IActorRef cnx, long sequenceId)
+        {
+            var op = _pendingMessages.Peek();
+            if (op == null)
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Topic}] [{_producerName}] Got send failure for timed out msg {sequenceId}");
+                }
+            }
+            else
+            {
+                long expectedSequenceId = GetHighestSequenceId(op);
+                if (sequenceId == expectedSequenceId)
+                {
+                    bool corrupted = !VerifyLocalBufferIsNotCorrupted(op);
+                    if (corrupted)
+                    {
+                        // remove message from pendingMessages queue and fail callback
+                        _pendingMessages.Dequeue();
+                        try
+                        {
+                            SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, new PulsarClientException.ChecksumException($"The checksum of the message which is produced by producer {_producerName} to the topic '{Topic}' is corrupted"));
+                        }
+                        catch (Exception t)
+                        {
+                            _log.Warning($"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {sequenceId}:{t}");
+                        }
+                        op.Recycle();
+                        return;
+                    }
+                    else
+                    {
+                        if (_log.IsDebugEnabled)
+                        {
+                            _log.Debug($"[{Topic}] [{_producerName}] Message is not corrupted, retry send-message with sequenceId {sequenceId}");
+                        }
+                    }
+
+                }
+                else
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Topic}] [{_producerName}] Corrupt message is already timed out {sequenceId}");
+                    }
+                }
+            }
+            // as msg is not corrupted : let producer resend pending-messages again including checksum failed message
+            ResendMessages(cnx);
+        }
+
+        private void RecoverNotAllowedError(long sequenceId)
+        {
+            var op = _pendingMessages.Peek();
+            if (op != null && sequenceId == GetHighestSequenceId(op))
+            {
+                _pendingMessages.Dequeue();
+                try
+                {
+                    SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, new NotAllowedException($"The size of the message which is produced by producer {_producerName} to the topic '{Topic}' is not allowed"));
+                }
+                catch (Exception t)
+                {
+                    _log.Warning($"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {sequenceId}:{t}");
+                }
+                op.Recycle();
+            }
+        }
+
+        /// <summary>
+        /// This fails and clears the pending messages with the given exception. This method should be called from within the
+        /// ProducerImpl object mutex.
+        /// </summary>
+        private void FailPendingMessages(IActorRef cnx, PulsarClientException ex)
 		{
 			if (cnx == null)
 			{
