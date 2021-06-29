@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Protocol.Proto;
+﻿using Akka.Actor;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Transaction;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,10 +10,13 @@ namespace SharpPulsar.Messages.Transaction
     {
         public TxnID TxnID { get; }
         public ImmutableList<string> Topics { get; }
-        public AddPublishPartitionToTxn(TxnID txnID, IList<string> topics)
+
+        public IActorRef ReplyTo { get; }
+        public AddPublishPartitionToTxn(TxnID txnID, IList<string> topics, IActorRef replyTo)
         {
             TxnID = txnID;
             Topics = topics.ToImmutableList();
+            ReplyTo = replyTo;
         }
     }
     public sealed class SubscriptionToTxn

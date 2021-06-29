@@ -319,8 +319,8 @@ namespace SharpPulsar
 				try
 				{
 					_txnSequence.Add(_msgIdGenerator, m.Txn);
-					InternalSendWithTxn(m.Message, m.Txn);
-				}
+                    Become(() => InternalSendWithTxn(m.Message, m.Txn));
+                }
 				catch (Exception ex)
 				{
 					_log.Error(ex.ToString());
@@ -567,11 +567,14 @@ namespace SharpPulsar
 		}
 		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
-			if(txn != null)
-			{
-				txn.Tell(new RegisterProducedTopic(Topic));
-			}
-			InternalSend(message);
+            Receive<RegisterProducedTopicResponse>(res => 
+            { 
+                if(res.Success)//Transaction status is Open
+                    InternalSend(message);
+                Become(Ready);
+            } );
+            ReceiveAny(_ => Stash.Stash()); 
+            txn.Tell(new RegisterProducedTopic(Topic, _self));
 		}
 
 		private void Send(IMessage<T> message)
@@ -1047,7 +1050,7 @@ namespace SharpPulsar
                 long expectedSequenceId = GetHighestSequenceId(op);
                 if (sequenceId == expectedSequenceId)
                 {
-                    bool corrupted = !VerifyLocalBufferIsNotCorrupted(op);
+                    bool corrupted = false;// !VerifyLocalBufferIsNotCorrupted(op);
                     if (corrupted)
                     {
                         // remove message from pendingMessages queue and fail callback
@@ -1081,7 +1084,7 @@ namespace SharpPulsar
                 }
             }
             // as msg is not corrupted : let producer resend pending-messages again including checksum failed message
-            ResendMessages(cnx);
+            //ResendMessages(cnx);
         }
 
         private void RecoverNotAllowedError(long sequenceId)

@@ -79,9 +79,8 @@ namespace SharpPulsar.Test.Transaction
 
             var txn1 = Txn;
 			var txn2 = Txn;
-
 			var txnMessageCnt = 0;
-			var messageCnt = 40;
+			var messageCnt = 10;
 			for(var i = 0; i < messageCnt; i++)
 			{
                 if(i % 5 == 0)
@@ -94,7 +93,7 @@ namespace SharpPulsar.Test.Transaction
 
 			// Can't receive transaction messages before commit.
 			var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
-			//Assert.Null(message);
+			Assert.Null(message);
 
 			txn1.Commit();
             txn2.Commit();
@@ -104,6 +103,7 @@ namespace SharpPulsar.Test.Transaction
 			{
 				message = consumer.Receive(TimeSpan.FromSeconds(10));
 				Assert.NotNull(message);
+                _output.WriteLine(Encoding.UTF8.GetString(message.Value));
 				receiveCnt++;
 			}
 
@@ -198,14 +198,18 @@ namespace SharpPulsar.Test.Transaction
 
 			// Can't receive transaction messages before abort.
 			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
-			Assert.Null(message);
+            _output.WriteLine("First....");
+            Assert.Null(message);
+            _output.WriteLine("First");
 
 			txn.Abort();
+            _output.WriteLine("Second");
 
-			// Cant't receive transaction messages after abort.
-			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+            // Cant't receive transaction messages after abort.
+            message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
-		}
+            _output.WriteLine("Third");
+        }
 
 		private User.Transaction Txn
 		{

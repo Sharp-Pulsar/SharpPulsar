@@ -174,7 +174,9 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(pub.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(pub.TxnID.MostSigBits).ToString());
-			}
+
+                pub.ReplyTo.Tell(new RegisterProducedTopicResponse());
+            }
 			else
 				handler.Tell(pub);
 		}

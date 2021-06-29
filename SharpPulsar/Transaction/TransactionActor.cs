@@ -83,6 +83,7 @@ namespace SharpPulsar.Transaction
 				var actor = tc.TCClient;
 				_log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
 				_tcClient = actor;
+                _queue.Add(null);
 				Become(Ready);
 			});
 			ReceiveAny(_=> Stash.Stash());
@@ -126,8 +127,9 @@ namespace SharpPulsar.Transaction
 			});
 			Receive<RegisterProducedTopic>(p =>
 			{
-				RegisterProducedTopic(p.Topic);
-			});
+                RegisterProducedTopic(p.Topic, p.ReplyTo);
+
+            });
 			Stash?.UnstashAll();
 		}
 		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits, BlockingCollection<TransactionCoordinatorClientException> queue)
@@ -140,16 +142,20 @@ namespace SharpPulsar.Transaction
 		}
 
 		// register the topics that will be modified by this transaction
-		private void RegisterProducedTopic(string topic)
+		private void RegisterProducedTopic(string topic, IActorRef replyto)
 		{
-            if(CheckIfOpen())
+            if (CheckIfOpen())
             {
                 if (_registerPartitionMaps.Add(topic))
                 {
                     // we need to issue the request to TC to register the produced topic
-                    _tcClient.Tell(new AddPublishPartitionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), new List<string> { topic }));
+                    _tcClient.Tell(new AddPublishPartitionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), new List<string> { topic }, replyto));
                 }
+                else
+                    replyto.Tell(new RegisterProducedTopicResponse());
             }
+            else
+                replyto.Tell(new RegisterProducedTopicResponse(false));
 		}
 
 		private void RegisterSendOp(IMessageId send)

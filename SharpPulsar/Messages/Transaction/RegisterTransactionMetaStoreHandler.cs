@@ -17,9 +17,19 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class RegisterProducedTopic
     {
         public string Topic { get; }
-        public RegisterProducedTopic(string topic)
+        public IActorRef ReplyTo { get; }
+        public RegisterProducedTopic(string topic, IActorRef replyTo)
         {
             Topic = topic;
+            ReplyTo = replyTo;
+        }
+    }
+    public sealed class RegisterProducedTopicResponse
+    {
+        public bool Success { get; }
+        public RegisterProducedTopicResponse(bool success = true)
+        {
+            Success = true;
         }
     }
     public sealed class RegisterCumulativeAckConsumer

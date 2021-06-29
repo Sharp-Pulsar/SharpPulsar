@@ -35,7 +35,7 @@ namespace SharpPulsar.Transaction
 		private readonly IActorRef _transactionCoordinatorClient;
 		private readonly IActorRef _client;
 		private long _txnTimeoutMs = 60000; // 1 minute
-		private const long TxnRequestTimeoutMs = 1000 * 30; // 30 seconds
+		private const long TxnRequestTimeoutMs = 3600; // 30 seconds
 		private ILoggingAdapter _log;
 
 		public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
@@ -66,9 +66,10 @@ namespace SharpPulsar.Transaction
             var queue = new BlockingCollection<TransactionCoordinatorClientException>();
 
             var result = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs)).ConfigureAwait(false);
-			var txnID = result.Response;
-			var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits, queue));
-			return new User.Transaction(transaction, queue);	
+			var txnID = result;
+			var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, _txnTimeoutMs, txnID.LeastSigBits, txnID.MostSigBits, queue));
+            _ = queue.Take();
+            return new User.Transaction(transaction, queue);	
 		}
 	}
 

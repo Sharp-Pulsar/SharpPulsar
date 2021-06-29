@@ -5,10 +5,16 @@ namespace SharpPulsar.Messages.Transaction
 {
     public sealed class NewTxnResponse
     {
-        public CommandNewTxnResponse Response { get; }
-        public NewTxnResponse(CommandNewTxnResponse response)
+        public long RequestId { get; }
+        public long MostSigBits { get; }
+        public long LeastSigBits { get; }
+        public ServerError Error { get; }
+        public NewTxnResponse(long requestid, long least, long most, ServerError error)
         {
-            Response = response;
+            RequestId = requestid;
+            MostSigBits = most;
+            LeastSigBits = least;
+            Error = error;
         }
     }
     public sealed class NewTxn

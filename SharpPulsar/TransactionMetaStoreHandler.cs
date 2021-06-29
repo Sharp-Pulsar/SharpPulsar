@@ -131,7 +131,7 @@ namespace SharpPulsar
 			Receive<AddPublishPartitionToTxn>(p => 
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { p.TxnID, p.Topics };
+				_invokeArg = new object[] { p.TxnID, p.Topics, p.ReplyTo };
 				_nextBecome = AddPublishPartitionToTxn;
 				Become(GetCnxAndRequestId);
 			});
@@ -204,14 +204,14 @@ namespace SharpPulsar
 
 			Receive<NewTxnResponse>(r =>
 			{
-				HandleNewTxnResponse(r.Response);
+				HandleNewTxnResponse(r);
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var timeout = (long)args[0];
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug("New transaction with timeout in ms {}", timeout);
+				_log.Debug("New transaction with timeout in secs {}", timeout);
 			}
 			_pendingRequests.Add(_requestId, (new ReadOnlySequence<byte>(new byte[] { (byte)timeout }), _replyTo));
 			var cmd = Commands.NewTxn(_transactionCoordinatorId, _requestId, timeout);
@@ -219,22 +219,22 @@ namespace SharpPulsar
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewTxn"));
 		}
 
-		private void HandleNewTxnResponse(CommandNewTxnResponse response)
+		private void HandleNewTxnResponse(NewTxnResponse response)
 		{
 			var requestId = (long)response.RequestId;
 			if(!_pendingRequests.TryGetValue(requestId, out var sender))
 			{
 				if(_log.IsDebugEnabled)
 				{
-					_log.Debug("Got new txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
+					_log.Debug("Got new txn response for timeout {} - {}", response.MostSigBits, response.LeastSigBits);
 				}
 			}
             else
             {
 				_pendingRequests.Remove(requestId);
-				if (response?.Error != null)
+				if (response?.Error == ServerError.UnknownError)
 				{
-					var txnID = new NewTxnResponse(response);
+					var txnID = response;
 					if (_log.IsDebugEnabled)
 					{
 						_log.Debug("Got new txn response {} for request {}", txnID, response.RequestId);
@@ -244,7 +244,8 @@ namespace SharpPulsar
 				else
 				{
 					_log.Error("Got new txn for request {} error {}", response.RequestId, response.Error);
-				}
+                    sender.ReplyTo.Tell(response);
+                }
 			}
 		}
 
@@ -252,6 +253,7 @@ namespace SharpPulsar
 		{
 			var txnID = (TxnID)args[0];
 			var partitions = (IList<string>)args[1];
+            var replyTo = (IActorRef)args[2];
 
 			Receive<AddPublishPartitionToTxnResponse>(a => 
 			{
@@ -264,7 +266,7 @@ namespace SharpPulsar
 				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
 			var cmd = Commands.NewAddPartitionToTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
-			_pendingRequests.Add(_requestId, (cmd, Sender));
+			_pendingRequests.Add(_requestId, (cmd, replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewAddPartitionToTxn"));
@@ -273,7 +275,7 @@ namespace SharpPulsar
 		private void HandleAddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse response)
 		{
 			var request = (long)response.RequestId;
-			if(!_pendingRequests.TryGetValue(request, out var _))
+			if(!_pendingRequests.TryGetValue(request, out var sdr))
             {
 				if (_log.IsDebugEnabled)
 				{
@@ -295,6 +297,7 @@ namespace SharpPulsar
 
                 _log.Error($"Add publish partition for request {response.RequestId} error {response.Error}.");
 			}
+            sdr.ReplyTo.Tell(new RegisterProducedTopicResponse());
 		}
 
 		private void AddSubscriptionToTxn(object[] args)
