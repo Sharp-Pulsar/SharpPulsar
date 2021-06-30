@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private const string TENANT = "public";
 		private static readonly string _nAMESPACE1 = TENANT + "/default";
-		private static readonly string _topicOutput = _nAMESPACE1 + $"/output-{Guid.NewGuid()}";
+		private static readonly string _topicOutput = _nAMESPACE1 + $"/output-txn-{Guid.NewGuid()}";
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
 		private readonly ITestOutputHelper _output;
@@ -55,16 +55,17 @@ namespace SharpPulsar.Test.Transaction
 
             try
             {
-                var response = _admin.SetRetention("public", "default", retentionPolicies: new SharpPulsar.Admin.Models.RetentionPolicies(retentionTimeInMinutes: 3600, retentionSizeInMB: 1000));
-                var bla = response;
+                //var response = _admin.SetRetention("public", "default", retentionPolicies: new SharpPulsar.Admin.Models.RetentionPolicies(retentionTimeInMinutes: 3600, retentionSizeInMB: 1000));
+                //var bla = response;
             }
             catch { }
         }
         [Fact]
 		public void ProduceCommitTest()
 		{
-			var guid = Guid.NewGuid();
-			var topic = $"{_topicOutput}-{guid}";
+            var txn1 = Txn;
+            var txn2 = Txn;
+			var topic = $"{_topicOutput}";
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName($"test-{Guid.NewGuid()}");
@@ -77,8 +78,6 @@ namespace SharpPulsar.Test.Transaction
 
 			var producer = _client.NewProducer(producerBuilder);
 
-            var txn1 = Txn;
-			var txn2 = Txn;
 			var txnMessageCnt = 0;
 			var messageCnt = 10;
 			for(var i = 0; i < messageCnt; i++)
@@ -124,7 +123,10 @@ namespace SharpPulsar.Test.Transaction
 		[Fact]
 		public void ProduceCommitBatchedTest()
 		{
-			var topic = $"{_topicOutput}-{Guid.NewGuid()}";
+
+            var txn = Txn;
+
+            var topic = $"{_topicOutput}-{Guid.NewGuid()}";
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
@@ -133,14 +135,12 @@ namespace SharpPulsar.Test.Transaction
 
 			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
-				.EnableBatching(true)
+				//.EnableBatching(true)
 				.SendTimeout(0);
 
 			var producer = _client.NewProducer(producerBuilder);
 
-			var txn = Txn;
-
-			var txnMessageCnt = 0;
+            var txnMessageCnt = 0;
 			var messageCnt = 40;
 			for(var i = 0; i < messageCnt; i++)
 			{
@@ -174,11 +174,9 @@ namespace SharpPulsar.Test.Transaction
 		public void ProduceAbortTest()
 		{
 			var txn = Txn;
-			
 
 			var producerBuilder = new ProducerConfigBuilder<byte[]>();
 			producerBuilder.Topic(_topicOutput);
-			producerBuilder.EnableBatching(true);
 			producerBuilder.SendTimeout(0);
 
 			var producer = _client.NewProducer(producerBuilder);
@@ -198,17 +196,13 @@ namespace SharpPulsar.Test.Transaction
 
 			// Can't receive transaction messages before abort.
 			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
-            _output.WriteLine("First....");
             Assert.Null(message);
-            _output.WriteLine("First");
 
 			txn.Abort();
-            _output.WriteLine("Second");
 
             // Cant't receive transaction messages after abort.
             message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
-            _output.WriteLine("Third");
         }
 
 		private User.Transaction Txn
@@ -216,7 +210,7 @@ namespace SharpPulsar.Test.Transaction
 			
 			get
 			{
-				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(2000).Build();
+				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
 			}
 		}
 

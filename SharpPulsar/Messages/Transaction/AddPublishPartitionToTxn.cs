@@ -11,12 +11,10 @@ namespace SharpPulsar.Messages.Transaction
         public TxnID TxnID { get; }
         public ImmutableList<string> Topics { get; }
 
-        public IActorRef ReplyTo { get; }
-        public AddPublishPartitionToTxn(TxnID txnID, IList<string> topics, IActorRef replyTo)
+        public AddPublishPartitionToTxn(TxnID txnID, IList<string> topics)
         {
             TxnID = txnID;
             Topics = topics.ToImmutableList();
-            ReplyTo = replyTo;
         }
     }
     public sealed class SubscriptionToTxn

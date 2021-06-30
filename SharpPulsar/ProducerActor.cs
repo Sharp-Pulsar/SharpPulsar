@@ -314,12 +314,12 @@ namespace SharpPulsar
 					_log.Error(ex.ToString());
 				}
 			});
-			Receive<InternalSendWithTxn<T>>(m =>
+			ReceiveAsync<InternalSendWithTxn<T>>( async m =>
 			{
 				try
 				{
 					_txnSequence.Add(_msgIdGenerator, m.Txn);
-                    Become(() => InternalSendWithTxn(m.Message, m.Txn));
+                    await InternalSendWithTxn(m.Message, m.Txn);
                 }
 				catch (Exception ex)
 				{
@@ -565,17 +565,16 @@ namespace SharpPulsar
 			}
 			Send(interceptorMessage);
 		}
-		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
-		{
-            Receive<RegisterProducedTopicResponse>(res => 
-            { 
-                if(res.Success)//Transaction status is Open
-                    InternalSend(message);
-                Become(Ready);
-            } );
-            ReceiveAny(_ => Stash.Stash()); 
-            txn.Tell(new RegisterProducedTopic(Topic, _self));
-		}
+		private async Task InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+        {
+            var res = await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic));
+
+            while(res.Error == ServerError.TransactionCoordinatorNotFound)
+                res = await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic));
+
+            if (res.Error == ServerError.UnknownError)
+                InternalSend(message);
+        }
 
 		private void Send(IMessage<T> message)
 		{

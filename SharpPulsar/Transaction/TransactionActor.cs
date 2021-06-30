@@ -127,7 +127,7 @@ namespace SharpPulsar.Transaction
 			});
 			Receive<RegisterProducedTopic>(p =>
 			{
-                RegisterProducedTopic(p.Topic, p.ReplyTo);
+                RegisterProducedTopic(p.Topic);
 
             });
 			Stash?.UnstashAll();
@@ -142,20 +142,21 @@ namespace SharpPulsar.Transaction
 		}
 
 		// register the topics that will be modified by this transaction
-		private void RegisterProducedTopic(string topic, IActorRef replyto)
+		private void RegisterProducedTopic(string topic)
 		{
             if (CheckIfOpen())
             {
-                if (_registerPartitionMaps.Add(topic))
+                if (!_registerPartitionMaps.Contains(topic))
                 {
                     // we need to issue the request to TC to register the produced topic
-                    _tcClient.Tell(new AddPublishPartitionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), new List<string> { topic }, replyto));
+                    _tcClient.Forward(new AddPublishPartitionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), new List<string> { topic }));
+                    _registerPartitionMaps.Add(topic);
                 }
                 else
-                    replyto.Tell(new RegisterProducedTopicResponse());
+                    Sender.Tell(new RegisterProducedTopicResponse(Protocol.Proto.ServerError.UnknownError));
             }
             else
-                replyto.Tell(new RegisterProducedTopicResponse(false));
+                Sender.Tell(new RegisterProducedTopicResponse(null));
 		}
 
 		private void RegisterSendOp(IMessageId send)

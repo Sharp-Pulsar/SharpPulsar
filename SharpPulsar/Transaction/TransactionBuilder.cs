@@ -3,6 +3,7 @@ using Akka.Event;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Transaction;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 /// <summary>
@@ -34,8 +35,7 @@ namespace SharpPulsar.Transaction
 		private readonly ActorSystem _actorSystem;
 		private readonly IActorRef _transactionCoordinatorClient;
 		private readonly IActorRef _client;
-		private long _txnTimeoutMs = 60000; // 1 minute
-		private const long TxnRequestTimeoutMs = 3600; // 30 seconds
+        private TimeSpan _txnTimeoutMs = TimeSpan.FromSeconds(60); // 1 minute
 		private ILoggingAdapter _log;
 
 		public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
@@ -46,9 +46,9 @@ namespace SharpPulsar.Transaction
 			_client = client;
 		}
 
-		public virtual ITransactionBuilder WithTransactionTimeout(long timeoutInMs)
+		public virtual ITransactionBuilder WithTransactionTimeout(TimeSpan timeout)
 		{
-			_txnTimeoutMs = timeoutInMs;
+			_txnTimeoutMs = timeout;
 			return this;
 		}
 
@@ -64,10 +64,12 @@ namespace SharpPulsar.Transaction
             //       After getting the transaction id, all the operations are handled by the
             //       `Transaction`
             var queue = new BlockingCollection<TransactionCoordinatorClientException>();
+            var timeout = (long)_txnTimeoutMs.TotalMilliseconds;
+            var txnID = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(timeout)).ConfigureAwait(false);
+			if(_log.IsDebugEnabled)
+                _log.Debug($"Success to new txn. txnID: ({txnID.MostSigBits}:{txnID.LeastSigBits})");
 
-            var result = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs)).ConfigureAwait(false);
-			var txnID = result;
-			var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, _txnTimeoutMs, txnID.LeastSigBits, txnID.MostSigBits, queue));
+            var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits, queue));
             _ = queue.Take();
             return new User.Transaction(transaction, queue);	
 		}

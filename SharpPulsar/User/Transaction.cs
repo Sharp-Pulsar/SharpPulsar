@@ -21,10 +21,10 @@ namespace SharpPulsar.User
             var error = _queue.Take();
             if (error != null)
             {
-                _txn.Tell(PoisonPill.Instance);
+                //_txn.Tell(PoisonPill.Instance);
                 throw error;
             }
-            _txn.Tell(PoisonPill.Instance);
+            //_txn.Tell(PoisonPill.Instance);
         }
 
         public void Commit()
@@ -33,10 +33,10 @@ namespace SharpPulsar.User
             var error = _queue.Take();
             if (error != null)
             {
-                _txn.Tell(PoisonPill.Instance);
+                //_txn.Tell(PoisonPill.Instance);
                 throw error;
             }
-            _txn.Tell(PoisonPill.Instance);
+            //_txn.Tell(PoisonPill.Instance);
         }
         internal IActorRef Txn => _txn;
     }

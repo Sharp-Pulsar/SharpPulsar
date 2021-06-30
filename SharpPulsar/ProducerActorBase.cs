@@ -30,7 +30,6 @@ namespace SharpPulsar
 {
     internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract void InternalSendWithTxn(IMessage<T> message, IActorRef txn);
 		internal abstract void InternalSend(IMessage<T> message);
 		protected internal abstract void LastDisconnectedTimestamp();
 		protected internal abstract bool Connected();

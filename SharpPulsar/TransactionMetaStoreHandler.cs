@@ -131,7 +131,7 @@ namespace SharpPulsar
 			Receive<AddPublishPartitionToTxn>(p => 
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { p.TxnID, p.Topics, p.ReplyTo };
+				_invokeArg = new object[] { p.TxnID, p.Topics, Sender };
 				_nextBecome = AddPublishPartitionToTxn;
 				Become(GetCnxAndRequestId);
 			});
@@ -190,7 +190,7 @@ namespace SharpPulsar
 		{
 			_log.Info($"Transaction meta handler with transaction coordinator id {_transactionCoordinatorId} connection opened.");
 			_connectionHandler.Tell(new SetCnx(cnx));
-			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, Self));
+			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
             if (!_state.ChangeToReadyState())
             {
                 cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
@@ -221,7 +221,7 @@ namespace SharpPulsar
 
 		private void HandleNewTxnResponse(NewTxnResponse response)
 		{
-			var requestId = (long)response.RequestId;
+			var requestId = response.RequestId;
 			if(!_pendingRequests.TryGetValue(requestId, out var sender))
 			{
 				if(_log.IsDebugEnabled)
@@ -237,7 +237,7 @@ namespace SharpPulsar
 					var txnID = response;
 					if (_log.IsDebugEnabled)
 					{
-						_log.Debug("Got new txn response {} for request {}", txnID, response.RequestId);
+						_log.Debug($"Got new txn response ({txnID.MostSigBits}:{txnID.LeastSigBits}) for request {response.RequestId}");
 					}
 					sender.ReplyTo.Tell(txnID);
 				}
@@ -280,9 +280,11 @@ namespace SharpPulsar
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"Got add publish partition to txn response for timeout {response.TxnidMostBits} - {response.TxnidLeastBits}");
-					return;
+					
 				}
-			}
+                sdr.ReplyTo.Tell(new RegisterProducedTopicResponse(null));
+                return;
+            }
 			if(response?.Error == ServerError.UnknownError)
 			{
 				if(_log.IsDebugEnabled)
@@ -297,7 +299,7 @@ namespace SharpPulsar
 
                 _log.Error($"Add publish partition for request {response.RequestId} error {response.Error}.");
 			}
-            sdr.ReplyTo.Tell(new RegisterProducedTopicResponse());
+            sdr.ReplyTo.Tell(new RegisterProducedTopicResponse(response.Error));
 		}
 
 		private void AddSubscriptionToTxn(object[] args)

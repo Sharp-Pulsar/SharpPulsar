@@ -175,10 +175,10 @@ namespace SharpPulsar.Transaction
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(pub.TxnID.MostSigBits).ToString());
 
-                pub.ReplyTo.Tell(new RegisterProducedTopicResponse());
+                Sender.Tell(new RegisterProducedTopicResponse(Protocol.Proto.ServerError.UnknownError));
             }
 			else
-				handler.Tell(pub);
+				handler.Forward(pub);
 		}
 
 		private void AddSubscriptionToTxn(SubscriptionToTxn subToTxn)

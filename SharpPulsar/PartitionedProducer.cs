@@ -212,7 +212,7 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		private void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
 			switch(State.ConnectionState)
 			{
