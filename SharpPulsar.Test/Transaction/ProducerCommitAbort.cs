@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private const string TENANT = "public";
 		private static readonly string _nAMESPACE1 = TENANT + "/default";
-		private static readonly string _topicOutput = _nAMESPACE1 + $"/output-txn-{Guid.NewGuid()}";
+		private static readonly string _topicOutput = _nAMESPACE1 + $"/output-txn-{DateTime.Now.Ticks}";
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
 		private readonly ITestOutputHelper _output;
@@ -127,11 +127,6 @@ namespace SharpPulsar.Test.Transaction
             var txn = Txn;
 
             var topic = $"{_topicOutput}-{Guid.NewGuid()}";
-			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-				.Topic(topic)
-				.SubscriptionName($"test-{Guid.NewGuid()}")
-				.EnableBatchIndexAcknowledgment(true);
-			var consumer = _client.NewConsumer(consumerBuilder);
 
 			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
@@ -148,8 +143,15 @@ namespace SharpPulsar.Test.Transaction
 				txnMessageCnt++;
 			}
 
-			// Can't receive transaction messages before commit.
-			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .SubscriptionName($"test2")
+                .EnableBatchIndexAcknowledgment(true)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
+
+            var consumer = _client.NewConsumer(consumerBuilder);
+            // Can't receive transaction messages before commit.
+            var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
 			Assert.Null(message);
 
 			txn.Commit();
@@ -189,7 +191,7 @@ namespace SharpPulsar.Test.Transaction
 
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>();
 			consumerBuilder.Topic(_topicOutput);
-			consumerBuilder.SubscriptionName("test");
+			consumerBuilder.SubscriptionName($"test{DateTime.Now.Ticks}");
 			consumerBuilder.EnableBatchIndexAcknowledgment(true);
 			consumerBuilder.SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
 			var consumer = _client.NewConsumer(consumerBuilder);

@@ -85,7 +85,7 @@ namespace SharpPulsar.SocketImpl
         public void Connect()
         {
             var host = _server.Host;
-            var networkStream = GetStream(_server);
+            var networkStream = GetStream(_server).GetAwaiter().GetResult();
 
             if (_encrypt)
                 networkStream = EncryptStream(networkStream, host);
@@ -199,10 +199,9 @@ namespace SharpPulsar.SocketImpl
             socket.Close(1000);
             _logger.Info("Shutting down socket client....");
         }
-        private Stream GetStream(DnsEndPoint endPoint)
+        private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {
             var tcpClient = new TcpClient();
-            Socket socket = null;
             try
             {
                 if (SniProxy)
@@ -213,19 +212,13 @@ namespace SharpPulsar.SocketImpl
 
                 if (!_encrypt)
                 {
-                    tcpClient.Connect(endPoint.Host, endPoint.Port);
+                    await tcpClient.ConnectAsync(endPoint.Host, endPoint.Port).ConfigureAwait(false);
                     
                     return tcpClient.GetStream();
                 }
 
-                Dns.GetHostAddressesAsync(endPoint.Host).ContinueWith(async task => {
-                    if (!task.IsFaulted)
-                    {
-                        socket = await ConnectAsync(task.Result, endPoint.Port);
-                    }
-                    else
-                        _logger.Error(task.Exception.ToString());
-                });
+                var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false); 
+                var socket = await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
                 return new NetworkStream(socket, true);
             }
             catch (Exception ex)
