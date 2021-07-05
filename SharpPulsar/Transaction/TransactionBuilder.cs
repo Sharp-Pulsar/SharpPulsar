@@ -71,7 +71,7 @@ namespace SharpPulsar.Transaction
 
             var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits, queue));
             _ = queue.Take();
-            return new User.Transaction(transaction, queue);	
+            return new User.Transaction(txnID.LeastSigBits, txnID.MostSigBits, transaction, queue);	
 		}
 	}
 

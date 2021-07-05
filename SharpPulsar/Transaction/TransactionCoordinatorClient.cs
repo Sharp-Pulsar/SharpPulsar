@@ -207,7 +207,7 @@ namespace SharpPulsar.Transaction
                 Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
             }
 			else
-				handler.Tell(commit);
+				handler.Forward(commit);
 		}
 
 		private void Abort(AbortTxnID abort)
@@ -218,7 +218,7 @@ namespace SharpPulsar.Transaction
                 Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
             }
 			else
-				handler.Tell(abort);
+				handler.Forward(abort);
 		}
 
 		private TransactionCoordinatorClientState State

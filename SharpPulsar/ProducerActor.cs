@@ -15,6 +15,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
+using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
@@ -33,7 +34,9 @@ using SharpPulsar.Shared;
 using SharpPulsar.Stats.Producer;
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using static SharpPulsar.Exceptions.PulsarClientException;
@@ -70,7 +73,7 @@ namespace SharpPulsar
 		private ICancelable _sendTimeout;
 		private long _createProducerTimeout;
 		private readonly IBatchMessageContainerBase<T> _batchMessageContainer;
-		private Queue<OpSendMsg<T>> _pendingMessages;
+		private ConcurrentQueue<OpSendMsg<T>> _pendingMessages;
 		private IActorRef _generator;
 
 		private readonly ICancelable _regenerateDataKeyCipherCancelable;
@@ -108,7 +111,6 @@ namespace SharpPulsar
 		private int _protocolVersion;
 
 		private ICancelable _batchTimerTask;
-		private Dictionary<long, IActorRef> _txnSequence;
 
 		private readonly IScheduler _scheduler;
 		private IActorRef _replyTo;
@@ -118,7 +120,6 @@ namespace SharpPulsar
 
         public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
-			_txnSequence = new Dictionary<long, IActorRef>();
 			_self = Self;
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
@@ -130,7 +131,7 @@ namespace SharpPulsar
 				_userProvidedProducerName = true;
 			}
 			_partitionIndex = partitionIndex;
-			_pendingMessages = new Queue<OpSendMsg<T>>(conf.MaxPendingMessages);
+			_pendingMessages = new ConcurrentQueue<OpSendMsg<T>>(/*conf.MaxPendingMessages*/);
 
 			_compressor = CompressionCodecProvider.GetCompressionCodec((int)conf.CompressionType);
 
@@ -274,7 +275,7 @@ namespace SharpPulsar
                     Terminated(x.ClientCnx);
                 }
             );
-            Receive<Messages.RecoverChecksumError>(x =>
+            Receive<RecoverChecksumError>(x =>
                 {
                     RecoverChecksumError(x.ClientCnx, x.SequenceId);
                 }
@@ -318,7 +319,6 @@ namespace SharpPulsar
 			{
 				try
 				{
-					_txnSequence.Add(_msgIdGenerator, m.Txn);
                     await InternalSendWithTxn(m.Message, m.Txn);
                 }
 				catch (Exception ex)
@@ -1036,8 +1036,7 @@ namespace SharpPulsar
         /// <param name="sequenceId"> </param>
         private void RecoverChecksumError(IActorRef cnx, long sequenceId)
         {
-            var op = _pendingMessages.Peek();
-            if (op == null)
+            if (!_pendingMessages.TryPeek(out var op))
             {
                 if (_log.IsDebugEnabled)
                 {
@@ -1046,17 +1045,21 @@ namespace SharpPulsar
             }
             else
             {
-                long expectedSequenceId = GetHighestSequenceId(op);
+                var expectedSequenceId = GetHighestSequenceId(op);
                 if (sequenceId == expectedSequenceId)
                 {
-                    bool corrupted = false;// !VerifyLocalBufferIsNotCorrupted(op);
+                    var corrupted = !VerifyLocalBufferIsNotCorrupted(op);
                     if (corrupted)
                     {
                         // remove message from pendingMessages queue and fail callback
-                        _pendingMessages.Dequeue();
+                        var error = new PulsarClientException.ChecksumException($"The checksum of the message which is produced by producer {_producerName} to the topic '{Topic}' is corrupted");
+                        _pendingMessages.TryDequeue(out op);
                         try
                         {
-                            SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, new PulsarClientException.ChecksumException($"The checksum of the message which is produced by producer {_producerName} to the topic '{Topic}' is corrupted"));
+
+                            SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, error);
+                            // as msg is not corrupted : let producer resend pending-messages again including checksum failed message
+                            FailPendingMessages(null, error);
                         }
                         catch (Exception t)
                         {
@@ -1082,16 +1085,36 @@ namespace SharpPulsar
                     }
                 }
             }
-            // as msg is not corrupted : let producer resend pending-messages again including checksum failed message
-            //ResendMessages(cnx);
         }
+        private bool VerifyLocalBufferIsNotCorrupted(OpSendMsg<T> o)
+        {
+            try
+            {
+                using var stream = new MemoryStream(o.Msg.Data.ToArray());
+                using var reader = new BinaryReader(stream);
+                var sizeStream = stream.Length;
+                stream.Seek(4L, SeekOrigin.Begin);
+                var sizeCmd = reader.ReadInt32().IntFromBigEndian();
+                stream.Seek((long)10 + sizeCmd, SeekOrigin.Begin);
 
+                var checkSum = reader.ReadInt32().IntFromBigEndian();
+                var checkSumPayload = ((int)sizeStream) - 14 - sizeCmd;
+                var computedCheckSum = (int)CRC32C.Get(0u, stream, checkSumPayload);
+                return checkSum != computedCheckSum;
+            }
+            catch(Exception ex)
+            {
+                _log.Error(ex.ToString());
+                return false;
+            }
+
+            
+        }
         private void RecoverNotAllowedError(long sequenceId)
         {
-            var op = _pendingMessages.Peek();
-            if (op != null && sequenceId == GetHighestSequenceId(op))
+            if (_pendingMessages.TryPeek(out var op) && sequenceId == GetHighestSequenceId(op))
             {
-                _pendingMessages.Dequeue();
+                _pendingMessages.TryDequeue(out op);
                 try
                 {
                     SendComplete(op.Msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, new NotAllowedException($"The size of the message which is produced by producer {_producerName} to the topic '{Topic}' is not allowed"));
@@ -1128,7 +1151,7 @@ namespace SharpPulsar
 					}
 					catch (Exception t)
 					{
-						_log.Warning($"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {op.SequenceId}:");
+						_log.Warning($"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {op.SequenceId}:{t}");
 					}
 					op.Recycle();
 				});
@@ -1162,9 +1185,6 @@ namespace SharpPulsar
 	private void AckReceived(long sequenceId, long highestSequenceId, long ledgerId, long entryId)
 	{
 			var cnx = _cnx;
-			if (_txnSequence.TryGetValue(sequenceId, out var txn))
-				txn.Tell(new RegisterSendOp(new MessageId(ledgerId, entryId, _partitionIndex)));
-
 			if (!_pendingMessages.TryDequeue(out var op))
 			{
 				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {sequenceId} - {highestSequenceId}";
@@ -1445,7 +1465,7 @@ namespace SharpPulsar
 					}
 					else if (op.Msg.GetSchemaState() == Message<T>.SchemaState.Broken)
 					{
-						_pendingMessages = new Queue<OpSendMsg<T>>(_pendingMessages.Where(x => x != op));
+						_pendingMessages = new ConcurrentQueue<OpSendMsg<T>>(_pendingMessages.Where(x => x != op));
 						op.Recycle();
 						continue;
 					}

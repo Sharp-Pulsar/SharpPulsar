@@ -8,9 +8,13 @@ namespace SharpPulsar.User
     public sealed class Transaction:ITransaction
     {
         private readonly IActorRef _txn;
+        private readonly long _mostSigBits;
+        private readonly long _leastSigBits;
         private readonly BlockingCollection<TransactionCoordinatorClientException> _queue;
-        public Transaction(IActorRef txn, BlockingCollection<TransactionCoordinatorClientException> queue)
+        public Transaction(long leastBits, long mostBits, IActorRef txn, BlockingCollection<TransactionCoordinatorClientException> queue)
         {
+            _mostSigBits = mostBits;
+            _leastSigBits = leastBits;
             _txn = txn;
             _queue = queue;
         }
@@ -21,10 +25,10 @@ namespace SharpPulsar.User
             var error = _queue.Take();
             if (error != null)
             {
-                //_txn.Tell(PoisonPill.Instance);
+                _txn.Tell(PoisonPill.Instance);
                 throw error;
             }
-            //_txn.Tell(PoisonPill.Instance);
+            _txn.Tell(PoisonPill.Instance);
         }
 
         public void Commit()
@@ -33,11 +37,13 @@ namespace SharpPulsar.User
             var error = _queue.Take();
             if (error != null)
             {
-                //_txn.Tell(PoisonPill.Instance);
+                _txn.Tell(PoisonPill.Instance);
                 throw error;
             }
-            //_txn.Tell(PoisonPill.Instance);
+            _txn.Tell(PoisonPill.Instance);
         }
+        public long LeastSigBits => _leastSigBits;
+        public long MostSigBits => _mostSigBits;
         internal IActorRef Txn => _txn;
     }
 }

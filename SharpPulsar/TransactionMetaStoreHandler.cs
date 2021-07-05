@@ -138,13 +138,13 @@ namespace SharpPulsar
 			Receive<AbortTxnID>(a => 
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { a.TxnID, a.ReplyTo };
+				_invokeArg = new object[] { a.TxnID, Sender };
 				_nextBecome = Abort;
 				Become(GetCnxAndRequestId);
 			});
 			Receive<CommitTxnID>(c => 
 			{
-				_invokeArg = new object[] { c.TxnID, c.ReplyTo};
+				_invokeArg = new object[] { c.TxnID, Sender};
 				_nextBecome = Commit;
 				Become(GetCnxAndRequestId);
 			});

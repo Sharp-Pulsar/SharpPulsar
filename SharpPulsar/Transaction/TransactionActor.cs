@@ -50,6 +50,7 @@ namespace SharpPulsar.Transaction
 		private readonly ILoggingAdapter _log;
 		private long _sequenceId = 0L;
         private volatile State _state;
+        private readonly IActorRef _self;
 
         private readonly ISet<string> _registerPartitionMaps;
 		private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
@@ -63,6 +64,7 @@ namespace SharpPulsar.Transaction
 
         public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits, BlockingCollection<TransactionCoordinatorClientException> queue)
 		{
+            _self = Self;
             _queue = queue;
             _state = State.OPEN;
             _log = Context.System.Log;
@@ -197,6 +199,7 @@ namespace SharpPulsar.Transaction
             _state = State.COMMITTING;
             Receive<EndTxnResponse>(e =>
             {
+                _log.Info("Got EndTxnResponse in Commit()");
                 if(e.Error != null)
                 {
                     var error = e.Error;
@@ -216,7 +219,7 @@ namespace SharpPulsar.Transaction
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
-			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), Self));
+			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), _self));
 		}
 
 		private void Abort()
@@ -255,7 +258,7 @@ namespace SharpPulsar.Transaction
 					c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
                 }
 			}
-			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), Self));
+			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), _self));
 			
         }
         private bool CheckIfOpen()

@@ -260,11 +260,11 @@ namespace SharpPulsar.Protocol
 			{
 				send.NumMessages = numMessages;
 			}
-			if (txnIdLeastBits > 0)
+			if (txnIdLeastBits >= 0)
 			{
 				send.TxnidLeastBits = (ulong)txnIdLeastBits;
 			}
-			if (txnIdMostBits > 0)
+			if (txnIdMostBits >= 0)
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
@@ -284,11 +284,11 @@ namespace SharpPulsar.Protocol
 			{
 				send.NumMessages = numMessages;
 			}
-			if (txnIdLeastBits > 0)
+			if (txnIdLeastBits >= 0)
 			{
 				send.TxnidLeastBits = (ulong)txnIdLeastBits;
 			}
-			if (txnIdMostBits > 0)
+			if (txnIdMostBits >= 0)
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}

@@ -2,16 +2,15 @@
 using System.Buffers;
 using System.Text;
 using SharpPulsar;
-using SharpPulsar.Auth;
 using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.User;
 
 namespace Tutorials
 {
+    //https://helm.kafkaesque.io/#accessing-the-pulsar-cluster-on-localhost
     class Program
     {
-        const string myTopic = "persistent://public/default/mytopic";
+        static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         static void Main(string[] args)
         {
             //pulsar client settings builder
@@ -34,6 +33,7 @@ namespace Tutorials
             else
                 ProduceConsumer(pulsarClient);
 
+            Console.ReadKey();
         }
         private static void ProduceConsumer(PulsarClient pulsarClient)
         {
@@ -83,14 +83,16 @@ namespace Tutorials
 
             for (var i = 0; i < 10; i++)
             {
-                var data = Encoding.UTF8.GetBytes($"tuts-{i}");
+                var text = $"tuts-{i}";
+                var data = Encoding.UTF8.GetBytes(text);
                 producer.NewMessage(txn).Value(data).Send();
+                Console.WriteLine($"produced: {text}");
             }
 
             var pool = ArrayPool<byte>.Shared;
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);
@@ -101,10 +103,16 @@ namespace Tutorials
                     Console.WriteLine($"[1] message '{res}' from topic: {message.TopicName}");
                 }
             }
+
+            Console.WriteLine("committing");
             txn.Commit();
+
+            Console.WriteLine("commited");
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
+                Console.WriteLine($"read1");
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
+                Console.WriteLine($"read2");
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);

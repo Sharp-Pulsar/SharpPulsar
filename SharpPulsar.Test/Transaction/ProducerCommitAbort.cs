@@ -91,16 +91,18 @@ namespace SharpPulsar.Test.Transaction
 			}
 
 			// Can't receive transaction messages before commit.
-			var message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+			var message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 			Assert.Null(message);
 
 			txn1.Commit();
+            _output.WriteLine($"Committed 1");
             txn2.Commit();
+            _output.WriteLine($"Committed 1");
             // txn1 messages could be received after txn1 committed
             var receiveCnt = 0;
 			for(var i = 0; i < txnMessageCnt; i++)
 			{
-				message = consumer.Receive(TimeSpan.FromSeconds(10));
+				message = consumer.Receive(TimeSpan.FromSeconds(1));
 				Assert.NotNull(message);
                 _output.WriteLine(Encoding.UTF8.GetString(message.Value));
 				receiveCnt++;
@@ -109,13 +111,13 @@ namespace SharpPulsar.Test.Transaction
 
             for (var i = 0; i < txnMessageCnt; i++)
             {
-                message = consumer.Receive(TimeSpan.FromSeconds(10));
+                message = consumer.Receive(TimeSpan.FromSeconds(1));
                 Assert.NotNull(message);
                 receiveCnt++;
             }
             Assert.Equal(txnMessageCnt, receiveCnt);
 
-			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+			message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 			Assert.Null(message);
 
 			_output.WriteLine($"message commit test enableBatch {true}");
@@ -197,13 +199,13 @@ namespace SharpPulsar.Test.Transaction
 			var consumer = _client.NewConsumer(consumerBuilder);
 
 			// Can't receive transaction messages before abort.
-			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+			var message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
             Assert.Null(message);
 
 			txn.Abort();
 
             // Cant't receive transaction messages after abort.
-            message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+            message = consumer.Receive(TimeSpan.FromMilliseconds(1000));
 			Assert.Null(message);
         }
 
