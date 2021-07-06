@@ -15,8 +15,9 @@ namespace SharpPulsar
 			Terminated, // Topic associated with this handler
 						// has been terminated
 			Failed, // Handler is failed
-			RegisteringSchema // Handler is registering schema
-		}
+            RegisteringSchema, // Handler is registering schema
+            ProducerFenced, // The producer has been fenced by the broker
+        }
 		private readonly IActorRef _lookup;
 		private readonly IActorRef _connectionPool;
 		private readonly string _topic;

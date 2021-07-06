@@ -261,7 +261,6 @@ namespace SharpPulsar
 		}
 		private void Ready()
         {
-			//move to become send
 			Receive<AckReceived>(a => 
 			{				
 				AckReceived(a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
@@ -434,61 +433,79 @@ namespace SharpPulsar
 				ResendMessages(response);
 
 			});
-			ReceiveAny(any => 
+			Receive<ClientExceptions>(exc => 
 			{
-				if (any is Exception ex)
-				{
-					_log.Error($"[{Topic}] [{_producerName}] Failed to create producer: {ex}");
-					_cnx.Tell(new RemoveProducer(_producerId));
-					if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-					{
-						//cx.Tell(PoisonPill.Instance);
-						ProducerQueue.Producer.Add(new ProducerCreation(ex));
-					}
-					else if (ex is TopicDoesNotExistException e)
-					{
-						_log.Error($"Failed to close producer on TopicDoesNotExistException: {Topic}");
-						ProducerQueue.Producer.Add(new ProducerCreation(e));
-					}
-					else if (ex is ProducerBlockedQuotaExceededException)
-					{
-						_log.Warning($"[{Topic}] [{_producerName}] Topic backlog quota exceeded. Throwing Exception on producer.");
-						var pe = new ProducerBlockedQuotaExceededException($"The backlog quota of the topic {Topic} that the producer {_producerName} produces to is exceeded");
-						ProducerQueue.Producer.Add(new ProducerCreation(pe));
-					}
-					else if (ex is ProducerBlockedQuotaExceededError pexe)
-					{
-						_log.Warning($"[{_producerName}] [{Topic}] Producer is blocked on creation because backlog exceeded on topic.");
-						ProducerQueue.Producer.Add(new ProducerCreation(pexe));
-					}
-					else if (ex is TopicTerminatedException tex)
-					{
-						State.ConnectionState = HandlerState.State.Terminated;
-						Client.Tell(new CleanupProducer(Self));
-						ProducerQueue.Producer.Add(new ProducerCreation(tex));
-					}
-					else if ((ex is PulsarClientException && IsRetriableError(ex) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
-					{
-						ReconnectLater(ex);
-						Become(Connection);
-					}
-					else
-					{
-						State.ConnectionState = HandlerState.State.Failed;
-						Client.Tell(new CleanupProducer(Self));
-						ProducerQueue.Producer.Add(new ProducerCreation(new Exception()));
-						var timeout = _sendTimeout;
-						if (timeout != null)
-						{
-							timeout.Cancel();
-							_sendTimeout = null;
-						}
-						Become(Connection);
-					}
-				}
-				else
-					Stash.Stash();
+                var ex = exc.Exception;
+                _log.Error($"[{Topic}] [{_producerName}] Failed to create producer: {ex}");
+                _cnx.Tell(new RemoveProducer(_producerId));
+                if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                {
+                    //cx.Tell(PoisonPill.Instance);
+                    ProducerQueue.Producer.Add(new ProducerCreation(ex));
+                }
+                else if (ex is TopicDoesNotExistException e)
+                {
+                    _log.Error($"Failed to close producer on TopicDoesNotExistException: {Topic}");
+                    ProducerQueue.Producer.Add(new ProducerCreation(e));
+                }
+                else if (ex is ProducerBlockedQuotaExceededException)
+                {
+                    _log.Warning($"[{Topic}] [{_producerName}] Topic backlog quota exceeded. Throwing Exception on producer.");
+                    var pe = new ProducerBlockedQuotaExceededException($"The backlog quota of the topic {Topic} that the producer {_producerName} produces to is exceeded");
+
+                    FailPendingMessages(_cnx, pe);
+                    ProducerQueue.Producer.Add(new ProducerCreation(pe));
+                }
+                else if (ex is ProducerBlockedQuotaExceededError pexe)
+                {
+                    _log.Warning($"[{_producerName}] [{Topic}] Producer is blocked on creation because backlog exceeded on topic.");
+
+                    ProducerQueue.Producer.Add(new ProducerCreation(pexe));
+                }
+                else if (ex is ProducerBusyException busy)
+                {
+                    _log.Warning($"[{_producerName}] [{Topic}] Producer is busy, dear.");
+
+                    ProducerQueue.Producer.Add(new ProducerCreation(busy));
+                }
+                else if (ex is TopicTerminatedException tex)
+                {
+                    State.ConnectionState = HandlerState.State.Terminated;
+                    FailPendingMessages(_cnx, tex);
+                    Client.Tell(new CleanupProducer(Self));
+                    ProducerQueue.Producer.Add(new ProducerCreation(tex));
+                }
+                else if (ex is ProducerFencedException pfe)
+                {
+                    State.ConnectionState = HandlerState.State.ProducerFenced;
+                    FailPendingMessages(_cnx, pfe);
+                    Client.Tell(new CleanupProducer(Self));
+                    ProducerQueue.Producer.Add(new ProducerCreation(pfe));
+                }
+                else if ((ex is PulsarClientException && IsRetriableError(ex) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
+                {
+                    ReconnectLater(ex);
+                    Become(Connection);
+                }
+                else
+                {
+                    State.ConnectionState = HandlerState.State.Failed;
+                    Client.Tell(new CleanupProducer(Self));
+                    ProducerQueue.Producer.Add(new ProducerCreation(new Exception()));
+                    var timeout = _sendTimeout;
+                    if (timeout != null)
+                    {
+                        timeout.Cancel();
+                        _sendTimeout = null;
+                    }
+                    Become(Connection);
+                }
 			});
+            ReceiveAny(any => 
+            {
+                _log.Info($"Stashing: {any.GetType().FullName}");
+                Stash.Stash();
+            });
 			_generator.Tell(NewRequestId.Instance);
 		}
 
@@ -914,6 +931,9 @@ namespace SharpPulsar
 					return false;
 				case HandlerState.State.Terminated:
 						_log.Error($"Topic was terminated sequenceId: {sequenceId}");
+					return false;
+				case HandlerState.State.ProducerFenced:
+						_log.Error($"Producer was fenced: {sequenceId}");
 					return false;
 				case HandlerState.State.Failed:
 				case HandlerState.State.Uninitialized:

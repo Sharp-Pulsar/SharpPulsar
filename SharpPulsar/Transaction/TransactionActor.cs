@@ -219,7 +219,7 @@ namespace SharpPulsar.Transaction
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
-			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), _self));
+			_tcClient.Tell(new CommitTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
 		}
 
 		private void Abort()
@@ -258,7 +258,7 @@ namespace SharpPulsar.Transaction
 					c.Key.Tell(ClearIncomingMessagesAndGetMessageNumber.Instance);
                 }
 			}
-			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits), _self));
+			_tcClient.Tell(new AbortTxnID(new TxnID(_txnIdMostBits, _txnIdLeastBits)), Self);
 			
         }
         private bool CheckIfOpen()

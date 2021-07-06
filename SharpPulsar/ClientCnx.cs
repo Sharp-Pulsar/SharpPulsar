@@ -141,6 +141,10 @@ namespace SharpPulsar
 
 				RemoveProducer(m.ProducerId);
 			});
+			Receive<Close>(m => {
+
+                _socketClient.Dispose();
+			});
 			Receive<MaxMessageSize>(_ => {
 
 				Sender.Tell(new MaxMessageSizeResponse(_maxMessageSize));
@@ -538,7 +542,7 @@ namespace SharpPulsar
 				default:
 					// By default, for transient error, let the reconnection logic
 					// to take place and re-establish the produce again
-					//_socketClient.Dispose();
+					_socketClient.Dispose();
 					break;
 			}
 		}
@@ -924,7 +928,9 @@ namespace SharpPulsar
 					return new PulsarClientException.NotAllowedException(errorMsg);
 				case ServerError.TransactionConflict:
 					return new PulsarClientException.TransactionConflictException(errorMsg);
-				case ServerError.UnknownError:
+                case ServerError.ProducerFenced:
+                    return new PulsarClientException.ProducerFencedException(errorMsg);
+                case ServerError.UnknownError:
 				default:
 					return new PulsarClientException(errorMsg);
 			}

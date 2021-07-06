@@ -1,17 +1,13 @@
-﻿
-using Akka.Actor;
-using SharpPulsar.Transaction;
+﻿using SharpPulsar.Transaction;
 
 namespace SharpPulsar.Messages.Transaction
 {
     public sealed class AbortTxnID
     {
         public TxnID TxnID { get; }
-        public IActorRef ReplyTo { get; }
-        public AbortTxnID(TxnID txnID, IActorRef replyto)
+        public AbortTxnID(TxnID txnID)
         {
             TxnID = txnID;
-            ReplyTo = replyto;
         }
     }
     public sealed class Abort
@@ -31,11 +27,9 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class CommitTxnID
     {
         public TxnID TxnID { get; }
-        public IActorRef ReplyTo { get; }
-        public CommitTxnID(TxnID txnID, IActorRef replyto)
+        public CommitTxnID(TxnID txnID)
         {
             TxnID = txnID;
-            ReplyTo = replyto;
         }
     }
     public sealed class Commit

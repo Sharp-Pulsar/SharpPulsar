@@ -186,18 +186,16 @@ namespace SharpPulsar.SocketImpl
 
         public void Dispose()
         {
-            cancellation?.Cancel();
-            _pipeReader?.Complete();
-            _pipeWriter?.Complete();
-            _networkstream.Dispose();
+            try
+            {
+                cancellation?.Cancel();
+                _pipeReader?.Complete();
+                _pipeWriter?.Complete();
+                _networkstream.Close();
+                _networkstream.Dispose();
+            }
+            catch { }
             OnDisconnect();
-        }
-
-        void ShutDownSocket(Socket socket)
-        {
-            socket.Shutdown(SocketShutdown.Both);
-            socket.Close(1000);
-            _logger.Info("Shutting down socket client....");
         }
         private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {

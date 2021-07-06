@@ -30,6 +30,10 @@ namespace Tutorials
             var pulsarClient = pulsarSystem.NewClient();
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 Transaction(pulsarClient);
+            if (cmd.Equals("exc", StringComparison.OrdinalIgnoreCase))
+                ExclusiveProduceConsumer(pulsarClient);
+            if (cmd.Equals("exc2", StringComparison.OrdinalIgnoreCase))
+                ExclusiveProduceNoneConsumer(pulsarClient);
             else
                 ProduceConsumer(pulsarClient);
 
@@ -68,6 +72,77 @@ namespace Tutorials
                 }
             }
         }
+        private static void ExclusiveProduceNoneConsumer(PulsarClient pulsarClient)
+        {
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
+                .Topic(myTopic));
+             
+            var producerNone = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));;
+            
+
+            for (var i = 0; i < 10; i++)
+            {
+                var data = Encoding.UTF8.GetBytes($"tuts-{i}");
+                producer.NewMessage().Value(data).Send();
+            }
+
+            var pool = ArrayPool<byte>.Shared;
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub-Exclusive")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
+            for (var i = 0; i < 10; i++)
+            {
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
+                if (message != null)
+                {
+                    var payload = pool.Rent((int)message.Data.Length);
+                    Array.Copy(sourceArray: message.Data.ToArray(), destinationArray: payload, length: (int)message.Data.Length);
+
+                    consumer.Acknowledge(message);
+                    var res = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                }
+            }
+        }
+        private static void ExclusiveProduceConsumer(PulsarClient pulsarClient)
+        {
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
+                .Topic(myTopic));;
+            
+
+            for (var i = 0; i < 10; i++)
+            {
+                var data = Encoding.UTF8.GetBytes($"tuts-{i}");
+                producer.NewMessage().Value(data).Send();
+            }
+
+            var pool = ArrayPool<byte>.Shared;
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub-Exclusive")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
+            for (var i = 0; i < 10; i++)
+            {
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
+                if (message != null)
+                {
+                    var payload = pool.Rent((int)message.Data.Length);
+                    Array.Copy(sourceArray: message.Data.ToArray(), destinationArray: payload, length: (int)message.Data.Length);
+
+                    consumer.Acknowledge(message);
+                    var res = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                }
+            }
+        }
         private static void Transaction(PulsarClient pulsarClient)
         {
             var txn = (Transaction)pulsarClient.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
@@ -90,6 +165,7 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
+            //Should not consume messages as the transaction is not committed yet
             for (var i = 0; i < 10; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
@@ -104,15 +180,11 @@ namespace Tutorials
                 }
             }
 
-            Console.WriteLine("committing");
             txn.Commit();
 
-            Console.WriteLine("commited");
             for (var i = 0; i < 10; i++)
             {
-                Console.WriteLine($"read1");
                 var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
-                Console.WriteLine($"read2");
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);
