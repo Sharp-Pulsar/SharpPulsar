@@ -70,21 +70,32 @@ namespace SharpPulsar
 			Metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
-		public void Send(bool isDeadLetter = false)
+		public MessageId Send(TimeSpan sendTimeout, bool isDeadLetter = false)
 		{
-			SendAsync(isDeadLetter).ConfigureAwait(false);
+			return SendAsync(sendTimeout, isDeadLetter).GetAwaiter().GetResult();
 		}
-		public async ValueTask SendAsync(bool isDeadLetter = false)
+		public async ValueTask<MessageId> SendAsync(TimeSpan sendTimeout, bool isDeadLetter = false)
 		{
-			var message = await Message().ConfigureAwait(false);
-			if (_txn != null)
-			{
-				_producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter));
-			}
-			else
-			{
-				_producer.Tell(new InternalSend<T>(message, isDeadLetter));
-			}
+            try
+            {
+                var message = await Message().ConfigureAwait(false);
+                if (_txn != null)
+                {
+                    return await _producer.Ask<MessageId>(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter), sendTimeout).ConfigureAwait(false);
+                }
+                else
+                {
+                    return await _producer.Ask<MessageId>(new InternalSend<T>(message, isDeadLetter), sendTimeout).ConfigureAwait(false);
+                }
+            }
+            catch(AskTimeoutException)
+            {
+                return null;
+            }
+            catch
+            {
+                throw;
+            }
 		}
 		public ITypedMessageBuilder<T> Key(string key)
 		{

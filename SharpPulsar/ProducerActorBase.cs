@@ -44,14 +44,12 @@ namespace SharpPulsar
 		protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
 		protected internal IActorRef Client;
 		protected internal readonly ClientConfigurationData ClientConfiguration;
-		protected internal readonly ProducerQueueCollection<T> ProducerQueue;
 		protected internal HandlerState State;
 		private string _topic;
 
-		public ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
+		public ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
 		{			
 			ClientConfiguration = configurationData;
-			ProducerQueue = queue;
 			Client = client;
 			_topic = topic;
 			Conf = conf;

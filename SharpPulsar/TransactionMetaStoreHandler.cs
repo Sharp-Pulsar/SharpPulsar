@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using SharpPulsar.Messages.Client;
 using System.Threading.Tasks;
 using System.Buffers;
+using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -232,7 +233,7 @@ namespace SharpPulsar
             else
             {
 				_pendingRequests.Remove(requestId);
-				if (response?.Error == ServerError.UnknownError)
+				if (response?.Error is NoException)
 				{
 					var txnID = response;
 					if (_log.IsDebugEnabled)

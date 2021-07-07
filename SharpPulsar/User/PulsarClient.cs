@@ -151,9 +151,9 @@ namespace SharpPulsar.User
             }
             if (conf.RetryEnable && conf.TopicNames.Count > 0)
             {
-                TopicName topicFirst = TopicName.Get(conf.TopicNames.GetEnumerator().Current);
-                string retryLetterTopic = topicFirst.Namespace + "/" + conf.SubscriptionName + RetryMessageUtil.RetryGroupTopicSuffix;
-                string deadLetterTopic = topicFirst.Namespace + "/" + conf.SubscriptionName + RetryMessageUtil.DlqGroupTopicSuffix;
+                var topicFirst = TopicName.Get(conf.TopicNames.GetEnumerator().Current);
+                var retryLetterTopic = topicFirst.Namespace + "/" + conf.SubscriptionName + RetryMessageUtil.RetryGroupTopicSuffix;
+                var deadLetterTopic = topicFirst.Namespace + "/" + conf.SubscriptionName + RetryMessageUtil.DlqGroupTopicSuffix;
                 if (conf.DeadLetterPolicy == null)
                 {
                     conf.DeadLetterPolicy = new DeadLetterPolicy
@@ -200,7 +200,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Consumer configuration undefined");
             }
 
-            foreach (string topic in conf.TopicNames)
+            foreach (var topic in conf.TopicNames)
             {
                 if (!TopicName.IsValid(topic))
                 {
@@ -251,7 +251,7 @@ namespace SharpPulsar.User
         private async ValueTask<Consumer<T>> DoSingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
         {
             var queue = new ConsumerQueueCollections<T>();
-            string topic = conf.SingleTopic;
+            var topic = conf.SingleTopic;
             try
             {
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
@@ -260,14 +260,14 @@ namespace SharpPulsar.User
                     _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
                 }
                 IActorRef consumer;
-                IActorRef state = _actorSystem.ActorOf(Props.Create(()=> new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+                var state = _actorSystem.ActorOf(Props.Create(()=> new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
                 {
                     Condition.CheckArgument(conf.TopicNames.Count == 1, "Should have only 1 topic for partitioned consumer");
 
                     // get topic name, then remove it from conf, so constructor will create a consumer with no topic.
                     var cloneConf = conf;
-                    string topicName = cloneConf.SingleTopic;
+                    var topicName = cloneConf.SingleTopic;
                     cloneConf.TopicNames.Remove(topicName);
                     consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, true, _clientConfigurationData, queue));
                     consumer.Tell(new Subscribe(topic, metadata.Partitions));
@@ -275,7 +275,7 @@ namespace SharpPulsar.User
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
-                    int partitionIndex = TopicName.GetPartitionIndex(topic);
+                    var partitionIndex = TopicName.GetPartitionIndex(topic);
                     consumer = _actorSystem.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData, queue)));
                 }
                 _client.Tell(new AddConsumer(consumer));
@@ -295,7 +295,7 @@ namespace SharpPulsar.User
         {
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames), "Topics is empty or invalid.");
 
-            IActorRef state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+            var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var queue = new ConsumerQueueCollections<T>();
             var consumer = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, conf.ForceTopicCreation, _clientConfigurationData, queue)));
             
@@ -312,10 +312,10 @@ namespace SharpPulsar.User
         {
 
             var queue = new ConsumerQueueCollections<T>();
-            string regex = conf.TopicsPattern.ToString();
+            var regex = conf.TopicsPattern.ToString();
             var subscriptionMode = ConvertRegexSubscriptionMode(conf.RegexSubscriptionMode);
-            TopicName destination = TopicName.Get(regex);
-            NamespaceName namespaceName = destination.NamespaceObject;
+            var destination = TopicName.Get(regex);
+            var namespaceName = destination.NamespaceObject;
             try
             {
                var result = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
@@ -325,9 +325,9 @@ namespace SharpPulsar.User
                     _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
                     topics.ForEach(topicName => _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
                 }
-                IList<string> topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
+                var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
                 topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
-                IActorRef state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+                var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 var consumer = _actorSystem.ActorOf(Props.Create<PatternMultiTopicsConsumer<T>>(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, queue));
 
                 _client.Tell(new AddConsumer(consumer));
@@ -369,7 +369,7 @@ namespace SharpPulsar.User
         {
             try
             {
-                TopicName topicName = TopicName.Get(topic);
+                var topicName = TopicName.Get(topic);
                 var o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);                
                 return o as PartitionedTopicMetadata;
             }
@@ -389,7 +389,7 @@ namespace SharpPulsar.User
         }
         public Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
-            return NewProducerAsync<T>(schema, configBuilder).GetAwaiter().GetResult();
+            return NewProducerAsync(schema, configBuilder).GetAwaiter().GetResult();
         }
         public async ValueTask<Producer<T>> NewProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
@@ -440,7 +440,7 @@ namespace SharpPulsar.User
             }
             var conf = confBuilder.ReaderConfigurationData;
 
-            foreach (string topic in conf.TopicNames)
+            foreach (var topic in conf.TopicNames)
             {
                 if (!TopicName.IsValid(topic))
                 {
@@ -463,7 +463,7 @@ namespace SharpPulsar.User
 
         private async ValueTask<Reader<T>> CreateSingleTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
-            string topic = conf.TopicName;
+            var topic = conf.TopicName;
             try
             {
                 var queue = new ConsumerQueueCollections<T>();
@@ -477,7 +477,7 @@ namespace SharpPulsar.User
                     throw new PulsarClientException("The partitioned topic startMessageId is illegal");
                 }
                 IActorRef reader;
-                IActorRef stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+                var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
                 {
                     reader = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue)));                    
@@ -504,7 +504,7 @@ namespace SharpPulsar.User
         private async ValueTask<Reader<T>> CreateMultiTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
             var queue = new ConsumerQueueCollections<T>();
-            IActorRef stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
+            var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var reader = _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData, queue)));
             
             _client.Tell(new AddConsumer(reader));
@@ -565,7 +565,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.AlreadyClosedException($"Client already closed : state = {state}");
             }
 
-            string topic = conf.TopicName;
+            var topic = conf.TopicName;
 
             if (!TopicName.IsValid(topic))
             {
@@ -609,7 +609,6 @@ namespace SharpPulsar.User
         private async ValueTask<Producer<T>> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {            
             var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
-            var queue = new ProducerQueueCollection<T>();
             if (_actorSystem.Log.IsDebugEnabled)
             {
                 _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
@@ -622,19 +621,24 @@ namespace SharpPulsar.User
                     throw new Exception("Could not create PartitionedProducer - check log for more info.");
 
                 _client.Tell(new AddProducer(actor));
-                return new Producer<T>(actor, queue, schema, conf);
+                return new Producer<T>(actor, schema, conf);
             }
             else
             {
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
-                var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData, queue)));
-                _client.Tell(new AddProducer(producer));
-                //Improve with trytake for partitioned topic too
-                var created = queue.Producer.Take();
-                if (created.Errored)
-                    throw created.Exception;
-
-                return new Producer<T>(producer, queue, schema, conf);
+                var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData)));
+                try
+                {
+                    var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                    _client.Tell(new AddProducer(producer));
+                    if (co.Errored)
+                        throw co.Exception;
+                }
+                catch
+                {
+                    throw;
+                }
+                return new Producer<T>(producer, schema, conf);
             }
             
         }
@@ -655,7 +659,7 @@ namespace SharpPulsar.User
             }
 
             // check topic names are unique
-            HashSet<string> set = new HashSet<string>(topics);
+            var set = new HashSet<string>(topics);
             if (set.Count == topics.Count)
             {
                 return true;

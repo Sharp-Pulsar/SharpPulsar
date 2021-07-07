@@ -8,8 +8,8 @@ namespace SharpPulsar.Messages.Transaction
         public long RequestId { get; }
         public long MostSigBits { get; }
         public long LeastSigBits { get; }
-        public ServerError Error { get; }
-        public NewTxnResponse(long requestid, long least, long most, ServerError error)
+        public TransactionCoordinatorClientException Error { get; }
+        public NewTxnResponse(long requestid, long least, long most, TransactionCoordinatorClientException error)
         {
             RequestId = requestid;
             MostSigBits = most;

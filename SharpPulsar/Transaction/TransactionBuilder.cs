@@ -2,10 +2,12 @@
 using Akka.Event;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Transaction;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -63,15 +65,18 @@ namespace SharpPulsar.Transaction
             //       and start the transaction to get the transaction id.
             //       After getting the transaction id, all the operations are handled by the
             //       `Transaction`
-            var queue = new BlockingCollection<TransactionCoordinatorClientException>();
             var timeout = (long)_txnTimeoutMs.TotalMilliseconds;
             var txnID = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(timeout)).ConfigureAwait(false);
+
+            if (!(txnID.Error is NoException))
+                throw txnID.Error;
+
 			if(_log.IsDebugEnabled)
                 _log.Debug($"Success to new txn. txnID: ({txnID.MostSigBits}:{txnID.LeastSigBits})");
 
-            var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits, queue));
-            _ = queue.Take();
-            return new User.Transaction(txnID.LeastSigBits, txnID.MostSigBits, transaction, queue);	
+            var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits));
+            var tcOk = await transaction.Ask<TcClientOk>(GetTcClient.Instance).ConfigureAwait(false);
+            return new User.Transaction(txnID.LeastSigBits, txnID.MostSigBits, transaction);	
 		}
 	}
 

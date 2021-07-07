@@ -1,14 +1,12 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
-using SharpPulsar.Queues;
 using System;
-using System.Threading;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User
@@ -16,14 +14,12 @@ namespace SharpPulsar.User
     public class Producer<T> : IProducer<T>
     {
         private readonly IActorRef _producerActor;
-        private readonly ProducerQueueCollection<T> _queue;
         private readonly ISchema<T> _schema;
         private readonly ProducerConfigurationData _conf;
 
-        public Producer(IActorRef producer, ProducerQueueCollection<T> queue, ISchema<T> schema, ProducerConfigurationData conf)
+        public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf)
         {
             _producerActor = producer;
-            _queue = queue;
             _schema = schema;
             _conf = conf;
         }
@@ -90,22 +86,33 @@ namespace SharpPulsar.User
         }
         internal IActorRef GetProducer => _producerActor;
 
-        public AckReceived Send(T message)
+        public MessageId Send(T message)
         {
             return SendAsync(message).GetAwaiter().GetResult();
         }
-        public async ValueTask<AckReceived> SendAsync(T message)
+        public async ValueTask<MessageId> SendAsync(T message)
         {
-            await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
-            return _queue.Receipt.Take();
+            return await NewMessage().Value(message).SendAsync(TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
         }
-        public AckReceived SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)
+
+        /// <summary>
+        /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
+        /// to get message ids received from the server
+        /// </summary>
+        /// <returns>List<MessageId></returns>
+        public List<MessageId> GetReceivedMessageIdsFromBatchedMessages()
         {
-            if (_queue.Receipt.TryTake(out var sent, timeoutMilliseconds, token))
-            {
-                return sent;
-            }
-            return sent;
+            return GetReceivedMessageIdsFromBatchedMessagesAsync().GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
+        /// to get message ids received from the server
+        /// </summary>
+        /// <returns>List<MessageId></returns>
+        public async ValueTask<List<MessageId>> GetReceivedMessageIdsFromBatchedMessagesAsync()
+        {
+            var ids = await _producerActor.Ask<GetReceivedMessageIdsResponse>(GetReceivedMessageIds.Instance).ConfigureAwait(false);
+            return ids.MessageIds;
         }
     }
 }
