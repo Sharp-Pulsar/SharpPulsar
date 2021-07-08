@@ -64,7 +64,7 @@ namespace SharpPulsar.Transaction
                 _sender = Sender;
 
                 if(st.Equals("Start"))
-                    StartCoordinator();
+                    Become(StartCoordinator);
             });
 			
 		}

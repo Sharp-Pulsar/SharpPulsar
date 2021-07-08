@@ -27,6 +27,7 @@ using SharpPulsar.Shared;
 namespace SharpPulsar
 {
     using global::Akka.Actor;
+    using SharpPulsar.Configuration;
     using SharpPulsar.Exceptions;
     using SharpPulsar.Interfaces;
     using SharpPulsar.Messages.Producer;
@@ -44,13 +45,15 @@ namespace SharpPulsar
 		private readonly ISchema<T> _schema;
 		private ReadOnlySequence<byte> _content;
 		private readonly User.Transaction _txn;
+        private readonly ProducerConfigurationData _conf;
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema) : this(producer, schema, null)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf) : this(producer, schema, null, conf)
 		{
 		}
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn, ProducerConfigurationData conf)
 		{
+            _conf = conf;
 			_producer = producer;
 			_schema = schema;
 			_content = ReadOnlySequence<byte>.Empty;
@@ -84,11 +87,11 @@ namespace SharpPulsar
                 object obj = null;
                 if (_txn != null)
                 {
-                    obj = await _producer.Ask(new InternalSendWithTxn<T>(message, _txn.Txn)).ConfigureAwait(false);
+                    obj = await _producer.Ask(new InternalSendWithTxn<T>(message, _txn.Txn), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
                 }
                 else
                 {
-                    obj = await _producer.Ask(new InternalSend<T>(message)).ConfigureAwait(false);
+                    obj = await _producer.Ask(new InternalSend<T>(message), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
                 }
                 switch(obj)
                 {

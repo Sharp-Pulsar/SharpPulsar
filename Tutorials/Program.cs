@@ -56,7 +56,7 @@ namespace Tutorials
             var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
                 .Topic(myTopic)
                 .ForceTopicCreation(true)
-                .SubscriptionName("myTopic-sub")
+                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
                 .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             for (var i = 0; i < 10; i++)

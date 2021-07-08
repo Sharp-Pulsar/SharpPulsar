@@ -1172,7 +1172,8 @@ namespace SharpPulsar
 			{
 				try
 				{
-					Message<T> retryMessage = null;
+                    var builder = new ProducerConfigBuilder<T>();
+                    Message<T> retryMessage = null;
 					string originMessageIdStr = null;
 					string originTopicNameStr = null;
 					if(message is TopicMessage<T> tm)
@@ -1219,7 +1220,6 @@ namespace SharpPulsar
 								if(_deadLetterProducer == null)
 								{
 									var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
-									var builder = new ProducerConfigBuilder<T>();
 									builder.Topic(_deadLetterPolicy.DeadLetterTopic);
 									builder.EnableBatching(false);
 									_deadLetterProducer = client.NewProducer(Schema, builder).GetProducer;
@@ -1234,7 +1234,7 @@ namespace SharpPulsar
 						{
 							propertiesMap[RetryMessageUtil.SystemPropertyRealTopic] = originTopicNameStr;
 							propertiesMap[RetryMessageUtil.SystemPropertyOriginMessageId] = originMessageIdStr;
-							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
+							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build());
 							typedMessageBuilderNew.Value(retryMessage.Value);
 							typedMessageBuilderNew.Properties(propertiesMap);
 							typedMessageBuilderNew.Send();
@@ -1243,7 +1243,7 @@ namespace SharpPulsar
 				   }
 					else
 					{
-						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema);
+						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema, builder.Build());
 						typedMessageBuilderNew.Value(retryMessage.Value);
 						typedMessageBuilderNew.Properties(propertiesMap);
 						if (delayTime > 0)
@@ -2191,7 +2191,9 @@ namespace SharpPulsar
 		private bool ProcessPossibleToDLQ(IMessageId messageId)
 		{
 			IList<IMessage<T>> deadLetterMessages = null;
-			if(_possibleSendToDeadLetterTopicMessages != null)
+            var builder = new ProducerConfigBuilder<T>();
+
+            if (_possibleSendToDeadLetterTopicMessages != null)
 			{
 				if(messageId is BatchMessageId bmid)
 				{
@@ -2209,7 +2211,6 @@ namespace SharpPulsar
 					try
 					{
 						var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
-						var builder = new ProducerConfigBuilder<T>();
 						builder.Topic(_deadLetterPolicy.DeadLetterTopic);
 						builder.EnableBatching(false);
 						_deadLetterProducer = client.NewProducer(Schema, builder).GetProducer;
@@ -2225,7 +2226,7 @@ namespace SharpPulsar
 					{
 						foreach(var message in deadLetterMessages)
 						{
-							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema);
+							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build());
 							typedMessageBuilderNew.Value(message.Value);
 							typedMessageBuilderNew.Properties(message.Properties);
 							typedMessageBuilderNew.Send();

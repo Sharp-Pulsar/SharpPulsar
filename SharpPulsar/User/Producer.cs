@@ -66,13 +66,13 @@ namespace SharpPulsar.User
 
         public ITypedMessageBuilder<T> NewMessage()
         {
-            return new TypedMessageBuilder<T>(_producerActor, _schema);
+            return new TypedMessageBuilder<T>(_producerActor, _schema, _conf);
         }
 
         public ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema)
         {
             Condition.CheckArgument(schema != null);
-            return new TypedMessageBuilder<V>(_producerActor, schema);
+            return new TypedMessageBuilder<V>(_producerActor, schema, _conf);
         }
 
         public TypedMessageBuilder<T> NewMessage(Transaction txn)
@@ -83,7 +83,7 @@ namespace SharpPulsar.User
                 throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
             }
 
-            return new TypedMessageBuilder<T>(_producerActor, _schema, txn);
+            return new TypedMessageBuilder<T>(_producerActor, _schema, txn, _conf);
         }
         internal IActorRef GetProducer => _producerActor;
 
