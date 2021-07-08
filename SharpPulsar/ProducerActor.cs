@@ -1286,7 +1286,11 @@ namespace SharpPulsar
             _lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(op.Msg));
             op.Msg.SetMessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
             if (_watchedActors.TryGetValue(op.Sender.Path.Name, out var sender))
+            {
+                _watchedActors.Remove(op.Sender.Path.Name);
+                Context.Unwatch(sender);
                 sender.Tell(new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex));
+            }
             else
                 _receivedMessageIds.Add(ackReceived);
 
