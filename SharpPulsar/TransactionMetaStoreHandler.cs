@@ -69,6 +69,7 @@ namespace SharpPulsar
 		}
 
 		private readonly ILoggingAdapter _log;
+        private IActorRef _sender;
 
 		private ICancelable _requestTimeout;
 		private readonly ClientConfigurationData _conf;
@@ -88,7 +89,11 @@ namespace SharpPulsar
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			//_blockIfReachMaxPendingOps = true;
 			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.OperationTimeoutMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
-            GrabCnx();
+            Receive<GrabCnx>(_ => 
+            {
+                _sender = Sender;
+                Become(GrabCnx);
+            });
 
 		}
         private void GrabCnx()
@@ -197,12 +202,14 @@ namespace SharpPulsar
                 cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
             }
             else
+            {
+                _sender.Tell("Ready");
                 Become(Listening);
+            }
 		}
 
 		private void NewTransaction(object[] args)
 		{
-
 			Receive<NewTxnResponse>(r =>
 			{
 				HandleNewTxnResponse(r);
@@ -494,7 +501,9 @@ namespace SharpPulsar
 		}
 		private void HandleConnectionFailed(PulsarClientException ex)
 		{
+            _sender?.Tell(ex.ToString());
 			_log.Error(ex.ToString());
+            _sender = null;
 		}
 		internal class RunRequestTimeout
         {

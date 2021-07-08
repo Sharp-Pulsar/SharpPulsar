@@ -48,7 +48,8 @@ namespace Tutorials
             for (var i = 0; i < 10; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
-                producer.NewMessage().Value(data).Send();
+                var id = producer.NewMessage().Value(data).Send();
+                Console.WriteLine($"Message Id({id.LedgerId}:{id.EntryId})");
             }
 
             var pool = ArrayPool<byte>.Shared;

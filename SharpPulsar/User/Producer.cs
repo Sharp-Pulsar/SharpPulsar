@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
@@ -92,24 +93,24 @@ namespace SharpPulsar.User
         }
         public async ValueTask<MessageId> SendAsync(T message)
         {
-            return await NewMessage().Value(message).SendAsync(TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
+            return await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
         }
 
         /// <summary>
         /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
         /// to get message ids received from the server
         /// </summary>
-        /// <returns>List<MessageId></returns>
-        public List<MessageId> GetReceivedMessageIdsFromBatchedMessages()
+        /// <returns>List<AckReceived></returns>
+        public List<AckReceived> GetReceivedAcks()
         {
-            return GetReceivedMessageIdsFromBatchedMessagesAsync().GetAwaiter().GetResult();
+            return GetReceivedAcksAsync().GetAwaiter().GetResult();
         }
         /// <summary>
         /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
         /// to get message ids received from the server
         /// </summary>
-        /// <returns>List<MessageId></returns>
-        public async ValueTask<List<MessageId>> GetReceivedMessageIdsFromBatchedMessagesAsync()
+        /// <returns>List<AckReceived></returns>
+        public async ValueTask<List<AckReceived>> GetReceivedAcksAsync()
         {
             var ids = await _producerActor.Ask<GetReceivedMessageIdsResponse>(GetReceivedMessageIds.Instance).ConfigureAwait(false);
             return ids.MessageIds;

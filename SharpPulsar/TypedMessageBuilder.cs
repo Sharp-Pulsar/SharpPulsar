@@ -27,7 +27,9 @@ using SharpPulsar.Shared;
 namespace SharpPulsar
 {
     using global::Akka.Actor;
+    using SharpPulsar.Exceptions;
     using SharpPulsar.Interfaces;
+    using SharpPulsar.Messages.Producer;
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
@@ -66,31 +68,39 @@ namespace SharpPulsar
 			var sequence = await _txn.Txn.Ask<long>(NextSequenceId.Instance).ConfigureAwait(false);
 			Metadata.TxnidLeastBits = (ulong)bits.LeastBits;
 			Metadata.TxnidMostBits = (ulong)bits.MostBits;
-			long sequenceId = sequence;
+			var sequenceId = sequence;
 			Metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
-		public MessageId Send(TimeSpan sendTimeout, bool isDeadLetter = false)
+		public MessageId Send()
 		{
-			return SendAsync(sendTimeout, isDeadLetter).GetAwaiter().GetResult();
+			return SendAsync().GetAwaiter().GetResult();
 		}
-		public async ValueTask<MessageId> SendAsync(TimeSpan sendTimeout, bool isDeadLetter = false)
+		public async ValueTask<MessageId> SendAsync()
 		{
             try
             {
                 var message = await Message().ConfigureAwait(false);
+                object obj = null;
                 if (_txn != null)
                 {
-                    return await _producer.Ask<MessageId>(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter), sendTimeout).ConfigureAwait(false);
+                    obj = await _producer.Ask(new InternalSendWithTxn<T>(message, _txn.Txn)).ConfigureAwait(false);
                 }
                 else
                 {
-                    return await _producer.Ask<MessageId>(new InternalSend<T>(message, isDeadLetter), sendTimeout).ConfigureAwait(false);
+                    obj = await _producer.Ask(new InternalSend<T>(message)).ConfigureAwait(false);
                 }
-            }
-            catch(AskTimeoutException)
-            {
-                return null;
+                switch(obj)
+                {
+                    case MessageId msgid:
+                        return msgid;
+                    case NoMessageIdYet _:
+                        return null;
+                    case PulsarClientException ex:
+                        throw ex;
+                    default:
+                        throw new Exception(obj.ToString());
+                }
             }
             catch
             {
@@ -183,7 +193,7 @@ namespace SharpPulsar
 		}
 		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
 		{
-			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
+			foreach (var entry in properties.SetOfKeyValuePairs())
 			{
 				Condition.CheckArgument(entry.Key != null, "Need Non-Null key");
 				Condition.CheckArgument(entry.Value != null, "Need Non-Null value for key: " + entry.Key);

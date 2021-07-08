@@ -88,7 +88,7 @@ namespace SharpPulsar
 		private readonly int _partitionIndex;
 		private ISchemaInfo _schemaInfo;
 
-        private HashSet<MessageId> _receivedMessageIds;
+        private HashSet<AckReceived> _receivedMessageIds;
 
 		private readonly IProducerStatsRecorder _stats;
 
@@ -121,7 +121,7 @@ namespace SharpPulsar
 
         public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration)
 		{
-            _receivedMessageIds = new HashSet<MessageId>();
+            _receivedMessageIds = new HashSet<AckReceived>();
 			_self = Self;
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
@@ -266,7 +266,7 @@ namespace SharpPulsar
         {
 			Receive<AckReceived>(a => 
 			{				
-				AckReceived(a.SequenceId, a.HighestSequenceId, a.LedgerId, a.EntryId);
+				AckReceived(a);
 			});
             Receive<GetReceivedMessageIds>(_ => 
 			{
@@ -609,8 +609,7 @@ namespace SharpPulsar
 				maxMessageSize = Math.Min(Conf.MaxMessageSize, maxMessageSize);
 			if (!IsValidProducerState(message.SequenceId))
 			{
-                Sender.Tell(new Exception($"Producer is in an invalid state: {State.ConnectionState}"));
-				return;
+                return;
 			}
 
 			var msg = (Message<T>) message;
@@ -658,19 +657,23 @@ namespace SharpPulsar
                 // send in chunks
                 var totalChunks = CanAddToBatch(msg) ? 1 : Math.Max(1, compressedPayload.Length) / maxMessageSize + (Math.Max(1, compressedPayload.Length) % maxMessageSize == 0 ? 0 : 1);
                 // chunked message also sent individually so, try to acquire send-permits
-                for (var i = 0; i < (totalChunks - 1); i++)
+                /*for (var i = 0; i < (totalChunks - 1); i++)
                 {
                     if (!CanEnqueueRequest(message.SequenceId))
                     {
                         return;
                     }
                 }
-
+                */
                 var readStartIndex = 0;
 				var sequenceId = _msgIdGenerator;
 				msgMetadata.SequenceId = (ulong)sequenceId;
 				_msgIdGenerator++;
 				var uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
+                //We need to send NoMessageIdYet to unblock the caller
+                if (totalChunks > 1)
+                    Sender.Tell(NoMessageIdYet.Instance);
+
 				for (var chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
 					SerializeAndSendMessage(msg, msgMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressedPayload.Length, uncompressedSize);
@@ -690,10 +693,6 @@ namespace SharpPulsar
 			}
 		}
 
-		private bool CanEnqueueRequest(long sequenceId)
-		{
-			return true;
-		}
 		private void SerializeAndSendMessage(Message<T> msg, MessageMetadata msgMetadata, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, int compressedPayloadSize, int uncompressedSize)
 		{
 			var chunkPayload = compressedPayload;
@@ -734,7 +733,8 @@ namespace SharpPulsar
 
 			if(CanAddToBatch(msg) && totalChunks <= 1)
 			{
-				if(CanAddToCurrentBatch(msg))
+                Sender.Tell(NoMessageIdYet.Instance);
+                if (CanAddToCurrentBatch(msg))
 				{
 					// should trigger complete the batch message, new message will add to a new batch and new batch
 					// sequence id use the new message, so that broker can handle the message duplication
@@ -941,18 +941,18 @@ namespace SharpPulsar
 					return true;
 				case HandlerState.State.Closing:
 				case HandlerState.State.Closed:
-					_log.Error($"Producer already closed sequenceId: {sequenceId}");
+					Sender.Tell(new AlreadyClosedException("Producer already closed", sequenceId));
 					return false;
 				case HandlerState.State.Terminated:
-						_log.Error($"Topic was terminated sequenceId: {sequenceId}");
+                    Sender.Tell(new TopicTerminatedException("Topic was terminated", sequenceId));
 					return false;
 				case HandlerState.State.ProducerFenced:
-						_log.Error($"Producer was fenced: {sequenceId}");
+                    Sender.Tell(new ProducerFencedException("Producer was fenced"));
 					return false;
 				case HandlerState.State.Failed:
 				case HandlerState.State.Uninitialized:
 				default:
-						_log.Error(new NotConnectedException(sequenceId).ToString());
+					Sender.Tell(new NotConnectedException(sequenceId).ToString());
 					return false;
 			}
 		}
@@ -1240,29 +1240,29 @@ namespace SharpPulsar
 		var numMessagesInBatch = _batchMessageContainer.NumMessagesInBatch;
 		_batchMessageContainer.Discard(ex);
 	}
-	private void AckReceived(long sequenceId, long highestSequenceId, long ledgerId, long entryId)
+	private void AckReceived(AckReceived ackReceived)
 	{
 			var cnx = _cnx;
 			if (!_pendingMessages.TryPeek(out var op))
 			{
-				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {sequenceId} - {highestSequenceId}";
+				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg {ackReceived.SequenceId} - {ackReceived.HighestSequenceId}";
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug(msg);
 				}
 				return;
 			}
-			if (sequenceId > op.SequenceId)
+			if (ackReceived.SequenceId > op.SequenceId)
 			{
-				var msg = $"[{Topic}] [{_producerName}] Got ack for msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}";
+				var msg = $"[{Topic}] [{_producerName}] Got ack for msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.Count}";
 				_log.Warning(msg);
 				// Force connection closing so that messages can be re-transmitted in a new connection
 				cnx.Tell(Messages.Requests.Close.Instance);
                 return;
 			}
-			else if (sequenceId < op.SequenceId)
+			else if (ackReceived.SequenceId < op.SequenceId)
 			{
-				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId}";
+				var msg = $"[{Topic}] [{_producerName}] Got ack for timed out msg. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId}";
 				// Ignoring the ack since it's referring to a message that has already timed out.
 				if (_log.IsDebugEnabled)
 				{
@@ -1273,17 +1273,17 @@ namespace SharpPulsar
 			else
 			{
 				// Add check `sequenceId >= highestSequenceId` for backward compatibility.
-				if (sequenceId >= highestSequenceId || highestSequenceId == op.HighestSequenceId)
+				if (ackReceived.SequenceId >= ackReceived.HighestSequenceId || ackReceived.HighestSequenceId == op.HighestSequenceId)
 				{
 					if (_log.IsDebugEnabled)
 					{
-						_log.Debug($"[{Topic}] [{_producerName}] Received ack for msg {sequenceId} ");
+						_log.Debug($"[{Topic}] [{_producerName}] Received ack for msg {ackReceived.SequenceId} ");
 					}
                     _pendingMessages.TryDequeue(out op);
 				}
 				else
 				{
-					var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {sequenceId} - {highestSequenceId} - queue-size: {_pendingMessages.Count}";
+					var msg = $"[{Topic}] [{_producerName}] Got ack for batch msg error. expecting: {op.SequenceId} - {op.HighestSequenceId} - got: {ackReceived.SequenceId} - {ackReceived.HighestSequenceId} - queue-size: {_pendingMessages.Count}";
 					_log.Warning(msg);
 					// Force connection closing so that messages can be re-transmitted in a new connection
 					cnx.Tell(Messages.Requests.Close.Instance);
@@ -1292,8 +1292,8 @@ namespace SharpPulsar
 			}
 
             _lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(op));
-            op.SetMessageId(ledgerId, entryId, _partitionIndex);
-            _receivedMessageIds.Add(new MessageId(ledgerId, entryId, _partitionIndex));
+            op.SetMessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+            _receivedMessageIds.Add(ackReceived);
             try
             {
                 // if message is chunked then call callback only on last chunk
@@ -1305,7 +1305,7 @@ namespace SharpPulsar
             }
             catch (Exception t)
             {
-                var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {sequenceId}";
+                var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {ackReceived.SequenceId}";
                 _log.Warning($"{msg}:{t}");
             }
             op.Recycle();
@@ -1791,10 +1791,10 @@ namespace SharpPulsar
     }
 	internal sealed class GetReceivedMessageIdsResponse
 	{
-        public readonly List<MessageId> MessageIds;
-        public GetReceivedMessageIdsResponse(HashSet<MessageId> ids)
+        public readonly List<AckReceived> MessageIds;
+        public GetReceivedMessageIdsResponse(HashSet<AckReceived> ids)
         {
-            MessageIds = new List<MessageId>(ids.ToArray());
+            MessageIds = new List<AckReceived>(ids.ToArray());
         }
     }
 	internal sealed class BatchTask

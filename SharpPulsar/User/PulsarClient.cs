@@ -615,13 +615,13 @@ namespace SharpPulsar.User
             }
             if (metadata.Partitions > 0)
             {
-                _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, queue)));
-                var actor = queue.PartitionedProducer.Take();
-                if (actor == null)
-                    throw new Exception("Could not create PartitionedProducer - check log for more info.");
+                var partitionActor = _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData)));
+                var co = await partitionActor.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                if (co.Errored)
+                    throw co.Exception;
 
-                _client.Tell(new AddProducer(actor));
-                return new Producer<T>(actor, schema, conf);
+                _client.Tell(new AddProducer(partitionActor));
+                return new Producer<T>(partitionActor, schema, conf);
             }
             else
             {
@@ -630,7 +630,6 @@ namespace SharpPulsar.User
                 try
                 {
                     var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                    _client.Tell(new AddProducer(producer));
                     if (co.Errored)
                         throw co.Exception;
                 }
@@ -638,6 +637,8 @@ namespace SharpPulsar.User
                 {
                     throw;
                 }
+                _client.Tell(new AddProducer(producer));
+
                 return new Producer<T>(producer, schema, conf);
             }
             
