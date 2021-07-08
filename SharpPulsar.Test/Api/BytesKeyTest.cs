@@ -150,10 +150,6 @@ namespace SharpPulsar.Test.Api
                 .Value(Encoding.UTF8.GetBytes($"TestMessage-4"))
                 .Send();
 
-            var sent = producer.SendReceipt();
-            if (sent != null)
-                _output.WriteLine($"Highest Sequence Id => {sent.SequenceId}:{sent.HighestSequenceId}");
-
 
             var message = consumer.Receive();
             Assert.Equal(byteKey, message.KeyBytes);

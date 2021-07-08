@@ -7,6 +7,7 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Utility;
 using System;
@@ -47,6 +48,7 @@ namespace SharpPulsar.Transaction
 		private IActorRef _lookup;
 		private IActorRef _cnxPool;
 		private IActorRef _replyTo;
+        private IActorRef _sender;
 
 		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
@@ -56,13 +58,19 @@ namespace SharpPulsar.Transaction
 			_lookup = lookup;
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
-			_log = Context.GetLogger(); 
-			StartCoordinator();
+			_log = Context.GetLogger();
+            Receive<string>(st=> 
+            {
+                _sender = Sender;
+
+                if(st.Equals("Start"))
+                    Become(StartCoordinator);
+            });
+			
 		}
 
 		private void Ready()
         {
-
 			Receive<NewTxn>(n => 
 			{
 				_replyTo = Sender;
@@ -85,7 +93,7 @@ namespace SharpPulsar.Transaction
 		private void StartCoordinator()
 		{
 			_state = TransactionCoordinatorClientState.Starting;
-			Receive<PartitionedTopicMetadata>(p => 
+			ReceiveAsync<PartitionedTopicMetadata>(async p => 
 			{
 				var partitionMeta = p;
 				if (_log.IsDebugEnabled)
@@ -95,20 +103,49 @@ namespace SharpPulsar.Transaction
 				if (partitionMeta.Partitions > 0)
 				{
 					_handlers = new List<IActorRef>(partitionMeta.Partitions);
-					for (int i = 0; i < partitionMeta.Partitions; i++)
+					for (var i = 0; i < partitionMeta.Partitions; i++)
 					{
-						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool , _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-						_handlers.Add(handler);
-						_handlerMap.Add(i, handler);
+                        try
+                        {
+                            var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+                            var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                            if(ask.Equals("Ready"))
+                            {
+                                _handlers.Add(handler);
+                                _handlerMap.Add(i, handler);
+                            }
+                            else
+                                _log.Error(ask);
+                        }
+                        catch(Exception ex)
+                        {
+                            _log.Error(ex.ToString());
+                        }
 					}
+                    _sender.Tell(_handlers.Count);
 				}
 				else
 				{
 					_handlers = new List<IActorRef>(1);
-					var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-					_handlers[0] = handler;
-					_handlerMap.Add(0, handler);
-				}
+                    try
+                    {
+                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+                        var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                        if (ask.Equals("Ready"))
+                        {
+                            _handlers[0] = handler;
+                            _handlerMap.Add(0, handler);
+                        }
+                        else
+                            _log.Error(ask);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex.ToString());
+                    }
+                    _sender.Tell(_handlers.Count);
+                }
 				Become(Ready);
 			});
 			Receive<ClientExceptions>(ex => 

@@ -51,6 +51,7 @@ namespace SharpPulsar.Transaction
 		private long _sequenceId = 0L;
         private volatile State _state;
         private readonly IActorRef _self;
+        private IActorRef _sender;
 
         private readonly ISet<string> _registerPartitionMaps;
 		private readonly Dictionary<string, List<string>> _registerSubscriptionMap;
@@ -58,14 +59,12 @@ namespace SharpPulsar.Transaction
 		private IDictionary<IActorRef, int> _cumulativeAckConsumers;
 
 		private readonly List<IMessageId> _sendList;
-        private readonly BlockingCollection<TransactionCoordinatorClientException> _queue;
 
         public IStash Stash { get; set; }
 
-        public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits, BlockingCollection<TransactionCoordinatorClientException> queue)
+        public TransactionActor(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
 		{
             _self = Self;
-            _queue = queue;
             _state = State.OPEN;
             _log = Context.System.Log;
 			_client = client;
@@ -85,11 +84,16 @@ namespace SharpPulsar.Transaction
 				var actor = tc.TCClient;
 				_log.Info($"Successfully Asked {actor.Path.Name} TC from Client Actor");
 				_tcClient = actor;
-                _queue.Add(null);
+                _sender.Tell(TcClientOk.Instance);
 				Become(Ready);
 			});
+			Receive<GetTcClient>(gtc => 
+			{
+                _sender = Sender;
+                _client.Tell(gtc);
+            });
 			ReceiveAny(_=> Stash.Stash());
-			_client.Tell(GetTcClient.Instance);
+			
         }
 		private void Ready()
         {
@@ -108,7 +112,12 @@ namespace SharpPulsar.Transaction
 			Receive<Abort>(_ =>
 			{
                 if (CheckIfOpen())
-                    Become(Abort);//Aborting
+                {
+                    _sender = Sender; 
+                    Become(Abort);
+                }                    
+                else
+                    Sender.Tell(new TransactionNotOpenedException(_state.ToString()));
 			});
 			Receive<RegisterAckedTopic>(r =>
 			{
@@ -120,8 +129,13 @@ namespace SharpPulsar.Transaction
 			});
 			Receive<Commit>(_ =>
 			{
-                if(CheckIfOpen())
+                if (CheckIfOpen())
+                {
+                    _sender = Sender;
                     Become(Commit);
+                }
+                else
+                    Sender.Tell(new TransactionNotOpenedException(_state.ToString()));                    
             });
 			Receive<RegisterSendOp>(s =>
 			{
@@ -134,9 +148,9 @@ namespace SharpPulsar.Transaction
             });
 			Stash?.UnstashAll();
 		}
-		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits, BlockingCollection<TransactionCoordinatorClientException> queue)
+		public static Props Prop(IActorRef client, long transactionTimeoutMs, long txnIdLeastBits, long txnIdMostBits)
         {
-			return Props.Create(() => new TransactionActor(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits, queue));
+			return Props.Create(() => new TransactionActor(client, transactionTimeoutMs, txnIdLeastBits, txnIdMostBits));
         }
 		private long NextSequenceId()
 		{
@@ -206,16 +220,16 @@ namespace SharpPulsar.Transaction
                     if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
                     {
                         _state = State.ERROR;
-                        _queue.Add(error);
+                        _sender.Tell(error);
                     }                        
                     else
                     {
                         _state = State.COMMITTED;
-                        _queue.Add(null);
+                        _sender.Tell(NoException.Instance);
                     }
                 }
                 else
-                    _queue.Add(null);
+                    _sender.Tell(NoException.Instance);
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());
@@ -227,6 +241,7 @@ namespace SharpPulsar.Transaction
             _state = State.ABORTING;
             Receive<EndTxnResponse>(e =>
             {
+                _log.Info("Got EndTxnResponse in Commit()");
                 if (_cumulativeAckConsumers != null)
                 {
                     _cumulativeAckConsumers.ForEach(x => x.Key.Tell(new IncreaseAvailablePermits(1)));
@@ -238,16 +253,16 @@ namespace SharpPulsar.Transaction
                     if (error is TransactionNotFoundException || error is InvalidTxnStatusException)
                     {
                         _state = State.ERROR;
-                        _queue.Add(error);
+                        _sender.Tell(error);
                     }
                     else
                     {
                         _state = State.ABORTED;
-                        _queue.Add(null);
+                        _sender.Tell(NoException.Instance);
                     }
                 }
                 else
-                    _queue.Add(null);
+                    _sender.Tell(NoException.Instance);
                 Become(Ready);
             });
             ReceiveAny(any => Stash.Stash());

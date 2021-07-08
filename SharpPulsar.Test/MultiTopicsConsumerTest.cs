@@ -87,9 +87,9 @@ namespace SharpPulsar.Test
 			}
 		}
 
-		private List<AckReceived> PublishMessages(string topic, int count, string message)
+		private List<MessageId> PublishMessages(string topic, int count, string message)
 		{
-			var keys = new List<AckReceived>();
+			var keys = new List<MessageId>();
 			var builder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic);
 			var producer = _client.NewProducer(builder);
@@ -97,9 +97,8 @@ namespace SharpPulsar.Test
 			{
 				var key = "key" + i;
 				var data = Encoding.UTF8.GetBytes($"{message}-{i}");
-				producer.NewMessage().Key(key).Value(data).Send();
-				var receipt = producer.SendReceipt();
-				keys.Add(receipt);
+				var id = producer.NewMessage().Key(key).Value(data).Send();
+				keys.Add(id);
 			}
 			return keys;
 		}

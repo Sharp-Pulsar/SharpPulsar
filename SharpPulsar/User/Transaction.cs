@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
+using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 
 namespace SharpPulsar.User
 {
@@ -10,20 +12,21 @@ namespace SharpPulsar.User
         private readonly IActorRef _txn;
         private readonly long _mostSigBits;
         private readonly long _leastSigBits;
-        private readonly BlockingCollection<TransactionCoordinatorClientException> _queue;
-        public Transaction(long leastBits, long mostBits, IActorRef txn, BlockingCollection<TransactionCoordinatorClientException> queue)
+        public Transaction(long leastBits, long mostBits, IActorRef txn)
         {
             _mostSigBits = mostBits;
             _leastSigBits = leastBits;
             _txn = txn;
-            _queue = queue;
         }
 
         public void Abort()
         {
-            _txn.Tell(Messages.Transaction.Abort.Instance);
-            var error = _queue.Take();
-            if (error != null)
+            AbortAsync().GetAwaiter().GetResult();
+        }
+        public async ValueTask AbortAsync()
+        {            
+            var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Abort.Instance).ConfigureAwait(false);
+            if (!(error is NoException))
             {
                 _txn.Tell(PoisonPill.Instance);
                 throw error;
@@ -33,9 +36,12 @@ namespace SharpPulsar.User
 
         public void Commit()
         {
-            _txn.Tell(Messages.Transaction.Commit.Instance);
-            var error = _queue.Take();
-            if (error != null)
+            CommitAsync().GetAwaiter().GetResult();
+        }
+        public async ValueTask CommitAsync()
+        {
+            var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Commit.Instance).ConfigureAwait(false);
+            if (!(error is NoException))
             {
                 _txn.Tell(PoisonPill.Instance);
                 throw error;

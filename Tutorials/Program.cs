@@ -48,14 +48,15 @@ namespace Tutorials
             for (var i = 0; i < 10; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
-                producer.NewMessage().Value(data).Send();
+                var id = producer.NewMessage().Value(data).Send();
+                Console.WriteLine($"Message Id({id.LedgerId}:{id.EntryId})");
             }
 
             var pool = ArrayPool<byte>.Shared;
             var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
                 .Topic(myTopic)
                 .ForceTopicCreation(true)
-                .SubscriptionName("myTopic-sub")
+                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
                 .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             for (var i = 0; i < 10; i++)
@@ -77,10 +78,17 @@ namespace Tutorials
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
                 .Topic(myTopic));
-             
-            var producerNone = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
-                .Topic(myTopic));;
-            
+
+            try
+            {
+                var producerNone = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));
+
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
 
             for (var i = 0; i < 10; i++)
             {
@@ -166,7 +174,7 @@ namespace Tutorials
 
             var pool = ArrayPool<byte>.Shared;
             //Should not consume messages as the transaction is not committed yet
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 10; ++i)
             {
                 var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
                 if (message != null)

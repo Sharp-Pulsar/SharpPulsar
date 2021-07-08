@@ -42,7 +42,7 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
+        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, NLog.Config.LoggingConfiguration loggingConfiguration = null, Config config = null)
         {
             if (_instance == null)
             {
@@ -50,13 +50,13 @@ namespace SharpPulsar
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf, loggingConfiguration);
+                        _instance = new PulsarSystem(conf, loggingConfiguration, config);
                     }
                 }
             }
             return _instance;
         }
-        private PulsarSystem(PulsarClientConfigBuilder confBuilder, NLog.Config.LoggingConfiguration loggingConfiguration)
+        private PulsarSystem(PulsarClientConfigBuilder confBuilder, NLog.Config.LoggingConfiguration loggingConfiguration, Config confg)
         {
 
             _conf = confBuilder.ClientConfigurationData;
@@ -73,7 +73,7 @@ namespace SharpPulsar
             nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
             LogManager.Configuration = loggingConfiguration ?? nlog;
             _conf = conf;
-            var config = ConfigurationFactory.ParseString(@"
+            var config = confg ?? ConfigurationFactory.ParseString(@"
             akka
             {
                 loglevel = DEBUG
@@ -103,8 +103,12 @@ namespace SharpPulsar
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
+            {
                 _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_lookup, _cnxPool, _generator, conf));
-
+                var cos = _tcClient.Ask<int>("Start").GetAwaiter().GetResult();
+                if (cos <= 0)
+                    throw new Exception($"Tranaction Coordinator has '{cos}' transaction handler");
+            } 
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
 
