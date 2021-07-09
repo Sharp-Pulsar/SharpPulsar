@@ -3,20 +3,15 @@ using Akka.Event;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch.Api;
-using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 /// <summary>
@@ -41,8 +36,6 @@ namespace SharpPulsar
 {
     internal abstract class ConsumerActorBase<T> : ReceiveActor
 	{
-
-		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
 		internal abstract LastConnectionClosedTimestampResponse LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
 		internal abstract void Resume();
@@ -78,11 +71,10 @@ namespace SharpPulsar
 		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
-		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
+		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
 			StateActor = stateActor;
 			_topic = topic;
-			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
 			_log = Context.GetLogger();
@@ -92,7 +84,7 @@ namespace SharpPulsar
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 
-			IncomingMessages = ConsumerQueue.IncomingMessages;
+            IncomingMessages = new BufferBlock<IMessage<T>>();
 			UnAckedChunckedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
 
 			ListenerExecutor = listenerExecutor;
@@ -244,7 +236,7 @@ namespace SharpPulsar
 			});
 			Receive<GetHandlerState>(_ => 
 			{
-				Sender.Tell(new HandlerStateResponse(_state));
+				Sender.Tell(new AskResponse(_state));
 			});
         }
     }

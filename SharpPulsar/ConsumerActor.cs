@@ -139,6 +139,7 @@ namespace SharpPulsar
 		private int _protocolVersion;
 
 		private volatile IActorRef _retryLetterProducer;
+		private volatile IActorRef _replyTo;
 
 		protected internal bool Paused;
 
@@ -160,12 +161,12 @@ namespace SharpPulsar
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 		private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue):this
-			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData, consumerQueue)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData):this
+			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData)
 		{
 		}
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> consumerQueue) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors, consumerQueue)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors)
 		{
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
@@ -311,33 +312,38 @@ namespace SharpPulsar
 			}
 
 			_topicNameWithoutPartition = _topicName.PartitionedTopicName;
-
-			_connectionHandler.Tell(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
-
-			Ready();
+            Receive<Connect>(c=> 
+            {
+                _replyTo = Sender;
+                Become(OnConnect);
+                _connectionHandler.Tell(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
+            });
 		}
-
-		private void Ready()
+        private void OnConnect()
         {
-			Receive<ConnectionOpened>(c =>
-			{
-				_clientCnx = c.ClientCnx;
-				_maxMessageSize = (int)c.MaxMessageSize;
-				_protocolVersion = c.ProtocolVersion;
-				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-				{
-					State.ConnectionState = HandlerState.State.Closed;
-					CloseConsumerTasks();
-					DeregisterFromClientCnx();
-					_client.Tell(new CleanupConsumer(Self));
-					ClearReceiverQueue();
-					ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is in a closing state")));
-					return;
-				}
-				SetCnx(_clientCnx);
-				_generator.Tell(NewRequestId.Instance);
-				Become(Connecting);
-			});
+            Receive<ConnectionOpened>(c =>
+            {
+                _clientCnx = c.ClientCnx;
+                _maxMessageSize = (int)c.MaxMessageSize;
+                _protocolVersion = c.ProtocolVersion;
+                if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                {
+                    State.ConnectionState = HandlerState.State.Closed;
+                    CloseConsumerTasks();
+                    DeregisterFromClientCnx();
+                    _client.Tell(new CleanupConsumer(Self));
+                    ClearReceiverQueue();
+                    _replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is in a closing state")));
+                    return;
+                }
+                SetCnx(_clientCnx);
+                _generator.Tell(NewRequestId.Instance);
+                Become(Connecting);
+            });
+            ReceiveAny(_ => Stash.Stash());
+        }
+		private void Ready()
+        {			
 			Receive<SendState>(_ =>
 			{
 				StateActor.Tell(new SetConumerState(State.ConnectionState));
@@ -389,11 +395,11 @@ namespace SharpPulsar
 			});				
 			Receive<GetHandlerState>(_ => 
 			{
-				Sender.Tell(new HandlerStateResponse(State.ConnectionState));
+				Sender.Tell(new AskResponse(State.ConnectionState));
 			});			
 			Receive<GetIncomingMessageSize>(_ => 
 			{
-				Sender.Tell(IncomingMessagesSize);
+				Sender.Tell(new AskResponse(IncomingMessagesSize));
 			});
 			Receive<GetCnx>(_ => 
 			{
@@ -418,10 +424,10 @@ namespace SharpPulsar
 			Receive<GetLastDisconnectedTimestamp>(m =>
 			{
 				var last = LastDisconnectedTimestamp();
-				Push(ConsumerQueue.LastDisconnectedTimestamp, last.TimeStamp);
+				Sender.Tell(last.TimeStamp);
 			});
 			Receive<GetConsumerName>(m => {
-				Push(ConsumerQueue.ConsumerName, ConsumerName);
+				Sender.Tell(ConsumerName);
 			});
 			Receive<AckReceipt>(m => {
 				AckReceipt(m.RequestId);
@@ -437,17 +443,17 @@ namespace SharpPulsar
 				Become(() => MessageReceived(m));
 			});
 			Receive<GetSubscription>(m => {
-				Push(ConsumerQueue.Subscription, Subscription);
+				Sender.Tell(Subscription);
 			});
-			Receive<GetTopic>(m => {				
-				Push(ConsumerQueue.Topic, _topicName.ToString());
+			Receive<GetTopic>(m => {
+                Sender.Tell(_topicName.ToString());
 			});
 			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
 				UnAckedChunckedMessageIdSequenceMap.Clear();
 			});
 			Receive<HasReachedEndOfTopic>(_ => {
 				var hasReached = HasReachedEndOfTopic();
-				Push(ConsumerQueue.HasReachedEndOfTopic, hasReached);
+                Sender.Tell(hasReached);
 			});
 			Receive<GetAvailablePermits>( _ => {
 				var permits = AvailablePermits();
@@ -465,14 +471,14 @@ namespace SharpPulsar
                 }
 			});
 			Receive<IsConnected>( _ => {
-				Push(ConsumerQueue.Connected, Connected());
+                Sender.Tell(Connected());
 			});
 			Receive<Pause>(_ => {
 				Pause();
 			});
 			ReceiveAsync<HasMessageAvailable>(async _ => {
 				var has = await HasMessageAvailable();
-				Push(ConsumerQueue.HasMessageAvailable, has);
+                Sender.Tell(has);
 			});
 			Receive<GetNumMessagesInQueue>(_ => {
 				var num = NumMessagesInQueue();
@@ -486,12 +492,12 @@ namespace SharpPulsar
                 try
                 {
 					var lmsid = await LastMessageId();
-					Push(ConsumerQueue.LastMessageId, lmsid);
+                    Sender.Tell(lmsid);
 				}
                 catch (Exception ex)
                 {
 					var nul = new NullMessageId(ex);
-					Push(ConsumerQueue.LastMessageId, nul);
+                    Sender.Tell(nul);
 				}
 			});
 			Receive<GetStats>(m => 
@@ -499,12 +505,12 @@ namespace SharpPulsar
                 try
                 {
 					var stats = Stats;
-					Push(ConsumerQueue.Stats, stats);
+                    Sender.Tell(stats);
 				}
                 catch (Exception ex)
                 {
 					_log.Error(ex.ToString());
-					Push(ConsumerQueue.Stats, null);
+                    Sender.Tell(null);
 				}
 			});
 			Receive<NegativeAcknowledgeMessage<T>>(m => 
@@ -512,11 +518,11 @@ namespace SharpPulsar
                 try
                 {
 					NegativeAcknowledge(m.Message);
-					Push(ConsumerQueue.NegativeAcknowledgeException, null);
+                    Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.NegativeAcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<NegativeAcknowledgeMessages<T>>(m => 
@@ -524,11 +530,11 @@ namespace SharpPulsar
                 try
                 {
 					NegativeAcknowledge(m.Messages);
-					Push(ConsumerQueue.NegativeAcknowledgeException, null);
+                    Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.NegativeAcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<NegativeAcknowledgeMessageId>(m => 
@@ -536,23 +542,23 @@ namespace SharpPulsar
                 try
                 {
 					NegativeAcknowledge(m.MessageId);
-					Push(ConsumerQueue.NegativeAcknowledgeException, null);
-				}
+                    Sender.Tell(new AskResponse());
+                }
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.NegativeAcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
-				}
-			});
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+                }
+            });
 			Receive<NegativeAcknowledgeMessage<T>>(m => 
 			{
                 try
                 {
 					NegativeAcknowledge(m.Message);
-					Push(ConsumerQueue.NegativeAcknowledgeException, null);
+                    Sender.Tell(null);
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.NegativeAcknowledgeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(PulsarClientException.Unwrap(ex));
 				}
 			});
 			Receive<ReconsumeLaterMessages<T>>(m => 
@@ -560,11 +566,11 @@ namespace SharpPulsar
                 try
                 {
 					ReconsumeLater(m.Messages, m.DelayTime);
-					Push(ConsumerQueue.ReconsumeLaterException, null);
+                    Sender.Tell(null);
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(PulsarClientException.Unwrap(ex));
 				}
 			});
 			Receive<ReconsumeLaterWithProperties<T>>(m => 
@@ -572,11 +578,11 @@ namespace SharpPulsar
                 try
                 {
 					DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x=> x.Key, x => x.Value), m.DelayTime);
-					Push(ConsumerQueue.ReconsumeLaterException, null);
+                    Sender.Tell(null);
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(PulsarClientException.Unwrap(ex));
 				}
 			});
 			Receive<ReconsumeLaterMessage<T>>(m => 
@@ -584,11 +590,11 @@ namespace SharpPulsar
                 try
                 {
 					ReconsumeLater(m.Message, m.DelayTime);
-					Push(ConsumerQueue.ReconsumeLaterException, null);
+                    Sender.Tell(null);
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.ReconsumeLaterException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(PulsarClientException.Unwrap(ex));
 				}
 			});
 			Receive<RedeliverUnacknowledgedMessages>(m => 
@@ -717,7 +723,7 @@ namespace SharpPulsar
 					DeregisterFromClientCnx();
 					_client.Tell(new CleanupConsumer(Self));
 					_clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
-					ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is closed")));
+					_replyTo.Tell(new PulsarClientException("Consumer is closed"));
 					return;
 				}
 				ResetBackoff();
@@ -725,7 +731,7 @@ namespace SharpPulsar
 				{
 					IncreaseAvailablePermits(_clientCnx, Conf.ReceiverQueueSize);
 				}
-				ConsumerQueue.ConsumerCreation.Add(null);
+				_replyTo.Tell(true);
 				Become(Ready);
 			});
 			Receive<ConnectionFailed>(c => {
@@ -737,7 +743,7 @@ namespace SharpPulsar
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
 					_clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
-					ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException("Consumer is in a closing state")));
+					_replyTo.Tell(new PulsarClientException("Consumer is in a closing state"));
 				}
 				else
 				{
@@ -745,7 +751,7 @@ namespace SharpPulsar
 					if (e.Exception is PulsarClientException && PulsarClientException.IsRetriableError(e.Exception) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout)
 					{
 						ReconnectLater(e.Exception);
-						Become(Ready);
+						Become(OnConnect);
 					}
 					else if (e.Exception is PulsarClientException.TopicDoesNotExistException)
 					{
@@ -754,21 +760,21 @@ namespace SharpPulsar
 						CloseConsumerTasks();
 						_client.Tell(new CleanupConsumer(Self));
 						_log.Warning(msg);
-						ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException(msg)));
+						_replyTo.Tell(new PulsarClientException(msg));
 					}
 					else
 					{
 						ReconnectLater(e.Exception);
-						Become(Ready);
+						Become(OnConnect);
 					}
 				}
 			});
 			Receive<Failure>(c => {
 				_log.Error($"Connection to the server failed: {c.Exception}/{c.Timestamp}");
-				ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException(c.Exception)));
+				_replyTo.Tell(new PulsarClientException(c.Exception));
 			});
 			Receive<ConnectionAlreadySet>(_ => {
-				ConsumerQueue.ConsumerCreation.Add(null);
+                _replyTo.Tell(true);
 				Become(Ready);
 			});
 			ReceiveAny(a => Stash.Stash());
@@ -811,11 +817,11 @@ namespace SharpPulsar
 						_log.Warning($"{ack.GetType().FullName} not supported");
 						break;
 				}
-				Push(ConsumerQueue.AcknowledgeException, null);
+				Sender.Tell(true);
 			}
 			catch (Exception ex)
 			{
-				Push(ConsumerQueue.AcknowledgeException, new ClientExceptions(new PulsarClientException(ex)));
+				Sender.Tell(new PulsarClientException(ex));
 			}
 		}
 
@@ -841,11 +847,11 @@ namespace SharpPulsar
 						_log.Warning($"{cumulative.GetType().FullName} not supported");
 						break;
 				}
-				Push(ConsumerQueue.AcknowledgeCumulativeException, null);
+                _replyTo.Tell(null);
 			}
 			catch (Exception ex)
 			{
-				Push(ConsumerQueue.AcknowledgeCumulativeException, new ClientExceptions(new PulsarClientException(ex)));
+                _replyTo.Tell(new PulsarClientException(ex));
 			}
 		}
 		private void DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
@@ -1428,7 +1434,7 @@ namespace SharpPulsar
 				CloseConsumerTasks();
 				DeregisterFromClientCnx();
 				_client.Tell(new CleanupConsumer(Self));
-				ConsumerQueue.ConsumerCreation.Add(new ClientExceptions(new PulsarClientException(msg)));
+				_replyTo.Tell(new PulsarClientException(msg));
 			}
 		}
 

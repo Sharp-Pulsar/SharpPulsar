@@ -78,14 +78,14 @@ namespace SharpPulsar.User
         }
         private async ValueTask VerifyConsumerState()
         {
-            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = result.State;
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var state = askForState.GetData<HandlerState.State>();
 
             var retry = 10;
             while (state == HandlerState.State.Uninitialized && retry > 0)
             {
-                result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-                state = result.State;
+                askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+                state = askForState.GetData<HandlerState.State>();
                 retry--;
                 if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
                     await Task.Delay(TimeSpan.FromSeconds(5));
@@ -112,8 +112,8 @@ namespace SharpPulsar.User
             => SeekAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(IMessageId messageId)
         {
-            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = result.State;
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var state = askForState.GetData<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
                 throw new PulsarClientException.AlreadyClosedException($"The consumer was already closed when seeking the subscription of the topic {Topic} to the message {messageId}");
@@ -134,8 +134,8 @@ namespace SharpPulsar.User
             => SeekAsync(timestamp).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(long timestamp)
         {
-            var result = await _stateActor.Ask<HandlerStateResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = result.State;
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var state = askForState.GetData<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
                 throw new Exception($"The reader was already closed when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
