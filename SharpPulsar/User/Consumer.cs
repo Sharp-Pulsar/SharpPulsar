@@ -74,7 +74,15 @@ namespace SharpPulsar.User
                 throw ask.Exception;
         }
         public int NumMessagesInQueue()
-            => _queue.IncomingMessages.Count;
+        {
+            return NumMessagesInQueueAsync().GetAwaiter().GetResult();
+        }
+        public async ValueTask<int> NumMessagesInQueueAsync()
+        {
+            var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance).ConfigureAwait(false);
+            var mesageCount = askFormesageCount.GetData<long>();
+            return (int)mesageCount;
+        }
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId)
         {
@@ -205,12 +213,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
             }
-            var message = GetMessage();
-            if (message == null && timeouts != null)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(timeouts.Value.TotalMilliseconds));
-                return GetMessage();
-            }
+            var message = await GetMessage(TimeSpan.FromMilliseconds(timeouts.Value.TotalMilliseconds));
             return message;
         }
 
@@ -250,11 +253,11 @@ namespace SharpPulsar.User
 
             if (await HasEnoughMessagesForBatchReceive())
             {
-                var message = GetMessage();
+                var message = await GetMessage();
                 while (message != null && messages.CanAdd(message))
                 {
                     messages.Add(message);
-                    message = GetMessage();
+                    message = await GetMessage();
                 }
             }
             return messages;
@@ -308,11 +311,13 @@ namespace SharpPulsar.User
         {
             var askFormesageSize = await _consumerActor.Ask<AskResponse>(GetIncomingMessageSize.Instance).ConfigureAwait(false);
             var mesageSize = askFormesageSize.GetData<long>();
+            var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance).ConfigureAwait(false);
+            var mesageCount = askFormesageCount.GetData<long>();
             if (_conf.BatchReceivePolicy.MaxNumMessages <= 0 && _conf.BatchReceivePolicy.MaxNumBytes <= 0)
             {
                 return false;
             }
-            return (_conf.BatchReceivePolicy.MaxNumMessages > 0 && _queue.IncomingMessages.Count >= _conf.BatchReceivePolicy.MaxNumMessages) || (_conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= _conf.BatchReceivePolicy.MaxNumBytes);
+            return (_conf.BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= _conf.BatchReceivePolicy.MaxNumMessages) || (_conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= _conf.BatchReceivePolicy.MaxNumBytes);
         }
         public void ReconsumeLater(IMessage<T> message, TimeSpan delayTimeInMs) 
             => ReconsumeLaterAsync(message, delayTimeInMs).GetAwaiter().GetResult();
@@ -424,21 +429,41 @@ namespace SharpPulsar.User
             {
                 while(true)
                 {
-                    while(_queue.IncomingMessages.TryReceive(out var message))
-                    { 
-                       yield return ProcessMessage(message, autoAck, customHander);
+                    AskResponse response = null;
+                    try
+                    {
+                        response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
+
                     }
-                    await Task.Delay(TimeSpan.FromMilliseconds(receiveTimeout));
+                    catch (AskTimeoutException)
+                    { }
+                    catch
+                    {
+                        throw;
+                    }
+                    if(response != null && response.Data is IMessage<T> message)
+                        yield return ProcessMessage(message, autoAck, customHander);
                 }
             }
             else if (takeCount > 0)//end at takeCount
             {
                 for (var i = 0; i < takeCount; i++)
                 {
-                    if (_queue.IncomingMessages.TryReceive(out var message))
+                    AskResponse response = null;
+                    try
                     {
-                        yield return ProcessMessage(message, autoAck, customHander);
+                        response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
+
                     }
+                    catch (AskTimeoutException)
+                    { }
+                    catch
+                    {
+                        throw;
+                    }
+
+                    if (response != null && response.Data is IMessage<T> message)
+                        yield return ProcessMessage(message, autoAck, customHander);                    
                     else
                     {
                         //we need to go back since no message was received within the timeout
@@ -449,11 +474,28 @@ namespace SharpPulsar.User
             }
             else
             {
-                //drain the current messages
-                while (_queue.IncomingMessages.TryReceive(out var message))
+                //drain the current messages                
+                while(true)
                 {
-                    yield return ProcessMessage(message, autoAck, customHander);
+                    AskResponse response = null;
+                    try
+                    {
+                        response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromMilliseconds(receiveTimeout)).ConfigureAwait(false);
+                    }
+                    catch (AskTimeoutException)
+                    { 
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+
+                    if (response != null && response.Data is IMessage<T> message)
+                        yield return ProcessMessage(message, autoAck, customHander);
+                    else
+                        break;
                 }
+                
             }
         }
 
@@ -467,14 +509,21 @@ namespace SharpPulsar.User
 
             return received;
         }
-        private IMessage<T> GetMessage()
+        private async ValueTask<IMessage<T>> GetMessage(TimeSpan? timeout = null)
         {
-            if (_queue.IncomingMessages.TryReceive(out var message))
+            try
             {
-                _consumerActor.Tell(new MessageProcessed<T>(message));
-                var inteceptedMessage = BeforeConsume(message);
-                return inteceptedMessage;
+                var rs = timeout != null ?
+                await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, timeout).ConfigureAwait(false)
+                : await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+                if (rs != null && rs.Data is IMessage<T> message)
+                {
+                    _consumerActor.Tell(new MessageProcessed<T>(message));
+                    var inteceptedMessage = BeforeConsume(message);
+                    return inteceptedMessage;
+                }
             }
+            catch { }
             return null;
         }
         public void Unsubscribe()

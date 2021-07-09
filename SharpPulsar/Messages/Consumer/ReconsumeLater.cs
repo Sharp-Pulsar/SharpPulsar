@@ -26,7 +26,8 @@ namespace SharpPulsar.Messages.Consumer
             DelayTime = delayTime;
             AckType = ackType;
         }
-    } public sealed class ReconsumeLaterMessages<T>
+    } 
+    public sealed class ReconsumeLaterMessages<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)

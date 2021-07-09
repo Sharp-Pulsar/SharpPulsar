@@ -10,7 +10,7 @@ namespace SharpPulsar.Messages.Consumer
     public sealed class AskResponse
     {
         public bool Failed { get; }
-        private object _data { get; }
+        public object Data { get; }
         public PulsarClientException Exception { get; }
         public AskResponse()
         {
@@ -19,7 +19,7 @@ namespace SharpPulsar.Messages.Consumer
         public AskResponse(object data)
         {
             Failed = false;
-            _data = data;
+            Data = data;
         }
 
         public AskResponse(PulsarClientException exception)
@@ -29,7 +29,7 @@ namespace SharpPulsar.Messages.Consumer
         }
         public T GetData<T>()
         {
-            return (T)_data;
+            return (T)Data;
         }
     }
 }

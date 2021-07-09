@@ -400,6 +400,10 @@ namespace SharpPulsar
 			Receive<GetIncomingMessageSize>(_ => 
 			{
 				Sender.Tell(new AskResponse(IncomingMessagesSize));
+			});		
+			Receive<GetIncomingMessageCount>(_ => 
+			{
+				Sender.Tell(new AskResponse(IncomingMessages.Count));
 			});
 			Receive<GetCnx>(_ => 
 			{
@@ -565,36 +569,24 @@ namespace SharpPulsar
 			{
                 try
                 {
-					ReconsumeLater(m.Messages, m.DelayTime);
-                    Sender.Tell(null);
+					ReconsumeLater(m.Messages, (long)m.DelayTime.TotalMilliseconds);
+                    Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
                 {
-                    Sender.Tell(PulsarClientException.Unwrap(ex));
-				}
-			});
-			Receive<ReconsumeLaterWithProperties<T>>(m => 
-			{
-                try
-                {
-					DoReconsumeLater(m.Message, m.AckType, m.Properties.ToDictionary(x=> x.Key, x => x.Value), m.DelayTime);
-                    Sender.Tell(null);
-				}
-                catch (Exception ex)
-                {
-                    Sender.Tell(PulsarClientException.Unwrap(ex));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<ReconsumeLaterMessage<T>>(m => 
 			{
                 try
                 {
-					ReconsumeLater(m.Message, m.DelayTime);
-                    Sender.Tell(null);
+					ReconsumeLater(m.Message, (long)m.DelayTime.TotalMilliseconds);
+                    Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
                 {
-                    Sender.Tell(PulsarClientException.Unwrap(ex));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<RedeliverUnacknowledgedMessages>(m => 
@@ -841,7 +833,7 @@ namespace SharpPulsar
 						DoAcknowledgeWithTxn(ack.MessageId, AckType.Cumulative, _properties, ack.Txn);
 						break;
 					case ReconsumeLaterCumulative<T> ack:
-						DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, ack.DelayTime);
+						DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, (long)ack.DelayTime.TotalMilliseconds);
 						break;
 					default:
 						_log.Warning($"{cumulative.GetType().FullName} not supported");
