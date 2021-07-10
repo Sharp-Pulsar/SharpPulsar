@@ -21,7 +21,6 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Queues;
 using SharpPulsar.Shared;
 using SharpPulsar.Stats.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
@@ -33,7 +32,6 @@ using SharpPulsar.Utils;
 using System;
 using System.Buffers;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -343,8 +341,17 @@ namespace SharpPulsar
             ReceiveAny(_ => Stash.Stash());
         }
 		private void Ready()
-        {			
-			Receive<SendState>(_ =>
+        {
+
+            Receive<BatchReceive>(_ =>
+            {
+                BatchReceive();
+            });
+            Receive<Messages.Consumer.Receive>(_ =>
+            {
+                Receive();
+            });
+            Receive<SendState>(_ =>
 			{
 				StateActor.Tell(new SetConumerState(State.ConnectionState));
 			});
@@ -457,7 +464,7 @@ namespace SharpPulsar
 			});
 			Receive<HasReachedEndOfTopic>(_ => {
 				var hasReached = HasReachedEndOfTopic();
-                Sender.Tell(hasReached);
+                Sender.Tell(new AskResponse(hasReached));
 			});
 			Receive<GetAvailablePermits>( _ => {
 				var permits = AvailablePermits();
@@ -594,11 +601,11 @@ namespace SharpPulsar
                 try
                 {
 					RedeliverUnacknowledgedMessages();
-					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
+                    Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.RedeliverUnacknowledgedException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<RedeliverUnacknowledgedMessageIds>(m => 
@@ -606,11 +613,11 @@ namespace SharpPulsar
                 try
 				{
 					RedeliverUnacknowledgedMessages(m.MessageIds);
-					Push(ConsumerQueue.RedeliverUnacknowledgedException, null);
-				}
+                    Sender.Tell(new AskResponse());
+                }
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.RedeliverUnacknowledgedException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<Unsubscribe>(_ => 
@@ -618,11 +625,11 @@ namespace SharpPulsar
                 try
                 {
 					Unsubscribe();
-					Push(ConsumerQueue.UnsubscribeException, null);
-				}
+                    Sender.Tell(new AskResponse());
+                }
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.UnsubscribeException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<SeekMessageId>(m => 
@@ -630,11 +637,11 @@ namespace SharpPulsar
                 try
                 {
 					Seek(m.MessageId);
-					Push(ConsumerQueue.SeekException, null);
-				}
+                    Sender.Tell(new AskResponse());
+                }
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.SeekException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Receive<SeekTimestamp>(m => 
@@ -642,11 +649,11 @@ namespace SharpPulsar
                 try
                 {
 					Seek(m.Timestamp);
-					Push(ConsumerQueue.SeekException, null);
-				}
+                    Sender.Tell(new AskResponse());
+                }
                 catch (Exception ex)
                 {
-					Push(ConsumerQueue.SeekException, new ClientExceptions(PulsarClientException.Unwrap(ex)));
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
 			Stash?.UnstashAll();
@@ -809,11 +816,11 @@ namespace SharpPulsar
 						_log.Warning($"{ack.GetType().FullName} not supported");
 						break;
 				}
-				Sender.Tell(true);
+				Sender.Tell(new AskResponse());
 			}
 			catch (Exception ex)
 			{
-				Sender.Tell(new PulsarClientException(ex));
+				Sender.Tell(new AskResponse(new PulsarClientException(ex)));
 			}
 		}
 
@@ -839,11 +846,11 @@ namespace SharpPulsar
 						_log.Warning($"{cumulative.GetType().FullName} not supported");
 						break;
 				}
-                _replyTo.Tell(null);
+                _replyTo.Tell(new AskResponse());
 			}
 			catch (Exception ex)
 			{
-                _replyTo.Tell(new PulsarClientException(ex));
+                _replyTo.Tell(new AskResponse(new PulsarClientException(ex)));
 			}
 		}
 		private void DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
@@ -2738,13 +2745,6 @@ namespace SharpPulsar
 					_log.Info($"Failed to add message with sequnceid {o.SequenceId} to IncomingMessages");
 			}
 		}
-		private void Push<T1>(BlockingCollection<T1> queue, T1 obj)
-        {
-			if (_hasParentConsumer)
-				Sender.Tell(obj);
-			else
-				queue.Add(obj);
-		}
 		private void DoTransactionAcknowledgeForResponse(IMessageId messageId, AckType ackType, ValidationError? validationError, IDictionary<string, long> properties, TxnID txnID, long requestId)
 		{
 			long ledgerId;
@@ -2822,8 +2822,7 @@ namespace SharpPulsar
 		}
 
 		private void AckError(long requestId, PulsarClientException pulsarClientException)
-		{
-			
+		{			
 			if(_ackRequests.TryGetValue(requestId, out var ot))
             {
 				_ = _ackRequests.Remove(requestId);
@@ -2836,7 +2835,7 @@ namespace SharpPulsar
             {
 				_log.Info($"Ack request has been handled requestId : {requestId}");
 			}
-			ConsumerQueue.AcknowledgeException.Add(new ClientExceptions(pulsarClientException));
+			//ConsumerQueue.AcknowledgeException.Add(new ClientExceptions(pulsarClientException));
 		}
 
 	}

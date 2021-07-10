@@ -88,7 +88,7 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
         /// <exception cref="PulsarClientException.InvalidConfigurationException">if a message listener was defined in the configuration </exception>
         ///             
-        IMessage<T> Receive(TimeSpan? timeout);
+        IMessage<T> Receive();
 
         /// <summary>
         /// Receive a single message.
@@ -102,7 +102,7 @@ namespace SharpPulsar.Interfaces
         /// <exception cref="PulsarClientException.AlreadyClosedException">if the consumer was already closed </exception>
         /// <exception cref="PulsarClientException.InvalidConfigurationException">if a message listener was defined in the configuration </exception>
         ///          
-        ValueTask<IMessage<T>> ReceiveAsync(TimeSpan? timeout);
+        ValueTask<IMessage<T>> ReceiveAsync();
 
         /// <summary>
         /// Batch receiving messages.

@@ -4,14 +4,12 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-using System.Threading.Tasks.Dataflow;
 using System.Runtime.CompilerServices;
 
 namespace SharpPulsar.User
@@ -197,24 +195,21 @@ namespace SharpPulsar.User
         {
             _consumerActor.Tell(Messages.Consumer.Pause.Instance);
         }
-        public IMessage<T> Receive(TimeSpan? timeout = null)
+        public IMessage<T> Receive()
         {
-            return ReceiveAsync(timeout).GetAwaiter().GetResult();
+            return ReceiveAsync().GetAwaiter().GetResult();
         }
 
-        public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan? timeouts = null)
+        public async ValueTask<IMessage<T>> ReceiveAsync()
         {
-            await VerifyConsumerState();
-            if (_conf.ReceiverQueueSize == 0)
-            {
-                throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
-            }
-            if (_conf.MessageListener != null)
-            {
-                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-            }
-            var message = await GetMessage(TimeSpan.FromMilliseconds(timeouts.Value.TotalMilliseconds));
-            return message;
+            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+
+            if (response.Data != null)
+                return response.GetData<IMessage<T>>();
+
+            return null;
         }
 
         protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
@@ -247,78 +242,18 @@ namespace SharpPulsar.User
         }
         public async ValueTask<IMessages<T>> BatchReceiveAsync()
         {
-            VerifyBatchReceive();
-            await VerifyConsumerState();
-            var messages = new Messages<T>(_conf.BatchReceivePolicy.MaxNumMessages, _conf.BatchReceivePolicy.MaxNumBytes);
+            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
 
-            if (await HasEnoughMessagesForBatchReceive())
-            {
-                var message = await GetMessage();
-                while (message != null && messages.CanAdd(message))
-                {
-                    messages.Add(message);
-                    message = await GetMessage();
-                }
-            }
-            return messages;
+            if (response.Data != null)
+                return response.GetData<IMessages<T>>();
+
+            return null;
         }
 
-        private async ValueTask VerifyConsumerState()
-        {
-            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.GetData<HandlerState.State>();
-
-            var retry = 10;
-            while(state == HandlerState.State.Uninitialized && retry > 0)
-            {
-                askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-                state = askForState.GetData<HandlerState.State>();
-                retry--;
-                if (state == HandlerState.State.Uninitialized || state == HandlerState.State.Failed)
-                    await Task.Delay(TimeSpan.FromSeconds(5))
-                .ConfigureAwait(false); 
-            }
-            switch (state)
-            {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
-                    break; // Ok
-                    goto case HandlerState.State.Closing;
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
-                    throw new PulsarClientException.AlreadyClosedException("Consumer already closed");
-                case HandlerState.State.Terminated:
-                    throw new PulsarClientException.AlreadyClosedException("Topic was terminated");
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
-                    throw new PulsarClientException.NotConnectedException();
-                default:
-                    break;
-            }
-        }
-        private void VerifyBatchReceive()
-        {
-            if (_conf.MessageListener != null)
-            {
-                throw new PulsarClientException.InvalidConfigurationException("Cannot use receive() when a listener has been set");
-            }
-            if (_conf.ReceiverQueueSize == 0)
-            {
-                throw new PulsarClientException.InvalidConfigurationException("Can't use batch receive, if the queue size is 0");
-            }
-        }
-        private async ValueTask<bool> HasEnoughMessagesForBatchReceive()
-        {
-            var askFormesageSize = await _consumerActor.Ask<AskResponse>(GetIncomingMessageSize.Instance).ConfigureAwait(false);
-            var mesageSize = askFormesageSize.GetData<long>();
-            var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance).ConfigureAwait(false);
-            var mesageCount = askFormesageCount.GetData<long>();
-            if (_conf.BatchReceivePolicy.MaxNumMessages <= 0 && _conf.BatchReceivePolicy.MaxNumBytes <= 0)
-            {
-                return false;
-            }
-            return (_conf.BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= _conf.BatchReceivePolicy.MaxNumMessages) || (_conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= _conf.BatchReceivePolicy.MaxNumBytes);
-        }
+        
+        
         public void ReconsumeLater(IMessage<T> message, TimeSpan delayTimeInMs) 
             => ReconsumeLaterAsync(message, delayTimeInMs).GetAwaiter().GetResult();
         public async ValueTask ReconsumeLaterAsync(IMessage<T> message, TimeSpan delayTimeInMs)
@@ -508,23 +443,6 @@ namespace SharpPulsar.User
             }
 
             return received;
-        }
-        private async ValueTask<IMessage<T>> GetMessage(TimeSpan? timeout = null)
-        {
-            try
-            {
-                var rs = timeout != null ?
-                await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, timeout).ConfigureAwait(false)
-                : await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-                if (rs != null && rs.Data is IMessage<T> message)
-                {
-                    _consumerActor.Tell(new MessageProcessed<T>(message));
-                    var inteceptedMessage = BeforeConsume(message);
-                    return inteceptedMessage;
-                }
-            }
-            catch { }
-            return null;
         }
         public void Unsubscribe()
         {
