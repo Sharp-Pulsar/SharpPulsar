@@ -96,6 +96,9 @@ namespace SharpPulsar.Configuration
         /// <returns></returns>
         public ProducerConfigBuilder<T> SetAckReceivedListerner(Action<AckReceived> listerner)
         {
+            if (!_conf.BatchingEnabled)
+                throw new InvalidOperationException("AckReceived Listerner is only allowed for batched producer!");
+
             _conf.AckReceivedListerner = listerner;
             return this;
         }
