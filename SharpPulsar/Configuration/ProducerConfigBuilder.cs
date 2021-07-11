@@ -89,6 +89,16 @@ namespace SharpPulsar.Configuration
             _conf.BatchingEnabled = enableBatching;
             return this;
         }
+        /// <summary>
+        /// When batching is enabled, AckReceiveListerner helps to capture acks
+        /// </summary>
+        /// <param name="listerner"></param>
+        /// <returns></returns>
+        public ProducerConfigBuilder<T> SetAckReceivedListerner(Action<AckReceived> listerner)
+        {
+            _conf.AckReceivedListerner = listerner;
+            return this;
+        }
         public ProducerConfigBuilder<T> BatchBuilder(IBatcherBuilder builder)
         {
             _conf.BatcherBuilder = builder;
