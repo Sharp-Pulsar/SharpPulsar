@@ -695,7 +695,7 @@ namespace SharpPulsar
 			}
 			catch (Exception t)
 			{
-                Sender.Tell(t);
+                Sender.Tell(PulsarClientException.Unwrap(t));
 				SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, t);
 			}
 		}
@@ -1474,7 +1474,8 @@ namespace SharpPulsar
 			{
 				_log.Warning($"[{Topic}] [{_producerName}] error while closing out batch -- {t}");
 				SendComplete(op.Msg, op.CreatedAt, op.FirstSentAt, op.LastSentAt, op.RetryCount, new PulsarClientException(t.ToString(), op.SequenceId));
-			}
+                Sender.Tell(PulsarClientException.Unwrap(t));
+            }
 		}
 		private void SendComplete(Message<T> interceptorMessage, long createdAt, long firstSentAt, long lastSentAt, long retryCount, Exception e)
 		{
