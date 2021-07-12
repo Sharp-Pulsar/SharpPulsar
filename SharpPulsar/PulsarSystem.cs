@@ -28,6 +28,20 @@ namespace SharpPulsar
         private readonly IActorRef _tcClient;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
+        private readonly Action _logSetup = () => 
+        {
+            var nlog = new NLog.Config.LoggingConfiguration();
+            var logfile = new NLog.Targets
+                .FileTarget("logFile")
+            {
+                FileName = "logs.log",
+                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}",
+                ArchiveEvery = NLog.Targets.FileArchivePeriod.Hour,
+                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.DateAndSequence
+            };
+            nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+            LogManager.Configuration = nlog;
+        };
         public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
         {
             if (_instance == null)
@@ -42,7 +56,7 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, NLog.Config.LoggingConfiguration loggingConfiguration = null, Config config = null)
+        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null)
         {
             if (_instance == null)
             {
@@ -50,28 +64,19 @@ namespace SharpPulsar
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf, loggingConfiguration, config);
+                        _instance = new PulsarSystem(conf, logSetup, config);
                     }
                 }
             }
             return _instance;
         }
-        private PulsarSystem(PulsarClientConfigBuilder confBuilder, NLog.Config.LoggingConfiguration loggingConfiguration, Config confg)
+        private PulsarSystem(PulsarClientConfigBuilder confBuilder, Action logSetup, Config confg)
         {
 
             _conf = confBuilder.ClientConfigurationData;
             var conf = _conf;
-            var nlog = new NLog.Config.LoggingConfiguration();
-            var logfile = new NLog.Targets
-                .FileTarget("logFile")
-            {
-                FileName = "logs.log",
-                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}",
-                ArchiveEvery = NLog.Targets.FileArchivePeriod.Hour,
-                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.DateAndSequence
-            };
-            nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
-            LogManager.Configuration = loggingConfiguration ?? nlog;
+            var logging = logSetup ?? _logSetup;
+            logging();
             _conf = conf;
             var config = confg ?? ConfigurationFactory.ParseString(@"
             akka
