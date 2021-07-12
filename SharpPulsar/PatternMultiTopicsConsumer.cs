@@ -56,9 +56,8 @@ namespace SharpPulsar
 				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
 			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
-
-			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), async()=> { await TopicReChecker(); });
-		}
+            _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
+        }
 
 		private async ValueTask TopicReChecker()
 		{
@@ -74,7 +73,7 @@ namespace SharpPulsar
 				}
 				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
 				var oldTopics = Topics;
-				OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
+				await OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
 				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
 			}
 			catch(Exception ex)
@@ -112,7 +111,7 @@ namespace SharpPulsar
             }
 		}
 
-		private void  OnTopicsAdded(ICollection<string> addedTopics)
+		private async ValueTask  OnTopicsAdded(ICollection<string> addedTopics)
 		{
 			if (addedTopics.Count == 0)
 			{				
@@ -120,7 +119,9 @@ namespace SharpPulsar
 			}
 			foreach(var t in addedTopics)
             {
-				_self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
+				var response = await _self.Ask<AskResponse>(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
+                if (response.Failed)
+                    _log.Error(response.Exception.ToString());
             }
 		}
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)

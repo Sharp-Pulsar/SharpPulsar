@@ -12,6 +12,7 @@ using SharpPulsar.Utility;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
+using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
@@ -24,9 +25,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
-        private readonly ConsumerQueueCollections<T> _buffer;
+        private readonly BufferBlock<IMessage<T>> _buffer;
         private readonly User.Admin _admin;
-        public CurrentEventsByTagActor(CurrentEventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
+        public CurrentEventsByTagActor(CurrentEventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
             _admin = new User.Admin(message.AdminUrl, httpClient);
             _message = message;
@@ -36,7 +37,6 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _cnxPool = cnxPool;
             _lookup = lookup;
             _generator = generator;
-            _buffer = queue;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
             Setup(partitions.Body, topic);
@@ -62,7 +62,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int)(msgId.End.Index - msgId.Start.Index));
-                    var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema, _buffer));
+                    var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema));
                     Context.Watch(child);
                 }
             }
@@ -70,7 +70,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             {
                 var msgId = GetMessageIds(TopicName.Get(topic));
                 var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
-                var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema, _buffer));
+                var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema));
                 Context.Watch(child);
             }
         }
@@ -90,9 +90,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(CurrentEventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
+        public static Props Prop(CurrentEventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            return Props.Create(() => new CurrentEventsByTagActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema, queue));
+            return Props.Create(() => new CurrentEventsByTagActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema));
         }
     }
 }

@@ -722,7 +722,7 @@ namespace SharpPulsar
 					DeregisterFromClientCnx();
 					_client.Tell(new CleanupConsumer(Self));
 					_clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
-					_replyTo.Tell(new PulsarClientException("Consumer is closed"));
+					_replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is closed")));
 					return;
 				}
 				ResetBackoff();
@@ -730,7 +730,7 @@ namespace SharpPulsar
 				{
 					IncreaseAvailablePermits(_clientCnx, Conf.ReceiverQueueSize);
 				}
-				_replyTo.Tell(true);
+				_replyTo.Tell(new AskResponse());
 				Become(Ready);
 			});
 			Receive<ConnectionFailed>(c => {
@@ -742,7 +742,7 @@ namespace SharpPulsar
 				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 				{
 					_clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
-					_replyTo.Tell(new PulsarClientException("Consumer is in a closing state"));
+					_replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is in a closing state")));
 				}
 				else
 				{
@@ -759,7 +759,7 @@ namespace SharpPulsar
 						CloseConsumerTasks();
 						_client.Tell(new CleanupConsumer(Self));
 						_log.Warning(msg);
-						_replyTo.Tell(new PulsarClientException(msg));
+						_replyTo.Tell(new AskResponse(new PulsarClientException(msg)));
 					}
 					else
 					{
@@ -770,10 +770,10 @@ namespace SharpPulsar
 			});
 			Receive<Failure>(c => {
 				_log.Error($"Connection to the server failed: {c.Exception}/{c.Timestamp}");
-				_replyTo.Tell(new PulsarClientException(c.Exception));
+				_replyTo.Tell(new AskResponse(new PulsarClientException(c.Exception)));
 			});
 			Receive<ConnectionAlreadySet>(_ => {
-                _replyTo.Tell(true);
+                _replyTo.Tell(new AskResponse());
 				Become(Ready);
 			});
 			ReceiveAny(a => Stash.Stash());
