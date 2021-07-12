@@ -78,7 +78,7 @@ namespace SharpPulsar.User
         public async ValueTask<int> NumMessagesInQueueAsync()
         {
             var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance).ConfigureAwait(false);
-            var mesageCount = askFormesageCount.GetData<long>();
+            var mesageCount = askFormesageCount.ConvertTo<long>();
             return (int)mesageCount;
         }
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
@@ -163,7 +163,7 @@ namespace SharpPulsar.User
             var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.HasReachedEndOfTopic.Instance)
                 .ConfigureAwait(false);
 
-            return ask.GetData<bool>();
+            return ask.ConvertTo<bool>();
         }
         /// <summary>
         /// Negatively Acknowledge a message so that it can be redelivered
@@ -207,7 +207,7 @@ namespace SharpPulsar.User
                 throw response.Exception;
 
             if (response.Data != null)
-                return response.GetData<IMessage<T>>();
+                return response.ConvertTo<IMessage<T>>();
 
             return null;
         }
@@ -247,7 +247,7 @@ namespace SharpPulsar.User
                 throw response.Exception;
 
             if (response.Data != null)
-                return response.GetData<IMessages<T>>();
+                return response.ConvertTo<IMessages<T>>();
 
             return null;
         }
@@ -305,7 +305,7 @@ namespace SharpPulsar.User
         public async ValueTask SeekAsync(IMessageId messageId)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.GetData<HandlerState.State>();
+            var state = askForState.ConvertTo<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
                 throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the message {messageId}");
@@ -330,7 +330,7 @@ namespace SharpPulsar.User
         public async ValueTask SeekAsync(long timestamp)
         {
             var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
-            var state = askForState.GetData<HandlerState.State>();
+            var state = askForState.ConvertTo<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
                 throw new Exception($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {Topic} to the timestamp {timestamp:D}");

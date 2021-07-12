@@ -27,7 +27,7 @@ namespace SharpPulsar.Messages.Consumer
             Failed = true;
             Exception = exception;
         }
-        public T GetData<T>()
+        public T ConvertTo<T>()
         {
             return (T)Data;
         }
