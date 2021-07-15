@@ -13,6 +13,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
@@ -48,6 +49,17 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     Context.System.Log.Info($"All children exited, shutting down in 5 seconds :{Self.Path}");
                     Self.GracefulStop(TimeSpan.FromSeconds(5));
                 }
+            });
+            Receive<ReceivedMessage<T>>(m =>
+            {
+                _buffer.Post(m.Message);
+            });
+            Receive<Messages.Receive>(_ =>
+            {
+                if (_buffer.TryReceive(out var message))
+                    Sender.Tell(new AskResponse(message));
+                else
+                    Sender.Tell(new AskResponse(null));
             });
         }
 

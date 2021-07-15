@@ -202,7 +202,7 @@ namespace SharpPulsar.User
 
         public async ValueTask<IMessage<T>> ReceiveAsync()
         {
-            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
             if (response.Failed)
                 throw response.Exception;
 

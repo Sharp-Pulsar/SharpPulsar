@@ -25,11 +25,8 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly IPulsarEventSourceMessage<T> _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
-        protected internal BufferBlock<IMessage<T>> _incomingMessages;
         public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema)
         {
-            _incomingMessages = new BufferBlock<IMessage<T>>();
-            //_sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
             _httpClient = httpClient;
@@ -77,15 +74,12 @@ namespace SharpPulsar.EventSource.Pulsar
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
             _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client)));
-           
+            _child.Tell(Connect.Instance);
             if (isLive)
                 LiveConsume();
             else Consume();
         }
-        private void OnConnect()
-        {
-
-        }
+        
         private void Consume()
         {
             Receive<ReceivedMessage<T>>(m =>
@@ -94,7 +88,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 var messageId = (MessageId)c.MessageId;
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
-                    _incomingMessages.Post(c);
+                    Context.Parent.Tell(c);
                     _child.Tell(new AcknowledgeMessage<T>(c));
                     _child.Tell(new MessageProcessed<T>(c));
                     //_sequenceId++;
@@ -107,9 +101,9 @@ namespace SharpPulsar.EventSource.Pulsar
         }
         private void LiveConsume()
         {
-            Receive<IMessage<T>>(c =>
+            Receive<ReceivedMessage<T>>(c =>
             {
-                _incomingMessages.Post(c);
+                Context.Parent.Tell(c);
                 //_sequenceId++;
             });
             _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);

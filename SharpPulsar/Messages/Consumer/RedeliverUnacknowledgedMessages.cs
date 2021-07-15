@@ -24,7 +24,10 @@ namespace SharpPulsar.Messages.Consumer
 
         public AskResponse(PulsarClientException exception)
         {
-            Failed = true;
+            if (exception == null)
+                Failed = false;
+            else
+                Failed = true;
             Exception = exception;
         }
         public T ConvertTo<T>()

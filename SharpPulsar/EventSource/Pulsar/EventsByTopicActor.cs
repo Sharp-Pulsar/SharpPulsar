@@ -3,9 +3,9 @@ using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar
 {
@@ -33,7 +33,18 @@ namespace SharpPulsar.EventSource.Pulsar
             _buffer = new BufferBlock<IMessage<T>>();
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
-            Setup(partitions.Body, topic);
+            Setup(partitions.Body, topic); 
+            Receive<ReceivedMessage<T>>(m =>
+            {
+                _buffer.Post(m.Message);
+            });
+            Receive<Messages.Receive>(_ =>
+            {
+                if (_buffer.TryReceive(out var message))
+                    Sender.Tell(new AskResponse(message));
+                else
+                    Sender.Tell(new AskResponse(null));
+            });
         }
 
         private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)

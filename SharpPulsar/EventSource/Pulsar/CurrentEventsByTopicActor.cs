@@ -7,6 +7,8 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Queues;
+using SharpPulsar.Messages.Consumer;
+using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.EventSource.Pulsar
 {
@@ -20,12 +22,14 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
         private readonly User.Admin _admin;
+        private readonly BufferBlock<IMessage<T>> _buffer;
         public CurrentEventsByTopicActor(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
             _admin = new User.Admin(message.AdminUrl, httpClient);
             _message = message;
             _httpClient = httpClient;
             _schema = schema;
+            _buffer = new BufferBlock<IMessage<T>>();
             _client = client;
             _cnxPool = cnxPool;
             _lookup = lookup;
@@ -41,6 +45,17 @@ namespace SharpPulsar.EventSource.Pulsar
                     Context.System.Log.Info($"All children exited, shutting down in 5 seconds :{Self.Path}");
                     Self.GracefulStop(TimeSpan.FromSeconds(5));
                 }
+            });
+            Receive<ReceivedMessage<T>>(m =>
+            {
+                _buffer.Post(m.Message);
+            });
+            Receive<Messages.Receive>(_ =>
+            {
+                if (_buffer.TryReceive(out var message))
+                    Sender.Tell(new AskResponse(message));
+                else
+                    Sender.Tell(new AskResponse(null));
             });
         }
 
