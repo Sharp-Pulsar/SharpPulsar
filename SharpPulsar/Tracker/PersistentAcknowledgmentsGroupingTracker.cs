@@ -17,6 +17,11 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Transaction;
 using System.Collections;
 using System.Threading.Tasks;
+using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Messages.Consumer;
+using System.Linq;
+using System.Buffers;
+using SharpPulsar.Messages.Client;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -77,6 +82,9 @@ namespace SharpPulsar.Tracker
 
         private  ICancelable _scheduledTask;
 
+        private readonly bool _batchIndexAckEnabled;
+        private readonly bool _ackReceiptEnabled;
+
         public PersistentAcknowledgmentsGroupingTracker(IActorRef consumer, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
             _handler = handler;
@@ -87,6 +95,8 @@ namespace SharpPulsar.Tracker
             _pendingIndividualBatchIndexAcks = new ConcurrentDictionary<IMessageId, BitSet>();
             _pendingIndividualTransactionBatchIndexAcks = new ConcurrentDictionary<IActorRef, Dictionary<MessageId, BitSet>>();
             _pendingIndividualTransactionAcks = new Queue<(long MostSigBits, long LeastSigBits, MessageId MessageId)>();
+            _ackReceiptEnabled = conf.AckReceiptEnabled;
+            _batchIndexAckEnabled = conf.BatchIndexAckEnabled;
             BecomeActive();
 			_scheduledTask = _acknowledgementGroupTimeMicros > 0 ? Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), Self, FlushPending.Instance, ActorRefs.NoSender) : null;
 		}
@@ -101,7 +111,7 @@ namespace SharpPulsar.Tracker
             ReceiveAsync<AddAcknowledgment>(async d => 
             {
                 _invokeAgrs = new object[] { d.MessageId, d.AckType, d.Properties, d.Txn };
-                await AddAcknowledgment(d.MessageId, d.AckType, d.Properties, d.Txn); 
+                await AddAcknowledgment(d.MessageId, d.AckType, d.Properties); 
             });
             ReceiveAsync<AddBatchIndexAcknowledgment>(async d => 
             {
@@ -127,6 +137,9 @@ namespace SharpPulsar.Tracker
 		/// </summary>
 		private bool IsDuplicate(IMessageId messageId)
         {
+            if (_lastCumulativeAck == null)
+                return false;
+
             if (messageId.CompareTo(_lastCumulativeAck) <= 0)
 	        {
 		        // Already included in a cumulative ack
@@ -201,77 +214,273 @@ namespace SharpPulsar.Tracker
         {
             if (ackType == AckType.Cumulative)
             {
-                messageIds.ForEach(messageId => DoCumulativeAck(messageId, null));
-                return;
-            }
-            messageIds.ForEach(async messageId =>
-            {
-                if (messageId is BatchMessageId batchMessageId)
+                var cnx = await Cnx();
+                if (await IsAckReceiptEnabled(cnx))
                 {
-                    _pendingIndividualAcks.Enqueue(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
+                    ISet<Task> taskSet = new HashSet<Task>();
+                    messageIds.ForEach(messageId => taskSet.Add(AddAcknowledgment(messageId, ackType, properties).AsTask()));
+                    Task.WaitAll(taskSet.ToArray());
                 }
                 else
                 {
-                    _pendingIndividualAcks.Enqueue(messageId);
+                    messageIds.ForEach(async messageId => await AddAcknowledgment(messageId, ackType, properties));
+                   
                 }
-                _pendingIndividualBatchIndexAcks.TryRemove(messageId, out var bts);
-                if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
-                {
-                    await Flush();
-                }
-            });
-            if (_acknowledgementGroupTimeMicros == 0)
-            {
-                await Flush();
-            }
-        }
-        private async ValueTask AddAcknowledgment(IMessageId msgId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
-        {
-            if (_acknowledgementGroupTimeMicros == 0 || properties.Count > 0 || (txn != null && ackType == AckType.Cumulative))
-            {
-                if (msgId is BatchMessageId && txn != null)
-                {
-                    var bits = await txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-                    var batchMessageId = (BatchMessageId)msgId;
-                    await DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchIndex, ackType, properties, bits.MostBits, bits.LeastBits);
-                    return;
-                }
-                // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
-                // uncommon condition since it's only used for the compaction subscription.
-                await DoImmediateAck(msgId, ackType, properties, txn);
-            }
-            else if (ackType == AckType.Cumulative)
-            {
-                DoCumulativeAck(msgId, null);
             }
             else
             {
-                // Individual ack
-                if (msgId is BatchMessageId m)
+                var cnx = await Cnx();
+                if (await IsAckReceiptEnabled(cnx))
                 {
-                    _pendingIndividualAcks.Enqueue(new MessageId(m.LedgerId, m.EntryId, m.PartitionIndex));
+                    // when flush the ack, we should bind the this ack in the currentFuture, during this time we can't
+                    // change currentFuture. but we can lock by the read lock, because the currentFuture is not change
+                    // any ack operation is allowed.
+                    
+                    try
+                    {
+                        if (messageIds.Count != 0)
+                        {
+                            AddListAcknowledgment(messageIds);
+                        }
+                    }
+                    finally
+                    {
+                        if (_acknowledgementGroupTimeMicros == 0 || _pendingIndividualAcks.Count >= MaxAckGroupSize)
+                        {
+                            await Flush();
+                        }
+                    }
                 }
                 else
                 {
-                    if (txn != null)
+                    AddListAcknowledgment(messageIds);
+                    if (_acknowledgementGroupTimeMicros == 0 || _pendingIndividualAcks.Count >= MaxAckGroupSize)
                     {
-                        var bits = await txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance);
-
-                        _pendingIndividualTransactionAcks.Enqueue((bits.MostBits, bits.LeastBits, (MessageId)msgId));
+                       await Flush();
                     }
-                    else
-                    {
-                        _pendingIndividualAcks.Enqueue(msgId);
-                    }
-                }
-                _pendingIndividualBatchIndexAcks.Remove(msgId, out _);
-                if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
-                {
-                    await Flush();
                 }
             }
         }
-       
+        private void AddListAcknowledgment(IList<MessageId> messageIds)
+        {
+            foreach (MessageId messageId in messageIds)
+            {
+                _consumer.Tell(new OnAcknowledge(messageId, null));
+                if (messageId is BatchMessageId batchMessageId)
+                {
+                    if (!batchMessageId.AckIndividual())
+                    {
+                        DoIndividualBatchAckAsync(batchMessageId);
+                    }
+                    else
+                    {
+                        var msgId = ModifyBatchMessageIdAndStatesInConsumer(batchMessageId);
+                        DoIndividualAckAsync(msgId);
+                    }
+                }
+                else
+                {
+                    ModifyMessageIdStatesInConsumer(messageId);
+                    DoIndividualAckAsync(messageId);
+                }
+            }
+        }
+        private async ValueTask AddAcknowledgment(IMessageId msgId, AckType ackType, IDictionary<string, long> properties)
+        {
+            if (msgId is BatchMessageId batchMessageId)
+            {
+                if (ackType == AckType.Individual)
+                {
+                    _consumer.Tell(new OnAcknowledge(msgId, null));
+                    // ack this ack carry bitSet index and judge bit set are all ack
+                    if (batchMessageId.AckIndividual())
+                    {
+                        var messageId = ModifyBatchMessageIdAndStatesInConsumer(batchMessageId);
+                        await DoIndividualAck(messageId, properties);
+                    }
+                    else if (_batchIndexAckEnabled)
+                    {
+                        await DoIndividualBatchAck(batchMessageId, properties);
+                    }
+                    else
+                    {
+                        // if we prevent batchIndexAck, we can't send the ack command to broker when the batch message are
+                        // all ack complete
+                        return;// CompletableFuture.completedFuture(null);
+                    }
+                }
+                else
+                {
+                    _consumer.Tell(new OnAcknowledgeCumulative(msgId, null));
+                    if (batchMessageId.AckCumulative())
+                    {
+                        return DoCumulativeAck(msgId, properties, null);
+                    }
+                    else
+                    {
+                        if (_batchIndexAckEnabled)
+                        {
+                            return DoCumulativeBatchIndexAck(batchMessageId, properties);
+                        }
+                        else
+                        {
+                            // ack the pre messageId, because we prevent the batchIndexAck, we can ensure pre messageId can
+                            // ack
+                            if (CommandAck.AckType.Cumulative == ackType && !batchMessageId.Acker.IsPrevBatchCumulativelyAcked())
+                            {
+                                DoCumulativeAck(batchMessageId.PrevBatchMessageId(), properties, null);
+                                batchMessageId.getAcker().setPrevBatchCumulativelyAcked(true);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (ackType == AckType.Individual)
+                {
+                    _consumer.Tell(new OnAcknowledge(msgId, null));
+                    ModifyMessageIdStatesInConsumer(msgId);
+                    await DoIndividualAck(msgId, properties);
+                }
+                else
+                {
+                    _consumer.Tell(new OnAcknowledgeCumulative(msgId, null));
+                    await DoCumulativeAck(msgId, properties, null);
+                }
+            }
+        }
+        private async ValueTask DoIndividualBatchAck(BatchMessageId batchMessageId, IDictionary<string, long> properties)
+        {
+            if (_acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            {
+                await DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, AckType.Individual, properties);
+            }
+            else
+            {
+                await DoIndividualBatchAck(batchMessageId);
+            }
+        }
+
+        private async ValueTask DoIndividualBatchAck(BatchMessageId batchMessageId)
+        {
+            var cnx = await Cnx();
+            if (await IsAckReceiptEnabled(cnx))
+            {
+                try
+                {
+                    DoIndividualBatchAckAsync(batchMessageId);
+                }
+                finally
+                {
+                    
+                }
+            }
+            else
+            {
+                DoIndividualBatchAckAsync(batchMessageId);
+            }
+        }
+
+        private CompletableFuture<Void> doCumulativeAck(MessageIdImpl messageId, IDictionary<string, long> properties, BitSetRecyclable bitSet)
+        {
+            consumer.getStats().incrementNumAcksSent(consumer.getUnAckedMessageTracker().removeMessagesTill(messageId));
+            if (acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            {
+                // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
+                // uncommon condition since it's only used for the compaction subscription.
+                return doImmediateAck(messageId, CommandAck.AckType.Cumulative, properties, bitSet);
+            }
+            else
+            {
+                if (isAckReceiptEnabled(consumer.getClientCnx()))
+                {
+                    // when flush the ack, we should bind the this ack in the currentFuture, during this time we can't
+                    // change currentFuture. but we can lock by the read lock, because the currentFuture is not change
+                    // any ack operation is allowed.
+                    this.@lock.readLock().@lock();
+                    try
+                    {
+                        doCumulativeAckAsync(messageId, bitSet);
+                        return this.currentCumulativeAckFuture;
+                    }
+                    finally
+                    {
+                        this.@lock.readLock().unlock();
+                        if (pendingIndividualBatchIndexAcks.Count >= MAX_ACK_GROUP_SIZE)
+                        {
+                            flush();
+                        }
+                    }
+                }
+                else
+                {
+                    doCumulativeAckAsync(messageId, bitSet);
+                    if (pendingIndividualBatchIndexAcks.Count >= MAX_ACK_GROUP_SIZE)
+                    {
+                        flush();
+                    }
+                    return CompletableFuture.completedFuture(null);
+                }
+            }
+        }
+
+        private void DoIndividualBatchAckAsync(BatchMessageId batchMessageId)
+        {
+            var msgId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
+            if(!_pendingIndividualBatchIndexAcks.ContainsKey(msgId))
+            {
+                if (batchMessageId.Acker != null && !(batchMessageId.Acker is BatchMessageAckerDisabled))
+                {
+                    _pendingIndividualBatchIndexAcks[msgId] = BitSet.Create(batchMessageId.Acker.BitSet.);
+                }
+                else
+                {
+                    value = ConcurrentBitSetRecyclable.create();
+                    value.set(0, batchMessageId.getBatchIndex());
+                }
+            }
+            ConcurrentBitSetRecyclable bitSet = _pendingIndividualBatchIndexAcks.computeIfAbsent(new MessageIdImpl(), (v) =>
+            {
+                ConcurrentBitSetRecyclable value;
+                if (batchMessageId.getAcker() != null && !(batchMessageId.getAcker() is BatchMessageAckerDisabled))
+                {
+                    value = ConcurrentBitSetRecyclable.create(batchMessageId.getAcker().getBitSet());
+                }
+                else
+                {
+                    value = ConcurrentBitSetRecyclable.create();
+                    value.set(0, batchMessageId.getBatchIndex());
+                }
+                return value;
+            });
+            bitSet.clear(batchMessageId.getBatchIndex());
+        }
+        private async ValueTask<bool> IsAckReceiptEnabled(IActorRef cnx)
+        {
+            var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+            var protocolVersion = version.Version;
+            return _ackReceiptEnabled && cnx != null && Commands.PeerSupportsAckReceipt(protocolVersion);
+        }
+        private MessageId ModifyBatchMessageIdAndStatesInConsumer(BatchMessageId batchMessageId)
+        {
+            var messageId = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
+            _consumer.Tell(new IncrementNumAcksSent(batchMessageId.BatchSize));
+            ClearMessageIdFromUnAckTrackerAndDeadLetter(messageId);
+            return messageId;
+        }
+
+        private void ModifyMessageIdStatesInConsumer(MessageId messageId)
+        {
+            _consumer.Tell(new IncrementNumAcksSent(1));
+            ClearMessageIdFromUnAckTrackerAndDeadLetter(messageId);
+        }
+
+        private void ClearMessageIdFromUnAckTrackerAndDeadLetter(MessageId messageId)
+        {
+            _consumer.Tell(new UnAckedMessageTrackerRemove(messageId));
+            _consumer.Tell(new PossibleSendToDeadLetterTopicMessagesRemove(messageId));
+        }
         private void DoCumulativeAck(IMessageId msgId, BitSet bitSet)
         {
 	        // Handle concurrent updates from different threads
@@ -340,6 +549,49 @@ namespace SharpPulsar.Tracker
             var payload = new Payload(cmd, -1, "NewAck");
             cnx.Tell(payload);
             return true;
+        }
+
+        private async ValueTask DoIndividualAck(MessageId messageId, IDictionary<string, long> properties)
+        {
+            if (_acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            {
+                // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
+                // uncommon condition since it's only used for the compaction subscription.
+                await DoImmediateAck(messageId, AckType.Individual, properties, null);
+            }
+            else
+            {
+                var cnx = await Cnx();
+                if (await IsAckReceiptEnabled(cnx))
+                {
+                    try
+                    {
+                        DoIndividualAckAsync(messageId);
+                    }
+                    finally
+                    {
+                        if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
+                        {
+                            await Flush();
+                        }
+                    }
+                }
+                else
+                {
+                    DoIndividualAckAsync(messageId);
+                    if (_pendingIndividualAcks.Count >= MaxAckGroupSize)
+                    {
+                        await Flush();
+                    }
+                }
+            }
+        }
+
+
+        private void DoIndividualAckAsync(MessageId messageId)
+        {
+            _pendingIndividualAcks.Enqueue(messageId);
+            _pendingIndividualBatchIndexAcks.TryRemove(messageId, out _);
         }
         /// <summary>
 		/// Flush all the pending acks and send them to the broker
@@ -594,6 +846,38 @@ namespace SharpPulsar.Tracker
 
                 var cmd = Commands.NewAck(consumerId, mid.LedgerId, mid.EntryId, sets, ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
                 cnx.Tell(new Payload(cmd, -1, "NewAck"));
+            }
+        }
+        private async ValueTask NewMessageAckCommandAndWrite(IActorRef cnx, long consumerId, long ledgerId, long entryId, BitSet ackSet, AckType ackType, ValidationError validationError, IDictionary<string, long> properties, bool flush, IList<(long LedgerId, long EntryId, BitSet Sets)> entriesToAck)
+        {
+            if (await IsAckReceiptEnabled(cnx))
+            {               
+                var response = await _consumer.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                long requestId = response.Id;
+
+                ReadOnlySequence<byte> cmd;
+                if (entriesToAck == null)
+                {
+                    cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet.ToLongArray(), ackType, null, properties, requestId);
+                }
+                else
+                {
+                    cmd = Commands.NewMultiMessageAck(consumerId, entriesToAck, requestId);
+                }
+                cnx.Tell(new Payload(cmd, requestId, "NewAckForReceipt"));
+            }
+            else
+            {                
+                ReadOnlySequence<byte> cmd;
+                if (entriesToAck == null)
+                {
+                    cmd = Commands.NewAck(consumerId, ledgerId, entryId, ackSet.ToLongArray(), ackType, null, properties, -1);
+                }
+                else
+                {
+                    cmd = Commands.NewMultiMessageAck(consumerId, entriesToAck, -1);
+                }
+                cnx.Tell(new Payload(cmd, -1, "NewMessageAckCommandAndWrite"));
             }
         }
     }

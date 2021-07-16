@@ -342,7 +342,29 @@ namespace SharpPulsar
         }
 		private void Ready()
         {
-
+            Receive<PossibleSendToDeadLetterTopicMessagesRemove>(s =>
+            {
+                if (_possibleSendToDeadLetterTopicMessages != null)
+                {
+                    _possibleSendToDeadLetterTopicMessages.Remove(s.MessageId);
+                }
+            });
+            Receive<UnAckedMessageTrackerRemove>(s =>
+            {
+                _unAckedMessageTracker.Tell(new Remove(s.MessageId));
+            });
+            Receive<IncrementNumAcksSent>(s =>
+            {
+                Stats.IncrementNumAcksSent(s.Sent);
+            });
+            Receive<OnAcknowledge>(on =>
+            {
+                OnAcknowledge(on.MessageId, on.Exception);
+            });
+            Receive<OnAcknowledgeCumulative>(on =>
+            {
+                OnAcknowledgeCumulative(on.MessageId, on.Exception);
+            });
             Receive<BatchReceive>(_ =>
             {
                 BatchReceive();

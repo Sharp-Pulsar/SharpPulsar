@@ -604,7 +604,20 @@ namespace SharpPulsar.Protocol
 			return Serializer.Serialize(ack.ToBaseCommand());
 			
 		}
-		public static ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
+        public static ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries, long requestId)
+        {
+            var ackBuilder = new CommandAck
+            {
+                ConsumerId = (ulong)consumerId,
+                ack_type = CommandAck.AckType.Individual
+            };
+            if (requestId >= 0)
+            {
+                ackBuilder.RequestId = (ulong)requestId;
+            }
+            return NewMultiMessageAckCommon(ackBuilder, entries);
+        }
+        public static ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries)
         {
             var ackCmd = new CommandAck {ConsumerId = (ulong) consumerId, ack_type = CommandAck.AckType.Individual};
 
@@ -649,7 +662,11 @@ namespace SharpPulsar.Protocol
 		{
 			return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, -1L, -1);
 		}
-		public static ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
+        public static ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSets, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long requestId)
+        {
+            return NewAck(consumerId, ledgerId, entryId, ackSets, ackType, validationError, properties, -1L, -1L, requestId, -1);
+        }
+        public static ReadOnlySequence<byte> NewAck(long consumerId, long ledgerId, long entryId, long[] ackSet, CommandAck.AckType ackType, CommandAck.ValidationError? validationError, IDictionary<string, long> properties, long txnIdLeastBits, long txnIdMostBits, long requestId)
 		{
 			return NewAck(consumerId, ledgerId, entryId, ackSet, ackType, validationError,
 					properties, txnIdLeastBits, txnIdMostBits, requestId, -1);
