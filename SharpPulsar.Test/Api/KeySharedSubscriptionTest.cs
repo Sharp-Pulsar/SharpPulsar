@@ -103,7 +103,7 @@ namespace SharpPulsar.Test.Api
 			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topic);
 			builder.SubscriptionName(consumerSub);
-			builder.AckTimeout(30000, TimeUnit.MILLISECONDS);
+			builder.AckTimeout(TimeSpan.FromMilliseconds(30));
 			builder.ForceTopicCreation(true);
 			if(keySharedPolicy != null)
 				builder.KeySharedPolicy(keySharedPolicy);
@@ -215,7 +215,7 @@ namespace SharpPulsar.Test.Api
 				Message<byte[]> noMessages = null;
 				try
 				{
-					noMessages = (Message<byte[]>)check.Key.Receive(TimeSpan.FromMilliseconds(100));
+					noMessages = (Message<byte[]>)check.Key.Receive();
 				}
 				catch (PulsarClientException)
 				{

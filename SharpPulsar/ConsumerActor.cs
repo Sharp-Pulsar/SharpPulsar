@@ -454,13 +454,13 @@ namespace SharpPulsar
 				else
 					IncreaseAvailablePermits(_clientCnx);
 			});
-			Receive<IAcknowledge>(ack => 
+			ReceiveAsync<IAcknowledge>(async ack => 
 			{
-				Acknowledge(ack);
+				await Acknowledge(ack);
 			});
-			Receive<ICumulative>(cumulative => 
+			ReceiveAsync<ICumulative>( async cumulative => 
 			{
-				Cumulative(cumulative);
+				await Cumulative(cumulative);
 			});
 
 			Receive<GetLastDisconnectedTimestamp>(m =>
@@ -816,38 +816,38 @@ namespace SharpPulsar
 				return _unAckedMessageTracker;
 			}
 		}
-		private void Acknowledge(IAcknowledge ack)
+		private async ValueTask Acknowledge(IAcknowledge ack)
         {
             try
             {
 				switch (ack)
 				{
 					case AcknowledgeMessage<T> m:
-						DoAcknowledgeWithTxn(m.Message.MessageId, AckType.Individual, _properties, null);
+						await DoAcknowledgeWithTxn(m.Message.MessageId, AckType.Individual, _properties, null);
 						break;
 					case AcknowledgeMessageId id:
-						DoAcknowledgeWithTxn(id.MessageId, AckType.Individual, _properties, null);
+                        await DoAcknowledgeWithTxn(id.MessageId, AckType.Individual, _properties, null);
 						break;
 					case AcknowledgeMessageIds ids:
-						DoAcknowledgeWithTxn(ids.MessageIds, AckType.Individual, _properties, null);
+						await DoAcknowledgeWithTxn (ids.MessageIds, AckType.Individual, _properties, null);
 						break;
 					case AcknowledgeWithTxnMessages mTxn:
-						DoAcknowledgeWithTxn(mTxn.MessageIds, mTxn.AckType, mTxn.Properties, mTxn.Txn);
+						await DoAcknowledgeWithTxn(mTxn.MessageIds, mTxn.AckType, mTxn.Properties, mTxn.Txn);
 						break;
 					case AcknowledgeWithTxn txn:
-						DoAcknowledgeWithTxn(txn.MessageId, txn.AckType, txn.Properties, txn.Txn);
+                        await DoAcknowledgeWithTxn(txn.MessageId, txn.AckType, txn.Properties, txn.Txn);
 						break;
 					case AcknowledgeMessages<T> ms:
 						foreach (var x in ms.Messages)
 						{
-							DoAcknowledgeWithTxn(x.MessageId, AckType.Individual, _properties, null);
+                            await DoAcknowledgeWithTxn(x.MessageId, AckType.Individual, _properties, null);
 						}
 						break;
 					default:
 						_log.Warning($"{ack.GetType().FullName} not supported");
-						break;
+                        Sender.Tell(new AskResponse());
+                        break;
 				}
-				Sender.Tell(new AskResponse());
 			}
 			catch (Exception ex)
 			{
@@ -855,42 +855,51 @@ namespace SharpPulsar
 			}
 		}
 
-		private void Cumulative(ICumulative cumulative)
+		private async ValueTask Cumulative(ICumulative cumulative)
 		{
             try
             {
 				switch(cumulative)
                 {
 					case AcknowledgeCumulativeMessageId ack:
-						DoAcknowledgeWithTxn(ack.MessageId, AckType.Cumulative, _properties, null);
+						await DoAcknowledgeWithTxn(ack.MessageId, AckType.Cumulative, _properties, null);
 						break;
 					case AcknowledgeCumulativeMessage<T> ack:
-						DoAcknowledgeWithTxn(ack.Message.MessageId, AckType.Cumulative, _properties, null);
+						await DoAcknowledgeWithTxn(ack.Message.MessageId, AckType.Cumulative, _properties, null);
 						break;
 					case AcknowledgeCumulativeTxn ack:
-						DoAcknowledgeWithTxn(ack.MessageId, AckType.Cumulative, _properties, ack.Txn);
+						await DoAcknowledgeWithTxn (ack.MessageId, AckType.Cumulative, _properties, ack.Txn);
 						break;
 					case ReconsumeLaterCumulative<T> ack:
 						DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, (long)ack.DelayTime.TotalMilliseconds);
-						break;
+                        _replyTo.Tell(new AskResponse());
+                        break;
 					default:
 						_log.Warning($"{cumulative.GetType().FullName} not supported");
-						break;
+                        _replyTo.Tell(new AskResponse());
+                        break;
 				}
-                _replyTo.Tell(new AskResponse());
+                
 			}
 			catch (Exception ex)
 			{
                 _replyTo.Tell(new AskResponse(new PulsarClientException(ex)));
 			}
 		}
-		private void DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		private async ValueTask DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if (txn != null)
 			{
 				txn.Tell(new RegisterAckedTopic(Topic, Subscription));
-			}
-			DoAcknowledge(messageIdList, ackType, properties, txn);
+                var response = await txn.Ask<AskResponse>(new RegisterAckedTopic(Topic, Subscription)).ConfigureAwait(false);
+                if (!response.Failed)
+                    DoAcknowledge(messageIdList, ackType, properties, txn);
+                else
+                    Sender.Tell(response);
+            }
+			
+            else
+                DoAcknowledge(messageIdList, ackType, properties, txn);
 		}
 		private void Unsubscribe()
 		{
@@ -1118,9 +1127,9 @@ namespace SharpPulsar
 					if(_retryLetterProducer == null)
 					{
 						var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
-						var builder = new ProducerConfigBuilder<T>();
-						builder.Topic(_deadLetterPolicy.RetryLetterTopic);
-						builder.EnableBatching(false);
+						var builder = new ProducerConfigBuilder<T>()
+                        .Topic(_deadLetterPolicy.RetryLetterTopic)
+                        .EnableBatching(false);
 						_retryLetterProducer = client.NewProducer(Schema, builder).GetProducer;
 					}
 				}
@@ -2745,7 +2754,7 @@ namespace SharpPulsar
 			_clientCnx.Tell(payload);
 		}
 
-		private void DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
+		private async ValueTask DoAcknowledgeWithTxn(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if (txn != null)
 			{
@@ -2757,9 +2766,14 @@ namespace SharpPulsar
 					txn.Tell(new RegisterCumulativeAckConsumer(Self));
 				}
 
-				txn.Tell(new RegisterAckedTopic(Topic, Subscription));
-			}
-			DoAcknowledge(messageId, ackType, properties, txn);
+				var response = await txn.Ask<AskResponse>(new RegisterAckedTopic(Topic, Subscription)).ConfigureAwait(false);
+                if (!response.Failed)
+                    DoAcknowledge(messageId, ackType, properties, txn);
+                else
+                    Sender.Tell(response);
+            }
+			else 
+                DoAcknowledge(messageId, ackType, properties, txn);
 		}
 		private void AckReceipt(long requestId)
 		{

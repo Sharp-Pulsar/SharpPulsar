@@ -209,7 +209,8 @@ namespace SharpPulsar
             {
                 return false;
             }
-            return (Conf.BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= Conf.BatchReceivePolicy.MaxNumMessages) || (Conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= Conf.BatchReceivePolicy.MaxNumBytes);
+            return (Conf.BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= Conf.BatchReceivePolicy.MaxNumMessages) 
+                || (Conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= Conf.BatchReceivePolicy.MaxNumBytes);
         }
         internal void NegativeAcknowledge(IMessage<T> message)
 		{

@@ -44,7 +44,7 @@ namespace SharpPulsar.Test
 
 			for (var i = 0; i < messageCount; i++)
 			{
-				var message = consumer.Receive(TimeSpan.FromSeconds(10));
+				var message = consumer.Receive();
 				if(message != null)
                 {
 					var decrypted = Encoding.UTF8.GetString(message.Data);

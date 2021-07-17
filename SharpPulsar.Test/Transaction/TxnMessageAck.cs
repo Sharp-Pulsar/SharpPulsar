@@ -56,7 +56,7 @@ namespace SharpPulsar.Test.Transaction
 			_output.WriteLine("produce transaction messages finished");
 
 			// Can't receive transaction messages before commit.
-			var message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+			var message = consumer.Receive();
 			Assert.Null(message);
 			_output.WriteLine("transaction messages can't be received before transaction committed");
 
@@ -66,7 +66,7 @@ namespace SharpPulsar.Test.Transaction
 			var receiveCnt = 0;
 			for (var i = 0; i < messageCnt; i++)
 			{
-				message = consumer.Receive(TimeSpan.FromSeconds(10));
+				message = consumer.Receive();
 				Assert.NotNull(message);
 				receiveCnt++;
 				if (i % 2 == 0)
@@ -77,7 +77,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.Equal(messageCnt, receiveCnt);
 
-			message = consumer.Receive(TimeSpan.FromMilliseconds(5000));
+			message = consumer.Receive();
 			Assert.Null(message);
 
 			consumer.RedeliverUnacknowledgedMessages();
@@ -86,14 +86,14 @@ namespace SharpPulsar.Test.Transaction
 			receiveCnt = 0;
 			for (var i = 0; i < messageCnt - ackedMessageCount; i++)
 			{
-				message = consumer.Receive(TimeSpan.FromMilliseconds(10000));
+				message = consumer.Receive();
 				Assert.NotNull(message);
 				consumer.Acknowledge(message);
 				receiveCnt++;
 			}
 			Assert.Equal(messageCnt - ackedMessageCount, receiveCnt);
 
-			message = consumer.Receive(TimeSpan.FromMilliseconds(2000));
+			message = consumer.Receive();
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}

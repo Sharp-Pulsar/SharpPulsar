@@ -63,10 +63,10 @@ namespace SharpPulsar.Test
 			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topic);
 			builder.SubscriptionName($"sub1-{Guid.NewGuid()}");
-			builder.AckTimeout(ackTimeout, TimeUnit.MILLISECONDS);
+			builder.AckTimeout(TimeSpan.FromMilliseconds(ackTimeout));
 			builder.ForceTopicCreation(true);
 			builder.AcknowledgmentGroupTime(0);
-			builder.NegativeAckRedeliveryDelay(negAcksDelayMillis, TimeUnit.MILLISECONDS);
+			builder.NegativeAckRedeliveryDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis));
 			builder.SubscriptionType(subscriptionType);
 			var consumer = _client.NewConsumer(builder);
 
@@ -107,7 +107,7 @@ namespace SharpPulsar.Test
 			// All the messages should be received again
 			for (var i = 0; i < n; i++)
 			{
-                var msg = consumer.Receive(TimeSpan.FromSeconds(5));
+                var msg = consumer.Receive();
                 if (msg != null)
                 {
 					var ms = Encoding.UTF8.GetString(msg.Data);
@@ -118,7 +118,7 @@ namespace SharpPulsar.Test
             }
 
 			Assert.Equal(sentMessages, receivedMessages);
-			var nu = consumer.Receive(TimeSpan.FromMilliseconds(100));
+			var nu = consumer.Receive();
 			// There should be no more messages
 			Assert.Null(nu);
 		}

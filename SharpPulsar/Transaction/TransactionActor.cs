@@ -4,6 +4,7 @@ using Akka.Util.Internal;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using System.Collections.Concurrent;
@@ -186,15 +187,20 @@ namespace SharpPulsar.Transaction
 			if (CheckIfOpen())
 			{
                 if (!_registerSubscriptionMap.TryGetValue(topic, out var subs))
+                {
                     _registerSubscriptionMap.Add(topic, new List<string> { subscription });
+                    Sender.Tell(new AskResponse(true));
+                }
                 else if(!subs.Contains(subscription))
                 {
                     _registerSubscriptionMap[topic].Add(subscription);
                     // we need to issue the request to TC to register the acked topic
-                    _tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription));
+                    _tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription), Sender);
                 }
 			}
-		}
+            else
+                Sender.Tell(new AskResponse(false));
+        }
 
 		private void RegisterCumulativeAckConsumer(IActorRef consumer)
 		{

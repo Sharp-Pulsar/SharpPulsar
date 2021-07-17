@@ -95,7 +95,7 @@ namespace SharpPulsar.Test.Api
             consumerBuilder.Topic(topic);
             consumerBuilder.SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = _client.NewConsumer(consumerBuilder);
-            var message = consumer.Receive(TimeSpan.FromSeconds(30));
+            var message = consumer.Receive();
 
             Assert.Equal(byteKey, message.KeyBytes);
 

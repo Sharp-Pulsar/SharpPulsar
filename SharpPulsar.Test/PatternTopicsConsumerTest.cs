@@ -84,18 +84,18 @@ namespace SharpPulsar.Test
 				.PatternAutoDiscoveryPeriod(2)
 				.SubscriptionName(subscriptionName)
 				.SubscriptionType(SubType.Shared)
-				.AckTimeout(2000, TimeUnit.MILLISECONDS));
+				.AckTimeout(TimeSpan.FromMilliseconds(2000)));
 
 			// 6. should receive all the message
 			var messageSet = 0;
-			var message = consumer.Receive(TimeSpan.FromSeconds(10));
+			var message = consumer.Receive();
 			do
 			{
 				var m = (TopicMessage<byte[]>)message;
 				messageSet++;
 				consumer.Acknowledge(message);
 				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.TopicName}");
-				message = consumer.Receive(TimeSpan.FromSeconds(20));
+				message = consumer.Receive();
 			} while(message != null);
 
 			consumer.Unsubscribe();

@@ -52,7 +52,7 @@ namespace SharpPulsar.Test
 			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topicName);
 			builder.SubscriptionName("my-subscriber-name");
-			builder.AckTimeout(20000, TimeUnit.MILLISECONDS);
+			builder.AckTimeout(TimeSpan.FromMilliseconds(20000));
 			builder.ForceTopicCreation(true);
 			builder.AcknowledgmentGroupTime(0);
 			var consumer = _client.NewConsumer(builder);

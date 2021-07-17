@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -110,7 +111,7 @@ namespace SharpPulsar.Test.EventSource
 			Assert.True(receivedCount > 0);
 		}
 		[Fact]
-		public virtual void ReaderSourceTest()
+		public virtual async Task ReaderSourceTest()
 		{
 			var topic = $"reader-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
@@ -123,23 +124,17 @@ namespace SharpPulsar.Test.EventSource
 				.CurrentEvents();
 
 			var receivedCount = 0;
-			for (var i = 0; i < 50; i++)
-			{
-				var response = reader.CurrentEvents(); 
-				foreach(var data in response)
-                {
-					i++;
-					receivedCount++; 
-					_output.WriteLine(JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
-
-				}
-				if (receivedCount == 0)
-					Thread.Sleep(TimeSpan.FromSeconds(10));
-			}
-			Assert.True(receivedCount > 0);
+            await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
+            {
+                receivedCount++;
+                _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
+                if (receivedCount == 0)
+                    Thread.Sleep(TimeSpan.FromSeconds(10));
+            }
+            Assert.True(receivedCount > 0);
 		}
 		[Fact]
-		public virtual void ReaderSourceTaggedTest()
+		public virtual async Task ReaderSourceTaggedTest()
 		{
 			var topic = $"reader-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
@@ -152,19 +147,13 @@ namespace SharpPulsar.Test.EventSource
 				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
 
 			var receivedCount = 0;
-			for (var i = 0; i < 50; i++)
-			{
-				var response = reader.CurrentEvents();
-				foreach(var data in response)
-                {
-					i++;
-					receivedCount++; 
-					_output.WriteLine(JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
-
-				}
-				if (receivedCount == 0)
-					Thread.Sleep(TimeSpan.FromSeconds(10));
-			}
+            await foreach(var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
+            {
+                receivedCount++;
+                _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
+                if (receivedCount == 0)
+                    Thread.Sleep(TimeSpan.FromSeconds(10));
+            }  
 			Assert.True(receivedCount > 0);
 		}
 		private ISet<string> PublishMessages(string topic, int count)

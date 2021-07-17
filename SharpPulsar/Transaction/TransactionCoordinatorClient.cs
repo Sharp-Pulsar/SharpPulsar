@@ -7,6 +7,7 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Utility;
@@ -222,8 +223,12 @@ namespace SharpPulsar.Transaction
 		{
 			if (!_handlerMap.TryGetValue(subToTxn.TxnID.MostSigBits, out var handler))
 			{
-				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(subToTxn.TxnID.MostSigBits).ToString());
-			}
+                var error = new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(subToTxn.TxnID.MostSigBits);
+
+                _log.Error(error.ToString());
+
+                Sender.Tell(new AskResponse(new PulsarClientException(error.ToString())));
+            }
             else
             {
 				var sub = new Protocol.Proto.Subscription
@@ -231,7 +236,7 @@ namespace SharpPulsar.Transaction
 					Topic = subToTxn.Topic,
 					subscription = subToTxn.Subscription,
 				};
-				handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Protocol.Proto.Subscription> { sub }));
+				handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Protocol.Proto.Subscription> { sub }), Sender);
 
 			}
 		}

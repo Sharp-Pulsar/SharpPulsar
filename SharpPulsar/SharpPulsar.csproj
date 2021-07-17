@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Batch\BatchBitSet.cs" />
     <Compile Remove="Presto\TrinoHeaders.cs" />
     <Compile Remove="Schemas\GenerateSchema.cs" />
     <Compile Remove="Presto\FixJsonDataUtils.cs" />

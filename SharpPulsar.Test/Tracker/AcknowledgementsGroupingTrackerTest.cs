@@ -62,14 +62,14 @@ namespace SharpPulsar.Test.Tracker
 			var msg6 = new MessageId(5, 6, 0);
 			var isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
-			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>()));
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
-			tracker.Tell(new AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>()));
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
@@ -101,7 +101,7 @@ namespace SharpPulsar.Test.Tracker
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
-			tracker.Tell(new AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>()));
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 			
@@ -142,7 +142,7 @@ namespace SharpPulsar.Test.Tracker
 			Assert.False(isDuplicate);
 
 
-			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>()));
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 			
@@ -150,7 +150,7 @@ namespace SharpPulsar.Test.Tracker
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
-			tracker.Tell(new AddAcknowledgment(msg2, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg2, CommandAck.AckType.Individual, new Dictionary<string, long>()));
 			// Since we were connected, the ack went out immediately
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
@@ -178,14 +178,14 @@ namespace SharpPulsar.Test.Tracker
 			var isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
-			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg1, CommandAck.AckType.Individual, new Dictionary<string, long>()));
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg2)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
-			tracker.Tell(new AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg5, CommandAck.AckType.Cumulative, new Dictionary<string, long>()));
 
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg1)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
@@ -218,7 +218,7 @@ namespace SharpPulsar.Test.Tracker
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.False(isDuplicate);
 
-			tracker.Tell(new AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>(), null));
+			tracker.Tell(new AddAcknowledgment(msg6, CommandAck.AckType.Individual, new Dictionary<string, long>()));
 			isDuplicate = tracker.Ask<bool>(new IsDuplicate(msg6)).GetAwaiter().GetResult();
 			Assert.True(isDuplicate);
 

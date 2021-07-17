@@ -17,6 +17,7 @@ using SharpPulsar.Messages.Client;
 using System.Threading.Tasks;
 using System.Buffers;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
+using SharpPulsar.Messages.Consumer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -339,19 +340,23 @@ namespace SharpPulsar
 				{
 					_log.Debug("Add subscription to txn timeout for request {}.", response.RequestId);
 				}
-				return;
+                _replyTo.Tell(new AskResponse(new PulsarClientException("Add subscription to txn timeout")));
+                return;
 			}
-			if(response?.Error != null)
+			if(response?.Error != ServerError.UnknownError)
 			{
 				if(_log.IsDebugEnabled)
 				{
 					_log.Debug("Add subscription to txn success for request {}.", response.RequestId);
 				}
-			}
+
+                _replyTo.Tell(new AskResponse(true));
+            }
 			else
 			{
 				_log.Error("Add subscription to txn failed for request {} error {}.", response.RequestId, response.Error);
-			}
+                _replyTo.Tell(new AskResponse(new PulsarClientException(response.Error.ToString())));
+            }
 		}
 
 		private void Commit(object[] args)
