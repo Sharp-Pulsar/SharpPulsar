@@ -1,4 +1,5 @@
-﻿using SharpPulsar.Exceptions;
+﻿using System.Diagnostics.CodeAnalysis;
+using SharpPulsar.Exceptions;
 
 namespace SharpPulsar.Messages.Consumer
 {
@@ -28,6 +29,7 @@ namespace SharpPulsar.Messages.Consumer
                 Failed = false;
             else
                 Failed = true;
+
             Exception = exception;
         }
         public T ConvertTo<T>()

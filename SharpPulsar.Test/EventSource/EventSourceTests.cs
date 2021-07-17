@@ -128,7 +128,7 @@ namespace SharpPulsar.Test.EventSource
 			var receivedCount = 0;
 			for (var i = 0; i < 50; i++)
 			{
-				var response = reader.CurrentEvents();
+				var response = reader.CurrentEvents(); 
 				foreach(var data in response)
                 {
 					i++;
