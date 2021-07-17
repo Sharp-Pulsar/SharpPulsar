@@ -349,6 +349,10 @@ namespace SharpPulsar
                     _possibleSendToDeadLetterTopicMessages.Remove(s.MessageId);
                 }
             });
+            Receive<RemoveMessagesTill>(s =>
+            {
+                _unAckedMessageTracker.Tell(s, Sender);
+            });
             Receive<UnAckedMessageTrackerRemove>(s =>
             {
                 _unAckedMessageTracker.Tell(new Remove(s.MessageId));
@@ -396,13 +400,18 @@ namespace SharpPulsar
 							UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
 						continue;
 					}
+                    else if(cmd == UnAckedCommand.GetRemoved && UnAckedChunckedMessageIdSequenceMap.TryGetValue(msgid, out var removed))
+                    {
+                        UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
+                        ids.AddRange(removed);
+                    }
 					if(cmd == UnAckedCommand.Get && UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
                     {
 						var mIds = UnAckedChunckedMessageIdSequenceMap[msgid];
 						ids.AddRange(mIds);
 					}
 				}
-				if(cmd == UnAckedCommand.Get)
+				if(cmd == UnAckedCommand.Get || cmd == UnAckedCommand.GetRemoved)
 					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(ids.ToArray()));
 			});
 
@@ -1069,87 +1078,12 @@ namespace SharpPulsar
 			}
 			else
 			{
-				if (messageId is BatchMessageId)
-				{
-					var batchMessageId = (BatchMessageId)messageId;
-					if (ackType == AckType.Cumulative)
-					{
-						SendAcknowledge(messageId, ackType, properties, null);
-						return;
-					}
-					if (MarkAckForBatchMessage(batchMessageId, ackType, properties, null))
-					{
-						// all messages in batch have been acked so broker can be acked via sendAcknowledge()
-						if (_log.IsDebugEnabled)
-						{
-							_log.Debug($"[{Subscription}] [{ConsumerName}] acknowledging message - {messageId}, acktype {ackType}");
-						}
-					}
-					else
-					{
-						if (Conf.BatchIndexAckEnabled)
-						{
-							_acknowledgmentsGroupingTracker.Tell(new AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties, null));
-						}
-						return;
-					}
-				}
-				SendAcknowledge(messageId, ackType, properties, null);
-			}
+                _acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(messageId, ackType, properties));
+            }
 		}
 		private void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
-			if(AckType.Cumulative.Equals(ackType))
-			{
-				foreach(var messageId in messageIdList)
-                {
-					DoAcknowledge(messageId, ackType, properties, txn);
-				}
-			}
-            else
-			{
-				if (State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
-				{
-					Stats.IncrementNumAcksFailed();
-					var exception = new PulsarClientException("Consumer not ready. State: " + State);
-					foreach (var messageId in messageIdList)
-					{
-						OnAcknowledge(messageId, exception);
-					}
-				}
-                else
-				{
-					IList<MessageId> nonBatchMessageIds = new List<MessageId>();
-					foreach (MessageId messageId in messageIdList)
-					{
-						MessageId messageIdImpl;
-						var marked = MarkAckForBatchMessage((BatchMessageId)messageId, ackType, properties, txn);
-						if (messageId is BatchMessageId && !marked)
-						{
-							var batchMessageId = (BatchMessageId)messageId;
-							messageIdImpl = new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex);
-							_acknowledgmentsGroupingTracker.Tell(new AddBatchIndexAcknowledgment(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, ackType, properties, txn));
-							Stats.IncrementNumAcksSent(batchMessageId.BatchSize);
-						}
-						else
-						{
-							messageIdImpl = (MessageId)messageId;
-							Stats.IncrementNumAcksSent(1);
-							nonBatchMessageIds.Add(messageIdImpl);
-						}
-						_unAckedMessageTracker.Tell(new Remove(messageIdImpl));
-						if (_possibleSendToDeadLetterTopicMessages != null)
-						{
-							_possibleSendToDeadLetterTopicMessages.Remove(messageIdImpl);
-						}
-						OnAcknowledge(messageId, null);
-					}
-					if (nonBatchMessageIds.Count > 0)
-					{
-						_acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(nonBatchMessageIds, ackType, properties));
-					}
-				}
-			}
+            _acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(messageIdList, ackType, properties));
 		}
         private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime)
 		{
@@ -1336,7 +1270,7 @@ namespace SharpPulsar
 				_stats.IncrementNumAcksSent(removed);
 			}
 
-			_acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(msgId, ackType, properties, txnImpl));
+			_acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(msgId, ackType, properties));
 
 			// Consumer acknowledgment operation immediately succeeds. In any case, if we're not able to send ack to broker,
 			// the messages will be re-delivered

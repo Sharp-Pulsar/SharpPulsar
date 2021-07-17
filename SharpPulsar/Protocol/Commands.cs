@@ -567,7 +567,7 @@ namespace SharpPulsar.Protocol
 			
 			
 		}
-		public static ReadOnlySequence<byte> NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, BitSet bitSet)> entries)
+		public static ReadOnlySequence<byte> NewMultiTransactionMessageAck(long consumerId, TxnID txnID, IList<(long ledger, long entry, long[] bitSet)> entries)
 		{
             var ackBuilder = new CommandAck
             {
@@ -578,7 +578,7 @@ namespace SharpPulsar.Protocol
             };
             return NewMultiMessageAckCommon(ackBuilder, entries);
 		}
-		public static ReadOnlySequence<byte> NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, BitSet bitSet)> entries)
+		public static ReadOnlySequence<byte> NewMultiMessageAckCommon(CommandAck ackBuilder, IList<(long ledger, long entry, long[] bitSet)> entries)
 		{
 			int entriesCount = entries.Count;
 			for (int i = 0; i < entriesCount; i++)
@@ -593,7 +593,7 @@ namespace SharpPulsar.Protocol
                 };
                 if (bitSet != null)
 				{
-					messageIdDataBuilder.AckSets = bitSet.ToLongArray();
+					messageIdDataBuilder.AckSets = bitSet;
 				}
 				var messageIdData = messageIdDataBuilder;
 				ackBuilder.MessageIds.Add(messageIdData);
@@ -604,7 +604,7 @@ namespace SharpPulsar.Protocol
 			return Serializer.Serialize(ack.ToBaseCommand());
 			
 		}
-        public static ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, BitSet Sets)> entries, long requestId)
+        public static ReadOnlySequence<byte> NewMultiMessageAck(long consumerId, IList<(long LedgerId, long EntryId, long[] Sets)> entries, long requestId)
         {
             var ackBuilder = new CommandAck
             {
