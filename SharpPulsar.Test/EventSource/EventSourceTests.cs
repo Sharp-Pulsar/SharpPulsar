@@ -7,11 +7,8 @@ using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
