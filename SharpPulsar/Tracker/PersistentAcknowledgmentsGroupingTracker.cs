@@ -592,52 +592,7 @@ namespace SharpPulsar.Tracker
                 _scheduledTask.Cancel(true);
             }
 		}
-        private async ValueTask NewAckCommand(long consumerId, IMessageId msgId, BitSet lastCumulativeAckSet, AckType ackType, ValidationError? validationError, IDictionary<string, long> map, bool flush, long txnidMostBits, long txnidLeastBits)
-        {
-            var cnx = await Cnx();
-            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }));
-            var chunkMsgIds = result.MessageIds;
-            if (chunkMsgIds?.Length > 0 && txnidLeastBits < 0 && txnidMostBits < 0)
-            {
-
-                var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
-                var protocolVersion = version.Version;
-                if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion) && ackType != AckType.Cumulative)
-                {
-                    IList<(long ledger, long entry, BitSet Bits)> entriesToAck = new List<(long ledger, long entry, BitSet Bits)>(chunkMsgIds.Length);
-                    foreach (var cMsgId in chunkMsgIds)
-                    {
-                        if (cMsgId != null && chunkMsgIds.Length > 1)
-                        {
-                            entriesToAck.Add((cMsgId.LedgerId, cMsgId.EntryId, null));
-                        }
-                    }
-                    var cmd = Commands.NewMultiMessageAck(_consumerId, entriesToAck);
-                    cnx.Tell(new Payload(cmd, -1, "NewMultiMessageAck"));
-                }
-                else
-                {
-                    foreach (var cMsgId in chunkMsgIds)
-                    {
-                        var cmd = Commands.NewAck(consumerId, cMsgId.LedgerId, cMsgId.EntryId, lastCumulativeAckSet.ToLongArray(), ackType, validationError, map);
-                        cnx.Tell(new Payload(cmd, -1, "NewAck"));
-                    }
-                }
-                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { msgId }));
-            }
-            else
-            {
-                var sets = new long[] { };
-
-                if (lastCumulativeAckSet != null)
-                    sets = lastCumulativeAckSet.ToLongArray();
-
-                var mid = (MessageId)msgId;
-
-                var cmd = Commands.NewAck(consumerId, mid.LedgerId, mid.EntryId, sets, ackType, validationError, map, txnidLeastBits, txnidMostBits, -1);
-                cnx.Tell(new Payload(cmd, -1, "NewAck"));
-            }
-        }
+        
         private async ValueTask NewImmediateAckAndFlush(long consumerId, MessageId msgId, long[] bitSet, AckType ackType, IDictionary<string, long> map, IActorRef cnx)
         {
             var response = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.GetRemoved, new List<IMessageId> { msgId})).ConfigureAwait(false);
