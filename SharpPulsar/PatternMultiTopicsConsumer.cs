@@ -3,11 +3,9 @@ using Akka.Util.Internal;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
-using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,7 +44,7 @@ namespace SharpPulsar
 		private IActorContext _context;
 		private IActorRef _self;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<bool> taskCompletion) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration)
 		{
 			_self = Self;
 			_lookup = lookup;
@@ -58,15 +56,31 @@ namespace SharpPulsar
 				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
 			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
+            TopicReChecker(taskCompletion);
+        }
+        public static Props Prop(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<bool> taskCompletion)
+        {
+            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, interceptors, clientConfiguration, taskCompletion));
+        }
+        private void TopicReChecker(TaskCompletionSource<bool> taskCompletion)
+        {
+            try
+            {
+                TopicReCheckerAsync().GetAwaiter();
+                _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReCheckerAsync(); });
+                taskCompletion.SetResult(true);
+            }
+            catch(Exception ex)
+            {
+                taskCompletion.SetException(ex);
+            }
+        }
 
-			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), async()=> { await TopicReChecker(); });
-		}
-
-		private async ValueTask TopicReChecker()
+        private async ValueTask TopicReCheckerAsync()
 		{
             try
             {
-				var response = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode));
+				var response = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode)).ConfigureAwait(false);
 				var topicsFound = response.Topics;
 				var topics = _context.GetChildren().ToList();
 				if (_log.IsDebugEnabled)
@@ -74,9 +88,9 @@ namespace SharpPulsar
 					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
 					TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
 				}
-				IList<string> newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
-				IList<string> oldTopics = Topics;
-				OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
+				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
+				var oldTopics = Topics;
+				await OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics)).ConfigureAwait(false);
 				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
 			}
 			catch(Exception ex)
@@ -85,7 +99,7 @@ namespace SharpPulsar
             }
             finally
             {
-				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
+				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReCheckerAsync(); });
 			}
 			if (_recheckPatternTimeout.IsCancellationRequested)
 			{
@@ -114,7 +128,7 @@ namespace SharpPulsar
             }
 		}
 
-		private void  OnTopicsAdded(ICollection<string> addedTopics)
+		private async ValueTask  OnTopicsAdded(ICollection<string> addedTopics)
 		{
 			if (addedTopics.Count == 0)
 			{				
@@ -122,7 +136,9 @@ namespace SharpPulsar
 			}
 			foreach(var t in addedTopics)
             {
-				_self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
+				var response = await _self.Ask<AskResponse>(new SubscribeAndCreateTopicIfDoesNotExist(t, false)).ConfigureAwait(false);
+                if (response.Failed)
+                    _log.Error(response.Exception.ToString());
             }
 		}
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
@@ -140,7 +156,7 @@ namespace SharpPulsar
 		// get topics, which are contained in list1, and not in list2
 		internal IList<string> TopicsListsMinus(IList<string> list1, IList<string> list2)
 		{
-			HashSet<string> s1 = new HashSet<string>(list1);
+			var s1 = new HashSet<string>(list1);
             foreach (var l in list2)
             {
 				s1.Remove(l);

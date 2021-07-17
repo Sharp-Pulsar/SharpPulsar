@@ -33,18 +33,6 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the topic which producer is publishing to </returns>
 		string Topic {get;}
 		ValueTask<string> TopicAsync();
-        /// <summary>
-        /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
-        /// to get message ids received from the server
-        /// </summary>
-        /// <returns>List<AckReceived></returns>
-		List<AckReceived> GetReceivedAcks();
-        /// <summary>
-        /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
-        /// to get message ids received from the server
-        /// </summary>
-        /// <returns>List<AckReceived></returns>
-		ValueTask<List<AckReceived>> GetReceivedAcksAsync();
 
 		/// <returns> the producer name which could have been assigned by the system or specified by the client </returns>
 		string ProducerName {get;}

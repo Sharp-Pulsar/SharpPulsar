@@ -89,8 +89,6 @@ namespace SharpPulsar
 		private readonly int _partitionIndex;
 		private ISchemaInfo _schemaInfo;
 
-        private HashSet<AckReceived> _receivedMessageIds;
-
 		private readonly IProducerStatsRecorder _stats;
 
 		private readonly CompressionCodec _compressor;
@@ -122,13 +120,13 @@ namespace SharpPulsar
 
         public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration)
 		{
-            _receivedMessageIds = new HashSet<AckReceived>();
 			_self = Self;
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
 			_log = Context.GetLogger();
 			_producerId = producerid;
 			_producerName = conf.ProducerName;
+            
 			if(!string.IsNullOrWhiteSpace(_producerName))
 			{
 				_userProvidedProducerName = true;
@@ -274,12 +272,6 @@ namespace SharpPulsar
 			Receive<AckReceived>(a => 
 			{				
 				AckReceived(a);
-			});
-            Receive<GetReceivedMessageIds>(_ => 
-			{
-                var ids = _receivedMessageIds;
-                Sender.Tell(new GetReceivedMessageIdsResponse(ids));
-                _receivedMessageIds.Clear();
 			});
 			Receive<RunSendTimeout>( _ => {
 				FailTimedoutMessages();
@@ -703,7 +695,7 @@ namespace SharpPulsar
 			}
 			catch (Exception t)
 			{
-                Sender.Tell(t);
+                Sender.Tell(PulsarClientException.Unwrap(t));
 				SendComplete(msg, DateTimeHelper.CurrentUnixTimeMillis(), -1, -1, -1, t);
 			}
 		}
@@ -1285,14 +1277,18 @@ namespace SharpPulsar
 
             _lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(op.Msg));
             op.Msg.SetMessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
-            if (_watchedActors.TryGetValue(op.Sender.Path.Name, out var sender))
-            {
-                _watchedActors.Remove(op.Sender.Path.Name);
-                Context.Unwatch(sender);
-                sender.Tell(new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex));
-            }
+            if(Conf.BatchingEnabled)
+                Conf.AckReceivedListerner(ackReceived);
             else
-                _receivedMessageIds.Add(ackReceived);
+            {
+                if (_watchedActors.TryGetValue(op.Sender.Path.Name, out var sender))
+                {
+                    _watchedActors.Remove(op.Sender.Path.Name);
+                    Context.Unwatch(sender);
+                    sender.Tell(new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex));
+                }
+            }
+                
 
             try
             {
@@ -1478,7 +1474,8 @@ namespace SharpPulsar
 			{
 				_log.Warning($"[{Topic}] [{_producerName}] error while closing out batch -- {t}");
 				SendComplete(op.Msg, op.CreatedAt, op.FirstSentAt, op.LastSentAt, op.RetryCount, new PulsarClientException(t.ToString(), op.SequenceId));
-			}
+                Sender.Tell(PulsarClientException.Unwrap(t));
+            }
 		}
 		private void SendComplete(Message<T> interceptorMessage, long createdAt, long firstSentAt, long lastSentAt, long retryCount, Exception e)
 		{
@@ -1784,10 +1781,6 @@ namespace SharpPulsar
 	internal sealed class RunSendTimeout
 	{
 		internal static RunSendTimeout Instance = new RunSendTimeout();
-    }
-	internal sealed class GetReceivedMessageIds
-	{
-		internal static GetReceivedMessageIds Instance = new GetReceivedMessageIds();
     }
 	internal sealed class GetReceivedMessageIdsResponse
 	{

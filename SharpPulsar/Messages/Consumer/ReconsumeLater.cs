@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using static SharpPulsar.Protocol.Proto.CommandAck;
@@ -25,7 +26,8 @@ namespace SharpPulsar.Messages.Consumer
             DelayTime = delayTime;
             AckType = ackType;
         }
-    } public sealed class ReconsumeLaterMessages<T>
+    } 
+    public sealed class ReconsumeLaterMessages<T>
     {
         /// <summary>
         /// Fulfils ReconsumeLater<T1>(IMessages<T1> messages, long delayTime, TimeUnit unit)
@@ -35,8 +37,8 @@ namespace SharpPulsar.Messages.Consumer
         /// the front checks to see if it is null to know it was successfully
         /// </summary>
         public IMessages<T> Messages { get; }
-        public long DelayTime { get; }
-        public ReconsumeLaterMessages(IMessages<T> messages, long delayTime)
+        public TimeSpan DelayTime { get; }
+        public ReconsumeLaterMessages(IMessages<T> messages, TimeSpan delayTime)
         {
             Messages = messages;
             DelayTime = delayTime;
@@ -52,8 +54,8 @@ namespace SharpPulsar.Messages.Consumer
         /// the front checks to see if it is null to know it was successfully
         /// </summary>
         public IMessage<T> Message { get; }
-        public long DelayTime { get; }
-        public ReconsumeLaterMessage(IMessage<T> message, long delayTime)
+        public TimeSpan DelayTime { get; }
+        public ReconsumeLaterMessage(IMessage<T> message, TimeSpan delayTime)
         {
             Message = message;
             DelayTime = delayTime;

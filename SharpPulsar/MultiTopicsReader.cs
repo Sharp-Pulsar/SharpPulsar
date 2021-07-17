@@ -9,6 +9,7 @@ using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,13 +31,15 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    internal class MultiTopicsReader<T> : ReceiveActor
+    internal class MultiTopicsReader<T> : ReceiveActor, IWithUnboundedStash
 	{
 
 		private readonly IActorRef _consumer;
 		private readonly IActorRef _generator;
 
-		public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
+        public IStash Stash { get; set; }
+
+        public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData)
 		{
 			_generator = idGenerator;
 			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -79,34 +82,65 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue)));
+			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData)));
 
-			Receive<HasReachedEndOfTopic>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<AcknowledgeCumulativeMessage<T>>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<MessageProcessed<T>>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<HasMessageAvailable>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<GetTopic>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<IsConnected>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<SeekMessageId>(m => {
-				_consumer.Tell(m);
-			});
-			Receive<SeekTimestamp>(m => {
-				_consumer.Tell(m);
-			});
+            ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async subs => 
+            {
+                await SubscribeAndCreateTopics(subs);
+            });
+            ReceiveAsync<Subscribe>(async sub => 
+            {
+                await SubscribeToTopic(sub);
+            });
+            ReceiveAny(_ => Stash.Stash());
 		}
-		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
+        private async ValueTask SubscribeAndCreateTopics(SubscribeAndCreateTopicsIfDoesNotExist subs)
+        {
+            var response = await _consumer.Ask<AskResponse>(subs).ConfigureAwait(false);
+            Sender.Tell(response);
+            if (!response.Failed)
+            {
+                Become(Ready);
+            }
+        }
+        private async ValueTask SubscribeToTopic(Subscribe sub)
+        {
+            var response = await _consumer.Ask<AskResponse>(sub).ConfigureAwait(false);
+            Sender.Tell(response);
+            if (!response.Failed)
+            {
+                Become(Ready);
+            }
+        }
+        private void Ready()
+        {
+            Receive<HasReachedEndOfTopic>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<AcknowledgeCumulativeMessage<T>>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<MessageProcessed<T>>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<HasMessageAvailable>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<GetTopic>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<IsConnected>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<SeekMessageId>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<SeekTimestamp>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Stash?.UnstashAll();
+        }
+        private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;
 
