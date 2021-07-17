@@ -295,7 +295,6 @@ namespace SharpPulsar.Tracker
     public enum UnAckedCommand
     {
         Get,
-        Remove,
-        GetRemoved
+        Remove
     }
 }

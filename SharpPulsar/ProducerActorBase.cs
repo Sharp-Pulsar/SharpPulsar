@@ -52,15 +52,7 @@ namespace SharpPulsar
 			ClientConfiguration = configurationData;
 			Client = client;
 			_topic = topic;
-
-            if (conf.BatchingEnabled && conf.AckReceivedListerner == null)
-            {
-                conf.AckReceivedListerner = (acked) =>
-                {
-                    Context.System.Log.Info($"AckReceived(ledger-id:{acked.LedgerId}, entery-id:{acked.EntryId}, sequence-id:{acked.SequenceId}, highest-sequence-id:{acked.HighestSequenceId})");
-                };
-            }
-            Conf = conf;
+			Conf = conf;
 			Schema = schema;
 			Interceptors = interceptors;
 			SchemaCache = new Dictionary<SchemaHash, byte[]>();

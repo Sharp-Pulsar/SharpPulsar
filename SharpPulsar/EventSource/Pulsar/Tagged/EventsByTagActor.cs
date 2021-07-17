@@ -5,8 +5,6 @@ using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
-using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
@@ -19,9 +17,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
-        private readonly BufferBlock<IMessage<T>> _buffer;
+        private readonly ConsumerQueueCollections<T> _buffer;
         private readonly User.Admin _admin;
-        public EventsByTagActor(EventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
+        public EventsByTagActor(EventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
             _admin = new User.Admin(message.AdminUrl, httpClient);
             _message = message;
@@ -31,22 +29,10 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _cnxPool = cnxPool;
             _lookup = lookup;
             _generator = generator;
-            _buffer = new BufferBlock<IMessage<T>>();
+            _buffer = queue;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
             Setup(partitions.Body, topic);
-
-            Receive<ReceivedMessage<T>>(m =>
-            {
-                _buffer.Post(m.Message);
-            });
-            Receive<Messages.Receive>(_ =>
-            {
-                if (_buffer.TryReceive(out var message))
-                    Sender.Tell(new AskResponse(message));
-                else
-                    Sender.Tell(new AskResponse(null));
-            });
         }
 
         private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
@@ -60,7 +46,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int)(msgId.End.Index - msgId.Start.Index));
-                    Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema));
+                    Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema, _buffer));
 
                 }
             }
@@ -68,7 +54,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             {
                 var msgId = GetMessageIds(TopicName.Get(topic));
                 var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, (int)(msgId.End.Index - msgId.Start.Index));
-                Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema));
+                Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.Tag, msgId.Start.Index, _schema, _buffer));
             }
         }
         private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, EventMessageId start, int permits)
@@ -88,9 +74,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(EventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
+        public static Props Prop(EventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
-            return Props.Create(() => new EventsByTagActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema));
+            return Props.Create(() => new EventsByTagActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema, queue));
         }
     }
 }

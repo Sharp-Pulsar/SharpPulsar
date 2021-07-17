@@ -30,9 +30,9 @@ namespace Tutorials
             var pulsarClient = pulsarSystem.NewClient();
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 Transaction(pulsarClient);
-            else if (cmd.Equals("exc", StringComparison.OrdinalIgnoreCase))
+            if (cmd.Equals("exc", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceConsumer(pulsarClient);
-            else if (cmd.Equals("exc2", StringComparison.OrdinalIgnoreCase))
+            if (cmd.Equals("exc2", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceNoneConsumer(pulsarClient);
             else
                 ProduceConsumer(pulsarClient);
@@ -61,7 +61,7 @@ namespace Tutorials
 
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);
@@ -105,7 +105,7 @@ namespace Tutorials
 
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);
@@ -139,7 +139,7 @@ namespace Tutorials
 
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(3));
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);
@@ -176,7 +176,7 @@ namespace Tutorials
             //Should not consume messages as the transaction is not committed yet
             for (var i = 0; i < 10; ++i)
             {
-                var message = (Message<byte[]>)consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);
@@ -192,7 +192,7 @@ namespace Tutorials
 
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive(TimeSpan.FromSeconds(1));
                 if (message != null)
                 {
                     var payload = pool.Rent((int)message.Data.Length);

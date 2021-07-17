@@ -156,28 +156,27 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder<T> AckTimeout(TimeSpan timeSpan)
+		public ConsumerConfigBuilder<T> AckTimeout(long ackTimeoutMs, TimeUnit timeUnit)
 		{
-			var toms = timeSpan.TotalMilliseconds;
+			var toms = timeUnit.ToMilliseconds(ackTimeoutMs);
 			Condition.CheckArgument(toms == 0 ||  toms >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
-			_conf.AckTimeoutMillis = (long)toms;
+			_conf.AckTimeoutMillis = toms;
             return this;
 		}
 
-		public ConsumerConfigBuilder<T> AckTimeoutTickTime(TimeSpan timeSpan)
+		public ConsumerConfigBuilder<T> AckTimeoutTickTime(long tickTimeMs, TimeUnit timeUnit)
 		{
-			var toms = timeSpan.TotalMilliseconds;
+			var toms = timeUnit.ToMilliseconds(tickTimeMs);
 
-            Condition.CheckArgument(toms < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
-			_conf.TickDurationMillis = (long)toms;
+			Condition.CheckArgument(toms < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
+			_conf.TickDurationMillis = toms;
             return this;
 		}
 
-		public ConsumerConfigBuilder<T> NegativeAckRedeliveryDelay(TimeSpan timeSpan)
+		public ConsumerConfigBuilder<T> NegativeAckRedeliveryDelay(long redeliveryDelayMs, TimeUnit timeUnit)
         {
-            var redeliveryDelayMs = (long)timeSpan.TotalMilliseconds;
             Condition.CheckArgument(redeliveryDelayMs >= 0, "redeliveryDelay needs to be >= 0");
-            _conf.NegativeAckRedeliveryDelayMs = redeliveryDelayMs;
+            _conf.NegativeAckRedeliveryDelayMs = timeUnit.ToMilliseconds(redeliveryDelayMs);
             return this;
 		}
 
@@ -293,11 +292,6 @@ namespace SharpPulsar.Configuration
 			_conf.SubscriptionInitialPosition = subscriptionInitialPosition;
             return this;
 		}
-		public ConsumerConfigBuilder<T> IsAckReceiptEnabled(bool isAckReceiptEnabled)
-		{
-            _conf.AckReceiptEnabled = isAckReceiptEnabled;
-            return this;
-		}
 
 		public ConsumerConfigBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode mode)
 		{
@@ -349,14 +343,14 @@ namespace SharpPulsar.Configuration
 			return this;
 		}
 
-		public ConsumerConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessage(TimeSpan timeSpan)
+		public ConsumerConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessage(long duration, TimeUnit unit)
 		{
-			_conf.ExpireTimeOfIncompleteChunkedMessageMillis = (long)timeSpan.TotalMilliseconds;
+			_conf.ExpireTimeOfIncompleteChunkedMessageMillis = unit.ToMilliseconds(duration);
 			return null;
 		}
-		public ConsumerConfigBuilder<T> AutoUpdatePartitionsInterval(TimeSpan timeSpan)
+		public ConsumerConfigBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeUnit unit)
 		{
-			_conf.SetAutoUpdatePartitionsIntervalSeconds((int)timeSpan.TotalSeconds);
+			_conf.SetAutoUpdatePartitionsIntervalSeconds(interval, unit);
 			return this;
 		}
 		public ConsumerConfigBuilder<T> AutoUpdatePartitions(bool autoUpdate)

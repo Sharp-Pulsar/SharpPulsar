@@ -37,8 +37,6 @@ namespace SharpPulsar.Configuration
 		public int BatchingMaxBytes { get; set; } = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
         public bool BatchingEnabled { get; set; } = false;
 		public IMessageCrypto MessageCrypto { get; set; }
-
-        public Action<Messages.AckReceived> AckReceivedListerner { get; set; }
 		public IProducerEventListener ProducerEventListener { get; set; }
         public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;

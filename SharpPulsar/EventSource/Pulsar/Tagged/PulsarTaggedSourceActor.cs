@@ -30,8 +30,10 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
         private long _sequenceId;
-        public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema)
+        private BufferBlock<IMessage<T>> _buffer;
+        public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
+            _buffer = queue.IncomingMessages;
             _sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
@@ -81,8 +83,8 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
-            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client)));
-            _child.Tell(Connect.Instance);
+            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client, queue)));
+
             Receive<ICumulative>(m => {
                 _child.Tell(m);
             });
@@ -109,7 +111,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
                     if (!string.IsNullOrWhiteSpace(tagged.Value))
                     {
-                        Context.Parent.Tell(c);
+                        _buffer.Post(c);
                     }
                     _sequenceId++;
                 }
@@ -121,13 +123,13 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         }
         private void LiveConsume()
         {
-            Receive<ReceivedMessage<T>>(c =>
+            Receive<IMessage<T>>(c =>
             {
-                var props = c.Message.Properties;
+                var props = c.Properties;
                 var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
                 if (!string.IsNullOrWhiteSpace(tagged.Value))
                 {
-                    Context.Parent.Tell(c);
+                    _buffer.Post(c);
                 }
 
                 _sequenceId++;
@@ -166,9 +168,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema)
+        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema, ConsumerQueueCollections<T> queue)
         {
-            return Props.Create(() => new PulsarTaggedSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, tag, fromSequenceId, schema));
+            return Props.Create(() => new PulsarTaggedSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, tag, fromSequenceId, schema, queue));
         }
         public IStash Stash { get; set; }
     }

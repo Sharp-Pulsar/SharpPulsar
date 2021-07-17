@@ -1,11 +1,13 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User
@@ -94,5 +96,24 @@ namespace SharpPulsar.User
             return await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
+        /// to get message ids received from the server
+        /// </summary>
+        /// <returns>List<AckReceived></returns>
+        public List<AckReceived> GetReceivedAcks()
+        {
+            return GetReceivedAcksAsync().GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// If producing messages with batching enable, use GetReceivedMessageIdsFromBatchedMessages
+        /// to get message ids received from the server
+        /// </summary>
+        /// <returns>List<AckReceived></returns>
+        public async ValueTask<List<AckReceived>> GetReceivedAcksAsync()
+        {
+            var ids = await _producerActor.Ask<GetReceivedMessageIdsResponse>(GetReceivedMessageIds.Instance).ConfigureAwait(false);
+            return ids.MessageIds;
+        }
     }
 }

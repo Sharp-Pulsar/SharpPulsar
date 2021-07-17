@@ -104,9 +104,6 @@ namespace SharpPulsar
 					case "NewLookup":
 						NewLookup(p.Bytes, p.RequestId);
 						break;
-					case "NewAckForReceipt":
-                        NewAckForReceipt(p.Bytes, p.RequestId);
-						break;
 					case "NewGetTopicsOfNamespaceRequest":
 						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
 						break;
@@ -231,11 +228,8 @@ namespace SharpPulsar
 			}
 
 		}
-        private void NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
-        {
-            _ = SendRequestAndHandleTimeout(request, requestId, RequestType.AckResponse);
-        }
-        protected override void PostStop()
+
+		protected override void PostStop()
 		{
 			_timeoutTask?.Cancel();
 			_sendPing?.Cancel();
@@ -1040,7 +1034,6 @@ namespace SharpPulsar
 			public static readonly RequestType GetTopics = new RequestType("GetTopics", InnerEnum.GetTopics);
 			public static readonly RequestType GetSchema = new RequestType("GetSchema", InnerEnum.GetSchema);
 			public static readonly RequestType GetOrCreateSchema = new RequestType("GetOrCreateSchema", InnerEnum.GetOrCreateSchema);
-			public static readonly RequestType AckResponse = new RequestType("AckResponse", InnerEnum.AckResponse);
 
 			private static readonly List<RequestType> valueList = new List<RequestType>();
 
@@ -1051,7 +1044,6 @@ namespace SharpPulsar
 				valueList.Add(GetTopics);
 				valueList.Add(GetSchema);
 				valueList.Add(GetOrCreateSchema);
-				valueList.Add(AckResponse);
 			}
 
 			public enum InnerEnum
@@ -1060,8 +1052,7 @@ namespace SharpPulsar
 				GetLastMessageId,
 				GetTopics,
 				GetSchema,
-				GetOrCreateSchema,
-                AckResponse
+				GetOrCreateSchema
 			}
 
 			public readonly InnerEnum innerEnumValue;

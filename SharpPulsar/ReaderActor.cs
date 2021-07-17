@@ -39,7 +39,7 @@ namespace SharpPulsar
 		private readonly IActorRef _consumer;
 		private readonly IActorRef _generator;
 
-		public ReaderActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData)
+		public ReaderActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
 			_generator = idGenerator;
 			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -94,38 +94,35 @@ namespace SharpPulsar
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
 			if (consumerConfiguration.ReceiverQueueSize == 0)
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, clientConfigurationData, consumerQueue)));
 			}
 			else
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, clientConfigurationData, consumerQueue)));
 			}
 			Receive<HasReachedEndOfTopic>(m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
-				_consumer.Tell(m, Sender);
-			});
-			Receive<Connect> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<MessageProcessed<T>> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<HasMessageAvailable> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<GetTopic> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<IsConnected> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<SeekMessageId> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 			Receive<SeekTimestamp> (m => {
-				_consumer.Tell(m, Sender);
+				_consumer.Tell(m);
 			});
 		}
 		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
