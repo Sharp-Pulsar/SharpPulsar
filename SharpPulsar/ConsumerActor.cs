@@ -1015,52 +1015,6 @@ namespace SharpPulsar
 			}
 		}
 
-		private bool MarkAckForBatchMessage(BatchMessageId batchMessageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
-		{
-			bool isAllMsgsAcked;
-			if(ackType == AckType.Individual)
-			{
-				isAllMsgsAcked = txn == null && batchMessageId.AckIndividual();
-			}
-			else
-			{
-				isAllMsgsAcked = batchMessageId.AckCumulative();
-			}
-			var outstandingAcks = 0;
-			if(_log.IsDebugEnabled)
-			{
-				outstandingAcks = batchMessageId.OutstandingAcksInSameBatch;
-			}
-
-			var batchSize = batchMessageId.BatchSize;
-			// all messages in this batch have been acked
-			if(isAllMsgsAcked)
-			{
-				if(_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{Subscription}] [{ConsumerName}] can ack message to broker {batchMessageId}, acktype {ackType}, cardinality {outstandingAcks}, length {batchSize}");
-				}
-				return true;
-			}
-			else
-			{
-				if(AckType.Cumulative == ackType && !batchMessageId.Acker.PrevBatchCumulativelyAcked)
-				{
-					SendAcknowledge(batchMessageId.PrevBatchMessageId(), AckType.Cumulative, properties, null);
-					batchMessageId.Acker.PrevBatchCumulativelyAcked = true;
-				}
-				else
-				{
-					OnAcknowledge(batchMessageId, null);
-				}
-				if(_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{Subscription}] [{ConsumerName}] cannot ack message to broker {batchMessageId}, acktype {ackType}, pending acks - {outstandingAcks}");
-				}
-			}
-			return false;
-		}
-
 		private void DoAcknowledge(IMessageId messageId, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			Condition.CheckArgument(messageId is MessageId);
@@ -1204,18 +1158,18 @@ namespace SharpPulsar
 						{
 							propertiesMap[RetryMessageUtil.SystemPropertyRealTopic] = originTopicNameStr;
 							propertiesMap[RetryMessageUtil.SystemPropertyOriginMessageId] = originMessageIdStr;
-							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build());
-							typedMessageBuilderNew.Value(retryMessage.Value);
-							typedMessageBuilderNew.Properties(propertiesMap);
-							typedMessageBuilderNew.Send();
+							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build())
+                                .Value(retryMessage.Value)
+                                .Properties(propertiesMap)
+                                .Send();
 							DoAcknowledge(messageId, ackType, properties, null);
 						}
 				   }
 					else
 					{
-						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema, builder.Build());
-						typedMessageBuilderNew.Value(retryMessage.Value);
-						typedMessageBuilderNew.Properties(propertiesMap);
+						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema, builder.Build())
+                            .Value(retryMessage.Value)
+                            .Properties(propertiesMap);
 						if (delayTime > 0)
 						{
 							typedMessageBuilderNew.DeliverAfter(delayTime);
@@ -1230,7 +1184,7 @@ namespace SharpPulsar
 				}
 				catch(Exception e)
 				{
-					_log.Error($"Send to retry letter topic exception with topic: {_deadLetterPolicy.DeadLetterTopic}, messageId: {messageId}");
+					_log.Error($"Send to retry letter topic exception with topic: {_deadLetterPolicy.DeadLetterTopic}, messageId: {messageId}: {e}");
                     ISet<IMessageId> messageIds = new HashSet<IMessageId>
                     {
                         messageId
@@ -2196,12 +2150,12 @@ namespace SharpPulsar
 					{
 						foreach(var message in deadLetterMessages)
 						{
-							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build());
-							typedMessageBuilderNew.Value(message.Value);
-							typedMessageBuilderNew.Properties(message.Properties);
-							typedMessageBuilderNew.Send();
+							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build())
+                                .Value(message.Value)
+                                .Properties(message.Properties)
+                                .Send();
 						}
-						DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null);
+						DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null).GetAwaiter().GetResult();
 						return true;
 					}
 					catch(Exception e)
@@ -2768,13 +2722,19 @@ namespace SharpPulsar
 
 				var response = await txn.Ask<AskResponse>(new RegisterAckedTopic(Topic, Subscription)).ConfigureAwait(false);
                 if (!response.Failed)
+                {
                     DoAcknowledge(messageId, ackType, properties, txn);
+                    Sender.Tell(new AskResponse());
+                }
                 else
                     Sender.Tell(response);
             }
-			else 
+			else
+            {
                 DoAcknowledge(messageId, ackType, properties, txn);
-		}
+                Sender.Tell(new AskResponse());
+            }
+        }
 		private void AckReceipt(long requestId)
 		{
 			if (_ackRequests.TryGetValue(requestId, out var ot))

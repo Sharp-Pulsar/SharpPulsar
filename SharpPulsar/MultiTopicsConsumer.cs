@@ -151,38 +151,37 @@ namespace SharpPulsar
 			{
 				State.ConnectionState = HandlerState.State.Ready;
 				Ready();
-			}
+            }
             else
             {
-                ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
+                Self.Tell(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), createTopicIfDoesNotExist));
+            }
+            ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
+            {
+                foreach (var topic in s.Topics)
                 {
-                    foreach (var topic in s.Topics)
-                    {
-                        var response = await Subscribe(topic, s.CreateTopicIfDoesNotExist);
-                    }
+                    var response = await Subscribe(topic, s.CreateTopicIfDoesNotExist);
+                }
 
-                    if (AllTopicPartitionsNumber == TopicsMap.Values.Sum())
-                    {
-                        MaxReceiverQueueSize = AllTopicPartitionsNumber;
-                        State.ConnectionState = HandlerState.State.Ready;
-                        StartReceivingMessages(_consumers.Values.ToList());
-                        _log.Info("[{}] [{}] Created topics consumer with {} sub-consumers", Topic, Subscription, AllTopicPartitionsNumber);
-                        Sender.Tell(new AskResponse());
-                        Become(Ready);
-                    }
-                    else
-                    {
-                        var msg = $"[{Topic}] [{Subscription}] Failed to create all topics consumer with {AllTopicPartitionsNumber} sub-consumers so far";
+                if (AllTopicPartitionsNumber == TopicsMap.Values.Sum())
+                {
+                    MaxReceiverQueueSize = AllTopicPartitionsNumber;
+                    State.ConnectionState = HandlerState.State.Ready;
+                    StartReceivingMessages(_consumers.Values.ToList());
+                    _log.Info("[{}] [{}] Created topics consumer with {} sub-consumers", Topic, Subscription, AllTopicPartitionsNumber);
+                    Sender.Tell(new AskResponse());
+                    Become(Ready);
+                }
+                else
+                {
+                    var msg = $"[{Topic}] [{Subscription}] Failed to create all topics consumer with {AllTopicPartitionsNumber} sub-consumers so far";
 
-                        _log.Warning(msg);
-                        Sender.Tell(new AskResponse(new PulsarClientException(msg)));
-                    }
-                });
-                ReceiveAny(_ => Stash.Stash());
-			}
-
-			
-		}
+                    _log.Warning(msg);
+                    Sender.Tell(new AskResponse(new PulsarClientException(msg)));
+                }
+            });
+            ReceiveAny(_ => Stash.Stash());
+        }
 		private void Ready()
 		{			// start track and auto subscribe partition increasement
 			if (_internalConfig.AutoUpdatePartitions)
@@ -340,6 +339,38 @@ namespace SharpPulsar
 					Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
+			Receive<AcknowledgeMessageIds>(m =>
+			{
+                DoAcknowledge(m.MessageIds, AckType.Individual, new Dictionary<string, long>(), null);
+			});
+			Receive<AcknowledgeMessage<T>>(m =>
+			{
+                DoAcknowledge(m.Message.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
+			});
+			Receive<AcknowledgeWithTxn>(m =>
+			{
+                DoAcknowledge(m.MessageId, m.AckType, m.Properties, m.Txn);
+			});
+			Receive<AcknowledgeWithTxnMessages>(m =>
+			{
+                DoAcknowledge(m.MessageIds, m.AckType, m.Properties, m.Txn);
+			});
+			Receive<AcknowledgeCumulativeMessage<T>>(m =>
+			{
+                DoAcknowledge(m.Message.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
+			});
+			Receive<AcknowledgeMessageId>(m =>
+			{
+                DoAcknowledge(m.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
+            });
+			Receive<AcknowledgeCumulativeMessageId>(m =>
+			{
+                DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
+            });
+			Receive<AcknowledgeCumulativeTxn>(m =>
+			{
+                DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), m.Txn);
+            });
 
             Receive<ReconsumeLaterMessages<T>>(m =>
             {
@@ -592,7 +623,7 @@ namespace SharpPulsar
 
 			if(State.ConnectionState != HandlerState.State.Ready)
 			{
-				throw new PulsarClientException("Consumer already closed");
+                Sender.Tell(new AskResponse(new PulsarClientException("Consumer already closed")));
 			}
 
 			if(ackType == AckType.Cumulative)
@@ -601,11 +632,11 @@ namespace SharpPulsar
 				if(consumer != null)
 				{
 					var innerId = topicMessageId.InnerMessageId;
-					consumer.Tell(new AcknowledgeCumulativeMessageId(innerId));
+					consumer.Tell(new AcknowledgeCumulativeMessageId(innerId), Sender);
 				}
 				else
 				{
-					throw new PulsarClientException.NotConnectedException();
+					Sender.Tell(new AskResponse(new PulsarClientException.NotConnectedException()));
 				}
 			}
 			else
@@ -613,7 +644,7 @@ namespace SharpPulsar
 				var consumer = _consumers.GetValueOrNull(topicMessageId.TopicPartitionName);
 
 				var innerId = topicMessageId.InnerMessageId;
-				consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl));
+				consumer.Tell(new AcknowledgeWithTxnMessages(new List<IMessageId> { innerId }, properties, txnImpl), Sender);
 				_unAckedMessageTracker.Tell(new Remove(topicMessageId));
 			}
 		}

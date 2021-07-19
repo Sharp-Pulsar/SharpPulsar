@@ -1295,7 +1295,7 @@ namespace SharpPulsar
                 // if message is chunked then call callback only on last chunk
                 if (op.Msg.TotalChunks <= 1 || (op.Msg.ChunkId == op.Msg.TotalChunks - 1))
                 {
-                    if (op.Msg != null)
+                    if (op.Msg.Msg != null)
                         SendComplete(op.Msg.Msg, op.Msg.CreatedAt, op.Msg.FirstSentAt, op.Msg.LastSentAt, op.Msg.RetryCount, null);
                 }
             }

@@ -331,10 +331,9 @@ namespace SharpPulsar.User
                 var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
                 topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
                 var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
-                var taskCompletion = new TaskCompletionSource<bool>();
-                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData, taskCompletion));
                 
-                var task = await taskCompletion.Task;
+                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData));
+                
                 _client.Tell(new AddConsumer(consumer));
 
                 return new Consumer<T>(state, consumer, schema, conf, interceptors);

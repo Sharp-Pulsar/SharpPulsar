@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Text;
+using System.Threading;
 using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.User;
@@ -34,6 +35,8 @@ namespace Tutorials
                 ExclusiveProduceConsumer(pulsarClient);
             else if (cmd.Equals("exc2", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceNoneConsumer(pulsarClient);
+            else if (cmd.Equals("bat", StringComparison.OrdinalIgnoreCase))
+                BatchProduceConsumer(pulsarClient);
             else
                 ProduceConsumer(pulsarClient);
 
@@ -70,6 +73,44 @@ namespace Tutorials
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
                     Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                }
+            }
+        }
+        private static void BatchProduceConsumer(PulsarClient pulsarClient)
+        {
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .EnableBatching(true)
+                .BatchingMaxMessages(50));
+            
+
+            for (var i = 0; i < 50; i++)
+            {
+                var data = Encoding.UTF8.GetBytes($"batched-tuts-{i}");
+                var noId = producer.NewMessage().Value(data).Send();
+                Console.WriteLine(i.ToString());
+            }
+
+            var pool = ArrayPool<byte>.Shared;
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+
+            for (var i = 0; i < 50; i++)
+            {
+                var message = (Message<byte[]>)consumer.Receive();
+                if (message != null)
+                {
+                    var payload = pool.Rent((int)message.Data.Length);
+                    Array.Copy(sourceArray: message.Data.ToArray(), destinationArray: payload, length: (int)message.Data.Length);
+
+                    consumer.Acknowledge(message);
+                    var res = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"[Batched] message '{res}' from topic: {message.TopicName}");
                 }
             }
         }

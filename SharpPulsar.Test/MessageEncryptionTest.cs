@@ -5,6 +5,7 @@ using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Text;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -42,6 +43,7 @@ namespace SharpPulsar.Test
 				.CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
 				.SubscriptionName("encrypted-sub"));
 
+            Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < messageCount; i++)
 			{
 				var message = consumer.Receive();
