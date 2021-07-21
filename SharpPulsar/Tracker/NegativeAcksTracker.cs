@@ -55,6 +55,7 @@ namespace SharpPulsar.Tracker
 
         public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef consumer)
         {
+            _nackedMessages = new Dictionary<IMessageId, long>();
             _log = Context.GetLogger();
             _self = Self;
             _consumer = consumer;

@@ -221,7 +221,7 @@ namespace SharpPulsar
 			Receive<GetLastDisconnectedTimestamp>(m =>
 			{
 				var l = LastDisconnectedTimestamp();
-                Sender.Tell(l.TimeStamp);
+                Sender.Tell(l);
 			});
 			Receive<GetConsumerName>(m => {
                 Sender.Tell(ConsumerName);
@@ -1275,15 +1275,14 @@ namespace SharpPulsar
 			_consumers.ForEach(x => x.Value.Tell(Messages.Consumer.Resume.Instance));
 		}
 
-		internal override LastConnectionClosedTimestampResponse LastDisconnectedTimestamp()
+		internal override long LastDisconnectedTimestamp()
 		{
-			LastConnectionClosedTimestampResponse lastDisconnectedTimestamp = null;
+			var lastDisconnectedTimestamp = -1L;
 			foreach(var c in _consumers.Values)
             {
-				var x = c.Ask<LastConnectionClosedTimestampResponse>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
-				if (lastDisconnectedTimestamp == null)
-					lastDisconnectedTimestamp = x;
-				if (x?.TimeStamp > lastDisconnectedTimestamp.TimeStamp)
+				var x = c.Ask<long>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
+				
+				if (x > lastDisconnectedTimestamp)
 					lastDisconnectedTimestamp = x;
 			}
 			return lastDisconnectedTimestamp;

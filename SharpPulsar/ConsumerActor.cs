@@ -466,7 +466,7 @@ namespace SharpPulsar
 			Receive<GetLastDisconnectedTimestamp>(m =>
 			{
 				var last = LastDisconnectedTimestamp();
-				Sender.Tell(last.TimeStamp);
+				Sender.Tell(last);
 			});
 			Receive<GetConsumerName>(m => {
 				Sender.Tell(ConsumerName);
@@ -894,12 +894,14 @@ namespace SharpPulsar
                 var response = await txn.Ask<AskResponse>(new RegisterAckedTopic(Topic, Subscription)).ConfigureAwait(false);
                 if (!response.Failed)
                     DoAcknowledge(messageIdList, ackType, properties, txn);
-                else
-                    Sender.Tell(response);
-            }
-			
+               
+                Sender.Tell(response);
+            }			
             else
+            {
                 DoAcknowledge(messageIdList, ackType, properties, txn);
+                Sender.Tell(new AskResponse());
+            }
 		}
 		private void Unsubscribe()
 		{
@@ -1868,10 +1870,11 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override LastConnectionClosedTimestampResponse LastDisconnectedTimestamp()
+		internal override long LastDisconnectedTimestamp()
 		{
-			return _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).Result;
-		}
+			var response = _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).GetAwaiter().GetResult();
+            return response.TimeStamp;
+        }
 
 		private byte[] DecryptPayloadIfNeeded(MessageIdData messageId, MessageMetadata msgMetadata, byte[] payload, IActorRef currentCnx)
 		{

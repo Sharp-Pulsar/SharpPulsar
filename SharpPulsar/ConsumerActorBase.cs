@@ -38,7 +38,7 @@ namespace SharpPulsar
 {
     internal abstract class ConsumerActorBase<T> : ReceiveActor
 	{
-		internal abstract LastConnectionClosedTimestampResponse LastDisconnectedTimestamp();
+		internal abstract long LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
 		internal abstract void Resume();
 		internal abstract void Pause();
