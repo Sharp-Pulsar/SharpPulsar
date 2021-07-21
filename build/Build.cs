@@ -188,17 +188,12 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces","create", "pulsar/system")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces","create", "public/deduplication")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-retention", "public/default","--time","-1", "--size", "-1")
+                .SetArgs("namespaces", "set-retention", "public/default","--time","3600", "--size", "-1")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
