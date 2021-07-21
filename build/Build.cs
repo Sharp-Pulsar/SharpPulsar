@@ -183,11 +183,6 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("tenants", "create", "pulsar", "-r", "appid1", "--allowed-clusters", "standalone")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces","create", "tnx/ns1")
             );
            DockerTasks.DockerExec(x => x
