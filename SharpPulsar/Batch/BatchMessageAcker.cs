@@ -25,12 +25,15 @@ namespace SharpPulsar.Batch
 		public static BatchMessageAcker NewAcker(int batchSize)
 		{
 			var bitSet = new BitArray(batchSize, true);
-			//bitSet.Set(batchSize-1, tr);
+			bitSet.Set(batchSize-1, false);
 			return new BatchMessageAcker(bitSet, batchSize);
 		}
-
-		// bitset shared across messages in the same batch.
-		private readonly BitArray _bitSet;
+        public static BatchMessageAcker NewAcker(BitArray bitSet)
+        {
+            return new BatchMessageAcker(bitSet, -1);
+        }
+        // bitset shared across messages in the same batch.
+        private readonly BitArray _bitSet;
         private int _unackedCount;
 
 
@@ -74,6 +77,12 @@ namespace SharpPulsar.Batch
 		public virtual int OutstandingAcks => _unackedCount;
 
 		public virtual bool PrevBatchCumulativelyAcked { set; get; } = false;
-	}
+
+        public override string ToString()
+        {
+            return "BatchMessageAcker{" + "batchSize=" + BatchSize + ", bitSet=" + _bitSet + ", prevBatchCumulativelyAcked=" + PrevBatchCumulativelyAcked + '}';
+        }
+
+    }
 
 }
