@@ -11,6 +11,7 @@ namespace Tutorials
     //https://helm.kafkaesque.io/#accessing-the-pulsar-cluster-on-localhost
     class Program
     {
+        //static string myTopic = $"persistent://public/default/mytopic-2";
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         static void Main(string[] args)
         {
@@ -48,7 +49,7 @@ namespace Tutorials
                 .Topic(myTopic));
             
 
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
                 var id = producer.NewMessage().Value(data).Send();
@@ -60,9 +61,10 @@ namespace Tutorials
                 .Topic(myTopic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
+                .ReceiverQueueSize(4)
                 .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)

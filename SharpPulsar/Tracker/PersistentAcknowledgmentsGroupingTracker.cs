@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Messages;
 using SharpPulsar.Batch;
@@ -12,12 +10,9 @@ using SharpPulsar.Tracker.Messages;
 using SharpPulsar.Interfaces;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using Akka.Util.Internal;
-using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Transaction;
 using System.Collections;
 using System.Threading.Tasks;
-using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Messages.Consumer;
 using System.Linq;
 using System.Buffers;
@@ -49,10 +44,10 @@ namespace SharpPulsar.Tracker
 	public class PersistentAcknowledgmentsGroupingTracker<T> : ReceiveActor
 	{
 
-		/// <summary>
-		/// When reaching the max group Size, an ack command is sent out immediately
-		/// </summary>
-		private const int MaxAckGroupSize = 1000;
+        /// <summary>
+        /// When reaching the max group Size, an ack command is sent out immediately
+        /// </summary>
+        private const int MaxAckGroupSize = 50;//1000;
         private readonly long _consumerId;
         private readonly IActorRef _consumer;
         private IActorRef _conx;

@@ -207,22 +207,14 @@ namespace SharpPulsar.User
                 throw response.Exception;
 
             if (response.Data != null)
-                return response.ConvertTo<IMessage<T>>();
+            {
+                var message = response.ConvertTo<IMessage<T>>();
+                return message;
+            }                
 
             return null;
         }
 
-        protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
-        {
-            if (_interceptors != null)
-            {
-                return _interceptors.BeforeConsume(_consumerActor, message);
-            }
-            else
-            {
-                return message;
-            }
-        }
         /// <summary>
         /// batch receive messages
         /// </summary>crea

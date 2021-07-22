@@ -48,6 +48,8 @@ namespace SharpPulsar
 		internal abstract void RedeliverUnacknowledgedMessages();
 		internal abstract IConsumerStatsRecorder Stats { get; }
 
+        private ConsumerInterceptors<T> _interceptors;
+
 		internal enum ConsumerType
 		{
 			PARTITIONED,
@@ -75,7 +77,10 @@ namespace SharpPulsar
 		private readonly string _topic;
 		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
 		{
-			StateActor = stateActor;
+            if (conf.Interceptors != null && conf.Interceptors.Count > 0)
+                _interceptors = new ConsumerInterceptors<T>(Context.System, conf.Interceptors);
+
+            StateActor = stateActor;
 			_topic = topic;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
@@ -138,6 +143,17 @@ namespace SharpPulsar
             return true;
         }
 
+        protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
+        {
+            if (_interceptors != null)
+            {
+                return _interceptors.BeforeConsume(Self, message);
+            }
+            else
+            {
+                return message;
+            }
+        }
         protected void BatchReceive()
         {
             if(VerifyConsumerState())
@@ -150,7 +166,8 @@ namespace SharpPulsar
 
                         while (IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
                         {
-                            messages.Add(message);
+                            Self.Tell(new MessageProcessed<T>(message));
+                            messages.Add(BeforeConsume(message));
                         }
                         Sender.Tell(new AskResponse(messages));
                     }
@@ -174,7 +191,10 @@ namespace SharpPulsar
                     return;
                 }
                 if (IncomingMessages.TryReceive(out var message))
-                    Sender.Tell(new AskResponse(message));
+                {
+                    Self.Tell(new MessageProcessed<T>(message));
+                    Sender.Tell(new AskResponse(BeforeConsume(message)));
+                }                    
                 else
                     Sender.Tell(new AskResponse(null));
             }

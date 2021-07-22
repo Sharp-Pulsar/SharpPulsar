@@ -4,10 +4,8 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Queues;
 using System;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 
 namespace SharpPulsar.User
 {
