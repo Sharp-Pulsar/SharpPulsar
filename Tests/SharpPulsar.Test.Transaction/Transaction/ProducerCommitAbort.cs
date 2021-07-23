@@ -1,10 +1,8 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Test.Fixtures;
+using SharpPulsar.Test.Transaction.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Text;
-using System.Threading;
-using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
@@ -33,7 +31,7 @@ namespace SharpPulsar.Test.Transaction
     /// <summary>
     /// End to end transaction test.
     /// </summary>
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTransactionTests))]
 	public class ProducerCommitAbort
 	{
 

@@ -3,7 +3,7 @@ using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
-using SharpPulsar.Test.Fixtures;
+using SharpPulsar.Test.EventSourcing.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.EventSource
+namespace SharpPulsar.Test.EventSourcing
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarEventsTests))]
     public class EventSourceTests
     {
         private readonly ITestOutputHelper _output;

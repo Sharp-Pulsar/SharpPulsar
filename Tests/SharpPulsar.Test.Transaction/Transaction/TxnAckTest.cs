@@ -2,14 +2,14 @@
 using System;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
-using SharpPulsar.Test.Fixtures;
+using SharpPulsar.Test.Transaction.Fixtures;
 using Xunit;
 using SharpPulsar.Configuration;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTransactionTests))]
 	public class TxnAckTest
     {
 		private const string TENANT = "public";

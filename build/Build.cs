@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -110,44 +111,54 @@ class Build : NukeBuild
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration));
         });
+    //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
         .DependsOn(Compile)
         .DependsOn(AdminPulsar)
         .Triggers(StopPulsar)
         .Executes(() =>
         {
-            var projectName = "SharpPulsar.Test";
-            var project = Solution.GetProjects("*.Test").First();
-            Information($"Running tests from {projectName}");
-
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                if (fw.StartsWith("net4")
-                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                {
-                    Information($"Skipping {projectName} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+            var projects = Solution.GetProjects("SharpPulsar.Test.*");
+            foreach (var project in projects)
+            {                
+                var projectName = project.Name;
+                if (projectName.Equals("SharpPulsar.Test.EventSourcing")||
+                    projectName.Equals("SharpPulsar.Test.Memory") ||
+                    projectName.Equals("SharpPulsar.Test.SQL"))
                     continue;
-                }
+                    
+                Information($"Running tests from {project.Name}");
 
-                Information($"Running for {projectName} ({fw}) ...");
-                try
+                foreach (var fw in project.GetTargetFrameworks())
                 {
-                    DotNetTest(c => c
-                        .SetProjectFile(project)
-                        .SetConfiguration(Configuration.ToString())
-                        .SetFramework(fw)
-                        //.SetDiagnosticsFile(TestsDirectory)
-                        //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                        .EnableNoBuild()); ;
+                    if (fw.StartsWith("net4")
+                        && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                        && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
+                    {
+                        Information($"Skipping {projectName} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                        continue;
+                    }
+
+                    Information($"Running for {projectName} ({fw}) ...");
+                    try
+                    {
+                        DotNetTest(c => c
+                            .SetProjectFile(project)
+                            .SetConfiguration(Configuration.ToString())
+                            .SetFramework(fw)
+                            //.SetDiagnosticsFile(TestsDirectory)
+                            //.SetLogger("trx")
+                            .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                            .EnableNoBuild()); ;
+                    }
+                    catch (Exception ex)
+                    {
+                        Information(ex.Message);
+                    }
                 }
-                catch(Exception ex)
-                {
-                    Information(ex.Message);
-                }
-            }
+            }           
         });
+
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
       .Executes(() =>

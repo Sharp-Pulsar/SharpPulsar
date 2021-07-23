@@ -1,19 +1,16 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Test.Fixtures;
+using SharpPulsar.Test.Transaction.Fixtures;
 using SharpPulsar.User;
-using SharpPulsar.Extension;
 using System;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTransactionTests))]
     public class CumulativeAck
     {
 		private const string TENANT = "public";

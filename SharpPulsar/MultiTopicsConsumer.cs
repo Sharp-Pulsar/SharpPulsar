@@ -343,9 +343,15 @@ namespace SharpPulsar
 			{
                 DoAcknowledge(m.MessageIds, AckType.Individual, new Dictionary<string, long>(), null);
 			});
-			Receive<AcknowledgeMessage<T>>(m =>
+			Receive<IAcknowledge>(m =>
 			{
-                DoAcknowledge(m.Message.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
+                switch(m)
+                {
+                    case AcknowledgeMessage<T> ack:
+                        DoAcknowledge(ack.Message.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
+                        break;
+                }
+                
 			});
 			Receive<AcknowledgeWithTxn>(m =>
 			{

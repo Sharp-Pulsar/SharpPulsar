@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
+﻿using System.Net.Http;
 using System.Threading.Tasks;
-using SharpPulsar.Test.Fixtures;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Admin
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection("pulsar admin")]
     public class TransactionAPITest
     {
         private readonly ITestOutputHelper _output;

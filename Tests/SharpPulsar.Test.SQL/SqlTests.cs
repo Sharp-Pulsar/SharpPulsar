@@ -1,25 +1,21 @@
-﻿using AvroSchemaGenerator;
-using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Messages;
 using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
-using SharpPulsar.Test.Fixtures;
+using SharpPulsar.Test.SQL.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Sql
+namespace SharpPulsar.Test.SQL
 {
-	[Collection(nameof(PulsarTests))]
+	[Collection(nameof(PulsarSqlTests))]
 	public class SqlTests
 	{
 		private readonly ITestOutputHelper _output;

@@ -208,7 +208,7 @@ namespace SharpPulsar
 
 			_duringSeek = false;
 
-			if(conf.AckTimeoutMillis != 0)
+			if(conf.AckTimeoutMillis > 0)
 			{
 				if(conf.TickDurationMillis > 0)
 				{
@@ -1198,50 +1198,6 @@ namespace SharpPulsar
 
 		}
 
-		// TODO: handle transactional acknowledgements.
-		private void SendAcknowledge(IMessageId messageId, CommandAck.AckType ackType, IDictionary<string, long> properties, IActorRef txnImpl)
-		{
-			var msgId = (MessageId) messageId;
-
-			if(ackType == AckType.Individual)
-			{
-				if(messageId is BatchMessageId)
-				{
-					var batchMessageId = (BatchMessageId) messageId;
-
-					Stats.IncrementNumAcksSent(batchMessageId.BatchSize);
-					_unAckedMessageTracker.Tell(new Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex)));
-					if(_possibleSendToDeadLetterTopicMessages != null)
-					{
-						_possibleSendToDeadLetterTopicMessages.Remove(new MessageId(batchMessageId.LedgerId, batchMessageId.EntryId, batchMessageId.PartitionIndex));
-					}
-				}
-				else
-				{
-					// increment counter by 1 for non-batch msg
-					_unAckedMessageTracker.Tell(new Remove(msgId));
-					if(_possibleSendToDeadLetterTopicMessages != null)
-					{
-						_possibleSendToDeadLetterTopicMessages.Remove(msgId);
-					}
-					Stats.IncrementNumAcksSent(1);
-				}
-				OnAcknowledge(messageId, null);
-			}
-			else if(ackType == AckType.Cumulative)
-			{
-				OnAcknowledgeCumulative(messageId, null);
-				var removed = _unAckedMessageTracker.Ask<int>(new RemoveMessagesTill(msgId)).GetAwaiter().GetResult();
-				_stats.IncrementNumAcksSent(removed);
-			}
-
-			_acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(msgId, ackType, properties));
-
-			// Consumer acknowledgment operation immediately succeeds. In any case, if we're not able to send ack to broker,
-			// the messages will be re-delivered
-			//return CompletableFuture.completedFuture(null);
-		}
-
 		internal override void NegativeAcknowledge(IMessageId messageId)
 		{
 			_negativeAcksTracker.Tell(new Add(messageId));
@@ -1465,74 +1421,76 @@ namespace SharpPulsar
 
 			var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 			var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
+            if (decryptedPayload == null)
+            {
+                // Message was discarded or CryptoKeyReader isn't implemented
+                return;
+            }
+            var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
-			var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
-
-			if (decryptedPayload != null)
-			{
-				// uncompress decryptedPayload and release decryptedPayload-ByteBuf
-				var uncompressedPayload = (isMessageUndecryptable || isChunkedMessage) ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, _clientCnx, true);
+			
+            // uncompress decryptedPayload and release decryptedPayload-ByteBuf
+            var uncompressedPayload = (isMessageUndecryptable || isChunkedMessage) ? decryptedPayload : UncompressPayloadIfNeeded(messageId, msgMetadata, decryptedPayload, _clientCnx, true);
 
 
-				if (uncompressedPayload == null)
-				{
+            if (uncompressedPayload == null)
+            {
 
-					// Message was discarded on decompression error
-					return;
-				}
-				// if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
-				// and return undecrypted payload
-				if (isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
-				{
-					// right now, chunked messages are only supported by non-shared subscription
-					if (isChunkedMessage)
-					{
-						uncompressedPayload = ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId, _clientCnx);
-						if (uncompressedPayload == null)
-						{
-							return;
-						}
-					}
+                // Message was discarded on decompression error
+                return;
+            }
+            // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
+            // and return undecrypted payload
+            if (isMessageUndecryptable || (numMessages == 1 && !HasNumMessagesInBatch(msgMetadata)))
+            {
+                // right now, chunked messages are only supported by non-shared subscription
+                if (isChunkedMessage)
+                {
+                    uncompressedPayload = ProcessMessageChunk(uncompressedPayload, msgMetadata, msgId, messageId, _clientCnx);
+                    if (uncompressedPayload == null)
+                    {
+                        return;
+                    }
+                }
 
-					else if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
-					{
-						// We need to discard entries that were prior to startMessageId
-						if (_log.IsDebugEnabled)
-						{
-							_log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
-						}
-						return;
-					}
-					var message = new Message<T>(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount);
+                if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
+                {
+                    // We need to discard entries that were prior to startMessageId
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
+                    }
+                    return;
+                }
+                var message = new Message<T>(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount);
 
-					try
-					{
-						// Enqueue the message so that it can be retrieved when application calls receive()
-						// if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
-						// if asyncReceive is waiting then notify callback without adding to incomingMessages queue
-						if (_deadLetterPolicy != null && _possibleSendToDeadLetterTopicMessages != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
-						{
-							_possibleSendToDeadLetterTopicMessages[(MessageId)message.MessageId] = new List<IMessage<T>> { message };
-						}
-					}
-					finally
-					{
-						EnqueueMessageAndCheckBatchReceive(message);
-					}
-				}
-				else
-				{
-					// handle batch message enqueuing; uncompressed payload has all messages in batch
-					ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx);
+                try
+                {
+                    // Enqueue the message so that it can be retrieved when application calls receive()
+                    // if the conf.getReceiverQueueSize() is 0 then discard message if no one is waiting for it.
+                    // if asyncReceive is waiting then notify callback without adding to incomingMessages queue
+                    if (_deadLetterPolicy != null && _possibleSendToDeadLetterTopicMessages != null && redeliveryCount >= _deadLetterPolicy.MaxRedeliverCount)
+                    {
+                        _possibleSendToDeadLetterTopicMessages[(MessageId)message.MessageId] = new List<IMessage<T>> { message };
+                    }
+                }
+                finally
+                {
+                    EnqueueMessageAndCheckBatchReceive(message);
+                }
+            }
+            else
+            {
+                // handle batch message enqueuing; uncompressed payload has all messages in batch
+                ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx);
 
-				}
+            }
 
-				if (Listener != null)
-				{
-					TriggerListener(numMessages);
-				}
-			}
-		}
+            if (Listener != null)
+            {
+                TriggerListener(numMessages);
+            }
+        }
 		private bool HasNumMessagesInBatch(MessageMetadata m)
 		{
 			var should = m.ShouldSerializeNumMessagesInBatch();

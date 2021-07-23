@@ -61,7 +61,7 @@ namespace Tutorials
                 .Topic(myTopic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
-                .ReceiverQueueSize(4)
+                .IsAckReceiptEnabled(true)
                 .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             for (var i = 0; i < 100; i++)

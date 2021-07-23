@@ -1,16 +1,15 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Test.Fixtures;
+using SharpPulsar.Test.Transaction.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Text;
-using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTransactionTests))]
 	public class TxnMessageAck
     {
 		private const string TENANT = "public";
