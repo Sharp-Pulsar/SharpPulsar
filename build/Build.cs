@@ -123,7 +123,8 @@ class Build : NukeBuild
                 var projectName = project.Name;
                 if (projectName.Equals("SharpPulsar.Test.EventSourcing")||
                     projectName.Equals("SharpPulsar.Test.Memory") ||
-                    projectName.Equals("SharpPulsar.Test.SQL"))
+                    projectName.Equals("SharpPulsar.Test.SQL") ||
+                    projectName.Equals("SharpPulsar.Test.Admin"))
                     continue;
                     
                 Information($"Running tests from {project.Name}");
