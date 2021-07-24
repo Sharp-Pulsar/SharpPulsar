@@ -20,12 +20,11 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
-using SharpPulsar.Extension;
 using SharpPulsar.SocketImpl;
 
 namespace SharpPulsar
 {
-	internal sealed class ClientCnx : ReceiveActor
+    internal sealed class ClientCnx : ReceiveActor
 	{
 		private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;

@@ -1,12 +1,9 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Common;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
-using SharpPulsar.Extension;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -31,7 +28,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar.Test
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class PatternTopicsConsumerTest
 	{
 		private readonly ITestOutputHelper _output;
@@ -56,7 +53,16 @@ namespace SharpPulsar.Test
 
 			// 2. create producer
 			var messagePredicate = "my-message-" + key + "-";
-			var totalMessages = 30;
+
+            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .TopicsPattern(pattern)
+                .PatternAutoDiscoveryPeriod(2)
+                .ForceTopicCreation(true)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Shared)
+                .AckTimeout(TimeSpan.FromMilliseconds(2000)));
+
+            var totalMessages = 30;
 
 			var producer1 = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName1));
@@ -79,12 +85,6 @@ namespace SharpPulsar.Test
 				producer4.Send(Encoding.UTF8.GetBytes(messagePredicate + "producer4-" + i));
 			}
 
-			var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-				.TopicsPattern(pattern)
-				.PatternAutoDiscoveryPeriod(2)
-				.SubscriptionName(subscriptionName)
-				.SubscriptionType(SubType.Shared)
-				.AckTimeout(TimeSpan.FromMilliseconds(2000)));
 
 			// 6. should receive all the message
 			var messageSet = 0;

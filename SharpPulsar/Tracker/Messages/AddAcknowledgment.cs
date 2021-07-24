@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Akka.Actor;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 

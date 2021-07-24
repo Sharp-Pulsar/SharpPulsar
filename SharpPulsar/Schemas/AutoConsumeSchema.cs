@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.Extensions.Logging;
 using SharpPulsar.Shared;
 using SharpPulsar.Schemas;
 using SharpPulsar.Interfaces.ISchema;
@@ -27,10 +26,10 @@ using SharpPulsar.Exceptions;
 /// </summary>
 namespace SharpPulsar.Schema
 {
-	/// <summary>
-	/// Auto detect schema.
-	/// </summary>
-	public class AutoConsumeSchema : ISchema<IGenericRecord>
+    /// <summary>
+    /// Auto detect schema.
+    /// </summary>
+    public class AutoConsumeSchema : ISchema<IGenericRecord>
 	{
 
 		private ISchema<IGenericRecord> _schema;

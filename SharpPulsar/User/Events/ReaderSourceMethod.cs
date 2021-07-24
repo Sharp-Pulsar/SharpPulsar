@@ -5,7 +5,6 @@ using SharpPulsar.EventSource.Pulsar;
 using SharpPulsar.EventSource.Pulsar.Tagged;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Queues;
 using System;
 using System.Text.RegularExpressions;
 

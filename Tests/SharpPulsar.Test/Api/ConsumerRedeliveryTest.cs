@@ -2,9 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using Xunit;

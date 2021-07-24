@@ -21,16 +21,10 @@ namespace SharpPulsar.User
         private readonly ConsumerConfigurationData<T> _conf;
         private readonly IActorRef _consumerActor;
         private readonly IActorRef _stateActor;
-        private readonly ConsumerInterceptors<T> _interceptors;
-        private readonly CancellationTokenSource _tokenSource;
-        private IMessageListener<T> _listener;
 
-        public Consumer(IActorRef stateActor, IActorRef consumer, ISchema<T> schema, ConsumerConfigurationData<T> conf, ConsumerInterceptors<T> interceptors)
+        public Consumer(IActorRef stateActor, IActorRef consumer, ISchema<T> schema, ConsumerConfigurationData<T> conf)
         {
             _stateActor = stateActor;
-            _listener = conf.MessageListener;
-            _tokenSource = new CancellationTokenSource();
-            _interceptors = interceptors;
             _consumerActor = consumer;
             _schema = schema;
             _conf = conf;
@@ -66,8 +60,7 @@ namespace SharpPulsar.User
         public void Acknowledge(IMessage<T> message) => AcknowledgeAsync(message).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessage<T> message)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessage<T>(message))
-                .ConfigureAwait(false);
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessage<T>(message)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
         }
@@ -84,8 +77,7 @@ namespace SharpPulsar.User
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessageId(messageId))
-                .ConfigureAwait(false);
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessageId(messageId)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
         }

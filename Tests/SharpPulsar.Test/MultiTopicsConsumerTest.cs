@@ -1,15 +1,11 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Messages;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Extension;
-using System.Linq;
 using System;
-using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

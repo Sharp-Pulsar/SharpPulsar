@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using SharpPulsar.Extension;
 using System.Text;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Test.Fixtures;
@@ -60,14 +58,14 @@ namespace SharpPulsar.Test
 			_output.WriteLine($"Test negative acks batching={batching} partitions={usePartition} subType={subscriptionType} negAckDelayMs={negAcksDelayMillis}");
 			var topic = "testNegativeAcks-" + DateTime.Now.Ticks;
 
-			var builder = new ConsumerConfigBuilder<byte[]>();
-			builder.Topic(topic);
-			builder.SubscriptionName($"sub1-{Guid.NewGuid()}");
-			builder.AckTimeout(TimeSpan.FromMilliseconds(ackTimeout));
-			builder.ForceTopicCreation(true);
-			builder.AcknowledgmentGroupTime(0);
-			builder.NegativeAckRedeliveryDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis));
-			builder.SubscriptionType(subscriptionType);
+			var builder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .SubscriptionName($"sub1-{Guid.NewGuid()}")
+                .AckTimeout(TimeSpan.FromMilliseconds(ackTimeout))
+                .ForceTopicCreation(true)
+                .AcknowledgmentGroupTime(0)
+                .NegativeAckRedeliveryDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis))
+                .SubscriptionType(subscriptionType);
 			var consumer = _client.NewConsumer(builder);
 
 			var pBuilder = new ProducerConfigBuilder<byte[]>();

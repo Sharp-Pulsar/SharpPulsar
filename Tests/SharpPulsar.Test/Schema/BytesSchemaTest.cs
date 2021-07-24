@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using System.Text;
-using SharpPulsar.Extension;
 using Xunit;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

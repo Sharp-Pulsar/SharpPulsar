@@ -1,11 +1,9 @@
 ﻿using Akka.Actor;
 using Akka.Event;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Transaction;
 using System;
-using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 /// <summary>

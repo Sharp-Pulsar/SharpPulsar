@@ -10,7 +10,6 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 using SharpPulsar.Common;
-using SharpPulsar.Extension;
 
 namespace SharpPulsar.Utility
 {

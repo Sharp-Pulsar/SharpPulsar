@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Pulsar;
-using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Utility;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Messages.Consumer;

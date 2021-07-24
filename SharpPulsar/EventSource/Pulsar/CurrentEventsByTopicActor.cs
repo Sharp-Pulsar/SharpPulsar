@@ -6,7 +6,6 @@ using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Queues;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks.Dataflow;
 

@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Messages;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file

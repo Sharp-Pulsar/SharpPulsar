@@ -159,12 +159,12 @@ namespace SharpPulsar
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 		private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData):this
-			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, interceptors, createTopicIfDoesNotExist, clientConfigurationData)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData):this
+			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfigurationData)
 		{
 		}
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema, interceptors)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema)
 		{
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
@@ -266,7 +266,7 @@ namespace SharpPulsar
 						
 			if(_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(Self, _consumerId, _connectionHandler, conf));
+				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(Self, idGenerator, _consumerId, _connectionHandler, conf));
 			}
 			else
 			{
@@ -2299,7 +2299,7 @@ namespace SharpPulsar
 		{
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
-				throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
+				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id")));
 			}
 
 			var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
@@ -2307,8 +2307,8 @@ namespace SharpPulsar
 
 			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
-			await InternalGetLastMessageId(backoff, opTimeoutMs, getLastMessageId);
-			return await getLastMessageId.Task;
+			await InternalGetLastMessageId(backoff, opTimeoutMs, getLastMessageId).ConfigureAwait(false);
+			return await getLastMessageId.Task.ConfigureAwait(false);
 		}
 		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<GetLastMessageIdResponse> source)
 		{
@@ -2665,7 +2665,7 @@ namespace SharpPulsar
 			{
 				_unAckedMessageTracker.Tell(new Remove(messageId));
 			}
-			var payload = new Payload(cmd, requestId, "NewAck");
+			var payload = new Payload(cmd, requestId, "NewAckForReceipt");
 			_clientCnx.Tell(payload);
 		}
 

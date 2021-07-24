@@ -66,6 +66,7 @@ namespace SharpPulsar.Test.Transaction
 			var topic = $"{_topicOutput}";
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
+                .ForceTopicCreation(true)
 				.SubscriptionName($"test-{Guid.NewGuid()}");
 
 			var consumer = _client.NewConsumer(consumerBuilder);
@@ -128,7 +129,16 @@ namespace SharpPulsar.Test.Transaction
 
             var topic = $"{_topicOutput}-{Guid.NewGuid()}";
 
-			var producerBuilder = new ProducerConfigBuilder<byte[]>()
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"test2")
+                .EnableBatchIndexAcknowledgment(true)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
+
+            var consumer = _client.NewConsumer(consumerBuilder);
+
+            var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				//.EnableBatching(true)
 				.SendTimeout(0);
@@ -143,13 +153,6 @@ namespace SharpPulsar.Test.Transaction
 				txnMessageCnt++;
 			}
 
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
-                .SubscriptionName($"test2")
-                .EnableBatchIndexAcknowledgment(true)
-                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
-
-            var consumer = _client.NewConsumer(consumerBuilder);
             // Can't receive transaction messages before commit.
             var message = consumer.Receive();
 			Assert.Null(message);
@@ -177,7 +180,16 @@ namespace SharpPulsar.Test.Transaction
 		{
 			var txn = Txn;
 
-			var producerBuilder = new ProducerConfigBuilder<byte[]>();
+
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(_topicOutput)
+                .SubscriptionName($"test{DateTime.Now.Ticks}")
+                .ForceTopicCreation(true)
+                .EnableBatchIndexAcknowledgment(true)
+                .SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
+            var consumer = _client.NewConsumer(consumerBuilder);
+
+            var producerBuilder = new ProducerConfigBuilder<byte[]>();
 			producerBuilder.Topic(_topicOutput);
 			producerBuilder.SendTimeout(0);
 
@@ -189,12 +201,6 @@ namespace SharpPulsar.Test.Transaction
 				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
 			}
 
-			var consumerBuilder = new ConsumerConfigBuilder<byte[]>();
-			consumerBuilder.Topic(_topicOutput);
-			consumerBuilder.SubscriptionName($"test{DateTime.Now.Ticks}");
-			consumerBuilder.EnableBatchIndexAcknowledgment(true);
-			consumerBuilder.SubscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
-			var consumer = _client.NewConsumer(consumerBuilder);
 
 			// Can't receive transaction messages before abort.
 			var message = consumer.Receive();

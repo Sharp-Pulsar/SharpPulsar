@@ -15,7 +15,6 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;
 using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
-using SharpPulsar.Extension;
 using SharpPulsar.Batch;
 
 /// <summary>

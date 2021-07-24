@@ -5,7 +5,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
 using System.Linq;
@@ -82,7 +81,7 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData)));
+			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData)));
 
             ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async subs => 
             {

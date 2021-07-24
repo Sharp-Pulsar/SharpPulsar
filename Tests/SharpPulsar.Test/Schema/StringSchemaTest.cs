@@ -1,9 +1,7 @@
-﻿using SharpPulsar.Interfaces.ISchema;
-using SharpPulsar.Schemas;
+﻿using SharpPulsar.Schemas;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
-using SharpPulsar.Extension;
 using SharpPulsar.Shared;
 
 /// <summary>

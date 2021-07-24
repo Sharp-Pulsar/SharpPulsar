@@ -17,13 +17,9 @@
  * under the License.
  */
 
-using System;
 using System.Collections.Generic;
-using System.Text;
 namespace SharpPulsar.Admin.Transactions.Models
 {
-    using System.Linq;
-
     public partial class TransactionPendingAckInternalStats
     {
         /// <summary>

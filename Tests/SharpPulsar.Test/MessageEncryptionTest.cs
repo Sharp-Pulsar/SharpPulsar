@@ -1,6 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using System;
@@ -11,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class MessageEncryptionTest
 	{
 		private readonly ITestOutputHelper _output;
@@ -28,6 +26,14 @@ namespace SharpPulsar.Test
 			var messageCount = 10;
 			var topic = "encrypted-messages";
 
+
+            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .ForceTopicCreation(true)
+                .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
+                .SubscriptionName("encrypted-sub")
+                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
+
             var producer = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
@@ -39,13 +45,6 @@ namespace SharpPulsar.Test
 			}
 			var receivedCount = 0;
 
-            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
-                .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
-                .SubscriptionName("encrypted-sub")
-                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
-
-            Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < messageCount; i++)
 			{
 				var message = consumer.Receive();

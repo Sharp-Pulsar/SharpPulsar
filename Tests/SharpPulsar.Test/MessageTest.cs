@@ -3,7 +3,6 @@ using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schemas;
 using Xunit;
-using SharpPulsar.Extension;
 using System;
 using System.Buffers;
 /// <summary>
@@ -27,10 +26,10 @@ using System.Buffers;
 namespace SharpPulsar.Test
 {
 
-	/// <summary>
-	/// Unit test of <seealso cref="MessageImpl"/>.
-	/// </summary>
-	public class MessageTest
+    /// <summary>
+    /// Unit test of <seealso cref="MessageImpl"/>.
+    /// </summary>
+    public class MessageTest
 	{
 		
 		[Fact]

@@ -13,7 +13,6 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
-using SharpPulsar.Queues;
 using SharpPulsar.Stats.Producer;
 using System;
 using System.Collections.Generic;

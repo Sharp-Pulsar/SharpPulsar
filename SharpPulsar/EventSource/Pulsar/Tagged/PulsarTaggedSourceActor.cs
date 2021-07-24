@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
-using System.Threading;
 using Akka.Actor;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Queues;
 using SharpPulsar.Common;
 using SharpPulsar.Utility;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
-using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Messages.Requests;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
@@ -81,7 +78,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
-            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client)));
+            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client)));
             _child.Tell(Connect.Instance);
             Receive<ICumulative>(m => {
                 _child.Tell(m);

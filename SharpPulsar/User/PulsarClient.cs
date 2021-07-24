@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Cache;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -10,14 +9,12 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Queues;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
@@ -27,7 +24,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -176,18 +172,10 @@ namespace SharpPulsar.User
                 }
                 conf.TopicNames.Add(conf.DeadLetterPolicy.RetryLetterTopic);
             }
-            var interceptors = conf.Interceptors;
-            if (interceptors == null || interceptors.Count == 0)
-            {
-                return await Subscribe(conf, schema, null).ConfigureAwait(false);
-            }
-            else
-            {
-                return await Subscribe(conf, schema, new ConsumerInterceptors<T>(_actorSystem, interceptors)).ConfigureAwait(false);
-            }
+            return await Subscribe(conf, schema).ConfigureAwait(false);
         }
         
-        private async ValueTask<Consumer<T>> Subscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        private async ValueTask<Consumer<T>> Subscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
             if (state != 0)
@@ -230,25 +218,25 @@ namespace SharpPulsar.User
                 {
                     throw new ArgumentException("Topic names list must be null when use topicsPattern");
                 }
-                return await PatternTopicSubscribe(conf, schema, interceptors).ConfigureAwait(false);
+                return await PatternTopicSubscribe(conf, schema).ConfigureAwait(false);
             }
             else if (conf.TopicNames.Count == 1)
             {
-                return await SingleTopicSubscribe(conf, schema, interceptors).ConfigureAwait(false);
+                return await SingleTopicSubscribe(conf, schema).ConfigureAwait(false);
             }
             else
             {
-                return await MultiTopicSubscribe(conf, schema, interceptors).ConfigureAwait(false);
+                return await MultiTopicSubscribe(conf, schema).ConfigureAwait(false);
             }
         }
 
-        private async ValueTask<Consumer<T>> SingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        private async ValueTask<Consumer<T>> SingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var schemaClone = await PreProcessSchemaBeforeSubscribe(schema, conf.SingleTopic).ConfigureAwait(false);
-            return await DoSingleTopicSubscribe(conf, schemaClone, interceptors).ConfigureAwait(false);
+            return await DoSingleTopicSubscribe(conf, schemaClone).ConfigureAwait(false);
         }
 
-        private async ValueTask<Consumer<T>> DoSingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        private async ValueTask<Consumer<T>> DoSingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var topic = conf.SingleTopic;
             try
@@ -268,7 +256,7 @@ namespace SharpPulsar.User
                     var cloneConf = conf;
                     var topicName = cloneConf.SingleTopic;
                     cloneConf.TopicNames.Remove(topicName);
-                    consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, true, _clientConfigurationData));
+                    consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, true, _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                     var response = await consumer.Ask<AskResponse>(new Subscribe(topic, metadata.Partitions)).ConfigureAwait(false);
                     if (response.Failed)
                         throw response.Exception;
@@ -276,18 +264,18 @@ namespace SharpPulsar.User
 
                     _client.Tell(new AddConsumer(consumer));
 
-                    return new Consumer<T>(state, consumer, schema, conf, interceptors);
+                    return new Consumer<T>(state, consumer, schema, conf);
                 }
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, interceptors, true, _clientConfigurationData)));
+                    consumer = _actorSystem.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, true, _clientConfigurationData)));
                     var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
                     if (response.Failed)
                         throw response.Exception;
                     _client.Tell(new AddConsumer(consumer));
-                    return new Consumer<T>(state, consumer, schema, conf, interceptors);
+                    return new Consumer<T>(state, consumer, schema, conf);
                 }
             }
             catch(Exception e)
@@ -297,12 +285,12 @@ namespace SharpPulsar.User
             }
         }
 
-        private async ValueTask<Consumer<T>> MultiTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        private async ValueTask<Consumer<T>> MultiTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames), "Topics is empty or invalid.");
 
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
-            var consumer = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, interceptors, conf.ForceTopicCreation, _clientConfigurationData)));
+            var consumer = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, conf.ForceTopicCreation, _clientConfigurationData)), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var response = await consumer.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
 
             if (response.Failed)
@@ -310,10 +298,10 @@ namespace SharpPulsar.User
 
             _client.Tell(new AddConsumer(consumer));
 
-            return new Consumer<T>(state, consumer, schema, conf, interceptors);
+            return new Consumer<T>(state, consumer, schema, conf);
         }
 
-        private async ValueTask<Consumer<T>> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+        private async ValueTask<Consumer<T>> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var regex = conf.TopicsPattern.ToString();
             var subscriptionMode = ConvertRegexSubscriptionMode(conf.RegexSubscriptionMode);
@@ -332,11 +320,11 @@ namespace SharpPulsar.User
                 topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
                 var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 
-                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, interceptors, _clientConfigurationData));
+                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value,  _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                 
                 _client.Tell(new AddConsumer(consumer));
 
-                return new Consumer<T>(state, consumer, schema, conf, interceptors);
+                return new Consumer<T>(state, consumer, schema, conf);
             }
             catch(Exception e)
             {

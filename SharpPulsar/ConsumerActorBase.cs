@@ -45,8 +45,6 @@ namespace SharpPulsar
 		internal abstract void RedeliverUnacknowledgedMessages();
 		internal abstract IConsumerStatsRecorder Stats { get; }
 
-        private ConsumerInterceptors<T> _interceptors;
-
 		internal enum ConsumerType
 		{
 			PARTITIONED,
@@ -72,10 +70,10 @@ namespace SharpPulsar
 		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
-		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors)
+		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema)
 		{
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
-                _interceptors = new ConsumerInterceptors<T>(Context.System, conf.Interceptors);
+                Interceptors = new ConsumerInterceptors<T>(Context.System, conf.Interceptors);
 
             StateActor = stateActor;
 			_topic = topic;
@@ -93,7 +91,6 @@ namespace SharpPulsar
 
 			ListenerExecutor = listenerExecutor;
 			Schema = schema;
-			Interceptors = interceptors;
 			
 			if (conf.BatchReceivePolicy != null)
 			{
@@ -123,7 +120,7 @@ namespace SharpPulsar
 				//BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
 				
 			}
-			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), Self, SendState.Instance, ActorRefs.NoSender);
+			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
 		}
         protected bool VerifyBatchReceive()
         {
@@ -142,9 +139,9 @@ namespace SharpPulsar
 
         protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
         {
-            if (_interceptors != null)
+            if (Interceptors != null)
             {
-                return _interceptors.BeforeConsume(Self, message);
+                return Interceptors.BeforeConsume(Self, message);
             }
             else
             {
@@ -169,7 +166,7 @@ namespace SharpPulsar
                         Sender.Tell(new AskResponse(messages));
                     }
                     else
-                        Sender.Tell(new AskResponse(null));
+                        Sender.Tell(new AskResponse());
                 }
             }
         }
@@ -193,7 +190,7 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(BeforeConsume(message)));
                 }                    
                 else
-                    Sender.Tell(new AskResponse(null));
+                    Sender.Tell(new AskResponse());
             }
         }
         private bool VerifyConsumerState()

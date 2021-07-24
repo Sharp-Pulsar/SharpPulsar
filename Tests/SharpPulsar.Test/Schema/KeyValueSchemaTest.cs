@@ -6,7 +6,6 @@ using SharpPulsar.Shared;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
-using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

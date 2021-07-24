@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixtures;
@@ -7,7 +6,6 @@ using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 

@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Schemas;
-using SharpPulsar.Extension;
 using System;
 using System.Linq;
 using Xunit;

@@ -3,7 +3,6 @@ using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;

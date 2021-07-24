@@ -33,6 +33,7 @@ namespace SharpPulsar.Test.Transaction
 			var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.SubscriptionName(subName)
+                .ForceTopicCreation(true)
 				.EnableBatchIndexAcknowledgment(true)
 				.AcknowledgmentGroupTime(0);
 

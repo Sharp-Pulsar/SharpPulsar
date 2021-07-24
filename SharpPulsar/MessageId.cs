@@ -3,7 +3,6 @@ using Google.Protobuf;
 
 using SharpPulsar.Batch;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Extension;
 using SharpPulsar.Protocol.Proto;

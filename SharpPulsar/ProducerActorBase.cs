@@ -1,9 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

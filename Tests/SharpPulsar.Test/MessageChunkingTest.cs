@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
-using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +28,7 @@ using System.Threading;
 /// </summary>
 namespace SharpPulsar.Test
 {
-	[Collection(nameof(PulsarTests))]
+    [Collection(nameof(PulsarTests))]
 	public class MessageChunkingTest
 	{
         private readonly ITestOutputHelper _output;
@@ -49,18 +46,18 @@ namespace SharpPulsar.Test
 			//this.conf.MaxMessageSize = 5;
 			const int totalMessages = 3;
 			var topicName = $"persistent://public/default/my-topic1-{DateTimeHelper.CurrentUnixTimeMillis()}";
-			var builder = new ConsumerConfigBuilder<byte[]>();
-			builder.Topic(topicName);
-			builder.SubscriptionName("my-subscriber-name");
-			builder.AckTimeout(TimeSpan.FromMilliseconds(20000));
-			builder.ForceTopicCreation(true);
-			builder.AcknowledgmentGroupTime(0);
+			var builder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topicName)
+                .SubscriptionName("my-subscriber-name")
+                .AckTimeout(TimeSpan.FromMilliseconds(20000))
+                .ForceTopicCreation(true)
+                .AcknowledgmentGroupTime(0);
 			var consumer = _client.NewConsumer(builder);
 
-			var pBuilder = new ProducerConfigBuilder<byte[]>();
-			pBuilder.Topic(topicName);
-			pBuilder.EnableChunking(true);
-			pBuilder.MaxMessageSize(5);
+			var pBuilder = new ProducerConfigBuilder<byte[]>()
+                .Topic(topicName)
+                .EnableChunking(true)
+                .MaxMessageSize(5);
 			var producer = _client.NewProducer(pBuilder);
 
 			IList<string> publishedMessages = new List<string>();
@@ -74,7 +71,7 @@ namespace SharpPulsar.Test
 			IMessage<byte[]> msg = null;
 			ISet<string> messageSet = new HashSet<string>();
 			IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+
 			for (var i = 0; i < totalMessages - 1; i++)
 			{
 				msg = consumer.Receive();

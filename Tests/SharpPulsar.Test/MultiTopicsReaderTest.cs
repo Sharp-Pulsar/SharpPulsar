@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Extension;
 using System.Threading;
 using SharpPulsar.Interfaces;
 /// <summary>
@@ -114,7 +113,7 @@ namespace SharpPulsar.Test
 			var keys = PublishMessages(topic, numKeys, enableBatch);
 			var builder = new ReaderConfigBuilder<byte[]>()
 				.Topic(topic)
-				.StartMessageId(IMessageId.Earliest)
+				.StartMessageId(IMessageId.Earliest)                
 				.ReaderName(Subscription);
 			var reader = _client.NewReader(builder);
 			Thread.Sleep(TimeSpan.FromSeconds(30));

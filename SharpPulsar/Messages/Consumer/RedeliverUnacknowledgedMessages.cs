@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using SharpPulsar.Exceptions;
+﻿using SharpPulsar.Exceptions;
 
 namespace SharpPulsar.Messages.Consumer
 {

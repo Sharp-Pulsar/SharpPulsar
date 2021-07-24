@@ -50,6 +50,7 @@ namespace SharpPulsar.Tracker
         private const int MaxAckGroupSize = 50;//1000;
         private readonly long _consumerId;
         private readonly IActorRef _consumer;
+        private readonly IActorRef _generator;
         private IActorRef _conx;
 
 		private readonly long _acknowledgementGroupTimeMicros;
@@ -74,10 +75,11 @@ namespace SharpPulsar.Tracker
         private readonly bool _batchIndexAckEnabled;
         private readonly bool _ackReceiptEnabled;
 
-        public PersistentAcknowledgmentsGroupingTracker(IActorRef consumer, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
+        public PersistentAcknowledgmentsGroupingTracker(IActorRef consumer, IActorRef generator, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
             _handler = handler;
             _consumer = consumer;
+            _generator = generator;
             _consumerId = consumerid;
             _pendingIndividualAcks = new SortedSet<MessageId>();
             _acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
@@ -106,9 +108,9 @@ namespace SharpPulsar.Tracker
                 await AddListAcknowledgment(a.MessageIds, a.AckType, a.Properties);
             });
         }
-        public static Props Prop(IActorRef consumer, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
+        public static Props Prop(IActorRef consumer, IActorRef generator, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
-			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker<T>(consumer, consumerid, handler, conf));
+			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker<T>(consumer, generator, consumerid, handler, conf));
         }
 		/// <summary>
 		/// Since the ack are delayed, we need to do some best-effort duplicate check to discard messages that are being
@@ -628,7 +630,7 @@ namespace SharpPulsar.Tracker
         {
             if (await IsAckReceiptEnabled(cnx))
             {               
-                var response = await _consumer.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 long requestId = response.Id;
 
                 ReadOnlySequence<byte> cmd;

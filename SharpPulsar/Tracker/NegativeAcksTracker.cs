@@ -20,8 +20,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using Akka.Actor;
 using Akka.Util.Internal;
 using SharpPulsar.Batch;

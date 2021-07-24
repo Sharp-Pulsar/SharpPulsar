@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.User;
@@ -38,6 +38,8 @@ namespace Tutorials
                 ExclusiveProduceNoneConsumer(pulsarClient);
             else if (cmd.Equals("bat", StringComparison.OrdinalIgnoreCase))
                 BatchProduceConsumer(pulsarClient);
+            else if (cmd.Equals("m", StringComparison.OrdinalIgnoreCase))
+                MultiConsumer(pulsarClient);
             else
                 ProduceConsumer(pulsarClient);
 
@@ -45,6 +47,13 @@ namespace Tutorials
         }
         private static void ProduceConsumer(PulsarClient pulsarClient)
         {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"sub-{Guid.NewGuid()}")
+                .IsAckReceiptEnabled(true));
+
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .Topic(myTopic));
             
@@ -57,12 +66,6 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(myTopic)
-                .ForceTopicCreation(true)
-                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
-                .IsAckReceiptEnabled(true)
-                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             for (var i = 0; i < 100; i++)
             {
@@ -80,13 +83,20 @@ namespace Tutorials
         }
         private static void BatchProduceConsumer(PulsarClient pulsarClient)
         {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .Topic(myTopic)
                 .EnableBatching(true)
                 .BatchingMaxMessages(50));
             
 
-            for (var i = 0; i < 50; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"batched-tuts-{i}");
                 var noId = producer.NewMessage().Value(data).Send();
@@ -94,15 +104,8 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(myTopic)
-                .ForceTopicCreation(true)
-                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
-                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
-            Thread.Sleep(TimeSpan.FromSeconds(5));
-
-            for (var i = 0; i < 50; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)
@@ -115,6 +118,66 @@ namespace Tutorials
                     Console.WriteLine($"[Batched] message '{res}' from topic: {message.TopicName}");
                 }
             }
+        }
+        private static void MultiConsumer(PulsarClient client)
+        {
+            var messageCount = 5;
+            var first = $"one-topic-{Guid.NewGuid()}";
+            var second = $"two-topic-{Guid.NewGuid()}";
+            var third = $"three-topic-{Guid.NewGuid()}";
+            var builder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(first, second, third)
+                .ForceTopicCreation(true)
+                .SubscriptionName("multi-topic-sub");
+
+            var consumer = client.NewConsumer(builder);
+
+            PublishMessages(first, messageCount, "hello Toba", client);
+            PublishMessages(third, messageCount, "hello Toba", client);
+            PublishMessages(second, messageCount, "hello Toba", client);
+
+            for (var i = 0; i < messageCount; i++)
+            {
+                var message = (TopicMessage<byte[]>)consumer.Receive();
+                if(message != null)
+                {
+                    consumer.Acknowledge(message);
+                    Console.WriteLine($"message from topic: {message.TopicName}");
+                }
+            }
+            for (var i = 0; i < messageCount; i++)
+            {
+                var message = (TopicMessage<byte[]>)consumer.Receive();
+                if (message != null)
+                {
+                    consumer.Acknowledge(message);
+                    Console.WriteLine($"message from topic: {message.TopicName}");
+                }
+            }
+            for (var i = 0; i < messageCount; i++)
+            {
+                var message = (TopicMessage<byte[]>)consumer.Receive(); if (message != null)
+                {
+                    consumer.Acknowledge(message);
+                    Console.WriteLine($"message from topic: {message.TopicName}");
+                }
+            }
+        }
+
+        private static List<MessageId> PublishMessages(string topic, int count, string message, PulsarClient client)
+        {
+            var keys = new List<MessageId>();
+            var builder = new ProducerConfigBuilder<byte[]>()
+                .Topic(topic);
+            var producer = client.NewProducer(builder);
+            for (var i = 0; i < count; i++)
+            {
+                var key = "key" + i;
+                var data = Encoding.UTF8.GetBytes($"{message}-{i}");
+                var id = producer.NewMessage().Key(key).Value(data).Send();
+                keys.Add(id);
+            }
+            return keys;
         }
         private static void ExclusiveProduceNoneConsumer(PulsarClient pulsarClient)
         {
@@ -167,7 +230,7 @@ namespace Tutorials
                 .Topic(myTopic));;
             
 
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
                 producer.NewMessage().Value(data).Send();
@@ -180,7 +243,7 @@ namespace Tutorials
                 .SubscriptionName("myTopic-sub-Exclusive")
                 .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)

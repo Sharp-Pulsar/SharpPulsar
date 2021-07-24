@@ -13,7 +13,6 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

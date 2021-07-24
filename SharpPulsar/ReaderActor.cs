@@ -8,7 +8,6 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
 using System.Linq;
@@ -94,11 +93,11 @@ namespace SharpPulsar
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
 			if (consumerConfiguration.ReceiverQueueSize == 0)
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, null, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, true, clientConfigurationData)));
 			}
 			else
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData)));
 			}
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m, Sender);

@@ -15,7 +15,6 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using SharpPulsar.Queues;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas.Generic;
 using SharpPulsar.Stats.Consumer;
@@ -23,7 +22,6 @@ using SharpPulsar.Stats.Consumer.Api;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -96,18 +94,18 @@ namespace SharpPulsar
 
 		private readonly IActorRef _self;
 		private readonly IActorContext _context;
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, clientConfiguration)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, createTopicIfDoesNotExist, clientConfiguration)
 		{
 		}
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration)
-		{
-		}
-
-		public MultiTopicsConsumer(IActorRef stateActor,IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, listenerExecutor, schema, interceptors, createTopicIfDoesNotExist, null, 0, clientConfiguration)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema, interceptors)
+		public MultiTopicsConsumer(IActorRef stateActor,IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, listenerExecutor, schema, createTopicIfDoesNotExist, null, 0, clientConfiguration)
+		{
+		}
+
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema)
 		{
 			_context = Context;
 			_generator = idGenerator;
@@ -339,10 +337,6 @@ namespace SharpPulsar
 					Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<AcknowledgeMessageIds>(m =>
-			{
-                DoAcknowledge(m.MessageIds, AckType.Individual, new Dictionary<string, long>(), null);
-			});
 			Receive<IAcknowledge>(m =>
 			{
                 switch(m)
@@ -350,33 +344,52 @@ namespace SharpPulsar
                     case AcknowledgeMessage<T> ack:
                         DoAcknowledge(ack.Message.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
                         break;
+                    case AcknowledgeWithTxn ack:
+                        DoAcknowledge(ack.MessageId, ack.AckType, ack.Properties, ack.Txn);
+                        break;
+                    case AcknowledgeWithTxnMessages ack:
+                        DoAcknowledge(ack.MessageIds, ack.AckType, ack.Properties, ack.Txn);
+                        break;
+                    case AcknowledgeMessageId ack:
+                        DoAcknowledge(ack.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
+                        break;
+                    case AcknowledgeMessageIds ack:
+                        DoAcknowledge(ack.MessageIds, AckType.Individual, new Dictionary<string, long>(), null);
+                        break;
+                    case AcknowledgeMessages<T> ms:
+                        foreach (var x in ms.Messages)
+                        {
+                            DoAcknowledge(x.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
+                        }
+                        break;
+                    default:
+                        Sender.Tell(new AskResponse());
+                        break;
                 }
                 
 			});
-			Receive<AcknowledgeWithTxn>(m =>
+			Receive<ICumulative>(message =>
 			{
-                DoAcknowledge(m.MessageId, m.AckType, m.Properties, m.Txn);
+                switch(message)
+                {
+                    case AcknowledgeCumulativeMessage<T> m:
+                        DoAcknowledge(m.Message.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
+                        break;
+                    case AcknowledgeCumulativeMessageId m:
+                        DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
+                        break;
+                    case AcknowledgeCumulativeTxn m:
+                        DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), m.Txn);
+                        break;
+                    case ReconsumeLaterCumulative<T> ack:
+                        DoReconsumeLater(ack.Message, AckType.Cumulative, new Dictionary<string, long>(), ack.DelayTime);
+                        break;
+                    default:
+                        Sender.Tell(new AskResponse());
+                        break;
+                }
+                
 			});
-			Receive<AcknowledgeWithTxnMessages>(m =>
-			{
-                DoAcknowledge(m.MessageIds, m.AckType, m.Properties, m.Txn);
-			});
-			Receive<AcknowledgeCumulativeMessage<T>>(m =>
-			{
-                DoAcknowledge(m.Message.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
-			});
-			Receive<AcknowledgeMessageId>(m =>
-			{
-                DoAcknowledge(m.MessageId, AckType.Individual, new Dictionary<string, long>(), null);
-            });
-			Receive<AcknowledgeCumulativeMessageId>(m =>
-			{
-                DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), null);
-            });
-			Receive<AcknowledgeCumulativeTxn>(m =>
-			{
-                DoAcknowledge(m.MessageId, AckType.Cumulative, new Dictionary<string, long>(), m.Txn);
-            });
 
             Receive<ReconsumeLaterMessages<T>>(m =>
             {
@@ -455,8 +468,9 @@ namespace SharpPulsar
 
 			Stash.UnstashAll();
 		}
-		// subscribe one more given topic
-		private async ValueTask<(IActorRef consumer, AskResponse response)> Subscribe(string topicName, bool createTopicIfDoesNotExist)
+        
+        // subscribe one more given topic
+        private async ValueTask<(IActorRef consumer, AskResponse response)> Subscribe(string topicName, bool createTopicIfDoesNotExist)
 		{
 			var topicNameInstance = GetTopicName(topicName);
 			if (topicNameInstance == null)
@@ -608,16 +622,24 @@ namespace SharpPulsar
 
 		private void ResumeReceivingFromPausedConsumersIfNeeded()
 		{
-			if(IncomingMessages.Count <= _sharedQueueResumeThreshold && _pausedConsumers.Count > 0)
+            if(IncomingMessages.Count <= _sharedQueueResumeThreshold && _pausedConsumers.Count > 0)
 			{
-				while(true)
+                while (true)
 				{
-					var consumer = _pausedConsumers.FirstOrDefault();
-					if(consumer == null)
-					{
-						break;
-					}
-					consumer.Tell(Messages.Consumer.Resume.Instance);
+                    try
+                    {
+                        var consumer = _pausedConsumers.Dequeue();
+
+                        if (consumer == null)
+                        {
+                            break;
+                        }
+                        consumer.Tell(Messages.Consumer.Resume.Instance);
+                    }
+                    catch
+                    {
+                        break;
+                    }
 				}
 			}
 		}
@@ -1048,7 +1070,7 @@ namespace SharpPulsar
                 {
 					var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
 					var partitionName = TopicName.Get(topicName).GetPartition(i).ToString();
-					var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, Interceptors, createIfDoesNotExist);
+					var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist);
 					if(!newConsumer.response.Failed)
                         _consumers.Add(partitionName, newConsumer.consumer);
 				}
@@ -1069,7 +1091,7 @@ namespace SharpPulsar
 				++AllTopicPartitionsNumber;
 				var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
 
-                var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, Interceptors, createIfDoesNotExist);
+                var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist);
                 if (!newConsumer.response.Failed)
                     _consumers.Add(topicName, newConsumer.consumer);
                 else
@@ -1099,15 +1121,15 @@ namespace SharpPulsar
 			//HandleSubscribeOneTopicError(topicName, ex, subscribeResult);
 		}
 
-        private async ValueTask<(IActorRef consumer, AskResponse response)> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, ConsumerInterceptors<T> interceptors, bool createIfDoesNotExist)
+        private async ValueTask<(IActorRef consumer, AskResponse response)> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
         {
             IActorRef consumer = null;
 			if (conf.ReceiverQueueSize == 0)
 			{
-				consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, null, createIfDoesNotExist, _clientConfiguration)));
+				consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, createIfDoesNotExist, _clientConfiguration)));
 			}
             else
-			    consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, null, createIfDoesNotExist, _clientConfiguration)));
+			    consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration)));
             
             var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
             return (consumer, response);
@@ -1319,7 +1341,7 @@ namespace SharpPulsar
 					var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
 					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					var configurationData = InternalConsumerConfig;
-					var newConsumer = _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, Interceptors, true, _clientConfiguration)));
+					var newConsumer = _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, true, _clientConfiguration)));
 					if (_paused)
 					{
 						newConsumer.Tell(Messages.Consumer.Pause.Instance);
@@ -1346,11 +1368,11 @@ namespace SharpPulsar
 			var multiMessageId = new Dictionary<string, IMessageId>();
 			foreach (var v in _consumers.Values)
 			{
-				var t = await v.Ask<string>(GetTopic.Instance);
+				var t = await v.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
 				IMessageId messageId;
 				try
 				{
-					messageId = await v.Ask<IMessageId>(GetLastMessageId.Instance);
+					messageId = await v.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
 				}
 				catch (Exception e)
 				{

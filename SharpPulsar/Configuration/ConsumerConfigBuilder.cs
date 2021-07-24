@@ -10,7 +10,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
 using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
-using BAMCIS.Util.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

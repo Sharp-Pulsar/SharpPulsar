@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Util;
 using System.Threading;
@@ -90,13 +89,14 @@ namespace SharpPulsar.Test
 		{
 			var numKeys = 10;
 
-			var keys = PublishMessages(topic, numKeys, enableBatch);
-			var builder = new ReaderConfigBuilder<byte[]>()
-				.Topic(topic)
-				.StartMessageId(IMessageId.Earliest)
-				.ReaderName(Subscription);
-			var reader = _client.NewReader(builder);
-			Thread.Sleep(TimeSpan.FromSeconds(30));
+            var builder = new ReaderConfigBuilder<byte[]>()
+                .Topic(topic)
+                .StartMessageId(IMessageId.Earliest)
+                .ReaderName(Subscription);
+            var reader = _client.NewReader(builder);
+
+            var keys = PublishMessages(topic, numKeys, enableBatch);
+
 			for (var i = 0; i < numKeys; i++)
 			{
 				var message = (Message<byte[]>)reader.ReadNext();
@@ -117,12 +117,13 @@ namespace SharpPulsar.Test
 			var partition0 = topic + "-partition-0";
 			var numKeys = 10;
 
-			var keys = PublishMessages(partition0, numKeys, false);
-			var builder = new ReaderConfigBuilder<byte[]>()
-				.Topic(partition0)
-				.StartMessageId(IMessageId.Earliest)
-				.ReaderName(Subscription);
-			var reader = _client.NewReader(builder);
+            var builder = new ReaderConfigBuilder<byte[]>()
+                .Topic(partition0)
+                .StartMessageId(IMessageId.Earliest)
+                .ReaderName(Subscription);
+            var reader = _client.NewReader(builder);
+
+            var keys = PublishMessages(partition0, numKeys, false);
 
 			for (var i = 0; i < numKeys; i++)
 			{

@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using SharpPulsar.Configuration;
@@ -14,7 +11,7 @@ namespace SharpPulsar.Benchmarks.Bench
     [SimpleJob(RunStrategy.Throughput, targetCount: 1, warmupCount: 1)]
     public class ProduceAndConsume
     {
-        static string _benchTopic = $"persistent://public/default/benchTopic-8";
+        static string _benchTopic = $"persistent://public/default/benchTopic-{Guid.NewGuid()}";
         private PulsarClient _client;
         private PulsarSystem _pulsarSystem;
         private Producer<byte[]> _producer;
@@ -32,14 +29,16 @@ namespace SharpPulsar.Benchmarks.Bench
 
             _client = _pulsarSystem.NewClient();
 
-            _producer = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
-               .Topic(_benchTopic));
 
             _consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
                 .Topic(_benchTopic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"bench-sub-{Guid.NewGuid()}")
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
+
+
+            _producer = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
+               .Topic(_benchTopic));
         }
         [GlobalCleanup]
         public void Cleanup()
@@ -49,28 +48,24 @@ namespace SharpPulsar.Benchmarks.Bench
         }
 
         [Benchmark]
-        public void Measure_Publish_Rate()
+        public void Measure_Publish_And_Consume_Rate()
         {
             PublishMessages(Iterations);
-        }
-        [Benchmark]
-        public void Measure_Consume_Rate()
-        {
             ConsumeMessages(Iterations);
         }
 
         private void PublishMessages(int iterations)
         {
-            for(var i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"bench mark [{i}]");
-                var id = _producer.NewMessage().Value(data).Send();
-                Console.WriteLine($"Message Id({id.LedgerId}:{id.EntryId})");
+                _producer.NewMessage().Value(data).Send();
             }
         }
         private void ConsumeMessages(int iterations)
         {
-            for(var i = 0; i < iterations; i++)
+
+            for (var i = 0; i < iterations; i++)
             {
                 var message = (Message<byte[]>)_consumer.Receive();
                 if (message != null)

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using Akka.Util.Internal;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;

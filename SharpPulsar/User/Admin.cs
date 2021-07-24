@@ -1,5 +1,4 @@
 ﻿using Microsoft.Rest;
-using Newtonsoft.Json;
 using SharpPulsar.Admin;
 using SharpPulsar.Admin.Models;
 using SharpPulsar.Admin.Transactions.Models;

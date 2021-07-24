@@ -3,7 +3,6 @@ using Akka.Actor;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Queues;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Messages.Consumer;
