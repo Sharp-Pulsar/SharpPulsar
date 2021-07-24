@@ -96,7 +96,7 @@ namespace SharpPulsar.Test
             var reader = _client.NewReader(builder);
 
             var keys = PublishMessages(topic, numKeys, enableBatch);
-
+            Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < numKeys; i++)
 			{
 				var message = (Message<byte[]>)reader.ReadNext();

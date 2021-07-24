@@ -105,6 +105,9 @@ namespace SharpPulsar
 			Receive<AcknowledgeCumulativeMessage<T>> (m => {
 				_consumer.Tell(m, Sender);
 			});
+			Receive<Messages.Consumer.Receive> (m => {
+				_consumer.Tell(m, Sender);
+			});
 			Receive<Connect> (m => {
 				_consumer.Tell(m, Sender);
 			});

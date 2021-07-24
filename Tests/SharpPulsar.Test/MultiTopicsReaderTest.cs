@@ -90,7 +90,7 @@ namespace SharpPulsar.Test
 				}
 			}
 			// receive messagesS
-			var message = reader.ReadNext(TimeSpan.FromSeconds(30));
+			var message = reader.ReadNext(TimeSpan.FromSeconds(5));
 			while (message != null)
 			{
 				var value = message.Value;
@@ -116,10 +116,10 @@ namespace SharpPulsar.Test
 				.StartMessageId(IMessageId.Earliest)                
 				.ReaderName(Subscription);
 			var reader = _client.NewReader(builder);
-			Thread.Sleep(TimeSpan.FromSeconds(30));
+			Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < numKeys; i++)
 			{
-				var message = (TopicMessage<byte[]>)reader.ReadNext();
+				var message = reader.ReadNext();
 				if (message != null)
 				{
 					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");

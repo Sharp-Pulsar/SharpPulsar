@@ -6,6 +6,7 @@ using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -78,6 +79,12 @@ namespace SharpPulsar.Test.Api
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
+            var consumer = _client.NewConsumer(consumerBuilder);
+
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(topic);
             var producer = _client.NewProducer(producerBuilder);
@@ -87,12 +94,7 @@ namespace SharpPulsar.Test.Api
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .Send();
 
-
-
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>();
-            consumerBuilder.Topic(topic);
-            consumerBuilder.SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
-            var consumer = _client.NewConsumer(consumerBuilder);
+            Thread.Sleep(TimeSpan.FromSeconds(5));
             var message = consumer.Receive();
 
             Assert.Equal(byteKey, message.KeyBytes);
@@ -110,9 +112,10 @@ namespace SharpPulsar.Test.Api
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>();
-            consumerBuilder.Topic(_topic);
-            consumerBuilder.SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(_topic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
             var consumer = _client.NewConsumer(consumerBuilder);
 
 
@@ -148,7 +151,7 @@ namespace SharpPulsar.Test.Api
                 .Value(Encoding.UTF8.GetBytes($"TestMessage-4"))
                 .Send();
 
-
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             var message = consumer.Receive();
             Assert.Equal(byteKey, message.KeyBytes);
             Assert.True(message.HasBase64EncodedKey());

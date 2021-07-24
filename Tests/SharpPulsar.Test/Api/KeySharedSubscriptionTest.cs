@@ -102,7 +102,7 @@ namespace SharpPulsar.Test.Api
 			var builder = new ConsumerConfigBuilder<byte[]>();
 			builder.Topic(topic);
 			builder.SubscriptionName(consumerSub);
-			builder.AckTimeout(TimeSpan.FromMilliseconds(30));
+			builder.AckTimeout(TimeSpan.FromSeconds(10));
 			builder.ForceTopicCreation(true);
 			if(keySharedPolicy != null)
 				builder.KeySharedPolicy(keySharedPolicy);

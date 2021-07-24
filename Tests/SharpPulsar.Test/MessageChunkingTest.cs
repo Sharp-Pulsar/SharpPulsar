@@ -7,6 +7,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Interfaces;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -71,7 +72,7 @@ namespace SharpPulsar.Test
 			IMessage<byte[]> msg = null;
 			ISet<string> messageSet = new HashSet<string>();
 			IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
-
+            Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < totalMessages - 1; i++)
 			{
 				msg = consumer.Receive();

@@ -2,6 +2,7 @@
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
@@ -34,6 +35,7 @@ namespace SharpPulsar
 	{
 
 		private readonly IActorRef _consumer;
+		private IActorRef _sender;
 		private readonly IActorRef _generator;
 
         public IStash Stash { get; set; }
@@ -85,34 +87,14 @@ namespace SharpPulsar
 
             ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async subs => 
             {
+                _sender = Sender;
                 await SubscribeAndCreateTopics(subs);
             });
             ReceiveAsync<Subscribe>(async sub => 
             {
+                _sender = Sender;
                 await SubscribeToTopic(sub);
             });
-            ReceiveAny(_ => Stash.Stash());
-		}
-        private async ValueTask SubscribeAndCreateTopics(SubscribeAndCreateTopicsIfDoesNotExist subs)
-        {
-            var response = await _consumer.Ask<AskResponse>(subs).ConfigureAwait(false);
-            Sender.Tell(response);
-            if (!response.Failed)
-            {
-                Become(Ready);
-            }
-        }
-        private async ValueTask SubscribeToTopic(Subscribe sub)
-        {
-            var response = await _consumer.Ask<AskResponse>(sub).ConfigureAwait(false);
-            Sender.Tell(response);
-            if (!response.Failed)
-            {
-                Become(Ready);
-            }
-        }
-        private void Ready()
-        {
             Receive<HasReachedEndOfTopic>(m => {
                 _consumer.Tell(m, Sender);
             });
@@ -120,6 +102,9 @@ namespace SharpPulsar
                 _consumer.Tell(m, Sender);
             });
             Receive<MessageProcessed<T>>(m => {
+                _consumer.Tell(m, Sender);
+            });
+            Receive<Messages.Consumer.Receive>(m => {
                 _consumer.Tell(m, Sender);
             });
             Receive<HasMessageAvailable>(m => {
@@ -137,7 +122,33 @@ namespace SharpPulsar
             Receive<SeekTimestamp>(m => {
                 _consumer.Tell(m, Sender);
             });
-            Stash?.UnstashAll();
+            ReceiveAny(m => {
+                _consumer.Tell(m, Sender);
+            });
+        }
+        private async ValueTask SubscribeAndCreateTopics(SubscribeAndCreateTopicsIfDoesNotExist subs)
+        {
+            try
+            {
+                var response = await _consumer.Ask<AskResponse>(subs).ConfigureAwait(false);
+                _sender.Tell(response);
+            }
+            catch(Exception ex)
+            {
+                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+            }
+        }
+        private async ValueTask SubscribeToTopic(Subscribe sub)
+        {
+            try
+            {
+                var response = await _consumer.Ask<AskResponse>(sub).ConfigureAwait(false);
+                _sender.Tell(response);
+            }
+            catch (Exception ex)
+            {
+                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+            }
         }
         private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{

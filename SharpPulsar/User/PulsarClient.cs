@@ -492,7 +492,7 @@ namespace SharpPulsar.User
             catch(Exception ex)
             {
                 _actorSystem.Log.Warning($"[{topic}] Failed to get create topic reader: {ex}");
-                throw ex;
+                throw;
             }
         }
         private async ValueTask<Reader<T>> CreateMultiTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)

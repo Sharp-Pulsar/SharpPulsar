@@ -87,8 +87,7 @@ namespace SharpPulsar.Test
 				producer.Send(Encoding.UTF8.GetBytes(value));
 				sentMessages.Add(value);
 			}
-
-			for (var i = 0; i < n; i++)
+            for (var i = 0; i < n; i++)
 			{
 				var msg = consumer.Receive();
 				if(msg != null)
@@ -101,7 +100,6 @@ namespace SharpPulsar.Test
 
 			ISet<string> receivedMessages = new HashSet<string>();
 
-			Thread.Sleep(TimeSpan.FromSeconds(10));
 			// All the messages should be received again
 			for (var i = 0; i < n; i++)
 			{
