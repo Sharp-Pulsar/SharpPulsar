@@ -117,7 +117,7 @@ class Build : NukeBuild
         .Triggers(StopPulsar)
         .Executes(() =>
         {
-            var projects = Solution.GetProjects("SharpPulsar.Test.*");
+            var projects = Solution.GetProjects("SharpPulsar.Test*");
             foreach (var project in projects)
             {                
                 var projectName = project.Name;
