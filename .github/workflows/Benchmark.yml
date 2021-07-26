@@ -14,7 +14,7 @@
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Build
+name: BenchmarkDotNet
 
 on:
   push:
