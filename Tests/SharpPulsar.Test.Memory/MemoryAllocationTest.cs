@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Memory
 {
     [Collection(nameof(MemoryAllocation))]
+    [DotMemoryUnit(FailIfRunWithoutSupport = false)]
     public class MemoryAllocationTest
     {
         private readonly ITestOutputHelper _output;
