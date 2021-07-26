@@ -2,10 +2,9 @@
 using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using ConsoleTables;
 using JetBrains.dotMemoryUnit;
-using JetBrains.dotMemoryUnit.Client.Interface;
-using JetBrains.dotMemoryUnit.Properties;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Memory.Fixtures;
 using SharpPulsar.User;
@@ -20,7 +19,7 @@ namespace SharpPulsar.Test.Memory
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
+        //dotMemoryUnit.exe "c:\Program Files\dotnet\dotnet.exe" -- test "C:\Users\User\source\repos\SharpPulsar\Tests\SharpPulsar.Test.Memory\bin\Release\net5.0\SharpPulsar.Test.Memory.dll"
         public MemoryAllocationTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _output = output;
@@ -30,8 +29,15 @@ namespace SharpPulsar.Test.Memory
         [Fact]
         public void Produce_Consumer_Allocation()
         {
+            var topic = $"memory-allocation-{Guid.NewGuid()}";
+            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
+                .IsAckReceiptEnabled(true)
+                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
+
             var producer = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
-                .Topic("memory-allocation"));
+                .Topic(topic));
 
 
             for (var i = 0; i < 50; i++)
@@ -39,13 +45,7 @@ namespace SharpPulsar.Test.Memory
                 var data = Encoding.UTF8.GetBytes($"memory-allocation-{i}");
                 producer.NewMessage().Value(data).Send();
             }
-
-            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic("memory-allocation")
-                .SubscriptionName($"myTopic-sub-{Guid.NewGuid()}")
-                .IsAckReceiptEnabled(true)
-                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
-
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 50; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
@@ -56,12 +56,10 @@ namespace SharpPulsar.Test.Memory
                     Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
                 }
             }
-            
             dotMemory.Check(memory =>
             {
                 var result = memory
-                    .GetObjects(where =>
-                        where.Type.IsInNamespace<Producer<byte[]>>());
+                    .GetObjects(where => @where.Namespace.Like("SharpPulsar.*"));
 
                 _output.WriteLine(
                     ConsoleTable.From(
@@ -75,20 +73,8 @@ namespace SharpPulsar.Test.Memory
                         })
                     ).ToMarkDownString());
 
-                //Assert.Equal(3, result.ObjectsCount);
+                Assert.True(result.ObjectsCount > 0);
             });
         }
-    }
-    public static class TypePropertyExtensions
-    {
-        public static Query IsInNamespace<TType>(this TypeProperty where)
-        {
-            var type = typeof(TType);
-            var types = type.Assembly.GetTypes()
-                .Where(t => t.Namespace?.StartsWith("SharpPulsar") == true)
-                .ToArray();
-
-            return where.Is(types);
-        }
-    }
+    }    
 }
