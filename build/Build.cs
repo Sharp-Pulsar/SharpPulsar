@@ -59,7 +59,7 @@ class Build : NukeBuild
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.Benchmark);
+    public static int Main () => Execute<Build>(x => x.TxnTest);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -139,7 +139,7 @@ class Build : NukeBuild
         .DependsOn(AdminPulsar)
         .Executes(() =>
         {
-            var testProject = RootDirectory + "\\Tests\\SharpPulsar.Test\\SharpPulsar.Test.csproj";
+            var testProject = "SharpPulsar.Test";
             var project = Solution.GetProject(testProject);
             Information($"Running tests from {project.Name}");
 
@@ -177,7 +177,7 @@ class Build : NukeBuild
         .Triggers(StopPulsar)
         .Executes(() =>
         {
-            var testProject = RootDirectory + "\\Tests\\SharpPulsar.Test.Transaction\\SharpPulsar.Test.Transaction.csproj";
+            var testProject = "SharpPulsar.Test.Transaction";
             var project = Solution.GetProject(testProject);
             Information($"Running tests from {project.Name}");
 
