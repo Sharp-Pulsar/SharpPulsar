@@ -54,7 +54,7 @@ namespace SharpPulsar.Test
 			var topic = "TestReadMessageWithBatching";
 			TestReadMessages(topic, true);
 		}
-		[Fact]
+		[Fact(Timeout = 1000)]
 		public void TestMultiTopic()
 		{
 			var topic = "persistent://public/default/topic" + Guid.NewGuid();

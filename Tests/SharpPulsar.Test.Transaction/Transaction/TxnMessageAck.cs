@@ -64,7 +64,8 @@ namespace SharpPulsar.Test.Transaction
 
 			var ackedMessageCount = 0;
 			var receiveCnt = 0;
-			for (var i = 0; i < messageCnt; i++)
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < messageCnt; i++)
 			{
 				message = consumer.Receive();
 				Assert.NotNull(message);
@@ -82,7 +83,7 @@ namespace SharpPulsar.Test.Transaction
 
 			consumer.RedeliverUnacknowledgedMessages();
 
-			Thread.Sleep(TimeSpan.FromSeconds(30));
+			Thread.Sleep(TimeSpan.FromSeconds(5));
 			receiveCnt = 0;
 			for (var i = 0; i < messageCnt - ackedMessageCount; i++)
 			{

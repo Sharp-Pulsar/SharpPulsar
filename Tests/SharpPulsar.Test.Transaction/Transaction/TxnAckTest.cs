@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.User;
 using System;
+using System.Threading;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
 using SharpPulsar.Test.Transaction.Fixtures;
@@ -58,8 +59,9 @@ namespace SharpPulsar.Test.Transaction
 					producer.NewMessage().Value("hello".GetBytes()).Send();
 				}
 
-				// consume and ack messages with txn
-				for (var i = 0; i < messageCnt; i++)
+                // consume and ack messages with txn
+				// Thread.Sleep(TimeSpan.FromSeconds(5));
+                for (var i = 0; i < messageCnt; i++)
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
@@ -76,8 +78,9 @@ namespace SharpPulsar.Test.Transaction
 
 				// after transaction abort, the messages could be received
 				var commitTxn = Txn;
-				//Thread.Sleep(TimeSpan.FromSeconds(30));
-				for (var i = 0; i < messageCnt; i++)
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+                //Thread.Sleep(TimeSpan.FromSeconds(30));
+                for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
 					Assert.NotNull(message);
@@ -127,8 +130,9 @@ namespace SharpPulsar.Test.Transaction
 					producer.NewMessage().Value("hello".GetBytes()).Send();
 				}
 
-				// consume and ack messages with txn
-				for (var i = 0; i < messageCnt; i++)
+                // consume and ack messages with txn
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+                for (var i = 0; i < messageCnt; i++)
 				{
 					var msg = consumer.Receive();
 					Assert.NotNull(msg);
@@ -145,7 +149,8 @@ namespace SharpPulsar.Test.Transaction
 
 				// after transaction abort, the messages could be received
 				var commitTxn = Txn;
-				for (var i = 0; i < messageCnt; i++)
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+                for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
 					Assert.NotNull(message);
@@ -155,9 +160,10 @@ namespace SharpPulsar.Test.Transaction
 
 				// 2) ack committed by a new txn
 				commitTxn.Commit();
+                Thread.Sleep(TimeSpan.FromSeconds(5));
 
-				// after transaction commit, the messages can't be received
-				message = consumer.Receive();
+                // after transaction commit, the messages can't be received
+                message = consumer.Receive();
 				Assert.Null(message);
 			}
 		}

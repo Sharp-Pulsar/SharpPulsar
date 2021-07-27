@@ -136,49 +136,78 @@ class Build : NukeBuild
     Target Test => _ => _
         .DependsOn(Compile)
         .DependsOn(AdminPulsar)
+        .Executes(() =>
+        {
+            var testProject = RootDirectory + "\\Tests\\SharpPulsar.Test\\SharpPulsar.Test.csproj";
+            var project = Solution.GetProject(testProject);
+            Information($"Running tests from {project.Name}");
+
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                if (fw.StartsWith("net4")
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
+                {
+                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                    continue;
+                }
+
+                Information($"Running for {project.Name} ({fw}) ...");
+                try
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        //.SetDiagnosticsFile(TestsDirectory)
+                        //.SetLogger("trx")
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild()); ;
+                }
+                catch (Exception ex)
+                {
+                    Information(ex.Message);
+                }
+            }
+        });
+
+    Target TxnTest => _ => _
+        .DependsOn(Compile)
+        .DependsOn(Test)
         .Triggers(StopPulsar)
         .Executes(() =>
         {
-            var projects = Solution.GetProjects("SharpPulsar.Test*");
-            foreach (var project in projects)
-            {                
-                var projectName = project.Name;
-                if (projectName.Equals("SharpPulsar.Test.EventSourcing")||
-                    projectName.Equals("SharpPulsar.Test.Memory") ||
-                    projectName.Equals("SharpPulsar.Test.SQL") ||
-                    projectName.Equals("SharpPulsar.Test.Admin"))
-                    continue;
-                    
-                Information($"Running tests from {project.Name}");
+            var testProject = RootDirectory + "\\Tests\\SharpPulsar.Test.Transaction\\SharpPulsar.Test.Transaction.csproj";
+            var project = Solution.GetProject(testProject);
+            Information($"Running tests from {project.Name}");
 
-                foreach (var fw in project.GetTargetFrameworks())
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                if (fw.StartsWith("net4")
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
                 {
-                    if (fw.StartsWith("net4")
-                        && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                        && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                    {
-                        Information($"Skipping {projectName} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
-                        continue;
-                    }
-
-                    Information($"Running for {projectName} ({fw}) ...");
-                    try
-                    {
-                        DotNetTest(c => c
-                            .SetProjectFile(project)
-                            .SetConfiguration(Configuration.ToString())
-                            .SetFramework(fw)
-                            //.SetDiagnosticsFile(TestsDirectory)
-                            //.SetLogger("trx")
-                            .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                            .EnableNoBuild()); ;
-                    }
-                    catch (Exception ex)
-                    {
-                        Information(ex.Message);
-                    }
+                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                    continue;
                 }
-            }           
+
+                Information($"Running for {project.Name} ({fw}) ...");
+                try
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        //.SetDiagnosticsFile(TestsDirectory)
+                        //.SetLogger("trx")
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild()); ;
+                }
+                catch (Exception ex)
+                {
+                    Information(ex.Message);
+                }
+            }
         });
 
     Target StartPulsar => _ => _
@@ -196,7 +225,7 @@ class Build : NukeBuild
             .SetImage("apachepulsar/pulsar-all:2.8.0")
             .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true, PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false")
             .SetCommand("bash")
-            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16")) ;
+            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16")) ;
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)

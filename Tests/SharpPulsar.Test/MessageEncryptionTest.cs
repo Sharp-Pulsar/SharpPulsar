@@ -24,8 +24,7 @@ namespace SharpPulsar.Test
 		public void TestEncrptedProduceConsume()
 		{
 			var messageCount = 10;
-			var topic = "encrypted-messages";
-
+			var topic = $"encrypted-messages-{Guid.NewGuid()}";
 
             var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
                 .Topic(topic)
@@ -45,6 +44,7 @@ namespace SharpPulsar.Test
 			}
 			var receivedCount = 0;
 
+            Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < messageCount; i++)
 			{
 				var message = consumer.Receive();

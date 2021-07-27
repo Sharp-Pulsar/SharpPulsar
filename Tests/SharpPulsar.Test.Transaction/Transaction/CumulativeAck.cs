@@ -4,6 +4,7 @@ using SharpPulsar.Test.Transaction.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Text;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -57,6 +58,7 @@ namespace SharpPulsar.Test.Transaction
 					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).Send();
 				}
 				IMessage<byte[]> message = null;
+                Thread.Sleep(TimeSpan.FromSeconds(5));
 				for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
@@ -73,7 +75,8 @@ namespace SharpPulsar.Test.Transaction
 
 				abortTxn.Abort();
 				var commitTxn = Txn;
-				for (var i = 0; i < messageCnt; i++)
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+                for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
 					Assert.NotNull(message);
@@ -82,8 +85,9 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				commitTxn.Commit();
+                Thread.Sleep(TimeSpan.FromSeconds(5));
 
-				message = consumer.Receive();
+                message = consumer.Receive();
 				Assert.Null(message);
 			}
 		}
@@ -121,8 +125,9 @@ namespace SharpPulsar.Test.Transaction
 					producer.NewMessage().Value(Encoding.UTF8.GetBytes("Hello")).Send();
 				}
 				IMessage<byte[]> message = null;
+                Thread.Sleep(TimeSpan.FromSeconds(5));
 
-				for (var i = 0; i < messageCnt; i++)
+                for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
 					Assert.NotNull(message);
@@ -141,7 +146,8 @@ namespace SharpPulsar.Test.Transaction
 
 				abortTxn.Abort();
 				var commitTxn = Txn;
-				for (var i = 0; i < messageCnt; i++)
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+                for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
 					Assert.NotNull(message);
@@ -153,7 +159,8 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				commitTxn.Commit();
-				message = consumer.Receive();
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+                message = consumer.Receive();
 				Assert.Null(message);
 			}
 		}

@@ -7,6 +7,7 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Common;
 using System.Net.Http;
+using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -99,7 +100,8 @@ namespace SharpPulsar.Test.Transaction
             _output.WriteLine($"Committed 1");
             // txn1 messages could be received after txn1 committed
             var receiveCnt = 0;
-			for(var i = 0; i < txnMessageCnt; i++)
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < txnMessageCnt; i++)
 			{
 				message = consumer.Receive();
 				Assert.NotNull(message);
@@ -161,7 +163,8 @@ namespace SharpPulsar.Test.Transaction
 
 			// txn1 messages could be received after txn1 committed
 			var receiveCnt = 0;
-			for(var i = 0; i < txnMessageCnt; i++)
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < txnMessageCnt; i++)
 			{
 				message = consumer.Receive();
 				Assert.NotNull(message);
@@ -179,7 +182,6 @@ namespace SharpPulsar.Test.Transaction
 		public void ProduceAbortTest()
 		{
 			var txn = Txn;
-
 
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
                 .Topic(_topicOutput)

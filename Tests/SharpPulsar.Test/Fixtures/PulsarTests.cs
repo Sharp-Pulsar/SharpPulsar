@@ -16,10 +16,10 @@ namespace SharpPulsar.Test.Fixtures
 {
     using Xunit;
 
-    [CollectionDefinition(nameof(PulsarTests))]
+    [CollectionDefinition(nameof(PulsarTests), DisableParallelization = true)]
     public class PulsarTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
 
-    [CollectionDefinition(nameof(PulsarTransactionTests))]
+    [CollectionDefinition(nameof(PulsarTransactionTests), DisableParallelization = true)]
     public class PulsarTransactionTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
 
     [CollectionDefinition(nameof(MemoryAllocation))]
