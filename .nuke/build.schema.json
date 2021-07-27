@@ -103,7 +103,8 @@
               "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
-              "Test"
+              "Test",
+              "TxnTest"
             ]
           }
         },
@@ -131,7 +132,8 @@
               "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
-              "Test"
+              "Test",
+              "TxnTest"
             ]
           }
         },

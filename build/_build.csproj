@@ -27,4 +27,12 @@
     <None Remove="..\.github\workflows\ci.yml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="..\.github\workflows\TxnTests.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\TxnTests.yml" />
+  </ItemGroup>
+
 </Project>

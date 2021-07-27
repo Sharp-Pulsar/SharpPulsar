@@ -59,7 +59,7 @@ class Build : NukeBuild
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.Benchmark);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -131,6 +131,7 @@ class Build : NukeBuild
             var benchmarkAssembly = RootDirectory+"\\SharpPulsar.Benchmarks\\bin\\Release\\net5.0\\SharpPulsar.Benchmarks.exe";
             var process = ProcessTasks.StartProcess(benchmarkAssembly);
             process.AssertZeroExitCode();
+            var output = process.Output;
         });
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
@@ -172,7 +173,6 @@ class Build : NukeBuild
         });
 
     Target TxnTest => _ => _
-        .DependsOn(Compile)
         .DependsOn(Test)
         .Triggers(StopPulsar)
         .Executes(() =>
