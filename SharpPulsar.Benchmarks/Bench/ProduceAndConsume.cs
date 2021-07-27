@@ -17,7 +17,7 @@ namespace SharpPulsar.Benchmarks.Bench
         private Producer<byte[]> _producer;
         private Consumer<byte[]> _consumer;
 
-        [Params(100)]
+        [Params(1000)]
         public int Iterations;
 
         [GlobalSetup]

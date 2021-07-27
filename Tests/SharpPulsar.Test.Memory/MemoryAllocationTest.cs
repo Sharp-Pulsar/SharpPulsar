@@ -41,13 +41,13 @@ namespace SharpPulsar.Test.Memory
                 .Topic(topic));
 
 
-            for (var i = 0; i < 1000; i++)
+            for (var i = 0; i < 500; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"memory-allocation-{i}");
                 producer.NewMessage().Value(data).Send();
             }
             Thread.Sleep(TimeSpan.FromSeconds(10));
-            for (var i = 0; i < 1000; i++)
+            for (var i = 0; i < 500; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)
