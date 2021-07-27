@@ -66,6 +66,7 @@ namespace SharpPulsar.Test
 			var builder = new ReaderConfigBuilder<string>()
 				.Topics(topics)
 				.StartMessageId(IMessageId.Earliest)
+                
 				.ReaderName("my-reader");
 
 			var reader = _client.NewReader(ISchema<object>.String, builder);
@@ -109,13 +110,14 @@ namespace SharpPulsar.Test
 		private void TestReadMessages(string topic, bool enableBatch)
 		{
 			var numKeys = 10;
+            var builder = new ReaderConfigBuilder<byte[]>()
+                .Topic(topic)
+                
+                .StartMessageId(IMessageId.Earliest)
+                .ReaderName(Subscription);
+            var reader = _client.NewReader(builder);
 
-			var keys = PublishMessages(topic, numKeys, enableBatch);
-			var builder = new ReaderConfigBuilder<byte[]>()
-				.Topic(topic)
-				.StartMessageId(IMessageId.Earliest)                
-				.ReaderName(Subscription);
-			var reader = _client.NewReader(builder);
+            var keys = PublishMessages(topic, numKeys, enableBatch);
 			Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < numKeys; i++)
 			{

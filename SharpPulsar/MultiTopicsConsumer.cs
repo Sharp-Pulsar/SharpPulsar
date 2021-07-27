@@ -158,7 +158,7 @@ namespace SharpPulsar
             {
                 foreach (var topic in s.Topics)
                 {
-                    var response = await Subscribe(topic, s.CreateTopicIfDoesNotExist);
+                    _ = await Subscribe(topic, s.CreateTopicIfDoesNotExist);
                 }
 
                 if (AllTopicPartitionsNumber == TopicsMap.Values.Sum())

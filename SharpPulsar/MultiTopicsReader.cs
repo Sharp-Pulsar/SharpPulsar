@@ -48,7 +48,7 @@ namespace SharpPulsar
 			{
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
-			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
+			var consumerConfiguration = new ConsumerConfigurationData<T>();
 			foreach(var topic in readerConfiguration.TopicNames)
 				consumerConfiguration.TopicNames.Add(topic);
 

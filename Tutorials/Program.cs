@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.User;
@@ -58,7 +59,7 @@ namespace Tutorials
                 .Topic(myTopic));
             
 
-            for (var i = 0; i < 100; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
                 var id = producer.NewMessage().Value(data).Send();
@@ -67,7 +68,8 @@ namespace Tutorials
 
             var pool = ArrayPool<byte>.Shared;
 
-            for (var i = 0; i < 100; i++)
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            for (var i = 0; i < 1000; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)
@@ -196,7 +198,7 @@ namespace Tutorials
                 Console.WriteLine(ex.ToString());
             }
 
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}");
                 producer.NewMessage().Value(data).Send();
@@ -209,7 +211,8 @@ namespace Tutorials
                 .SubscriptionName("myTopic-sub-Exclusive")
                 .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
-            for (var i = 0; i < 10; i++)
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            for (var i = 0; i < 1000; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)

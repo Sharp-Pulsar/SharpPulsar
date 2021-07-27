@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Buffers;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -40,20 +41,20 @@ namespace SharpPulsar.Test.Memory
                 .Topic(topic));
 
 
-            for (var i = 0; i < 50; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var data = Encoding.UTF8.GetBytes($"memory-allocation-{i}");
                 producer.NewMessage().Value(data).Send();
             }
             Thread.Sleep(TimeSpan.FromSeconds(10));
-            for (var i = 0; i < 50; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var message = (Message<byte[]>)consumer.Receive();
                 if (message != null)
                 {
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    _output.WriteLine($"message '{res}' from topic: {message.TopicName}");
                 }
             }
             dotMemory.Check(memory =>
@@ -71,6 +72,7 @@ namespace SharpPulsar.Test.Memory
                             t.ObjectsCount,
                             t.SizeInBytes
                         })
+                        .OrderByDescending(x => x.SizeInBytes)
                     ).ToMarkDownString());
 
                 Assert.True(result.ObjectsCount > 0);

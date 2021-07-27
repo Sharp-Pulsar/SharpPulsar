@@ -115,6 +115,7 @@ class Build : NukeBuild
         });
     Target RunMemoryAllocation => _ => _
         .DependsOn(Compile)
+        .OnlyWhenStatic(() => IsLocalBuild)
         .Executes(() =>
         {
             
@@ -124,9 +125,9 @@ class Build : NukeBuild
         });
     Target Benchmark => _ => _
         .DependsOn(Compile)
+        .OnlyWhenStatic(() => IsLocalBuild)
         .Executes(() =>
         {
-            
             var benchmarkAssembly = RootDirectory+"\\SharpPulsar.Benchmarks\\bin\\Release\\net5.0\\SharpPulsar.Benchmarks.exe";
             var process = ProcessTasks.StartProcess(benchmarkAssembly);
             process.AssertZeroExitCode();
