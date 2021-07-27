@@ -889,13 +889,14 @@ namespace SharpPulsar
 		private async ValueTask DoAcknowledgeWithTxn(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
 		{
 			if (txn != null)
-			{
+            {
+                var sender = Sender;
 				txn.Tell(new RegisterAckedTopic(Topic, Subscription));
                 var response = await txn.Ask<AskResponse>(new RegisterAckedTopic(Topic, Subscription)).ConfigureAwait(false);
                 if (!response.Failed)
                     DoAcknowledge(messageIdList, ackType, properties, txn);
                
-                Sender.Tell(response);
+                sender.Tell(response);
             }			
             else
             {
@@ -2681,14 +2682,15 @@ namespace SharpPulsar
 					txn.Tell(new RegisterCumulativeAckConsumer(Self));
 				}
 
+                var sender = Sender;
 				var response = await txn.Ask<AskResponse>(new RegisterAckedTopic(Topic, Subscription)).ConfigureAwait(false);
                 if (!response.Failed)
                 {
                     DoAcknowledge(messageId, ackType, properties, txn);
-                    Sender.Tell(new AskResponse());
+                    sender.Tell(new AskResponse());
                 }
                 else
-                    Sender.Tell(response);
+                    sender.Tell(response);
             }
 			else
             {
