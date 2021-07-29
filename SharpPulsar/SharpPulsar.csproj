@@ -93,24 +93,6 @@
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Update="Admin\PulsarAdmin.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>PulsarAdmin.json</DependentUpon>
-    </Compile>
-    <Compile Update="Function\PulsarFunction.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>PulsarFunction.json</DependentUpon>
-    </Compile>
-    <None Update="Admin\PulsarAdmin.json">
-      <Generator>AutoRestCodeGenerator</Generator>
-      <LastGenOutput>PulsarAdmin.cs</LastGenOutput>
-    </None>
-    <None Update="Function\PulsarFunction.json">
-      <Generator>NSwagCodeGenerator</Generator>
-      <LastGenOutput>PulsarFunction.cs</LastGenOutput>
-    </None>
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
