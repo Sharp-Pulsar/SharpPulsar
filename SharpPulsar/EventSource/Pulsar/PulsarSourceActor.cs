@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks.Dataflow;
 using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -10,7 +9,6 @@ using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
-using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
@@ -26,12 +24,8 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly IPulsarEventSourceMessage<T> _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
-        //private long _sequenceId;
-        private BufferBlock<IMessage<T>> _buffer;
-        public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema, ConsumerQueueCollections<T> queue)
+        public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema)
         {
-            _buffer = queue.IncomingMessages;
-            //_sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
             _httpClient = httpClient;
@@ -78,8 +72,8 @@ namespace SharpPulsar.EventSource.Pulsar
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
-            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, null, true, client, queue)));
-           
+            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client)));
+            _child.Tell(Connect.Instance);
             if (isLive)
                 LiveConsume();
             else Consume();
@@ -93,7 +87,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 var messageId = (MessageId)c.MessageId;
                 if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
                 {
-                    _buffer.Post(c);
+                    Context.Parent.Tell(c);
                     _child.Tell(new AcknowledgeMessage<T>(c));
                     _child.Tell(new MessageProcessed<T>(c));
                     //_sequenceId++;
@@ -106,9 +100,9 @@ namespace SharpPulsar.EventSource.Pulsar
         }
         private void LiveConsume()
         {
-            Receive<IMessage<T>>(c =>
+            Receive<ReceivedMessage<T>>(c =>
             {
-                _buffer.Post(c);
+                Context.Parent.Tell(c);
                 //_sequenceId++;
             });
             _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);
@@ -118,7 +112,7 @@ namespace SharpPulsar.EventSource.Pulsar
         {
             try
             {
-                var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+                var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
                 var statsResponse = adminRestapi.GetInternalStats(_topicName.NamespaceObject.Tenant,
                     _topicName.NamespaceObject.LocalName, _topicName.LocalName);
                 var start = MessageIdHelper.NextFlow(statsResponse.Body);
@@ -145,9 +139,9 @@ namespace SharpPulsar.EventSource.Pulsar
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema, ConsumerQueueCollections<T> queue)
+        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema)
         {
-            return Props.Create(()=> new PulsarSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, fromSequenceId, schema, queue));
+            return Props.Create(()=> new PulsarSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, fromSequenceId, schema));
         }
         public IStash Stash { get; set; }
     }

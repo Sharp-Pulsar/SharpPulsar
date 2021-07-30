@@ -261,7 +261,19 @@ namespace SharpPulsar.Schemas
         {
             return Clone();
         }
-
+        public ISchema<KeyValue<K, V>> AtSchemaVersion(byte[] schemaVersion)
+        {
+		    if(!SupportSchemaVersioning())
+		    {
+			    return this;
+		    }
+		    else
+		    {
+                    var keySchema = _keySchema is AbstractSchema<K> ? ((AbstractSchema<K>)_keySchema).AtSchemaVersion(schemaVersion) : _keySchema;
+                    var valueSchema = _valueSchema is AbstractSchema<V> ? ((AbstractSchema<V>)_valueSchema).AtSchemaVersion(schemaVersion) : _valueSchema;
+			        return Of(keySchema, valueSchema, _keyValueEncodingType);
+		    }
+        }
         private class KeySchemaInfoProvider : ISchemaInfoProvider
 		{
 			private readonly KeyValueSchema<K, V> _outerInstance;

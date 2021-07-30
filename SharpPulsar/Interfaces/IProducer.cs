@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Messages;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -54,8 +53,8 @@ namespace SharpPulsar.Interfaces
 		///             if the message was not correctly received by the system within the timeout period </exception>
 		/// <exception cref="PulsarClientException.AlreadyClosedException">
 		///             if the producer was already closed </exception>
-		AckReceived Send(T message);
-		ValueTask<AckReceived> SendAsync(T message);
+		MessageId Send(T message);
+		ValueTask<MessageId> SendAsync(T message);
 
 		
 		/// <summary>

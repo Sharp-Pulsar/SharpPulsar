@@ -23,33 +23,36 @@ using SharpPulsar.Auth;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
+///
+
 namespace SharpPulsar
 {
     using Protocol.Proto;
     using System.Linq;
-    using global::Akka.Actor;
-    using global::Akka.Util;
-    using SharpPulsar.Precondition;
+    using Akka.Actor;
+    using Akka.Util;
+    using Precondition;
     using BAMCIS.Util.Concurrent;
-    using SharpPulsar.Shared;
-    using SharpPulsar.Schemas;
-    using SharpPulsar.Extension;
+    using Shared;
+    using Schemas;
+    using Extension;
     using System.Buffers;
+    using Schema;
 
     public class Message<T> : IMessage<T>
 	{
 		private IMessageId _messageId;
-		private IActorRef _cnx;
+		private readonly IActorRef _cnx;
 
 		private readonly MessageMetadata _metadata;
 		private readonly Metadata _mtadata;
-		private ReadOnlySequence<byte> _payload { get; set; }
-		private ISchema<T> _schema;
+        private readonly ReadOnlySequence<byte> _payload;
+		private readonly ISchema<T> _schema;
 		private SchemaState _schemaState = SchemaState.None;
         private IDictionary<string, string> _properties;
 		private readonly int _redeliveryCount;
 
-		private string _topic;
+		private readonly string _topic;
 		public MessageMetadata Metadata => _metadata;
 		public Message(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
         {
@@ -66,13 +69,13 @@ namespace SharpPulsar
 		// Constructor for incoming message
 		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata,
                 ReadOnlySequence<byte> payload, IActorRef cnx, ISchema<T> schema)
-		{
-			new Message<T>(topic, messageId, msgMetadata, payload, Option<EncryptionContext>.None, cnx, schema);
-		}
+        {
+            _ = new Message<T>(topic, messageId, msgMetadata, payload, Option<EncryptionContext>.None, cnx, schema);
+        }
 		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload,
 				Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema)
 		{
-			new Message<T>(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0);
+			_ = new Message<T>(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0);
 		}
 		
 		public Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload,
@@ -250,7 +253,11 @@ namespace SharpPulsar
 			}
 		}
 
-		public virtual bool IsExpired(int messageTTLInSeconds)
+        public ISchema<T> SchemaInternal()
+        {
+            return _schema;
+        }
+        public virtual bool IsExpired(int messageTTLInSeconds)
 		{
 			return messageTTLInSeconds != 0 && DateTimeHelper.CurrentUnixTimeMillis() > (PublishTime + TimeUnit.SECONDS.ToMilliseconds(messageTTLInSeconds));
 		}
@@ -363,7 +370,8 @@ namespace SharpPulsar
 			get
 			{
 				var schemaType = _schema.GetType();
-				var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
+				var keyValueEncodingType =
+                    (KeyValueEncodingType) schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
 
 				var kvSchema = (KeyValueSchema<object, object>)_schema;
 				if (keyValueEncodingType == KeyValueEncodingType.SEPARATED)
@@ -473,8 +481,37 @@ namespace SharpPulsar
 			}
 		}
 
-
-		public bool HasBase64EncodedKey()
+        public Option<ISchema<T>> ReaderSchema()
+        {
+            EnsureSchemaIsLoaded();
+            if (_schema == null)
+            {
+                return Option<ISchema<T>>.None;
+            }
+            if (_schema is AutoConsumeSchema) 
+            {
+                var schemaVersion = SchemaVersion;
+                //return new Option<ISchema<T>>(((AutoConsumeSchema)_schema).AtSchemaVersion(schemaVersion));
+                return new Option<ISchema<T>>();
+            } 
+            else if (_schema is AbstractSchema<T> schema) 
+            {
+               var schemaVersion = SchemaVersion;
+                return new Option<ISchema<T>>(schema.AtSchemaVersion(schemaVersion));
+            } 
+            else
+            {
+                return new Option<ISchema<T>>(_schema); 
+            }
+        }
+        private void EnsureSchemaIsLoaded()
+        {
+            if (_schema is AutoConsumeSchema schema) 
+            {
+                schema.FetchSchemaIfNeeded();
+            }
+        }
+        public bool HasBase64EncodedKey()
 		{
 			if(_mtadata != null)
 				return _mtadata.HasBase64EncodedKey;

@@ -3,11 +3,9 @@ using Akka.Util.Internal;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
-using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,7 +44,7 @@ namespace SharpPulsar
 		private IActorContext _context;
 		private IActorRef _self;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ConsumerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ConsumerQueueCollections<T> queue) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, interceptors, false, clientConfiguration, queue)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, false, clientConfiguration)
 		{
 			_self = Self;
 			_lookup = lookup;
@@ -58,15 +56,19 @@ namespace SharpPulsar
 				NamespaceName = GetNameSpaceFromPattern(topicsPattern);
 			}
 			Condition.CheckArgument(GetNameSpaceFromPattern(topicsPattern).ToString().Equals(NamespaceName.ToString()));
-
-			_recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, conf.PatternAutoDiscoveryPeriod)), async()=> { await TopicReChecker(); });
-		}
-
-		private async ValueTask TopicReChecker()
+            _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
+            
+        }
+        public static Props Prop(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration)
+        {
+            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration));
+        }
+        
+        private async ValueTask TopicReChecker()
 		{
             try
             {
-				var response = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode));
+				var response = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode)).ConfigureAwait(false);
 				var topicsFound = response.Topics;
 				var topics = _context.GetChildren().ToList();
 				if (_log.IsDebugEnabled)
@@ -74,11 +76,11 @@ namespace SharpPulsar
 					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
 					TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
 				}
-				IList<string> newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
-				IList<string> oldTopics = Topics;
+				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
+				var oldTopics = Topics;
 				OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
 				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
-			}
+            }
 			catch(Exception ex)
             {
 				_log.Error(ex.ToString());
@@ -86,7 +88,7 @@ namespace SharpPulsar
             finally
             {
 				_recheckPatternTimeout = _context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
-			}
+            }
 			if (_recheckPatternTimeout.IsCancellationRequested)
 			{
 				return;
@@ -122,7 +124,7 @@ namespace SharpPulsar
 			}
 			foreach(var t in addedTopics)
             {
-				_self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
+                _self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
             }
 		}
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
@@ -140,7 +142,7 @@ namespace SharpPulsar
 		// get topics, which are contained in list1, and not in list2
 		internal IList<string> TopicsListsMinus(IList<string> list1, IList<string> list2)
 		{
-			HashSet<string> s1 = new HashSet<string>(list1);
+			var s1 = new HashSet<string>(list1);
             foreach (var l in list2)
             {
 				s1.Remove(l);

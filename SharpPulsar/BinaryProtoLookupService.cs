@@ -11,7 +11,6 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
-using SharpPulsar.Extension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
