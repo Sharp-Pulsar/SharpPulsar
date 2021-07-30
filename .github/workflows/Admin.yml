@@ -19,7 +19,7 @@ name: Admin
 on:
   push:
     branches:
-      - admin
+      - Admin
 
 jobs:
   windows-latest:
