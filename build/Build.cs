@@ -429,7 +429,7 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .EnableNoRestore()
-                .SetVersion("1.0.0")
+                .SetVersion($"1.0.0.{BuildNumber}")
                 .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo.")
                 .SetDescription("Implements Apache Pulsar Admin and Function REST API.")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar")

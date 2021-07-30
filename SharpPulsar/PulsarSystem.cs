@@ -138,22 +138,6 @@ namespace SharpPulsar
         {
             return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
         }
-        public static User.Admin Admin(string brokeWebServiceUrl, HttpClient httpClient, bool disposeHttpClient) 
-        {
-            return new User.Admin(brokeWebServiceUrl, httpClient, disposeHttpClient);
-        }
-        public static User.Admin Admin(string brokerWebServiceUrl, params DelegatingHandler[] handlers) 
-        {
-            return new User.Admin(brokerWebServiceUrl, handlers);
-        }
-        public static User.Admin Admin(string brokerwebserviceurl, HttpClientHandler rootHandler, params DelegatingHandler[] handlers) 
-        {
-            return new User.Admin(brokerwebserviceurl, rootHandler, handlers);
-        }
-        public static User.Function Function(HttpClient httpClient) 
-        {
-            return new User.Function(httpClient);
-        }
         public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl) 
         {
             return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
