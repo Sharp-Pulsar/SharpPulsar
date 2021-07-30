@@ -1,20 +1,13 @@
-﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Protocol.Proto;
+﻿using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Transaction
 {
     public sealed class NewTxnResponse
     {
-        public long RequestId { get; }
-        public long MostSigBits { get; }
-        public long LeastSigBits { get; }
-        public TransactionCoordinatorClientException Error { get; }
-        public NewTxnResponse(long requestid, long least, long most, TransactionCoordinatorClientException error)
+        public CommandNewTxnResponse Response { get; }
+        public NewTxnResponse(CommandNewTxnResponse response)
         {
-            RequestId = requestid;
-            MostSigBits = most;
-            LeastSigBits = least;
-            Error = error;
+            Response = response;
         }
     }
     public sealed class NewTxn
@@ -27,17 +20,10 @@ namespace SharpPulsar.Messages.Transaction
     }
     public sealed class EndTxnResponse
     {
-        public long LeastBits { get; }
-        public long MostBits { get; }
-        public long RequestId { get; }
-
-        public TransactionCoordinatorClientException Error { get; }
-        public EndTxnResponse(long requestId, long leastBits, long mostBits, TransactionCoordinatorClientException error)
+        public CommandEndTxnResponse Response { get; }
+        public EndTxnResponse(CommandEndTxnResponse response)
         {
-            RequestId = requestId;
-            LeastBits = leastBits;
-            MostBits = mostBits;
-            Error = error;
+            Response = response;
         }
     }
     public sealed class AddPublishPartitionToTxnResponse

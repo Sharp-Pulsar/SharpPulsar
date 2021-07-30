@@ -3,6 +3,7 @@ using Akka.Event;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
@@ -15,8 +16,6 @@ using System.Collections.Generic;
 using SharpPulsar.Messages.Client;
 using System.Threading.Tasks;
 using System.Buffers;
-using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
-using SharpPulsar.Messages.Consumer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -69,7 +68,6 @@ namespace SharpPulsar
 		}
 
 		private readonly ILoggingAdapter _log;
-        private IActorRef _sender;
 
 		private ICancelable _requestTimeout;
 		private readonly ClientConfigurationData _conf;
@@ -89,41 +87,14 @@ namespace SharpPulsar
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			//_blockIfReachMaxPendingOps = true;
 			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.OperationTimeoutMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
-            Receive<GrabCnx>(_ => 
-            {
-                _sender = Sender;
-                Become(GrabCnx);
-            });
+			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(conf, _state, (new BackoffBuilder()).SetInitialTime(conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
+			Listening(); 
+			_connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
 
 		}
-        private void GrabCnx()
-        {
-            Receive<ConnectionOpened>(o => {
-                HandleConnectionOpened(o.ClientCnx);
-            });
-            Receive<ConnectionClosed>(o => {
-                HandleConnectionClosed(o.ClientCnx);
-            });
-            Receive<ConnectionFailed>(f => {
-                HandleConnectionFailed(f.Exception);
-            });
-            ReceiveAny(x => Stash.Stash());
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(_conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(_conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
-
-            _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
-        }
 		private void Listening()
         {
-            Receive<ConnectionOpened>(o => {
-                HandleConnectionOpened(o.ClientCnx);
-            });
-            Receive<ConnectionClosed>(o => {
-                HandleConnectionClosed(o.ClientCnx);
-            });
-            Receive<ConnectionFailed>(f => {
-                HandleConnectionFailed(f.Exception);
-            });
-            Receive<RunRequestTimeout>(t =>
+			Receive<RunRequestTimeout>(t =>
 			{
 				RunRequestTime();
 			});
@@ -137,20 +108,21 @@ namespace SharpPulsar
 			Receive<AddPublishPartitionToTxn>(p => 
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { p.TxnID, p.Topics, Sender };
+				_invokeArg = new object[] { p.TxnID, p.Topics };
 				_nextBecome = AddPublishPartitionToTxn;
 				Become(GetCnxAndRequestId);
 			});
 			Receive<AbortTxnID>(a => 
 			{
 				_replyTo = Sender;
-				_invokeArg = new object[] { a.TxnID, Sender };
+				_invokeArg = new object[] { a.TxnID, a.MessageIds };
 				_nextBecome = Abort;
 				Become(GetCnxAndRequestId);
 			});
 			Receive<CommitTxnID>(c => 
 			{
-				_invokeArg = new object[] { c.TxnID, Sender};
+				_replyTo = Sender;
+				_invokeArg = new object[] { c.TxnID, c.MessageIds };
 				_nextBecome = Commit;
 				Become(GetCnxAndRequestId);
 			});
@@ -160,6 +132,15 @@ namespace SharpPulsar
 				_invokeArg = new object[] { s.TxnID, s.Subscriptions };
 				_nextBecome = AddSubscriptionToTxn;
 				Become(GetCnxAndRequestId);
+			});
+			Receive<ConnectionOpened>(o => {
+				HandleConnectionOpened(o.ClientCnx);
+			});
+			Receive<ConnectionClosed>(o => {
+				HandleConnectionClosed(o.ClientCnx);
+			});
+			Receive<ConnectionFailed>(f => {
+				HandleConnectionFailed(f.Exception);
 			});
 			Stash?.UnstashAll();
 		}
@@ -196,30 +177,26 @@ namespace SharpPulsar
 		{
 			_log.Info($"Transaction meta handler with transaction coordinator id {_transactionCoordinatorId} connection opened.");
 			_connectionHandler.Tell(new SetCnx(cnx));
-			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
-            if (!_state.ChangeToReadyState())
-            {
-                cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-            }
-            else
-            {
-                _sender.Tell("Ready");
-                Become(Listening);
-            }
+			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, Self));
+			if(!_state.ChangeToReadyState())
+			{
+				cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+			}
 		}
 
 		private void NewTransaction(object[] args)
 		{
+
 			Receive<NewTxnResponse>(r =>
 			{
-				HandleNewTxnResponse(r);
+				HandleNewTxnResponse(r.Response);
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var timeout = (long)args[0];
 			if (_log.IsDebugEnabled)
 			{
-				_log.Debug("New transaction with timeout in secs {}", timeout);
+				_log.Debug("New transaction with timeout in ms {}", timeout);
 			}
 			_pendingRequests.Add(_requestId, (new ReadOnlySequence<byte>(new byte[] { (byte)timeout }), _replyTo));
 			var cmd = Commands.NewTxn(_transactionCoordinatorId, _requestId, timeout);
@@ -227,33 +204,32 @@ namespace SharpPulsar
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewTxn"));
 		}
 
-		private void HandleNewTxnResponse(NewTxnResponse response)
+		private void HandleNewTxnResponse(CommandNewTxnResponse response)
 		{
-			var requestId = response.RequestId;
+			var requestId = (long)response.RequestId;
 			if(!_pendingRequests.TryGetValue(requestId, out var sender))
 			{
 				if(_log.IsDebugEnabled)
 				{
-					_log.Debug("Got new txn response for timeout {} - {}", response.MostSigBits, response.LeastSigBits);
+					_log.Debug("Got new txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
 				}
 			}
             else
             {
 				_pendingRequests.Remove(requestId);
-				if (response?.Error is NoException)
+				if (response?.Error != null)
 				{
-					var txnID = response;
+					var txnID = new NewTxnResponse(response);
 					if (_log.IsDebugEnabled)
 					{
-						_log.Debug($"Got new txn response ({txnID.MostSigBits}:{txnID.LeastSigBits}) for request {response.RequestId}");
+						_log.Debug("Got new txn response {} for request {}", txnID, response.RequestId);
 					}
 					sender.ReplyTo.Tell(txnID);
 				}
 				else
 				{
 					_log.Error("Got new txn for request {} error {}", response.RequestId, response.Error);
-                    sender.ReplyTo.Tell(response);
-                }
+				}
 			}
 		}
 
@@ -261,7 +237,6 @@ namespace SharpPulsar
 		{
 			var txnID = (TxnID)args[0];
 			var partitions = (IList<string>)args[1];
-            var replyTo = (IActorRef)args[2];
 
 			Receive<AddPublishPartitionToTxnResponse>(a => 
 			{
@@ -274,7 +249,7 @@ namespace SharpPulsar
 				_log.Debug("Add publish partition {} to txn {}", partitions, txnID);
 			}
 			var cmd = Commands.NewAddPartitionToTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
-			_pendingRequests.Add(_requestId, (cmd, replyTo));
+			_pendingRequests.Add(_requestId, (cmd, Sender));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewAddPartitionToTxn"));
@@ -283,17 +258,15 @@ namespace SharpPulsar
 		private void HandleAddPublishPartitionToTxnResponse(CommandAddPartitionToTxnResponse response)
 		{
 			var request = (long)response.RequestId;
-			if(!_pendingRequests.TryGetValue(request, out var sdr))
+			if(!_pendingRequests.TryGetValue(request, out var _))
             {
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"Got add publish partition to txn response for timeout {response.TxnidMostBits} - {response.TxnidLeastBits}");
-					
+					return;
 				}
-                sdr.ReplyTo.Tell(new RegisterProducedTopicResponse(null));
-                return;
-            }
-			if(response?.Error == ServerError.UnknownError)
+			}
+			if(response?.Error != null)
 			{
 				if(_log.IsDebugEnabled)
 				{
@@ -302,12 +275,8 @@ namespace SharpPulsar
 			}
 			else
 			{
-                if (response.Error == ServerError.TransactionCoordinatorNotFound)
-                    _connectionHandler.Tell(new ReconnectLater(new TransactionCoordinatorClientException.CoordinatorNotFoundException(response.Message)));
-
-                _log.Error($"Add publish partition for request {response.RequestId} error {response.Error}.");
+				_log.Error($"Add publish partition for request {response.RequestId} error {response.Error}.");
 			}
-            sdr.ReplyTo.Tell(new RegisterProducedTopicResponse(response.Error));
 		}
 
 		private void AddSubscriptionToTxn(object[] args)
@@ -339,42 +308,48 @@ namespace SharpPulsar
 				{
 					_log.Debug("Add subscription to txn timeout for request {}.", response.RequestId);
 				}
-                _replyTo.Tell(new AskResponse(new PulsarClientException("Add subscription to txn timeout")));
-                return;
+				return;
 			}
-			if(response?.Error != ServerError.UnknownError)
+			if(response?.Error != null)
 			{
 				if(_log.IsDebugEnabled)
 				{
 					_log.Debug("Add subscription to txn success for request {}.", response.RequestId);
 				}
-
-                _replyTo.Tell(new AskResponse(true));
-            }
+			}
 			else
 			{
 				_log.Error("Add subscription to txn failed for request {} error {}.", response.RequestId, response.Error);
-                _replyTo.Tell(new AskResponse(new PulsarClientException(response.Error.ToString())));
-            }
+			}
 		}
 
 		private void Commit(object[] args)
 		{
 
-			Receive<EndTxnResponse>(response =>
+			Receive<EndTxnResponse>(r =>
 			{
-				HandleEndTxnResponse(response);
+				HandleEndTxnResponse(r.Response);
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var txnID = (TxnID)args[0];
-            var replyTo = (IActorRef)args[1];
+			var sendMessageIdList = (IList<IMessageId>)args[1];
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug("Commit txn {}", txnID);
 			}
-			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit);
-			_pendingRequests.Add(_requestId, (cmd, replyTo));
+			var messageIdDataList = new List<MessageIdData>();
+			foreach(MessageId messageId in sendMessageIdList)
+			{
+				messageIdDataList.Add(new MessageIdData 
+				{ 
+					ledgerId = (ulong)messageId.LedgerId,
+					entryId = (ulong)messageId.EntryId,
+					Partition = messageId.PartitionIndex
+				});
+			}
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Commit, messageIdDataList);
+			_pendingRequests.Add(_requestId, (cmd, _replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));
@@ -382,32 +357,44 @@ namespace SharpPulsar
 
 		private void Abort(object[] args)
 		{
-			Receive<EndTxnResponse>(response =>
+			Receive<EndTxnResponse>(r =>
 			{
-				HandleEndTxnResponse(response);
+				HandleEndTxnResponse(r.Response);
 				Become(Listening);
 			});
 			ReceiveAny(_ => Stash.Stash());
 			var txnID = (TxnID)args[0];
-            var replyTo = (IActorRef)args[1];
-            if (_log.IsDebugEnabled)
+			var sendMessageIdList = (IList<IMessageId>)args[1];
+			if (_log.IsDebugEnabled)
 			{
 				_log.Debug("Abort txn {}", txnID);
 			}
-			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort);
-			_pendingRequests.Add(_requestId, (cmd, replyTo));
+			IList<MessageIdData> messageIdDataList = new List<MessageIdData>();
+			foreach(IMessageId messageId in sendMessageIdList)
+			{
+				var msgIdData = new MessageIdData
+				{
+					ledgerId = (ulong)((MessageId)messageId).LedgerId,
+					entryId = (ulong)((MessageId)messageId).EntryId,
+					Partition = ((MessageId)messageId).PartitionIndex,
+
+				};
+				messageIdDataList.Add(msgIdData);
+			}
+			var cmd = Commands.NewEndTxn(_requestId, txnID.LeastSigBits, txnID.MostSigBits, TxnAction.Abort, messageIdDataList);
+			_pendingRequests.Add(_requestId, (cmd, _replyTo));
 			_timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
 			_clientCnx.Tell(new Payload(cmd, _requestId, "NewEndTxn"));
 		}
 
-		private void HandleEndTxnResponse(EndTxnResponse response)
+		private void HandleEndTxnResponse(CommandEndTxnResponse response)
 		{
-			var request = response.RequestId;
-			if (!_pendingRequests.TryGetValue(request, out var msg))
+			var request = (long)response.RequestId;
+			if (!_pendingRequests.TryGetValue(request, out var s))
 			{
 				if(_log.IsDebugEnabled)
 				{
-					_log.Debug("Got end txn response for timeout {} - {}", response.MostBits, response.LeastBits);
+					_log.Debug("Got end txn response for timeout {} - {}", response.TxnidMostBits, response.TxnidLeastBits);
 				}
 				return;
 			}
@@ -422,8 +409,6 @@ namespace SharpPulsar
 			{
 				_log.Error("Got end txn response for request {} error {}", response.RequestId, response.Error);
 			}
-            //callback
-            msg.ReplyTo.Tell(response);
 			_pendingRequests.Remove(request);
 		}
 
@@ -505,9 +490,7 @@ namespace SharpPulsar
 		}
 		private void HandleConnectionFailed(PulsarClientException ex)
 		{
-            _sender?.Tell(ex.ToString());
 			_log.Error(ex.ToString());
-            _sender = null;
 		}
 		internal class RunRequestTimeout
         {

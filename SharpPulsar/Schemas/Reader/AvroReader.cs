@@ -2,6 +2,7 @@
 using Avro.IO;
 using Avro.Reflect;
 using Avro.Specific;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using System.IO;
 

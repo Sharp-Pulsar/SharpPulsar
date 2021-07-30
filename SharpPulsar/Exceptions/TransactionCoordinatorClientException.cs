@@ -42,19 +42,6 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
-        public class NoException : TransactionCoordinatorClientException
-		{
-            public static NoException Instance = new NoException();
-            public NoException() : base("")
-			{
-			}
-		}
-        public class TransactionNotOpenedException : TransactionCoordinatorClientException
-		{
-            public TransactionNotOpenedException(string state) : base(state)
-			{
-			}
-		}
 		/// <summary>
 		/// Thrown when transaction coordinator with unexpected state.
 		/// </summary>

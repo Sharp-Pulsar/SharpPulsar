@@ -6,13 +6,13 @@ using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Queues;
 using SharpPulsar.Stats.Producer;
 using System;
 using System.Collections.Generic;
@@ -56,7 +56,7 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 
-		public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration)
+		public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, ProducerQueueCollection<T> queue) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration, queue)
 		{
 			_cnxPool = cnxPool;
 			_lookup = lookup;
@@ -68,7 +68,7 @@ namespace SharpPulsar
 			_topicMetadata = new TopicMetadata(numPartitions);
 			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
 			_log = Context.GetLogger();
-			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
+			int maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
 
 			switch (conf.MessageRoutingMode)
@@ -86,7 +86,8 @@ namespace SharpPulsar
 					_router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
 					break;
 			}
-			
+			Start().ConfigureAwait(false);
+
 			// start track and auto subscribe partition increasement
 			if(conf.AutoUpdatePartitions)
 			{
@@ -95,10 +96,6 @@ namespace SharpPulsar
 			Receive<Flush>(_ => {
 				Flush();
 			});
-			ReceiveAsync<Connect>(async _ => 
-            {
-                await Start().ConfigureAwait(false);
-            });
 			Receive<TriggerFlush>(_ => {
 				TriggerFlush();
 			});
@@ -116,9 +113,8 @@ namespace SharpPulsar
 					InternalSend(m.Message);
 				}
 				catch (Exception ex)
-                {
-                    Sender.Tell(ex);
-                    _log.Error(ex.ToString());
+				{
+					_log.Error(ex.ToString());
 				}
 			});
 			Receive<InternalSendWithTxn<T>>(m =>
@@ -129,7 +125,6 @@ namespace SharpPulsar
 				}
 				catch (Exception ex)
 				{
-                    Sender.Tell(ex);
 					_log.Error(ex.ToString());
 				}
 			});
@@ -152,23 +147,20 @@ namespace SharpPulsar
 		private async ValueTask Start()
 		{
 			Exception createFail = null;
-			var completed = 0;
-			for(var partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
+			int completed = 0;
+			for(int partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
 				var producerId = await _generator.Ask<long>(NewProducerId.Instance);
-				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration)));
-                var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
-                if (!co.Errored)
-                {
-                    _producers.Add(producer);
-                    var routee = Routee.FromActorRef(producer);
-                    _router.Tell(new AddRoutee(routee));
-                }
-                else
+				string partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
+				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
+				_producers.Add(producer);
+				var routee = Routee.FromActorRef(producer);
+				_router.Tell(new AddRoutee(routee));
+				var prod = ProducerQueue.Producer.Take();
+				if(prod.Errored)
                 {
 					State.ConnectionState = HandlerState.State.Failed;
-					createFail = co.Exception;
+					createFail = prod.Exception;
 				}
 				if (++completed == _topicMetadata.NumPartitions())
 				{
@@ -176,13 +168,13 @@ namespace SharpPulsar
 					{
 						State.ConnectionState = HandlerState.State.Ready;
 						_log.Info($"[{Topic}] Created partitioned producer");
-                        Sender.Tell(co);
+						ProducerQueue.PartitionedProducer.Add(_self);
 					}
 					else
 					{
 						_log.Error($"[{Topic}] Could not create partitioned producer: {createFail}");
-                        Sender.Tell(createFail);
-                        Client.Tell(new CleanupProducer(_self));
+						ProducerQueue.PartitionedProducer.Add(null);
+						Client.Tell(new CleanupProducer(_self));
 					}
 				}
 			}
@@ -193,67 +185,61 @@ namespace SharpPulsar
 		{
 			switch (State.ConnectionState)
 			{
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
-                    break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
-                    Sender.Tell(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-                    return;
-                case HandlerState.State.Terminated:
-                    Sender.Tell(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-                    return;
-                case HandlerState.State.ProducerFenced:
-                    Sender.Tell(new PulsarClientException.ProducerFencedException("Producer was fenced"));
-                    return;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
-                    Sender.Tell(new PulsarClientException.NotConnectedException());
-                    return;
-            }
+				case HandlerState.State.Ready:
+				case HandlerState.State.Connecting:
+					break; // Ok
+					goto case HandlerState.State.Closing;
+				case HandlerState.State.Closing:
+				case HandlerState.State.Closed:
+					_log.Error("Producer already closed");
+					break;
+				case HandlerState.State.Terminated:
+					_log.Error("Topic was terminated");
+					break;
+				case HandlerState.State.Failed:
+				case HandlerState.State.Uninitialized:
+					_log.Error("NotConnectedException"); break;
+			}
 
 			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
 				var msg = new ConsistentHashableEnvelope(new InternalSend<T>(message), message.Key);
-				_router.Tell(msg, Sender);
+				_router.Tell(msg);
 			}
 			else
 			{
-				_router.Tell(new InternalSend<T>(message), Sender);
+				_router.Tell(new InternalSend<T>(message));
 			}
 		}
 
-		private void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		internal override void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
-            switch (State.ConnectionState)
-            {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
-                    break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
-                    Sender.Tell(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-                    return;
-                case HandlerState.State.Terminated:
-                    Sender.Tell(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-                    return;
-                case HandlerState.State.ProducerFenced:
-                    Sender.Tell(new PulsarClientException.ProducerFencedException("Producer was fenced"));
-                    return;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
-                    Sender.Tell(new PulsarClientException.NotConnectedException());
-                    return;
-            }
+			switch(State.ConnectionState)
+			{
+				case HandlerState.State.Ready:
+				case HandlerState.State.Connecting:
+					break; // Ok
+					goto case HandlerState.State.Closing;
+				case HandlerState.State.Closing:
+				case HandlerState.State.Closed:
+					 _log.Error("Producer already closed");
+					break;
+				case HandlerState.State.Terminated:
+					_log.Error("Topic was terminated");
+					break;
+				case HandlerState.State.Failed:
+				case HandlerState.State.Uninitialized:
+					_log.Error("NotConnectedException");break;
+			}
 
-            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
 				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn), message.Key);
-				_router.Tell(msg, Sender);
+				_router.Tell(msg);
 			}
             else
 			{
-				_router.Tell(new InternalSendWithTxn<T>(message, txn), Sender);
+				_router.Tell(new InternalSendWithTxn<T>(message, txn));
 			}
 		}
 
@@ -309,7 +295,7 @@ namespace SharpPulsar
 				return null;
 			}
 			_stats.Reset();
-			for (var i = 0; i < _topicMetadata.NumPartitions(); i++)
+			for (int i = 0; i < _topicMetadata.NumPartitions(); i++)
 			{
 				var stats = await _producers[i].Ask<IProducerStats>(GetStats.Instance);
 				_stats.UpdateCumulativeStats(stats);
@@ -330,11 +316,11 @@ namespace SharpPulsar
 			{
 				return;
 			}
-			var topicName = TopicName.Get(Topic);
+			TopicName topicName = TopicName.Get(Topic);
 			var metadata = await _lookup.Ask<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
 			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
-			var oldPartitionNumber = _topicMetadata.NumPartitions();
-			var currentPartitionNumber = topics.Count;
+			int oldPartitionNumber = _topicMetadata.NumPartitions();
+			int currentPartitionNumber = topics.Count;
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{Topic}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
@@ -349,15 +335,11 @@ namespace SharpPulsar
 				foreach (var partitionName in newPartitions)
 				{
 					var producerId = await _generator.Ask<long>(NewProducerId.Instance);
-					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration)));
-                    var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
-                    if(!co.Errored)
-                    {
-                        _producers.Add(producer);
-                        var routee = Routee.FromActorRef(producer);
-                        _router.Tell(new AddRoutee(routee));
-                    }
+					int partitionIndex = TopicName.GetPartitionIndex(partitionName);
+					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration, ProducerQueue)));
+					_producers.Add(producer);
+					var routee = Routee.FromActorRef(producer);
+					_router.Tell(new AddRoutee(routee));
 				}
 				if (_log.IsDebugEnabled)
 				{
@@ -376,7 +358,7 @@ namespace SharpPulsar
 			if (metadata.Partitions > 0)
 			{
 				IList<string> partitions = new List<string>(metadata.Partitions);
-				for (var i = 0; i < metadata.Partitions; i++)
+				for (int i = 0; i < metadata.Partitions; i++)
 				{
 					partitions.Add(topicName.GetPartition(i).ToString());
 				}

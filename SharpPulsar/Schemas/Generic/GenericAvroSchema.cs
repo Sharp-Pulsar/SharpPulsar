@@ -1,5 +1,6 @@
 ﻿using Avro;
 using Avro.Generic;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;

@@ -8,6 +8,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Protocol.Builder;
 using SharpPulsar.Shared;
 using SharpPulsar.Interfaces.ISchema;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

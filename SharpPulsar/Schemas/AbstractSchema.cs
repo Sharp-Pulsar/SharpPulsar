@@ -87,18 +87,6 @@ namespace SharpPulsar.Schemas
         {
             throw new NotImplementedException();
         }
-        public virtual ISchema<T> AtSchemaVersion(byte[] schemaVersion)
-        {
-            Precondition.Condition.RequireNonNull(schemaVersion, "schemaVersion");
-            if (!SupportSchemaVersioning()) 
-            {
-                return this;
-            } 
-            else 
-            {
-                throw new SchemaSerializationException("Not implemented for " + GetType().FullName);
-            }
-        }
     }
 
 }

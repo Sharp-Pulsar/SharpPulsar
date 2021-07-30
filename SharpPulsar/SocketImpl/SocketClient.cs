@@ -85,7 +85,7 @@ namespace SharpPulsar.SocketImpl
         public void Connect()
         {
             var host = _server.Host;
-            var networkStream = GetStream(_server).GetAwaiter().GetResult();
+            var networkStream = GetStream(_server);
 
             if (_encrypt)
                 networkStream = EncryptStream(networkStream, host);
@@ -186,20 +186,23 @@ namespace SharpPulsar.SocketImpl
 
         public void Dispose()
         {
-            try
-            {
-                cancellation?.Cancel();
-                _pipeReader?.Complete();
-                _pipeWriter?.Complete();
-                _networkstream.Close();
-                _networkstream.Dispose();
-            }
-            catch { }
+            cancellation?.Cancel();
+            _pipeReader?.Complete();
+            _pipeWriter?.Complete();
+            _networkstream.Dispose();
             OnDisconnect();
         }
-        private async Task<Stream> GetStream(DnsEndPoint endPoint)
+
+        void ShutDownSocket(Socket socket)
+        {
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close(1000);
+            _logger.Info("Shutting down socket client....");
+        }
+        private Stream GetStream(DnsEndPoint endPoint)
         {
             var tcpClient = new TcpClient();
+            Socket socket = null;
             try
             {
                 if (SniProxy)
@@ -210,13 +213,19 @@ namespace SharpPulsar.SocketImpl
 
                 if (!_encrypt)
                 {
-                    await tcpClient.ConnectAsync(endPoint.Host, endPoint.Port).ConfigureAwait(false);
+                    tcpClient.Connect(endPoint.Host, endPoint.Port);
                     
                     return tcpClient.GetStream();
                 }
 
-                var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false); 
-                var socket = await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
+                Dns.GetHostAddressesAsync(endPoint.Host).ContinueWith(async task => {
+                    if (!task.IsFaulted)
+                    {
+                        socket = await ConnectAsync(task.Result, endPoint.Port);
+                    }
+                    else
+                        _logger.Error(task.Exception.ToString());
+                });
                 return new NetworkStream(socket, true);
             }
             catch (Exception ex)

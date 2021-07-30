@@ -6,6 +6,7 @@ using System.Text;
 using IdentityModel.Client;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Extension;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -30,7 +31,7 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Auth
 {
 
-    public class AuthenticationDataOAuth2 : IAuthenticationDataProvider
+	public class AuthenticationDataOAuth2 : IAuthenticationDataProvider
     {
         private readonly string _clientId;
         private readonly string _clientSecret;

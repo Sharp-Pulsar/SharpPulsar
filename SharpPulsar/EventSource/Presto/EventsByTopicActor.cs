@@ -1,8 +1,12 @@
 ﻿using System.Net.Http;
+using System.Threading;
 using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Presto;
+using SharpPulsar.Messages;
 using SharpPulsar.Common.Naming;
+using SharpPulsar.Protocol;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.EventSource.Pulsar;
 using SharpPulsar.EventSource.Messages;
 
 namespace SharpPulsar.EventSource.Presto

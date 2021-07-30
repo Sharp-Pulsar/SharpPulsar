@@ -3,16 +3,14 @@ using Akka.Event;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -48,7 +46,6 @@ namespace SharpPulsar.Transaction
 		private IActorRef _lookup;
 		private IActorRef _cnxPool;
 		private IActorRef _replyTo;
-        private IActorRef _sender;
 
 		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
@@ -58,19 +55,13 @@ namespace SharpPulsar.Transaction
 			_lookup = lookup;
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
-			_log = Context.GetLogger();
-            Receive<string>(st=> 
-            {
-                _sender = Sender;
-
-                if(st.Equals("Start"))
-                    Become(StartCoordinator);
-            });
-			
+			_log = Context.GetLogger(); 
+			StartCoordinator();
 		}
 
 		private void Ready()
         {
+
 			Receive<NewTxn>(n => 
 			{
 				_replyTo = Sender;
@@ -93,7 +84,7 @@ namespace SharpPulsar.Transaction
 		private void StartCoordinator()
 		{
 			_state = TransactionCoordinatorClientState.Starting;
-			ReceiveAsync<PartitionedTopicMetadata>(async p => 
+			Receive<PartitionedTopicMetadata>(p => 
 			{
 				var partitionMeta = p;
 				if (_log.IsDebugEnabled)
@@ -103,49 +94,20 @@ namespace SharpPulsar.Transaction
 				if (partitionMeta.Partitions > 0)
 				{
 					_handlers = new List<IActorRef>(partitionMeta.Partitions);
-					for (var i = 0; i < partitionMeta.Partitions; i++)
+					for (int i = 0; i < partitionMeta.Partitions; i++)
 					{
-                        try
-                        {
-                            var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-                            var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                            if(ask.Equals("Ready"))
-                            {
-                                _handlers.Add(handler);
-                                _handlerMap.Add(i, handler);
-                            }
-                            else
-                                _log.Error(ask);
-                        }
-                        catch(Exception ex)
-                        {
-                            _log.Error(ex.ToString());
-                        }
+						var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool , _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
+						_handlers.Add(handler);
+						_handlerMap.Add(i, handler);
 					}
-                    _sender.Tell(_handlers.Count);
 				}
 				else
 				{
 					_handlers = new List<IActorRef>(1);
-                    try
-                    {
-                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-                        var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                        if (ask.Equals("Ready"))
-                        {
-                            _handlers[0] = handler;
-                            _handlerMap.Add(0, handler);
-                        }
-                        else
-                            _log.Error(ask);
-
-                    }
-                    catch (Exception ex)
-                    {
-                        _log.Error(ex.ToString());
-                    }
-                    _sender.Tell(_handlers.Count);
-                }
+					var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+					_handlers[0] = handler;
+					_handlerMap.Add(0, handler);
+				}
 				Become(Ready);
 			});
 			Receive<ClientExceptions>(ex => 
@@ -211,23 +173,17 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(pub.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(pub.TxnID.MostSigBits).ToString());
-
-                Sender.Tell(new RegisterProducedTopicResponse(Protocol.Proto.ServerError.UnknownError));
-            }
+			}
 			else
-				handler.Forward(pub);
+				handler.Tell(pub);
 		}
 
 		private void AddSubscriptionToTxn(SubscriptionToTxn subToTxn)
 		{
 			if (!_handlerMap.TryGetValue(subToTxn.TxnID.MostSigBits, out var handler))
 			{
-                var error = new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(subToTxn.TxnID.MostSigBits);
-
-                _log.Error(error.ToString());
-
-                Sender.Tell(new AskResponse(new PulsarClientException(error.ToString())));
-            }
+				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(subToTxn.TxnID.MostSigBits).ToString());
+			}
             else
             {
 				var sub = new Protocol.Proto.Subscription
@@ -235,7 +191,7 @@ namespace SharpPulsar.Transaction
 					Topic = subToTxn.Topic,
 					subscription = subToTxn.Subscription,
 				};
-				handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Protocol.Proto.Subscription> { sub }), Sender);
+				handler.Tell(new AddSubscriptionToTxn(subToTxn.TxnID, new List<Protocol.Proto.Subscription> { sub }));
 
 			}
 		}
@@ -245,10 +201,9 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(commit.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
-            }
+			}
 			else
-				handler.Forward(commit);
+				handler.Tell(commit);
 		}
 
 		private void Abort(AbortTxnID abort)
@@ -256,10 +211,9 @@ namespace SharpPulsar.Transaction
 			if(!_handlerMap.TryGetValue(abort.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(abort.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
-            }
+			}
 			else
-				handler.Forward(abort);
+				handler.Tell(abort);
 		}
 
 		private TransactionCoordinatorClientState State

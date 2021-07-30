@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using SharpPulsar.Auth;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,11 +25,11 @@ using SharpPulsar.Auth;
 /// </summary>
 namespace SharpPulsar.Interfaces
 {
-
-    /// <summary>
-    /// Interface for accessing data which are used in variety of authentication schemes on client side.
-    /// </summary>
-    public interface IAuthenticationDataProvider
+	
+	/// <summary>
+	/// Interface for accessing data which are used in variety of authentication schemes on client side.
+	/// </summary>
+	public interface IAuthenticationDataProvider
 	{
 		/*
 		 * TLS
