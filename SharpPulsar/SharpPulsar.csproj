@@ -74,6 +74,7 @@
     </PackageReference>
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
     <PackageReference Include="protobuf-net" Version="3.0.101" />
+    <PackageReference Include="SharpPulsar.Admin" Version="1.0.0" />
     <PackageReference Include="SharpZipLib" Version="1.3.2" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
@@ -92,24 +93,6 @@
   <ItemGroup>
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Compile Update="Admin\PulsarAdmin.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>PulsarAdmin.json</DependentUpon>
-    </Compile>
-    <Compile Update="Function\PulsarFunction.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>PulsarFunction.json</DependentUpon>
-    </Compile>
-    <None Update="Admin\PulsarAdmin.json">
-      <Generator>AutoRestCodeGenerator</Generator>
-      <LastGenOutput>PulsarAdmin.cs</LastGenOutput>
-    </None>
-    <None Update="Function\PulsarFunction.json">
-      <Generator>NSwagCodeGenerator</Generator>
-      <LastGenOutput>PulsarFunction.cs</LastGenOutput>
     </None>
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

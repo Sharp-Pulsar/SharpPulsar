@@ -112,7 +112,7 @@ namespace SharpPulsar.EventSource.Pulsar
         {
             try
             {
-                var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+                var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
                 var statsResponse = adminRestapi.GetInternalStats(_topicName.NamespaceObject.Tenant,
                     _topicName.NamespaceObject.LocalName, _topicName.LocalName);
                 var start = MessageIdHelper.NextFlow(statsResponse.Body);

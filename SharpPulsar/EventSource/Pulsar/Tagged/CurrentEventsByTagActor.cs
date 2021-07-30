@@ -21,10 +21,10 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
         private readonly BufferBlock<IMessage<T>> _buffer;
-        private readonly User.Admin _admin;
+        private readonly Admin.Public.Admin _admin;
         public CurrentEventsByTagActor(CurrentEventsByTag<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            _admin = new User.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
             _message = message;
             _httpClient = httpClient;
             _schema = schema;
@@ -57,7 +57,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             });
         }
 
-        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
+        private void Setup(Admin.Model.PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {
