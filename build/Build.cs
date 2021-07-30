@@ -52,7 +52,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     InvokedTargets = new[] { nameof(Push) })]
 
 [GitHubActions("Admin",
-    GitHubActionsImage.WindowsLatest,
+    GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "admin" },
     InvokedTargets = new[] { nameof(ReleaseAdmin) })]

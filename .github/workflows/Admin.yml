@@ -22,9 +22,9 @@ on:
       - Admin
 
 jobs:
-  windows-latest:
-    name: windows-latest
-    runs-on: windows-latest
+  ubuntu-latest:
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Setup dotnet 5.0
         uses: actions/setup-dotnet@v1
