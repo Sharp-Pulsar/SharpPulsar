@@ -3,14 +3,20 @@ using Akka.Event;
 using Akka.Util.Internal;
 using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch.Api;
+using SharpPulsar.Common;
 using SharpPulsar.Configuration;
+using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Messages.Requests;
+using SharpPulsar.Messages.Transaction;
+using SharpPulsar.Queues;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using static SharpPulsar.Exceptions.PulsarClientException;
+using static SharpPulsar.Protocol.Proto.CommandAck;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 /// <summary>
@@ -35,7 +41,9 @@ namespace SharpPulsar
 {
     internal abstract class ConsumerActorBase<T> : ReceiveActor
 	{
-		internal abstract long LastDisconnectedTimestamp();
+
+		protected readonly ConsumerQueueCollections<T> ConsumerQueue;
+		internal abstract LastConnectionClosedTimestampResponse LastDisconnectedTimestamp();
 		internal abstract void NegativeAcknowledge(IMessageId messageId);
 		internal abstract void Resume();
 		internal abstract void Pause();
@@ -70,13 +78,11 @@ namespace SharpPulsar
 		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
-		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema)
+		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ConsumerInterceptors<T> interceptors, ConsumerQueueCollections<T> consumerQueue)
 		{
-            if (conf.Interceptors != null && conf.Interceptors.Count > 0)
-                Interceptors = new ConsumerInterceptors<T>(Context.System, conf.Interceptors);
-
-            StateActor = stateActor;
+			StateActor = stateActor;
 			_topic = topic;
+			ConsumerQueue = consumerQueue;
 			_consumerName = conf.ConsumerName ?? Utility.ConsumerName.GenerateRandomName();
 			State = new HandlerState(lookup, connectionPool, topic, Context.System, _consumerName);
 			_log = Context.GetLogger();
@@ -86,11 +92,12 @@ namespace SharpPulsar
 			Listener = conf.MessageListener;
 			ConsumerEventListener = conf.ConsumerEventListener;
 
-            IncomingMessages = new BufferBlock<IMessage<T>>();
+			IncomingMessages = ConsumerQueue.IncomingMessages;
 			UnAckedChunckedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
 
 			ListenerExecutor = listenerExecutor;
 			Schema = schema;
+			Interceptors = interceptors;
 			
 			if (conf.BatchReceivePolicy != null)
 			{
@@ -120,113 +127,10 @@ namespace SharpPulsar
 				//BatchReceiveTimeout = ListenerExecutor.ScheduleOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(BatchReceivePolicy.TimeoutMs)), PendingBatchReceiveTask);
 				
 			}
-			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5), Self, SendState.Instance, ActorRefs.NoSender);
+			_stateUpdater = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1), Self, SendState.Instance, ActorRefs.NoSender);
 		}
-        protected bool VerifyBatchReceive()
-        {
-            if (Conf.MessageListener != null)
-            {
-                Sender.Tell(new AskResponse(new InvalidConfigurationException("Cannot use receive() when a listener has been set")));
-                return false;
-            }
-            if (Conf.ReceiverQueueSize == 0)
-            {
-                Sender.Tell(new AskResponse(new InvalidConfigurationException("Can't use batch receive, if the queue size is 0")));
-                return false;
-            }
-            return true;
-        }
-
-        protected internal virtual IMessage<T> BeforeConsume(IMessage<T> message)
-        {
-            if (Interceptors != null)
-            {
-                return Interceptors.BeforeConsume(Self, message);
-            }
-            else
-            {
-                return message;
-            }
-        }
-        protected void BatchReceive()
-        {
-            if(VerifyConsumerState())
-            {
-                if(VerifyBatchReceive())
-                {
-                    if (HasEnoughMessagesForBatchReceive())
-                    {
-                        var messages = new Messages<T>(Conf.BatchReceivePolicy.MaxNumMessages, Conf.BatchReceivePolicy.MaxNumBytes);
-
-                        while (IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
-                        {
-                            Self.Tell(new MessageProcessed<T>(message));
-                            messages.Add(BeforeConsume(message));
-                        }
-                        Sender.Tell(new AskResponse(messages));
-                    }
-                    else
-                        Sender.Tell(new AskResponse());
-                }
-            }
-        }
-        protected void Receive()
-        {
-            if(VerifyConsumerState())
-            {
-                if (Conf.ReceiverQueueSize == 0)
-                {
-                    Sender.Tell(new AskResponse(new InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0")));
-                    return;
-                }
-                if (Conf.MessageListener != null)
-                {
-                    Sender.Tell(new AskResponse(new InvalidConfigurationException("Cannot use receive() when a listener has been set")));
-                    return;
-                }
-                if (IncomingMessages.TryReceive(out var message))
-                {
-                    Self.Tell(new MessageProcessed<T>(message));
-                    Sender.Tell(new AskResponse(BeforeConsume(message)));
-                }                    
-                else
-                    Sender.Tell(new AskResponse());
-            }
-        }
-        private bool VerifyConsumerState()
-        {
-            var state = State.ConnectionState;
-            switch (state)
-            {
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
-                    return true;
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
-                   Sender.Tell(new AskResponse(new AlreadyClosedException("Consumer already closed")));
-                    return false;
-                case HandlerState.State.Terminated:
-                    Sender.Tell(new AskResponse(new TopicTerminatedException("Topic was terminated")));
-                    return false;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
-                default:
-                    Sender.Tell(new AskResponse(new NotConnectedException()));
-                    return false;
-            }
-        }
-        private bool HasEnoughMessagesForBatchReceive()
-        {
-            var mesageSize = IncomingMessagesSize;
-            var mesageCount = IncomingMessages.Count;
-            if (Conf.BatchReceivePolicy.MaxNumMessages <= 0 && Conf.BatchReceivePolicy.MaxNumBytes <= 0)
-            {
-                return false;
-            }
-            return (Conf.BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= Conf.BatchReceivePolicy.MaxNumMessages) 
-                || (Conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= Conf.BatchReceivePolicy.MaxNumBytes);
-        }
-        internal void NegativeAcknowledge(IMessage<T> message)
+		
+		internal void NegativeAcknowledge(IMessage<T> message)
 		{
 			NegativeAcknowledge(message.MessageId);
 		}
@@ -340,7 +244,7 @@ namespace SharpPulsar
 			});
 			Receive<GetHandlerState>(_ => 
 			{
-				Sender.Tell(new AskResponse(_state));
+				Sender.Tell(new HandlerStateResponse(_state));
 			});
         }
     }

@@ -28,6 +28,7 @@ using Org.BouncyCastle.Security;
 
 using SharpPulsar.Cache;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Shared;

@@ -37,19 +37,18 @@ jobs:
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
-    timeout-minutes: 60
     steps:
-      - name: Setup dotnet 2
+      - name: Setup dotnet 2.1
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 2.2.*
+          dotnet-version: 2.1.*
 
-      - name: Setup dotnet 3
+      - name: Setup dotnet 3.1
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 3.1.*
 
-      - name: Setup dotnet 5
+      - name: Setup dotnet 5.0
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 5.0.*
@@ -62,5 +61,5 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run TxnTest'
-        run: ./build.cmd TxnTest
+      - name: Run './build.cmd Test'
+        run: ./build.cmd Test

@@ -1,10 +1,10 @@
 ﻿using System;
+using Microsoft.Extensions.Logging;
 using SharpPulsar.Shared;
 using SharpPulsar.Schemas;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas.Generic;
-using SharpPulsar.Exceptions;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,10 +26,10 @@ using SharpPulsar.Exceptions;
 /// </summary>
 namespace SharpPulsar.Schema
 {
-    /// <summary>
-    /// Auto detect schema.
-    /// </summary>
-    public class AutoConsumeSchema : ISchema<IGenericRecord>
+	/// <summary>
+	/// Auto detect schema.
+	/// </summary>
+	public class AutoConsumeSchema : ISchema<IGenericRecord>
 	{
 
 		private ISchema<IGenericRecord> _schema;
@@ -93,51 +93,18 @@ namespace SharpPulsar.Schema
 		{
 			return true;
 		}
-        public virtual ISchema<IGenericRecord> AtSchemaVersion(byte[] schemaVersion)
-        {
-            FetchSchemaIfNeeded();
-            EnsureSchemaInitialized();
-            if (_schema.SupportSchemaVersioning() && _schema is AbstractSchema<IGenericRecord>)
-            {
-                return ((AbstractSchema<IGenericRecord>)_schema).AtSchemaVersion(schemaVersion);
-            }
-            else
-            {
-                return _schema;
-            }
-        }
-        public IGenericRecord Decode(byte[] bytes, byte[] schemaVersion)
-        {
-            FetchSchemaIfNeeded();
-            EnsureSchemaInitialized();
-            return Adapt(_schema.Decode(bytes, schemaVersion), schemaVersion);
-        }
-        public object NativeSchema
-        {
-            get
-            {
-                EnsureSchemaInitialized();
-                if (_schema == null)
-                {
-                    return null;
-                }
-                else
-                {
-                    return _schema.NativeSchema();
-                }
-            }
-        }
-        public  void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
+
+		public  void ConfigureSchemaInfo(string topicName, string componentName, SchemaInfo schemaInfo)
 		{
 			_topicName = topicName;
 			_componentName = componentName;
             if (schemaInfo == null) return;
             var genericSchema = GenerateSchema(schemaInfo);
             Schema = genericSchema;
-            //Log.LogInformation("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
+            Log.LogInformation("Configure {} schema for topic {} : {}", componentName, topicName, schemaInfo.SchemaDefinition);
         }
 
-		private IGenericSchema<IGenericRecord> GenerateSchema(ISchemaInfo schemaInfo)
+		private IGenericSchema<IGenericRecord> GenerateSchema(SchemaInfo schemaInfo)
 		{
 			if (schemaInfo.Type != SchemaType.AVRO && schemaInfo.Type != SchemaType.JSON)
 			{
@@ -213,63 +180,13 @@ namespace SharpPulsar.Schema
 					throw new ArgumentException("Retrieve schema instance from schema info for type '" + schemaInfo.Type + "' is not supported yet");
 			}
 		}
-        protected internal virtual IGenericRecord Adapt(object value, byte[] schemaVersion)
-        {
-            if (value is IGenericRecord)
-            {
-                return (IGenericRecord)value;
-            }
-            if (_schema == null)
-            {
-                throw new System.InvalidOperationException("Cannot decode a message without schema");
-            }
-            return WrapPrimitiveObject(value, _schema.SchemaInfo.Type, schemaVersion);
-        }
 
-        public static IGenericRecord WrapPrimitiveObject(object value, SchemaType type, byte[] schemaVersion)
-        {
-            return GenericObjectWrapper.Of(value, type, schemaVersion);
-        }
         object ICloneable.Clone()
         {
             throw new NotImplementedException();
         }
-        /// <summary>
-        /// It may happen that the schema is not loaded but we need it, for instance in order to call getSchemaInfo()
-        /// We cannot call this method in getSchemaInfo, because getSchemaInfo is called in many
-        /// places and we will introduce lots of deadlocks.
-        /// </summary>
-        public virtual void FetchSchemaIfNeeded()
-        {
-            if (_schema == null)
-            {
-                if (_schemaInfoProvider == null)
-                {
-                    throw new SchemaSerializationException("Can't get accurate schema information for topic " + _topicName + "using AutoConsumeSchema because SchemaInfoProvider is not set yet");
-                }
-                else
-                {
-                    ISchemaInfo schemaInfo = null;
-                    try
-                    {
-                        schemaInfo = _schemaInfoProvider.LatestSchema().GetAwaiter().GetResult();
-                        if (schemaInfo == null)
-                        {
-                            // schemaless topic
-                            schemaInfo = BytesSchema.Of().SchemaInfo;
-                        }
-                    }
-                    catch (Exception e) 
-                    {
-                        throw new SchemaSerializationException(e.Message);
-                    }
-                    // schemaInfo null means that there is no schema attached to the topic.
-                    _schema = GenerateSchema(schemaInfo);
-                    _schema.SchemaInfoProvider = _schemaInfoProvider;
-                    //log.info("Configure {} schema for topic {} : {}", _componentName, _topicName, schemaInfo.SchemaDefinition);
-                }
-            }
-        }
-    }
+
+        private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<AutoConsumeSchema>();
+	}
 
 }

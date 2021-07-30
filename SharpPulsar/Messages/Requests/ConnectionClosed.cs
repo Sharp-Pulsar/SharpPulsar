@@ -36,10 +36,6 @@ namespace SharpPulsar.Messages.Requests
     {
         public static ConnectionAlreadySet Instance = new ConnectionAlreadySet();
     }
-    public sealed class Connect
-    {
-        public static Connect Instance = new Connect();
-    }
     public sealed class ConnectionOpened
     {
         public IActorRef ClientCnx { get; }

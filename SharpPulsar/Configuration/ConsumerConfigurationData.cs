@@ -6,6 +6,7 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
+using BAMCIS.Util.Concurrent;
 using SharpPulsar.Precondition;
 
 /// <summary>
@@ -31,10 +32,10 @@ namespace SharpPulsar.Configuration
     public sealed class ConsumerConfigurationData<T>
 	{
 		private long _autoUpdatePartitionsIntervalSeconds = 5;
-		public void SetAutoUpdatePartitionsIntervalSeconds(int interval)
+		public void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
 		{
 			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
-			_autoUpdatePartitionsIntervalSeconds = interval;
+			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
 		}
 		public long AutoUpdatePartitionsIntervalSeconds { get => _autoUpdatePartitionsIntervalSeconds; }
 		public IMessageCrypto MessageCrypto { get; set; }
@@ -56,7 +57,6 @@ namespace SharpPulsar.Configuration
 		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
 
 		public long AckTimeoutMillis { get; set; } = 0;
-		public bool AckReceiptEnabled { get; set; } = false;
 
 		public long TickDurationMillis { get; set; } = 1000;
 

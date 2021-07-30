@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -40,7 +39,7 @@ namespace SharpPulsar.Interfaces.Transaction
 		/// <param name="timeout"> the transaction timeout value </param>
 		/// <param name="timeoutUnit"> the transaction timeout unit </param>
 		/// <returns> the transaction builder itself </returns>
-		ITransactionBuilder WithTransactionTimeout(TimeSpan timeout);
+		ITransactionBuilder WithTransactionTimeout(long timeoutInMs);
 
 		/// <summary>
 		/// Build the transaction with the configured settings.

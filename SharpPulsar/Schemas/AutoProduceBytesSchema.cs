@@ -18,16 +18,17 @@
 /// </summary>
 
 using System;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 
 namespace SharpPulsar.Schemas
 {
-    /// <summary>
-    /// Auto detect schema.
-    /// </summary>
-    public class AutoProduceBytesSchema<T> : ISchema<byte[]>
+	/// <summary>
+	/// Auto detect schema.
+	/// </summary>
+	public class AutoProduceBytesSchema<T> : ISchema<byte[]>
 	{
 
 		private bool _requireSchemaValidation = true;

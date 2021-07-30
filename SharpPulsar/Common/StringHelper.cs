@@ -4,6 +4,8 @@
 //	This class is used to convert some aspects of the Java String class.
 //-------------------------------------------------------------------------------------------
 
+using SharpPulsar.Extension;
+
 namespace SharpPulsar.Common
 {
     public static class StringHelper

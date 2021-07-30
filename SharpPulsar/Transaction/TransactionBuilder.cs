@@ -1,11 +1,8 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.Interfaces.Transaction;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Transaction;
-using System;
 using System.Threading.Tasks;
-using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -35,7 +32,8 @@ namespace SharpPulsar.Transaction
 		private readonly ActorSystem _actorSystem;
 		private readonly IActorRef _transactionCoordinatorClient;
 		private readonly IActorRef _client;
-        private TimeSpan _txnTimeoutMs = TimeSpan.FromSeconds(60); // 1 minute
+		private long _txnTimeoutMs = 60000; // 1 minute
+		private const long TxnRequestTimeoutMs = 1000 * 30; // 30 seconds
 		private ILoggingAdapter _log;
 
 		public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
@@ -46,9 +44,9 @@ namespace SharpPulsar.Transaction
 			_client = client;
 		}
 
-		public virtual ITransactionBuilder WithTransactionTimeout(TimeSpan timeout)
+		public virtual ITransactionBuilder WithTransactionTimeout(long timeoutInMs)
 		{
-			_txnTimeoutMs = timeout;
+			_txnTimeoutMs = timeoutInMs;
 			return this;
 		}
 
@@ -58,23 +56,15 @@ namespace SharpPulsar.Transaction
 		}
 		public async Task<ITransaction> BuildAsync()
 		{
-            // talk to TC to begin a transaction
-            //       the builder is responsible for locating the transaction coorindator (TC)
-            //       and start the transaction to get the transaction id.
-            //       After getting the transaction id, all the operations are handled by the
-            //       `Transaction`
-            var timeout = (long)_txnTimeoutMs.TotalMilliseconds;
-            var txnID = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(timeout)).ConfigureAwait(false);
-
-            if (!(txnID.Error is NoException))
-                throw txnID.Error;
-
-			if(_log.IsDebugEnabled)
-                _log.Debug($"Success to new txn. txnID: ({txnID.MostSigBits}:{txnID.LeastSigBits})");
-
-            var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits));
-            var tcOk = await transaction.Ask<TcClientOk>(GetTcClient.Instance).ConfigureAwait(false);
-            return new User.Transaction(txnID.LeastSigBits, txnID.MostSigBits, transaction);	
+			// talk to TC to begin a transaction
+			//       the builder is responsible for locating the transaction coorindator (TC)
+			//       and start the transaction to get the transaction id.
+			//       After getting the transaction id, all the operations are handled by the
+			//       `Transaction`
+			var result = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(TxnRequestTimeoutMs)).ConfigureAwait(false);
+			var txnID = result.Response;
+			var transaction = _actorSystem.ActorOf(Transaction.Prop(_client, _txnTimeoutMs, (long)txnID.TxnidLeastBits, (long)txnID.TxnidMostBits));
+			return new User.Transaction(transaction);	
 		}
 	}
 

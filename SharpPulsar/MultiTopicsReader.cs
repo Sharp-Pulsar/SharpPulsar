@@ -2,14 +2,13 @@
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
+using SharpPulsar.Queues;
 using SharpPulsar.Utility;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,16 +30,13 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar
 {
-    internal class MultiTopicsReader<T> : ReceiveActor, IWithUnboundedStash
+    internal class MultiTopicsReader<T> : ReceiveActor
 	{
 
 		private readonly IActorRef _consumer;
-		private IActorRef _sender;
 		private readonly IActorRef _generator;
 
-        public IStash Stash { get; set; }
-
-        public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData)
+		public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, ConsumerQueueCollections<T> consumerQueue)
 		{
 			_generator = idGenerator;
 			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -48,7 +44,7 @@ namespace SharpPulsar
 			{
 				subscription = readerConfiguration.SubscriptionRolePrefix + "-" + subscription;
 			}
-			var consumerConfiguration = new ConsumerConfigurationData<T>();
+			ConsumerConfigurationData<T> consumerConfiguration = new ConsumerConfigurationData<T>();
 			foreach(var topic in readerConfiguration.TopicNames)
 				consumerConfiguration.TopicNames.Add(topic);
 
@@ -83,74 +79,34 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData)));
+			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, null, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, consumerQueue)));
 
-            ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async subs => 
-            {
-                _sender = Sender;
-                await SubscribeAndCreateTopics(subs);
-            });
-            ReceiveAsync<Subscribe>(async sub => 
-            {
-                _sender = Sender;
-                await SubscribeToTopic(sub);
-            });
-            Receive<HasReachedEndOfTopic>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<AcknowledgeCumulativeMessage<T>>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<MessageProcessed<T>>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<Messages.Consumer.Receive>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<HasMessageAvailable>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<GetTopic>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<IsConnected>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<SeekMessageId>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            Receive<SeekTimestamp>(m => {
-                _consumer.Tell(m, Sender);
-            });
-            ReceiveAny(m => {
-                _consumer.Tell(m, Sender);
-            });
-        }
-        private async ValueTask SubscribeAndCreateTopics(SubscribeAndCreateTopicsIfDoesNotExist subs)
-        {
-            try
-            {
-                var response = await _consumer.Ask<AskResponse>(subs).ConfigureAwait(false);
-                _sender.Tell(response);
-            }
-            catch(Exception ex)
-            {
-                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-            }
-        }
-        private async ValueTask SubscribeToTopic(Subscribe sub)
-        {
-            try
-            {
-                var response = await _consumer.Ask<AskResponse>(sub).ConfigureAwait(false);
-                _sender.Tell(response);
-            }
-            catch (Exception ex)
-            {
-                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-            }
-        }
-        private class MessageListenerAnonymousInnerClass : IMessageListener<T>
+			Receive<HasReachedEndOfTopic>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<AcknowledgeCumulativeMessage<T>>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<MessageProcessed<T>>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<HasMessageAvailable>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<GetTopic>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<IsConnected>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekMessageId>(m => {
+				_consumer.Tell(m);
+			});
+			Receive<SeekTimestamp>(m => {
+				_consumer.Tell(m);
+			});
+		}
+		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;
 

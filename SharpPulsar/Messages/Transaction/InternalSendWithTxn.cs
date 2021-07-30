@@ -8,18 +8,22 @@ namespace SharpPulsar.Messages.Transaction
     {
         public IMessage<T> Message { get; }
         public IActorRef Txn { get; }
-        public InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+        public bool IsDeadLetter { get; }
+        public InternalSendWithTxn(IMessage<T> message, IActorRef txn, bool isDeadLetter = false)
         {
             Message = message;
             Txn = txn;
+            IsDeadLetter  = isDeadLetter;
         }
     }
     public class InternalSend<T>
     {
         public IMessage<T> Message { get; }
-        public InternalSend(IMessage<T> message)
+        public bool IsDeadLetter { get; }
+        public InternalSend(IMessage<T> message, bool isDeadLetter = false)
         {
             Message = message;
+            IsDeadLetter = isDeadLetter;
         }
     }
     public class InternalSendResponse

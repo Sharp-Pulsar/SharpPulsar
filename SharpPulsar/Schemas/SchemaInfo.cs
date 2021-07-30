@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Common;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
@@ -9,10 +10,10 @@ namespace SharpPulsar.Schemas
 {
 
 
-    /// <summary>
-    /// Information about the schema.
-    /// </summary>
-    public class SchemaInfo : ISchemaInfo
+	/// <summary>
+	/// Information about the schema.
+	/// </summary>
+	public class SchemaInfo : ISchemaInfo
 	{
 		public string Name { get; set; }
 
