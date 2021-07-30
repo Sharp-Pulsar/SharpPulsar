@@ -1,8 +1,4 @@
 ﻿using Microsoft.Rest;
-using SharpPulsar.Admin;
-using SharpPulsar.Admin.Models;
-using SharpPulsar.Admin.Transactions.Models;
-using SharpPulsar.Transaction;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.Admin;
 using SharpPulsar.Admin.Admin.Models;
+using SharpPulsar.Admin.Model;
 
 namespace SharpPulsar.Admin.Public
 {
@@ -565,11 +562,34 @@ namespace SharpPulsar.Admin.Public
             return await _api.CreateSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, topic, subscriptionName, authoritative, messageId, replicated, customHeaders, cancellationToken).ConfigureAwait(false);
 
         }
-
+        /// <summary>
+        /// Create a new tenant.
+        /// </summary>
+        /// <remarks>
+        /// This operation requires Pulsar super-user privileges.
+        /// </remarks>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
+        /// <param name='tenantInfo'>
+        /// TenantInfo
+        /// </param>
         public HttpOperationResponse CreateTenant(string tenant, TenantInfo body = null, Dictionary<string, List<string>> customHeaders = null)
         {
             return CreateTenantAsync(tenant, body, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Create a new tenant.
+        /// </summary>
+        /// <remarks>
+        /// This operation requires Pulsar super-user privileges.
+        /// </remarks>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
+        /// <param name='tenantInfo'>
+        /// TenantInfo
+        /// </param>
         public async Task<HttpOperationResponse> CreateTenantAsync(string tenant, TenantInfo body = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.CreateTenantWithHttpMessagesAsync(tenant, body, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -1028,11 +1048,32 @@ namespace SharpPulsar.Admin.Public
            
             return await _api.DeletePartitionedTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, force, authoritative, deleteSchema, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Delete the schema of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<DeleteSchemaResponse> DeleteSchema(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return DeleteSchemaAsync(tenant, namespaceParameter, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Delete the schema of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<DeleteSchemaResponse>> DeleteSchemaAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.DeleteSchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -1100,14 +1141,163 @@ namespace SharpPulsar.Admin.Public
             
             return await _api.DeleteSubscriptionWithHttpMessagesAsync(tenant, namespaceParameter, topic, subName, force, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
+        /// <summary>
+        /// Delete a tenant and all namespaces and topics under it.
+        /// </summary>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
+        /// <param name='force'>
+        /// </param>
         public HttpOperationResponse DeleteTenant(string tenant, bool forced = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return DeleteTenantAsync(tenant, forced, customHeaders).GetAwaiter().GetResult();
         }
-
+        /// <summary>
+        /// Delete a tenant and all namespaces and topics under it.
+        /// </summary>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
+        /// <param name='force'>
+        /// </param>
         public async Task<HttpOperationResponse> DeleteTenantAsync(string tenant, bool forced = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.DeleteTenantWithHttpMessagesAsync(tenant, forced, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Get metrics for all functions owned by worker
+        /// </summary>
+        /// <remarks>
+        /// Requested should be executed by Monitoring agent on each worker to fetch
+        /// the metrics
+        /// </remarks>
+        public HttpOperationResponse<IList<WorkerFunctionInstanceStats>> GetWorkerFunctionInstanceStats(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetWorkerFunctionInstanceStatsAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Get metrics for all functions owned by worker
+        /// </summary>
+        /// <remarks>
+        /// Requested should be executed by Monitoring agent on each worker to fetch
+        /// the metrics
+        /// </remarks>
+        public async Task<HttpOperationResponse<IList<WorkerFunctionInstanceStats>>> GetWorkerFunctionInstanceStatsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetStats2WithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Gets the metrics for Monitoring
+        /// </summary>
+        /// <remarks>
+        /// Request should be executed by Monitoring agent on each worker to fetch the
+        /// worker-metrics
+        /// </remarks>
+        public HttpOperationResponse<IList<Metrics>> GetMetric(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetMetricAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Gets the metrics for Monitoring
+        /// </summary>
+        /// <remarks>
+        /// Request should be executed by Monitoring agent on each worker to fetch the
+        /// worker-metrics
+        /// </remarks>
+        public async Task<HttpOperationResponse<IList<Metrics>>> GetMetricAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetMetrics1WithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Fetches information about the Pulsar cluster running Pulsar Functions
+        /// </summary>
+        public HttpOperationResponse<IList<WorkerInfo>> GetCluster(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetClusterAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Fetches information about the Pulsar cluster running Pulsar Functions
+        /// </summary>
+        public async Task<HttpOperationResponse<IList<WorkerInfo>>> GetClusterAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetCluster1WithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Fetches a list of supported Pulsar IO connectors currently running in
+        /// cluster mode
+        /// </summary>
+        public HttpOperationResponse<IList<object>> GetConnectorsList(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetConnectorsListAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Fetches a list of supported Pulsar IO connectors currently running in
+        /// cluster mode
+        /// </summary>
+        public async Task<HttpOperationResponse<IList<object>>> GetConnectorsListAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetConnectorsListWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Fetches info about the leader node of the Pulsar cluster running Pulsar
+        /// Functions
+        /// </summary>
+        public HttpOperationResponse<WorkerInfo> GetClusterLeader(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetClusterLeaderAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Fetches info about the leader node of the Pulsar cluster running Pulsar
+        /// Functions
+        /// </summary>
+        public async Task<HttpOperationResponse<WorkerInfo>> GetClusterLeaderAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetClusterLeaderWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Checks if this node is the leader and is ready to service requests
+        /// </summary>
+        public HttpOperationResponse<bool?> IsLeaderReady(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return IsLeaderReadyAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Checks if this node is the leader and is ready to service requests
+        /// </summary>
+        public async Task<HttpOperationResponse<bool?>> IsLeaderReadyAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.IsLeaderReadyWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Triggers a rebalance of functions to workers
+        /// </summary>
+        public HttpOperationResponse Rebalance(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return RebalanceAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Triggers a rebalance of functions to workers
+        /// </summary>
+        public async Task<HttpOperationResponse> RebalanceAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.RebalanceWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Fetches information about which Pulsar Functions are assigned to which
+        /// Pulsar clusters
+        /// </summary>
+        public HttpOperationResponse<IDictionary<string, object>> GetAssignments(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetAssignmentsAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Fetches information about which Pulsar Functions are assigned to which
+        /// Pulsar clusters
+        /// </summary>
+        public async Task<HttpOperationResponse<IDictionary<string, object>>> GetAssignmentsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetAssignmentsWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
         /// Delete a topic.
@@ -1480,10 +1670,32 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.GetAllocatorStatsWithHttpMessagesAsync(allocator, customHeaders, cancellationToken).ConfigureAwait(false);
         }
+        /// <summary>
+        /// Get the all schemas of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<GetAllVersionsSchemaResponse> GetAllSchemas(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return GetAllSchemasAsync(tenant, namespaceParameter, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Get the all schemas of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<GetAllVersionsSchemaResponse>> GetAllSchemasAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetAllSchemasWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -2114,11 +2326,16 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.GetDeduplicationSnapshotIntervalWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Get the default quota
+        /// </summary>
         public HttpOperationResponse<IList<string>> GetDefaultResourceQuota(Dictionary<string, List<string>> customHeaders = null)
         {
             return GetDefaultResourceQuotaAsync(customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Get the default quota
+        /// </summary>
         public async Task<HttpOperationResponse<IList<string>>> GetDefaultResourceQuotaAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetDefaultResourceQuotaWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
@@ -3947,11 +4164,36 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.GetRuntimeConfigurationWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Get the schema of a topic at a given version
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='version'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<GetSchemaResponse> GetSchema(string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return GetSchemaAsync(tenant, namespaceParameter, topic, version, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Get the schema of a topic at a given version
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='version'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<GetSchemaResponse>> GetSchemaAsync(string tenant, string namespaceParameter, string topic, string version, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetSchema1WithHttpMessagesAsync(tenant, namespaceParameter, topic, version, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -4046,11 +4288,32 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.GetSchemaValidtionEnforcedWithHttpMessagesAsync(tenant, namespaceParameter, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Get the schema of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<GetSchemaResponse> GetSchema(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return GetSchemaAsync(tenant, namespaceParameter, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Get the schema of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<GetSchemaResponse>> GetSchemaAsync(string tenant, string namespaceParameter, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetSchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -4338,11 +4601,22 @@ namespace SharpPulsar.Admin.Public
             
             return await _api.GetSubscriptionsWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Get the admin configuration for a given tenant.
+        /// </summary>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
         public HttpOperationResponse GetTenantAdmin(string tenant, Dictionary<string, List<string>> customHeaders = null)
         {
             return GetTenantAdminAsync(tenant, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Get the admin configuration for a given tenant.
+        /// </summary>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
         public async Task<HttpOperationResponse> GetTenantAdminAsync(string tenant, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetTenantAdminWithHttpMessagesAsync(tenant, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -4371,11 +4645,16 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.GetTenantNamespacesWithHttpMessagesAsync(tenant, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Get the list of existing tenants.
+        /// </summary>
         public HttpOperationResponse<IList<string>> GetTenants(Dictionary<string, List<string>> customHeaders = null)
         {
             return GetTenantsAsync(customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Get the list of existing tenants.
+        /// </summary>
         public async Task<HttpOperationResponse<IList<string>>> GetTenantsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetTenantsWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
@@ -4449,11 +4728,40 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.GetTopicsWithHttpMessagesAsync(tenant, namespaceParameter, mode, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// get the version of the schema
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='schemaPayload'>
+        /// A JSON value presenting a schema playload. An example of the expected
+        /// schema can be found down here.
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<LongSchemaVersion> GetVersionBySchema(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return GetVersionBySchemaAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// get the version of the schema
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='schemaPayload'>
+        /// A JSON value presenting a schema playload. An example of the expected
+        /// schema can be found down here.
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<LongSchemaVersion>> GetVersionBySchemaAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetVersionBySchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -4734,11 +5042,40 @@ namespace SharpPulsar.Admin.Public
             
             return await _api.PeekNthMessageWithHttpMessagesAsync(tenant, namespaceParameter, topic, subName, messagePosition, authoritative, customHeaders, cancellationToken ).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// Update the schema of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='schemaPayload'>
+        /// A JSON value presenting a schema playload. An example of the expected
+        /// schema can be found down here.
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<PostSchemaResponse> PostSchema(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return PostSchemaAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Update the schema of a topic
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='schemaPayload'>
+        /// A JSON value presenting a schema playload. An example of the expected
+        /// schema can be found down here.
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<PostSchemaResponse>> PostSchemaAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload schemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.PostSchemaWithHttpMessagesAsync(tenant, namespaceParameter, topic, schemaPayload, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -6372,14 +6709,99 @@ namespace SharpPulsar.Admin.Public
         {
             return await _api.SetDeduplicationSnapshotIntervalWithHttpMessagesAsync(tenant, namespaceParameter, interval, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-       
+        /// <summary>
+        /// Set the default quota
+        /// </summary>
+        /// <param name='resourceQuota'>
+        /// Default resource quota
+        /// </param>
         public HttpOperationResponse<IList<string>> SetDefaultResourceQuota(ResourceQuota resourceQuota = null, Dictionary<string, List<string>> customHeaders = null)
         {
             return SetDefaultResourceQuotaAsync(resourceQuota, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Set the default quota
+        /// </summary>
+        /// <param name='resourceQuota'>
+        /// Default resource quota
+        /// </param>
         public async Task<HttpOperationResponse<IList<string>>> SetDefaultResourceQuotaAsync(ResourceQuota resourceQuota = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.SetDefaultResourceQuotaWithHttpMessagesAsync(resourceQuota, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Get the list of all the resourcegroups.
+        /// </summary>
+        public HttpOperationResponse<IList<string>> GetResourceGroups(ResourceQuota resourceQuota = null, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetResourceGroupsAsync(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Get the list of all the resourcegroups.
+        /// </summary>
+        public async Task<HttpOperationResponse<IList<string>>> GetResourceGroupsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetResourceGroupsWithHttpMessagesAsync(customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Get the rate limiters specified for a resourcegroup.
+        /// </summary>
+        /// <param name='resourcegroup'>
+        /// </param>
+        public HttpOperationResponse<ResourceGroup> GetResourceGroup(string resourceGroup, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetResourceGroupAsync(resourceGroup, customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Get the rate limiters specified for a resourcegroup.
+        /// </summary>
+        /// <param name='resourcegroup'>
+        /// </param>
+        public async Task<HttpOperationResponse<ResourceGroup>> GetResourceGroupAsync(string resourceGroup, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.GetResourceGroupWithHttpMessagesAsync(resourceGroup, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Delete a resourcegroup.
+        /// </summary>
+        /// <param name='resourcegroup'>
+        /// </param>
+        public HttpOperationResponse DeleteResourceGroup(string resourceGroup, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return DeleteResourceGroupAsync(resourceGroup, customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Delete a resourcegroup.
+        /// </summary>
+        /// <param name='resourcegroup'>
+        /// </param>
+        public async Task<HttpOperationResponse> DeleteResourceGroupAsync(string resourceGroup, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.DeleteResourceGroupWithHttpMessagesAsync(resourceGroup, customHeaders, cancellationToken).ConfigureAwait(false);
+        }
+        /// <summary>
+        /// Creates a new resourcegroup with the specified rate limiters
+        /// </summary>
+        /// <param name='resourcegroup'>
+        /// </param>
+        /// <param name='resource'>
+        /// Rate limiters for the resourcegroup
+        /// </param>
+        public HttpOperationResponse CreateOrUpdateResourceGroup(string resourceGroup, ResourceGroup resource, Dictionary<string, List<string>> customHeaders = null)
+        {
+            return CreateOrUpdateResourceGroupAsync(resourceGroup, resource, customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Creates a new resourcegroup with the specified rate limiters
+        /// </summary>
+        /// <param name='resourcegroup'>
+        /// </param>
+        /// <param name='resource'>
+        /// Rate limiters for the resourcegroup
+        /// </param>
+        public async Task<HttpOperationResponse> CreateOrUpdateResourceGroupAsync(string resourceGroup, ResourceGroup resource, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        {
+            return await _api.CreateOrUpdateResourceGroupWithHttpMessagesAsync(resourceGroup, resource, customHeaders, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -8481,17 +8903,44 @@ namespace SharpPulsar.Admin.Public
         public async Task<HttpOperationResponse> TruncateTopicAsync(string tenant, string namespaceParameter, string topic, bool isPersistentTopic = true, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             if (isPersistentTopic)
-                return await _api.TruncateTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
-            
-            throw new ArgumentNullException("NonPersistentTopic does not support truncate.");
-            //return await _api.TruncateTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+                return await _api.TruncateTopic1WithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
+           
+            return await _api.TruncateTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-
+        /// <summary>
+        /// test the schema compatibility
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='postSchemaPayload'>
+        /// A JSON value presenting a schema playload. An example of the expected
+        /// schema can be found down here.
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public HttpOperationResponse<IsCompatibilityResponse> TestCompatibility(string tenant, string namespaceParameter, string topic, PostSchemaPayload postSchemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
             return TestCompatibilityAsync(tenant, namespaceParameter, topic, postSchemaPayload, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        
+        /// <summary>
+        /// test the schema compatibility
+        /// </summary>
+        /// <param name='tenant'>
+        /// </param>
+        /// <param name='namespaceParameter'>
+        /// </param>
+        /// <param name='topic'>
+        /// </param>
+        /// <param name='postSchemaPayload'>
+        /// A JSON value presenting a schema playload. An example of the expected
+        /// schema can be found down here.
+        /// </param>
+        /// <param name='authoritative'>
+        /// </param>
         public async Task<HttpOperationResponse<IsCompatibilityResponse>> TestCompatibilityAsync(string tenant, string namespaceParameter, string topic, PostSchemaPayload postSchemaPayload = null, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.TestCompatibilityWithHttpMessagesAsync(tenant, namespaceParameter, topic, postSchemaPayload, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
@@ -8878,10 +9327,34 @@ namespace SharpPulsar.Admin.Public
             
             return await _api.UpdatePartitionedTopicWithHttpMessagesAsync(tenant, namespaceParameter, topic, partitions, updateLocalTopicOnly, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
+        /// <summary>
+        /// Update the admins for a tenant.
+        /// </summary>
+        /// <remarks>
+        /// This operation requires Pulsar super-user privileges.
+        /// </remarks>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
+        /// <param name='tenantInfo'>
+        /// TenantInfo
+        /// </param>
         public HttpOperationResponse UpdateTenantWithHttpMessages(string tenant, TenantInfo tenantInfo = null, Dictionary<string, List<string>> customHeaders = null)
         {
             return UpdateTenantWithHttpMessagesAsync(tenant, tenantInfo, customHeaders).GetAwaiter().GetResult();
         }
+        /// <summary>
+        /// Update the admins for a tenant.
+        /// </summary>
+        /// <remarks>
+        /// This operation requires Pulsar super-user privileges.
+        /// </remarks>
+        /// <param name='tenant'>
+        /// The tenant name
+        /// </param>
+        /// <param name='tenantInfo'>
+        /// TenantInfo
+        /// </param>
         public async Task<HttpOperationResponse> UpdateTenantWithHttpMessagesAsync(string tenant, TenantInfo tenantInfo = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.UpdateTenantWithHttpMessagesAsync(tenant, tenantInfo, customHeaders, cancellationToken).ConfigureAwait(false);
