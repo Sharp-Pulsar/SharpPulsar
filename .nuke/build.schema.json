@@ -6,6 +6,10 @@
     "build": {
       "type": "object",
       "properties": {
+        "ADMIN_NUGET_KEY": {
+          "type": "string",
+          "description": "Admin NuGet API Key"
+        },
         "BUILD_NUMBER": {
           "type": "string",
           "description": "GitHub Build Number"
@@ -95,15 +99,20 @@
               "CheckDockerVersion",
               "Clean",
               "Compile",
+              "CompileAdmin",
               "Pack",
+              "PackAdmin",
               "PackBeta",
               "Push",
               "PushBeta",
+              "ReleaseAdmin",
               "Restore",
+              "RestoreAdmin",
               "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
               "Test",
+              "TestAdmin",
               "TxnTest"
             ]
           }
@@ -124,15 +133,20 @@
               "CheckDockerVersion",
               "Clean",
               "Compile",
+              "CompileAdmin",
               "Pack",
+              "PackAdmin",
               "PackBeta",
               "Push",
               "PushBeta",
+              "ReleaseAdmin",
               "Restore",
+              "RestoreAdmin",
               "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
               "Test",
+              "TestAdmin",
               "TxnTest"
             ]
           }

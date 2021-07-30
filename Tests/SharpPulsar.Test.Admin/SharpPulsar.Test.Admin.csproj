@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SharpPulsar\SharpPulsar.csproj" />
+    <ProjectReference Include="..\..\Extras\SharpPulsar.Admin\SharpPulsar.Admin.csproj" />
   </ItemGroup>
 
 </Project>
