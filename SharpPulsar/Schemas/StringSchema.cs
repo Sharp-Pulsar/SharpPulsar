@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Extension;
-using SharpPulsar.Interfaces.ISchema;
+﻿using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
@@ -26,10 +25,10 @@ using System.Text;
 namespace SharpPulsar.Schemas
 {
 
-	/// <summary>
-	/// Schema definition for Strings encoded in UTF-8 format.
-	/// </summary>
-	public class StringSchema : AbstractSchema<string>
+    /// <summary>
+    /// Schema definition for Strings encoded in UTF-8 format.
+    /// </summary>
+    public class StringSchema : AbstractSchema<string>
 	{
 
 		public static readonly string CHARSET_KEY;

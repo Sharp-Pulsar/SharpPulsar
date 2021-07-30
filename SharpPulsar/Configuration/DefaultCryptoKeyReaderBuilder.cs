@@ -1,6 +1,5 @@
 ﻿using Akka.Util.Internal;
 using SharpPulsar.Crypto;
-using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -23,7 +22,7 @@ using System.Collections.Generic;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-	public class DefaultCryptoKeyReaderBuilder
+    public class DefaultCryptoKeyReaderBuilder
 	{
 
 		private DefaultCryptoKeyReaderConfigurationData _conf;

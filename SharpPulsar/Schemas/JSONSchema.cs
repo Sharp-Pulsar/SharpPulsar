@@ -1,6 +1,5 @@
 ﻿using AvroSchemaGenerator;
 using SharpPulsar.Configuration;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;
@@ -29,10 +28,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Schemas
 {
 
-	/// <summary>
-	/// A schema implementation to deal with json data.
-	/// </summary>
-	public class JSONSchema<T> : AvroBaseStructSchema<T>
+    /// <summary>
+    /// A schema implementation to deal with json data.
+    /// </summary>
+    public class JSONSchema<T> : AvroBaseStructSchema<T>
 	{
 		// Cannot use org.apache.pulsar.common.util.ObjectMapperFactory.getThreadLocal() because it does not
 		// return shaded version of object mapper

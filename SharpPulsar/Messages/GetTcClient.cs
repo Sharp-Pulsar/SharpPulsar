@@ -6,6 +6,10 @@ namespace SharpPulsar.Messages
     {
         public static GetTcClient Instance = new GetTcClient();
     }
+    public sealed class TcClientOk
+    {
+        public static TcClientOk Instance = new TcClientOk();
+    }
     public sealed class TcClient
     {
         public IActorRef TCClient { get; }

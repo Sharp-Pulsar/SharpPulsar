@@ -28,6 +28,20 @@ namespace SharpPulsar
         private readonly IActorRef _tcClient;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
+        private readonly Action _logSetup = () => 
+        {
+            var nlog = new NLog.Config.LoggingConfiguration();
+            var logfile = new NLog.Targets
+                .FileTarget("logFile")
+            {
+                FileName = "logs.log",
+                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}",
+                ArchiveEvery = NLog.Targets.FileArchivePeriod.Hour,
+                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.DateAndSequence
+            };
+            nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+            LogManager.Configuration = nlog;
+        };
         public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
         {
             if (_instance == null)
@@ -42,7 +56,7 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, NLog.Config.LoggingConfiguration loggingConfiguration = null)
+        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null)
         {
             if (_instance == null)
             {
@@ -50,30 +64,21 @@ namespace SharpPulsar
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf, loggingConfiguration);
+                        _instance = new PulsarSystem(conf, logSetup, config);
                     }
                 }
             }
             return _instance;
         }
-        private PulsarSystem(PulsarClientConfigBuilder confBuilder, NLog.Config.LoggingConfiguration loggingConfiguration)
+        private PulsarSystem(PulsarClientConfigBuilder confBuilder, Action logSetup, Config confg)
         {
 
             _conf = confBuilder.ClientConfigurationData;
             var conf = _conf;
-            var nlog = new NLog.Config.LoggingConfiguration();
-            var logfile = new NLog.Targets
-                .FileTarget("logFile")
-            {
-                FileName = "logs.log",
-                Layout = "[${longdate}] [${logger}] ${level:uppercase=true}] : ${event-properties:actorPath} ${message} ${exception:format=tostring}",
-                ArchiveEvery = NLog.Targets.FileArchivePeriod.Hour,
-                ArchiveNumbering = NLog.Targets.ArchiveNumberingMode.DateAndSequence
-            };
-            nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
-            LogManager.Configuration = loggingConfiguration ?? nlog;
+            var logging = logSetup ?? _logSetup;
+            logging();
             _conf = conf;
-            var config = ConfigurationFactory.ParseString(@"
+            var config = confg ?? ConfigurationFactory.ParseString(@"
             akka
             {
                 loglevel = DEBUG
@@ -103,8 +108,12 @@ namespace SharpPulsar
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
+            {
                 _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_lookup, _cnxPool, _generator, conf));
-
+                var cos = _tcClient.Ask<int>("Start").GetAwaiter().GetResult();
+                if (cos <= 0)
+                    throw new Exception($"Tranaction Coordinator has '{cos}' transaction handler");
+            } 
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
 
@@ -128,22 +137,6 @@ namespace SharpPulsar
         public PulsarClient NewClient() 
         {
             return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
-        }
-        public static User.Admin Admin(string brokeWebServiceUrl, HttpClient httpClient, bool disposeHttpClient) 
-        {
-            return new User.Admin(brokeWebServiceUrl, httpClient, disposeHttpClient);
-        }
-        public static User.Admin Admin(string brokerWebServiceUrl, params DelegatingHandler[] handlers) 
-        {
-            return new User.Admin(brokerWebServiceUrl, handlers);
-        }
-        public static User.Admin Admin(string brokerwebserviceurl, HttpClientHandler rootHandler, params DelegatingHandler[] handlers) 
-        {
-            return new User.Admin(brokerwebserviceurl, rootHandler, handlers);
-        }
-        public static User.Function Function(HttpClient httpClient) 
-        {
-            return new User.Function(httpClient);
         }
         public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl) 
         {

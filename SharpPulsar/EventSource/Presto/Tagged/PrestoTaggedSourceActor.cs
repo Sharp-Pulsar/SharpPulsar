@@ -10,7 +10,6 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Sql.Client;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Sql.Message;
-using SharpPulsar.EventSource.Pulsar;
 
 namespace SharpPulsar.EventSource.Presto.Tagged
 {

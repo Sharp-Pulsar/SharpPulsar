@@ -9,6 +9,7 @@ namespace SharpPulsar.Messages.Transaction
     {
         public TxnID TxnID { get; }
         public ImmutableList<string> Topics { get; }
+
         public AddPublishPartitionToTxn(TxnID txnID, IList<string> topics)
         {
             TxnID = txnID;

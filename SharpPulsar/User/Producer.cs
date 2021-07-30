@@ -1,14 +1,11 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
-using SharpPulsar.Queues;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User
@@ -16,14 +13,12 @@ namespace SharpPulsar.User
     public class Producer<T> : IProducer<T>
     {
         private readonly IActorRef _producerActor;
-        private readonly ProducerQueueCollection<T> _queue;
         private readonly ISchema<T> _schema;
         private readonly ProducerConfigurationData _conf;
 
-        public Producer(IActorRef producer, ProducerQueueCollection<T> queue, ISchema<T> schema, ProducerConfigurationData conf)
+        public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf)
         {
             _producerActor = producer;
-            _queue = queue;
             _schema = schema;
             _conf = conf;
         }
@@ -69,13 +64,13 @@ namespace SharpPulsar.User
 
         public ITypedMessageBuilder<T> NewMessage()
         {
-            return new TypedMessageBuilder<T>(_producerActor, _schema);
+            return new TypedMessageBuilder<T>(_producerActor, _schema, _conf);
         }
 
         public ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema)
         {
             Condition.CheckArgument(schema != null);
-            return new TypedMessageBuilder<V>(_producerActor, schema);
+            return new TypedMessageBuilder<V>(_producerActor, schema, _conf);
         }
 
         public TypedMessageBuilder<T> NewMessage(Transaction txn)
@@ -86,26 +81,18 @@ namespace SharpPulsar.User
                 throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
             }
 
-            return new TypedMessageBuilder<T>(_producerActor, _schema, txn);
+            return new TypedMessageBuilder<T>(_producerActor, _schema, txn, _conf);
         }
         internal IActorRef GetProducer => _producerActor;
 
-        public AckReceived Send(T message)
+        public MessageId Send(T message)
         {
             return SendAsync(message).GetAwaiter().GetResult();
         }
-        public async ValueTask<AckReceived> SendAsync(T message)
+        public async ValueTask<MessageId> SendAsync(T message)
         {
-            await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
-            return _queue.Receipt.Take();
+            return await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
         }
-        public AckReceived SendReceipt(int timeoutMilliseconds = 30000, CancellationToken token = default)
-        {
-            if (_queue.Receipt.TryTake(out var sent, timeoutMilliseconds, token))
-            {
-                return sent;
-            }
-            return sent;
-        }
+
     }
 }

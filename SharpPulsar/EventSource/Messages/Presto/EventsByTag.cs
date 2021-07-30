@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Collections.Immutable;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Sql.Client;
 

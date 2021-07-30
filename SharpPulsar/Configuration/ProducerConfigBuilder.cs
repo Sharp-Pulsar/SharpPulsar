@@ -79,9 +79,27 @@ namespace SharpPulsar.Configuration
             _conf.ProducerName = producerName;
             return this;
         }
+        public ProducerConfigBuilder<T> AccessMode(Common.ProducerAccessMode accessMode)
+        {
+            _conf.AccessMode = accessMode;
+            return this;
+        }
         public ProducerConfigBuilder<T> EnableBatching(bool enableBatching)
         {
             _conf.BatchingEnabled = enableBatching;
+            return this;
+        }
+        /// <summary>
+        /// When batching is enabled, AckReceiveListerner helps to capture acks
+        /// </summary>
+        /// <param name="listerner"></param>
+        /// <returns></returns>
+        public ProducerConfigBuilder<T> SetAckReceivedListerner(Action<AckReceived> listerner)
+        {
+            if (!_conf.BatchingEnabled)
+                throw new InvalidOperationException("AckReceived Listerner is only allowed for batched producer!");
+
+            _conf.AckReceivedListerner = listerner;
             return this;
         }
         public ProducerConfigBuilder<T> BatchBuilder(IBatcherBuilder builder)

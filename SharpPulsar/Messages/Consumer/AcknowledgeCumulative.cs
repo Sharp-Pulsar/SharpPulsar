@@ -1,4 +1,5 @@
-﻿using Akka.Actor;
+﻿using System;
+using Akka.Actor;
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Messages.Consumer
@@ -60,8 +61,8 @@ namespace SharpPulsar.Messages.Consumer
         /// the front checks to see if it is null to know it was successfully
         /// </summary>
         public IMessage<T> Message { get; }
-        public long DelayTime { get; }
-        public ReconsumeLaterCumulative(IMessage<T> message, long delayTime)
+        public TimeSpan DelayTime { get; }
+        public ReconsumeLaterCumulative(IMessage<T> message, TimeSpan delayTime)
         {
             Message = message;
             DelayTime = delayTime;
