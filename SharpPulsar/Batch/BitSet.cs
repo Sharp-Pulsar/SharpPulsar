@@ -793,7 +793,7 @@ namespace SharpPulsar.Batch
 		/// bit set argument also had the value {@code true}.
 		/// </summary>
 		/// <param name="set"> a bit set </param>
-		public virtual void and(BitSet set)
+		public virtual void And(BitSet set)
 		{
 			if (this == set)
 			{

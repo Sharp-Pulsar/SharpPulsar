@@ -37,16 +37,20 @@ namespace SharpPulsar.Configuration
 		public int BatchingMaxBytes { get; set; } = 128 * 1024; // 128KB (keep the maximum consistent as previous versions)
         public bool BatchingEnabled { get; set; } = false;
 		public IMessageCrypto MessageCrypto { get; set; }
+
+        public Action<Messages.AckReceived> AckReceivedListerner { get; set; }
 		public IProducerEventListener ProducerEventListener { get; set; }
         public const int DefaultBatchingMaxMessages = 1000;
 		public const int DefaultMaxPendingMessages = 1000;
 		public const int DefaultMaxPendingMessagesAcrossPartitions = 50000;
-		/// <summary>
-		/// MaxMessageSize is set at the server side,
-		/// But when we need a smaller size than the size set by the server when chunking
-		/// we can do it here
-		/// </summary>
-		public int MaxMessageSize { get; set; } = -1;
+        /// <summary>
+        /// MaxMessageSize is set at the server side,
+        /// But when we need a smaller size than the size set by the server when chunking
+        /// we can do it here
+        /// </summary>
+        /// 
+        public Common.ProducerAccessMode AccessMode = Common.ProducerAccessMode.Shared;
+        public int MaxMessageSize { get; set; } = -1;
         public string TopicName { get; set; }
         public int Partitions { get; set; } = 0;
 
@@ -60,7 +64,10 @@ namespace SharpPulsar.Configuration
         public IMessageRouter CustomMessageRouter { get; set; } = null;
 		public bool ChunkingEnabled { get; set; } = false;
 
-		[JsonIgnore]
+        private int _maxPendingMessagesAcrossPartitions = DefaultMaxPendingMessagesAcrossPartitions;
+        private int _maxPendingMessages = DefaultMaxPendingMessages;
+
+        [JsonIgnore]
 		public IBatcherBuilder BatcherBuilder { get; set; }
 
         [JsonIgnore]
@@ -92,26 +99,28 @@ namespace SharpPulsar.Configuration
 			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
 			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
 		}
-		public long AutoUpdatePartitionsIntervalSeconds => _autoUpdatePartitionsIntervalSeconds;
+        public virtual int MaxPendingMessagesAcrossPartitions
+        {
+            get { return _maxPendingMessagesAcrossPartitions; }
+            set
+            {
+                Condition.CheckArgument(value >= _maxPendingMessages, "maxPendingMessagesAcrossPartitions needs to be >= maxPendingMessages");
+                _maxPendingMessagesAcrossPartitions = value;
+            }
+        }
+        public long AutoUpdatePartitionsIntervalSeconds => _autoUpdatePartitionsIntervalSeconds;
 		public  string ProducerName { get; set; }
 
 		public int MaxPendingMessages
 		{
-			get => DefaultMaxPendingMessages;
+			get => _maxPendingMessages;
             set
 			{
-				if(value < 1)
-					throw new ArgumentException("maxPendingMessages needs to be > 0");
-			}
-		}
-
-		public int MaxPendingMessagesAcrossPartitions
-		{
-			get => DefaultMaxPendingMessagesAcrossPartitions;
-            set
-			{
-				if(value >= MaxPendingMessages)
-				 MaxPendingMessagesAcrossPartitions = value;
+                if (value < 1)
+                    throw new ArgumentException("maxPendingMessages needs to be > 0");
+                else
+                    _maxPendingMessages = value;
+                    
 			}
 		}
 

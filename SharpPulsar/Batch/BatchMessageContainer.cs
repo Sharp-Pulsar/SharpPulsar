@@ -7,7 +7,6 @@ using Akka.Event;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 

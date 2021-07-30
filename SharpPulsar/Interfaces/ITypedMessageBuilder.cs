@@ -34,28 +34,28 @@ namespace SharpPulsar.Interfaces
     public interface ITypedMessageBuilder<T>
 	{
 
-		/// <summary>
-		/// Send a message synchronously.
-		/// 
-		/// <para>This method will block until the message is successfully published and returns the
-		/// <seealso cref="IMessageId"/> assigned by the broker to the published message.
-		/// 
-		/// </para>
-		/// <para>Example:
-		/// 
-		/// <pre>{@code
-		/// MessageId msgId = producer.newMessage()
-		///                  .key(myKey)
-		///                  .value(myValue)
-		///                  .send();
-		/// System.out.println("Published message: " + msgId);
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
-		void Send(bool isDeadLetter = false);
-		ValueTask SendAsync(bool isDeadLetter = false);
+        /// <summary>
+        /// Send a message synchronously.
+        /// 
+        /// <para>This method will block until the message is successfully published and returns the
+        /// <seealso cref="IMessageId"/> assigned by the broker to the published message.
+        /// 
+        /// </para>
+        /// <para>Example:
+        /// 
+        /// <pre>{@code
+        /// MessageId msgId = producer.newMessage()
+        ///                  .key(myKey)
+        ///                  .value(myValue)
+        ///                  .send();
+        /// System.out.println("Published message: " + msgId);
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> the <seealso cref="MessageId"/> assigned by the broker to the published message. </returns>
+        MessageId Send();
+		ValueTask<MessageId> SendAsync();
 
 		
 

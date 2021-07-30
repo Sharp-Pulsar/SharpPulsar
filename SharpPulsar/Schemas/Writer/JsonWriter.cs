@@ -18,7 +18,6 @@
 /// </summary>
 
 using System;
-using SharpPulsar.Extension;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces.ISchema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
@@ -26,7 +25,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 namespace SharpPulsar.Schemas.Writer
 {
 
-	public class JsonWriter<T> : ISchemaWriter<T>
+    public class JsonWriter<T> : ISchemaWriter<T>
 	{
 
 		private readonly ObjectMapper _objectMapper;

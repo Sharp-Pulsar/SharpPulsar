@@ -1,9 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Event;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Auth;
-using SharpPulsar.Common.Naming;
-using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Messages;
@@ -11,8 +8,6 @@ using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Requests;
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

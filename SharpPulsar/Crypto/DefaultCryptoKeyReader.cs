@@ -2,7 +2,6 @@
 using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Shared;
-using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -26,7 +25,7 @@ using System.IO;
 /// </summary>
 namespace SharpPulsar.Crypto
 {
-	public class DefaultCryptoKeyReader : ICryptoKeyReader
+    public class DefaultCryptoKeyReader : ICryptoKeyReader
 	{
 		private string _defaultPublicKey;
 		private string _defaultPrivateKey;

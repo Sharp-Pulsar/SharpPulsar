@@ -1,9 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Protocol.Schema;
-using SharpPulsar.Queues;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -30,7 +28,6 @@ namespace SharpPulsar
 {
     internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract void InternalSendWithTxn(IMessage<T> message, IActorRef txn);
 		internal abstract void InternalSend(IMessage<T> message);
 		protected internal abstract void LastDisconnectedTimestamp();
 		protected internal abstract bool Connected();
@@ -45,17 +42,23 @@ namespace SharpPulsar
 		protected internal MultiSchemaMode _multiSchemaMode = MultiSchemaMode.Auto;
 		protected internal IActorRef Client;
 		protected internal readonly ClientConfigurationData ClientConfiguration;
-		protected internal readonly ProducerQueueCollection<T> ProducerQueue;
 		protected internal HandlerState State;
 		private string _topic;
 
-		public ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData, ProducerQueueCollection<T> queue)
+		public ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
 		{			
 			ClientConfiguration = configurationData;
-			ProducerQueue = queue;
 			Client = client;
 			_topic = topic;
-			Conf = conf;
+
+            if (conf.BatchingEnabled && conf.AckReceivedListerner == null)
+            {
+                conf.AckReceivedListerner = (acked) =>
+                {
+                    Context.System.Log.Info($"AckReceived(ledger-id:{acked.LedgerId}, entery-id:{acked.EntryId}, sequence-id:{acked.SequenceId}, highest-sequence-id:{acked.HighestSequenceId})");
+                };
+            }
+            Conf = conf;
 			Schema = schema;
 			Interceptors = interceptors;
 			SchemaCache = new Dictionary<SchemaHash, byte[]>();
