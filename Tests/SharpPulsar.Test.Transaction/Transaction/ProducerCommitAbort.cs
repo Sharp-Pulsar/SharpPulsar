@@ -45,12 +45,12 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-        private readonly User.Admin _admin;
+        private readonly Admin.Public.Admin _admin;
         public ProducerCommitAbort(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
-            _admin = new User.Admin("http://localhost:8080/", new HttpClient());
+            _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
 
             try
             {

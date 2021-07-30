@@ -5,6 +5,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar
@@ -19,10 +20,10 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
         private readonly BufferBlock<IMessage<T>> _buffer;
-        private readonly User.Admin _admin;
+        private readonly Admin.Public.Admin _admin;
         public EventsByTopicActor(EventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            _admin = new User.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
             _message = message;
             _httpClient = httpClient;
             _schema = schema;
@@ -47,7 +48,7 @@ namespace SharpPulsar.EventSource.Pulsar
             });
         }
 
-        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
+        private void Setup(PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {
@@ -78,7 +79,7 @@ namespace SharpPulsar.EventSource.Pulsar
 
         private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
         {
-            var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+            var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
             var statsResponse = adminRestapi.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
             var start = MessageIdHelper.Calculate(_message.FromSequenceId, statsResponse.Body);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);

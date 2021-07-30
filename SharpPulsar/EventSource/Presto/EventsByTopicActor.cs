@@ -3,6 +3,7 @@ using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Presto;
 using SharpPulsar.Common.Naming;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
 
 namespace SharpPulsar.EventSource.Presto
@@ -12,10 +13,10 @@ namespace SharpPulsar.EventSource.Presto
         private readonly EventsByTopic _message;
         private readonly HttpClient _httpClient;
         private readonly BufferBlock<IEventEnvelope> _buffer;
-        private readonly User.Admin _admin;
+        private readonly Admin.Public.Admin _admin;
         public EventsByTopicActor(EventsByTopic message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
         {
-            _admin = new User.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
             _buffer = buffer;
             _message = message;
             _httpClient = httpClient;
@@ -24,7 +25,7 @@ namespace SharpPulsar.EventSource.Presto
             Setup(partitions.Body, topic);
         }
 
-        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
+        private void Setup(PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {

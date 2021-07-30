@@ -14,12 +14,12 @@ namespace SharpPulsar.User.Events
     {
         private IActorRef _eventSource;
         private HttpClient _httpclient;
-        private readonly Admin _admin;
+        private readonly Admin.Public.Admin _admin;
         public ReaderSource(string brokerWebServiceUrl, IActorRef sourceActor)
         {
             _eventSource = sourceActor;
             _httpclient = new HttpClient();
-            _admin = new Admin(brokerWebServiceUrl, _httpclient, true);
+            _admin = new Admin.Public.Admin(brokerWebServiceUrl, _httpclient, true);
         }
         public IList<string> Topics(IEventTopics message)
         {
