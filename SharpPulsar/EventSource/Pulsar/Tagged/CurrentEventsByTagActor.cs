@@ -7,6 +7,7 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
@@ -57,7 +58,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             });
         }
 
-        private void Setup(Admin.Model.PartitionedTopicMetadata p, string topic)
+        private void Setup(PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {

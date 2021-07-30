@@ -98,7 +98,7 @@ namespace SharpPulsar.EventSource.Presto.Tagged
         }
         private EventMessageId NextFlow()
         {
-            var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+            var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
             var statsResponse = adminRestapi.GetInternalStats(_message.Tenant, _message.Namespace, _message.Topic);
             var start = MessageIdHelper.NextFlow(statsResponse.Body);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);

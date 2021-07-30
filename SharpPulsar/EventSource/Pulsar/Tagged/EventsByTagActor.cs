@@ -5,6 +5,7 @@ using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Configuration;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
@@ -48,7 +49,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             });
         }
 
-        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
+        private void Setup(PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {
@@ -79,7 +80,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         }
         private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
         {
-            var adminRestapi = new User.Admin(_message.AdminUrl, _httpClient);
+            var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
             var statsResponse = adminRestapi.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
             var start = MessageIdHelper.Calculate(_message.FromSequenceId, statsResponse.Body);
             var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
