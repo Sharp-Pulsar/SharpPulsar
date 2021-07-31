@@ -21,8 +21,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Extras\SharpPulsar.Admin\SharpPulsar.Admin.csproj" />
-  </ItemGroup>
-
 </Project>
