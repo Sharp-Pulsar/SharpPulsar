@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+    <PackageReference Include="SharpPulsar" Version="2.0.0-beta.19" />
   </ItemGroup>
 
 </Project>
