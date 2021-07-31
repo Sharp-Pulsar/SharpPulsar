@@ -20,10 +20,7 @@ namespace Tutorials
             Console.WriteLine("Please enter cmd");
             var cmd = Console.ReadLine();
             var clientConfig = new PulsarClientConfigBuilder()
-                //.ProxyServiceUrl("pulsar+ssl://pulsar-azure-westus2.streaming.datastax.com:6551", SharpPulsar.Common.ProxyProtocol.SNI)
                 .ServiceUrl("pulsar://localhost:6650");
-                //.ServiceUrl("pulsar+ssl://pulsar-azure-westus2.streaming.datastax.com:6551")
-                //.Authentication(new AuthenticationToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGllbnQ7NjBlZTBjZGUtOWU3Zi00MzJmLTk3ZmEtYzA1NGFhYjgwODQwO2JXVnpkR2xqWVd3PSJ9.tIi1s_PQ6AZNxBr9rEqCoPk34mG-M6BXL8DwZpgh1Yr_nR4S5UpHG79_aYTvz902GA8PB8R7DJw6qknSdlCdXhPiDsxSPPnx4sylFz9QFCvvY6Q1JE38jVJDMMvHnm-_rggGkCPk_MFZxh1yxtamQ_QYcZQa-aq3rvFZmcJbG_jtcfmOT3TEZradN7FOiztfJDRP0YLVgnh0CJFxC36C0S4UaORllQN11i0KIgasF5dbLSidt70nwNgt6PZHDykEdhV6OC473U_4y7rM0gX7SNR3IiFMsAb7jD4CKIGG876J20aU67jXkHj08-QW2Ut38rJi5u4WxKgNTTfWOBSlQQ"));
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 clientConfig.EnableTransaction(true);
 
@@ -33,13 +30,13 @@ namespace Tutorials
             var pulsarClient = pulsarSystem.NewClient();
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 Transaction(pulsarClient);
-            else if (cmd.Equals("exc", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("exclusive", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceConsumer(pulsarClient);
-            else if (cmd.Equals("exc2", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("exclusive2", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceNoneConsumer(pulsarClient);
-            else if (cmd.Equals("bat", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("batch", StringComparison.OrdinalIgnoreCase))
                 BatchProduceConsumer(pulsarClient);
-            else if (cmd.Equals("m", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("multi", StringComparison.OrdinalIgnoreCase))
                 MultiConsumer(pulsarClient);
             else
                 ProduceConsumer(pulsarClient);
