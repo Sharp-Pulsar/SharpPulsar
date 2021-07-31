@@ -14,8 +14,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "SharpPulsar\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tutorials", "Tutorials\Tutorials.csproj", "{43D97B47-B525-4DC9-9DB2-3DB66413CBC5}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Benchmarks", "SharpPulsar.Benchmarks\SharpPulsar.Benchmarks.csproj", "{A8644135-E363-406B-A063-D56E47404947}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Memory", "Tests\SharpPulsar.Test.Memory\SharpPulsar.Test.Memory.csproj", "{B61FC414-F6CE-4205-A896-CEF9BA0BA837}"
@@ -32,7 +30,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.EventSourc
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extras", "Extras", "{BDB397AF-0A2E-40AE-A31B-A04E0B869225}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Admin", "Extras\SharpPulsar.Admin\SharpPulsar.Admin.csproj", "{52EDAA03-CC16-4C82-9351-43C5F5159B56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Admin", "Extras\SharpPulsar.Admin\SharpPulsar.Admin.csproj", "{52EDAA03-CC16-4C82-9351-43C5F5159B56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,10 +47,6 @@ Global
 		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{43D97B47-B525-4DC9-9DB2-3DB66413CBC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{43D97B47-B525-4DC9-9DB2-3DB66413CBC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{43D97B47-B525-4DC9-9DB2-3DB66413CBC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{43D97B47-B525-4DC9-9DB2-3DB66413CBC5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A8644135-E363-406B-A063-D56E47404947}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A8644135-E363-406B-A063-D56E47404947}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8644135-E363-406B-A063-D56E47404947}.Release|Any CPU.ActiveCfg = Release|Any CPU
