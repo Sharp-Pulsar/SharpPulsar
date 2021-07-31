@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
@@ -25,10 +24,10 @@ using System.Linq;
 namespace SharpPulsar.Schemas
 {
 
-	/// <summary>
-	/// A schema for `Double`.
-	/// </summary>
-	public class DoubleSchema : AbstractSchema<double>
+    /// <summary>
+    /// A schema for `Double`.
+    /// </summary>
+    public class DoubleSchema : AbstractSchema<double>
 	{
 
 		private static readonly DoubleSchema _instance;

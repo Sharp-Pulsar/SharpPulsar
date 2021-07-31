@@ -1,7 +1,5 @@
 ﻿using Akka.Actor;
-using SharpPulsar.EventSource.Messages;
 using SharpPulsar.Sql.Client;
-using System;
 using System.Collections.Generic;
 
 namespace SharpPulsar.User.Events

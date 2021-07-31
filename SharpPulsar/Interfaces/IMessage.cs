@@ -59,6 +59,9 @@ namespace SharpPulsar.Interfaces
         /// <para>Even when using the Schema and type-safe API, an application
         /// has access to the underlying raw message payload.
         /// 
+        /// To avoid allocation: 
+        /// var pool = ArrayPool<byte>.Shared;
+        /// var payload = pool.Rent((int)msg.Data.Length);
         /// </para>
         /// </summary>
         /// <returns> the byte array with the message payload </returns>
@@ -84,12 +87,28 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the message id null if this message was not received by this client instance </returns>
 		IMessageId MessageId { get; }
 
-		/// <summary>
-		/// Get the publish time of this message. The publish time is the timestamp that a client publish the message.
-		/// </summary>
-		/// <returns> publish time of this message. </returns>
-		/// <seealso cref= #getEventTime() </seealso>
-		long PublishTime { get; }
+        /// <summary>
+        /// Get the schema associated to the message.
+        /// Please note that this schema is usually equal to the Schema you passed
+        /// during the construction of the Consumer or the Reader.
+        /// But if you are consuming the topic using the GenericObject interface
+        /// this method will return the schema associated with the message. </summary>
+        /// <returns> The schema used to decode the payload of message. </returns>
+        /// <seealso cref= Schema#AUTO_CONSUME() </seealso>
+        virtual Option<ISchema<T>> ReaderSchema
+        {
+            get
+            {
+                return Option<ISchema<T>>.None;
+            }
+        }
+
+        /// <summary>
+        /// Get the publish time of this message. The publish time is the timestamp that a client publish the message.
+        /// </summary>
+        /// <returns> publish time of this message. </returns>
+        /// <seealso cref= #getEventTime() </seealso>
+        long PublishTime { get; }
 
 		/// <summary>
 		/// Get the event time associated with this message. It is typically set by the applications via

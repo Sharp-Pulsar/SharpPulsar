@@ -25,7 +25,7 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 namespace SharpPulsar.Protocol
 {
     /// <summary>
-    /// Helper class to work with new Commands().
+    /// Helper class to work with Commands.
     /// </summary>
     public sealed class CommandUtils
 	{

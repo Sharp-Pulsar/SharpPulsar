@@ -27,10 +27,14 @@ using SharpPulsar.Shared;
 namespace SharpPulsar
 {
     using global::Akka.Actor;
+    using SharpPulsar.Configuration;
+    using SharpPulsar.Exceptions;
     using SharpPulsar.Interfaces;
+    using SharpPulsar.Messages.Producer;
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;
+    using System.Buffers;
     using System.Threading.Tasks;
 
     [Serializable]
@@ -39,18 +43,20 @@ namespace SharpPulsar
 		private readonly IActorRef _producer;//topic
 		public readonly MessageMetadata Metadata  = new MessageMetadata();
 		private readonly ISchema<T> _schema;
-		private byte[] _content;
+		private ReadOnlySequence<byte> _content;
 		private readonly User.Transaction _txn;
+        private readonly ProducerConfigurationData _conf;
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema) : this(producer, schema, null)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf) : this(producer, schema, null, conf)
 		{
 		}
 
-		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn)
+		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn, ProducerConfigurationData conf)
 		{
+            _conf = conf;
 			_producer = producer;
 			_schema = schema;
-			_content = new byte[0] { };
+			_content = ReadOnlySequence<byte>.Empty;
 			_txn = txn;
 		}
 
@@ -65,25 +71,44 @@ namespace SharpPulsar
 			var sequence = await _txn.Txn.Ask<long>(NextSequenceId.Instance).ConfigureAwait(false);
 			Metadata.TxnidLeastBits = (ulong)bits.LeastBits;
 			Metadata.TxnidMostBits = (ulong)bits.MostBits;
-			long sequenceId = sequence;
+			var sequenceId = sequence;
 			Metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
-		public void Send(bool isDeadLetter = false)
+		public MessageId Send()
 		{
-			SendAsync(isDeadLetter).ConfigureAwait(false);
+			return SendAsync().GetAwaiter().GetResult();
 		}
-		public async ValueTask SendAsync(bool isDeadLetter = false)
+		public async ValueTask<MessageId> SendAsync()
 		{
-			var message = await Message().ConfigureAwait(false);
-			if (_txn != null)
-			{
-				_producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, isDeadLetter));
-			}
-			else
-			{
-				_producer.Tell(new InternalSend<T>(message, isDeadLetter));
-			}
+            try
+            {
+                var message = await Message().ConfigureAwait(false);
+                object obj = null;
+                if (_txn != null)
+                {
+                    obj = await _producer.Ask(new InternalSendWithTxn<T>(message, _txn.Txn), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
+                }
+                else
+                {
+                    obj = await _producer.Ask(new InternalSend<T>(message), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
+                }
+                switch(obj)
+                {
+                    case MessageId msgid:
+                        return msgid;
+                    case NoMessageIdYet _:
+                        return null;
+                    case PulsarClientException ex:
+                        throw ex;
+                    default:
+                        throw new Exception(obj.ToString());
+                }
+            }
+            catch
+            {
+                throw;
+            }
 		}
 		public ITypedMessageBuilder<T> Key(string key)
 		{
@@ -150,7 +175,7 @@ namespace SharpPulsar
 					// set value as the payload
 					if (kv.Value != null)
 					{
-						_content = kvSchema.ValueSchema.Encode(kv.Value);
+						_content = new ReadOnlySequence<byte>(kvSchema.ValueSchema.Encode(kv.Value));
 					}
 					else
 					{
@@ -159,7 +184,7 @@ namespace SharpPulsar
 					return this;
 				}
 			}
-			_content = _schema.Encode(value);
+			_content = new ReadOnlySequence<byte>(_schema.Encode(value));
 			return this;
 		}
 		public ITypedMessageBuilder<T> Property(string name, string value)
@@ -171,7 +196,7 @@ namespace SharpPulsar
 		}
 		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
 		{
-			foreach (KeyValuePair<string, string> entry in properties.SetOfKeyValuePairs())
+			foreach (var entry in properties.SetOfKeyValuePairs())
 			{
 				Condition.CheckArgument(entry.Key != null, "Need Non-Null key");
 				Condition.CheckArgument(entry.Value != null, "Need Non-Null value for key: " + entry.Key);

@@ -10,7 +10,6 @@ using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Extension;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 
@@ -158,7 +157,7 @@ namespace SharpPulsar.Batch
 			{
 				keyedBatch.MessageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
 			}
-			var cmd = new Commands().NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
+			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
 
 			var op = ProducerActor<T>.OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId);
 
@@ -233,7 +232,7 @@ namespace SharpPulsar.Batch
 					foreach (var msg in Messages)
 					{
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, new Commands().SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToArray());
 					}
 					var batchedMessageMetadataAndPayload = stream.ToArray();
@@ -257,7 +256,7 @@ namespace SharpPulsar.Batch
 			{
 				if (Messages.Count == 0)
 				{
-					SequenceId = new Commands().InitBatchMessageMetadata(MessageMetadata);
+					SequenceId = Commands.InitBatchMessageMetadata(MessageMetadata);
 					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToArray());
 					FirstCallback = callback;
 				}

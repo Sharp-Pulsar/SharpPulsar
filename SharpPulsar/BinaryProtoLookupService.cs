@@ -11,7 +11,6 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Protocol.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
-using SharpPulsar.Extension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -335,7 +334,7 @@ namespace SharpPulsar
 				Become(Awaiting);
 				return;
 			}
-			var request = new Commands().NewLookup(topicName.ToString(), _listenerName, authoritative, _requestId);
+			var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, _requestId);
 			var payload = new Payload(request, _requestId, "NewLookup");
 			_clientCnx.Tell(payload);
 
@@ -384,7 +383,7 @@ namespace SharpPulsar
 				Become(Awaiting);
 			});
 			ReceiveAny(_ => Stash.Stash());
-			var request = new Commands().NewPartitionMetadataRequest(topicName.ToString(), _requestId);
+			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
 			 _clientCnx.Tell(payload);
 		}
@@ -419,7 +418,7 @@ namespace SharpPulsar
 			ReceiveAny(_ => Stash.Stash());
 			var topicName = (TopicName)args[0];
 			var version = (byte[])args[1];
-			var request = new Commands().NewGetSchema(_requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
+			var request = Commands.NewGetSchema(_requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, _requestId, "SendGetRawSchema");
 			_clientCnx.Tell(payload);
 		}
@@ -481,7 +480,7 @@ namespace SharpPulsar
                         var client = _clientCnx;
                         var mde = mode;
                         var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
-                        var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.ToString(), reqId.Id, mde);
+                        var request = Commands.NewGetTopicsOfNamespaceRequest(nsn.ToString(), reqId.Id, mde);
                         var payload = new Payload(request, reqId.Id, "NewGetTopicsOfNamespaceRequest");
                         client.Tell(payload);
                         _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {nextDelay} ms delay with requestid '{reqId.Id}'");
@@ -490,7 +489,7 @@ namespace SharpPulsar
 				}
 			});
 			ReceiveAny(_ => Stash.Stash());
-			var request = new Commands().NewGetTopicsOfNamespaceRequest(nsn.ToString(), _requestId, mode);
+			var request = Commands.NewGetTopicsOfNamespaceRequest(nsn.ToString(), _requestId, mode);
 			var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
 			_clientCnx.Tell(payload);
 		}

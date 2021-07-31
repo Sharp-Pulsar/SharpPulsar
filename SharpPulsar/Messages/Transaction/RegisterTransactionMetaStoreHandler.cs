@@ -1,6 +1,7 @@
 ﻿
 using Akka.Actor;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Messages.Transaction
 {
@@ -20,6 +21,14 @@ namespace SharpPulsar.Messages.Transaction
         public RegisterProducedTopic(string topic)
         {
             Topic = topic;
+        }
+    }
+    public sealed class RegisterProducedTopicResponse
+    {
+        public ServerError? Error { get; }
+        public RegisterProducedTopicResponse(ServerError? error)
+        {
+            Error = error;
         }
     }
     public sealed class RegisterCumulativeAckConsumer

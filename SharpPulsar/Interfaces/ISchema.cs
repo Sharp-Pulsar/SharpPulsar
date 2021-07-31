@@ -1,4 +1,5 @@
-﻿using NodaTime;
+﻿using Akka.Util;
+using NodaTime;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
@@ -130,14 +131,18 @@ namespace SharpPulsar.Interfaces
 		/// <param name="schemaInfo"> schema info </param>
 		virtual void ConfigureSchemaInfo(string topic, string componentName, ISchemaInfo schemaInfo)
 		{
-			// no-op
-		}
+            // no-op
+        }
+        virtual Option<object> NativeSchema()
+        {
+            return Option<object>.None;
+        }
 
-		/// <summary>
-		/// Duplicates the schema.
-		/// </summary>
-		/// <returns> The duplicated schema. </returns>
-		ISchema<T> Clone();
+        /// <summary>
+        /// Duplicates the schema.
+        /// </summary>
+        /// <returns> The duplicated schema. </returns>
+        ISchema<T> Clone();
 
 		/// <summary>
 		/// Schema that doesn't perform any encoding on the message payloads. Accepts a byte array and it passes it through.

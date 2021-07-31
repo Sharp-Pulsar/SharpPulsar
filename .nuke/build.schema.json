@@ -6,6 +6,10 @@
     "build": {
       "type": "object",
       "properties": {
+        "ADMIN_NUGET_KEY": {
+          "type": "string",
+          "description": "Admin NuGet API Key"
+        },
         "BUILD_NUMBER": {
           "type": "string",
           "description": "GitHub Build Number"
@@ -44,10 +48,13 @@
             "GitHubActions",
             "GitLab",
             "Jenkins",
+            "Rider",
             "SpaceAutomation",
             "TeamCity",
             "Terminal",
-            "TravisCI"
+            "TravisCI",
+            "VisualStudio",
+            "VSCode"
           ]
         },
         "NoLogo": {
@@ -60,6 +67,10 @@
         },
         "NugetApiUrl": {
           "type": "string"
+        },
+        "Partition": {
+          "type": "string",
+          "description": "Partition to use on CI"
         },
         "Plan": {
           "type": "boolean",
@@ -83,18 +94,26 @@
             "type": "string",
             "enum": [
               "AdminPulsar",
+              "Benchmark",
               "CheckBranch",
               "CheckDockerVersion",
               "Clean",
               "Compile",
+              "CompileAdmin",
               "Pack",
+              "PackAdmin",
               "PackBeta",
               "Push",
               "PushBeta",
+              "ReleaseAdmin",
               "Restore",
+              "RestoreAdmin",
+              "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
-              "Test"
+              "Test",
+              "TestAdmin",
+              "TxnTest"
             ]
           }
         },
@@ -109,18 +128,26 @@
             "type": "string",
             "enum": [
               "AdminPulsar",
+              "Benchmark",
               "CheckBranch",
               "CheckDockerVersion",
               "Clean",
               "Compile",
+              "CompileAdmin",
               "Pack",
+              "PackAdmin",
               "PackBeta",
               "Push",
               "PushBeta",
+              "ReleaseAdmin",
               "Restore",
+              "RestoreAdmin",
+              "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
-              "Test"
+              "Test",
+              "TestAdmin",
+              "TxnTest"
             ]
           }
         },

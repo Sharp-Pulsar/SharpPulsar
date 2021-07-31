@@ -712,6 +712,22 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
+        /// <summary>
+        /// Producer was fenced by the broker.
+        /// </summary>
+        public class ProducerFencedException : PulsarClientException
+		{
+
+            /// <summary>
+            /// Constructs an {@code ProducerFencedException} with the specified detail message.
+            /// </summary>
+            /// <param name="msg">
+            ///        The detail message (which is saved for later retrieval
+            ///        by the <seealso cref="getMessage()"/> method) </param>
+            public ProducerFencedException(string msg) : base(msg)
+			{
+			}
+		}
 		/// <summary>
 		/// Consumer assign exception thrown by Pulsar client.
 		/// </summary>

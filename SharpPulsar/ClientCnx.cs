@@ -20,12 +20,11 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
-using SharpPulsar.Extension;
 using SharpPulsar.SocketImpl;
 
 namespace SharpPulsar
 {
-	internal sealed class ClientCnx : ReceiveActor
+    internal sealed class ClientCnx : ReceiveActor
 	{
 		private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;
@@ -55,7 +54,7 @@ namespace SharpPulsar
 		private readonly ILoggingAdapter _log;
 
 		private string _proxyToTargetBrokerAddress;
-		private readonly ReadOnlySequence<byte> _pong = new Commands().NewPong();
+		private readonly ReadOnlySequence<byte> _pong = Commands.NewPong();
 		private List<byte> _pendingReceive;
 
 		private string _remoteHostName;
@@ -71,7 +70,7 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, new Commands().CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
 		{
 		}
 
@@ -104,6 +103,9 @@ namespace SharpPulsar
 					case "NewLookup":
 						NewLookup(p.Bytes, p.RequestId);
 						break;
+					case "NewAckForReceipt":
+                        NewAckForReceipt(p.Bytes, p.RequestId);
+						break;
 					case "NewGetTopicsOfNamespaceRequest":
 						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
 						break;
@@ -118,8 +120,10 @@ namespace SharpPulsar
 						break;
 					case "NewAddSubscriptionToTxn":
 					case "NewAddPartitionToTxn":
-					case "NewTxn":
-					case "NewEndTxn":
+                        _socketClient.SendMessage(p.Bytes);
+                        break;
+                    case "NewTxn":
+                    case "NewEndTxn":
 						_socketClient.SendMessage(p.Bytes);
 						break;
 					default:
@@ -138,6 +142,10 @@ namespace SharpPulsar
 			Receive<RemoveProducer>(m => {
 
 				RemoveProducer(m.ProducerId);
+			});
+			Receive<Close>(m => {
+
+                _socketClient.Dispose();
 			});
 			Receive<MaxMessageSize>(_ => {
 
@@ -187,7 +195,7 @@ namespace SharpPulsar
 		private void OnDisconnected()
 		{
 			_log.Info($"{_remoteHostName} Disconnected");
-			PulsarClientException e = new PulsarClientException("Disconnected from server at " + _remoteHostName);
+			var e = new PulsarClientException("Disconnected from server at " + _remoteHostName);
 
 
 			// Notify all attached producers/consumers so they have a chance to reconnect
@@ -222,8 +230,11 @@ namespace SharpPulsar
 			}
 
 		}
-
-		protected override void PostStop()
+        private void NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
+        {
+            _ = SendRequestAndHandleTimeout(request, requestId, RequestType.AckResponse);
+        }
+        protected override void PostStop()
 		{
 			_timeoutTask?.Cancel();
 			_sendPing?.Cancel();
@@ -260,7 +271,7 @@ namespace SharpPulsar
 				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
 				var auth = new AuthData { auth_data = (authData.Bytes) };
 				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
-				var request = new Commands().NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
+				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
 
 				if (_log.IsDebugEnabled)
 				{
@@ -283,9 +294,9 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(_state == State.Ready);
 
-			long producerId = (long)sendReceipt.ProducerId;
-			long sequenceId = (long)sendReceipt.SequenceId;
-			long highestSequenceId = (long)sendReceipt.HighestSequenceId;
+			var producerId = (long)sendReceipt.ProducerId;
+			var sequenceId = (long)sendReceipt.SequenceId;
+			var highestSequenceId = (long)sendReceipt.HighestSequenceId;
 			long ledgerId = -1;
 			long entryId = -1;
 			if (sendReceipt.MessageId != null)
@@ -313,7 +324,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received a message from the server: {msg}");
 			}
-			MessageIdData id = new MessageIdData
+			var id = new MessageIdData
 			{
 				AckSets = msg.AckSets,
 				ledgerId = msg.MessageId.ledgerId,
@@ -351,7 +362,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received success response from server: {success.RequestId}");
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var req))
 			{
 				_pendingRequests.Remove(requestId);
@@ -371,7 +382,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received success GetLastMessageId response from server: {success.RequestId}");
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
 				var consumer = request.Requester;
@@ -392,7 +403,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Received producer success response from server: {success.RequestId} - producer-name: {success.ProducerName}");
 			}
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var producer))
 			{
 				_pendingRequests.Remove(requestId);
@@ -411,7 +422,7 @@ namespace SharpPulsar
 				_log.Debug($"Received Broker lookup response: {lookupResult.Response}");
 			}
 
-			long requestId = (long)lookupResult.RequestId;
+			var requestId = (long)lookupResult.RequestId;
 			if (RemovePendingLookupRequest(requestId, out var requester))
 			{
 
@@ -455,7 +466,7 @@ namespace SharpPulsar
 				_log.Debug($"Received Broker Partition response: {lookupResult.Partitions}");
 			}
 
-			long requestId = (long)lookupResult.RequestId;
+			var requestId = (long)lookupResult.RequestId;
 			if (RemovePendingLookupRequest(requestId, out var requester))
 			{
 				if (CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult.Response))
@@ -486,7 +497,7 @@ namespace SharpPulsar
 
 		private void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
 		{
-			long consumerId = (long)commandReachedEndOfTopic.ConsumerId;
+			var consumerId = (long)commandReachedEndOfTopic.ConsumerId;
 
 			_log.Info($"[{_remoteHostName}] Broker notification reached the end of topic: {consumerId}");
 			if (_consumers.TryGetValue(consumerId, out var consumer))
@@ -516,23 +527,27 @@ namespace SharpPulsar
 		{
 			_log.Warning($"Received send error from server: {sendError.Error} : {sendError.Message}");
 
-			long producerId = (long)sendError.ProducerId;
-			long sequenceId = (long)sendError.SequenceId;
+			var producerId = (long)sendError.ProducerId;
+			var sequenceId = (long)sendError.SequenceId;
 
 			switch (sendError.Error)
 			{
 				case ServerError.ChecksumError:
-					_producers[producerId].Tell(new RecoverChecksumError(Self, sequenceId));
+					_producers[producerId].Tell(new RecoverChecksumError(_self, sequenceId));
 					break;
 
 				case ServerError.TopicTerminatedError:
-					_producers[producerId].Tell(new Messages.Terminated(Self));
+					_producers[producerId].Tell(new Messages.Terminated(_self));
+					break;
+
+				case ServerError.NotAllowedError:
+					_producers[producerId].Tell(new RecoverNotAllowedError(sequenceId));
 					break;
 
 				default:
 					// By default, for transient error, let the reconnection logic
 					// to take place and re-establish the produce again
-					//_socketClient.Dispose();
+					_socketClient.Dispose();
 					break;
 			}
 		}
@@ -542,7 +557,7 @@ namespace SharpPulsar
 			Condition.CheckArgument(_state == State.SentConnectFrame || _state == State.Ready);
 
 			_log.Warning($"Received error from server: {error.Message}");
-			long requestId = (long)error.RequestId;
+			var requestId = (long)error.RequestId;
 
 			if (_pendingRequests.TryGetValue(requestId, out var request))
 			{
@@ -568,7 +583,7 @@ namespace SharpPulsar
 		private void HandleCloseProducer(CommandCloseProducer closeProducer)
 		{
 			_log.Info($"[{_remoteHostName}] Broker notification of Closed producer: {closeProducer.ProducerId}");
-			long producerId = (long)closeProducer.ProducerId;
+			var producerId = (long)closeProducer.ProducerId;
 			if (_producers.TryGetValue(producerId, out var producer))
 			{
 				producer.Tell(new ConnectionClosed(_self));
@@ -583,7 +598,7 @@ namespace SharpPulsar
 		{
 			_log.Info($"[{_remoteHostName}] Broker notification of Closed consumer: {closeConsumer.ConsumerId}");
 
-			long consumerId = (long)closeConsumer.ConsumerId;
+			var consumerId = (long)closeConsumer.ConsumerId;
 			if (_consumers.TryGetValue(consumerId, out var consumer))
 			{
 				consumer.Tell(new ConnectionClosed(_self));
@@ -617,7 +632,7 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(_state == State.Ready);
 
-			long requestId = (long)success.RequestId;
+			var requestId = (long)success.RequestId;
 
 			if (_log.IsDebugEnabled)
 			{
@@ -637,7 +652,7 @@ namespace SharpPulsar
 		private void HandleGetSchemaResponse(CommandGetSchemaResponse commandGetSchemaResponse)
 		{
 			Condition.CheckArgument(_state == State.Ready);
-			long requestId = (long)commandGetSchemaResponse.RequestId;
+			var requestId = (long)commandGetSchemaResponse.RequestId;
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
@@ -650,7 +665,7 @@ namespace SharpPulsar
 		private void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
 		{
 			Condition.CheckArgument(_state == State.Ready);
-			long requestId = (long)commandGetOrCreateSchemaResponse.RequestId;
+			var requestId = (long)commandGetOrCreateSchemaResponse.RequestId;
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
 				requester.Requester.Tell(new GetOrCreateSchemaResponse(commandGetOrCreateSchemaResponse));
@@ -706,7 +721,7 @@ namespace SharpPulsar
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new NewTxnResponse(command));
+				handler.Tell(new NewTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
 			}
 		}
 
@@ -734,7 +749,7 @@ namespace SharpPulsar
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new EndTxnResponse(command));
+				handler.Tell(new EndTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
 			}
 		}
 
@@ -865,7 +880,7 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(_state == State.Ready);
 			Condition.CheckArgument(ackResponse.RequestId >= 0);
-			long consumerId = (long)ackResponse.ConsumerId;
+			var consumerId = (long)ackResponse.ConsumerId;
 			if (ackResponse?.Error == ServerError.UnknownError && string.IsNullOrWhiteSpace(ackResponse.Message))
 			{
 				_consumers[consumerId].Tell(new AckReceipt((long)ackResponse.RequestId));
@@ -918,12 +933,31 @@ namespace SharpPulsar
 					return new PulsarClientException.NotAllowedException(errorMsg);
 				case ServerError.TransactionConflict:
 					return new PulsarClientException.TransactionConflictException(errorMsg);
-				case ServerError.UnknownError:
+                case ServerError.ProducerFenced:
+                    return new PulsarClientException.ProducerFencedException(errorMsg);
+                case ServerError.UnknownError:
 				default:
 					return new PulsarClientException(errorMsg);
 			}
 		}
-		private void RegisterProducer(long producerId, IActorRef producer)
+
+        private TransactionCoordinatorClientException GetExceptionByServerError(ServerError serverError, string msg)
+        {
+            switch (serverError)
+            {
+                case ServerError.TransactionCoordinatorNotFound:
+                    return new TransactionCoordinatorClientException.CoordinatorNotFoundException(msg);
+                case ServerError.InvalidTxnStatus:
+                    return new TransactionCoordinatorClientException.InvalidTxnStatusException(msg);
+                case ServerError.TransactionNotFound:
+                    return new TransactionCoordinatorClientException.TransactionNotFoundException(msg);
+                case ServerError.UnknownError:
+                    return new TransactionCoordinatorClientException.NoException();
+                default:
+                    return new TransactionCoordinatorClientException(msg);
+            }
+        }
+        private void RegisterProducer(long producerId, IActorRef producer)
 		{
 			_producers.TryAdd(producerId, producer);
 		}
@@ -972,7 +1006,7 @@ namespace SharpPulsar
 			var auth = new AuthData { auth_data = (authData.Bytes) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
 
-			return new Commands().NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State
@@ -1005,6 +1039,7 @@ namespace SharpPulsar
 			public static readonly RequestType GetTopics = new RequestType("GetTopics", InnerEnum.GetTopics);
 			public static readonly RequestType GetSchema = new RequestType("GetSchema", InnerEnum.GetSchema);
 			public static readonly RequestType GetOrCreateSchema = new RequestType("GetOrCreateSchema", InnerEnum.GetOrCreateSchema);
+			public static readonly RequestType AckResponse = new RequestType("AckResponse", InnerEnum.AckResponse);
 
 			private static readonly List<RequestType> valueList = new List<RequestType>();
 
@@ -1015,6 +1050,7 @@ namespace SharpPulsar
 				valueList.Add(GetTopics);
 				valueList.Add(GetSchema);
 				valueList.Add(GetOrCreateSchema);
+				valueList.Add(AckResponse);
 			}
 
 			public enum InnerEnum
@@ -1023,7 +1059,8 @@ namespace SharpPulsar
 				GetLastMessageId,
 				GetTopics,
 				GetSchema,
-				GetOrCreateSchema
+				GetOrCreateSchema,
+                AckResponse
 			}
 
 			public readonly InnerEnum innerEnumValue;
@@ -1070,7 +1107,7 @@ namespace SharpPulsar
 
 			public static RequestType ValueOf(string name)
 			{
-				foreach (RequestType enumInstance in valueList)
+				foreach (var enumInstance in valueList)
 				{
 					if (enumInstance.nameValue == name)
 					{

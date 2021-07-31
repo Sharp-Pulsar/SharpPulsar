@@ -6,7 +6,9 @@ using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Queues;
+using SharpPulsar.Messages.Consumer;
+using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Admin.Admin.Models;
 
 namespace SharpPulsar.EventSource.Pulsar
 {
@@ -19,19 +21,19 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
-        private readonly ConsumerQueueCollections<T> _buffer;
-        private readonly User.Admin _admin;
-        public CurrentEventsByTopicActor(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
+        private readonly Admin.Public.Admin _admin;
+        private readonly BufferBlock<IMessage<T>> _buffer;
+        public CurrentEventsByTopicActor(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            _admin = new User.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
             _message = message;
             _httpClient = httpClient;
             _schema = schema;
+            _buffer = new BufferBlock<IMessage<T>>();
             _client = client;
             _cnxPool = cnxPool;
             _lookup = lookup;
             _generator = generator;
-            _buffer = queue;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
             Setup(partitions.Body, topic);
@@ -44,9 +46,20 @@ namespace SharpPulsar.EventSource.Pulsar
                     Self.GracefulStop(TimeSpan.FromSeconds(5));
                 }
             });
+            Receive<ReceivedMessage<T>>(m =>
+            {
+                _buffer.Post(m.Message);
+            });
+            Receive<Messages.Receive>(_ =>
+            {
+                if (_buffer.TryReceive(out var message))
+                    Sender.Tell(new AskResponse(message));
+                else
+                    Sender.Tell(new AskResponse(null));
+            });
         }
 
-        private void Setup(Admin.Models.PartitionedTopicMetadata p, string topic)
+        private void Setup(PartitionedTopicMetadata p, string topic)
         {
             if (p.Partitions > 0)
             {
@@ -57,7 +70,7 @@ namespace SharpPulsar.EventSource.Pulsar
                     var msgId = GetMessageIds(partitionTopic);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
                         (int) (msgId.End.Index - msgId.Start.Index)); 
-                    var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema, _buffer));
+                    var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema));
                     Context.Watch(child);
                 }
             }
@@ -66,7 +79,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 var msgId = GetMessageIds(TopicName.Get(topic));
                 var permits = (int)(msgId.End.Index - msgId.Start.Index);
                 var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, permits);
-                var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema, _buffer));
+                var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema));
                 Context.Watch(child);
             }
         }
@@ -86,9 +99,9 @@ namespace SharpPulsar.EventSource.Pulsar
             var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
             return (startMessageId, endMessageId);
         }
-        public static Props Prop(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema, ConsumerQueueCollections<T> queue)
+        public static Props Prop(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            return Props.Create(()=> new CurrentEventsByTopicActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema, queue));
+            return Props.Create(()=> new CurrentEventsByTopicActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema));
         }
     }
 }

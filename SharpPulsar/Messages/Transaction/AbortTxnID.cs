@@ -1,18 +1,13 @@
-﻿
-using SharpPulsar.Interfaces;
-using SharpPulsar.Transaction;
-using System.Collections.Generic;
+﻿using SharpPulsar.Transaction;
 
 namespace SharpPulsar.Messages.Transaction
 {
     public sealed class AbortTxnID
     {
         public TxnID TxnID { get; }
-        public IList<IMessageId> MessageIds { get; }
-        public AbortTxnID(TxnID txnID, IList<IMessageId> messageIds)
+        public AbortTxnID(TxnID txnID)
         {
             TxnID = txnID;
-            MessageIds = messageIds;
         }
     }
     public sealed class Abort
@@ -32,11 +27,9 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class CommitTxnID
     {
         public TxnID TxnID { get; }
-        public IList<IMessageId> MessageIds { get; }
-        public CommitTxnID(TxnID txnID, IList<IMessageId> messageIds)
+        public CommitTxnID(TxnID txnID)
         {
             TxnID = txnID;
-            MessageIds = messageIds;
         }
     }
     public sealed class Commit
