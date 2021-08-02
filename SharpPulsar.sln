@@ -26,6 +26,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.SQL", "Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.EventSourcing", "Tests\SharpPulsar.Test.EventSourcing\SharpPulsar.Test.EventSourcing.csproj", "{32E252E5-BF84-441A-8F1B-83A605D8007C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{F7A4ED9D-F859-4738-A5AC-492BC57521FD}"
+	ProjectSection(SolutionItems) = preProject
+		docker\docker-compose.yml = docker\docker-compose.yml
+		docker\README.md = docker\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

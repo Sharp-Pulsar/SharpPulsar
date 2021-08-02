@@ -200,7 +200,12 @@ class Build : NukeBuild
                 }
             }
         });
-
+    Target TestPaths => _ => _
+        .Executes(() =>
+        {
+            Information($"Directory: { Solution.Directory}");
+            Information($"Path: { Solution.Path}");
+        });
     Target TestAdmin => _ => _
         .DependsOn(CompileAdmin)
         .DependsOn(AdminPulsar)
