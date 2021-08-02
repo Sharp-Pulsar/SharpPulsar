@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using crypto;
 using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.User;
@@ -16,11 +17,35 @@ namespace Tutorials
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         static void Main(string[] args)
         {
+            var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
-            Console.WriteLine("Please enter cmd");
-            var cmd = Console.ReadLine();
+            Console.WriteLine("Welcome!!");
+            Console.WriteLine("Select 0(none-tls) 1(tls)");
+            var selections = new List<string> {"0","1" };
+            var selection = Console.ReadLine();
+            var selected = selections.Contains(selection);
+            while (!selected)
+            {
+                Console.WriteLine($"Invalid selection: expected 0 or 1. Retry!![{selection}]");
+                selection = Console.ReadLine();
+                selected = selection != "0";
+            }
+            if(selection.Equals("1"))
+                url = "pulsar+ssl://127.0.0.1:6651";
+
+            
             var clientConfig = new PulsarClientConfigBuilder()
-                .ServiceUrl("pulsar://localhost:6650");
+                .ServiceUrl(url);
+
+            if (selection.Equals("1"))
+            {
+                var ca = new System.Security.Cryptography.X509Certificates.X509Certificate2(@"certs/ca.cert.pem");
+                clientConfig.EnableTls(true);
+                clientConfig.AddTrustedAuthCert(ca);
+            }
+            Console.WriteLine("Please, time to execute some command, which do you want?");
+            var cmd = Console.ReadLine();
+
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 clientConfig.EnableTransaction(true);
 
@@ -162,7 +187,6 @@ namespace Tutorials
                 }
             }
         }
-
         private static List<MessageId> PublishMessages(string topic, int count, string message, PulsarClient client)
         {
             var keys = new List<MessageId>();
@@ -310,5 +334,45 @@ namespace Tutorials
                 }
             }
         }
+
+
+        private static void TlsProduceConsumer(PulsarClient pulsarClient)
+        {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"sub-{Guid.NewGuid()}")
+                .IsAckReceiptEnabled(true));
+
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));
+
+
+            for (var i = 0; i < 1000; i++)
+            {
+                var data = Encoding.UTF8.GetBytes($"tuts-{i}");
+                var id = producer.NewMessage().Value(data).Send();
+                Console.WriteLine($"Message Id({id.LedgerId}:{id.EntryId})");
+            }
+
+            var pool = ArrayPool<byte>.Shared;
+
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            for (var i = 0; i < 1000; i++)
+            {
+                var message = (Message<byte[]>)consumer.Receive();
+                if (message != null)
+                {
+                    var payload = pool.Rent((int)message.Data.Length);
+                    Array.Copy(sourceArray: message.Data.ToArray(), destinationArray: payload, length: (int)message.Data.Length);
+
+                    consumer.Acknowledge(message);
+                    var res = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                }
+            }
+        }
+
     }
 }
