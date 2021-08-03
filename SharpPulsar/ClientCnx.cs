@@ -433,7 +433,7 @@ namespace SharpPulsar
 			if (_pendingRequests.TryGetValue(requestId, out var producer))
 			{
 				_pendingRequests.Remove(requestId);
-				producer.Requester.Tell(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion));
+				producer.Requester.Tell(new AskResponse(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion)));
 			}
 			else
 			{
@@ -454,27 +454,31 @@ namespace SharpPulsar
 
 				if (CommandLookupTopicResponse.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (lookupResult?.Error != null)
+					if (lookupResult.Error != ServerError.UnknownError)
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);
-						requester.Tell(new Failure { Exception = ex });
+						requester.Tell(new AskResponse(ex));
 					}
 					else
 					{
 						var ex = new PulsarClientException.LookupException("Empty lookup response");
-						requester.Tell(new Failure { Exception = ex });
-					}
+                        requester.Tell(new AskResponse(ex));
+                    }
 				}
 				else
 				{
-					requester.Tell(new LookupDataResult(lookupResult));
+					requester.Tell(new AskResponse(new LookupDataResult(lookupResult)));
 				}
 			}
 			else
-			{
-				_log.Warning($"Received unknown request id from server: {lookupResult.RequestId}");
-			}
+            {
+                var msg = $"Received unknown request id from server: {lookupResult.RequestId}";
+
+                _log.Warning(msg);
+                var ex = new PulsarClientException.LookupException(msg);
+                requester.Tell(new AskResponse(ex));
+            }
 		}
 		private void HandlePing(CommandPing ping)
 		{
@@ -497,28 +501,32 @@ namespace SharpPulsar
 			{
 				if (CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (lookupResult?.Error != null)
+					if (lookupResult.Error != ServerError.UnknownError)
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);
-						requester.Tell(new ClientExceptions(ex));
+						requester.Tell(new AskResponse(ex));
 					}
 					else
 					{
 						var ex = new PulsarClientException.LookupException("Empty lookup response");
-						requester.Tell(ex);
+						requester.Tell(new AskResponse(ex));
 					}
 				}
 				else
 				{
 					// return LookupDataResult when Result.response = success/redirect
-					requester.Tell(new LookupDataResult((int)lookupResult.Partitions));
+					requester.Tell(new AskResponse(new LookupDataResult((int)lookupResult.Partitions)));
 				}
 			}
 			else
 			{
-				_log.Warning($"Received unknown request id from server: {lookupResult.RequestId}");
-			}
+                var msg = $"Received unknown request id from server: {lookupResult.RequestId}";
+
+                _log.Warning(msg);
+                var ex = new PulsarClientException.LookupException(msg);
+                requester.Tell(new AskResponse(ex));
+            }
 		}
 
 		private void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
@@ -590,15 +598,15 @@ namespace SharpPulsar
 				if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
 				{
 					_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
-					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
+					request.Requester.Tell(new AskResponse(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
 				}
 				else if (error.Error == ServerError.AuthenticationError)
 				{
-					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException(error.Message)));
+					request.Requester.Tell(new AskResponse(new PulsarClientException.AuthenticationException(error.Message)));
 					_log.Error("Failed to authenticate the client");
 				}
 				else
-					request.Requester.Tell(new ClientExceptions(GetPulsarClientException(error.Error, error.Message)));
+					request.Requester.Tell(new AskResponse(GetPulsarClientException(error.Error, error.Message)));
 			}
 			else
 			{
@@ -669,11 +677,13 @@ namespace SharpPulsar
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
-				requester.Requester.Tell(new GetTopicsOfNamespaceResponse(success));
+				requester.Requester.Tell(new AskResponse(new GetTopicsOfNamespaceResponse(success)));
 			}
 			else
-			{
-				_log.Warning($"Received unknown request id from server: {success.RequestId}");
+            {
+                var msg = $"Received unknown request id from server: {success.RequestId}";
+
+                _log.Warning(msg);
 			}
 		}
 
@@ -684,10 +694,15 @@ namespace SharpPulsar
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
-				requester.Requester.Tell(new GetSchemaResponse(commandGetSchemaResponse));
+				requester.Requester.Tell(new AskResponse(new GetSchemaResponse(commandGetSchemaResponse)));
 			}
-			else
-				_log.Warning($"Received unknown request id from server: {requestId}");
+            else
+            {
+                var msg = $"Received unknown request id from server: {requestId}";
+                _log.Warning(msg);
+                requester.Requester.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception(msg))));
+            }
+            
 		}
 
 		private void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)

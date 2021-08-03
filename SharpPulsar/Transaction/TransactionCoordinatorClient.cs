@@ -5,7 +5,6 @@ using SharpPulsar.Common.Partition;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
-using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
@@ -106,21 +105,24 @@ namespace SharpPulsar.Transaction
                     try
                     {
                         var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-                        var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                        if (ask.Equals("Ready"))
+                        var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                        if (ask.Failed)
+                        {
+                            _sender.Tell(ask);
+                            break;
+                        }
+                        if (ask.Data.ToString().Equals("Ready"))
                         {
                             _handlers.Add(handler);
                             _handlerMap.Add(i, handler);
                         }
-                        else
-                            _log.Error(ask);
                     }
                     catch (Exception ex)
                     {
                         _log.Error(ex.ToString());
                     }
                 }
-                _sender.Tell(_handlers.Count);
+                _sender.Tell(new AskResponse(_handlers.Count));
             }
             else
             {

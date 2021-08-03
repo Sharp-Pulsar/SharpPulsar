@@ -16,20 +16,6 @@ namespace SharpPulsar.Messages.Requests
             TopicName = topicName;
         }
     }
-    public sealed class GetBrokerRedirect
-    {
-        public TopicName TopicName { get; }
-        public int RedirectCount { get; }
-        public DnsEndPoint BrokerAddress { get; }
-        public bool Authoritative { get; }
-        public GetBrokerRedirect(TopicName topicName, int redirectCount, DnsEndPoint brokerAddress, bool authoritative)
-        {
-            TopicName = topicName;
-            RedirectCount = redirectCount;
-            BrokerAddress = brokerAddress;
-            Authoritative = authoritative;
-        }
-    }
     public sealed class GetSchema
     {
         public TopicName TopicName { get; }

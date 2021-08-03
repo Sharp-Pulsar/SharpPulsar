@@ -309,7 +309,11 @@ namespace SharpPulsar.User
             var namespaceName = destination.NamespaceObject;
             try
             {
-               var result = await _lookup.Ask<GetTopicsUnderNamespaceResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+                var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+                if (ask.Failed)
+                    throw ask.Exception;
+
+                var result = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
                 var topics = result.Topics;
                 if (_actorSystem.Log.IsDebugEnabled)
                 {
@@ -576,30 +580,23 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var schem = await _lookup.Ask(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
-                    if (schem is Failure fa)
+                    var schem = await _lookup.Ask<AskResponse>(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
+                    if (schem.Failed) 
+                        throw schem.Exception;
+
+                    var sc = schem.ConvertTo<GetSchemaInfoResponse>();
+                    if (sc.SchemaInfo != null)
                     {
-                        throw fa.Exception;
+                        autoProduceBytesSchema.Schema = (ISchema<T>)ISchema<T>.GetSchema(sc.SchemaInfo);
                     }
-                    else if (schem is GetSchemaInfoResponse sc)
+                    else
                     {
-                        if (sc.SchemaInfo != null)
-                        {
-                            autoProduceBytesSchema.Schema = (ISchema<T>)ISchema<T>.GetSchema(sc.SchemaInfo);
-                        }
-                        else
-                        {
-                            autoProduceBytesSchema.Schema = (ISchema<T>)ISchema<T>.Bytes;
-                        }
+                        autoProduceBytesSchema.Schema = (ISchema<T>)ISchema<T>.Bytes;
                     }
                     return await CreateProducer(topic, conf, schema, interceptors).ConfigureAwait(false);
                 }
             }
-            else
-            {
-                return await CreateProducer(topic, conf, schema, interceptors).ConfigureAwait(false);
-            }
-
+            return await CreateProducer(topic, conf, schema, interceptors).ConfigureAwait(false);
         }
 
         private async ValueTask<Producer<T>> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
@@ -612,8 +609,8 @@ namespace SharpPulsar.User
             if (metadata.Partitions > 0)
             {
                 var partitionActor = _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData)));
-                var co = await partitionActor.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                if (co.Errored)
+                var co = await partitionActor.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                if (co.Failed)
                     throw co.Exception;
 
                 _client.Tell(new AddProducer(partitionActor));
@@ -623,16 +620,10 @@ namespace SharpPulsar.User
             {
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
                 var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData)));
-                try
-                {
-                    var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                    if (co.Errored)
-                        throw co.Exception;
-                }
-                catch
-                {
-                    throw;
-                }
+                var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                if (co.Failed)
+                    throw co.Exception;
+
                 _client.Tell(new AddProducer(producer));
 
                 return new Producer<T>(producer, schema, conf);
