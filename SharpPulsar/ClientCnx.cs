@@ -24,12 +24,13 @@ using SharpPulsar.SocketImpl;
 
 namespace SharpPulsar
 {
-    internal sealed class ClientCnx : ReceiveActor
+    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;
 		private State _state;
 		private readonly IActorRef _self;
+		private IActorRef _sender;
 
 		private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
 		// LookupRequests that waiting in client side.
@@ -95,81 +96,106 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
-			_socketClient.Connect();
-			Receive<Payload>(p =>
-			{
-				switch (p.Command)
-				{
-					case "NewLookup":
-						NewLookup(p.Bytes, p.RequestId);
-						break;
-					case "NewAckForReceipt":
+            ReceiveAsync<Connect>(async _ =>
+            {
+                _sender = Sender;
+                try
+                {
+                    await _socketClient.Connect();
+                }
+                catch (Exception e)
+                {
+                   Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
+                }
+            });
+
+            Receive<ConnectionOpened>(o =>
+            {
+                Sender.Tell(new AskResponse(o));
+                Become(Ready);
+            });
+            ReceiveAny(_=> Stash.Stash());
+			
+		}
+
+        private void Ready()
+        {
+
+            Receive<Payload>(p =>
+            {
+                switch (p.Command)
+                {
+                    case "NewLookup":
+                        NewLookup(p.Bytes, p.RequestId);
+                        break;
+                    case "NewAckForReceipt":
                         NewAckForReceipt(p.Bytes, p.RequestId);
-						break;
-					case "NewGetTopicsOfNamespaceRequest":
-						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
-						break;
-					case "SendGetLastMessageId":
-						SendGetLastMessageId(p.Bytes, p.RequestId);
-						break;
-					case "SendGetRawSchema":
-						SendGetRawSchema(p.Bytes, p.RequestId);
-						break;
-					case "SendGetOrCreateSchema":
-						SendGetOrCreateSchema(p.Bytes, p.RequestId);
-						break;
-					case "NewAddSubscriptionToTxn":
-					case "NewAddPartitionToTxn":
+                        break;
+                    case "NewGetTopicsOfNamespaceRequest":
+                        NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
+                        break;
+                    case "SendGetLastMessageId":
+                        SendGetLastMessageId(p.Bytes, p.RequestId);
+                        break;
+                    case "SendGetRawSchema":
+                        SendGetRawSchema(p.Bytes, p.RequestId);
+                        break;
+                    case "SendGetOrCreateSchema":
+                        SendGetOrCreateSchema(p.Bytes, p.RequestId);
+                        break;
+                    case "NewAddSubscriptionToTxn":
+                    case "NewAddPartitionToTxn":
                         _socketClient.SendMessage(p.Bytes);
                         break;
                     case "NewTxn":
                     case "NewEndTxn":
-						_socketClient.SendMessage(p.Bytes);
-						break;
-					default:
-						SendRequest(p.Bytes, p.RequestId);
-						break;
+                        _socketClient.SendMessage(p.Bytes);
+                        break;
+                    default:
+                        SendRequest(p.Bytes, p.RequestId);
+                        break;
 
-				}
-			});
+                }
+            });
 
-			Receive<RegisterProducer>(m => {
-				RegisterProducer(m.ProducerId, m.Producer);
-			});
-			Receive<RegisterConsumer>(m => {
-				RegisterConsumer(m.ConsumerId, m.Consumer);
-			});
-			Receive<RemoveProducer>(m => {
+            Receive<RegisterProducer>(m => {
+                RegisterProducer(m.ProducerId, m.Producer);
+            });
+            Receive<RegisterConsumer>(m => {
+                RegisterConsumer(m.ConsumerId, m.Consumer);
+            });
+            Receive<RemoveProducer>(m => {
 
-				RemoveProducer(m.ProducerId);
-			});
-			Receive<Close>(m => {
+                RemoveProducer(m.ProducerId);
+            });
+            Receive<Close>(m => {
 
                 _socketClient.Dispose();
-			});
-			Receive<MaxMessageSize>(_ => {
+            });
+            Receive<MaxMessageSize>(_ => {
 
-				Sender.Tell(new MaxMessageSizeResponse(_maxMessageSize));
-			});
-			Receive<RemoveConsumer>(m => {
-				RemoveConsumer(m.ConsumerId);
-			});
-			Receive<SendPing>(m => {
-				_socketClient.SendMessage(_pong);
-			});
-			Receive<RequestTimeout>(m => {
-				CheckRequestTimeout();
-			});
-			Receive<RegisterTransactionMetaStoreHandler>(h => {
-				RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
-			});
-			Receive<SendRequestWithId>(r => {
-				SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
-			});
-			Receive<RemoteEndpointProtocolVersion>(r => {
-				Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
-			});
-		}
+                Sender.Tell(new MaxMessageSizeResponse(_maxMessageSize));
+            });
+            Receive<RemoveConsumer>(m => {
+                RemoveConsumer(m.ConsumerId);
+            });
+            Receive<SendPing>(m => {
+                _socketClient.SendMessage(_pong);
+            });
+            Receive<RequestTimeout>(m => {
+                CheckRequestTimeout();
+            });
+            Receive<RegisterTransactionMetaStoreHandler>(h => {
+                RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
+            });
+            Receive<SendRequestWithId>(r => {
+                SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
+            });
+            Receive<RemoteEndpointProtocolVersion>(r => {
+                Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
+            });
+            Stash?.UnstashAll();
+        }
 		private void OnConnected()
 		{
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
@@ -190,7 +216,7 @@ namespace SharpPulsar
 			// Send CONNECT command
 			_socketClient.SendMessage(NewConnectCommand());
 			_state = State.SentConnectFrame;
-			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
+			_socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
 		}
 		private void OnDisconnected()
 		{
@@ -259,7 +285,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
-			_parent.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
+			_self.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
@@ -617,7 +643,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private void NewLookup(ReadOnlySequence<byte> request, long requestId)
+        public IStash Stash { get; set; }
+
+        private void NewLookup(ReadOnlySequence<byte> request, long requestId)
 		{
 			AddPendingLookupRequests(requestId, request);
 			_socketClient.SendMessage(request);

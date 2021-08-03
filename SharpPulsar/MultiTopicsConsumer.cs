@@ -488,19 +488,17 @@ namespace SharpPulsar
                 return (null, new AskResponse(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed")));
 			}
 
-			var result = await _lookup.Ask(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
-			if (result is PartitionedTopicMetadata metadata)
-			{
-				return await SubscribeTopicPartitions(fullTopicName, metadata.Partitions, createTopicIfDoesNotExist);
-			}
-			else if (result is Failure failure)
+			var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
+            if(result.Failed)
             {
-                var error = $"[{fullTopicName}] Failed to get partitioned topic metadata: {failure.Exception}";
-
+                var error = $"[{fullTopicName}] Failed to get partitioned topic metadata: {result.Exception}";
                 _log.Warning(error);
                 return (null, new AskResponse(new PulsarClientException(error)));
             }
-            return (null, new AskResponse());
+
+            var metadata = result.ConvertTo<PartitionedTopicMetadata>();
+            return await SubscribeTopicPartitions(fullTopicName, metadata.Partitions, createTopicIfDoesNotExist);
+            
 		}
 		private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe(ISchema<T> schema, string topicName)
 		{
@@ -1320,7 +1318,11 @@ namespace SharpPulsar
 		private async ValueTask SubscribeIncreasedTopicPartitions(string topic)
 		{
 			var topicName = TopicName.Get(topic);
-			var metadata = await _lookup.Ask<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+            if (result.Failed)
+                throw result.Exception;
+            
+            var metadata = result.ConvertTo<PartitionedTopicMetadata>();
 			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
 			var oldPartitionNumber = TopicsMap.GetValueOrNull(topic);
 			var currentPartitionNumber = topics.Count;

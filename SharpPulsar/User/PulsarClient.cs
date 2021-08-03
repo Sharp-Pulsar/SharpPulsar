@@ -201,7 +201,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("Empty subscription name");
             }
 
-            if (conf.ReadCompacted && (!conf.TopicNames.All(topic => TopicName.Get(topic).Domain == TopicDomain.Persistent) || (conf.SubscriptionType != SubType.Exclusive && conf.SubscriptionType != SubType.Failover)))
+            if (conf.ReadCompacted && (conf.TopicNames.Any(topic => TopicName.Get(topic).Domain != TopicDomain.Persistent) || (conf.SubscriptionType != SubType.Exclusive && conf.SubscriptionType != SubType.Failover)))
             {
                 throw new PulsarClientException.InvalidConfigurationException("Read compacted can only be used with exclusive or failover persistent subscriptions");
             }
@@ -357,8 +357,11 @@ namespace SharpPulsar.User
             try
             {
                 var topicName = TopicName.Get(topic);
-                var o = await _lookup.Ask(new GetPartitionedTopicMetadata(topicName)).ConfigureAwait(false);                
-                return o as PartitionedTopicMetadata;
+                var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+                if (result.Failed)
+                    throw result.Exception;
+
+                return result.ConvertTo<PartitionedTopicMetadata>();
             }
             catch (ArgumentException e)
             {

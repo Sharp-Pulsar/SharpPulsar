@@ -67,6 +67,12 @@
     <None Update="Certs\proxy.key-pk8.pem">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Certs\SharpPulsar_private.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Certs\SharpPulsar_pub.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Certs\superproxy.cert.pem">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -82,10 +88,6 @@
     <None Update="Certs\user1.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="TLS\" />
   </ItemGroup>
 
 </Project>

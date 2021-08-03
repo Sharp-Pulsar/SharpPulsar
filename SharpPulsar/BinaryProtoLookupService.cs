@@ -17,6 +17,7 @@ using System.Linq;
 using System.Net;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
 
@@ -182,7 +183,7 @@ namespace SharpPulsar
 						}
 						else
 						{
-							string serviceUrl = data.BrokerUrl;
+							var serviceUrl = data.BrokerUrl;
 							uri = new Uri(serviceUrl);
 						}
 						var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
@@ -243,7 +244,7 @@ namespace SharpPulsar
 						}
 						else
 						{
-							string serviceUrl = data.BrokerUrl;
+							var serviceUrl = data.BrokerUrl;
 							uri = new Uri(serviceUrl);
 						}
 						var responseBrokerAddress = new DnsEndPoint(uri.Host, uri.Port);
@@ -354,11 +355,11 @@ namespace SharpPulsar
 				if (Enum.IsDefined(typeof(ServerError), data.Error) && data.ErrorMessage != null)
 				{
 					_log.Warning($"[{topicName}] failed to get Partitioned metadata : {data.Error}:{data.ErrorMessage}");
-					_replyTo.Tell(new PartitionedTopicMetadata(0));
+					_replyTo.Tell(new AskResponse(new PartitionedTopicMetadata(0)));
 				}
 				else
 				{
-					_replyTo.Tell(new PartitionedTopicMetadata(data.Partitions));
+					_replyTo.Tell(new AskResponse(new PartitionedTopicMetadata(data.Partitions)));
 				}
 				_getPartitionedTopicMetadataBackOff = null;
 				Become(Awaiting);
@@ -367,10 +368,10 @@ namespace SharpPulsar
 			{
 				var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeoutMs);
 				var reply = _replyTo;
-				bool isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
+				var isLookupThrottling = !PulsarClientException.IsRetriableError(e.Exception) || e.Exception is PulsarClientException.TooManyRequestsException || e.Exception is PulsarClientException.AuthenticationException;
 				if (nextDelay <= 0 || isLookupThrottling)
 				{
-					reply.Tell(new Failure { Exception = new PulsarClientException.InvalidConfigurationException(e.Exception) });
+					reply.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e.Exception)));
 					_log.Error(e.ToString());
 					_getPartitionedTopicMetadataBackOff = null;
 				}

@@ -13,6 +13,7 @@ using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Utility;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -59,14 +60,14 @@ namespace SharpPulsar.Transaction
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
-            Receive<string>(st=> 
+            ReceiveAsync<string>(async st=> 
             {
                 _sender = Sender;
 
-                if(st.Equals("Start"))
-                    Become(StartCoordinator);
+                if(st.Equals("Start")) 
+                    await StartCoordinator();
             });
-			
+			ReceiveAny(_=> Stash.Stash());
 		}
 
 		private void Ready()
@@ -76,87 +77,75 @@ namespace SharpPulsar.Transaction
 				_replyTo = Sender;
 				Become(() => CreateTransaction(n));
 			});
-			Receive<AddPublishPartitionToTxn>(n => {
-				AddPublishPartitionToTxn(n);
-			});
-			Receive<SubscriptionToTxn>(n => {
-				AddSubscriptionToTxn(n);
-			});
-			Receive<AbortTxnID>(n => {
-				Abort(n);
-			});
-			Receive<CommitTxnID>(n => {
-				Commit(n);
-			});
+			Receive<AddPublishPartitionToTxn>(AddPublishPartitionToTxn);
+			Receive<SubscriptionToTxn>(AddSubscriptionToTxn);
+			Receive<AbortTxnID>(Abort);
+			Receive<CommitTxnID>(Commit);
 			Stash?.UnstashAll();
 		}
-		private void StartCoordinator()
+		private async ValueTask StartCoordinator()
 		{
 			_state = TransactionCoordinatorClientState.Starting;
-			ReceiveAsync<PartitionedTopicMetadata>(async p => 
-			{
-				var partitionMeta = p;
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
-				}
-				if (partitionMeta.Partitions > 0)
-				{
-					_handlers = new List<IActorRef>(partitionMeta.Partitions);
-					for (var i = 0; i < partitionMeta.Partitions; i++)
-					{
-                        try
-                        {
-                            var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-                            var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                            if(ask.Equals("Ready"))
-                            {
-                                _handlers.Add(handler);
-                                _handlerMap.Add(i, handler);
-                            }
-                            else
-                                _log.Error(ask);
-                        }
-                        catch(Exception ex)
-                        {
-                            _log.Error(ex.ToString());
-                        }
-					}
-                    _sender.Tell(_handlers.Count);
-				}
-				else
-				{
-					_handlers = new List<IActorRef>(1);
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+            while (result.Failed)
+            {
+                _log.Error(result.Exception.ToString());
+                _log.Info("Transaction coordinator not started...retrying");
+                result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+            }
+            var partitionMeta = result.ConvertTo<PartitionedTopicMetadata>();
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
+            }
+            if (partitionMeta.Partitions > 0)
+            {
+                _handlers = new List<IActorRef>(partitionMeta.Partitions);
+                for (var i = 0; i < partitionMeta.Partitions; i++)
+                {
                     try
                     {
-                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
                         var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
                         if (ask.Equals("Ready"))
                         {
-                            _handlers[0] = handler;
-                            _handlerMap.Add(0, handler);
+                            _handlers.Add(handler);
+                            _handlerMap.Add(i, handler);
                         }
                         else
                             _log.Error(ask);
-
                     }
                     catch (Exception ex)
                     {
                         _log.Error(ex.ToString());
                     }
-                    _sender.Tell(_handlers.Count);
                 }
-				Become(Ready);
-			});
-			Receive<ClientExceptions>(ex => 
-			{
-				_log.Error(ex.ToString());
-				_log.Info("Transaction coordinator not started...retrying");
-				_lookup.Tell(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
-			});
-			ReceiveAny(_=> Stash.Stash());
-			_lookup.Tell(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
-		}
+                _sender.Tell(_handlers.Count);
+            }
+            else
+            {
+                _handlers = new List<IActorRef>(1);
+                try
+                {
+                    var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
+                    var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                    if (ask.Equals("Ready"))
+                    {
+                        _handlers[0] = handler;
+                        _handlerMap.Add(0, handler);
+                    }
+                    else
+                        _log.Error(ask);
+
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex.ToString());
+                }
+                _sender.Tell(_handlers.Count);
+            }
+            Become(Ready);
+        }
 		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
         {
 			return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf));

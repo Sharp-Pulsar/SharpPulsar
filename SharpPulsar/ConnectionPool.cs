@@ -9,6 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
+using SharpPulsar.Exceptions;
+using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar
 {
@@ -22,7 +25,6 @@ namespace SharpPulsar
 		private readonly IActorContext _context;
 		private IActorRef _replyTo;
 		private int _randomKey;
-		private bool _getConnectionInProgress = false;
 		private DnsEndPoint _logicalEndpoint;
 		public ConnectionPool(ClientConfigurationData conf)
 		{
@@ -37,52 +39,32 @@ namespace SharpPulsar
 		}
 		private void Listen()
         {
-			Receive<GetConnection>(g =>
+			ReceiveAsync<GetConnection>(async g =>
 			{
-				if (!_getConnectionInProgress)
-				{
-					ConnectionOpened connection = null;
-					_randomKey = SignSafeMod(_random.Next(), _maxConnectionsPerHosts);
-					_logicalEndpoint = g.LogicalEndPoint;
-					if (g.LogicalEndPoint != null && g.PhusicalEndPoint == null)
-					{
-						connection = GetConnection(g.LogicalEndPoint, _randomKey);
-					}
-					else if (g.LogicalEndPoint != null && g.PhusicalEndPoint != null)
-					{
-						connection = GetConnection(g.LogicalEndPoint, g.PhusicalEndPoint, _randomKey);
-					}
-					else
-					{
-						connection = GetConnection(g.LogicalEndPoint, _randomKey);
-					}
-					if (connection != null)
-					{
-						Sender.Tell(connection);
-					}
-					else
-					{
-						_getConnectionInProgress = true;
-						_replyTo = Sender;
-					}
-				}
-				else
-					Stash.Stash();
-			});
-			Receive<ConnectionOpened>(c =>
-			{
-				if (_pool.TryGetValue(_logicalEndpoint, out var cnx))
-				{
-					_pool[_logicalEndpoint][_randomKey] = c;
-				}
-				else
-				{
-					_pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { _randomKey, c } });
-				}
-				_replyTo.Tell(c);
-				_getConnectionInProgress = false;
-				Stash?.UnstashAll();
-			});
+                try
+                {
+                    ConnectionOpened connection = null;
+                    _randomKey = SignSafeMod(Random.Next(), _maxConnectionsPerHosts);
+                    _logicalEndpoint = g.LogicalEndPoint;
+                    if (g.LogicalEndPoint != null && g.PhusicalEndPoint == null)
+                    {
+                        connection = await GetConnection(g.LogicalEndPoint, _randomKey);
+                    }
+                    else if (g.LogicalEndPoint != null && g.PhusicalEndPoint != null)
+                    {
+                        connection = await GetConnection(g.LogicalEndPoint, g.PhusicalEndPoint, _randomKey);
+                    }
+                    else
+                    {
+                        connection = await GetConnection(g.LogicalEndPoint, _randomKey);
+                    }
+                    Sender.Tell(new AskResponse(connection));
+                }
+                catch (Exception e)
+                {
+                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
+                }
+            });
 			Receive<CleanupConnection>(c =>
 			{
 				CleanupConnection(c.Address, c.ConnectionKey);
@@ -105,7 +87,7 @@ namespace SharpPulsar
 		{
 			return Props.Create(() => new ConnectionPool(conf));
 		}
-		private static readonly Random _random = new Random();
+		private static readonly Random Random = new Random();
 
 
 		/// <summary>
@@ -128,46 +110,55 @@ namespace SharpPulsar
 		/// <param name="physicalAddress">
 		///            the real address where the TCP connection should be made </param>
 		/// <returns> a future that will produce the ClientCnx object </returns>
-		private ConnectionOpened GetConnection(DnsEndPoint address, int randomKey)
+		private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint address, int randomKey)
 		{
-			return GetConnection(address, address, randomKey);
+			return await GetConnection(address, address, randomKey);
 		}
-		private ConnectionOpened GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int randomKey)
+		private async ValueTask<ConnectionOpened> GetConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int randomKey)
 		{
 			if (_maxConnectionsPerHosts == 0)
 			{
 				// Disable pooling
-				CreateConnection(logicalAddress, physicalAddress, -1);
-				return null;
+				return await CreateConnection(logicalAddress, physicalAddress, -1);
 			}
 
 			if (_pool.TryGetValue(logicalAddress, out var cnx))
 			{
 				if (cnx.TryGetValue(randomKey, out var cn))
 					return cn;
-				CreateConnection(logicalAddress, physicalAddress, randomKey);
-				return null;
-			}
-			else
-			{
-				CreateConnection(logicalAddress, physicalAddress, randomKey);
-				return null;
 
+				return await CreateConnection(logicalAddress, physicalAddress, randomKey);
 			}
-		}
-		private void CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int connectionKey)
+            return await CreateConnection(logicalAddress, physicalAddress, randomKey);
+        }
+		private async ValueTask<ConnectionOpened> CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int connectionKey)
 		{
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"Connection for {logicalAddress} not found in cache");
 			}
-			string targetBroker = string.Empty;
+			var targetBroker = string.Empty;
 
 			if (!logicalAddress.Equals(physicalAddress))
 				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
 
-			_context.ActorOf(Props.Create(() => new ClientCnx(_clientConfig, physicalAddress, targetBroker)), $"{targetBroker}{connectionKey}".ToAkkaNaming());
-		}
+			var cnx = _context.ActorOf(Props.Create(() => new ClientCnx(_clientConfig, physicalAddress, targetBroker)), $"{targetBroker}{connectionKey}".ToAkkaNaming());
+            var ask = await cnx.Ask<AskResponse>(Connect.Instance);
+            if (ask.Failed)
+                throw ask.Exception;
+
+            var connection = ask.ConvertTo<ConnectionOpened>();
+            if (_pool.TryGetValue(_logicalEndpoint, out _))
+            {
+                _pool[_logicalEndpoint][_randomKey] = connection;
+            }
+            else
+            {
+                _pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { _randomKey, connection } });
+            }
+
+            return connection;
+        }
 		private void CleanupConnection(DnsEndPoint address, int connectionKey)
 		{
 			if (_pool.TryGetValue(address, out var map))

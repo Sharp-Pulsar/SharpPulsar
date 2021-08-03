@@ -331,7 +331,11 @@ namespace SharpPulsar
 				return;
 			}
 			var topicName = TopicName.Get(Topic);
-			var metadata = await _lookup.Ask<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+            if (result.Failed)
+                throw result.Exception;
+            var metadata = result.ConvertTo<PartitionedTopicMetadata>();
 			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
 			var oldPartitionNumber = _topicMetadata.NumPartitions();
 			var currentPartitionNumber = topics.Count;
