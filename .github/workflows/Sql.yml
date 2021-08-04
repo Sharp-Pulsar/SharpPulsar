@@ -40,6 +40,6 @@ jobs:
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd ReleaseSql'
-        run: ./build.cmd ReleaseAdmin --sql_nuget_key ${{ secrets.SQL_NUGET_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
+        run: ./build.cmd ReleaseSql --sql_nuget_key ${{ secrets.SQL_NUGET_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
         env:
           SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SQL_NUGET_KEY }}
