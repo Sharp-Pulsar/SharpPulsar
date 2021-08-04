@@ -49,12 +49,12 @@
     <PackageReference Include="Apache.Avro" Version="1.10.2" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.2.0" />
     <PackageReference Include="avroschemagenerator" Version="1.9.0" />
-    <PackageReference Include="DotNetty.Common" Version="0.6.0" />
+    <PackageReference Include="DotNetty.Common" Version="0.7.0" />
     <PackageReference Include="Google.Protobuf" Version="3.17.3" />
     <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
     <PackageReference Include="IdentityModel" Version="5.1.0" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
-    <PackageReference Include="K4os.Compression.LZ4" Version="1.2.6" />
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.2.12" />
     <PackageReference Include="Mail.dll" Version="3.0.21189.1553" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="5.0.8">
@@ -74,7 +74,7 @@
     </PackageReference>
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
     <PackageReference Include="protobuf-net" Version="3.0.101" />
-    <PackageReference Include="SharpPulsar.Admin" Version="1.0.0" />
+    <PackageReference Include="SharpPulsar.Admin" Version="1.1.0.6" />
     <PackageReference Include="SharpZipLib" Version="1.3.2" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />

@@ -24,6 +24,7 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] Subscription(Durable, Non-durable)	
 
 # Producer
+- [x] Exclusive Producer
 - [x] Partitioned Topics
 - [x] Batching
 - [x] Compression (LZ4, ZLIB, ZSTD, SNAPPY)
@@ -100,9 +101,10 @@ Install the NuGet package [SharpPulsar](https://www.nuget.org/packages/SharpPuls
                 var data = Encoding.UTF8.GetBytes($"tuts-{i}").ToSBytes();
                 producer.NewMessage().Value(data).Send();
             }
+			Thread.Sleep(TimeSpan.FromSeconds(5));
             for (var i = 0; i < 10; i++)
             {
-                var message = (Message<sbyte[]>)consumer.Receive(TimeSpan.FromSeconds(30));
+                var message = (Message<sbyte[]>)consumer.Receive();
                 consumer.Acknowledge(message);
                 var res = Encoding.UTF8.GetString(message.Data.ToBytes());
                 Console.WriteLine($"message '{res}' from topic: {message.TopicName}");

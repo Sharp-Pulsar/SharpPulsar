@@ -86,7 +86,7 @@ namespace SharpPulsar
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
 			_proxyToTargetBrokerAddress = targetBroker;
 			_socketClient = (SocketClient)SocketClient.CreateClient(conf, endPoint, endPoint.Host, Context.System.Log);
-			_socketClient.OnConnect += OnConnected;
+			//_socketClient.OnConnect += OnConnected;
 			_socketClient.OnDisconnect += OnDisconnected;
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>>();
@@ -102,6 +102,7 @@ namespace SharpPulsar
                 try
                 {
                     await _socketClient.Connect();
+                    OnConnected();
                 }
                 catch (Exception e)
                 {
@@ -112,6 +113,7 @@ namespace SharpPulsar
             Receive<ConnectionOpened>(o =>
             {
                 _sender.Tell(new AskResponse(o));
+                _sender = null;
                 Become(Ready);
             });
             ReceiveAny(_=> Stash.Stash());
@@ -286,7 +288,7 @@ namespace SharpPulsar
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
 			_self.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
-		}
+        }
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
@@ -592,24 +594,27 @@ namespace SharpPulsar
 
 			_log.Warning($"Received error from server: {error.Message}");
 			var requestId = (long)error.RequestId;
+            AskResponse response;
+            if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
+            {
+                _log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
+                response = new AskResponse(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic"));
+            }
+            else if (error.Error == ServerError.AuthenticationError)
+            {
+                response = new AskResponse(new PulsarClientException.AuthenticationException(error.Message));
+                _log.Error("Failed to authenticate the client");
+            }
+            else
+                response = new AskResponse(GetPulsarClientException(error.Error, error.Message));
 
-			if (_pendingRequests.TryGetValue(requestId, out var request))
-			{
-				if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
-				{
-					_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
-					request.Requester.Tell(new AskResponse(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
-				}
-				else if (error.Error == ServerError.AuthenticationError)
-				{
-					request.Requester.Tell(new AskResponse(new PulsarClientException.AuthenticationException(error.Message)));
-					_log.Error("Failed to authenticate the client");
-				}
-				else
-					request.Requester.Tell(new AskResponse(GetPulsarClientException(error.Error, error.Message)));
-			}
+            if (_pendingRequests.TryGetValue(requestId, out var request))
+            {
+                request.Requester.Tell(response);
+            }
 			else
 			{
+                _sender?.Tell(response);
 				_log.Warning($"Received unknown request id from server: {error.RequestId}");
 			}
 		}
