@@ -8,23 +8,23 @@ using SharpPulsar.Sql.Message;
 
 namespace SharpPulsar.Sql.Public
 {
-    public class Sql<T>
+    public class SqlInstance<T>
     {
         private readonly SqlQueue<T> _queue;
         private readonly IActorRef _queryActor;
-        public static Sql<SqlData> NewSql(ActorSystem system)
+        public static SqlInstance<SqlData> NewSql(ActorSystem system)
         {
             var q = new SqlQueue<SqlData>();
             var actor = system.ActorOf(SqlWorker.Prop(q));
-            return new Sql<SqlData>(actor, q);
+            return new SqlInstance<SqlData>(actor, q);
         }
-        public static Sql<LiveSqlData> NewLiveSql(ActorSystem system, LiveSqlSession sql)
+        public static SqlInstance<LiveSqlData> NewLiveSql(ActorSystem system, LiveSqlSession sql)
         {
             var q = new SqlQueue<LiveSqlData>();
             var actor = system.ActorOf(LiveQuery.Prop(q, sql));
-            return new Sql<LiveSqlData>(actor, q);
+            return new SqlInstance<LiveSqlData>(actor, q);
         }
-        public Sql(IActorRef actor, SqlQueue<T> queue)
+        public SqlInstance(IActorRef actor, SqlQueue<T> queue)
         {
             _queue = queue;
             _queryActor = actor;
