@@ -96,7 +96,6 @@ namespace SharpPulsar.SocketImpl
             _pipeReader = PipeReader.Create(_networkstream);
 
             _pipeWriter = PipeWriter.Create(_networkstream);
-            if (OnConnect != null) OnConnect();
         }
         public string RemoteConnectionId
         {
