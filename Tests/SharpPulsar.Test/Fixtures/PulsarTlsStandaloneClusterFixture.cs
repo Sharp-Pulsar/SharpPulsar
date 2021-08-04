@@ -119,7 +119,7 @@ namespace SharpPulsar.Test.Fixtures
             var webUrl = "https://127.0.0.1:8443";
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
-            var authCertPath = clienConfigSetting.GetSection("../Certs/ca.cert.pem").Value;
+            var authCertPath = "Certs/ca.cert.pem";
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
             var statsInterval = int.Parse(clienConfigSetting.GetSection("stats-interval").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);

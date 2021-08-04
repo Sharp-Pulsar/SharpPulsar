@@ -233,12 +233,7 @@ namespace SharpPulsar
 			{
 				_metadata = new SortedDictionary<string, string>(Configuration.Properties);
 			}
-            ReceiveAsync<Connect>(async _=> 
-            {
-                _replyTo = Sender;
-                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from producer: {_producerName}"));
-                await Connection(askResponse);
-            });
+            Ready();
 		}
 		private async ValueTask Connection(AskResponse response)
 		{
@@ -252,7 +247,13 @@ namespace SharpPulsar
         }
 		private void Ready()
         {
-			Receive<AckReceived>(a => 
+            ReceiveAsync<Connect>(async _ =>
+            {
+                _replyTo = Sender;
+                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from producer: {_producerName}"));
+                await Connection(askResponse);
+            });
+            Receive<AckReceived>(a => 
 			{				
 				AckReceived(a);
 			});
@@ -1303,7 +1304,6 @@ namespace SharpPulsar
 				if (State.ChangeToReadyState())
 				{
                     _replyTo.Tell(new AskResponse(response));
-					Become(Ready);
 				}
 				return;
 			}

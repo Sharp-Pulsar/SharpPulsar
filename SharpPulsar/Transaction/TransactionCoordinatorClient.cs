@@ -83,15 +83,24 @@ namespace SharpPulsar.Transaction
 			Stash?.UnstashAll();
 		}
 		private async ValueTask StartCoordinator()
-		{
+        {
+            var retryCount = 0;
 			_state = TransactionCoordinatorClientState.Starting;
             var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
-            while (result.Failed)
+            while (result.Failed && retryCount < 10)
             {
                 _log.Error(result.Exception.ToString());
                 _log.Info("Transaction coordinator not started...retrying");
                 result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.TransactionCoordinatorAssign));
+                retryCount++;
             }
+
+            if (result.Failed)
+            {
+                _sender.Tell(result);
+                return;
+            }
+
             var partitionMeta = result.ConvertTo<PartitionedTopicMetadata>();
             if (_log.IsDebugEnabled)
             {
@@ -130,21 +139,23 @@ namespace SharpPulsar.Transaction
                 try
                 {
                     var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-                    var ask = await handler.Ask<string>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
-                    if (ask.Equals("Ready"))
+                    var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                    if (ask.Failed)
                     {
-                        _handlers[0] = handler;
+                        _sender.Tell(ask);
+                        return;
+                    }
+                    if (ask.Data.ToString().Equals("Ready"))
+                    {
+                        _handlers.Add(handler);
                         _handlerMap.Add(0, handler);
                     }
-                    else
-                        _log.Error(ask);
-
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
                 }
-                _sender.Tell(_handlers.Count);
+                _sender.Tell(new AskResponse(_handlers.Count));
             }
             Become(Ready);
         }

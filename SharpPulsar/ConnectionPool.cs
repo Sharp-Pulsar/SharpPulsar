@@ -137,7 +137,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"Connection for {logicalAddress} not found in cache");
 			}
-			var targetBroker = string.Empty;
+			var targetBroker = $"{physicalAddress.Host}:{physicalAddress.Port}";
 
 			if (!logicalAddress.Equals(physicalAddress))
 				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
@@ -145,7 +145,13 @@ namespace SharpPulsar
 			var cnx = _context.ActorOf(Props.Create(() => new ClientCnx(_clientConfig, physicalAddress, targetBroker)), $"{targetBroker}{connectionKey}".ToAkkaNaming());
             var ask = await cnx.Ask<AskResponse>(Connect.Instance);
             if (ask.Failed)
+            {
+                //in a situation where we cannot connect, and since this will be retried,
+                //in order to avoid conflicting actor names, lets kill it
+                _context.Stop(cnx);
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 throw ask.Exception;
+            }
 
             var connection = ask.ConvertTo<ConnectionOpened>();
             if (_pool.TryGetValue(_logicalEndpoint, out _))

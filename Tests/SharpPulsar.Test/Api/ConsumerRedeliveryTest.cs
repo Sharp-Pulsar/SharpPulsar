@@ -66,6 +66,7 @@ namespace SharpPulsar.Test.Api
             }
 
             var messageReceived = 0;
+            Thread.Sleep(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCount; ++i)
             {
                 var m = consumer.Receive();

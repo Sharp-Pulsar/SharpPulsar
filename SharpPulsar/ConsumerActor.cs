@@ -310,12 +310,8 @@ namespace SharpPulsar
 			}
 
 			_topicNameWithoutPartition = _topicName.PartitionedTopicName;
-            ReceiveAsync<Connect>(async _=> 
-            {
-                _replyTo = Sender;
-                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
-                await Connect(askResponse);
-            });
+            
+            Ready();
 		}
 
         private async ValueTask Connect(AskResponse response)
@@ -345,7 +341,7 @@ namespace SharpPulsar
                 }
                 SetCnx(_clientCnx);
                 var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
-                await Connecting(id);
+                await Connecting(id).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -354,6 +350,12 @@ namespace SharpPulsar
         }
 		private void Ready()
         {
+            ReceiveAsync<Connect>(async _ =>
+            {
+                _replyTo = Sender;
+                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
+                await Connect(askResponse).ConfigureAwait(false);
+            });
             Receive<PossibleSendToDeadLetterTopicMessagesRemove>(s =>
             {
                 if (_possibleSendToDeadLetterTopicMessages != null)
@@ -747,15 +749,19 @@ namespace SharpPulsar
             _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
             try
             {
-                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                _log.Info("ONE");
+                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs)).ConfigureAwait(false);
+                _log.Info("TWO");
                 if (result is CommandSuccessResponse _)
                 {
+                    _log.Info("THREE");
                     int currentSize;
                     isDurable = _subscriptionMode == SubscriptionMode.Durable;
                     currentSize = IncomingMessages.Count;
                     if (State.ChangeToReadyState())
                     {
                         ConsumerIsReconnectedToBroker(_clientCnx, currentSize);
+                        _log.Info("FOUR");
                     }
                     else
                     {
@@ -766,16 +772,11 @@ namespace SharpPulsar
                         _replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is closed")));
                         return;
                     }
-                    ResetBackoff();
-                    if (!(_hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
-                    {
-                        IncreaseAvailablePermits(_clientCnx, Conf.ReceiverQueueSize);
-                    }
-                    _replyTo.Tell(new AskResponse());
-                    Become(Ready);
+                    ResetBackoff(isDurable);
                 }
                 else if (result is AskResponse response)
                 {
+                    _log.Info("ELEVEN");
                     if (response.Failed)
                     {
                         DeregisterFromClientCnx();
@@ -809,10 +810,12 @@ namespace SharpPulsar
                     else if (response.Data is ConnectionAlreadySet)
                     {
                         _replyTo.Tell(new AskResponse());
-                        Become(Ready);
                     }
-                    else 
+                    else
+                    {
                         _replyTo.Tell(response);
+
+                    }
                 }
                 else if(result is ConnectionFailed c)
                     ConnectionFailed(c.Exception);
@@ -1807,11 +1810,8 @@ namespace SharpPulsar
 					SendFlowPermitsToBroker(currentCnx, available);
 					break;
 				}
-				else
-				{
-					available = _availablePermits;
-				}
-			}
+                available = _availablePermits;
+            }
 		}
 
 		private void IncreaseAvailablePermits(int delta)
@@ -2496,10 +2496,21 @@ namespace SharpPulsar
 		}
 
 		
-		private void ResetBackoff()
+		private void ResetBackoff(bool isDurable)
 		{
 			_connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
-		}
+
+            _log.Info("FIVE");
+            if (!(_hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
+            {
+                _log.Info("SIX");
+                IncreaseAvailablePermits(_clientCnx, Conf.ReceiverQueueSize);
+                _log.Info("SEVEN");
+            }
+            _log.Info("EIGHT");
+            _replyTo.Tell(new AskResponse());
+            _log.Info("NINE");
+        }
 
 		private void ConnectionClosed(IActorRef cnx)
 		{
@@ -2529,8 +2540,8 @@ namespace SharpPulsar
 
 		internal virtual async ValueTask ReconnectLater(Exception exception)
 		{
-			var askResponse = await _connectionHandler.Ask<AskResponse>(new ReconnectLater(exception));
-            await Connect(askResponse);
+			var askResponse = await _connectionHandler.Ask<AskResponse>(new ReconnectLater(exception)).ConfigureAwait(false);
+            await Connect(askResponse).ConfigureAwait(false);
         }
 
         protected override void Unhandled(object message)

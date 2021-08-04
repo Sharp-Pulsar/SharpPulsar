@@ -296,9 +296,9 @@ class Build : NukeBuild
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
             .SetImage("apachepulsar/pulsar-all:2.8.0")
-            .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true, PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false")
+            .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true, PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false")
             .SetCommand("bash")
-            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16")) ;
+            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)
@@ -415,7 +415,7 @@ class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetVersion("2.0.0")
+              .SetVersion($"2.0.0.{BuildNumber}")
               .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
@@ -435,11 +435,11 @@ class Build : NukeBuild
                 .EnableNoBuild()
                 .EnableNoRestore()
                 .SetVersion($"1.0.0.{BuildNumber}")
-                .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo.")
+                .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo. How to use sample can be found here https://github.com/eaba/SharpPulsar/blob/Admin/Tests/SharpPulsar.Test.Admin/TransactionAPITest.cs")
                 .SetDescription("Implements Apache Pulsar Admin and Function REST API.")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar")
                 .AddAuthors("Ebere Abanonu (@mestical)")
-                .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
+                .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar/tree/Admin/Extras/SharpPulsar.Admin")
                 .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
         });
@@ -454,7 +454,7 @@ class Build : NukeBuild
               .EnableNoBuild()
               .EnableNoRestore()
               .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("Try to reduce allocation along hot paths")
+              .SetPackageReleaseNotes("Made it possible for user to handle connection errors")
               .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")

@@ -105,13 +105,13 @@ namespace SharpPulsar
                 }
                 catch (Exception e)
                 {
-                   Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
+                   _sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
                 }
             });
 
             Receive<ConnectionOpened>(o =>
             {
-                Sender.Tell(new AskResponse(o));
+                _sender.Tell(new AskResponse(o));
                 Become(Ready);
             });
             ReceiveAny(_=> Stash.Stash());
@@ -235,7 +235,7 @@ namespace SharpPulsar
 			_producers.Clear();
 			_consumers.Clear();
 
-			_timeoutTask.Cancel(true);
+			_timeoutTask?.Cancel(true);
 		}
 		private void ExceptionCaught(Exception cause)
 		{

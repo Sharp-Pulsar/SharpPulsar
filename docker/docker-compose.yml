@@ -15,6 +15,7 @@ services:
       bash -c "bin/apply-config-from-env.py conf/standalone.conf &&
                bin/pulsar standalone"
     environment:
+      PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
       PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled: "true"
       PULSAR_PREFIX_nettyMaxFrameSizeBytes: 5253120
       PULSAR_PREFIX_transactionCoordinatorEnabled: "true"
@@ -46,6 +47,7 @@ services:
                bin/apply-config-from-env.py conf/standalone.conf &&
                bin/pulsar standalone -nfw"
     environment:
+      PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
       PULSAR_PREFIX_brokerServicePortTls: 6651
       PULSAR_PREFIX_webServicePortTls: 8443
       PULSAR_PREFIX_tlsCertificateFilePath: /pulsar/ssl/broker.cert.pem
