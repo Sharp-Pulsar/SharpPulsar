@@ -56,6 +56,12 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "admin" },
     InvokedTargets = new[] { nameof(ReleaseAdmin) })]
+
+[GitHubActions("Sql",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "Sql" },
+    InvokedTargets = new[] { nameof(ReleaseSql) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
