@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Messages;
 using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;

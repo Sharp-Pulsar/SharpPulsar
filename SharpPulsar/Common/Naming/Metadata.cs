@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
-using HashMapHelper = SharpPulsar.Sql.Presto.HashMapHelper;
+using SharpPulsar.Extension;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,8 +42,8 @@ namespace SharpPulsar.Common.Naming
 				return;
 			}
 
-			int size = 0;
-			foreach (KeyValuePair<string, string> e in HashMapHelper.SetOfKeyValuePairs(metadata))
+			var size = 0;
+			foreach (var e in HashMapHelper.SetOfKeyValuePairs(metadata))
 			{
 				size += (e.Key.Length + e.Value.Length);
 				if (size > MaxMetadataSize)

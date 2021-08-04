@@ -6,10 +6,11 @@ using System.Text.RegularExpressions;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
+using SharpPulsar.Extension;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using HashMapHelper = SharpPulsar.Sql.Presto.HashMapHelper;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
