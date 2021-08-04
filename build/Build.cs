@@ -54,7 +54,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 [GitHubActions("Admin",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "admin" },
+    OnPushBranches = new[] { "Admin" },
     InvokedTargets = new[] { nameof(ReleaseAdmin) })]
 class Build : NukeBuild
 {
@@ -279,22 +279,22 @@ class Build : NukeBuild
         });
 
     Target StartPulsar => _ => _
-      .DependsOn(CheckDockerVersion)
-      .Executes(() =>
-       {
-           DockerTasks.DockerRun(b =>
-            b
-            .SetDetach(true)
-            .SetInteractive(true)
-            .SetName("pulsar_test")
-            .SetPublish("6650:6650", "8080:8080","8081:8081", "2181:2181")
-            .SetMount("source=pulsardata,target=/pulsar/data")
-            .SetMount("source=pulsarconf,target=/pulsar/conf")
-            .SetImage("apachepulsar/pulsar-all:2.8.0")
-            .SetEnv(@"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true, PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false")
-            .SetCommand("bash")
-            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16")) ;
-       });
+        .DependsOn(CheckDockerVersion)
+        .Executes(() =>
+        {
+            DockerTasks.DockerRun(b =>
+                b
+                    .SetDetach(true)
+                    .SetInteractive(true)
+                    .SetName("pulsar_test")
+                    .SetPublish("6650:6650", "8080:8080", "8081:8081", "2181:2181")
+                    .SetMount("source=pulsardata,target=/pulsar/data")
+                    .SetMount("source=pulsarconf,target=/pulsar/conf")
+                    .SetImage("apachepulsar/pulsar-all:2.8.0")
+                    .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true, PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false")
+                    .SetCommand("bash")
+                    .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2"));
+        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)
       .Executes(() =>
@@ -429,12 +429,12 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .EnableNoRestore()
-                .SetVersion($"1.0.0.{BuildNumber}")
-                .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo.")
+                .SetVersion($"1.1.0.{BuildNumber}")
+                .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo. How to use sample can be found here https://github.com/eaba/SharpPulsar/blob/Admin/Tests/SharpPulsar.Test.Admin/TransactionAPITest.cs")
                 .SetDescription("Implements Apache Pulsar Admin and Function REST API.")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar")
                 .AddAuthors("Ebere Abanonu (@mestical)")
-                .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
+                .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar/tree/Admin/Extras/SharpPulsar.Admin")
                 .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
         });

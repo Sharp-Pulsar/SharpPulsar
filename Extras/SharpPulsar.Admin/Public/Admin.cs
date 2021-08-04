@@ -9339,9 +9339,9 @@ namespace SharpPulsar.Admin.Public
         /// <param name='tenantInfo'>
         /// TenantInfo
         /// </param>
-        public HttpOperationResponse UpdateTenantWithHttpMessages(string tenant, TenantInfo tenantInfo = null, Dictionary<string, List<string>> customHeaders = null)
+        public HttpOperationResponse UpdateTenant(string tenant, TenantInfo tenantInfo = null, Dictionary<string, List<string>> customHeaders = null)
         {
-            return UpdateTenantWithHttpMessagesAsync(tenant, tenantInfo, customHeaders).GetAwaiter().GetResult();
+            return UpdateTenantAsync(tenant, tenantInfo, customHeaders).GetAwaiter().GetResult();
         }
         /// <summary>
         /// Update the admins for a tenant.
@@ -9355,97 +9355,97 @@ namespace SharpPulsar.Admin.Public
         /// <param name='tenantInfo'>
         /// TenantInfo
         /// </param>
-        public async Task<HttpOperationResponse> UpdateTenantWithHttpMessagesAsync(string tenant, TenantInfo tenantInfo = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse> UpdateTenantAsync(string tenant, TenantInfo tenantInfo = null, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.UpdateTenantWithHttpMessagesAsync(tenant, tenantInfo, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public async Task<HttpOperationResponse<TransactionCoordinatorStats>> GetCoordinatorStatsByIdWithHttpMessagesAsync(int coordinatorId, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionCoordinatorStats>> GetCoordinatorStatsByIdAsync(int coordinatorId, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetCoordinatorStatsByIdAsync(coordinatorId, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionCoordinatorStats> GetCoordinatorStatsByIdWithHttpMessages(int coordinatorId, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        public HttpOperationResponse<TransactionCoordinatorStats> GetCoordinatorStatsById(int coordinatorId, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            return GetCoordinatorStatsByIdWithHttpMessagesAsync(coordinatorId, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetCoordinatorStatsByIdAsync(coordinatorId, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<IDictionary<int, TransactionCoordinatorStats>>> GetCoordinatorStatsWithHttpMessagesAsync(bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IDictionary<int, TransactionCoordinatorStats>>> GetCoordinatorStatsAsync(bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.CoordinatorStatsAsync(authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<IDictionary<int, TransactionCoordinatorStats>> GetCoordinatorStatsWithHttpMessages(bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
+        public HttpOperationResponse<IDictionary<int, TransactionCoordinatorStats>> GetCoordinatorStats(bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null)
         {
-            return GetCoordinatorStatsWithHttpMessagesAsync(authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetCoordinatorStatsAsync(authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionInBufferStats>> GetTransactionInBufferStatsWithHttpMessagesAsync(string tenant, string nameSpace, TxnID tx, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionInBufferStats>> GetTransactionInBufferStatsAsync(string tenant, string nameSpace, TxnID tx, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetTransactionInBufferStatsAsync(tenant, nameSpace, tx, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionInBufferStats> GetTransactionInBufferStatsWithHttpMessages(string tenant, string nameSpace, TxnID tx, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionInBufferStats> GetTransactionInBufferStats(string tenant, string nameSpace, TxnID tx, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetTransactionInBufferStatsWithHttpMessagesAsync(tenant, nameSpace, tx, topic, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetTransactionInBufferStatsAsync(tenant, nameSpace, tx, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionInPendingAckStats>> GetTransactionInPendingAckStatsWithHttpMessagesAsync(string tenant, string nameSpace, TxnID tx, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionInPendingAckStats>> GetTransactionInPendingAckStatsAsync(string tenant, string nameSpace, TxnID tx, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetTransactionInPendingAckStatsAsync(tenant, nameSpace, tx, topic, subName, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionInPendingAckStats> GetTransactionInPendingAckStatsWithHttpMessages(string tenant, string nameSpace, TxnID tx, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionInPendingAckStats> GetTransactionInPendingAckStats(string tenant, string nameSpace, TxnID tx, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetTransactionInPendingAckStatsWithHttpMessagesAsync(tenant, nameSpace, tx, topic, subName, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetTransactionInPendingAckStatsAsync(tenant, nameSpace, tx, topic, subName, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionMetadata>> GetTransactionMetadataWithHttpMessagesAsync(TxnID tx, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionMetadata>> GetTransactionMetadataAsync(TxnID tx, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetTransactionMetadataAsync(tx, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionMetadata> GetTransactionMetadataWithHttpMessages(TxnID tx, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionMetadata> GetTransactionMetadata(TxnID tx, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetTransactionMetadataWithHttpMessagesAsync(tx, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetTransactionMetadataAsync(tx, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionBufferStats>> GetTransactionBufferStatsWithHttpMessagesAsync(string tenant, string nameSpace, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionBufferStats>> GetTransactionBufferStatsAsync(string tenant, string nameSpace, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetTransactionBufferStatsAsync(tenant, nameSpace, topic, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionBufferStats> GetTransactionBufferStatsWithHttpMessages(string tenant, string nameSpace, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionBufferStats> GetTransactionBufferStats(string tenant, string nameSpace, string topic, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetTransactionBufferStatsWithHttpMessagesAsync(tenant, nameSpace, topic, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetTransactionBufferStatsAsync(tenant, nameSpace, topic, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionPendingAckStats>> GetPendingAckStatsWithHttpMessagesAsync(string tenant, string nameSpace, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionPendingAckStats>> GetPendingAckStatsAsync(string tenant, string nameSpace, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetPendingAckStatsAsync(tenant, nameSpace, topic, subName, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionPendingAckStats> GetPendingAckStatsWithHttpMessages(string tenant, string nameSpace, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionPendingAckStats> GetPendingAckStats(string tenant, string nameSpace, string topic, string subName, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetPendingAckStatsWithHttpMessagesAsync(tenant, nameSpace, topic, subName, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetPendingAckStatsAsync(tenant, nameSpace, topic, subName, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsByCoordinatorIdWithHttpMessagesAsync(int coordinatorId, long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsByCoordinatorIdAsync(int coordinatorId, long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetSlowTransactionsByCoordinatorIdAsync(coordinatorId, timeout, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<IDictionary<string, TransactionMetadata>> GetSlowTransactionsByCoordinatorIdWithHttpMessages(int coordinatorId, long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, TransactionMetadata>> GetSlowTransactionsByCoordinatorId(int coordinatorId, long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetSlowTransactionsByCoordinatorIdWithHttpMessagesAsync(coordinatorId, timeout, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetSlowTransactionsByCoordinatorIdAsync(coordinatorId, timeout, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsWithHttpMessagesAsync(long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<IDictionary<string, TransactionMetadata>>> GetSlowTransactionsAsync(long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetSlowTransactionsAsync(timeout, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<IDictionary<string, TransactionMetadata>> GetSlowTransactionsWithHttpMessages(long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<IDictionary<string, TransactionMetadata>> GetSlowTransactions(long timeout, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetSlowTransactionsWithHttpMessagesAsync(timeout, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetSlowTransactionsAsync(timeout, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionCoordinatorInternalStats>> GetCoordinatorInternalStatsWithHttpMessagesAsync(int coordinatorId, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionCoordinatorInternalStats>> GetCoordinatorInternalStatsAsync(int coordinatorId, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetCoordinatorInternalStatsAsync(coordinatorId, metadata, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionCoordinatorInternalStats> GetCoordinatorInternalStatsWithHttpMessages(int coordinatorId, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionCoordinatorInternalStats> GetCoordinatorInternalStats(int coordinatorId, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetCoordinatorInternalStatsWithHttpMessagesAsync(coordinatorId, metadata, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetCoordinatorInternalStatsAsync(coordinatorId, metadata, authoritative, customHeaders).GetAwaiter().GetResult();
         }
-        public async Task<HttpOperationResponse<TransactionPendingAckInternalStats>> GetPendingAckInternalStatsWithHttpMessagesAsync(string tenant, string nameSpace, string topic, string subName, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public async Task<HttpOperationResponse<TransactionPendingAckInternalStats>> GetPendingAckInternalStatsAsync(string tenant, string nameSpace, string topic, string subName, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
             return await _api.GetPendingAckInternalStatsAsync(tenant, nameSpace, topic, subName, metadata, authoritative, customHeaders, cancellationToken).ConfigureAwait(false);
         }
-        public HttpOperationResponse<TransactionPendingAckInternalStats> GetPendingAckInternalStatsWithHttpMessages(string tenant, string nameSpace, string topic, string subName, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
+        public HttpOperationResponse<TransactionPendingAckInternalStats> GetPendingAckInternalStats(string tenant, string nameSpace, string topic, string subName, bool metadata = false, bool? authoritative = false, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default)
         {
-            return GetPendingAckInternalStatsWithHttpMessagesAsync(tenant, nameSpace, topic, subName, metadata, authoritative, customHeaders).GetAwaiter().GetResult();
+            return GetPendingAckInternalStatsAsync(tenant, nameSpace, topic, subName, metadata, authoritative, customHeaders).GetAwaiter().GetResult();
         }
     }
 }
