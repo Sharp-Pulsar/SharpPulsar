@@ -49,7 +49,7 @@ namespace SharpPulsar.Sql.Presto.Facebook.Type
 				};
 				short maxZoneKey = 0;
                 var lines = ReadLines(() => Assembly.GetExecutingAssembly()
-                                    .GetManifestResourceStream("SharpPulsar.Presto.Facebook.Type.zone-index.properties"),
+                                    .GetManifestResourceStream("SharpPulsar.Sql.Presto.Facebook.Type.zone-index.properties"),
                       Encoding.UTF8)
                 .ToList();
                 //var assembly = typeof(TimeZoneKey).GetTypeInfo().Assembly;

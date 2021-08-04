@@ -482,7 +482,7 @@ class Build : NukeBuild
                 .EnableNoRestore()
                 .SetAssemblyVersion($"1.0.{BuildNumber}")
                 .SetVersion($"1.0.{BuildNumber}")
-                .SetPackageReleaseNotes("Expose HashMapHelper as a public class")
+                .SetPackageReleaseNotes("Update Manifest Resource assembly")
                 .SetDescription("Implements Apache Pulsar Trino's REST API.")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar", "Trino")
                 .AddAuthors("Ebere Abanonu (@mestical)")
