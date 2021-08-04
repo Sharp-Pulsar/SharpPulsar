@@ -10,10 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="DTO\" />
   </ItemGroup>
 

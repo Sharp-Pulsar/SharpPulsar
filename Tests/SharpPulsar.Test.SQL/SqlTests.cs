@@ -1,15 +1,13 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.Messages;
-using SharpPulsar.Schemas;
-using SharpPulsar.Sql.Client;
+﻿using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.Test.SQL.Fixtures;
-using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
+using SharpPulsar.Sql;
+using SharpPulsar.Sql.Public;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -19,21 +17,17 @@ namespace SharpPulsar.Test.SQL
 	public class SqlTests
 	{
 		private readonly ITestOutputHelper _output;
-		private readonly PulsarClient _client;
-
 		public SqlTests(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
-			_client = fixture.Client;
 		}
 		[Fact(Skip ="Issue with sql-worker on github action")]
 		//[Fact]
 		public virtual void TestQuerySql()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
-			PublishMessages(topic, 50);
             Thread.Sleep(TimeSpan.FromSeconds(30));
-			var sql = PulsarSystem.NewSql();
+			var sql = Sql<SqlData>.NewSql(null);
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 			var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
 			sql.SendQuery(query);
@@ -63,20 +57,6 @@ namespace SharpPulsar.Test.SQL
             sql.SendQuery(query);
             response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
             Assert.Equal(45, receivedCount);
-		}
-		private ISet<string> PublishMessages(string topic, int count)
-		{
-			ISet<string> keys = new HashSet<string>();
-			var builder = new ProducerConfigBuilder<DataOp>()
-				.Topic(topic);
-			var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
-			for (var i = 0; i < count; i++)
-			{
-				var key = "key" + i;
-				producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).Send();
-				keys.Add(key);
-			}
-			return keys;
 		}
 	}
 	public class DataOp

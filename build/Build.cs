@@ -85,6 +85,9 @@ class Build : NukeBuild
     [Parameter("Admin NuGet API Key", Name = "ADMIN_NUGET_KEY")]
     readonly string AdminNugetApiKey;
     
+    [Parameter("Sql NuGet API Key", Name = "SQL_NUGET_KEY")]
+    readonly string SqlNugetApiKey;
+    
     [Parameter("GitHub Build Number", Name = "BUILD_NUMBER")]
     readonly string BuildNumber;
 
@@ -121,6 +124,14 @@ class Build : NukeBuild
             DotNetRestore(s => s
                 .SetProjectFile(project));
         });
+    Target RestoreSql => _ => _
+        .Executes(() =>
+        {
+            var projectName = "SharpPulsar.Sql";
+            var project = Solution.GetProject(projectName);
+            DotNetRestore(s => s
+                .SetProjectFile(project));
+        });
 
     Target Compile => _ => _
         .DependsOn(Restore)
@@ -136,6 +147,17 @@ class Build : NukeBuild
         .Executes(() =>
         {
             var projectName = "SharpPulsar.Admin";
+            var project = Solution.GetProject(projectName);
+            DotNetBuild(s => s
+                .SetProjectFile(project)
+                .SetNoRestore(InvokedTargets.Contains(Restore))
+                .SetConfiguration(Configuration));
+        });
+    Target CompileSql => _ => _
+        .DependsOn(RestoreSql)
+        .Executes(() =>
+        {
+            var projectName = "SharpPulsar.Sql";
             var project = Solution.GetProject(projectName);
             DotNetBuild(s => s
                 .SetProjectFile(project)
@@ -244,7 +266,6 @@ class Build : NukeBuild
                 }
             }
         });
-
     Target TxnTest => _ => _
         .DependsOn(Test)
         .Triggers(StopPulsar)
@@ -282,7 +303,6 @@ class Build : NukeBuild
                 }
             }
         });
-
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
       .Executes(() =>
@@ -443,6 +463,26 @@ class Build : NukeBuild
                 .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
         });
+
+    Target PackSql => _ => _
+        .DependsOn(CompileSql)
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Sql");
+            DotNetPack(s => s
+                .SetProject(project)
+                .SetConfiguration(Configuration)
+                .EnableNoBuild()
+                .EnableNoRestore()
+                .SetVersion($"1.0.0.{BuildNumber}")
+                .SetPackageReleaseNotes("First release SharpPulsar.Sql - this was taken from the main repo.")
+                .SetDescription("Implements Apache Pulsar Trino's REST API.")
+                .SetPackageTags("Apache Pulsar", "SharpPulsar", "Trino")
+                .AddAuthors("Ebere Abanonu (@mestical)")
+                .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar/tree/Sql/Extras/SharpPulsar.Sql")
+                .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
+
+        });
     Target PackBeta => _ => _
       .DependsOn(Compile)
       .Executes(() =>
@@ -542,6 +582,27 @@ class Build : NukeBuild
               });
       });
 
+    Target ReleaseSql => _ => _
+        .DependsOn(PackSql)
+        .Requires(() => NugetApiUrl)
+        .Requires(() => !SqlNugetApiKey.IsNullOrEmpty())
+        .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+        .Requires(() => !BuildNumber.IsNullOrEmpty())
+        .Requires(() => Configuration.Equals(Configuration.Release))
+        .Executes(() =>
+        {
+            GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
+                .NotEmpty()
+                .Where(x => !x.EndsWith("symbols.nupkg"))
+                .ForEach(x =>
+                {
+                    DotNetNuGetPush(s => s
+                        .SetTargetPath(x)
+                        .SetSource(NugetApiUrl)
+                        .SetApiKey(SqlNugetApiKey)
+                    );
+                });
+        });
 
     static void Information(string info)
     {
