@@ -158,8 +158,8 @@ namespace SharpPulsar
 				var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
 				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration)));
-                var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
-                if (!co.Errored)
+                var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
+                if (!co.Failed)
                 {
                     _producers.Add(producer);
                     var routee = Routee.FromActorRef(producer);
@@ -331,7 +331,11 @@ namespace SharpPulsar
 				return;
 			}
 			var topicName = TopicName.Get(Topic);
-			var metadata = await _lookup.Ask<PartitionedTopicMetadata>(new GetPartitionedTopicMetadata(topicName));
+
+            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+            if (result.Failed)
+                throw result.Exception;
+            var metadata = result.ConvertTo<PartitionedTopicMetadata>();
 			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
 			var oldPartitionNumber = _topicMetadata.NumPartitions();
 			var currentPartitionNumber = topics.Count;
@@ -351,8 +355,8 @@ namespace SharpPulsar
 					var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration)));
-                    var co = await producer.Ask<ProducerCreation>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
-                    if(!co.Errored)
+                    var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
+                    if(!co.Failed)
                     {
                         _producers.Add(producer);
                         var routee = Routee.FromActorRef(producer);

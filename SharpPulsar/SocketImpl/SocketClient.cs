@@ -34,7 +34,7 @@ namespace SharpPulsar.SocketImpl
         private readonly string _serviceUrl;
         private string _targetServerName;
 
-        private const int _chunkSize = 75000;
+        private const int ChunkSize = 75000;
 
 
         private ChunkingPipeline _pipeline;
@@ -82,21 +82,21 @@ namespace SharpPulsar.SocketImpl
             //_connectonId = $"{_networkstream.}";
 
         }
-        public void Connect()
+        public async ValueTask Connect()
         {
             var host = _server.Host;
-            var networkStream = GetStream(_server).GetAwaiter().GetResult();
+            var networkStream = await GetStream(_server);
 
             if (_encrypt)
                 networkStream = EncryptStream(networkStream, host);
 
             _networkstream = networkStream;
 
-            _pipeline = new ChunkingPipeline(networkStream, _chunkSize);
+            _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
             _pipeReader = PipeReader.Create(_networkstream);
 
             _pipeWriter = PipeWriter.Create(_networkstream);
-            OnConnect();
+            if (OnConnect != null) OnConnect();
         }
         public string RemoteConnectionId
         {
@@ -191,11 +191,15 @@ namespace SharpPulsar.SocketImpl
                 cancellation?.Cancel();
                 _pipeReader?.Complete();
                 _pipeWriter?.Complete();
-                _networkstream.Close();
-                _networkstream.Dispose();
+                _networkstream?.Close();
+                _networkstream?.Dispose();
             }
-            catch { }
-            OnDisconnect();
+            catch
+            {
+                // ignored
+            }
+
+            if (OnDisconnect != null) OnDisconnect();
         }
         private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {
@@ -300,41 +304,39 @@ namespace SharpPulsar.SocketImpl
 
         private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            bool result;
-            switch (sslPolicyErrors)
+            var error = sslPolicyErrors.ToString();
+            if (sslPolicyErrors == SslPolicyErrors.None)
+                return true;
+
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateChainErrors))
             {
-                case SslPolicyErrors.None:
-                    result = true;
-                    break;
-                case SslPolicyErrors.RemoteCertificateChainErrors:
-
-                    if (_trustedCertificateAuthority is null)
-                        return false;
-
-                    chain.ChainPolicy.ExtraStore.Add(_trustedCertificateAuthority);
-                    _ = chain.Build((X509Certificate2)certificate);
-                    for (var i = 0; i < chain.ChainElements.Count; i++)
-                    {
-                        if (chain.ChainElements[i].Certificate.Thumbprint == _trustedCertificateAuthority.Thumbprint)
-                            return true;
-                    }
+                if (_trustedCertificateAuthority is null)
                     return false;
-                case SslPolicyErrors.RemoteCertificateNameMismatch:
-                    var cert = new X509Certificate2(certificate);
-                    var cn = cert.GetNameInfo(X509NameType.SimpleName, false);
-                    var cleanName = cn?.Substring(cn.LastIndexOf('*') + 1);
-                    string[] addresses = { _serviceUrl, _targetServerName };
 
-                    // if the ending of the sni and servername do match the common name of the cert, fail
-                    result = addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
-                    break;
-
-                default:
-                    result = false;
-                    break;
+                chain.ChainPolicy.ExtraStore.Add(_trustedCertificateAuthority);
+                _ = chain.Build((X509Certificate2)certificate);
+                for (var i = 0; i < chain.ChainElements.Count; i++)
+                {
+                    if (chain.ChainElements[i].Certificate.Thumbprint == _trustedCertificateAuthority.Thumbprint)
+                        return true;
+                }
+                return false;
             }
 
-            return result;
+            if (sslPolicyErrors.HasFlag(SslPolicyErrors.RemoteCertificateNameMismatch))
+            {
+                var cert = new X509Certificate2(certificate);
+                var cn = cert.GetNameInfo(X509NameType.SimpleName, false);
+                var cleanName = cn?.Substring(cn.LastIndexOf('*') + 1);
+                string[] addresses = { _serviceUrl, _targetServerName };
+
+                // if the ending of the sni and servername do match the common name of the cert, fail
+                return addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
+
+            }
+            
+
+            return false;
         }
 
         public void Connected()

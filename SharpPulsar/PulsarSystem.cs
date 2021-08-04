@@ -12,8 +12,8 @@ using SharpPulsar.User;
 using SharpPulsar.User.Events;
 using System;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
+using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar
 {
@@ -110,8 +110,11 @@ namespace SharpPulsar
             if (conf.EnableTransaction)
             {
                 _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_lookup, _cnxPool, _generator, conf));
-                var cos = _tcClient.Ask<int>("Start").GetAwaiter().GetResult();
-                if (cos <= 0)
+                var cos = _tcClient.Ask<AskResponse>("Start").GetAwaiter().GetResult();
+                if (cos.Failed)
+                    throw cos.Exception;
+
+                if ((int)cos.Data <= 0)
                     throw new Exception($"Tranaction Coordinator has '{cos}' transaction handler");
             } 
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
@@ -129,7 +132,15 @@ namespace SharpPulsar
             _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
+            {
                 _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_lookup, _cnxPool, _generator, conf));
+                var cos = _tcClient.Ask<AskResponse>("Start").GetAwaiter().GetResult();
+                if (cos.Failed)
+                    throw cos.Exception;
+
+                if ((int)cos.Data <= 0)
+                    throw new Exception($"Tranaction Coordinator has '{cos}' transaction handler");
+            }
 
             _client = _actorSystem.ActorOf(Props.Create<PulsarClientActor>(conf, _cnxPool, _tcClient, _lookup, _generator), "PulsarClient");
             _lookup.Tell(new SetClient(_client));

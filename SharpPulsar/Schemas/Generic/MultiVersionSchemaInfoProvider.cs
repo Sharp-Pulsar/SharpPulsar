@@ -8,6 +8,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Cache;
 using System;
 using System.Threading.Tasks;
+using SharpPulsar.Messages.Consumer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -69,8 +70,11 @@ namespace SharpPulsar.Schemas.Generic
 
         public async ValueTask<ISchemaInfo> LatestSchema()
         {
-            var schema = await _lookup.Ask<GetSchemaInfoResponse>(new GetSchema(_topicName)).ConfigureAwait(false);
-            var sch = schema.SchemaInfo;
+            var schema = await _lookup.Ask<AskResponse>(new GetSchema(_topicName)).ConfigureAwait(false);
+            if (schema.Failed)
+                throw schema.Exception;
+
+            var sch = schema.ConvertTo<GetSchemaInfoResponse>().SchemaInfo;
             _cache.Put(BytesSchemaVersion.Of(sch.Schema), sch);
             return sch;
         }

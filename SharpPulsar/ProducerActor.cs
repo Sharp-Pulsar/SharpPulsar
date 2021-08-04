@@ -233,41 +233,27 @@ namespace SharpPulsar
 			{
 				_metadata = new SortedDictionary<string, string>(Configuration.Properties);
 			}
-            Receive<Connect>(c=> 
-            {
-                _replyTo = Sender;
-                Become(Connection);
-            });
+            Ready();
 		}
-		private void Connection()
+		private async ValueTask Connection(AskResponse response)
 		{
-			Receive<ConnectionOpened>(c => {
-				Become(()=>ConnectionOpened(c));
-			});
-            Receive<Connect>(_ => 
+            if (response.Failed)
             {
-                _connectionHandler.Tell(new GrabCnx($"Create connection from producer: {_producerName}"));
-            });
-			Receive<ConnectionFailed>(c => {
-				ConnectionFailed(c.Exception);
-			});
-			Receive<Failure>(c => {
-				_log.Error($"Connection to the server failed: {c.Exception}/{c.Timestamp}");
-			});
-			Receive<ConnectionAlreadySet>(_ => {
-				Become(Ready);
-			});
-			ReceiveAny(a => 
-			{
-				var message = a;
-				Stash.Stash();
-			}); 
-			Stash?.UnstashAll(); 
-            _connectionHandler.Tell(new GrabCnx($"Create connection from producer: {_producerName}"));
+                _replyTo.Tell(response);
+                return;
+            }
+
+            await ConnectionOpened(response.ConvertTo<ConnectionOpened>());
         }
 		private void Ready()
         {
-			Receive<AckReceived>(a => 
+            ReceiveAsync<Connect>(async _ =>
+            {
+                _replyTo = Sender;
+                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from producer: {_producerName}"));
+                await Connection(askResponse);
+            });
+            Receive<AckReceived>(a => 
 			{				
 				AckReceived(a);
 			});
@@ -292,8 +278,9 @@ namespace SharpPulsar
 			Receive<BatchTask>( _ => {
 				RunBatchTask();
 			});
-			Receive<ConnectionClosed>(m => {
-				ConnectionClosed(m.ClientCnx);
+			ReceiveAsync<ConnectionClosed>(async m => 
+            {
+				await ConnectionClosed(m.ClientCnx);
 			});
 			Receive<Flush>(_ => {
 				Flush();
@@ -340,7 +327,7 @@ namespace SharpPulsar
 			});
 			Stash?.UnstashAll();
 		}
-		private void ConnectionOpened(ConnectionOpened o)
+		private async ValueTask ConnectionOpened(ConnectionOpened o)
 		{
 			// we set the cnx reference before registering the producer on the cnx, so if the cnx breaks before creating the
 			// producer, it will try to grab a new cnx
@@ -392,74 +379,28 @@ namespace SharpPulsar
 					}
 				}
 			}
-			Receive<NewRequestIdResponse>(id =>
-			{
-				_requestId = id.Id;
-				_connectionHandler.Tell(GetEpoch.Instance);
-
-			});
-			Receive<GetEpochResponse>(epoch =>
-			{
-				_log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-				var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch.Epoch, _userProvidedProducerName, Conf.AccessMode);
-				var payload = new Payload(cmd, _requestId, "NewProducer");
-				_cnx.Tell(payload);
-			});
-			Receive<ProducerResponse>(response =>
-			{
-				var producerName = response.ProducerName;
-				var lastSequenceId = response.LastSequenceId;
-
-				_schemaVersion = new Option<byte[]>(response.SchemaVersion);
-
-				if (_schemaVersion.HasValue)
-					SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);
-				if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-				{
-					_log.Info($"[{Topic}] [{producerName}] State:{State.ConnectionState}, poisoning {_cnx.Path} to death. Becoming 'Connection'");
-					_cnx.Tell(new RemoveProducer(_producerId));
-					_cnx.Tell(PoisonPill.Instance);
-					return;
-				}
-
-				if (_batchMessageContainer != null)
-					_batchMessageContainer.Container.ProducerName = producerName;
-
-				_connectionHandler.Tell(ResetBackoff.Instance);
-				_log.Info($"[{Topic}] [{producerName}] Created producer on cnx {_cnx.Path}");
-				_connectionId = _cnx.Path.ToString();
-				_connectedSince = DateTime.Now.ToLongDateString();
-				if (string.IsNullOrWhiteSpace(_producerName))
-				{
-					_producerName = producerName;
-				}
-				if (_msgIdGenerator == 0 && Conf.InitialSequenceId == null)
-				{
-					_lastSequenceIdPublished = lastSequenceId;
-					_msgIdGenerator = lastSequenceId + 1;
-				}
-				if (BatchMessagingEnabled)
-				{
-					var interval = TimeUnit.MICROSECONDS.ToMicroseconds(Conf.BatchingMaxPublishDelayMicros);
-					_batchTimerTask = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(0), TimeSpan.FromTicks(interval), Self, BatchTask.Instance, ActorRefs.NoSender);
-				}
-				ResendMessages(response);
-
-			});
-			Receive<ClientExceptions>(exc => 
-			{
-                var ex = exc.Exception;
+            var response  = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+            _requestId = response.Id;
+            var epochResponse = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
+            var epoch = epochResponse.Epoch;
+            _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
+            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode);
+            var payload = new Payload(cmd, _requestId, "NewProducer");
+            var request = await _cnx.Ask<AskResponse>(payload);
+            if (request.Failed)
+            {
+                var ex = request.Exception;
                 _log.Error($"[{Topic}] [{_producerName}] Failed to create producer: {ex}");
                 _cnx.Tell(new RemoveProducer(_producerId));
                 if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
                 {
                     //cx.Tell(PoisonPill.Instance);
-                    _replyTo.Tell(new ProducerCreation(ex));
+                    _replyTo.Tell(new AskResponse(ex));
                 }
                 else if (ex is TopicDoesNotExistException e)
                 {
                     _log.Error($"Failed to close producer on TopicDoesNotExistException: {Topic}");
-                    _replyTo.Tell(new ProducerCreation(e));
+                    _replyTo.Tell(new AskResponse(e));
                 }
                 else if (ex is ProducerBlockedQuotaExceededException)
                 {
@@ -467,59 +408,98 @@ namespace SharpPulsar
                     var pe = new ProducerBlockedQuotaExceededException($"The backlog quota of the topic {Topic} that the producer {_producerName} produces to is exceeded");
 
                     FailPendingMessages(_cnx, pe);
-                    _replyTo.Tell(new ProducerCreation(pe));
+                    _replyTo.Tell(new AskResponse(pe));
                 }
                 else if (ex is ProducerBlockedQuotaExceededError pexe)
                 {
                     _log.Warning($"[{_producerName}] [{Topic}] Producer is blocked on creation because backlog exceeded on topic.");
 
-                    _replyTo.Tell(new ProducerCreation(pexe));
+                    _replyTo.Tell(new AskResponse(pexe));
                 }
                 else if (ex is ProducerBusyException busy)
                 {
                     _log.Warning($"[{_producerName}] [{Topic}] Producer is busy, dear.");
 
-                    _replyTo.Tell(new ProducerCreation(busy));
+                    _replyTo.Tell(new AskResponse(busy));
                 }
                 else if (ex is TopicTerminatedException tex)
                 {
                     State.ConnectionState = HandlerState.State.Terminated;
                     FailPendingMessages(_cnx, tex);
                     Client.Tell(new CleanupProducer(Self));
-                    _replyTo.Tell(new ProducerCreation(tex));
+                    _replyTo.Tell(new AskResponse(tex));
                 }
                 else if (ex is ProducerFencedException pfe)
                 {
                     State.ConnectionState = HandlerState.State.ProducerFenced;
                     FailPendingMessages(_cnx, pfe);
                     Client.Tell(new CleanupProducer(Self));
-                    _replyTo.Tell(new ProducerCreation(pfe));
+                    _replyTo.Tell(new AskResponse(pfe));
                 }
                 else if ((ex is PulsarClientException && IsRetriableError(ex) && DateTimeHelper.CurrentUnixTimeMillis() < _createProducerTimeout))
                 {
-                    ReconnectLater(ex);
-                    Become(Connection);
+                    await ReconnectLater(ex);
                 }
                 else
                 {
                     State.ConnectionState = HandlerState.State.Failed;
                     Client.Tell(new CleanupProducer(Self));
-                    _replyTo.Tell(new ProducerCreation(new Exception()));
+                    _replyTo.Tell(new AskResponse(new Exception()));
                     var timeout = _sendTimeout;
                     if (timeout != null)
                     {
                         timeout.Cancel();
                         _sendTimeout = null;
                     }
-                    Become(Connection);
                 }
-			});
-            ReceiveAny(any => 
+            }
+            else
             {
-                _log.Info($"Stashing: {any.GetType().FullName}");
-                Stash.Stash();
-            });
-			_generator.Tell(NewRequestId.Instance);
+                try
+                {
+                    var res = request.ConvertTo<ProducerResponse>();
+                    var producerName = res.ProducerName;
+                    var lastSequenceId = res.LastSequenceId;
+
+                    _schemaVersion = new Option<byte[]>(res.SchemaVersion);
+
+                    if (_schemaVersion.HasValue)
+                        SchemaCache.Add(SchemaHash.Of(Schema), _schemaVersion.Value);
+                    if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                    {
+                        _log.Info($"[{Topic}] [{producerName}] State:{State.ConnectionState}, poisoning {_cnx.Path} to death. Becoming 'Connection'");
+                        _cnx.Tell(new RemoveProducer(_producerId));
+                        _cnx.Tell(PoisonPill.Instance);
+                        return;
+                    }
+
+                    if (_batchMessageContainer != null)
+                        _batchMessageContainer.Container.ProducerName = producerName;
+
+                    _connectionHandler.Tell(ResetBackoff.Instance);
+                    _log.Info($"[{Topic}] [{producerName}] Created producer on cnx {_cnx.Path}");
+                    _connectionId = _cnx.Path.ToString();
+                    _connectedSince = DateTime.Now.ToLongDateString();
+                    if (string.IsNullOrWhiteSpace(_producerName))
+                    {
+                        _producerName = producerName;
+                    }
+                    if (_msgIdGenerator == 0 && Conf.InitialSequenceId == null)
+                    {
+                        _lastSequenceIdPublished = lastSequenceId;
+                        _msgIdGenerator = lastSequenceId + 1;
+                    }
+                    if (BatchMessagingEnabled)
+                    {
+                        _batchTimerTask = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(0), TimeSpan.FromTicks(Conf.BatchingMaxPublishDelayMicros), Self, BatchTask.Instance, ActorRefs.NoSender);
+                    }
+                    ResendMessages(res);
+                }
+                catch (Exception e)
+                {
+                    _replyTo.Tell(new AskResponse(new PulsarClientException(e)));
+                }
+            }
 		}
 
 		private void ConnectionFailed(PulsarClientException exception)
@@ -538,16 +518,17 @@ namespace SharpPulsar
 				}
 				State.ConnectionState = HandlerState.State.Failed;
 				Client.Tell(new CleanupProducer(Self));
-                _replyTo.Tell(new ProducerCreation(exception));
+                _replyTo.Tell(new AskResponse(exception));
 				Self.Tell(PoisonPill.Instance);
 			}
 		}
 
-		private void ReconnectLater(Exception exception)
-		{
-			_connectionHandler.Tell(new ReconnectLater(exception));
-		}
-		private void RunBatchTask()
+        private async ValueTask ReconnectLater(Exception exception)
+        {
+            var askResponse = await _connectionHandler.Ask<AskResponse>(new ReconnectLater(exception));
+            await Connection(askResponse);
+        }
+        private void RunBatchTask()
         {
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
@@ -1322,8 +1303,7 @@ namespace SharpPulsar
 
 				if (State.ChangeToReadyState())
 				{
-                    _replyTo.Tell(new ProducerCreation(response));
-					Become(Ready);
+                    _replyTo.Tell(new AskResponse(response));
 				}
 				return;
 			}
@@ -1668,11 +1648,11 @@ namespace SharpPulsar
 			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
 		}
 
-		private void ConnectionClosed(IActorRef cnx)
+		private async ValueTask ConnectionClosed(IActorRef cnx)
 		{
-			_connectionHandler.Tell(new ConnectionClosed(cnx));
-			Become(Connection);
-		}
+            var askResponse = await _connectionHandler.Ask<AskResponse>(new ConnectionClosed(cnx));
+            await Connection(askResponse);
+        }
 
 		internal async ValueTask<IActorRef> ClientCnx()
 		{

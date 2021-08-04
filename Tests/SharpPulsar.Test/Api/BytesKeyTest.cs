@@ -126,66 +126,25 @@ namespace SharpPulsar.Test.Api
             producerBuilder.BatchingMaxMessages(5);
             var producer = _client.NewProducer(producerBuilder);
 
-            producer.NewMessage().KeyBytes(byteKey)
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-0"))
-                .Send();
+            for (var i = 0; i < 5; i++)
+            {
+                producer.NewMessage().KeyBytes(byteKey)
+                    .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                    .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}"))
+                    .Send();
+            }
 
-            producer.NewMessage().KeyBytes(byteKey)
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-1"))
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey)
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-2"))
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey)
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-3"))
-                .Send();
-
-            producer.NewMessage().KeyBytes(byteKey)
-                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                .Value(Encoding.UTF8.GetBytes($"TestMessage-4"))
-                .Send();
-
-            Thread.Sleep(TimeSpan.FromSeconds(10));
-            var message = consumer.Receive();
-            Assert.Equal(byteKey, message.KeyBytes);
-            Assert.True(message.HasBase64EncodedKey());
-            var receivedMessage = Encoding.UTF8.GetString(message.Data);
-            _output.WriteLine($"Received message: [{receivedMessage}]");
-            Assert.Equal($"TestMessage-0", receivedMessage);
-
-            message = consumer.Receive();
-            Assert.Equal(byteKey, message.KeyBytes);
-            Assert.True(message.HasBase64EncodedKey());
-            receivedMessage = Encoding.UTF8.GetString(message.Data);
-            _output.WriteLine($"Received message: [{receivedMessage}]");
-            Assert.Equal($"TestMessage-1", receivedMessage);
-
-            message = consumer.Receive();
-            Assert.Equal(byteKey, message.KeyBytes);
-            Assert.True(message.HasBase64EncodedKey());
-            receivedMessage = Encoding.UTF8.GetString(message.Data);
-            _output.WriteLine($"Received message: [{receivedMessage}]");
-            Assert.Equal($"TestMessage-2", receivedMessage);
-
-            message = consumer.Receive();
-            Assert.Equal(byteKey, message.KeyBytes);
-            Assert.True(message.HasBase64EncodedKey());
-            receivedMessage = Encoding.UTF8.GetString(message.Data);
-            _output.WriteLine($"Received message: [{receivedMessage}]");
-            Assert.Equal($"TestMessage-3", receivedMessage);
-
-            message = consumer.Receive();
-            Assert.Equal(byteKey, message.KeyBytes);
-            Assert.True(message.HasBase64EncodedKey());
-            receivedMessage = Encoding.UTF8.GetString(message.Data);
-            _output.WriteLine($"Received message: [{receivedMessage}]");
-            Assert.Equal($"TestMessage-4", receivedMessage);
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < 5; i++)
+            {
+                var message = consumer.Receive();
+                Assert.Equal(byteKey, message.KeyBytes);
+                Assert.True(message.HasBase64EncodedKey());
+                var receivedMessage = Encoding.UTF8.GetString(message.Data);
+                _output.WriteLine($"Received message: [{receivedMessage}]");
+                Assert.Equal($"TestMessage-{i}", receivedMessage);
+            }
+            
         }
         
     }

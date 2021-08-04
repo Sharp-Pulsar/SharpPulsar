@@ -2,12 +2,12 @@
 using Akka.Event;
 using SharpPulsar.Exceptions;
 using System;
-using BAMCIS.Util.Concurrent;
+using System.Threading.Tasks;
 using State = SharpPulsar.HandlerState.State;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Configuration;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 
 namespace SharpPulsar
 {
@@ -24,6 +24,7 @@ namespace SharpPulsar
 		private readonly IActorRef _connection;
 		private ICancelable _cancelable;
 		private readonly IActorContext _actorContext;
+        private IActorRef _sender;
 
 		public ConnectionHandler(ClientConfigurationData conf, HandlerState state, Backoff backoff, IActorRef connection)
 		{
@@ -37,16 +38,16 @@ namespace SharpPulsar
 		}
 		private void Listening()
         {
-
-			Receive<GrabCnx>(g =>
+            ReceiveAsync<GrabCnx>(async g =>
 			{
 				_log.Info(g.Message);
 				++_epoch;
-				Become(GrabCnx);
+                _sender = Sender;
+				await GrabCnx();
 			});
 			Receive<ReconnectLater>(g =>
 			{
-				ReconnectLater(g.Exception);
+				ReconnectLater(g.Exception, Sender);
 			});
 			Receive<GetEpoch>(g =>
 			{
@@ -85,12 +86,12 @@ namespace SharpPulsar
 			});
 			Stash?.UnstashAll();
 		}
-		private void GrabCnx()
+		private async ValueTask GrabCnx()
 		{
 			if (_clientCnx != null)
 			{
 				_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Client cnx already set, ignoring reconnection request");
-				_connection.Tell(ConnectionAlreadySet.Instance);
+				Sender.Tell(new AskResponse(ConnectionAlreadySet.Instance));
 				return;
 			}
 
@@ -98,40 +99,38 @@ namespace SharpPulsar
 			{
 				// Ignore connection closed when we are shutting down
 				_log.Info($"[{_state.Topic}] [{_state.HandlerName}] Ignoring reconnection request (state: {_state.ConnectionState})");
-				_connection.Tell(new Failure { Exception = new Exception("Invalid State For Reconnection"), Timestamp = DateTime.UtcNow });
+				_sender.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception("Invalid State For Reconnection"))));
 			}
-			LookupConnection();
+			await LookupConnection();
 		}
-		private void LookupConnection()
+		private async ValueTask LookupConnection()
         {
-			Receive<GetBrokerResponse>(broker =>
-			{
-				_state.ConnectionPool.Tell(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
-			});
-			Receive<ConnectionOpened>(c =>
-			{
-				_connection.Tell(c);
-				Become(Listening);
-			});
-			Receive<ClientExceptions>(c =>
-			{
-				_log.Error(c.Exception.ToString());
-				Become(Listening);
-			});
-			ReceiveAny(_ => Stash.Stash());
 			var topicName = TopicName.Get(_state.Topic);
-			_state.Lookup.Tell(new GetBroker(topicName));
-		}
+			var askResponse = await _state.Lookup.Ask<AskResponse>(new GetBroker(topicName));
+            if (askResponse.Failed)
+            {
+                _sender.Tell(askResponse);
+                return;
+            }
+
+            var broker = askResponse.ConvertTo<GetBrokerResponse>();
+            var connect = await _state.ConnectionPool.Ask<AskResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+            if (connect.Failed)
+            {
+                _log.Error(connect.Exception.ToString());
+            }
+            _sender.Tell(connect);
+        }
 		private void HandleConnectionError(Exception exception)
 		{
 			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Error connecting to broker: {exception.Message}");
-			if (exception is PulsarClientException)
+			if (exception is PulsarClientException clientException)
 			{
-				_connection.Tell(new ConnectionFailed((PulsarClientException)exception));
+				_connection.Tell(new ConnectionFailed(clientException));
 			}
-			else if (exception.InnerException is PulsarClientException)
+			else if (exception.InnerException is PulsarClientException innerException)
 			{
-				_connection.Tell(new ConnectionFailed((PulsarClientException)exception.InnerException));
+				_connection.Tell(new ConnectionFailed(innerException));
 			}
 			else
 			{
@@ -145,8 +144,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private void ReconnectLater(Exception exception)
-		{
+		private void ReconnectLater(Exception exception, IActorRef sender = null)
+        {
+            var reply = sender ?? _connection;
 			var children = Context.GetChildren();
 			foreach (var child in children)
 				child.GracefulStop(TimeSpan.FromMilliseconds(100));
@@ -160,7 +160,7 @@ namespace SharpPulsar
 			var delayMs = _backoff.Next();
 			_log.Warning($"[{_state.Topic}] [{_state.HandlerName}] Could not get connection to broker: {exception.Message} -- Will try again in {(delayMs/1000.0)} s");
 			_state.ConnectionState = State.Connecting;
-			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(delayMs)), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), Nobody.Instance);
+			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{_state.Topic}] [{_state.HandlerName}] Reconnecting after connection was closed"), reply);
 		}
 
 		private void ConnectionClosed(IActorRef cnx)
@@ -176,7 +176,7 @@ namespace SharpPulsar
 			_state.ConnectionState = State.Connecting;
 			//_log.Info("[{}] [{}] Closed connection -- Will try again in {} s", _state.Topic, _state.HandlerName, cnx.Channel()delayMs / 1000.0);
 			_log.Info($"[{ _state.Topic}] [{_state.HandlerName}] Closed connection -- Will try again in {(delayMs / 1000.0)} s");
-			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(delayMs)), Self, new GrabCnx($"[{ _state.Topic}] [{_state.HandlerName}] Reconnecting after timeout"), Nobody.Instance);
+			_cancelable = _actorContext.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(delayMs), Self, new GrabCnx($"[{ _state.Topic}] [{_state.HandlerName}] Reconnecting after timeout"), _connection);
 			
 		}
 

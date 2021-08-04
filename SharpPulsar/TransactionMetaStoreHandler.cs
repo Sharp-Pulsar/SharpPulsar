@@ -89,33 +89,23 @@ namespace SharpPulsar
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			//_blockIfReachMaxPendingOps = true;
 			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.OperationTimeoutMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
-            Receive<GrabCnx>(_ => 
+            ReceiveAsync<GrabCnx>(async _ => 
             {
                 _sender = Sender;
-                Become(GrabCnx);
+                _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(_conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(_conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
+
+                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx("TransactionMetaStoreHandler"));
+                if(askResponse.Failed)
+                    _sender.Tell(askResponse);
+                var o = askResponse.ConvertTo<ConnectionOpened>();
+                await HandleConnectionOpened(o.ClientCnx);
             });
 
 		}
-        private void GrabCnx()
-        {
-            Receive<ConnectionOpened>(o => {
-                HandleConnectionOpened(o.ClientCnx);
-            });
-            Receive<ConnectionClosed>(o => {
-                HandleConnectionClosed(o.ClientCnx);
-            });
-            Receive<ConnectionFailed>(f => {
-                HandleConnectionFailed(f.Exception);
-            });
-            ReceiveAny(x => Stash.Stash());
-            _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(_conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(_conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
-
-            _connectionHandler.Tell(new GrabCnx("TransactionMetaStoreHandler"));
-        }
 		private void Listening()
         {
-            Receive<ConnectionOpened>(o => {
-                HandleConnectionOpened(o.ClientCnx);
+            ReceiveAsync<ConnectionOpened>(async o => {
+                await HandleConnectionOpened(o.ClientCnx);
             });
             Receive<ConnectionClosed>(o => {
                 HandleConnectionClosed(o.ClientCnx);
@@ -192,18 +182,18 @@ namespace SharpPulsar
 			//_connectFuture.completeExceptionally(exception);
 		}
 
-		private void HandleConnectionOpened(IActorRef cnx)
+		private async ValueTask HandleConnectionOpened(IActorRef cnx)
 		{
 			_log.Info($"Transaction meta handler with transaction coordinator id {_transactionCoordinatorId} connection opened.");
 			_connectionHandler.Tell(new SetCnx(cnx));
 			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
             if (!_state.ChangeToReadyState())
             {
-                cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
             }
             else
             {
-                _sender.Tell("Ready");
+                _sender.Tell(new AskResponse("Ready"));
                 Become(Listening);
             }
 		}

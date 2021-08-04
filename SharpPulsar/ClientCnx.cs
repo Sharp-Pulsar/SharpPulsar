@@ -24,12 +24,13 @@ using SharpPulsar.SocketImpl;
 
 namespace SharpPulsar
 {
-    internal sealed class ClientCnx : ReceiveActor
+    internal sealed class ClientCnx : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly SocketClient _socketClient;
 		private readonly IAuthentication _authentication;
 		private State _state;
 		private readonly IActorRef _self;
+		private IActorRef _sender;
 
 		private readonly Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Message, IActorRef Requester)>();
 		// LookupRequests that waiting in client side.
@@ -95,81 +96,106 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
-			_socketClient.Connect();
-			Receive<Payload>(p =>
-			{
-				switch (p.Command)
-				{
-					case "NewLookup":
-						NewLookup(p.Bytes, p.RequestId);
-						break;
-					case "NewAckForReceipt":
+            ReceiveAsync<Connect>(async _ =>
+            {
+                _sender = Sender;
+                try
+                {
+                    await _socketClient.Connect();
+                }
+                catch (Exception e)
+                {
+                   _sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
+                }
+            });
+
+            Receive<ConnectionOpened>(o =>
+            {
+                _sender.Tell(new AskResponse(o));
+                Become(Ready);
+            });
+            ReceiveAny(_=> Stash.Stash());
+			
+		}
+
+        private void Ready()
+        {
+
+            Receive<Payload>(p =>
+            {
+                switch (p.Command)
+                {
+                    case "NewLookup":
+                        NewLookup(p.Bytes, p.RequestId);
+                        break;
+                    case "NewAckForReceipt":
                         NewAckForReceipt(p.Bytes, p.RequestId);
-						break;
-					case "NewGetTopicsOfNamespaceRequest":
-						NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
-						break;
-					case "SendGetLastMessageId":
-						SendGetLastMessageId(p.Bytes, p.RequestId);
-						break;
-					case "SendGetRawSchema":
-						SendGetRawSchema(p.Bytes, p.RequestId);
-						break;
-					case "SendGetOrCreateSchema":
-						SendGetOrCreateSchema(p.Bytes, p.RequestId);
-						break;
-					case "NewAddSubscriptionToTxn":
-					case "NewAddPartitionToTxn":
+                        break;
+                    case "NewGetTopicsOfNamespaceRequest":
+                        NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
+                        break;
+                    case "SendGetLastMessageId":
+                        SendGetLastMessageId(p.Bytes, p.RequestId);
+                        break;
+                    case "SendGetRawSchema":
+                        SendGetRawSchema(p.Bytes, p.RequestId);
+                        break;
+                    case "SendGetOrCreateSchema":
+                        SendGetOrCreateSchema(p.Bytes, p.RequestId);
+                        break;
+                    case "NewAddSubscriptionToTxn":
+                    case "NewAddPartitionToTxn":
                         _socketClient.SendMessage(p.Bytes);
                         break;
                     case "NewTxn":
                     case "NewEndTxn":
-						_socketClient.SendMessage(p.Bytes);
-						break;
-					default:
-						SendRequest(p.Bytes, p.RequestId);
-						break;
+                        _socketClient.SendMessage(p.Bytes);
+                        break;
+                    default:
+                        SendRequest(p.Bytes, p.RequestId);
+                        break;
 
-				}
-			});
+                }
+            });
 
-			Receive<RegisterProducer>(m => {
-				RegisterProducer(m.ProducerId, m.Producer);
-			});
-			Receive<RegisterConsumer>(m => {
-				RegisterConsumer(m.ConsumerId, m.Consumer);
-			});
-			Receive<RemoveProducer>(m => {
+            Receive<RegisterProducer>(m => {
+                RegisterProducer(m.ProducerId, m.Producer);
+            });
+            Receive<RegisterConsumer>(m => {
+                RegisterConsumer(m.ConsumerId, m.Consumer);
+            });
+            Receive<RemoveProducer>(m => {
 
-				RemoveProducer(m.ProducerId);
-			});
-			Receive<Close>(m => {
+                RemoveProducer(m.ProducerId);
+            });
+            Receive<Close>(m => {
 
                 _socketClient.Dispose();
-			});
-			Receive<MaxMessageSize>(_ => {
+            });
+            Receive<MaxMessageSize>(_ => {
 
-				Sender.Tell(new MaxMessageSizeResponse(_maxMessageSize));
-			});
-			Receive<RemoveConsumer>(m => {
-				RemoveConsumer(m.ConsumerId);
-			});
-			Receive<SendPing>(m => {
-				_socketClient.SendMessage(_pong);
-			});
-			Receive<RequestTimeout>(m => {
-				CheckRequestTimeout();
-			});
-			Receive<RegisterTransactionMetaStoreHandler>(h => {
-				RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
-			});
-			Receive<SendRequestWithId>(r => {
-				SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
-			});
-			Receive<RemoteEndpointProtocolVersion>(r => {
-				Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
-			});
-		}
+                Sender.Tell(new MaxMessageSizeResponse(_maxMessageSize));
+            });
+            Receive<RemoveConsumer>(m => {
+                RemoveConsumer(m.ConsumerId);
+            });
+            Receive<SendPing>(m => {
+                _socketClient.SendMessage(_pong);
+            });
+            Receive<RequestTimeout>(m => {
+                CheckRequestTimeout();
+            });
+            Receive<RegisterTransactionMetaStoreHandler>(h => {
+                RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
+            });
+            Receive<SendRequestWithId>(r => {
+                SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
+            });
+            Receive<RemoteEndpointProtocolVersion>(r => {
+                Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
+            });
+            Stash?.UnstashAll();
+        }
 		private void OnConnected()
 		{
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
@@ -190,7 +216,7 @@ namespace SharpPulsar
 			// Send CONNECT command
 			_socketClient.SendMessage(NewConnectCommand());
 			_state = State.SentConnectFrame;
-			_socketClient.ReceiveMessageObservable.Subscribe(a => OnCommandReceived(a));
+			_socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
 		}
 		private void OnDisconnected()
 		{
@@ -209,7 +235,7 @@ namespace SharpPulsar
 			_producers.Clear();
 			_consumers.Clear();
 
-			_timeoutTask.Cancel(true);
+			_timeoutTask?.Cancel(true);
 		}
 		private void ExceptionCaught(Exception cause)
 		{
@@ -259,7 +285,7 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
-			_parent.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
+			_self.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
 		}
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
@@ -407,7 +433,7 @@ namespace SharpPulsar
 			if (_pendingRequests.TryGetValue(requestId, out var producer))
 			{
 				_pendingRequests.Remove(requestId);
-				producer.Requester.Tell(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion));
+				producer.Requester.Tell(new AskResponse(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion)));
 			}
 			else
 			{
@@ -428,27 +454,31 @@ namespace SharpPulsar
 
 				if (CommandLookupTopicResponse.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (lookupResult?.Error != null)
+					if (lookupResult.Error != ServerError.UnknownError)
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);
-						requester.Tell(new Failure { Exception = ex });
+						requester.Tell(new AskResponse(ex));
 					}
 					else
 					{
 						var ex = new PulsarClientException.LookupException("Empty lookup response");
-						requester.Tell(new Failure { Exception = ex });
-					}
+                        requester.Tell(new AskResponse(ex));
+                    }
 				}
 				else
 				{
-					requester.Tell(new LookupDataResult(lookupResult));
+					requester.Tell(new AskResponse(new LookupDataResult(lookupResult)));
 				}
 			}
 			else
-			{
-				_log.Warning($"Received unknown request id from server: {lookupResult.RequestId}");
-			}
+            {
+                var msg = $"Received unknown request id from server: {lookupResult.RequestId}";
+
+                _log.Warning(msg);
+                var ex = new PulsarClientException.LookupException(msg);
+                requester.Tell(new AskResponse(ex));
+            }
 		}
 		private void HandlePing(CommandPing ping)
 		{
@@ -471,28 +501,32 @@ namespace SharpPulsar
 			{
 				if (CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult.Response))
 				{
-					if (lookupResult?.Error != null)
+					if (lookupResult.Error != ServerError.UnknownError)
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);
-						requester.Tell(new ClientExceptions(ex));
+						requester.Tell(new AskResponse(ex));
 					}
 					else
 					{
 						var ex = new PulsarClientException.LookupException("Empty lookup response");
-						requester.Tell(ex);
+						requester.Tell(new AskResponse(ex));
 					}
 				}
 				else
 				{
 					// return LookupDataResult when Result.response = success/redirect
-					requester.Tell(new LookupDataResult((int)lookupResult.Partitions));
+					requester.Tell(new AskResponse(new LookupDataResult((int)lookupResult.Partitions)));
 				}
 			}
 			else
 			{
-				_log.Warning($"Received unknown request id from server: {lookupResult.RequestId}");
-			}
+                var msg = $"Received unknown request id from server: {lookupResult.RequestId}";
+
+                _log.Warning(msg);
+                var ex = new PulsarClientException.LookupException(msg);
+                requester.Tell(new AskResponse(ex));
+            }
 		}
 
 		private void HandleReachedEndOfTopic(CommandReachedEndOfTopic commandReachedEndOfTopic)
@@ -564,15 +598,15 @@ namespace SharpPulsar
 				if (error.Error == ServerError.ProducerBlockedQuotaExceededError)
 				{
 					_log.Warning($"Producer creation has been blocked because backlog quota exceeded for producer topic");
-					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
+					request.Requester.Tell(new AskResponse(new PulsarClientException.AuthenticationException("Producer creation has been blocked because backlog quota exceeded for producer topic")));
 				}
 				else if (error.Error == ServerError.AuthenticationError)
 				{
-					request.Requester.Tell(new ClientExceptions(new PulsarClientException.AuthenticationException(error.Message)));
+					request.Requester.Tell(new AskResponse(new PulsarClientException.AuthenticationException(error.Message)));
 					_log.Error("Failed to authenticate the client");
 				}
 				else
-					request.Requester.Tell(new ClientExceptions(GetPulsarClientException(error.Error, error.Message)));
+					request.Requester.Tell(new AskResponse(GetPulsarClientException(error.Error, error.Message)));
 			}
 			else
 			{
@@ -617,7 +651,9 @@ namespace SharpPulsar
 			}
 		}
 
-		private void NewLookup(ReadOnlySequence<byte> request, long requestId)
+        public IStash Stash { get; set; }
+
+        private void NewLookup(ReadOnlySequence<byte> request, long requestId)
 		{
 			AddPendingLookupRequests(requestId, request);
 			_socketClient.SendMessage(request);
@@ -641,11 +677,13 @@ namespace SharpPulsar
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
-				requester.Requester.Tell(new GetTopicsOfNamespaceResponse(success));
+				requester.Requester.Tell(new AskResponse(new GetTopicsOfNamespaceResponse(success)));
 			}
 			else
-			{
-				_log.Warning($"Received unknown request id from server: {success.RequestId}");
+            {
+                var msg = $"Received unknown request id from server: {success.RequestId}";
+
+                _log.Warning(msg);
 			}
 		}
 
@@ -656,10 +694,15 @@ namespace SharpPulsar
 
 			if (_pendingRequests.TryGetValue(requestId, out var requester))
 			{
-				requester.Requester.Tell(new GetSchemaResponse(commandGetSchemaResponse));
+				requester.Requester.Tell(new AskResponse(new GetSchemaResponse(commandGetSchemaResponse)));
 			}
-			else
-				_log.Warning($"Received unknown request id from server: {requestId}");
+            else
+            {
+                var msg = $"Received unknown request id from server: {requestId}";
+                _log.Warning(msg);
+                requester.Requester.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception(msg))));
+            }
+            
 		}
 
 		private void HandleGetOrCreateSchemaResponse(CommandGetOrCreateSchemaResponse commandGetOrCreateSchemaResponse)
