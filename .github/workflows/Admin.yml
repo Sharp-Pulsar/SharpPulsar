@@ -19,13 +19,18 @@ name: Admin
 on:
   push:
     branches:
-      - admin
+      - Admin
 
 jobs:
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
+      - name: Setup dotnet 5.0
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
+
       - uses: actions/checkout@v1
       - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
@@ -35,4 +40,6 @@ jobs:
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd ReleaseAdmin'
-        run: ./build.cmd ReleaseAdmin
+        run: ./build.cmd ReleaseAdmin --admin_nuget_key ${{ secrets.ADMIN_NUGET_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
+        env:
+          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.ADMIN_NUGET_KEY }}
