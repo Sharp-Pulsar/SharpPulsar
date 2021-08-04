@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
+using HashMapHelper = SharpPulsar.Sql.Presto.HashMapHelper;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -9,7 +9,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
-using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
+using HashMapHelper = SharpPulsar.Sql.Presto.HashMapHelper;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

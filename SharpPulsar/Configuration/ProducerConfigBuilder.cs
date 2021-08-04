@@ -5,7 +5,7 @@ using SharpPulsar.Messages;
 
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces.Interceptor;
-using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
+using HashMapHelper = SharpPulsar.Sql.Presto.HashMapHelper;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Proto;
