@@ -11,12 +11,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Akka\**" />
+    <Compile Remove="Messages\EventSource\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
     <EmbeddedResource Remove="Akka\**" />
+    <EmbeddedResource Remove="Messages\EventSource\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
     <None Remove="Akka\**" />
+    <None Remove="Messages\EventSource\**" />
     <None Remove="Protocol\Circe\**" />
     <None Remove="Protocol\Proto\Partial\**" />
     <None Include="SharpPulsar.jpg">
@@ -27,20 +30,11 @@
 
   <ItemGroup>
     <Compile Remove="Batch\BatchBitSet.cs" />
-    <Compile Remove="Presto\TrinoHeaders.cs" />
     <Compile Remove="Schemas\GenerateSchema.cs" />
-    <Compile Remove="Presto\FixJsonDataUtils.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="NLog.config" />
-    <None Remove="Presto\Facebook\Type\zone-index.properties" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Presto\Facebook\Type\zone-index.properties">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -99,8 +93,10 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Messages\EventSource\" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
+    <PackageReference Include="SharpPulsar.Sql">
+      <Version>1.0.0.3</Version>
+    </PackageReference>
   </ItemGroup>
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
     <ItemGroup>

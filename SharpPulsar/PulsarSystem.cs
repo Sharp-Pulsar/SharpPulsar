@@ -5,8 +5,6 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Sql;
-using SharpPulsar.Sql.Live;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using SharpPulsar.User.Events;
