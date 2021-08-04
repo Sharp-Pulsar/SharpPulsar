@@ -25,8 +25,8 @@ namespace SharpPulsar.Test.SQL
 			_output = output;
 			_client = fixture.Client;
 		}
-		[Fact(Skip ="Issue with sql-worker on github action")]
-		//[Fact]
+		//[Fact(Skip ="Issue with sql-worker on github action")]
+		[Fact]
 		public virtual void TestQuerySql()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
