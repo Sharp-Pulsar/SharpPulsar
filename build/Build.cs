@@ -483,7 +483,7 @@ class Build : NukeBuild
                 .SetAssemblyVersion($"1.0.{BuildNumber}")
                 .SetVersion($"1.0.{BuildNumber}")
                 .SetPackageReleaseNotes("Fix null exception when reading messages")
-                .SetDescription("Implements Apache Pulsar Trino's REST API. For sample, visit https://github.com/eaba/SharpPulsar/blob/dev/Tests/SharpPulsar.Test.SQL/SqlTests.cs")
+                .SetDescription("Implements Apache Pulsar Trino's REST API. For sample visit https://github.com/eaba/SharpPulsar/blob/dev/Tests/SharpPulsar.Test.SQL/SqlTests.cs")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar", "Trino")
                 .AddAuthors("Ebere Abanonu (@mestical)")
                 .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar/tree/Sql/Extras/SharpPulsar.Sql")
