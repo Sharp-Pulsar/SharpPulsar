@@ -358,11 +358,8 @@ namespace SharpPulsar
 					var v = Data.ToArray();
 					return (T)decode.Invoke(_schema, new object[] { k, v, schemaVersion });
 				}
-				else
-				{
-					return _schema.Decode(Data.ToArray(), schemaVersion);
-				}
-			}
+                return _schema.Decode(Data.ToArray(), schemaVersion);
+            }
 		}
 		
 		private T KeyValue
