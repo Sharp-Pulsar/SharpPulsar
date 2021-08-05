@@ -13,6 +13,7 @@ namespace SharpPulsar.Sql
         private readonly BufferBlock<SqlData> _buffer;
         public SqlWorker()
         {
+            _buffer = new BufferBlock<SqlData>();
             ReceiveAsync<SqlSession>(async s=> await Query(s));
             Receive<IQueryResponse>(q =>
             {

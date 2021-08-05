@@ -106,17 +106,10 @@ namespace SharpPulsar.Sql.Public
 
         private async  ValueTask<T> ReadData(TimeSpan? timeSpan)
         {
-            try
-            {
-                if (timeSpan.HasValue)
-                    return await _queryActor.Ask<T>(Message.Read.Instance, timeSpan.Value);
+            if (timeSpan.HasValue)
+                return await _queryActor.Ask<T>(Message.Read.Instance, timeSpan.Value);
 
-                return await _queryActor.Ask<T>(Message.Read.Instance);
-            }
-            catch (Exception e)
-            {
-                return default;
-            }
+            return await _queryActor.Ask<T>(Message.Read.Instance);
         }
     }
 }
