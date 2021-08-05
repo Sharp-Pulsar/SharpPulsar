@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Sql.Live;
 using SharpPulsar.Sql.Message;
+using SharpPulsar.Sql.Naming;
 
 namespace SharpPulsar.Sql.Public
 {
@@ -106,10 +107,10 @@ namespace SharpPulsar.Sql.Public
                     }
                     throw new ArgumentException("add 'where __publish_time__ > {time}' to '" + data.ClientOptions.Execute + "'");
                 }
-                //if (!TopicName.IsValid(data.Topic))
-                    //throw new ArgumentException($"Topic '{data.Topic}' failed validation");
+                if (!TopicName.IsValid(data.Topic))
+                    throw new ArgumentException($"Topic '{data.Topic}' failed validation");
 
-                var q = new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, data.Topic, data.Log, data.ExceptionHandler);
+                var q = new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler);
            
                      _queryActor.Tell(q);
             }

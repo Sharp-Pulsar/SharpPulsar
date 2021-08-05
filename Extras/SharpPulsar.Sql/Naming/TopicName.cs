@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Web;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -224,7 +225,7 @@ namespace SharpPulsar.Sql.Naming
 
         public virtual string LocalName => _localName;
 
-        public virtual string EncodedLocalName => Codec.Encode(_localName);
+        public virtual string EncodedLocalName => HttpUtility.UrlEncode(_localName);
 
         public TopicName GetPartition(int index)
 		{
@@ -279,7 +280,7 @@ namespace SharpPulsar.Sql.Naming
 				}
 				catch (FormatException)
 				{
-					Log.LogWarning("Could not get the partition index from the topic {}", topic);
+					//Log.LogWarning("Could not get the partition index from the topic {}", topic);
 				}
 			}
 
