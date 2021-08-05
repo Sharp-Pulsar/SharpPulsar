@@ -114,8 +114,10 @@ namespace SharpPulsar
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
-				var kvSchema = (KeyValueSchema<object,object>)_schema;
-				Condition.CheckArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+                var schemaType = _schema.GetType();
+                var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
+
+                Condition.CheckArgument(!(keyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when the encoding type is not SEPARATED");
 				if (string.IsNullOrWhiteSpace(key))
 				{
 					Metadata.NullPartitionKey = true;
@@ -130,8 +132,10 @@ namespace SharpPulsar
 		{
 			if (_schema.SchemaInfo.Type == SchemaType.KeyValue)
 			{
-				var kvSchema = (KeyValueSchema<object, object>)_schema;
-				Condition.CheckArgument(!(kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when in encoding type is SEPARATED");
+                var schemaType = _schema.GetType();
+                var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
+
+                Condition.CheckArgument(!(keyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when the encoding type is not SEPARATED");
 				if (key == null)
 				{
 					Metadata.NullPartitionKey = true;
@@ -147,7 +151,12 @@ namespace SharpPulsar
 			Metadata.OrderingKey = orderingKey;
 			return this;
 		}
-
+        /// <summary>
+        /// For KeyValueSchema, please make use of Value<TK, TV>(T value)
+        /// to supply the key and value type
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
 		public ITypedMessageBuilder<T> Value(T value)
 		{
 			if (value == null)
@@ -156,38 +165,52 @@ namespace SharpPulsar
 				return this;
 			}
 			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
-			{
-				var kvSchema = (KeyValueSchema<object,object>)_schema;
-				var kv = (KeyValue<object, object>)(object)value;
-				if (kvSchema.KeyValueEncodingType == KeyValueEncodingType.SEPARATED)
-				{
-					// set key as the message key
-					if (kv.Key != null)
-					{
-						Metadata.PartitionKey = Convert.ToBase64String(kvSchema.KeySchema.Encode(kv.Key));
-						Metadata.PartitionKeyB64Encoded = true;
-					}
-					else
-					{
-						Metadata.NullPartitionKey = true;
-					}
-
-					// set value as the payload
-					if (kv.Value != null)
-					{
-						_content = new ReadOnlySequence<byte>(kvSchema.ValueSchema.Encode(kv.Value));
-					}
-					else
-					{
-						Metadata.NullValue = true;
-					}
-					return this;
-				}
-			}
+            {
+                throw new Exception("Get method only support non keyvalue schema");
+            }
 			_content = new ReadOnlySequence<byte>(_schema.Encode(value));
 			return this;
 		}
-		public ITypedMessageBuilder<T> Property(string name, string value)
+
+        public ITypedMessageBuilder<T> Value<TK, TV>(T value)
+        {
+            if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
+            {
+                var schemaType = _schema.GetType();
+                var keyValueEncodingType = (KeyValueEncodingType)schemaType.GetProperty("KeyValueEncodingType")?.GetValue(_schema, null);
+                var keySchema = (ISchema<TK>)schemaType.GetProperty("KeySchema")?.GetValue(_schema, null);
+                var valueSchema = (ISchema<TV>)schemaType.GetProperty("ValueSchema")?.GetValue(_schema, null);
+
+                var kv = (KeyValue<TK, TV>)(object)value;
+                if (keyValueEncodingType == KeyValueEncodingType.SEPARATED)
+                {
+                    // set key as the message key
+                    if (kv.Key != null)
+                    {
+                        Metadata.PartitionKey = Convert.ToBase64String(keySchema.Encode(kv.Key));
+                        Metadata.PartitionKeyB64Encoded = true;
+                    }
+                    else
+                    {
+                        Metadata.NullPartitionKey = true;
+                    }
+
+                    // set value as the payload
+                    if (kv.Value != null)
+                    {
+                        _content = new ReadOnlySequence<byte>(valueSchema.Encode(kv.Value));
+                    }
+                    else
+                    {
+                        Metadata.NullValue = true;
+                    }
+                    return this;
+                }
+            }
+            _content = new ReadOnlySequence<byte>(_schema.Encode(value));
+            return this;
+        }
+        public ITypedMessageBuilder<T> Property(string name, string value)
 		{
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(name), "Need Non-Null name");
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);

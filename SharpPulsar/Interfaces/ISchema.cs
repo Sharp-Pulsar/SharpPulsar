@@ -364,5 +364,5 @@ namespace SharpPulsar.Interfaces
 			return DefaultImplementation.GetGenericSchema(schemaInfo);
 		}
 	}
-
+    
 }

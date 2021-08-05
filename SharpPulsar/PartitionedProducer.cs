@@ -138,7 +138,7 @@ namespace SharpPulsar
 		protected internal override async ValueTask<string> ProducerName()
 		{
 			//return await _producers[0].Ask<string>(GetProducerName.Instance);
-			return "PartitionedProducer";
+			return await Task.FromResult("PartitionedProducer");
 		}
 
 		protected internal override async ValueTask<long> LastSequenceId()

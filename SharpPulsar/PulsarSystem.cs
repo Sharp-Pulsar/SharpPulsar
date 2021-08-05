@@ -5,8 +5,6 @@ using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Messages;
 using SharpPulsar.Messages.Client;
-using SharpPulsar.Sql;
-using SharpPulsar.Sql.Live;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using SharpPulsar.User.Events;
@@ -14,6 +12,10 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Sql;
+using SharpPulsar.Sql.Live;
+using SharpPulsar.Sql.Message;
+using SharpPulsar.Sql.Public;
 
 namespace SharpPulsar
 {
@@ -153,14 +155,14 @@ namespace SharpPulsar
         {
             return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
         }
-        public static Sql<SqlData> NewSql(ActorSystem actorSystem = null) 
+        public static SqlInstance<SqlData> NewSql(ActorSystem actorSystem = null) 
         {
             if(actorSystem != null)
-                return Sql<SqlData>.NewSql(actorSystem);
+                return SqlInstance<SqlData>.NewSql(actorSystem);
 
-            return Sql<SqlData>.NewSql(_actorSystem);
+            return SqlInstance<SqlData>.NewSql(_actorSystem);
         }
-        public static Sql<LiveSqlData> NewLiveSql(LiveSqlQuery data) 
+        public static SqlInstance<LiveSqlData> NewLiveSql(LiveSqlQuery data) 
         {
             var hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
 
@@ -187,7 +189,7 @@ namespace SharpPulsar
             if (!TopicName.IsValid(data.Topic))
                 throw new ArgumentException($"Topic '{data.Topic}' failed validation");
 
-            return Sql<LiveSqlData>.NewLiveSql(_actorSystem, new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler));
+            return SqlInstance<LiveSqlData>.NewLiveSql(_actorSystem, new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler));
         }
         public async Task Shutdown()
         {

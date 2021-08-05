@@ -90,15 +90,17 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the message builder instance </returns>
 		ITypedMessageBuilder<T> Value(T value);
 
-		/// <summary>
-		/// Sets a new property on a message.
-		/// </summary>
-		/// <param name="name">
-		///            the name of the property </param>
-		/// <param name="value">
-		///            the associated value </param>
-		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> Property(string name, string value);
+        ITypedMessageBuilder<T> Value<TK, TV>(T value);
+
+        /// <summary>
+        /// Sets a new property on a message.
+        /// </summary>
+        /// <param name="name">
+        ///            the name of the property </param>
+        /// <param name="value">
+        ///            the associated value </param>
+        /// <returns> the message builder instance </returns>
+        ITypedMessageBuilder<T> Property(string name, string value);
 
 		/// <summary>
 		/// Add all the properties in the provided map. </summary>

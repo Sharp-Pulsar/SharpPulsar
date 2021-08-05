@@ -119,7 +119,7 @@ namespace SharpPulsar
 			Condition.CheckNotNull(Listener, "listener can't be null");
 			Condition.CheckNotNull(message, "unqueued message can't be null");
 
-			Task.Run(async () =>
+			Task.Run( () =>
 			{
 				var self = _self;
 				var log = _log;

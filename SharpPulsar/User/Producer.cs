@@ -94,5 +94,13 @@ namespace SharpPulsar.User
             return await NewMessage().Value(message).SendAsync().ConfigureAwait(false);
         }
 
+        public MessageId Send<TK, TV>(T message)
+        {
+            return SendAsync<TK, TV>(message).GetAwaiter().GetResult();
+        }
+        public async ValueTask<MessageId> SendAsync<TK, TV>(T message)
+        {
+            return await NewMessage().Value<TK, TV>(message).SendAsync().ConfigureAwait(false);
+        }
     }
 }
