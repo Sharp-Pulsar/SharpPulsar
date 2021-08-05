@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using crypto;
 using SharpPulsar;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Schemas;
 using SharpPulsar.User;
 
 namespace Tutorials
@@ -63,6 +68,10 @@ namespace Tutorials
                 BatchProduceConsumer(pulsarClient);
             else if (cmd.Equals("multi", StringComparison.OrdinalIgnoreCase))
                 MultiConsumer(pulsarClient);
+            else if (cmd.Equals("avro", StringComparison.OrdinalIgnoreCase))
+                PlainAvroProducer(pulsarClient, "plain-avro");
+            else if (cmd.Equals("keyvalue", StringComparison.OrdinalIgnoreCase))
+                PlainKeyValueProducer(pulsarClient, "keyvalue");
             else
                 ProduceConsumer(pulsarClient);
 
@@ -334,8 +343,6 @@ namespace Tutorials
                 }
             }
         }
-
-
         private static void TlsProduceConsumer(PulsarClient pulsarClient)
         {
 
@@ -374,5 +381,126 @@ namespace Tutorials
             }
         }
 
+        private static void PlainAvroProducer(PulsarClient client, string topic)
+        {
+            var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
+            var builder = new ConsumerConfigBuilder<JournalEntry>()
+                .Topic(topic)
+                .SubscriptionName($"my-subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
+                .AckTimeout(TimeSpan.FromMilliseconds(20000))
+                .ForceTopicCreation(true)
+                .AcknowledgmentGroupTime(0);
+            var consumer = client.NewConsumer(jsonSchem, builder);
+            var producerConfig = new ProducerConfigBuilder<JournalEntry>()
+                .ProducerName(topic.Split("/").Last())
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .SendTimeout(10000);
+
+            var producer = client.NewProducer(jsonSchem, producerConfig);
+
+            for (var i = 0; i < 10; i++)
+            {
+                var student = new Students
+                {
+                    Name = $"[{i}] Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Age = 202 + i,
+                    School = "Akka-Pulsar university"
+                };
+                var journal = new JournalEntry
+                {
+                    Id = $"[{i}]Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}",
+                    PersistenceId = "sampleActor",
+                    IsDeleted = false,
+                    Ordering = 0,
+                    Payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(student)),
+                    SequenceNr = 0,
+                    Tags = "root"
+                };
+                var metadata = new Dictionary<string, string>
+                {
+                    ["Key"] = "Single",
+                    ["Properties"] = JsonSerializer.Serialize(new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }, new JsonSerializerOptions { WriteIndented = true })
+                };
+                var id = producer.NewMessage().Properties(metadata).Value(journal).Send();
+            }
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < 10; i++)
+            {
+                var msg = consumer.Receive();
+                if (msg != null)
+                {
+                    var receivedMessage = msg.Value;
+                    Console.WriteLine(JsonSerializer.Serialize(receivedMessage, new JsonSerializerOptions { WriteIndented = true }));
+                }
+
+            }
+        }
+
+        private static void PlainKeyValueProducer(PulsarClient client, string topic)
+        {
+            //var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
+            var jsonSchem = KeyValueSchema<string, string>.Of(ISchema<string>.String, ISchema<string>.String);
+            var builder = new ConsumerConfigBuilder<KeyValue<string, string>>()
+                .Topic(topic)
+                .SubscriptionName($"subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
+                .AckTimeout(TimeSpan.FromMilliseconds(20000))
+                .ForceTopicCreation(true)
+                .AcknowledgmentGroupTime(0);
+            var consumer = client.NewConsumer(jsonSchem, builder);
+            var producerConfig = new ProducerConfigBuilder<KeyValue<string, string>>()
+                .ProducerName(topic.Split("/").Last())
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .SendTimeout(10000);
+
+            var producer = client.NewProducer(jsonSchem, producerConfig);
+
+            for (var i = 0; i < 10; i++)
+            {
+                var metadata = new Dictionary<string, string>
+                {
+                    ["Key"] = "Single",
+                    ["Properties"] = JsonSerializer.Serialize(new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }, new JsonSerializerOptions { WriteIndented = true })
+                };
+                var id = producer.NewMessage().Properties(metadata).Value<string, string>(new KeyValue<string, string>("Ebere", $"[{i}]Ebere")).Send();
+                Console.WriteLine(id.ToString());
+            }
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < 10; i++)
+            {
+                var msg = consumer.Receive();
+                if (msg != null)
+                {
+                    var kv = msg.Value;
+                    Console.WriteLine($"key:{kv.Key}, value:{kv.Value}");
+                }
+
+            }
+        }
+    }
+    public class Students
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public string School { get; set; }
+    }
+    public class DataOp
+    {
+        public string Text { get; set; }
+    }
+    public class JournalEntry
+    {
+        public string Id { get; set; }
+
+        public string PersistenceId { get; set; }
+
+        public long SequenceNr { get; set; }
+
+        public bool IsDeleted { get; set; }
+
+        public byte[] Payload { get; set; }
+        public long Ordering { get; set; }
+        public string Tags { get; set; }
     }
 }
