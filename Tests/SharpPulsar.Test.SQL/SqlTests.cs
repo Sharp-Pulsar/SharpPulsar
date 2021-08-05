@@ -28,8 +28,7 @@ namespace SharpPulsar.Test.SQL
 			_output = output;
 			_client = fixture.Client;
 		}
-		//[Fact(Skip ="Issue with sql-worker on github action")]
-		[Fact]
+		[Fact(Skip ="Issue with sql-worker on github action")]
 		public virtual void TestQuerySql()
 		{
 			var topic = $"query_topics_bytes";
@@ -75,12 +74,12 @@ namespace SharpPulsar.Test.SQL
             Assert.True(receivedCount > 1);
         }
 
-        [Fact]
+        [Fact(Skip = "Issue with sql-worker on github action")]
         public void TestAvro()
         {
             PlainAvroProducer($"journal");
         }
-        [Fact]
+        [Fact(Skip = "Issue with sql-worker on github action")]
         public void TestKeyValue()
         {
             PlainKeyValueProducer($"keyvalue");
