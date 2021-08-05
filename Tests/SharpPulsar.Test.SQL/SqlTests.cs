@@ -31,7 +31,7 @@ namespace SharpPulsar.Test.SQL
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
-            Thread.Sleep(TimeSpan.FromSeconds(30));
+            Thread.Sleep(TimeSpan.FromSeconds(5));
 			var sql = PulsarSystem.NewSql();
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 			var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
