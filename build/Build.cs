@@ -482,7 +482,7 @@ class Build : NukeBuild
                 .EnableNoRestore()
                 .SetAssemblyVersion($"1.0.{BuildNumber}")
                 .SetVersion($"1.0.{BuildNumber}")
-                .SetPackageReleaseNotes("Fix bug with topic naming")
+                .SetPackageReleaseNotes("Some enhancements")
                 .SetDescription("Implements Apache Pulsar Trino's REST API.")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar", "Trino")
                 .AddAuthors("Ebere Abanonu (@mestical)")

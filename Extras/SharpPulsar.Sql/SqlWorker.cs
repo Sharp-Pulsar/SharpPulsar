@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Akka.Actor;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
@@ -8,14 +9,20 @@ namespace SharpPulsar.Sql
 {
     public class SqlWorker : ReceiveActor
     {
-        public SqlWorker(SqlQueue<SqlData> queue)
+
+        private readonly BufferBlock<SqlData> _buffer;
+        public SqlWorker()
         {
             ReceiveAsync<SqlSession>(async s=> await Query(s));
             Receive<IQueryResponse>(q =>
             {
-                queue.Post(new SqlData(q));
+                _buffer.Post(new SqlData(q));
             });
-
+            Receive<Read>(_ =>
+            {
+                _buffer.TryReceive(out var data);
+                Sender.Tell(data);
+            });
         }
 
         protected override void Unhandled(object message)
@@ -38,9 +45,9 @@ namespace SharpPulsar.Sql
                 Context.System.Log.Error(ex.ToString());
             }
         }
-        public static Props Prop(SqlQueue<SqlData> queue)
+        public static Props Prop()
         {
-            return Props.Create(() => new SqlWorker(queue));
+            return Props.Create(() => new SqlWorker());
         }
     }
 }

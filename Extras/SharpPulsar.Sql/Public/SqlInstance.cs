@@ -11,23 +11,19 @@ namespace SharpPulsar.Sql.Public
 {
     public class SqlInstance<T>
     {
-        private readonly SqlQueue<T> _queue;
         private readonly IActorRef _queryActor;
         public static SqlInstance<SqlData> NewSql(ActorSystem system)
         {
-            var q = new SqlQueue<SqlData>();
-            var actor = system.ActorOf(SqlWorker.Prop(q));
-            return new SqlInstance<SqlData>(actor, q);
+            var actor = system.ActorOf(SqlWorker.Prop());
+            return new SqlInstance<SqlData>(actor);
         }
         public static SqlInstance<LiveSqlData> NewLiveSql(ActorSystem system, LiveSqlSession sql)
         {
-            var q = new SqlQueue<LiveSqlData>();
-            var actor = system.ActorOf(LiveQuery.Prop(q, sql));
-            return new SqlInstance<LiveSqlData>(actor, q);
+            var actor = system.ActorOf(LiveQuery.Prop(sql));
+            return new SqlInstance<LiveSqlData>(actor);
         }
-        public SqlInstance(IActorRef actor, SqlQueue<T> queue)
+        public SqlInstance(IActorRef actor)
         {
-            _queue = queue;
             _queryActor = actor;
         }
         /// <summary>
@@ -35,33 +31,22 @@ namespace SharpPulsar.Sql.Public
         /// </summary>
         /// <param name="timeOut">The query may not have finished before this method is call. TimeSpan can be supplied to wait</param>
         /// <returns></returns>
-        public async IAsyncEnumerable<T> ReadResults(TimeSpan? timeOut = null)
+        public async IAsyncEnumerable<T> ReadsAsync(TimeSpan? timeOut = null)
         {
-            var data = _queue.Receive(); 
-            if (data == null && timeOut.HasValue)
-            {
-                await Task.Delay((int)timeOut.Value.TotalMilliseconds).ConfigureAwait(false);
-                data = _queue.Receive();
-            }
+            var data = await ReadData(timeOut).ConfigureAwait(false);
             while (data != null)
             {
                 yield return data;
-                data = _queue.Receive();
+                data = await ReadData(timeOut);
             }
         }
-        public T ReadQueryResult(TimeSpan? timeOut = null)
+        public T Read(TimeSpan? timeOut = null)
         {
-            return ReadQueryResultAsync(timeOut).GetAwaiter().GetResult();
+            return ReadAsync(timeOut).GetAwaiter().GetResult();
         }
-        public async ValueTask<T> ReadQueryResultAsync(TimeSpan? timeOut = null)
+        public async ValueTask<T> ReadAsync(TimeSpan? timeOut = null)
         {
-            var data = _queue.Receive();
-            if(data == null && timeOut.HasValue)
-            {
-                await Task.Delay((int)timeOut.Value.TotalMilliseconds).ConfigureAwait(false);
-                data = _queue.Receive();
-            }
-            return data;
+            return await ReadData(timeOut);
         }
         public void SendQuery(ISqlQuery query)
         {
@@ -111,12 +96,26 @@ namespace SharpPulsar.Sql.Public
                     throw new ArgumentException($"Topic '{data.Topic}' failed validation");
 
                 var q = new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler);
-           
-                     _queryActor.Tell(q);
+                _queryActor.Tell(q);
             }
             else
             {
                 throw new ArgumentException($"Mismatch: {d} cannot accept query of type {query.GetType().Name}");
+            }
+        }
+
+        private async  ValueTask<T> ReadData(TimeSpan? timeSpan)
+        {
+            try
+            {
+                if (timeSpan.HasValue)
+                    return await _queryActor.Ask<T>(Message.Read.Instance, timeSpan.Value);
+
+                return await _queryActor.Ask<T>(Message.Read.Instance);
+            }
+            catch (Exception e)
+            {
+                return default;
             }
         }
     }

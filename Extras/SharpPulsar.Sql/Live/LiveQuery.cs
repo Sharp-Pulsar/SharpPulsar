@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Akka.Actor;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
@@ -13,10 +14,12 @@ namespace SharpPulsar.Sql.Live
         private string _execute;
         private int _runCount;
         private readonly IActorContext _context;
-        private ICancelable _executeCancelable;
+        private readonly ICancelable _executeCancelable;
         private readonly IActorRef _self;
-        public LiveQuery(SqlQueue<LiveSqlData> queue, LiveSqlSession sql)
+        private readonly BufferBlock<LiveSqlData> _buffer;
+        public LiveQuery(LiveSqlSession sql)
         {
+            _buffer = new BufferBlock<LiveSqlData>();
             _self = Self;
             _sql = sql;
             _execute = sql.ClientOptions.Execute;
@@ -24,7 +27,13 @@ namespace SharpPulsar.Sql.Live
             _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
             _executeCancelable = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_sql.Frequency), TimeSpan.FromMilliseconds(_sql.Frequency), Self, ExecuteQuery.Instance, Self);
             _context = Context;
-            Receive<IQueryResponse>(q => { queue.Post(new LiveSqlData(q, _sql.Topic)); });
+
+            Receive<IQueryResponse>(q => { _buffer.Post(new LiveSqlData(q, _sql.Topic)); });
+            Receive<Read>(_ =>
+            {
+                _buffer.TryReceive(out var data);
+                Sender.Tell(data);
+            });
             ReceiveAsync<ExecuteQuery>(async _=> await Execute());
             Receive<LiveSqlSession>(l =>
             {
@@ -64,9 +73,9 @@ namespace SharpPulsar.Sql.Live
             _executeCancelable?.Cancel();
         }
 
-        public static Props Prop(SqlQueue<LiveSqlData> queue, LiveSqlSession sql)
+        public static Props Prop(LiveSqlSession sql)
         {
-            return Props.Create(() => new LiveQuery(queue, sql));
+            return Props.Create(() => new LiveQuery(sql));
         }
     }
     public sealed class ExecuteQuery
