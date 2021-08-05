@@ -34,10 +34,10 @@ namespace SharpPulsar.Test.SQL
             Thread.Sleep(TimeSpan.FromSeconds(5));
 			var sql = PulsarSystem.NewSql();
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
-			var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
+			var query = new SqlQuery(option, e => { _output.WriteLine(e.ToString()); }, _output.WriteLine);
 			sql.SendQuery(query);
 			var receivedCount = 0;
-            var response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
+            var response = sql.Read(TimeSpan.FromSeconds(30));
             var data = response.Response;
             switch (data)
             {
@@ -60,7 +60,7 @@ namespace SharpPulsar.Test.SQL
                     break;
             }
             sql.SendQuery(query);
-            response = sql.ReadQueryResult(TimeSpan.FromSeconds(30));
+            response = sql.Read(TimeSpan.FromSeconds(30));
             Assert.Equal(45, receivedCount);
 		}
 		private ISet<string> PublishMessages(string topic, int count)
