@@ -38,13 +38,12 @@ services:
 
   standaloneTls:
     hostname: standaloneTls
-    image: localhost:5000/pulsar-test:latest
+    image: localhost:5000/pulsar-secured:2.8.0
     ports:
       - "6651:6651"
       - "8443:8443"
     command: >
-      bash -c "bin/set_python_version.sh &&
-               bin/apply-config-from-env.py conf/standalone.conf &&
+      bash -c "bin/apply-config-from-env.py conf/standalone.conf &&
                bin/pulsar standalone -nfw"
     environment:
       PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
@@ -66,7 +65,7 @@ services:
       clientAuthenticationParameters: tlsCertFile:/pulsar/ssl/admin.cert.pem,tlsKeyFile:/pulsar/ssl/admin.key-pk8.pem
 
   initTls:
-    image: localhost:5000/pulsar-test:latest
+    image: localhost:5000/pulsar-secured:2.8.0
     volumes:
       - ./scripts/wait-for-it.sh:/pulsar/bin/wait-for-it.sh
       - ./scripts/init-standalone-tls.sh:/pulsar/bin/init-standalone-tls.sh
