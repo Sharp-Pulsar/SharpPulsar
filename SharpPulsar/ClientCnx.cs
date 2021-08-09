@@ -1049,7 +1049,7 @@ namespace SharpPulsar
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
-			var authData = _authenticationDataProvider.Authenticate(_authentication.AuthMethodName.ToLower() == "sts" ? null : new Auth.AuthData(Auth.AuthData.InitAuthData));
+			var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(Auth.AuthData.InitAuthData));
 			var assemblyName = Assembly.GetCallingAssembly().GetName();
 			var auth = new AuthData { auth_data = (authData.Bytes) };
 			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);

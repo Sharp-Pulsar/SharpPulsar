@@ -48,7 +48,7 @@ namespace SharpPulsar.Utility
 				}
 				catch (IOException e)
 				{
-					Log.LogError("Unable to fetch lastModified time for file {}: ", FileName, e);
+					//Log.LogError("Unable to fetch lastModified time for file {}: ", FileName, e);
 				}
 			}
 			throw new Exception("Invalid file name");
@@ -64,8 +64,7 @@ namespace SharpPulsar.Utility
 			}
 			return false;
 		}
-
-		private static readonly ILogger Log = Utility.Log.Logger.CreateLogger<FileModifiedTimeUpdater>();
+        
 	}
 
 }

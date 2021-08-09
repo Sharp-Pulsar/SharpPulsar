@@ -57,35 +57,24 @@ namespace SharpPulsar.Auth
 		{
 			return DefaultImplementation.NewAuthenticationToken(tokenSupplier);
 		}
+        
+        public static IAuthentication Tls(string pfxFilePath)
+        {
+            return DefaultImplementation.NewAuthenticationTls(pfxFilePath);
+        }
+        // CHECKSTYLE.ON: MethodName
 
-		// CHECKSTYLE.OFF: MethodName
-
-		/// <summary>
-		/// Create an authentication provider for TLS based authentication.
-		/// </summary>
-		/// <param name="certFilePath">
-		///            the path to the TLS client public key </param>
-		/// <param name="keyFilePath">
-		///            the path to the TLS client private key </param>
-		/// <returns> the Authentication object initialized with the TLS credentials </returns>
-		public static IAuthentication Tls(string certFilePath, string keyFilePath)
-		{
-			return DefaultImplementation.NewAuthenticationTls(certFilePath, keyFilePath);
-		}
-
-		// CHECKSTYLE.ON: MethodName
-
-		/// <summary>
-		/// Create an instance of the <seealso cref="Authentication"/> object by using
-		/// the plugin class name.
-		/// </summary>
-		/// <param name="authPluginClassName">
-		///            name of the Authentication-Plugin you want to use </param>
-		/// <param name="authParamsString">
-		///            string which represents parameters for the Authentication-Plugin, e.g., "key1:val1,key2:val2" </param>
-		/// <returns> instance of the Authentication object </returns>
-		/// <exception cref="UnsupportedAuthenticationException"> </exception>
-		public static IAuthentication Create(string authPluginClassName, string authParamsString)
+        /// <summary>
+        /// Create an instance of the <seealso cref="Authentication"/> object by using
+        /// the plugin class name.
+        /// </summary>
+        /// <param name="authPluginClassName">
+        ///            name of the Authentication-Plugin you want to use </param>
+        /// <param name="authParamsString">
+        ///            string which represents parameters for the Authentication-Plugin, e.g., "key1:val1,key2:val2" </param>
+        /// <returns> instance of the Authentication object </returns>
+        /// <exception cref="UnsupportedAuthenticationException"> </exception>
+        public static IAuthentication Create(string authPluginClassName, string authParamsString)
 		{
 			try
 			{

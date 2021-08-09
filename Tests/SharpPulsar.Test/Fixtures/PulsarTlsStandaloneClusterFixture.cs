@@ -65,7 +65,7 @@ namespace SharpPulsar.Test.Fixtures
             {
                 try
                 {
-                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                    //await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
                     return;
                 }
                 catch
@@ -117,8 +117,8 @@ namespace SharpPulsar.Test.Fixtures
             var clienConfigSetting = config.GetSection("client");
             var serviceUrl = "pulsar+ssl://127.0.0.1:6651";
             var webUrl = "https://127.0.0.1:8443";
-            var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
-            var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
+            var authPluginClassName = "SharpPulsar.Auth.AuthenticationTls, SharpPulsar";
+            var authParamsString = @"{""tlsCertFile"":""Certs/admin.pfx""}";
             var authCertPath = "Certs/ca.cert.pem";
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
             var statsInterval = int.Parse(clienConfigSetting.GetSection("stats-interval").Value);

@@ -45,11 +45,8 @@ namespace SharpPulsar.Interfaces
 
 		/// 
 		/// <returns> a client certificate chain, or null if the data are not available </returns>
-		virtual X509Certificate2[] TlsCertificates => null;
-
-        /// 
-		/// <returns> a private key for the client certificate, or null if the data are not available </returns>
-		virtual AsymmetricAlgorithm TlsPrivateKey => null;
+		virtual X509Certificate2Collection TlsCertificates => null;
+        
 
         /*
 		 * HTTP

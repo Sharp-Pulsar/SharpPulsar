@@ -28,8 +28,75 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.EventSourc
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{F7A4ED9D-F859-4738-A5AC-492BC57521FD}"
 	ProjectSection(SolutionItems) = preProject
-		docker\docker-compose.yml = docker\docker-compose.yml
 		docker\README.md = docker\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "compose", "compose", "{F9003C2F-1F79-4FDC-9D87-BA02244476EF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tls", "tls", "{F39C9922-2E2D-41D5-AD49-B30E727F2F0E}"
+	ProjectSection(SolutionItems) = preProject
+		docker\compose\tls\docker-compose.yml = docker\compose\tls\docker-compose.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "simple", "simple", "{A989E239-D0E2-47C6-A577-916F71C5487F}"
+	ProjectSection(SolutionItems) = preProject
+		docker\compose\simple\docker-compose.yml = docker\compose\simple\docker-compose.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "multi", "multi", "{D79CA6A6-5B2C-4F6E-839E-53E20E6064DF}"
+	ProjectSection(SolutionItems) = preProject
+		docker\compose\multi\docker-compose.yml = docker\compose\multi\docker-compose.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "latest-version-image", "latest-version-image", "{D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}"
+	ProjectSection(SolutionItems) = preProject
+		docker\latest-version-image\Dockerfile = docker\latest-version-image\Dockerfile
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "conf", "conf", "{BE51FF3B-EA56-4609-8CB7-A3BB1C3C081A}"
+	ProjectSection(SolutionItems) = preProject
+		docker\latest-version-image\conf\bookie.conf = docker\latest-version-image\conf\bookie.conf
+		docker\latest-version-image\conf\broker.conf = docker\latest-version-image\conf\broker.conf
+		docker\latest-version-image\conf\functions_worker.conf = docker\latest-version-image\conf\functions_worker.conf
+		docker\latest-version-image\conf\global-zk.conf = docker\latest-version-image\conf\global-zk.conf
+		docker\latest-version-image\conf\local-zk.conf = docker\latest-version-image\conf\local-zk.conf
+		docker\latest-version-image\conf\presto_worker.conf = docker\latest-version-image\conf\presto_worker.conf
+		docker\latest-version-image\conf\proxy.conf = docker\latest-version-image\conf\proxy.conf
+		docker\latest-version-image\conf\supervisord.conf = docker\latest-version-image\conf\supervisord.conf
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "presto", "presto", "{1ED8187D-303F-4768-8341-FD8B15A54972}"
+	ProjectSection(SolutionItems) = preProject
+		docker\latest-version-image\conf\presto\jvm.config = docker\latest-version-image\conf\presto\jvm.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{6F7B7EDC-2647-4CB9-8768-AD580B65FDED}"
+	ProjectSection(SolutionItems) = preProject
+		docker\latest-version-image\scripts\init-cluster.sh = docker\latest-version-image\scripts\init-cluster.sh
+		docker\latest-version-image\scripts\run-bookie.sh = docker\latest-version-image\scripts\run-bookie.sh
+		docker\latest-version-image\scripts\run-broker.sh = docker\latest-version-image\scripts\run-broker.sh
+		docker\latest-version-image\scripts\run-functions-worker.sh = docker\latest-version-image\scripts\run-functions-worker.sh
+		docker\latest-version-image\scripts\run-global-zk.sh = docker\latest-version-image\scripts\run-global-zk.sh
+		docker\latest-version-image\scripts\run-local-zk.sh = docker\latest-version-image\scripts\run-local-zk.sh
+		docker\latest-version-image\scripts\run-presto-worker.sh = docker\latest-version-image\scripts\run-presto-worker.sh
+		docker\latest-version-image\scripts\run-proxy.sh = docker\latest-version-image\scripts\run-proxy.sh
+		docker\latest-version-image\scripts\run-standalone.sh = docker\latest-version-image\scripts\run-standalone.sh
+		docker\latest-version-image\scripts\run-websocket.sh = docker\latest-version-image\scripts\run-websocket.sh
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ssl", "ssl", "{59623902-830D-4D6F-B1D0-DA74CD18B0DA}"
+	ProjectSection(SolutionItems) = preProject
+		docker\latest-version-image\ssl\admin.cert.pem = docker\latest-version-image\ssl\admin.cert.pem
+		docker\latest-version-image\ssl\admin.key-pk8.pem = docker\latest-version-image\ssl\admin.key-pk8.pem
+		docker\latest-version-image\ssl\broker.cert.pem = docker\latest-version-image\ssl\broker.cert.pem
+		docker\latest-version-image\ssl\broker.key-pk8.pem = docker\latest-version-image\ssl\broker.key-pk8.pem
+		docker\latest-version-image\ssl\ca.cert.pem = docker\latest-version-image\ssl\ca.cert.pem
+		docker\latest-version-image\ssl\proxy.cert.pem = docker\latest-version-image\ssl\proxy.cert.pem
+		docker\latest-version-image\ssl\proxy.key-pk8.pem = docker\latest-version-image\ssl\proxy.key-pk8.pem
+		docker\latest-version-image\ssl\superproxy.cert.pem = docker\latest-version-image\ssl\superproxy.cert.pem
+		docker\latest-version-image\ssl\superproxy.key-pk8.pem = docker\latest-version-image\ssl\superproxy.key-pk8.pem
+		docker\latest-version-image\ssl\user1.cert.pem = docker\latest-version-image\ssl\user1.cert.pem
+		docker\latest-version-image\ssl\user1.key-pk8.pem = docker\latest-version-image\ssl\user1.key-pk8.pem
 	EndProjectSection
 EndProject
 Global
@@ -77,6 +144,15 @@ Global
 		{3202A7DE-93B1-4359-A905-103D5E59DEDC} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{55754BAF-1577-45B1-BE28-C37F9154109E} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{32E252E5-BF84-441A-8F1B-83A605D8007C} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{F9003C2F-1F79-4FDC-9D87-BA02244476EF} = {F7A4ED9D-F859-4738-A5AC-492BC57521FD}
+		{F39C9922-2E2D-41D5-AD49-B30E727F2F0E} = {F9003C2F-1F79-4FDC-9D87-BA02244476EF}
+		{A989E239-D0E2-47C6-A577-916F71C5487F} = {F9003C2F-1F79-4FDC-9D87-BA02244476EF}
+		{D79CA6A6-5B2C-4F6E-839E-53E20E6064DF} = {F9003C2F-1F79-4FDC-9D87-BA02244476EF}
+		{D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A} = {F7A4ED9D-F859-4738-A5AC-492BC57521FD}
+		{BE51FF3B-EA56-4609-8CB7-A3BB1C3C081A} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
+		{1ED8187D-303F-4768-8341-FD8B15A54972} = {BE51FF3B-EA56-4609-8CB7-A3BB1C3C081A}
+		{6F7B7EDC-2647-4CB9-8768-AD580B65FDED} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
+		{59623902-830D-4D6F-B1D0-DA74CD18B0DA} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A9D4BE7B-E00C-47EC-87B3-4064A8F6F75E}

@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.TLS
 {
+    //18:09:22.527 [pulsar-io-29-1] INFO org.apache.pulsar.broker.service.ServerCnx - [/172.20.0.1:51604] Failed to authenticate: operation=connect, principal=null, reason=No anonymous role, and no authentication provider configured
     [Collection(nameof(PulsarTlsTests))]
     public class TlsTests
     {
