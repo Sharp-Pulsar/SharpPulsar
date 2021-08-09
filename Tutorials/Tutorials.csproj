@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SharpPulsar" Version="2.0.0-beta.25" />
+    <PackageReference Include="SharpPulsar" Version="2.0.0-beta.26" />
   </ItemGroup>
 
   <ItemGroup>
