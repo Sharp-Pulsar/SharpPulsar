@@ -40,23 +40,15 @@ namespace SharpPulsar.Auth
 		private const long SerialVersionUid = 1L;
 
 		private string _certFilePath;
-		private string _keyFilePath;
-        private readonly Func<MemoryStream> _certStreamProvider;
-        private readonly Func<MemoryStream> _keyStreamProvider;
+		private string _password;
 
         public AuthenticationTls()
         {
-                
         }
-        public AuthenticationTls(string certFilePath, string keyFilePath)
-		{
-			_certFilePath = certFilePath;
-			_keyFilePath = keyFilePath;
-		}
-        public AuthenticationTls(Func<MemoryStream> certStreamProvider, Func<MemoryStream> keyStreamProvider)
+        public AuthenticationTls(string certFilePath, string password = "")
         {
-            _certStreamProvider = certStreamProvider;
-            _keyStreamProvider = keyStreamProvider;
+            _certFilePath = certFilePath;
+            _password = password;
         }
 		public void Close()
 		{
@@ -72,21 +64,12 @@ namespace SharpPulsar.Auth
             {
                 try
                 {
-                    if (!ReferenceEquals(CertFilePath, null) && !ReferenceEquals(KeyFilePath, null))
-                    {
-                        return new AuthenticationDataTls(CertFilePath, KeyFilePath);
-                    }
-
-                    if (_certStreamProvider != null && _keyStreamProvider != null)
-                    {
-                        return new AuthenticationDataTls(_certStreamProvider, _keyStreamProvider);
-                    }
+                    return new AuthenticationDataTls(CertFilePath, _password);
                 }
                 catch (Exception e)
                 {
                     throw new PulsarClientException(e.ToString());
                 }
-                throw new ArgumentException("cert/key file path or cert/key stream must be present");
             }
 		}
         public virtual void Configure(string encodedAuthParamString)
@@ -128,13 +111,10 @@ namespace SharpPulsar.Auth
             set
             {
                 _certFilePath = value["tlsCertFile"];
-                _keyFilePath = value["tlsKeyFile"];
             }
         }
 
         public virtual string CertFilePath => _certFilePath; 
-
-        public virtual string KeyFilePath => _keyFilePath;
     }
 
 }

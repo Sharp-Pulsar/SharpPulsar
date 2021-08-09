@@ -74,10 +74,10 @@ namespace SharpPulsar
 		{
 			return new AuthenticationToken(supplier);
 		}
-
-		public static IAuthentication NewAuthenticationTls(string certFilePath, string keyFilePath)
+        
+		public static IAuthentication NewAuthenticationTls(string pfxFilePath)
 		{
-			return new AuthenticationTls(certFilePath, keyFilePath);
+			return new AuthenticationTls(pfxFilePath);
 		}
 
 		public static IAuthentication CreateAuthentication(string authPluginClassName, string authParamsString)

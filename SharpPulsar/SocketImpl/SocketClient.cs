@@ -21,6 +21,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpPulsar.Auth;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -65,6 +66,9 @@ namespace SharpPulsar.SocketImpl
             if (conf.ClientCertificates != null)
                 _clientCertificates = conf.ClientCertificates;
 
+            if (conf.Authentication is AuthenticationTls tls)
+                _clientCertificates = tls.AuthData.TlsCertificates;
+
             if (conf.TrustedCertificateAuthority != null)
                 _trustedCertificateAuthority = conf.TrustedCertificateAuthority;
 
@@ -88,7 +92,7 @@ namespace SharpPulsar.SocketImpl
             var networkStream = await GetStream(_server);
 
             if (_encrypt)
-                networkStream = EncryptStream(networkStream, host);
+                networkStream = await EncryptStream(networkStream, host);
 
             _networkstream = networkStream;
 
@@ -229,17 +233,17 @@ namespace SharpPulsar.SocketImpl
                 throw;
             }
         }
-        private Stream EncryptStream(Stream stream, string host)
+        private async ValueTask<Stream> EncryptStream(Stream stream, string host)
         {
             SslStream sslStream = null;
 
             try
             {
-                sslStream = new SslStream(stream, true, ValidateServerCertificate, null);
-                sslStream.AuthenticateAsClient(host, _clientCertificates, SslProtocols.Tls12, false);
+                sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
+                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.Tls12, true);
                 return sslStream;
             }
-            catch
+            catch(Exception ex)
             {
                 if (sslStream is null)
                     stream.Dispose();

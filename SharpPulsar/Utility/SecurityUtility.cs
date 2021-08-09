@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -11,7 +12,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Security.Certificates;
-
+using Org.BouncyCastle.Utilities.Encoders;
 using PemReader = Org.BouncyCastle.OpenSsl.PemReader;
 
 
@@ -50,63 +51,15 @@ namespace SharpPulsar.Utility
 
 			try
             {
-                var pem = new Limilabs.Cryptography.PemReader();
-                var certificate = pem.ReadCertificateFromFile(certFilePath);
-                return new []{certificate};
+                var cert = new X509Certificate2(File.ReadAllBytes(certFilePath));
+                return new [] {cert};
             }
 			catch (Exception e) when (e is GeneralSecurityException || e is IOException)
 			{
 				throw new SecurityException("Certificate loading error", e);
 			}
 		}
-        /// <summary>
-        /// Retrieves the certificate from Pem format.
-        /// </summary>
-        /// <param name="certificateText">Certificate in Pem format</param>
-        /// <returns>An X509 certificate</returns>
-        public X509Certificate ImportCertificate(string certificateText)
-        {
-            using var textReader = new StringReader(certificateText);
-            var pemReader = new PemReader(textReader);
-            var certificate = (X509Certificate)pemReader.ReadObject();
-            return certificate;
-        }
-        /// <summary>
-        /// Retrieves the key pair from PEM format
-        /// </summary>
-        /// <param name="keyPairPemText">Key pair in pem format</param>
-        /// <returns>Key pair</returns>
-        public AsymmetricCipherKeyPair ImportKeyPair(string keyPairPemText)
-        {
-            using var textReader = new StringReader(keyPairPemText);
-            var pemReader = new PemReader(textReader);
-            var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-            return keyPair;
-        }
-        private RsaKeyParameters GenerateKeysFromPem(byte[] rawData)
-        {
-            var pem = new PemReader(new StreamReader(new MemoryStream(rawData)));
-            var keyPair = (RsaKeyParameters)pem.ReadObject();
-            return keyPair;
-        }
-        public Pkcs10CertificationRequest LoadCertificate(string pemFilenameCsr)
-        {
-            var textReader = File.OpenText(pemFilenameCsr);
-            var reader = new PemReader(textReader);
-            return reader.ReadObject() as Pkcs10CertificationRequest;
-        }
-        public static AsymmetricKeyParameter ImportPublicFromPem(string pub)
-        {
-            AsymmetricKeyParameter pubkey;
-
-            using (var textReader = new StringReader(pub))
-            {
-                var pemReader = new PemReader(textReader);
-                pubkey = (AsymmetricKeyParameter)pemReader.ReadObject();
-            }
-
-            return pubkey;
-        }
+        
         public static RSACryptoServiceProvider LoadPrivateKeyFromPemStream(Stream inStream)
         {
             if (inStream == null)
@@ -191,9 +144,11 @@ namespace SharpPulsar.Utility
 			}
 
 			try
-			{
-                var pem = new Limilabs.Cryptography.PemReader();
-                var rsa = pem.ReadPrivateKeyFromFile(keyFilePath);
+            {
+                var privateKeyBytes = LoadPrivateKeyBytes(keyFilePath);
+
+                using var rsa = RSA.Create();
+                rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
                 return rsa;
             }
 			catch (Exception e) when (e is SecurityException || e is IOException)
@@ -201,95 +156,20 @@ namespace SharpPulsar.Utility
 				throw new Exception("Private key loading error", e);
 			}
 		}
-        /// <summary>
-        /// Reads the PEM key file and returns the object.
-        /// </summary>
-        /// <param name="fileName">Path to the pem file</param>
-        /// <returns>the read object which may be of different key types</returns>
-        /// <exception cref="FormatException">Thrown if the key is not in PEM format</exception>
-        private static object ReadPem(string fileName)
+        private static byte[] LoadPrivateKeyBytes(string keyFile)
         {
-            if (!File.Exists(fileName))
-                throw new FileNotFoundException("The key file does not exist: " + fileName);
+            // remove these lines
+            // -----BEGIN RSA PRIVATE KEY-----
+            // -----END RSA PRIVATE KEY-----
+            var pemFileData = File.ReadAllLines(keyFile).Where(x => !x.StartsWith("-"));
 
-            using var file = new StreamReader(fileName);
-            var pRd = new PemReader(file);
+            // Join it all together, convert from base64
+            var binaryEncoding = Convert.FromBase64String(string.Join(null, pemFileData));
 
-            var obj = pRd.ReadObject();
-            pRd.Reader.Close();
-            if (obj == null)
-            {
-                throw new FormatException("The key file " + fileName + " is no valid PEM format");
-            }
-            return obj;
+            // this is the private key byte data
+            return binaryEncoding;
         }
-        public static byte[] Decrypt(byte[] buffer)
-        {
-            using TextReader sr = new StringReader(""/*PRIVATE_KEY*/);
-            var pemReader = new PemReader(sr);
-            var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-            var privateKey = (RsaKeyParameters)keyPair.Private;
-            IAsymmetricBlockCipher cipher = new Pkcs1Encoding(new RsaEngine());
-
-            cipher.Init(false, privateKey);
-            return cipher.ProcessBlock(buffer, 0, buffer.Length);
-        }
-        public static AsymmetricKeyParameter ReadRsaPrivateKey(string path)
-        {
-            try
-            {
-                var fileName = Path.GetFileNameWithoutExtension(path);
-                if (fileName != null && fileName.Contains("_private"))
-                {
-                    AsymmetricCipherKeyPair key;
-                    TextReader tr = new StreamReader(path);
-                    var pr = new PemReader(tr);
-                    key = (AsymmetricCipherKeyPair)pr.ReadObject();
-                    pr.Reader.Close();
-                    tr.Close();
-                    return key.Private;
-                }
-
-                return null;
-            }
-            catch (InvalidCastException e)
-            {
-                return null;
-            }
-        }
-        public static AsymmetricKeyParameter ReadRsaPublicKey(string path)
-        {
-            try
-            {
-                var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
-                if (fileName != null && fileName.Contains("_public"))
-                {
-                    RsaKeyParameters rsaKey;
-                    TextReader tr = new StreamReader(path);
-                    var pr = new PemReader(tr);
-                    rsaKey = (RsaKeyParameters)pr.ReadObject();
-                    var key = (AsymmetricKeyParameter)rsaKey;
-                    pr.Reader.Close();
-                    tr.Close();
-                    return key;
-                }
-
-                return null;
-            }
-            catch (InvalidCastException e)
-            {
-                return null;
-            }
-        }
-        internal AsymmetricCipherKeyPair GetKeyPair(string key)
-        {
-            var reader = new StringReader(key);
-            var pem = new PemReader(reader);
-            var o = pem.ReadObject();
-
-            return (AsymmetricCipherKeyPair)o;
-        }
-		private static RSACryptoServiceProvider GetPrivateKeyFromPemFile(string keyFilePath)
+        private static RSACryptoServiceProvider GetPrivateKeyFromPemFile(string keyFilePath)
         {
             using TextReader privateKeyTextReader = new StringReader(File.ReadAllText(keyFilePath));
             var readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
@@ -299,18 +179,7 @@ namespace SharpPulsar.Utility
             csp.ImportParameters(rsaParams);
             return csp;
         }
-
-		public static RSA GetPublicKeyFromPemFile(string filePath)
-        {
-            using TextReader publicKeyTextReader = new StringReader(File.ReadAllText(filePath));
-            var publicKeyParam = (RsaKeyParameters)new PemReader(publicKeyTextReader).ReadObject();
-
-            var rsaParams = DotNetUtilities.ToRSAParameters(publicKeyParam);
-
-            var rsa = RSA.Create();
-            rsa.ImportParameters(rsaParams);
-            return rsa;
-        }
+        
 		
 	}
 

@@ -26,7 +26,7 @@ namespace SharpPulsar.Auth
     public class AuthData
 	{
 		
-		public static byte[] InitAuthData = Encoding.UTF8.GetBytes("PulsarAuthInit");
+		public static byte[] InitAuthData = Encoding.UTF8.GetBytes("PulsarAuthRefresh");
 
 		public byte[] Bytes;
 
