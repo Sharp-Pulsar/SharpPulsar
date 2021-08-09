@@ -456,7 +456,8 @@ class Build : NukeBuild
               .EnableNoRestore()
               .SetAssemblyVersion($"2.0.0.beta.{BuildNumber}")
               .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("Updated Akka.NET to version 1.4.22")
+              .SetPackageReleaseNotes("> Removed Limilabs Mail.dll" +
+                                      "> Fixed TLS Authentication")
               .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
