@@ -456,8 +456,7 @@ class Build : NukeBuild
               .EnableNoRestore()
               .SetAssemblyVersion($"2.0.0.beta.{BuildNumber}")
               .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("> Removed Limilabs Mail.dll" +
-                                      "> Fixed TLS Authentication")
+              .SetPackageReleaseNotes("Fixed duplicate `requestid` when retrying `getPartitionedTopicMetadata`")
               .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")

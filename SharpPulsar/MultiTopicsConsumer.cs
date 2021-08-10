@@ -409,7 +409,7 @@ namespace SharpPulsar
 			{
 				try
 				{
-					RedeliverUnacknowledgedMessages();
+					RedeliverUnacknowledged();
                     Sender.Tell(new AskResponse());
 				}
 				catch (Exception ex)
@@ -421,7 +421,7 @@ namespace SharpPulsar
 			{
 				try
 				{
-					RedeliverUnacknowledgedMessages(m.MessageIds);
+					RedeliverUnacknowledged(m.MessageIds);
                     Sender.Tell(new AskResponse());
 				}
 				catch (Exception ex)
@@ -807,11 +807,11 @@ namespace SharpPulsar
 			}
 		}
 
-		internal override void RedeliverUnacknowledgedMessages()
+		private void RedeliverUnacknowledged()
 		{
 			_consumers.Values.ForEach(consumer =>
 			{
-				consumer.Tell(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance);
+				consumer.Tell(RedeliverUnacknowledgedMessages.Instance);
 				consumer.Tell(ClearUnAckedChunckedMessageIdSequenceMap.Instance);
 			});
 			IncomingMessages.Empty();
@@ -820,7 +820,7 @@ namespace SharpPulsar
 			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+		protected internal override void RedeliverUnacknowledged(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -832,7 +832,7 @@ namespace SharpPulsar
 			if(Conf.SubscriptionType != CommandSubscribe.SubType.Shared)
 			{
 				// We cannot redeliver single messages if subscription type is not Shared
-				RedeliverUnacknowledgedMessages();
+				RedeliverUnacknowledged();
 				return;
 			}
 			RemoveExpiredMessagesFromQueue(messageIds);

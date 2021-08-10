@@ -1,14 +1,14 @@
-﻿using SharpPulsar.User;
-using System;
+﻿using System;
 using System.Threading;
-using Xunit.Abstractions;
 using SharpPulsar.Common;
-using SharpPulsar.Test.Transaction.Fixtures;
-using Xunit;
 using SharpPulsar.Configuration;
+using SharpPulsar.Test.Transaction.Fixtures;
+using SharpPulsar.User;
+using Xunit;
+using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
-namespace SharpPulsar.Test.Transaction
+namespace SharpPulsar.Test.Transaction.Transaction
 {
     [Collection(nameof(PulsarTransactionTests))]
 	public class TxnAckTest
@@ -60,7 +60,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
                 // consume and ack messages with txn
-				// Thread.Sleep(TimeSpan.FromSeconds(5));
+				Thread.Sleep(TimeSpan.FromSeconds(5));
                 for (var i = 0; i < messageCnt; i++)
 				{
 					var msg = consumer.Receive();

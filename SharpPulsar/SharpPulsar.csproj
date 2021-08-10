@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.22" />
+    <PackageReference Include="akka" Version="1.4.23" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.10.2" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.2.0" />

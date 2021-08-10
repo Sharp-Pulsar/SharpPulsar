@@ -332,6 +332,8 @@ namespace SharpPulsar
                 {
                     _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Message}");
                     opTimeoutMs -= nextDelay;
+                    var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                    _requestId = id.Id;
                     await GetPartitionedTopicMetadata(topicName, opTimeoutMs);
                 }
             }
