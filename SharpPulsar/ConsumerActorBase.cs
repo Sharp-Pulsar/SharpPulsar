@@ -42,7 +42,6 @@ namespace SharpPulsar
 		internal abstract bool Connected();
 		internal abstract void Seek(long timestamp);
 		internal abstract void Seek(IMessageId messageId);
-		internal abstract void RedeliverUnacknowledgedMessages();
 		internal abstract IConsumerStatsRecorder Stats { get; }
 
 		internal enum ConsumerType
@@ -280,7 +279,7 @@ namespace SharpPulsar
 		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
-		protected internal abstract void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds);
+		protected internal abstract void RedeliverUnacknowledged(ISet<IMessageId> messageIds);
 
 		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
 		{

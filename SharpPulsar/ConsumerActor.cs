@@ -62,7 +62,7 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 namespace SharpPulsar
 {
 
-    internal class ConsumerActor<T> : ConsumerActorBase<T>, IWithUnboundedStash
+    internal class ConsumerActor<T> : ConsumerActorBase<T>
 	{
 		private const int MaxRedeliverUnacknowledged = 1000;
 
@@ -494,9 +494,9 @@ namespace SharpPulsar
 			Receive<ActiveConsumerChanged>(m => {
 				ActiveConsumerChanged(m.IsActive);
 			});
-			Receive<MessageReceived>(m => 
+			ReceiveAsync<MessageReceived>(async m => 
 			{
-				Become(() => MessageReceived(m));
+				await MessageReceived(m);
 			});
 			Receive<GetSubscription>(m => {
 				Sender.Tell(Subscription);
@@ -643,21 +643,14 @@ namespace SharpPulsar
 			});
 			Receive<RedeliverUnacknowledgedMessages>(m => 
 			{
-                try
-                {
-					RedeliverUnacknowledgedMessages();
-                    Sender.Tell(new AskResponse());
-				}
-                catch (Exception ex)
-                {
-                    Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-				}
-			});
+                RedeliverUnacknowledged();
+                Sender.Tell(new AskResponse());
+            });
 			Receive<RedeliverUnacknowledgedMessageIds>(m => 
 			{
                 try
 				{
-					RedeliverUnacknowledgedMessages(m.MessageIds);
+					RedeliverUnacknowledged(m.MessageIds);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -701,7 +694,6 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Stash?.UnstashAll();
         }
 
 
@@ -1063,9 +1055,9 @@ namespace SharpPulsar
         private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime)
 		{
 			var messageId = message.MessageId;
-			if(messageId is TopicMessageId)
+			if(messageId is TopicMessageId id)
 			{
-				messageId = ((TopicMessageId)messageId).InnerMessageId;
+				messageId = id.InnerMessageId;
 			}
 			Condition.CheckArgument(messageId is MessageId);
 			if(State.ConnectionState != HandlerState.State.Ready && State.ConnectionState != HandlerState.State.Connecting)
@@ -1202,7 +1194,7 @@ namespace SharpPulsar
                         messageId
                     };
                     _unAckedMessageTracker.Tell(new Remove(messageId));
-					RedeliverUnacknowledgedMessages(messageIds);
+					RedeliverUnacknowledged(messageIds);
 				}
 			}
 
@@ -1364,16 +1356,26 @@ namespace SharpPulsar
 				ConsumerEventListener.BecameInactive(Self, _partitionIndex);
 			}
 		}
-		private void MessageReceived(MessageReceived received)
+		private async ValueTask MessageReceived(MessageReceived received)
 		{
-			Receive<bool>(isDup =>
+            var ms = received;
+            var messageId = ms.MessageId;
+            var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
+
+            var mn = (short)0x0e01;
+			var startsWith = received.MagicNumber == mn;
+			var hascheckum = received.CheckSum;
+			if (!(startsWith && hascheckum))
+			{
+				// discard message with checksum error
+				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
+			}
+            else
             {
                 try
                 {
-                    var ms = received;
-                    var messageId = ms.MessageId;
-                    var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-                    if (isDup)
+                    var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
+                    if (isDub)
                     {
                         if (_log.IsDebugEnabled)
                         {
@@ -1384,33 +1386,11 @@ namespace SharpPulsar
                     else
                         ProcessMessage(ms);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
                 }
-                finally
-                {
-                    Become(Ready);
-
-                }
-			});
-			ReceiveAny(_ => Stash.Stash());
-			var messageId = received.MessageId;
-
-			var mn = (short)0x0e01;
-			var startsWith = received.MagicNumber == mn;
-			var hascheckum = received.CheckSum;
-			if (!(startsWith && hascheckum))
-			{
-				// discard message with checksum error
-				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
-				Become(Ready);
-			}
-            else
-            {
-				var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
-				_acknowledgmentsGroupingTracker.Tell(new IsDuplicate(msgId));				
-			}	
+            }	
 			
 		}
 
@@ -1967,7 +1947,7 @@ namespace SharpPulsar
 			return IncomingMessages.Count;
 		}
 
-		internal override void RedeliverUnacknowledgedMessages()
+		private void RedeliverUnacknowledged()
 		{
 			var cnx = _clientCnx;
 			var protocolVersion = _protocolVersion;
@@ -1989,18 +1969,19 @@ namespace SharpPulsar
 				{
 					_log.Debug($"[{Subscription}] [{Topic}] [{ConsumerName}] Redeliver unacked messages and send {currentSize} permits");
 				}
-				return;
 			}
-			if(cnx == null || (State.ConnectionState == HandlerState.State.Connecting))
-			{
-				_log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
-			}
-			else
-			{
-				_log.Warning($"[{Self}] Reconnecting the client to redeliver the messages.");
-				cnx.Tell(PoisonPill.Instance);
-			}
-			_log.Info("RedeliverUnacknowledgedMessages()=5");
+            else
+            {
+                if (cnx == null || (State.ConnectionState == HandlerState.State.Connecting))
+                {
+                    _log.Warning($"[{Self}] Client Connection needs to be established for redelivery of unacknowledged messages");
+                }
+                else
+                {
+                    _log.Warning($"[{Self}] Reconnecting the client to redeliver the messages.");
+                    cnx.Tell(PoisonPill.Instance);
+                }
+            }
 		}
 
 		private int ClearIncomingMessagesAndGetMessageNumber()
@@ -2013,7 +1994,7 @@ namespace SharpPulsar
 			return messagesNumber;
 		}
 
-		protected internal override void RedeliverUnacknowledgedMessages(ISet<IMessageId> messageIds)
+		protected internal override void RedeliverUnacknowledged(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -2025,7 +2006,7 @@ namespace SharpPulsar
 			if(Conf.SubscriptionType != CommandSubscribe.SubType.Shared && Conf.SubscriptionType != CommandSubscribe.SubType.KeyShared)
 			{
 				// We cannot redeliver single messages if subscription type is not Shared
-				RedeliverUnacknowledgedMessages();
+				RedeliverUnacknowledged();
 				return;
 			}
 			var cnx = _clientCnx;
@@ -2555,8 +2536,7 @@ namespace SharpPulsar
 				return _topicNameWithoutPartition;
 			}
 		}
-
-        public IStash Stash { get; set; }
+        
 
 		private void RemoveOldestPendingChunkedMessage()
 		{

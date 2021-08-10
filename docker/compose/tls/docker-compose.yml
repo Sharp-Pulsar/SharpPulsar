@@ -76,6 +76,9 @@ services:
   pulsar1:
     hostname: pulsar1
     image: localhost:5000/pulsar-secured:2.8.0
+    ports:
+      - "6651:6651"
+      - "8443:8443"
     command: bin/run-broker.sh
     environment:
       clusterName: test

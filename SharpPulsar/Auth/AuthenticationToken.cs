@@ -85,7 +85,7 @@ namespace SharpPulsar.Auth
 			}
 			else
 			{
-				this._tokenSupplier = () => encodedAuthParamString;
+				_tokenSupplier = () => encodedAuthParamString;
 			}
 		}
 

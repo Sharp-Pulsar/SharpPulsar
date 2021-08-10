@@ -1,13 +1,13 @@
-﻿using SharpPulsar.Configuration;
+﻿using System;
+using System.Net.Http;
+using System.Text;
+using System.Threading;
+using SharpPulsar.Common;
+using SharpPulsar.Configuration;
 using SharpPulsar.Test.Transaction.Fixtures;
 using SharpPulsar.User;
-using System;
-using System.Text;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Common;
-using System.Net.Http;
-using System.Threading;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,7 +27,7 @@ using System.Threading;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Transaction
+namespace SharpPulsar.Test.Transaction.Transaction
 {
     /// <summary>
     /// End to end transaction test.
