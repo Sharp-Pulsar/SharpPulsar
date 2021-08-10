@@ -7,4 +7,4 @@
 - run: `docker compose up` to deploy pulsar
 
 # Edit Host File
-Add `pulsar1` and `proxy1` to host file. The easiest and fastest was is to use [Hostsman](https://github.com/portapps/hostsman-portable)
+Add `pulsar1` and `proxy1` to host file. The easiest and fastest way is to use [Hostsman](https://github.com/portapps/hostsman-portable)
