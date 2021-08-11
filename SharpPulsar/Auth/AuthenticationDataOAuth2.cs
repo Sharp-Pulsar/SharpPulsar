@@ -60,14 +60,14 @@ namespace SharpPulsar.Auth
 			{
 				try
 				{
-                    var responseTask = _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+                    var response = _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
                     {
                         Address = _disco.TokenEndpoint,
 
                         ClientId = _clientId,
                         ClientSecret = _clientSecret,
-                    });
-                    var response = Task.Run(async () => await responseTask).Result;
+                    }).GetAwaiter().GetResult();
+
                     if (response.IsError) throw new Exception(response.Error);
                     return response.AccessToken;
 				}
@@ -82,15 +82,15 @@ namespace SharpPulsar.Auth
         {
             if (data != null)
             {
-                var resultTask = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
+                var result = _client.IntrospectTokenAsync(new TokenIntrospectionRequest
                 {
                     Address = _disco.IntrospectionEndpoint,
 
                     ClientId = _clientId,
                     ClientSecret = _clientSecret,
                     Token = Encoding.UTF8.GetString(data.Bytes)
-                });
-                var result = Task.Run(async () => await resultTask).Result;
+                }).GetAwaiter().GetResult();
+
                 if (result.IsError)
                 {
                     throw new PulsarClientException(result.Error);

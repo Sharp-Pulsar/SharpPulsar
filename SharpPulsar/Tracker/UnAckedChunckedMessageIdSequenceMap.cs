@@ -5,7 +5,7 @@ using SharpPulsar.Tracker.Messages;
 
 namespace SharpPulsar.Tracker
 {
-    public class UnAckedChunckedMessageIdSequenceMap: ReceiveActor, IWithUnboundedStash
+    public class UnAckedChunckedMessageIdSequenceMap: ReceiveActor
     {
         private readonly Dictionary<MessageId, MessageId[]> _unAckedChunckedMessageIdSequenceMap;
         public UnAckedChunckedMessageIdSequenceMap()
@@ -49,10 +49,10 @@ namespace SharpPulsar.Tracker
         }
         
         public static Props Prop()
-        {
+        { 
             return Props.Create(()=> new UnAckedChunckedMessageIdSequenceMap());
         }
-        public IStash Stash { get; set; }
+
     }
 
     public sealed class AddMessageIds

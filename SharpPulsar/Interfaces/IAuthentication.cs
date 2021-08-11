@@ -55,7 +55,7 @@ namespace SharpPulsar.Interfaces
 		{
 			if (string.IsNullOrWhiteSpace(brokerHostName))
 				throw new PulsarClientException("Broker Host Name Cannot be Empty");
-			return this.AuthData;
+			return AuthData;
 		}
 		
 		/// <summary>
