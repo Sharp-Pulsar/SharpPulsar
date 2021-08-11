@@ -477,27 +477,26 @@ namespace Tutorials
                 Console.WriteLine("transaction messages can't be received before transaction committed");
 
             txn.Commit();
-
-            var ackedMessageCount = 0;
+            
             Thread.Sleep(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCnt; i++)
             {
                 message = consumer.Receive();
                 if (message == null) continue;
-                if (i % 2 != 0) continue;
-                consumer.Acknowledge(message);
-                ackedMessageCount++;
-
+                var msg = Encoding.UTF8.GetString(message.Data);
+                Console.WriteLine($"[1] {msg}");
             }
             
             consumer.RedeliverUnacknowledgedMessages();
 
-            for (var i = 0; i < messageCnt - ackedMessageCount; i++)
+            for (var i = 0; i < messageCnt; i++)
             {
                 message = consumer.Receive();
                 if (message != null)
                 {
                     consumer.Acknowledge(message);
+                    var msg = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"[2] {msg}");
                 }
                 
             }
