@@ -39,7 +39,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Inter;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using Receive = Akka.Actor.Receive;
 

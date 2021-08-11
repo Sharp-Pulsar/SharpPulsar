@@ -29,7 +29,6 @@ using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
 using System;
-using SharpPulsar.Inter;
 
 namespace SharpPulsar.Test.Tracker
 {

@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Akka.Actor;
 using SharpPulsar.Batch;
-using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 
-namespace SharpPulsar.Inter
+namespace SharpPulsar.Tracker
 {
     public class UnAckedChunckedMessageIdSequenceMap: ReceiveActor, IWithUnboundedStash
     {
-        private Dictionary<MessageId, MessageId[]> _unAckedChunckedMessageIdSequenceMap;
+        private readonly Dictionary<MessageId, MessageId[]> _unAckedChunckedMessageIdSequenceMap;
         public UnAckedChunckedMessageIdSequenceMap()
         {
             _unAckedChunckedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
