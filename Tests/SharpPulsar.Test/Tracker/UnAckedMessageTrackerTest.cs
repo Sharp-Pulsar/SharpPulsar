@@ -6,6 +6,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
+using SharpPulsar.Inter;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,11 +33,13 @@ namespace SharpPulsar.Test.Tracker
     {
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
+        private readonly ActorSystem _system;
 		public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
-		}
+            _system = fixture.PulsarSystem.System;
+        }
 
 		[Fact]
         public void TestAddAndRemove()
@@ -45,7 +48,8 @@ namespace SharpPulsar.Test.Tracker
 			builder.Topic("TestAckTracker");
 			builder.SubscriptionName("TestAckTracker-sub");
 			var consumer = _client.NewConsumer(builder);
-			var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop (1000000, 100000, consumer.ConsumerActor));
+            var unack = _system.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop (1000000, 100000, consumer.ConsumerActor, unack));
 
 			var empty = tracker.Ask<bool>(Empty.Instance).GetAwaiter().GetResult();
 			Assert.True(empty);

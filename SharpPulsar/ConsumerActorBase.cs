@@ -57,7 +57,7 @@ namespace SharpPulsar
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
 		protected internal readonly IAdvancedScheduler ListenerExecutor;
 		protected internal BufferBlock<IMessage<T>> IncomingMessages;
-		protected internal Dictionary<MessageId, MessageId[]> UnAckedChunckedMessageIdSequenceMap;
+		protected internal IActorRef UnAckedChunckedMessageIdSequenceMap;
 
 		protected internal int MaxReceiverQueueSize;
 		protected internal readonly ISchema<T> Schema;
@@ -86,7 +86,7 @@ namespace SharpPulsar
 			ConsumerEventListener = conf.ConsumerEventListener;
 
             IncomingMessages = new BufferBlock<IMessage<T>>();
-			UnAckedChunckedMessageIdSequenceMap = new Dictionary<MessageId, MessageId[]>();
+			UnAckedChunckedMessageIdSequenceMap = Context.ActorOf(Inter.UnAckedChunckedMessageIdSequenceMap.Prop());
 
 			ListenerExecutor = listenerExecutor;
 			Schema = schema;

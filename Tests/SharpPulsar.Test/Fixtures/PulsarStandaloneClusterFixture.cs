@@ -12,6 +12,8 @@
  * limitations under the License.
  */
 
+using Akka.Actor;
+
 namespace SharpPulsar.Test.Fixtures
 {
     using Microsoft.Extensions.Configuration;

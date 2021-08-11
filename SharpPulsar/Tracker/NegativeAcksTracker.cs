@@ -40,6 +40,7 @@ namespace SharpPulsar.Tracker
 		private readonly long _nackDelayMs;
 		private readonly long _timerIntervalMs;
         private IActorRef _consumer;
+        private IActorRef _unack;
         private IActorRef _self;
         private ILoggingAdapter _log;
 
@@ -51,7 +52,7 @@ namespace SharpPulsar.Tracker
 
         public IStash Stash { get; set; }
 
-        public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef consumer)
+        public NegativeAcksTracker(ConsumerConfigurationData<T> conf, IActorRef consumer, IActorRef unack)
         {
             _nackedMessages = new Dictionary<IMessageId, long>();
             _log = Context.GetLogger();
@@ -59,6 +60,7 @@ namespace SharpPulsar.Tracker
             _consumer = consumer;
 			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
 			_timerIntervalMs = _nackDelayMs / 3;
+            _unack = unack;
             Ready();
             //_timeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
             _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
@@ -71,9 +73,9 @@ namespace SharpPulsar.Tracker
                await TriggerRedelivery();
             });
         }
-        public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef consumer)
+        public static Props Prop(ConsumerConfigurationData<T> conf, IActorRef consumer, IActorRef unack)
         {
-            return Props.Create(()=> new NegativeAcksTracker<T>(conf, consumer));
+            return Props.Create(()=> new NegativeAcksTracker<T>(conf, consumer, unack));
         }
 		private async ValueTask TriggerRedelivery()
         {
@@ -90,12 +92,12 @@ namespace SharpPulsar.Tracker
             {
                 if (unack.Value < now)
                 {
-                    var ids = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { unack.Key}));
+                    var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { unack.Key}));
                     foreach (var i in ids.MessageIds)
                         messagesToRedeliver.Add(i);
 
                     messagesToRedeliver.Add(unack.Key);
-                    _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { unack.Key }));
+                    _unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { unack.Key }));
                 }
             }
 

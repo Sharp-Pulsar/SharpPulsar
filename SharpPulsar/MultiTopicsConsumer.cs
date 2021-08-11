@@ -129,11 +129,11 @@ namespace SharpPulsar
 			{
 				if (conf.TickDurationMillis > 0)
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeoutMillis, conf.TickDurationMillis, Self), "UnAckedTopicMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeoutMillis, conf.TickDurationMillis, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedTopicMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(Self, conf.AckTimeoutMillis), "UnAckedTopicMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf.AckTimeoutMillis), "UnAckedTopicMessageTracker");
 				}
 			}
 			else
@@ -238,7 +238,7 @@ namespace SharpPulsar
 				await ReceiveMessageFromConsumer(Sender, m.Message);
 			});
 			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
-				UnAckedChunckedMessageIdSequenceMap.Clear();
+				UnAckedChunckedMessageIdSequenceMap.Tell(new Clear());
 			});
 			ReceiveAsync<HasReachedEndOfTopic>(async _ => {
 				var hasReached = await HasReachedEndOfTopic();

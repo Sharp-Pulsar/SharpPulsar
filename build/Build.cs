@@ -456,7 +456,7 @@ class Build : NukeBuild
               .EnableNoRestore()
               .SetAssemblyVersion($"2.0.0.beta.{BuildNumber}")
               .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("Fixed duplicate `requestid` when retrying `getPartitionedTopicMetadata`")
+              .SetPackageReleaseNotes("Fixed deadlock in consumer when Redelivering Unacknowledged Messages")
               .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")

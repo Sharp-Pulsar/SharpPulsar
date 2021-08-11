@@ -191,6 +191,8 @@ namespace SharpPulsar
 
             return SqlInstance<LiveSqlData>.NewLiveSql(_actorSystem, new LiveSqlSession(data.ClientOptions.ToClientSession(), data.ClientOptions, data.Frequency, data.StartAtPublishTime, TopicName.Get(data.Topic).ToString(), data.Log, data.ExceptionHandler));
         }
+
+        public ActorSystem System => _actorSystem;
         public async Task Shutdown()
         {
             await _actorSystem.Terminate();

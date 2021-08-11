@@ -39,7 +39,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using SharpPulsar.Inter;
 using static SharpPulsar.Protocol.Proto.CommandAck;
+using Receive = Akka.Actor.Receive;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -212,11 +214,11 @@ namespace SharpPulsar
 			{
 				if(conf.TickDurationMillis > 0)
 				{
-					_unAckedMessageTracker = Context.ActorOf(Tracker.UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis), Self), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis), Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(Tracker.UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, 0, Self), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, 0, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 			}
 			else
@@ -224,7 +226,7 @@ namespace SharpPulsar
 				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
 			}
 
-			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, Self));
+			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, Self, UnAckedChunckedMessageIdSequenceMap));
 			// Create msgCrypto if not created already
 			if (conf.CryptoKeyReader != null)
 			{
@@ -266,7 +268,7 @@ namespace SharpPulsar
 						
 			if(_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(Self, idGenerator, _consumerId, _connectionHandler, conf));
+				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(UnAckedChunckedMessageIdSequenceMap, Self, idGenerator, _consumerId, _connectionHandler, conf));
 			}
 			else
 			{
@@ -395,40 +397,7 @@ namespace SharpPulsar
 			{
 				StateActor.Tell(new SetConumerState(State.ConnectionState));
 			});
-			Receive<UnAckedChunckedMessageIdSequenceMapCmd>(r =>
-			{
-				var ids = new List<MessageId>();
-				var cmd = r.Command;
-				var messageIds = r.MessageId;
-				foreach(var msgId in messageIds)
-                {
-					MessageId msgid;
-					if (msgId is BatchMessageId id)
-						msgid = new MessageId(id.LedgerId, id.EntryId, id.PartitionIndex);
-					else 
-						msgid = (MessageId)msgId;
-
-					if (cmd == UnAckedCommand.Remove)
-                    {
-						if (UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
-							UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
-						continue;
-					}
-                    else if(cmd == UnAckedCommand.GetRemoved && UnAckedChunckedMessageIdSequenceMap.TryGetValue(msgid, out var removed))
-                    {
-                        UnAckedChunckedMessageIdSequenceMap.Remove(msgid);
-                        ids.AddRange(removed);
-                    }
-					if(cmd == UnAckedCommand.Get && UnAckedChunckedMessageIdSequenceMap.ContainsKey(msgid))
-                    {
-						var mIds = UnAckedChunckedMessageIdSequenceMap[msgid];
-						ids.AddRange(mIds);
-					}
-				}
-				if(cmd == UnAckedCommand.Get || cmd == UnAckedCommand.GetRemoved)
-					Sender.Tell(new UnAckedChunckedMessageIdSequenceMapCmdResponse(ids.ToArray()));
-			});
-
+			
 			Receive<AckTimeoutSend>(ack =>
 			{
 				OnAckTimeoutSend(ack.MessageIds);
@@ -505,7 +474,7 @@ namespace SharpPulsar
                 Sender.Tell(_topicName.ToString());
 			});
 			Receive<ClearUnAckedChunckedMessageIdSequenceMap>(_ => {
-				UnAckedChunckedMessageIdSequenceMap.Clear();
+				UnAckedChunckedMessageIdSequenceMap.Tell(Clear.Instance);
 			});
 			Receive<HasReachedEndOfTopic>(_ => {
 				var hasReached = HasReachedEndOfTopic();
@@ -741,19 +710,17 @@ namespace SharpPulsar
             _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
             try
             {
-                _log.Info("ONE");
+                
                 var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs)).ConfigureAwait(false);
-                _log.Info("TWO");
+                
                 if (result is CommandSuccessResponse _)
                 {
-                    _log.Info("THREE");
                     int currentSize;
                     isDurable = _subscriptionMode == SubscriptionMode.Durable;
                     currentSize = IncomingMessages.Count;
                     if (State.ChangeToReadyState())
                     {
                         ConsumerIsReconnectedToBroker(_clientCnx, currentSize);
-                        _log.Info("FOUR");
                     }
                     else
                     {
@@ -768,7 +735,6 @@ namespace SharpPulsar
                 }
                 else if (result is AskResponse response)
                 {
-                    _log.Info("ELEVEN");
                     if (response.Failed)
                     {
                         DeregisterFromClientCnx();
@@ -934,6 +900,7 @@ namespace SharpPulsar
 				}
 			}
 		}
+        
         protected override void PostStop()
         {
 			_tokenSource.Cancel();
@@ -1045,7 +1012,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-                _acknowledgmentsGroupingTracker.Tell(new AddAcknowledgment(messageId, ackType, properties));
+                _ = _acknowledgmentsGroupingTracker.Ask(new AddAcknowledgment(messageId, ackType, properties));
             }
 		}
 		private void DoAcknowledge(IList<IMessageId> messageIdList, AckType ackType, IDictionary<string, long> properties, IActorRef txn)
@@ -1363,13 +1330,13 @@ namespace SharpPulsar
             var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 
             var mn = (short)0x0e01;
-			var startsWith = received.MagicNumber == mn;
-			var hascheckum = received.CheckSum;
-			if (!(startsWith && hascheckum))
+            var startsWith = received.MagicNumber == mn;
+            var hascheckum = received.CheckSum;
+            if (!(startsWith && hascheckum))
 			{
 				// discard message with checksum error
 				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
-			}
+            }
             else
             {
                 try
@@ -1381,10 +1348,13 @@ namespace SharpPulsar
                         {
                             _log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
                         }
+                        _log.Info("MessageReceived: 10");
                         IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
+                        _log.Info("MessageReceived: 11");
                     }
                     else
                         ProcessMessage(ms);
+
                 }
                 catch (Exception ex)
                 {
@@ -1497,9 +1467,7 @@ namespace SharpPulsar
 			// Lazy task scheduling to expire incomplete chunk message
 			if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessageMillis > 0)
 			{				
-				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), () => {
-					RemoveExpireIncompleteChunkedMessages();
-				});
+				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
 				_expireChunkMessageTaskScheduled = true;
 			}
 
@@ -1558,7 +1526,7 @@ namespace SharpPulsar
 			}
 			// remove buffer from the map, add chucked messageId to unack-message tracker, and reduce pending-chunked-message count
 			_chunkedMessagesMap.Remove(msgMetadata.Uuid);
-			UnAckedChunckedMessageIdSequenceMap.Add(msgId, chunkedMsgCtx.ChunkedMessageIds);
+			UnAckedChunckedMessageIdSequenceMap.Tell(new AddMessageIds(msgId, chunkedMsgCtx.ChunkedMessageIds));
 			_pendingChunckedMessageCount--;
 			compressedPayload = chunkedMsgCtx.ChunkedMsgBuffer.ToArray();
 			chunkedMsgCtx.Recycle();
@@ -1903,13 +1871,13 @@ namespace SharpPulsar
 		}
 
 
-		private void DiscardCorruptedMessage(MessageIdData messageId, IActorRef currentCnx, CommandAck.ValidationError validationError)
+		private void DiscardCorruptedMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
 		{
 			_log.Error($"[{Topic}][{Subscription}] Discarding corrupted message at {messageId.ledgerId}:{messageId.entryId}");
 			DiscardMessage(messageId, currentCnx, validationError);
 		}
 
-		private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, CommandAck.ValidationError validationError)
+		private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
 		{
 			var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
 			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
@@ -2480,17 +2448,11 @@ namespace SharpPulsar
 		private void ResetBackoff(bool isDurable)
 		{
 			_connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
-
-            _log.Info("FIVE");
             if (!(_hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
             {
-                _log.Info("SIX");
                 IncreaseAvailablePermits(_clientCnx, Conf.ReceiverQueueSize);
-                _log.Info("SEVEN");
             }
-            _log.Info("EIGHT");
             _replyTo.Tell(new AskResponse());
-            _log.Info("NINE");
         }
 
 		private void ConnectionClosed(IActorRef cnx)
