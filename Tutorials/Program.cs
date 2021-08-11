@@ -20,6 +20,7 @@ namespace Tutorials
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
+        private static PulsarClient _client;
         static void Main(string[] args)
         {
             var url = "pulsar://127.0.0.1:6650";
@@ -51,13 +52,14 @@ namespace Tutorials
             Console.WriteLine("Please, time to execute some command, which do you want?");
             var cmd = Console.ReadLine();
 
-            if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
+            if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase) || cmd.Equals("txnunack", StringComparison.OrdinalIgnoreCase))
                 clientConfig.EnableTransaction(true);
 
             //pulsar actor system
             var pulsarSystem = PulsarSystem.GetInstance(clientConfig);
 
             var pulsarClient = pulsarSystem.NewClient();
+            _client = pulsarClient;
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 Transaction(pulsarClient);
             else if (cmd.Equals("exclusive", StringComparison.OrdinalIgnoreCase))
@@ -72,6 +74,8 @@ namespace Tutorials
                 PlainAvroProducer(pulsarClient, "plain-avro");
             else if (cmd.Equals("keyvalue", StringComparison.OrdinalIgnoreCase))
                 PlainKeyValueProducer(pulsarClient, "keyvalue");
+            else if (cmd.Equals("txnunack", StringComparison.OrdinalIgnoreCase))
+                TxnRedeliverUnack(pulsarClient);
             else
                 ProduceConsumer(pulsarClient);
 
@@ -437,6 +441,76 @@ namespace Tutorials
             }
         }
 
+        private static void TxnRedeliverUnack(PulsarClient client)
+        {
+            var topic = $"TxnRedeliverUnack_{Guid.NewGuid()}";
+            var subName = $"RedeliverUnack-{Guid.NewGuid()}";
+
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .SubscriptionName(subName)
+                .ForceTopicCreation(true)
+                .EnableBatchIndexAcknowledgment(true)
+                .AcknowledgmentGroupTime(0);
+
+            var consumer = client.NewConsumer(consumerBuilder);
+
+            var producerBuilder = new ProducerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .EnableBatching(false)
+                .SendTimeout(0);
+
+            var producer = client.NewProducer(producerBuilder);
+
+            var txn = Txn;
+
+            var messageCnt = 10;
+            for (var i = 0; i < messageCnt; i++)
+            {
+                producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
+            }
+            Console.WriteLine("produce transaction messages finished");
+
+            // Can't receive transaction messages before commit.
+            var message = consumer.Receive();
+            if(message == null)
+                Console.WriteLine("transaction messages can't be received before transaction committed");
+
+            txn.Commit();
+
+            var ackedMessageCount = 0;
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < messageCnt; i++)
+            {
+                message = consumer.Receive();
+                if (message == null) continue;
+                if (i % 2 != 0) continue;
+                consumer.Acknowledge(message);
+                ackedMessageCount++;
+
+            }
+            
+            consumer.RedeliverUnacknowledgedMessages();
+
+            for (var i = 0; i < messageCnt - ackedMessageCount; i++)
+            {
+                message = consumer.Receive();
+                if (message != null)
+                {
+                    consumer.Acknowledge(message);
+                }
+                
+            }
+            
+        }
+        private static Transaction Txn
+        {
+
+            get
+            {
+                return (Transaction)_client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
+            }
+        }
         private static void PlainKeyValueProducer(PulsarClient client, string topic)
         {
             //var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
