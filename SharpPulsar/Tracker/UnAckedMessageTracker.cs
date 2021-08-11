@@ -39,8 +39,9 @@ namespace SharpPulsar.Tracker
         private readonly long _tickDurationInMs;
         private readonly long _ackTimeoutMillis;
         private readonly IScheduler _scheduler;
+        private IActorRef _unack;
 
-        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer)
+        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer, IActorRef unack)
         {
             Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
             _scheduler = Context.System.Scheduler;
@@ -48,6 +49,7 @@ namespace SharpPulsar.Tracker
             _log = Context.System.Log;
             _tickDurationInMs = tickDurationInMs;
             _ackTimeoutMillis = ackTimeoutMillis;
+            _unack = unack;
             MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, SortedSet<IMessageId>>();
             TimePartitions = new Queue<SortedSet<IMessageId>>();
 
@@ -108,7 +110,7 @@ namespace SharpPulsar.Tracker
                             messagesToRedeliver.Add(i);
 
                         messagesToRedeliver.Add(messageId);
-                        _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
+                        _unack.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { messageId }));
                         _ = MessageIdPartitionMap.TryRemove(messageId, out var _);
                     }
                     
@@ -239,9 +241,9 @@ namespace SharpPulsar.Tracker
             Clear();
         }
 
-        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer)
+        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer, IActorRef unack)
         {
-            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer));
+            return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer, unack));
         }
     }
 

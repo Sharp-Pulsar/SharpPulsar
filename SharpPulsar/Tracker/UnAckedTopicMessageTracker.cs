@@ -24,23 +24,23 @@ namespace SharpPulsar.Tracker
 {
     public class UnAckedTopicMessageTracker : UnAckedMessageTracker
 	{
-		public UnAckedTopicMessageTracker(IActorRef consumerBase, long ackTimeoutMillis) : base(ackTimeoutMillis, 0, consumerBase)
+		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, long ackTimeoutMillis) : base(ackTimeoutMillis, 0, consumerBase, unack)
 		{
 		}
 
-		public UnAckedTopicMessageTracker(IActorRef consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(ackTimeoutMillis, tickDurationMillis, consumerBase)
+		public UnAckedTopicMessageTracker(IActorRef unack, IActorRef consumerBase, long ackTimeoutMillis, long tickDurationMillis) : base(ackTimeoutMillis, tickDurationMillis, consumerBase, unack)
 		{
 			Receive<RemoveTopicMessages>(m => {
 				RemoveTopicMessages(m.Topic);
 			});
 		}
-		public static Props Prop(IActorRef consumerBase, long ackTimeoutMillis)
+		public static Props Prop(IActorRef unack, IActorRef consumerBase, long ackTimeoutMillis)
         {
-			return Props.Create(() => new UnAckedTopicMessageTracker(consumerBase, ackTimeoutMillis));
+			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeoutMillis));
         }
-		public static Props Prop(IActorRef consumerBase, long ackTimeoutMillis, long tickDurationMillis)
+		public static Props Prop(IActorRef unack, IActorRef consumerBase, long ackTimeoutMillis, long tickDurationMillis)
         {
-			return Props.Create(() => new UnAckedTopicMessageTracker(consumerBase, ackTimeoutMillis, tickDurationMillis));
+			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeoutMillis, tickDurationMillis));
         }
 		public virtual int RemoveTopicMessages(string topicName)
 		{

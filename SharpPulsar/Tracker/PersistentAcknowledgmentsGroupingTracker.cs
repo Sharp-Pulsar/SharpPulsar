@@ -16,7 +16,10 @@ using System.Threading.Tasks;
 using SharpPulsar.Messages.Consumer;
 using System.Linq;
 using System.Buffers;
+using Akka.Event;
+using SharpPulsar.Inter;
 using SharpPulsar.Messages.Client;
+using Receive = Akka.Actor.Receive;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -74,8 +77,9 @@ namespace SharpPulsar.Tracker
 
         private readonly bool _batchIndexAckEnabled;
         private readonly bool _ackReceiptEnabled;
+        private readonly IActorRef _unAckedChunckedMessageIdSequenceMap;
 
-        public PersistentAcknowledgmentsGroupingTracker(IActorRef consumer, IActorRef generator, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
+        public PersistentAcknowledgmentsGroupingTracker(IActorRef sequenceMap, IActorRef consumer, IActorRef generator, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
             _handler = handler;
             _consumer = consumer;
@@ -86,6 +90,7 @@ namespace SharpPulsar.Tracker
             _pendingIndividualBatchIndexAcks = new SortedSet<MessageId>();
             _ackReceiptEnabled = conf.AckReceiptEnabled;
             _batchIndexAckEnabled = conf.BatchIndexAckEnabled;
+            _unAckedChunckedMessageIdSequenceMap = sequenceMap;
             BecomeActive();
 			_scheduledTask = _acknowledgementGroupTimeMicros > 0 ? Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), Self, FlushPending.Instance, ActorRefs.NoSender) : null;
 		}
@@ -100,6 +105,7 @@ namespace SharpPulsar.Tracker
             ReceiveAsync<AddAcknowledgment>(async d => 
             {
                 await AddAcknowledgment(d.MessageId, d.AckType, d.Properties); 
+                Sender.Tell("done");
             });
             ReceiveAsync<FlushAndClean>( async _ => await FlushAndClean());
             ReceiveAsync<FlushPending>(async _ => await Flush());
@@ -108,9 +114,10 @@ namespace SharpPulsar.Tracker
                 await AddListAcknowledgment(a.MessageIds, a.AckType, a.Properties);
             });
         }
-        public static Props Prop(IActorRef consumer, IActorRef generator, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
+        
+        public static Props Prop(IActorRef sequenceMap, IActorRef consumer, IActorRef generator, long consumerid, IActorRef handler, ConsumerConfigurationData<T> conf)
         {
-			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker<T>(consumer, generator, consumerid, handler, conf));
+			return Props.Create(()=> new PersistentAcknowledgmentsGroupingTracker<T>(sequenceMap, consumer, generator, consumerid, handler, conf));
         }
 		/// <summary>
 		/// Since the ack are delayed, we need to do some best-effort duplicate check to discard messages that are being
@@ -210,7 +217,7 @@ namespace SharpPulsar.Tracker
             {
                 if (ackType == AckType.Individual)
                 {
-                    _consumer.Tell(new OnAcknowledge(msgId, null));
+                    _consumer.Tell(new OnAcknowledge(batchMessageId, null));
                     // ack this ack carry bitSet index and judge bit set are all ack
                     if (batchMessageId.AckIndividual())
                     {
@@ -230,10 +237,10 @@ namespace SharpPulsar.Tracker
                 }
                 else
                 {
-                    _consumer.Tell(new OnAcknowledgeCumulative(msgId, null));
+                    _consumer.Tell(new OnAcknowledgeCumulative(batchMessageId, null));
                     if (batchMessageId.AckCumulative())
                     {
-                        await DoCumulativeAck((MessageId)msgId, properties, null);
+                        await DoCumulativeAck(batchMessageId, properties, null);
                     }
                     else
                     {
@@ -490,7 +497,7 @@ namespace SharpPulsar.Tracker
                 {
                     var lastAck = (MessageId)_lastCumulativeAck;
                     await NewMessageAckCommandAndWrite(cnx, _consumerId, lastAck.LedgerId, lastAck.EntryId, null, AckType.Cumulative, null, new Dictionary<string, long>(), false,  null);
-                    _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> {_lastCumulativeAck}));
+                    _unAckedChunckedMessageIdSequenceMap.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> {_lastCumulativeAck}));
                     //shouldFlush = true;
                     _cumulativeAckFlushRequired = false;
                 }
@@ -512,7 +519,7 @@ namespace SharpPulsar.Tracker
 
                             // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                             // them
-                            var result = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }));
+                            var result = await _unAckedChunckedMessageIdSequenceMap.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }));
                             var chunkMsgIds = result.MessageIds;
                             if (chunkMsgIds != null && chunkMsgIds.Length > 1)
                             {
@@ -524,7 +531,7 @@ namespace SharpPulsar.Tracker
                                     }
                                 }
                                 // messages will be acked so, remove checked message sequence
-                                _consumer.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { msgId }));
+                                _unAckedChunckedMessageIdSequenceMap.Tell(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Remove, new List<IMessageId> { msgId }));
                             }
                             else
                             {
@@ -592,7 +599,7 @@ namespace SharpPulsar.Tracker
         
         private async ValueTask NewImmediateAckAndFlush(long consumerId, MessageId msgId, long[] bitSet, AckType ackType, IDictionary<string, long> map, IActorRef cnx)
         {
-            var response = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.GetRemoved, new List<IMessageId> { msgId})).ConfigureAwait(false);
+            var response = await _unAckedChunckedMessageIdSequenceMap.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.GetRemoved, new List<IMessageId> { msgId})).ConfigureAwait(false);
             var chunkMsgIds = response.MessageIds;
             // cumulative ack chunk by the last messageId
             if (chunkMsgIds != null && ackType != AckType.Cumulative)

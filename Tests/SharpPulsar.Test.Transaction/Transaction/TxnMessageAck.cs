@@ -83,9 +83,9 @@ namespace SharpPulsar.Test.Transaction.Transaction
 
 			consumer.RedeliverUnacknowledgedMessages();
 
-			Thread.Sleep(TimeSpan.FromSeconds(5));
+			Thread.Sleep(TimeSpan.FromSeconds(10));
 			receiveCnt = 0;
-			for (var i = 0; i < messageCnt - ackedMessageCount; i++)
+			for (var i = 0; i < messageCnt; i++)
 			{
 				message = consumer.Receive();
 				Assert.NotNull(message);
