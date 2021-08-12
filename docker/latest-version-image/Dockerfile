@@ -17,12 +17,12 @@
 # under the License.
 #
 
-FROM localhost:5000/pulsar:2.8.0 as pulsar-all
+FROM apachepulsar/pulsar-all:2.8.0 as pulsar-all
 
 ########################################
 ###### Main image build
 ########################################
-FROM localhost:5000/pulsar:2.8.0
+FROM apachepulsar/pulsar-all:2.8.0
 
 RUN rm -rf /var/lib/apt/lists/* && apt update
 

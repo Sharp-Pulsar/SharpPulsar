@@ -54,7 +54,7 @@ namespace SharpPulsar.Test.Memory
                 {
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    _output.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    _output.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
             dotMemory.Check(memory =>

@@ -67,19 +67,19 @@ namespace SharpPulsar.Test
 				var message = (TopicMessage<byte[]>)consumer.Receive();
 				Assert.NotNull(message);
 				consumer.Acknowledge(message);
-				_output.WriteLine($"message from topic: {message.TopicName}");
+				_output.WriteLine($"message from topic: {message.Topic}");
 			}
 			for (var i = 0; i < messageCount; i++)
 			{
 				var message = (TopicMessage<byte[]>)consumer.Receive();
 				Assert.NotNull(message);
-				_output.WriteLine($"message from topic: {message.TopicName}");
+				_output.WriteLine($"message from topic: {message.Topic}");
 			}
 			for (var i = 0; i < messageCount; i++)
 			{
 				var message = (TopicMessage<byte[]>)consumer.Receive();
 				Assert.NotNull(message);
-				_output.WriteLine($"message from topic: {message.TopicName}");
+				_output.WriteLine($"message from topic: {message.Topic}");
 			}
 		}
 
