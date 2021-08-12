@@ -67,6 +67,8 @@ namespace SharpPulsar.Interfaces
         /// <returns> the byte array with the message payload </returns>
         ReadOnlySequence<byte> Data { get; }
 
+        long Size();
+
 		/// <summary>
 		/// Get the de-serialized value of the message, according the configured <seealso cref="Schema"/>.
 		/// </summary>
@@ -181,7 +183,7 @@ namespace SharpPulsar.Interfaces
 		/// Get the topic the message was published to.
 		/// </summary>
 		/// <returns> the topic the message was published to </returns>
-		string TopicName { get; }
+		string Topic { get; }
 
 		/// <summary>
 		/// <seealso cref="EncryptionContext"/> contains encryption and compression information in it using which application can

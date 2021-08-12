@@ -72,7 +72,7 @@ namespace SharpPulsar.Benchmarks.Bench
                 {
                     _consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from bench topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from bench topic: {message.Topic}");
                 }
             }
         }

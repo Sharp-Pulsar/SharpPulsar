@@ -86,7 +86,7 @@ namespace SharpPulsar
 			ConsumerEventListener = conf.ConsumerEventListener;
 
             IncomingMessages = new BufferBlock<IMessage<T>>();
-			UnAckedChunckedMessageIdSequenceMap = Context.ActorOf(Inter.UnAckedChunckedMessageIdSequenceMap.Prop());
+			UnAckedChunckedMessageIdSequenceMap = Context.ActorOf(Tracker.UnAckedChunckedMessageIdSequenceMap.Prop());
 
 			ListenerExecutor = listenerExecutor;
 			Schema = schema;

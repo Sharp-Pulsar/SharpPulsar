@@ -34,7 +34,7 @@ namespace SharpPulsar.Auth
 
 		public AuthenticationDataToken(Func<string> tokenSupplier)
 		{
-			this._tokenSupplier = tokenSupplier;
+			_tokenSupplier = tokenSupplier;
 		}
 
 		public bool HasDataForHttp()

@@ -94,7 +94,7 @@ namespace SharpPulsar.Test
 				var m = (TopicMessage<byte[]>)message;
 				messageSet++;
 				consumer.Acknowledge(message);
-				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.TopicName}");
+				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
 				message = consumer.Receive();
 			} while(message != null);
 

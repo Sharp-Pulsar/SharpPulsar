@@ -190,7 +190,7 @@ namespace SharpPulsar.Batch
 			{
 				return true;
 			}
-			if (!(part.MessageMetadata.SchemaVersion?.Length > 0))
+			if (!(part.MessageMetadata.ShouldSerializeSchemaVersion()))
 			{
 				return msg.SchemaVersion == null;
 			}

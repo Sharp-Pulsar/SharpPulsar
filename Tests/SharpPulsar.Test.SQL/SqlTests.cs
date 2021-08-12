@@ -29,10 +29,11 @@ namespace SharpPulsar.Test.SQL
 			_client = fixture.Client;
 		}
 		[Fact(Skip ="Issue with sql-worker on github action")]
+		//[Fact]
 		public virtual void TestQuerySql()
 		{
-			var topic = $"query_topics_bytes";
-			PublishMessages(topic, 50);
+			var topic = $"query_topics_avro";
+			PublishMessages(topic, 5);
 			var sql = PulsarSystem.NewSql();
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 			var query = new SqlQuery(option, e => { _output.WriteLine(e.ToString()); }, _output.WriteLine);
@@ -52,10 +53,9 @@ namespace SharpPulsar.Test.SQL
                     {
                         for (var i = 0; i < dr.Data.Count; i++)
                         {
-                            var et = dr.Data.ElementAt(i);
-                            var str = Convert.FromBase64String(et["__value__"].ToString());
-                            var ob = Encoding.UTF8.GetString(str);
+                            var ob = dr.Data.ElementAt(i)["text"].ToString();
                             _output.WriteLine(ob);
+                                _output.WriteLine(ob);
                             receivedCount++;
                         }
                         _output.WriteLine(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
@@ -75,9 +75,10 @@ namespace SharpPulsar.Test.SQL
         }
 
         [Fact(Skip = "Issue with sql-worker on github action")]
+        //[Fact]
         public void TestAvro()
         {
-            PlainAvroProducer($"journal");
+            PlainAvroProducer($"journal-{Guid.NewGuid()}");
         }
         [Fact(Skip = "Issue with sql-worker on github action")]
         public void TestKeyValue()
@@ -86,18 +87,18 @@ namespace SharpPulsar.Test.SQL
         }
 		private ISet<string> PublishMessages(string topic, int count)
 		{
-			ISet<string> keys = new HashSet<string>();
-			var builder = new ProducerConfigBuilder<byte[]>()
-				.Topic(topic);
-			var producer = _client.NewProducer(ISchema<object>.Bytes, builder);
-			for (var i = 0; i < count; i++)
-			{
-				var key = "key" + i;
-				var id = producer.NewMessage().Key(key).Value(Encoding.UTF8.GetBytes("my-sql-message-" + i)).Send();
-				keys.Add(key);
-			}
-			return keys;
-		}
+            ISet<string> keys = new HashSet<string>();
+            var builder = new ProducerConfigBuilder<DataOp>()
+                .Topic(topic);
+            var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
+            for (var i = 0; i < count; i++)
+            {
+                var key = "key" + i;
+                producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).Send();
+                keys.Add(key);
+            }
+            return keys;
+        }
         private void PlainAvroProducer(string topic)
         {
             var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));

@@ -6,7 +6,6 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
-using SharpPulsar.Inter;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

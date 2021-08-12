@@ -39,7 +39,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Inter;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using Receive = Akka.Actor.Receive;
 
@@ -117,8 +116,10 @@ namespace SharpPulsar
 
 		private readonly bool _readCompacted;
 		private readonly bool _resetIncludeHead;
+        private readonly bool _poolMessages = false;
 
-		private ActorSystem _actorSystem;
+
+        private ActorSystem _actorSystem;
 
 		private readonly SubscriptionInitialPosition _subscriptionInitialPosition;
 		private readonly IActorRef _connectionHandler;
@@ -1081,7 +1082,7 @@ namespace SharpPulsar
 					{
 						retryMessage = m;
 						originMessageIdStr = m.MessageId.ToString();
-						originTopicNameStr = m.TopicName;
+						originTopicNameStr = m.Topic;
 					}
 					var propertiesMap = new SortedDictionary<string, string>();
 					var reconsumetimes = 1;
@@ -1422,8 +1423,7 @@ namespace SharpPulsar
                     }
                     return;
                 }
-                var message = new Message<T>(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount);
-
+                var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages);
                 try
                 {
                     // Enqueue the message so that it can be retrieved when application calls receive()
@@ -1578,7 +1578,8 @@ namespace SharpPulsar
 				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
 			}
 
-			using var stream = new MemoryStream(payload);
+            var stream = Helpers.Serializer.MemoryManager.GetStream();
+			stream.Write(payload, 0, payload.Length);
 			using var binaryReader = new BinaryReader(stream);
 			var skippedMessages = 0;
 			try
@@ -1625,9 +1626,8 @@ namespace SharpPulsar
 					}
 
 					var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex, i, batchSize, acker);
-
-					var message = new Message<T>(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount);
-					if(possibleToDeadLetter != null)
+                    var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount, _poolMessages);
+                    if(possibleToDeadLetter != null)
 					{
 						possibleToDeadLetter.Add(message);
 					}

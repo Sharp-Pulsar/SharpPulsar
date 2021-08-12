@@ -17,7 +17,6 @@ using SharpPulsar.Messages.Consumer;
 using System.Linq;
 using System.Buffers;
 using Akka.Event;
-using SharpPulsar.Inter;
 using SharpPulsar.Messages.Client;
 using Receive = Akka.Actor.Receive;
 
