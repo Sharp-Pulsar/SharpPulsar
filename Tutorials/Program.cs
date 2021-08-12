@@ -11,6 +11,8 @@ using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
+using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
 using SharpPulsar.User;
 
 namespace Tutorials
@@ -76,6 +78,8 @@ namespace Tutorials
                 PlainKeyValueProducer(pulsarClient, "keyvalue");
             else if (cmd.Equals("txnunack", StringComparison.OrdinalIgnoreCase))
                 TxnRedeliverUnack(pulsarClient);
+            else if (cmd.Equals("sql", StringComparison.OrdinalIgnoreCase))
+                TestQuerySql();
             else
                 ProduceConsumer(pulsarClient);
 
@@ -114,7 +118,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -152,7 +156,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"[Batched] message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"[Batched] message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -179,7 +183,7 @@ namespace Tutorials
                 if(message != null)
                 {
                     consumer.Acknowledge(message);
-                    Console.WriteLine($"message from topic: {message.TopicName}");
+                    Console.WriteLine($"message from topic: {message.Topic}");
                 }
             }
             for (var i = 0; i < messageCount; i++)
@@ -188,7 +192,7 @@ namespace Tutorials
                 if (message != null)
                 {
                     consumer.Acknowledge(message);
-                    Console.WriteLine($"message from topic: {message.TopicName}");
+                    Console.WriteLine($"message from topic: {message.Topic}");
                 }
             }
             for (var i = 0; i < messageCount; i++)
@@ -196,7 +200,7 @@ namespace Tutorials
                 var message = (TopicMessage<byte[]>)consumer.Receive(); if (message != null)
                 {
                     consumer.Acknowledge(message);
-                    Console.WriteLine($"message from topic: {message.TopicName}");
+                    Console.WriteLine($"message from topic: {message.Topic}");
                 }
             }
         }
@@ -256,7 +260,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -290,7 +294,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -327,7 +331,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"[1] message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"[1] message '{res}' from topic: {message.Topic}");
                 }
             }
 
@@ -343,7 +347,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"[2] message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"[2] message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -380,7 +384,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -550,6 +554,60 @@ namespace Tutorials
                 }
 
             }
+        }
+        private static void TestQuerySql()
+        {
+            var topic = $"query_topics_avro_{Guid.NewGuid()}";
+            PublishMessages(topic, 5);
+            var sql = PulsarSystem.NewSql();
+            var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
+            var query = new SqlQuery(option, e => { Console.WriteLine(e.ToString()); }, Console.WriteLine);
+            
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            sql.SendQuery(query);
+
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+
+            var response = sql.Read(TimeSpan.FromSeconds(30));
+            if (response != null)
+            {
+                var data = response.Response;
+                switch (data)
+                {
+                    case DataResponse dr:
+                    {
+                        for (var i = 0; i < dr.Data.Count; i++)
+                        {
+                            var ob = dr.Data.ElementAt(i)["text"].ToString();
+                            Console.WriteLine(ob);
+                        }
+                        Console.WriteLine(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
+                    }
+                        break;
+                    case StatsResponse sr:
+                        Console.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case ErrorResponse er:
+                        Console.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
+                sql.SendQuery(query);
+            }
+            
+        }
+        private static ISet<string> PublishMessages(string topic, int count)
+        {
+            ISet<string> keys = new HashSet<string>();
+            var builder = new ProducerConfigBuilder<DataOp>()
+                .Topic(topic);
+            var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
+            for (var i = 0; i < count; i++)
+            {
+                var key = "key" + i;
+                producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).Send();
+                keys.Add(key);
+            }
+            return keys;
         }
     }
     public class Students
