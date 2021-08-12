@@ -9,6 +9,7 @@ using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
+using ProtoBuf;
 using SharpPulsar.Protocol.Extension;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using SharpPulsar.Interfaces.ISchema;
@@ -16,6 +17,7 @@ using SharpPulsar.Common;
 using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
 using SharpPulsar.Batch;
+using Serializer = SharpPulsar.Helpers.Serializer;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -44,8 +46,9 @@ namespace SharpPulsar.Protocol
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
 		public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
+        public const short MagicBrokerEntryMetadata = 0x0e02;
 
-		public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
+        public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
 		{
 			return peerVersion >= (int)ProtocolVersion.V13;
 		}
@@ -227,8 +230,11 @@ namespace SharpPulsar.Protocol
 		{
 			try
 			{
-				//SkipChecksumIfPresent(buffer);
-				var bufferbytes = buffer.ToArray();
+                // initially reader-index may point to start of broker entry metadata :
+                // increment reader-index to start_of_headAndPayload to parse metadata
+                SkipBrokerEntryMetadataIfExist(buffer);
+                //SkipChecksumIfPresent(buffer);
+                var bufferbytes = buffer.ToArray();
                 return bufferbytes.FromByteArray<MessageMetadata>();
 			}
 			catch (IOException e)
@@ -405,8 +411,72 @@ namespace SharpPulsar.Protocol
 			
 			
 		}
+        public static ReadOnlySequence<byte> SkipBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
+        {
+            var payload = headerAndPayloadWithBrokerEntryMetadata.ToArray();
+            var memory = Serializer.MemoryManager.GetStream();
+            memory.Write(payload, 0, payload.Length);
+            var reader = new BinaryReader(memory);
+            var readerIndex = reader.BaseStream.Position;
+            if (reader.ReadInt16() == MagicBrokerEntryMetadata)
+            {
+                var brokerEntryMetadataSize = reader.ReadInt32();
+                reader.BaseStream.Position = reader.BaseStream.Position + brokerEntryMetadataSize;
+            }
+            else
+            {
+                reader.BaseStream.Position =  readerIndex;
+            }
+            return new ReadOnlySequence<byte>(memory.ToArray());
+        }
+        public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
+        {
+            var payload = headerAndPayloadWithBrokerEntryMetadata.ToArray();
+            var memory = Serializer.MemoryManager.GetStream();
+            memory.Write(payload, 0, payload.Length);
+            var reader = new BinaryReader(memory);
+            var readerIndex = reader.BaseStream.Position;
+            reader.BaseStream.Seek(readerIndex, SeekOrigin.Current);
+            //if (reader.getShort(readerIndex) == MagicBrokerEntryMetadata)
+            if (reader.ReadInt16() == MagicBrokerEntryMetadata)
+            {
+                reader.BaseStream.Seek(2, SeekOrigin.Current);
+                var brokerEntryMetadataSize = reader.ReadInt32();
+                var brokerEntryMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(memory, PrefixStyle.Fixed32BigEndian);
+                //brokerEntryMetadata.parseFrom(headerAndPayloadWithBrokerEntryMetadata, brokerEntryMetadataSize);
+                return brokerEntryMetadata;
+            }
 
-		public static ReadOnlySequence<byte> NewSeek(long consumerId, long requestId, long timestamp)
+            return null;
+        }
+        public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(BinaryReader reader)
+        {
+            var readerIndex = reader.BaseStream.Position;
+            reader.BaseStream.Seek(readerIndex, SeekOrigin.Current);
+            //if (reader.getShort(readerIndex) == MagicBrokerEntryMetadata)
+            if (reader.ReadInt16() == MagicBrokerEntryMetadata)
+            {
+                reader.BaseStream.Seek(2, SeekOrigin.Current);
+                var brokerEntryMetadataSize = reader.ReadInt32();
+                var brokerEntryMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(reader.BaseStream, PrefixStyle.Fixed32BigEndian);
+                //brokerEntryMetadata.parseFrom(headerAndPayloadWithBrokerEntryMetadata, brokerEntryMetadataSize);
+                return brokerEntryMetadata;
+            }
+
+            return null;
+        }
+        public static BrokerEntryMetadata PeekBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
+        {
+            var payload = headerAndPayloadWithBrokerEntryMetadata.ToArray();
+            var memory = Serializer.MemoryManager.GetStream();
+            memory.Write(payload, 0, payload.Length);
+            var reader = new BinaryReader(memory);
+            var readerIndex = reader.BaseStream.Position;
+            var entryMetadata = ParseBrokerEntryMetadataIfExist(reader);
+            memory.Seek(readerIndex, SeekOrigin.Current);
+            return entryMetadata;
+        }
+        public static ReadOnlySequence<byte> NewSeek(long consumerId, long requestId, long timestamp)
 		{
             var seek = new CommandSeek
             {
@@ -907,9 +977,19 @@ namespace SharpPulsar.Protocol
             {
                 PublishTime = builder.PublishTime,
                 ProducerName = builder.ProducerName,
-                SequenceId = (ulong) builder.SequenceId
+                SequenceId =  builder.SequenceId
             };
-            if (!string.IsNullOrWhiteSpace(builder.ReplicatedFrom))
+            // Attach the key to the message metadata.
+            if (builder.ShouldSerializePartitionKey())
+            {
+                messageMetadata.PartitionKey = builder.PartitionKey;
+                messageMetadata.PartitionKeyB64Encoded = builder.PartitionKeyB64Encoded;
+            }
+            if (builder.ShouldSerializeOrderingKey())
+            {
+                messageMetadata.OrderingKey = builder.OrderingKey;
+            }
+            if (builder.ShouldSerializeReplicatedFrom())
 			{
 				messageMetadata.ReplicatedFrom = builder.ReplicatedFrom;
 			}
@@ -917,7 +997,7 @@ namespace SharpPulsar.Protocol
 			{
 				messageMetadata.ReplicateToes.AddRange(builder.ReplicateToes);
 			}
-			if (builder.SchemaVersion?.Length > 0)
+			if (builder.ShouldSerializeSchemaVersion())
 			{
 				messageMetadata.SchemaVersion = builder.SchemaVersion;
 			}

@@ -106,6 +106,7 @@ namespace SharpPulsar
 
 		private readonly IActorRef _connectionHandler;
 		private readonly IActorRef _self;
+		private IActorRef _sender;
 		private int _protocolVersion;
 
 		private ICancelable _batchTimerTask;
@@ -566,8 +567,8 @@ namespace SharpPulsar
 		}
 
 		internal override void InternalSend(IMessage<T> message)
-		{
-
+        {
+            _sender = Sender;
 			var interceptorMessage = (Message<T>) BeforeSend(message);
 			if(Interceptors != null)
 			{
@@ -803,11 +804,10 @@ namespace SharpPulsar
 		private bool PopulateMessageSchema(Message<T> msg, out Exception exception)
 		{
 			exception = new Exception();
-			var msgMetadata = new MessageMetadata();
 			if(msg.SchemaInternal() == Schema)
 			{
 				if (_schemaVersion.HasValue)
-					msgMetadata.SchemaVersion = _schemaVersion.Value;
+					msg.Metadata.SchemaVersion = _schemaVersion.Value;
 				msg.SetSchemaState(Message<T>.SchemaState.Ready);
 				return true;
 			}
@@ -820,7 +820,7 @@ namespace SharpPulsar
 			var schemaHash = SchemaHash.Of(msg.Schema);
 			if(SchemaCache.TryGetValue(schemaHash, out var schemaVersion))
             {
-				msgMetadata.SchemaVersion = schemaVersion;
+                msg.Metadata.SchemaVersion = schemaVersion;
 				msg.SetSchemaState(Message<T>.SchemaState.Ready);
 			}
 			return true;
@@ -1555,7 +1555,7 @@ namespace SharpPulsar
 				});
 				Receive<GetOrCreateSchemaResponse>(r =>
 				 {
-					 if (!Enum.IsDefined(typeof(ServerError), r.Response.ErrorCode))
+					 if (r.Response.ErrorCode != ServerError.UnknownError)
 					 {
 						 _log.Warning($"[{Topic}] [{_producerName}] GetOrCreateSchema succeed");
 						 var schemaHash = SchemaHash.Of(msg.Schema);
@@ -1571,6 +1571,7 @@ namespace SharpPulsar
 							 _log.Warning($"[{Topic}] [{_producerName}] GetOrCreateSchema error: [{r.Response.ErrorCode}:{r.Response.ErrorMessage}]");
 							 msg.SetSchemaState(Message<T>.SchemaState.Broken);
 							 var ex = new IncompatibleSchemaException(r.Response.ErrorMessage);
+                             _sender.Tell(new AskResponse(ex));
 						 }
 						 else
 						 {

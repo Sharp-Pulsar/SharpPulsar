@@ -42,7 +42,7 @@ namespace SharpPulsar.Schemas.Reader
 			}
 			catch (Exception e)
 			{
-				//LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.TopicName, Hex.encodeHexString(schemaVersion), e);
+				//LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.Topic, Hex.encodeHexString(schemaVersion), e);
 				throw new Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);
 			}
 		}
@@ -59,7 +59,7 @@ namespace SharpPulsar.Schemas.Reader
 				{
 					throw new SchemaSerializationException(e);
 				}
-				//LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.TopicName, Hex.encodeHexString(schemaVersion), e);
+				//LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.Topic, Hex.encodeHexString(schemaVersion), e);
 				throw new Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);
 			}
 		}

@@ -47,7 +47,7 @@ namespace SharpPulsar
 		/// <summary>
 		/// Get the topic name without partition part of this message. </summary>
 		/// <returns> the name of the topic on which this message was published </returns>
-		public virtual string TopicName => _msg.TopicName;
+		public virtual string Topic => _msg.Topic;
 		/// <summary>
 		/// Get the topic name which contains partition part for this message. </summary>
 		/// <returns> the topic name which contains Partition part </returns>
@@ -73,6 +73,10 @@ namespace SharpPulsar
 			return _msg.HasProperty(name);
 		}
 
+        public long Size()
+        {
+            return _msg.Size();
+        }
 		public string GetProperty(string name)
 		{
 			return _msg.GetProperty(name);

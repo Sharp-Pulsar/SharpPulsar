@@ -37,7 +37,11 @@ namespace SharpPulsar.Messages
 
         public byte[] OrderingKey => throw new NotImplementedException();
 
-        public string TopicName => throw new NotImplementedException();
+        public string Topic => throw new NotImplementedException();
+        public long Size()
+        {
+            throw new NotImplementedException();
+        }
 
         public Option<EncryptionContext> EncryptionCtx => throw new NotImplementedException();
 

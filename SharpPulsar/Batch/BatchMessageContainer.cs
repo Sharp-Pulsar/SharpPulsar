@@ -223,7 +223,7 @@ namespace SharpPulsar.Batch
 			{
 				return true;
 			}
-			if (_messageMetadata.SchemaVersion == null || !(_messageMetadata.SchemaVersion?.Length > 0))
+			if (!_messageMetadata.ShouldSerializeSchemaVersion())
 			{
 				return msg.SchemaVersion == null;
 			}
