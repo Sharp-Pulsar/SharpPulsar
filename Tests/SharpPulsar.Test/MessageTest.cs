@@ -188,7 +188,7 @@ namespace SharpPulsar.Test
             var msg = Message<byte[]>.Create(builder, payload, ISchema<int>.Bytes);
 
 			Assert.False(msg.Replicated);
-			Assert.True(msg.ReplicatedFrom.Length == 0);
+			Assert.True(msg.ReplicatedFrom?.Length == 0);
 		}
 		[Fact]
 		public virtual void TestTopicMessageImplReplicatedInfo()
@@ -217,7 +217,7 @@ namespace SharpPulsar.Test
 			var topicMessage = new TopicMessage<byte[]>(topicName, topicName, msg);
 
 			Assert.False(topicMessage.Replicated);
-			Assert.True(topicMessage.ReplicatedFrom.Length == 0);
+			Assert.True(topicMessage.ReplicatedFrom?.Length == 0);
 		}
 	}
 
