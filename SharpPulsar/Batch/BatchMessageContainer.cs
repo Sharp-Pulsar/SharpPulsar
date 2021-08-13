@@ -73,11 +73,11 @@ namespace SharpPulsar.Batch
 				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
 				_firstCallback = callback;
 				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
-				if(msg.Metadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
+				if(msg.Metadata.TxnidMostBits.HasValue && CurrentTxnidMostBits == -1)
 				{
 					CurrentTxnidMostBits = (long)msg.Metadata.TxnidMostBits;
 				}
-				if (msg.Metadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
+				if (msg.Metadata.TxnidLeastBits.HasValue && CurrentTxnidLeastBits == -1)
 				{
 					CurrentTxnidLeastBits = (long)msg.Metadata.TxnidLeastBits;
 				}
@@ -111,7 +111,7 @@ namespace SharpPulsar.Batch
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata;
-						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata.OriginalMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToArray());
 					}
 					catch (Exception ex)

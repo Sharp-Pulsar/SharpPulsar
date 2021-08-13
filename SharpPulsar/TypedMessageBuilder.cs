@@ -40,11 +40,17 @@ namespace SharpPulsar
     [Serializable]
 	public class TypedMessageBuilder<T> : ITypedMessageBuilder<T>
 	{
-		private readonly IActorRef _producer;//topic
-		public readonly MessageMetadata Metadata  = new MessageMetadata();
-		private readonly ISchema<T> _schema;
-		private ReadOnlySequence<byte> _content;
-		private readonly User.Transaction _txn;
+        [NonSerialized]
+        private readonly IActorRef _producer;//topic
+        [NonSerialized]
+        private readonly MessageMetadata _metadata;
+        [NonSerialized]
+        private readonly ISchema<T> _schema;
+        [NonSerialized]
+        private ReadOnlySequence<byte> _content;
+        [NonSerialized]
+        private readonly User.Transaction _txn;
+        [NonSerialized]
         private readonly ProducerConfigurationData _conf;
 
 		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf) : this(producer, schema, null, conf)
@@ -53,6 +59,7 @@ namespace SharpPulsar
 
 		public TypedMessageBuilder(IActorRef producer, ISchema<T> schema, User.Transaction txn, ProducerConfigurationData conf)
 		{
+            _metadata = new MessageMetadata();
             _conf = conf;
 			_producer = producer;
 			_schema = schema;
@@ -69,10 +76,10 @@ namespace SharpPulsar
 			
 			var bits = await _txn.Txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).ConfigureAwait(false);
 			var sequence = await _txn.Txn.Ask<long>(NextSequenceId.Instance).ConfigureAwait(false);
-			Metadata.TxnidLeastBits = (ulong)bits.LeastBits;
-			Metadata.TxnidMostBits = (ulong)bits.MostBits;
+			_metadata.TxnidLeastBits = (ulong)bits.LeastBits;
+			_metadata.TxnidMostBits = (ulong)bits.MostBits;
 			var sequenceId = sequence;
-			Metadata.SequenceId = (ulong)sequenceId;
+			_metadata.SequenceId = (ulong)sequenceId;
 			return sequenceId;
 		}
 		public MessageId Send()
@@ -121,12 +128,12 @@ namespace SharpPulsar
                 Condition.CheckArgument(!(keyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when the encoding type is not SEPARATED");
 				if (string.IsNullOrWhiteSpace(key))
 				{
-					Metadata.NullPartitionKey = true;
+					_metadata.NullPartitionKey = true;
 					return this;
 				}
 			}
-			Metadata.PartitionKey = key;
-			Metadata.PartitionKeyB64Encoded = false;
+			_metadata.PartitionKey = key;
+			_metadata.PartitionKeyB64Encoded = false;
 			return this;
 		}
 		public ITypedMessageBuilder<T> KeyBytes(byte[] key)
@@ -139,17 +146,17 @@ namespace SharpPulsar
                 Condition.CheckArgument(!(keyValueEncodingType == KeyValueEncodingType.SEPARATED), "This method is not allowed to set keys when the encoding type is not SEPARATED");
 				if (key == null)
 				{
-					Metadata.NullPartitionKey = true;
+					_metadata.NullPartitionKey = true;
 					return this;
 				}
 			}
-			Metadata.PartitionKey = Convert.ToBase64String(key);
-			Metadata.PartitionKeyB64Encoded = true;
+			_metadata.PartitionKey = Convert.ToBase64String(key);
+			_metadata.PartitionKeyB64Encoded = true;
 			return this;
 		}
 		public ITypedMessageBuilder<T> OrderingKey(byte[] orderingKey)
 		{
-			Metadata.OrderingKey = orderingKey;
+			_metadata.OrderingKey = orderingKey;
 			return this;
 		}
         /// <summary>
@@ -162,7 +169,7 @@ namespace SharpPulsar
 		{
 			if (value == null)
 			{
-				Metadata.NullValue = true;
+				_metadata.NullValue = true;
 				return this;
 			}
 			if (_schema.SchemaInfo != null && _schema.SchemaInfo.Type == SchemaType.KeyValue)
@@ -188,12 +195,12 @@ namespace SharpPulsar
                     // set key as the message key
                     if (kv.Key != null)
                     {
-                        Metadata.PartitionKey = Convert.ToBase64String(keySchema.Encode(kv.Key));
-                        Metadata.PartitionKeyB64Encoded = true;
+                        _metadata.PartitionKey = Convert.ToBase64String(keySchema.Encode(kv.Key));
+                        _metadata.PartitionKeyB64Encoded = true;
                     }
                     else
                     {
-                        Metadata.NullPartitionKey = true;
+                        _metadata.NullPartitionKey = true;
                     }
 
                     // set value as the payload
@@ -203,7 +210,7 @@ namespace SharpPulsar
                     }
                     else
                     {
-                        Metadata.NullValue = true;
+                        _metadata.NullValue = true;
                     }
                     return this;
                 }
@@ -215,7 +222,7 @@ namespace SharpPulsar
 		{
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(name), "Need Non-Null name");
 			Condition.CheckArgument(!string.IsNullOrWhiteSpace(value), "Need Non-Null value for name: " + name);
-			Metadata.Properties.Add(new KeyValue { Key = name, Value = value });
+			_metadata.Properties.Add(new KeyValue { Key = name, Value = value });
 			return this;
 		}
 		public ITypedMessageBuilder<T> Properties(IDictionary<string, string> properties)
@@ -224,7 +231,7 @@ namespace SharpPulsar
 			{
 				Condition.CheckArgument(entry.Key != null, "Need Non-Null key");
 				Condition.CheckArgument(entry.Value != null, "Need Non-Null value for key: " + entry.Key);
-				Metadata.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
+				_metadata.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
 			}
 
 			return this;
@@ -233,28 +240,28 @@ namespace SharpPulsar
 		public ITypedMessageBuilder<T> EventTime(long timestamp)
 		{
 			Condition.CheckArgument(timestamp > 0, "Invalid timestamp : '%s'", timestamp);
-			Metadata.EventTime = (ulong)timestamp;
+			_metadata.EventTime = (ulong)timestamp;
 			return this;
 		}
 
 		public ITypedMessageBuilder<T> SequenceId(long sequenceId)
 		{
 			Condition.CheckArgument(sequenceId >= 0);
-			Metadata.SequenceId = (ulong)sequenceId;
+			_metadata.SequenceId = (ulong)sequenceId;
 			return this;
 		}
 
 		public ITypedMessageBuilder<T> ReplicationClusters(IList<string> clusters)
 		{
 			Condition.CheckNotNull(clusters);
-			Metadata.ReplicateToes.Clear();
-			Metadata.ReplicateToes.AddRange(clusters);
+			_metadata.ReplicateToes.Clear();
+			_metadata.ReplicateToes.AddRange(clusters);
 			return this;
 		}
 		public ITypedMessageBuilder<T> DisableReplication()
 		{
-			Metadata.ReplicateToes.Clear();
-			Metadata.ReplicateToes.Add("__local__");
+			_metadata.ReplicateToes.Clear();
+			_metadata.ReplicateToes.Add("__local__");
 			return this;
 		}
 		public ITypedMessageBuilder<T> DeliverAfter(long delay)
@@ -264,7 +271,7 @@ namespace SharpPulsar
 
 		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
 		{
-			Metadata.DeliverAtTime = timestamp;
+			_metadata.DeliverAtTime = timestamp;
 			return this;
 		}
 		
@@ -321,18 +328,18 @@ namespace SharpPulsar
 		public async Task<IMessage<T>> Message()
 		{
 			await BeforeSend().ConfigureAwait(false);
-			return Message<T>.Create(Metadata, _content, _schema);
+			return Message<T>.Create(_metadata, _content, _schema);
 		}
 
-		public long PublishTime => (long)Metadata.PublishTime;
+		public long PublishTime => (long)_metadata.PublishTime;
 
         public bool HasKey()
 		{
-			return !string.IsNullOrWhiteSpace(Metadata.PartitionKey);
+			return !string.IsNullOrWhiteSpace(_metadata.PartitionKey);
 		}
 
 
-        public string GetKey => Metadata.PartitionKey;
+        public string GetKey => _metadata.PartitionKey;
     }
 
 }

@@ -157,9 +157,11 @@ namespace SharpPulsar
 		{
 			_clientCnx = null;
 			_requestId = -1;
-			Receive<IActorRef>(m =>
+			Receive<AskResponse>(m =>
 			{
-				_clientCnx = m;
+                if(m.Data != null)
+				    _clientCnx = m.ConvertTo<IActorRef>();
+
 				_generator.Tell(NewRequestId.Instance);
 			});
 			Receive<NewRequestIdResponse>(m =>
@@ -483,12 +485,7 @@ namespace SharpPulsar
 			}
 			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), _self, RunRequestTimeout.Instance, Nobody.Instance);
 		}
-
-		private async ValueTask<IActorRef> Cnx()
-		{
-			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
-		}
-
+        
 		private void HandleConnectionClosed(IActorRef cnx)
 		{
 			_connectionHandler.Tell(new ConnectionClosed(cnx));

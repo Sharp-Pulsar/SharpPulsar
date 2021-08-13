@@ -111,7 +111,7 @@ namespace SharpPulsar.Batch
 		}
 		public virtual bool HasSameTxn(Message<T> msg)
 		{
-			if (!msg.Metadata.ShouldSerializeTxnidMostBits() || !msg.Metadata.ShouldSerializeTxnidLeastBits())
+			if (!msg.Metadata.TxnidMostBits.HasValue || !msg.Metadata.TxnidLeastBits.HasValue)
 			{
 				return true;
 			}

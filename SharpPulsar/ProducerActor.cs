@@ -611,7 +611,7 @@ namespace SharpPulsar
                 var compressedPayload = payload;
                 // Batch will be compressed when closed
                 // If a message has a delayed delivery time, we'll always send it individually
-                if (!BatchMessagingEnabled || msgMetadata.ShouldSerializeDeliverAtTime())
+                if (!BatchMessagingEnabled || msgMetadata.DeliverAtTime.HasValue)
                 {
                     compressedPayload = _compressor.Encode(payload);
 
@@ -654,7 +654,7 @@ namespace SharpPulsar
                 */
                 var readStartIndex = 0;
 				var sequenceId = _msgIdGenerator;
-				msgMetadata.SequenceId = (ulong)sequenceId;
+				msgMetadata.SequenceId = sequenceId;
 				_msgIdGenerator++;
 				var uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
                 //We need to send NoMessageIdYet to unblock the caller
@@ -663,7 +663,7 @@ namespace SharpPulsar
 
 				for (var chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
-					SerializeAndSendMessage(msg, msgMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressedPayload.Length, uncompressedSize);
+					SerializeAndSendMessage(msg, msgMetadata.OriginalMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressedPayload.Length, uncompressedSize);
 					readStartIndex = ((chunkId + 1) * maxMessageSize);
 				}
 			}
@@ -777,20 +777,20 @@ namespace SharpPulsar
 				msgMetadata = chunkMsgMetadata;
 				// When publishing during replication, we need to set the correct number of message in batch
 				// This is only used in tracking the publish rate stats
-				var numMessages = msg.Metadata.ShouldSerializeNumMessagesInBatch() ? msg.Metadata.NumMessagesInBatch : 1;
+				var numMessages = msg.Metadata.NumMessagesInBatch.HasValue ? msg.Metadata.NumMessagesInBatch : 1;
 
 				OpSendMsg<T> op;
 				if(msg.GetSchemaState() == Message<T>.SchemaState.Ready)
 				{
-					var cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+					var cmd = SendMessage(_producerId, sequenceId, numMessages.Value, msgMetadata, encryptedPayload);
 					op = OpSendMsg<T>.Create(msg, cmd, sequenceId);
 				}
 				else
 				{
 					op = OpSendMsg<T>.Create(msg, ReadOnlySequence<byte>.Empty, sequenceId);
-					op.Cmd = SendMessage(_producerId, sequenceId, numMessages, msgMetadata, encryptedPayload);
+					op.Cmd = SendMessage(_producerId, sequenceId, numMessages.Value, msgMetadata, encryptedPayload);
 				}
-				op.NumMessagesInBatch = numMessages;
+				op.NumMessagesInBatch = numMessages.Value;
 				op.BatchSizeByte = encryptedPayload.Length;
 				if(totalChunks > 1)
 				{
@@ -883,7 +883,7 @@ namespace SharpPulsar
 
         private bool CanAddToBatch(Message<T> msg)
 		{
-			return msg.GetSchemaState() == Message<T>.SchemaState.Ready && BatchMessagingEnabled && !msg.Metadata.ShouldSerializeDeliverAtTime();
+			return msg.GetSchemaState() == Message<T>.SchemaState.Ready && BatchMessagingEnabled && !msg.Metadata.DeliverAtTime.HasValue;
 		}
 
 		private bool CanAddToCurrentBatch(Message<T> msg)
@@ -1646,8 +1646,12 @@ namespace SharpPulsar
 		// wrapper for connection methods
 		private async ValueTask<IActorRef> Cnx()
 		{
-			return await _connectionHandler.Ask<IActorRef>(GetCnx.Instance);
-		}
+			var response = await _connectionHandler.Ask<AskResponse>(GetCnx.Instance);
+            if (response.Data == null)
+                return null;
+
+            return response.ConvertTo<IActorRef>();
+        }
 
 		private async ValueTask ConnectionClosed(IActorRef cnx)
 		{

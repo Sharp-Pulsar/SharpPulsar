@@ -429,7 +429,7 @@ namespace SharpPulsar
 			});
 			Receive<GetCnx>(_ => 
 			{
-				Sender.Tell(_clientCnx);
+				Sender.Tell(new AskResponse(_clientCnx));
 			});
 			Receive<IncreaseAvailablePermits>(i => 
 			{
@@ -1578,8 +1578,7 @@ namespace SharpPulsar
 				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
 			}
 
-            var stream = Helpers.Serializer.MemoryManager.GetStream();
-			stream.Write(payload, 0, payload.Length);
+            using var stream = new MemoryStream(payload);
 			using var binaryReader = new BinaryReader(stream);
 			var skippedMessages = 0;
 			try

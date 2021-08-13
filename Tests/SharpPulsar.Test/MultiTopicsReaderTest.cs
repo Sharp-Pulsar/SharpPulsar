@@ -51,7 +51,7 @@ namespace SharpPulsar.Test
 		[Fact]
 		public virtual void TestReadMessageWithBatching()
 		{
-			var topic = "TestReadMessageWithBatching";
+			var topic = $"ReadMessageWithBatching_{Guid.NewGuid()}";
 			TestReadMessages(topic, true);
 		}
 		[Fact(Timeout = 1000)]
@@ -127,8 +127,6 @@ namespace SharpPulsar.Test
 					_output.WriteLine($"{message.Key}:{message.MessageId}:{Encoding.UTF8.GetString(message.Data)}");
 					Assert.True(keys.Remove(message.Key));
 				}
-				else
-					break;
 			}
 			Assert.True(keys.Count == 0);
 		}
