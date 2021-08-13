@@ -221,6 +221,13 @@ namespace Tutorials
         }
         private static void ExclusiveProduceNoneConsumer(PulsarClient pulsarClient)
         {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub-Exclusive")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
                 .Topic(myTopic));
@@ -243,11 +250,6 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(myTopic)
-                .ForceTopicCreation(true)
-                .SubscriptionName("myTopic-sub-Exclusive")
-                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 1000; i++)
@@ -266,6 +268,14 @@ namespace Tutorials
         }
         private static void ExclusiveProduceConsumer(PulsarClient pulsarClient)
         {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub-Exclusive")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
+
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
                 .Topic(myTopic));;
@@ -278,11 +288,6 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(myTopic)
-                .ForceTopicCreation(true)
-                .SubscriptionName("myTopic-sub-Exclusive")
-                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             for (var i = 0; i < 100; i++)
             {
@@ -492,7 +497,7 @@ namespace Tutorials
             }
             
             consumer.RedeliverUnacknowledgedMessages();
-
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < messageCnt; i++)
             {
                 message = consumer.Receive();
