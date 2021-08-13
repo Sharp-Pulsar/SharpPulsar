@@ -1,5 +1,4 @@
 ﻿using Akka.Actor;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
@@ -34,7 +33,7 @@ namespace SharpPulsar
 {
     internal class ReaderActor<T>: ReceiveActor
 	{
-		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout((int)TimeUnit.MILLISECONDS.ToMilliseconds(0)).MaxNumMessages(1).Build();
+		private static readonly BatchReceivePolicy _disabledBatchReceivePolicy = new BatchReceivePolicy.Builder().Timeout(0).MaxNumMessages(1).Build();
 		private readonly IActorRef _consumer;
 		private readonly IActorRef _generator;
 

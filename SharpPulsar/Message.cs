@@ -5,9 +5,7 @@ using System.Text;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Batch;
 using SharpPulsar.Auth;
-using SharpPulsar.Common.Naming;
 using SharpPulsar.Protocol;
-using SharpPulsar.Protocol.Schema;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -46,7 +44,7 @@ namespace SharpPulsar
 		private  IMessageId _messageId;
 		private  IActorRef _cnx;
 
-		private  MessageMetadata _metadata;
+		private  Metadata _metadata;
         private  ReadOnlySequence<byte>? _payload;
 		private  ISchema<T> _schema;
 		private SchemaState _schemaState = SchemaState.None;
@@ -57,24 +55,24 @@ namespace SharpPulsar
 
         private string _topic;
         private BrokerEntryMetadata _brokerEntryMetadata;
-        public MessageMetadata Metadata => _metadata;
+        public Metadata Metadata => _metadata;
         private Message(){}
-		public Message(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
-        {
-            _metadata = null;
-            _topic = null;
-            _cnx = null;
-            _properties = null;
-			_metadata = msgMetadata;
-			_payload = payload;
-			_schema = schema;
-            _uncompressedSize = (int)payload.Length;
-
-        }
+		
 		// Constructor for out-going message
 		public static Message<T> Create(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
 		{
-			return new Message<T>(msgMetadata, payload, schema);
+            var msg = new Message<T>
+            {
+                _metadata = EnsureMetadata(msgMetadata, new Metadata()),
+                _messageId = null,
+                _topic = null,
+                _cnx = null,
+                _payload = payload,
+                _properties = null,
+                _schema = schema,
+                _uncompressedSize = (int) payload.Length
+            };
+            return msg;
 		}
 
         // Constructor for incoming message
@@ -87,7 +85,7 @@ namespace SharpPulsar
         }
         internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage)
         {
-            _metadata = new MessageMetadata();
+            //_metadata = new MessageMetadata();
             Init(this, topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage);
         }
 
@@ -119,7 +117,6 @@ namespace SharpPulsar
 
         internal Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata batchMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool keepMessageInDirectMemory)
         {
-            _metadata = new MessageMetadata();
             Init(this, topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, keepMessageInDirectMemory);
 
         }
@@ -131,8 +128,8 @@ namespace SharpPulsar
         }
         private static void Init(Message<T> msg, string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage)
         {
-            msg._metadata = null;
-            msg._metadata = msgMetadata;
+            //msg._metadata.Clear();
+            msg._metadata = new Metadata();
             msg._messageId = batchMessageIdImpl;
             msg._topic = topic;
             msg._cnx = cnx;
@@ -146,7 +143,7 @@ namespace SharpPulsar
             // Message is passed to the user. Also, the passed ByteBuf is coming from network 
             // and is backed by a direct buffer which we could not expose as a byte[]
             msg._payload = payload;//poolMessage ? payload.retain() : Unpooled.copiedBuffer(payload);
-
+            msg._metadata.ReplicateTo = msgMetadata.ReplicateToes;
             if (singleMessageMetadata != null)
             {
                 if (singleMessageMetadata.Properties.Count > 0)
@@ -167,7 +164,7 @@ namespace SharpPulsar
                     msg._metadata.PartitionKeyB64Encoded = singleMessageMetadata.PartitionKeyB64Encoded;
                     msg._metadata.PartitionKey = singleMessageMetadata.PartitionKey;
                 }
-                else if (msg._metadata.ShouldSerializePartitionKey())
+                else if (msgMetadata.ShouldSerializePartitionKey())
                 {
                     msg._metadata.PartitionKey = string.Empty;
                     msg._metadata.PartitionKeyB64Encoded = false;
@@ -183,12 +180,12 @@ namespace SharpPulsar
 
                 if (singleMessageMetadata.ShouldSerializeEventTime())
                 {
-                    msg._metadata.EventTime = singleMessageMetadata.EventTime;
+                    msg._metadata.EventTime = (long)singleMessageMetadata.EventTime;
                 }
 
                 if (singleMessageMetadata.ShouldSerializeSequenceId())
                 {
-                    msg._metadata.SequenceId = singleMessageMetadata.SequenceId;
+                    msg._metadata.SequenceId = (long)singleMessageMetadata.SequenceId;
                 }
 
                 if (singleMessageMetadata.ShouldSerializeNullValue())
@@ -209,6 +206,8 @@ namespace SharpPulsar
             {
                 msg.Properties = new Dictionary<string, string>();
             }
+
+            msg._metadata = EnsureMetadata(msgMetadata, msg._metadata);
         }
         public Message(string topic, string msgId, IDictionary<string, string> properties, byte[] payload, ISchema<T> schema, MessageMetadata msgMetadata) : this(topic, msgId, properties, new ReadOnlySequence<byte>(payload), schema, msgMetadata)
         {
@@ -232,7 +231,7 @@ namespace SharpPulsar
             _properties = properties.ToImmutableDictionary();
             _schema = schema;
             _redeliveryCount = 0;
-            _metadata = msgMetadata;
+            _metadata = EnsureMetadata(msgMetadata, _metadata);
         }
         public static Message<byte[]> DeserializeBrokerEntryMetaDataFirst(ReadOnlySequence<byte> headersAndPayloadWithBrokerEntryMetadata)
         {
@@ -245,7 +244,7 @@ namespace SharpPulsar
 
             if (msg._brokerEntryMetadata != null)
             {
-                msg._metadata = null;
+                msg._metadata = new Metadata();
                 msg._payload = null;
                 msg._messageId = null;
                 msg._topic = null;
@@ -280,7 +279,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-                return _metadata.ShouldSerializeReplicatedFrom();
+                return _metadata.Replicated != null && _metadata.Replicated.Value;
 			}
 		}
 
@@ -288,15 +287,15 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return (long)_metadata.PublishTime;
+				return _metadata.PublishTime.Value;
 			}
 		}
 		public long EventTime
 		{
 			get
 			{
-                if(_metadata.ShouldSerializeEventTime())
-				    return (long)_metadata.EventTime;
+                if(_metadata.EventTime.HasValue)
+				    return _metadata.EventTime.Value;
                 return 0;
             }
 		}
@@ -317,19 +316,22 @@ namespace SharpPulsar
 		{
 			get
             {
-                if (_metadata.ShouldSerializeNullValue())
+                var nullValue = _metadata.NullValue ?? false;
+                
+                if (nullValue)
                 {
 					return ReadOnlySequence<byte>.Empty;
 				}
 
-                if (_payload != null) return _payload.Value;
+                if (_payload.HasValue) return _payload.Value;
 
                 return ReadOnlySequence<byte>.Empty;
             }
 		}
         public long Size()
         {
-            if (_metadata.NullValue)
+            var nullValue = _metadata.NullValue ?? false;
+            if (nullValue)
             {
                 return 0;
             }
@@ -345,7 +347,7 @@ namespace SharpPulsar
 		{
 			get
             {
-                if (_metadata.ShouldSerializeSchemaVersion())
+                if (_metadata.SchemaVersion != null)
 				{
 					return _metadata.SchemaVersion;
 				}
@@ -367,8 +369,9 @@ namespace SharpPulsar
 
                     return KeyValue;
                 }
-
-                if (_metadata.NullValue)
+                var nullValue = _metadata.NullValue ?? false;
+                
+                if (nullValue)
                 {
                     return default(T);
                 }
@@ -406,7 +409,7 @@ namespace SharpPulsar
 						.GetMethods()
 						.Where(x=> x.Name == "Decode")
 						.FirstOrDefault(x=> x.GetParameters().Length == 3);
-					var k = _metadata.NullPartitionKey ? null : KeyBytes;
+					var k = _metadata.NullPartitionKey != null && !_metadata.NullPartitionKey.Value ? null : KeyBytes;
 					var v = Data.ToArray();
 					return (T)decode.Invoke(_schema, new object[] { k, v, schemaVersion });
 				}
@@ -429,7 +432,7 @@ namespace SharpPulsar
 						.GetMethods()
 						.Where(x => x.Name == "Decode")
 						.FirstOrDefault(x => x.GetParameters().Length == 3);
-					var k = _metadata.NullPartitionKey ? null : KeyBytes;
+					var k = _metadata.NullPartitionKey != null && _metadata.NullPartitionKey.Value ? null : KeyBytes;
 					var v = Data.ToArray();
 					return (T)decode.Invoke(_schema, new object[] { k, v, null });
 				}
@@ -514,7 +517,7 @@ namespace SharpPulsar
         }
         public bool HasKey()
         {
-            return _metadata.ShouldSerializeNullPartitionKey();
+            return _metadata.NullPartitionKey != null && _metadata.NullPartitionKey.Value;
         }
 
 		public string Key
@@ -561,7 +564,7 @@ namespace SharpPulsar
         }
         public bool HasBase64EncodedKey()
 		{
-			return _metadata.ShouldSerializePartitionKey();
+			return _metadata.PartitionKeyB64Encoded != null && _metadata.PartitionKeyB64Encoded.Value;
 		}
 
 		public byte[] KeyBytes
@@ -601,7 +604,7 @@ namespace SharpPulsar
 		{
 			get
 			{
-				return _metadata.ReplicateToes;
+				return _metadata.ReplicateTo;
 			}
 		}
 
@@ -660,6 +663,146 @@ namespace SharpPulsar
 			Ready,
 			Broken
 		}
-		
+        
+        private static Metadata EnsureMetadata(MessageMetadata metadata, Metadata mtadata)
+        {
+            if (!mtadata.SequenceId.HasValue)
+                mtadata.SequenceId = (long)metadata.SequenceId;
+
+            if (!mtadata.PartitionKeyB64Encoded.HasValue && metadata.ShouldSerializePartitionKeyB64Encoded())
+                mtadata.PartitionKeyB64Encoded = metadata.ShouldSerializePartitionKeyB64Encoded();
+            
+            if (!mtadata.EventTime.HasValue && metadata.ShouldSerializeEventTime())
+                mtadata.EventTime = (long)metadata.EventTime;
+            
+            if (!mtadata.PublishTime.HasValue)
+                mtadata.PublishTime = (long)metadata.PublishTime;
+            
+            if (!mtadata.Replicated.HasValue && metadata.ShouldSerializeReplicatedFrom())
+                mtadata.Replicated = metadata.ShouldSerializeReplicatedFrom();
+
+            if (!mtadata.ChunkId.HasValue && metadata.ShouldSerializeChunkId())
+                mtadata.ChunkId = metadata.ChunkId;
+            
+            if (!mtadata.Compression.HasValue && metadata.ShouldSerializeCompression())
+                mtadata.Compression = metadata.Compression;
+            
+            if (!mtadata.DeliverAtTime.HasValue && metadata.ShouldSerializeDeliverAtTime())
+                mtadata.DeliverAtTime = metadata.DeliverAtTime;
+            
+            if (!mtadata.HighestSequenceId.HasValue && metadata.ShouldSerializeHighestSequenceId())
+                mtadata.HighestSequenceId = (long)metadata.HighestSequenceId;
+            
+            if (!mtadata.EventTime.HasValue && metadata.ShouldSerializeEventTime())
+                mtadata.EventTime = (long)metadata.EventTime;
+            
+            if (!mtadata.MarkerType.HasValue && metadata.ShouldSerializeMarkerType())
+                mtadata.MarkerType = metadata.MarkerType;
+            
+            if (!mtadata.NullPartitionKey.HasValue && metadata.ShouldSerializeNullPartitionKey())
+                mtadata.NullPartitionKey = metadata.NullPartitionKey;
+            
+            if (!mtadata.NullValue.HasValue && metadata.ShouldSerializeNullValue())
+                mtadata.NullValue = metadata.NullValue;
+            
+            if (!mtadata.NumChunksFromMsg.HasValue && metadata.ShouldSerializeNumChunksFromMsg())
+                mtadata.NumChunksFromMsg = metadata.NumChunksFromMsg;
+            
+            if (!mtadata.NumMessagesInBatch.HasValue && metadata.ShouldSerializeNumMessagesInBatch())
+                mtadata.NumMessagesInBatch = metadata.NumMessagesInBatch;
+            
+            if (!mtadata.TxnidLeastBits.HasValue && metadata.ShouldSerializeTxnidLeastBits())
+                mtadata.TxnidLeastBits = (long)metadata.TxnidLeastBits;
+            
+            if (!mtadata.UncompressedSize.HasValue && metadata.ShouldSerializeUncompressedSize())
+                mtadata.UncompressedSize = (int)metadata.UncompressedSize;
+            
+            if (!mtadata.TxnidMostBits.HasValue && metadata.ShouldSerializeTxnidMostBits())
+                mtadata.TxnidMostBits = (long)metadata.TxnidMostBits;
+            
+            if (!mtadata.TotalChunkMsgSize.HasValue && metadata.ShouldSerializeTotalChunkMsgSize())
+                mtadata.TotalChunkMsgSize = metadata.TotalChunkMsgSize;
+
+            if (mtadata.Properties == null && metadata.Properties.Count > 0)
+            {
+                var properties = new Dictionary<string, string>();
+                foreach (var entry in metadata.Properties)
+                {
+                    properties[entry.Key] = entry.Value;
+                }
+
+                mtadata.Properties = properties.ToImmutableDictionary();
+            }
+            
+            if (string.IsNullOrWhiteSpace(mtadata.PartitionKey) && metadata.ShouldSerializePartitionKey())
+                mtadata.PartitionKey = metadata.PartitionKey;
+            
+            if (mtadata.SchemaVersion == null && metadata.ShouldSerializeSchemaVersion())
+                mtadata.SchemaVersion = metadata.SchemaVersion;
+            
+            if (mtadata.OrderingKey == null && metadata.ShouldSerializeOrderingKey())
+                mtadata.OrderingKey = metadata.OrderingKey;
+            
+            if (string.IsNullOrWhiteSpace(mtadata.PartitionKey) && metadata.ShouldSerializePartitionKey())
+                mtadata.PartitionKey = metadata.PartitionKey;
+            
+            if (string.IsNullOrWhiteSpace(mtadata.Uuid) && metadata.ShouldSerializeUuid())
+                mtadata.Uuid = metadata.Uuid;
+             
+            if (string.IsNullOrWhiteSpace(mtadata.ReplicatedFrom) && metadata.ShouldSerializeReplicatedFrom())
+                mtadata.ReplicatedFrom = metadata.ReplicatedFrom;
+            
+            if (string.IsNullOrWhiteSpace(mtadata.ProducerName))
+                mtadata.ProducerName = metadata.ProducerName;
+            
+            if (mtadata.EncryptionKeys == null)
+                mtadata.EncryptionKeys = metadata.EncryptionKeys;
+            
+            if (mtadata.EncryptionParam == null && metadata.ShouldSerializeEncryptionParam())
+                mtadata.EncryptionParam = metadata.EncryptionParam;
+            
+            if (string.IsNullOrWhiteSpace(mtadata.EncryptionAlgo) && metadata.ShouldSerializeEncryptionAlgo())
+                mtadata.EncryptionAlgo = metadata.EncryptionAlgo;
+
+            if (mtadata.ReplicateTo == null)
+                mtadata.ReplicateTo = metadata.ReplicateToes;
+
+            mtadata.OriginalMetadata = metadata;
+
+            return mtadata;
+        }
 	}
+    public sealed class Metadata
+    {
+        public IList<string> ReplicateTo { get; set; } = null;
+        public byte[] OrderingKey { get; set; } = null;
+        public byte[] EncryptionParam { get; set; } = null;
+        public string ProducerName { get; set; } = null;
+        public long? SequenceId { get; set; } = null;
+        public byte[] SchemaVersion { get; set; } = null;
+        public long? EventTime { get; set; } = null;
+        public long? PublishTime { get; set; } = null;
+        public long? DeliverAtTime { get; set; } = null;
+        public bool? Replicated { get; set; } = null;
+        public string ReplicatedFrom { get; set; } = null;
+        public bool? PartitionKeyB64Encoded { get; set; } = null;
+        public bool? NullValue { get; set; } = null;
+        public string PartitionKey { get; set; } = null;
+        public bool? NullPartitionKey { get; set; } = null;
+        public IDictionary<string, string> Properties { get; set; } = null;
+        public int? ChunkId { get; set; } = null;
+        public int? MarkerType { get; set; } = null;
+        public int? NumChunksFromMsg { get; set; } = null;
+        public int? NumMessagesInBatch { get; set; } = null;
+        public int? TotalChunkMsgSize { get; set; } = null;
+        public int? UncompressedSize { get; set; } = null;
+        public CompressionType? Compression { get; set; } = null;
+        public string EncryptionAlgo { get; set; } = null;
+        public string Uuid { get; set; } = null;
+        public IList<EncryptionKeys> EncryptionKeys { get; set; } = null;
+        public long? HighestSequenceId { get; set; } = null;
+        public long? TxnidLeastBits { get; set; } = null;
+        public long? TxnidMostBits { get; set; } = null;
+        public MessageMetadata OriginalMetadata { get; set; }
+    }
 }

@@ -575,8 +575,12 @@ namespace SharpPulsar.Tracker
         }
         private async ValueTask<IActorRef> Cnx()
         {
-            if(_conx == null)
-                _conx = await _handler.Ask<IActorRef>(GetCnx.Instance);
+            if (_conx == null)
+            {
+                var response = await _handler.Ask<AskResponse>(GetCnx.Instance);
+                if(response.Data != null)
+                    _conx = response.ConvertTo<IActorRef>();
+            }
 
             return _conx;
         }

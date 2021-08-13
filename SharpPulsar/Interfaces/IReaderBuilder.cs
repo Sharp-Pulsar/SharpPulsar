@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Interfaces;
+﻿using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -143,7 +142,7 @@ namespace Org.Apache.Pulsar.Client.Api
 		/// <param name="rollbackDuration">
 		///            duration which position should be rolled back.
 		/// @return </param>
-		IReaderBuilder<T> StartMessageFromRollbackDuration(long rollbackDuration, TimeUnit timeunit);
+		IReaderBuilder<T> StartMessageFromRollbackDuration(TimeSpan rollbackDuration);
 
 		/// <summary>
 		/// Set the reader to include the given position of <seealso cref="IReaderBuilder.startMessageId(MessageId)"/>

@@ -4,6 +4,7 @@ using SharpPulsar.User;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -88,6 +89,7 @@ namespace SharpPulsar.Test
 
 			// 6. should receive all the message
 			var messageSet = 0;
+            Thread.Sleep(TimeSpan.FromSeconds(10));
 			var message = consumer.Receive();
 			do
 			{

@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util;
 using Akka.Util.Internal;
-using BAMCIS.Util.Concurrent;
 using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
@@ -265,7 +264,7 @@ namespace SharpPulsar
 				_metadata = new Dictionary<string,string>(conf.Properties).ToImmutableDictionary();
 			}
 
-			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(clientConfiguration.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(clientConfiguration.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create(), Self));
+			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
 						
 			if(_topicName.Persistent)
 			{
@@ -429,7 +428,7 @@ namespace SharpPulsar
 			});
 			Receive<GetCnx>(_ => 
 			{
-				Sender.Tell(_clientCnx);
+				Sender.Tell(new AskResponse(_clientCnx));
 			});
 			Receive<IncreaseAvailablePermits>(i => 
 			{
@@ -1578,8 +1577,7 @@ namespace SharpPulsar
 				ackBitSet = BitSet.ValueOf(ackSet.ToArray());
 			}
 
-            var stream = Helpers.Serializer.MemoryManager.GetStream();
-			stream.Write(payload, 0, payload.Length);
+            using var stream = new MemoryStream(payload);
 			using var binaryReader = new BinaryReader(stream);
 			var skippedMessages = 0;
 			try
@@ -2259,7 +2257,7 @@ namespace SharpPulsar
 			}
 
 			var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
-			var backoff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMax(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMandatoryStop(0, TimeUnit.MILLISECONDS).Create();
+			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
 
 			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
@@ -2323,7 +2321,7 @@ namespace SharpPulsar
 					return;
 					
 				}
-				_context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(TimeUnit.MILLISECONDS.ToMilliseconds(nextDelay)), async () =>
+				_context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(nextDelay), async () =>
 				{
 					var log = _log;
 					var remaining = remainingTime - nextDelay;

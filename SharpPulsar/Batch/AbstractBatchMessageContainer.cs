@@ -111,17 +111,17 @@ namespace SharpPulsar.Batch
 		}
 		public virtual bool HasSameTxn(Message<T> msg)
 		{
-			if (!msg.Metadata.ShouldSerializeTxnidMostBits() || !msg.Metadata.ShouldSerializeTxnidLeastBits())
+			if (!msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() || !msg.Metadata.OriginalMetadata.ShouldSerializeTxnidLeastBits())
 			{
 				return true;
 			}
 			if (CurrentTxnidMostBits == -1 || CurrentTxnidLeastBits == -1)
 			{
-				CurrentTxnidMostBits = (long)msg.Metadata.TxnidMostBits;
-				CurrentTxnidLeastBits = (long)msg.Metadata.TxnidLeastBits;
+				CurrentTxnidMostBits = (long)msg.Metadata.OriginalMetadata.TxnidMostBits;
+				CurrentTxnidLeastBits = (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
 				return true;
 			}
-			return CurrentTxnidMostBits == (long)msg.Metadata.TxnidMostBits && CurrentTxnidLeastBits == (long)msg.Metadata.TxnidLeastBits;
+			return CurrentTxnidMostBits == (long)msg.Metadata.OriginalMetadata.TxnidMostBits && CurrentTxnidLeastBits == (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
 		}
 		public int MaxBatchSize
         {

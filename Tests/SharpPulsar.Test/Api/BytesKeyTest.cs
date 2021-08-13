@@ -94,7 +94,7 @@ namespace SharpPulsar.Test.Api
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .Send();
 
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             var message = consumer.Receive();
 
             Assert.Equal(byteKey, message.KeyBytes);
@@ -122,7 +122,7 @@ namespace SharpPulsar.Test.Api
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(_topic);
             producerBuilder.EnableBatching(true);
-            producerBuilder.BatchingMaxPublishDelay(60000);
+            producerBuilder.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000));
             producerBuilder.BatchingMaxMessages(5);
             var producer = _client.NewProducer(producerBuilder);
 

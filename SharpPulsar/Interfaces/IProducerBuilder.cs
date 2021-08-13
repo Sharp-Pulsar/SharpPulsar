@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Batch.Api;
+﻿using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Proto;
 using System;
@@ -150,7 +149,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            the time unit of the {@code sendTimeout} </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> SendTimeout(int sendTimeout, TimeUnit unit);
+		IProducerBuilder<T> SendTimeout(TimeSpan sendTimeout);
 
 		/// <summary>
 		/// Set the max size of the queue holding the messages pending to receive an acknowledgment from the broker.
@@ -406,7 +405,7 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the producer builder instance </returns>
 		/// <seealso cref= #batchingMaxMessages(int) </seealso>
 		/// <seealso cref= #batchingMaxBytes(int) </seealso>
-		IProducerBuilder<T> BatchingMaxPublishDelay(long batchDelay, TimeUnit timeUnit);
+		IProducerBuilder<T> BatchingMaxPublishDelay(TimeSpan batchDelay);
 
 		/// <summary>
 		/// Set the partition switch frequency while batching of messages is enabled and
@@ -539,7 +538,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            the time unit of the interval. </param>
 		/// <returns> the producer builder instance </returns>
-		IProducerBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeUnit unit);
+		IProducerBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval);
 
 		/// <summary>
 		/// Control whether enable the multiple schema mode for producer.

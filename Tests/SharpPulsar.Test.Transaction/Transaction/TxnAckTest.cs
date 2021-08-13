@@ -78,8 +78,8 @@ namespace SharpPulsar.Test.Transaction.Transaction
 
 				// after transaction abort, the messages could be received
 				var commitTxn = Txn;
-                Thread.Sleep(TimeSpan.FromSeconds(5));
-                //Thread.Sleep(TimeSpan.FromSeconds(30));
+                //Thread.Sleep(TimeSpan.FromSeconds(5));
+                Thread.Sleep(TimeSpan.FromSeconds(30));
                 for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();

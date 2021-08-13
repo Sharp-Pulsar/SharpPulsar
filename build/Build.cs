@@ -456,7 +456,7 @@ class Build : NukeBuild
               .EnableNoRestore()
               .SetAssemblyVersion($"2.0.0.beta.{BuildNumber}")
               .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("Fix null SchemaVersion")
+              .SetPackageReleaseNotes("Fix metadata issue on batched messages. Improved producer and more")
               .SetVersionSuffix($"beta.{BuildNumber}")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")

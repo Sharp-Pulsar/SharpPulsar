@@ -71,7 +71,7 @@ namespace SharpPulsar
 			});
 			Receive<GetCnx>(_ =>
 			{
-				Sender.Tell(_clientCnx);
+				Sender.Tell(new AskResponse(_clientCnx));
 			});
 			Receive<SetCnx>(s =>
 			{

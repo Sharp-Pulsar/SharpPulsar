@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Auth;
+﻿using SharpPulsar.Auth;
 using SharpPulsar.Common;
 using SharpPulsar.Interfaces;
 using System;
@@ -174,21 +173,21 @@ namespace SharpPulsar.Configuration
             return this;
         }
 
-        public PulsarClientConfigBuilder ConnectionTimeout(int duration, TimeUnit unit)
+        public PulsarClientConfigBuilder ConnectionTimeout(TimeSpan duration)
         {
-            _conf.ConnectionTimeoutMs = (int)unit.ToMilliseconds(duration);
+            _conf.ConnectionTimeoutMs = (int)duration.TotalMilliseconds;
             return this;
         }
 
-        public PulsarClientConfigBuilder StartingBackoffInterval(long duration, TimeUnit unit)
+        public PulsarClientConfigBuilder StartingBackoffInterval(TimeSpan duration)
         {
-            _conf.InitialBackoffIntervalNanos = unit.ToNanoseconds(duration);
+            _conf.InitialBackoffIntervalMs = (long)duration.TotalMilliseconds;
             return this;
         }
 
-        public PulsarClientConfigBuilder MaxBackoffInterval(long duration, TimeUnit unit)
+        public PulsarClientConfigBuilder MaxBackoffInterval(TimeSpan duration)
         {
-            _conf.MaxBackoffIntervalNanos = unit.ToNanoseconds(duration);
+            _conf.MaxBackoffIntervalMs = (long)duration.TotalMilliseconds;
             return this;
         }
         public ClientConfigurationData ClientConfigurationData

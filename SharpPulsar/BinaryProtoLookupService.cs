@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Event;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Common.Partition;
 using SharpPulsar.Messages;
@@ -108,7 +107,7 @@ namespace SharpPulsar
                 {
                     var opTimeoutMs = _operationTimeoutMs;
                     _replyTo = Sender;
-                    _getPartitionedTopicMetadataBackOff = (new BackoffBuilder()).SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
+                    _getPartitionedTopicMetadataBackOff = (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMax(TimeSpan.FromMinutes(1)).Create();
 
                     await GetCnxAndRequestId();
                     await GetPartitionedTopicMetadata(p.TopicName, opTimeoutMs);
@@ -137,7 +136,7 @@ namespace SharpPulsar
                 try
                 {
                     var opTimeoutMs = _operationTimeoutMs;
-                    _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(100, TimeUnit.MILLISECONDS).SetMandatoryStop(opTimeoutMs * 2, TimeUnit.MILLISECONDS).SetMax(1, TimeUnit.MINUTES).Create();
+                    _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMax(TimeSpan.FromMinutes(1)).Create();
                     _replyTo = Sender;
                     await GetCnxAndRequestId();
                     await GetTopicsUnderNamespace(t.Namespace, t.Mode, opTimeoutMs);

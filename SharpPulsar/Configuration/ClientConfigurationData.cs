@@ -1,6 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-
-using SharpPulsar.Common;
+﻿using SharpPulsar.Common;
 using SharpPulsar.Auth;
 using SharpPulsar.Interfaces;
 using System;
@@ -37,13 +35,13 @@ namespace SharpPulsar.Configuration
 		/// <summary>
 		/// TLS KeyStore type configuration: JKS, PKCS12
 		/// </summary>
-		public long InitialBackoffIntervalNanos = TimeUnit.MILLISECONDS.ToNanoseconds(100);
+		public long InitialBackoffIntervalMs = 100;
 
 		public int ConnectionTimeoutMs { get; set; }
 		public string WebUrl { get; set; }
 		public int MaxLookupRedirects { get; set; }
 
-		public long MaxBackoffIntervalNanos = TimeUnit.SECONDS.ToNanoseconds(60);
+		public long MaxBackoffIntervalMs = 60;
 		public string TlsTrustStoreType { get; set; } = "PKCS12";
 		public bool EnableTransaction { get; set; } = false;
 		public string TlsTrustStorePath { get; set; } = null;

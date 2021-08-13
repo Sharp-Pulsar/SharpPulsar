@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using System;
+﻿using System;
 
 namespace SharpPulsar
 {
@@ -7,48 +6,42 @@ namespace SharpPulsar
 	{
 		private long _backoffIntervalNanos;
 		private long _maxBackoffIntervalNanos;
-		private long _initial;
-		private TimeUnit _unitInitial;
-		private long _max;
-		private TimeUnit _unitMax;
+		private TimeSpan _initial;
+		private TimeSpan _max;
 		private DateTimeOffset _clock;
-		private long _mandatoryStop;
-		private TimeUnit _unitMandatoryStop;
+		private TimeSpan _mandatoryStop;
 		internal BackoffBuilder()
 		{
-			_initial = 0;
-			_max = 0;
-			_mandatoryStop = 0;
+			_initial = TimeSpan.Zero;
+			_max = TimeSpan.Zero;
+			_mandatoryStop = TimeSpan.Zero;
 			_clock = DateTimeOffset.Now;
 			_backoffIntervalNanos = 0;
 			_maxBackoffIntervalNanos = 0;
 		}
 
-		public virtual BackoffBuilder SetInitialTime(long initial, TimeUnit unitInitial)
+		public virtual BackoffBuilder SetInitialTime(TimeSpan initial)
 		{
-			_unitInitial = unitInitial;
 			_initial = initial;
 			return this;
 		}
 
-		public virtual BackoffBuilder SetMax(long max, TimeUnit unitMax)
+		public virtual BackoffBuilder SetMax(TimeSpan max)
 		{
-			_unitMax = unitMax;
 			_max = max;
 			return this;
 		}
 
-		public virtual BackoffBuilder SetMandatoryStop(long mandatoryStop, TimeUnit unitMandatoryStop)
+		public virtual BackoffBuilder SetMandatoryStop(TimeSpan mandatoryStop)
 		{
 			_mandatoryStop = mandatoryStop;
-			_unitMandatoryStop = unitMandatoryStop;
 			return this;
 		}
 
 
 		public virtual Backoff Create()
 		{
-			return new Backoff(_initial, _unitInitial, _max, _unitMax, _mandatoryStop, _unitMandatoryStop, _clock);
+			return new Backoff(_initial, _max, _mandatoryStop, _clock);
 		}
 	}
 

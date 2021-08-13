@@ -1,5 +1,4 @@
-﻿using BAMCIS.Util.Concurrent;
-using SharpPulsar.Common;
+﻿using SharpPulsar.Common;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
@@ -221,7 +220,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            time unit for {@code operationTimeout} </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder OperationTimeout(int operationTimeout, TimeUnit unit);
+		IClientBuilder OperationTimeout(TimeSpan operationTimeout);
 
 		/// <summary>
 		/// Set the number of threads to be used for handling connections to brokers <i>(default: 1 thread)</i>.
@@ -373,7 +372,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            time unit for {@code statsInterval} </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder StatsInterval(long statsInterval, TimeUnit unit);
+		IClientBuilder StatsInterval(TimeSpan statsInterval);
 
 		/// <summary>
 		/// Number of concurrent lookup-requests allowed to send on each broker-connection to prevent overload on broker.
@@ -417,7 +416,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="keepAliveInterval"> </param>
 		/// <param name="unit"> the time unit in which the keepAliveInterval is defined </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder KeepAliveInterval(int keepAliveInterval, TimeUnit unit);
+		IClientBuilder KeepAliveInterval(TimeSpan keepAliveInterval);
 
 		/// <summary>
 		/// Set the duration of time to wait for a connection to a broker to be established. If the duration passes without a
@@ -429,7 +428,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder ConnectionTimeout(int duration, TimeUnit unit);
+		IClientBuilder ConnectionTimeout(TimeSpan duration);
 
 		/// <summary>
 		/// Set the duration of time for a backoff interval.
@@ -437,7 +436,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="duration"> the duration of the interval </param>
 		/// <param name="unit"> the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder StartingBackoffInterval(long duration, TimeUnit unit);
+		IClientBuilder StartingBackoffInterval(TimeSpan duration);
 
 		/// <summary>
 		/// Set the maximum duration of time for a backoff interval.
@@ -445,7 +444,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="duration"> the duration of the interval </param>
 		/// <param name="unit"> the time unit in which the duration is defined </param>
 		/// <returns> the client builder instance </returns>
-		IClientBuilder MaxBackoffInterval(long duration, TimeUnit unit);
+		IClientBuilder MaxBackoffInterval(TimeSpan duration);
 
 		/// <summary>
 		/// The clock used by the pulsar client.

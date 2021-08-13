@@ -72,13 +72,13 @@ namespace SharpPulsar.Batch
 				part.TopicName = TopicName;
 				part.ProducerName = ProducerName;
 				if (!_batches.ContainsKey(key)) _batches.Add(key, part);
-				if (msg.Metadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
+				if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
 				{
-					CurrentTxnidMostBits = (long)msg.Metadata.TxnidMostBits;
+					CurrentTxnidMostBits = (long)msg.Metadata.OriginalMetadata.TxnidMostBits;
 				}
-				if (msg.Metadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
+				if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
 				{
-					CurrentTxnidLeastBits = (long)msg.Metadata.TxnidLeastBits;
+					CurrentTxnidLeastBits = (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
 				}
 			}
 			else
@@ -231,7 +231,7 @@ namespace SharpPulsar.Batch
 					var messageWriter = new BinaryWriter(stream);
 					foreach (var msg in Messages)
 					{
-						var msgMetadata = msg.Metadata;
+						var msgMetadata = msg.Metadata.OriginalMetadata;
 						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
 						messageWriter.Write(msg.Data.ToArray());
 					}
