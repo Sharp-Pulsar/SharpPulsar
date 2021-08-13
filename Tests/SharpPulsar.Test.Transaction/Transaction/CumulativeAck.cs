@@ -111,7 +111,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.Topic(normalTopic)
 				.EnableBatching(true)
 				.BatchingMaxMessages(50)
-				.BatchingMaxPublishDelay(1000);
+				.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(1000));
 
 			var producer = _client.NewProducer(producerBuilder);
 

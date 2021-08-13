@@ -1,15 +1,14 @@
-﻿using BAMCIS.Util.Concurrent;
+﻿
+using System;
 
 namespace SharpPulsar.Messages.Reader
 {
     public sealed class ReadNextTimeout
     {
-        public int Timeout { get; } 
-        public TimeUnit Unit { get; }
-        public ReadNextTimeout(int timeout, TimeUnit unit)
+        public long Timeout { get; } 
+        public ReadNextTimeout(TimeSpan timeout)
         {
-            Timeout = timeout;
-            Unit = unit;
+            Timeout = (long)timeout.TotalSeconds;
         }
     }
 }

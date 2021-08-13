@@ -105,7 +105,7 @@ namespace SharpPulsar.Tracker
                     _log.Warning($"[{_consumer.Path.Name}] {headPartition.Count} messages have timed-out");
                     foreach (var messageId in headPartition)
                     {
-                        var ids = await _consumer.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId}));
+                        var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { messageId}));
                         foreach (var i in ids.MessageIds)
                             messagesToRedeliver.Add(i);
 

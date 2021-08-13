@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Event;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Messages;
@@ -92,7 +91,7 @@ namespace SharpPulsar
             ReceiveAsync<GrabCnx>(async _ => 
             {
                 _sender = Sender;
-                _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(_conf.InitialBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMax(_conf.MaxBackoffIntervalNanos, TimeUnit.NANOSECONDS).SetMandatoryStop(100, TimeUnit.MILLISECONDS).Create(), Self), "TransactionMetaStoreHandler");
+                _connectionHandler = Context.ActorOf(ConnectionHandler.Prop(_conf, _state, (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(_conf.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(_conf.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(100)).Create(), Self), "TransactionMetaStoreHandler");
 
                 var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx("TransactionMetaStoreHandler"));
                 if(askResponse.Failed)
@@ -334,7 +333,7 @@ namespace SharpPulsar
                 _replyTo.Tell(new AskResponse(new PulsarClientException("Add subscription to txn timeout")));
                 return;
 			}
-			if(response?.Error != ServerError.UnknownError)
+			if(response.Error == ServerError.UnknownError)
 			{
 				if(_log.IsDebugEnabled)
 				{

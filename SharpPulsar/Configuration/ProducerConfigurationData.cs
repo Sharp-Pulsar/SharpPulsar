@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
 
@@ -76,7 +75,7 @@ namespace SharpPulsar.Configuration
 		public ISet<string> EncryptionKeys { get; set; } = new SortedSet<string>();
 
 		public CompressionType CompressionType { get; set; } = CompressionType.None;
-		public long BatchingMaxPublishDelayMicros = TimeUnit.MILLISECONDS.ToMilliseconds(1000);
+		public double BatchingMaxPublishDelayMs = TimeSpan.FromMilliseconds(5000).TotalMilliseconds;
 
 		public long? InitialSequenceId { get; set; }
 
@@ -94,10 +93,11 @@ namespace SharpPulsar.Configuration
 		/// 
 		public virtual bool EncryptionEnabled => (EncryptionKeys != null) && EncryptionKeys.Count > 0 && (CryptoKeyReader != null);
 
-		public virtual void SetAutoUpdatePartitionsIntervalSeconds(int interval, TimeUnit timeUnit)
-		{
-			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
-			_autoUpdatePartitionsIntervalSeconds = timeUnit.ToSeconds(interval);
+		public virtual void SetAutoUpdatePartitionsIntervalSeconds(TimeSpan interval)
+        {
+            var interv = (long)interval.TotalSeconds;
+			Condition.CheckArgument(interv > 0, "interval needs to be > 0");
+			_autoUpdatePartitionsIntervalSeconds = interv;
 		}
         public virtual int MaxPendingMessagesAcrossPartitions
         {
@@ -124,11 +124,11 @@ namespace SharpPulsar.Configuration
 			}
 		}
 
-		public void SetBatchingMaxPublishDelayMicros(long batchDelay)
+		public void SetBatchingMaxPublishDelayMs(TimeSpan batchDelay)
 		{
-			long delayInMs = batchDelay;
+			var delayInMs = batchDelay.TotalMilliseconds;
 			Condition.CheckArgument(delayInMs >= 1, "configured value for batch delay must be at least 1ms");
-			BatchingMaxPublishDelayMicros = delayInMs;
+			BatchingMaxPublishDelayMs = delayInMs;
 		}
 
 		public int BatchingPartitionSwitchFrequencyByPublishDelay
@@ -142,7 +142,7 @@ namespace SharpPulsar.Configuration
 
 		public long BatchingPartitionSwitchFrequencyIntervalMicros()
 		{
-			return _batchingPartitionSwitchFrequencyByPublishDelay * BatchingMaxPublishDelayMicros;
+			return _batchingPartitionSwitchFrequencyByPublishDelay * (long)BatchingMaxPublishDelayMs;
 		}
 
 		public void SetSendTimeoutMs(long sendTimeoutMs)

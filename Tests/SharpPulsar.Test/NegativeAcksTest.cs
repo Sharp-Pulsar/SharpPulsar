@@ -73,7 +73,7 @@ namespace SharpPulsar.Test
 			if(batching)
             {
 				pBuilder.EnableBatching(batching);
-				pBuilder.BatchingMaxPublishDelay(negAcksDelayMillis);
+				pBuilder.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis));
 				pBuilder.BatchingMaxMessages(10);
 			}
 			var producer = _client.NewProducer(pBuilder);
@@ -87,6 +87,7 @@ namespace SharpPulsar.Test
 				producer.Send(Encoding.UTF8.GetBytes(value));
 				sentMessages.Add(value);
 			}
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < n; i++)
 			{
 				var msg = consumer.Receive();
@@ -100,8 +101,9 @@ namespace SharpPulsar.Test
 
 			ISet<string> receivedMessages = new HashSet<string>();
 
-			// All the messages should be received again
-			for (var i = 0; i < n; i++)
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            // All the messages should be received again
+            for (var i = 0; i < n; i++)
 			{
                 var msg = consumer.Receive();
                 if (msg != null)

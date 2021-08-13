@@ -137,7 +137,7 @@ namespace SharpPulsar.Test
 				.Topic(topic)
 				.MessageRoutingMode(Common.MessageRoutingMode.RoundRobinMode)
 				.MaxPendingMessages(count)
-				.BatchingMaxPublishDelay(86400000);
+				.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(80000));
 			if (enableBatch)
 			{
 				builder.EnableBatching(true);

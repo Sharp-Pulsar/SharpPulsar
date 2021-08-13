@@ -9,7 +9,6 @@ using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Proto;
-using BAMCIS.Util.Concurrent;
 using SharpPulsar.Extension;
 
 /// <summary>
@@ -108,9 +107,9 @@ namespace SharpPulsar.Configuration
             _conf.BatcherBuilder = builder;
             return this;
         }
-        public ProducerConfigBuilder<T> BatchingMaxPublishDelay(long batchDelay)
+        public ProducerConfigBuilder<T> BatchingMaxPublishDelay(TimeSpan batchDelay)
         {
-            _conf.SetBatchingMaxPublishDelayMicros(batchDelay);
+            _conf.SetBatchingMaxPublishDelayMs(batchDelay);
             return this;
         }
 
@@ -240,9 +239,9 @@ namespace SharpPulsar.Configuration
             _conf.AutoUpdatePartitions = autoUpdate;
             return this;
         }
-        public ProducerConfigBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeUnit unit)
+        public ProducerConfigBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval)
         {
-            _conf.SetAutoUpdatePartitionsIntervalSeconds(interval, unit);
+            _conf.SetAutoUpdatePartitionsIntervalSeconds(interval);
             return this;
         }
 

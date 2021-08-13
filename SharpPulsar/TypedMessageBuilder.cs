@@ -98,8 +98,8 @@ namespace SharpPulsar
                 }
                 else
                 {
-                    //obj = await _producer.Ask(new InternalSend<T>(message), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
-                    obj = await _producer.Ask(new InternalSend<T>(message)).ConfigureAwait(false);
+                    obj = await _producer.Ask(new InternalSend<T>(message), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
+                    //obj = await _producer.Ask(new InternalSend<T>(message)).ConfigureAwait(false);
                 }
                 switch(obj)
                 {

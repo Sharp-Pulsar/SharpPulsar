@@ -50,7 +50,7 @@ namespace SharpPulsar.Test
 				.Topic(topic)
 				.MessageRoutingMode(Common.MessageRoutingMode.RoundRobinMode)
 				.MaxPendingMessages(count)
-				.BatchingMaxPublishDelay(86400000);
+				.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(800000));
 			if (enableBatch)
 			{
 				builder.EnableBatching(true);
@@ -124,7 +124,7 @@ namespace SharpPulsar.Test
             var reader = _client.NewReader(builder);
 
             var keys = PublishMessages(partition0, numKeys, false);
-
+            Thread.Sleep(TimeSpan.FromSeconds(10));
 			for (var i = 0; i < numKeys; i++)
 			{
 				var message = reader.ReadNext();

@@ -28,11 +28,11 @@ namespace SharpPulsar.Test.SQL
 			_output = output;
 			_client = fixture.Client;
 		}
-		[Fact(Skip ="Issue with sql-worker on github action")]
-		//[Fact]
+		//[Fact(Skip ="Issue with sql-worker on github action")]
+		[Fact]
 		public virtual void TestQuerySql()
 		{
-			var topic = $"query_topics_avro";
+			var topic = $"query_topics_avro_{Guid.NewGuid()}";
 			PublishMessages(topic, 5);
 			var sql = PulsarSystem.NewSql();
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
@@ -55,7 +55,6 @@ namespace SharpPulsar.Test.SQL
                         {
                             var ob = dr.Data.ElementAt(i)["text"].ToString();
                             _output.WriteLine(ob);
-                                _output.WriteLine(ob);
                             receivedCount++;
                         }
                         _output.WriteLine(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));

@@ -8,6 +8,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using System.Collections.Generic;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
+using Receive = Akka.Actor.Receive;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -174,7 +175,13 @@ namespace SharpPulsar.Transaction
                 Sender.Tell(new RegisterProducedTopicResponse(null));
 		}
 
-		private void RegisterSendOp(IMessageId send)
+        protected override bool AroundReceive(Receive receive, object message)
+        {
+            _log.Info($"Received: {message.GetType().FullName}");
+            return base.AroundReceive(receive, message);
+        }
+
+        private void RegisterSendOp(IMessageId send)
 		{
 			_sendList.Add(send);
 		}
@@ -187,7 +194,7 @@ namespace SharpPulsar.Transaction
                 if (!_registerSubscriptionMap.TryGetValue(topic, out var subs))
                 {
                     _registerSubscriptionMap.Add(topic, new List<string> { subscription });
-                    Sender.Tell(new AskResponse(true));
+                    _tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription), Sender);
                 }
                 else if(!subs.Contains(subscription))
                 {
@@ -195,7 +202,9 @@ namespace SharpPulsar.Transaction
                     // we need to issue the request to TC to register the acked topic
                     _tcClient.Tell(new SubscriptionToTxn(new TxnID(_txnIdMostBits, _txnIdLeastBits), topic, subscription), Sender);
                 }
-			}
+                else
+                    Sender.Tell(new AskResponse(true));
+            }
             else
                 Sender.Tell(new AskResponse(false));
         }

@@ -76,7 +76,7 @@ namespace SharpPulsar.Test.Api
         {
             NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", false);
 		}
-		[Fact (Skip ="Seems to run forever when all tests run - passed when ran alone")]
+		[Fact]
         public void TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
 
@@ -91,7 +91,7 @@ namespace SharpPulsar.Test.Api
 				pBuilder.EnableBatching(true);
 				pBuilder.BatchBuilder(IBatcherBuilder.KeyBased(_client.ActorSystem));
 				pBuilder.BatchingMaxMessages(batchSize);
-				pBuilder.BatchingMaxPublishDelay(5000);
+				pBuilder.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(5000));
 			}
 
 			return _client.NewProducer(pBuilder);

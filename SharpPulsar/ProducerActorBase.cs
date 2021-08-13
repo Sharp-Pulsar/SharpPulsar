@@ -28,7 +28,7 @@ namespace SharpPulsar
 {
     internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
-		internal abstract void InternalSend(IMessage<T> message);
+		internal abstract ValueTask InternalSend(IMessage<T> message);
 		protected internal abstract void LastDisconnectedTimestamp();
 		protected internal abstract bool Connected();
 		protected internal abstract ValueTask<IProducerStats> Stats();
@@ -43,9 +43,9 @@ namespace SharpPulsar
 		protected internal IActorRef Client;
 		protected internal readonly ClientConfigurationData ClientConfiguration;
 		protected internal HandlerState State;
-		private string _topic;
+		private readonly string _topic;
 
-		public ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
+        protected ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
 		{			
 			ClientConfiguration = configurationData;
 			Client = client;

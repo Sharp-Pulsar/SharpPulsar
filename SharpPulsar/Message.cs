@@ -61,15 +61,17 @@ namespace SharpPulsar
 		// Constructor for out-going message
 		public static Message<T> Create(MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
 		{
-            var msg = new Message<T>( );
-            msg._metadata = EnsureMetadata(msgMetadata,new Metadata());
-            msg._messageId = null;
-            msg._topic = null;
-            msg._cnx = null;
-            msg._payload = payload;
-            msg._properties = null;
-            msg._schema = schema;
-            msg._uncompressedSize = (int)payload.Length;
+            var msg = new Message<T>
+            {
+                _metadata = EnsureMetadata(msgMetadata, new Metadata()),
+                _messageId = null,
+                _topic = null,
+                _cnx = null,
+                _payload = payload,
+                _properties = null,
+                _schema = schema,
+                _uncompressedSize = (int) payload.Length
+            };
             return msg;
 		}
 
@@ -314,27 +316,22 @@ namespace SharpPulsar
 		{
 			get
             {
-                if (!_metadata.NullValue.HasValue)
-                {
-					return ReadOnlySequence<byte>.Empty;
-				}
-                if (_metadata.NullValue.Value)
+                var nullValue = _metadata.NullValue ?? false;
+                
+                if (nullValue)
                 {
 					return ReadOnlySequence<byte>.Empty;
 				}
 
-                if (_payload != null) return _payload.Value;
+                if (_payload.HasValue) return _payload.Value;
 
                 return ReadOnlySequence<byte>.Empty;
             }
 		}
         public long Size()
         {
-            if (_metadata.NullValue == null)
-            {
-                return 0;
-            }
-            if (_metadata.NullValue.Value)
+            var nullValue = _metadata.NullValue ?? false;
+            if (nullValue)
             {
                 return 0;
             }
@@ -372,12 +369,9 @@ namespace SharpPulsar
 
                     return KeyValue;
                 }
-
-                if (!_metadata.NullValue.HasValue)
-                {
-                    return default(T);
-                }
-                if (_metadata.NullValue.Value)
+                var nullValue = _metadata.NullValue ?? false;
+                
+                if (nullValue)
                 {
                     return default(T);
                 }
@@ -672,6 +666,9 @@ namespace SharpPulsar
         
         private static Metadata EnsureMetadata(MessageMetadata metadata, Metadata mtadata)
         {
+            if (!mtadata.SequenceId.HasValue)
+                mtadata.SequenceId = (long)metadata.SequenceId;
+
             if (!mtadata.PartitionKeyB64Encoded.HasValue && metadata.ShouldSerializePartitionKeyB64Encoded())
                 mtadata.PartitionKeyB64Encoded = metadata.ShouldSerializePartitionKeyB64Encoded();
             

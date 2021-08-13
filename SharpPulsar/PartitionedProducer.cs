@@ -108,12 +108,12 @@ namespace SharpPulsar
 				await OnTopicsExtended(new List<string> { t });
 			});
 
-			Receive<InternalSend<T>>(m =>
+			ReceiveAsync<InternalSend<T>>(async m =>
 			{
 				try
 				{
 					//get excepyion vai out
-					InternalSend(m.Message);
+					await InternalSend(m.Message);
 				}
 				catch (Exception ex)
                 {
@@ -189,7 +189,7 @@ namespace SharpPulsar
 
 		}
 
-		internal override void InternalSend(IMessage<T> message)
+		internal override async ValueTask InternalSend(IMessage<T> message)
 		{
 			switch (State.ConnectionState)
 			{
@@ -221,7 +221,9 @@ namespace SharpPulsar
 			{
 				_router.Tell(new InternalSend<T>(message), Sender);
 			}
-		}
+
+            await Task.CompletedTask;
+        }
 
 		private void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
 		{
