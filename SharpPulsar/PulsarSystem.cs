@@ -13,6 +13,7 @@ using System.IO;
 using System.Threading.Tasks;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Sql;
+using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Live;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.Sql.Public;
@@ -155,14 +156,18 @@ namespace SharpPulsar
         {
             return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
         }
-        public static SqlInstance<SqlData> NewSql(ActorSystem actorSystem = null) 
+        public static SqlInstance Sql(ClientOptions options) 
         {
-            if(actorSystem != null)
-                return SqlInstance<SqlData>.NewSql(actorSystem);
-
-            return SqlInstance<SqlData>.NewSql(_actorSystem);
+            return new SqlInstance(_actorSystem, options);
         }
-        public static SqlInstance<LiveSqlData> NewLiveSql(LiveSqlQuery data) 
+        public static SqlInstance Sql(ActorSystem actorSystem, ClientOptions options)
+        {
+            if (actorSystem == null)
+                throw new Exception("ActorSystem can not be null");
+
+            return new SqlInstance(actorSystem, options);
+        }
+        public static LiveSqlInstance LiveSql(LiveSqlQuery data) 
         {
             var hasQuery = !string.IsNullOrWhiteSpace(data.ClientOptions.Execute);
 
