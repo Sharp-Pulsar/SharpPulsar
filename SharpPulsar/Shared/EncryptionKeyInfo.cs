@@ -29,7 +29,7 @@ namespace SharpPulsar.Shared
 	{
 
 		private IDictionary<string, string> metadata = null;
-		private sbyte[] key = null;
+		private byte[] key = null;
 
 		public EncryptionKeyInfo()
 		{
@@ -37,13 +37,13 @@ namespace SharpPulsar.Shared
 			this.metadata = null;
 		}
 
-		public EncryptionKeyInfo(sbyte[] key, IDictionary<string, string> metadata)
+		public EncryptionKeyInfo(byte[] key, IDictionary<string, string> metadata)
 		{
 			this.key = key;
 			this.metadata = metadata;
 		}
 
-		public virtual sbyte[] Key
+		public virtual byte[] Key
 		{
 			get
 			{

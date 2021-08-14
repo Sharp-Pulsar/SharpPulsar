@@ -55,7 +55,7 @@ namespace SharpPulsar.Common.Naming
 		{
 
 		}
-		private class CacheLoaderAnonymousInnerClass //: CacheLoader<string, TopicName>
+		private class CacheLoaderAnonymousInnerClass //: CacheLoader<string, Topic>
 		{
 			public TopicName Load(string name)
 			{

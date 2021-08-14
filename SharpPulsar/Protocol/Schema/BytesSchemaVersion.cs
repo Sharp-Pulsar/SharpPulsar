@@ -31,21 +31,21 @@ namespace SharpPulsar.Protocol.Schema
 
 		private static readonly char[] HexCharsUpper = new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-		private readonly sbyte[] _bytes;
+		private readonly byte[] _bytes;
 		// cache the hash code for the string, default to 0
 		private int _hashCode;
 
-		private BytesSchemaVersion(sbyte[] bytes)
+		private BytesSchemaVersion(byte[] bytes)
 		{
 			this._bytes = bytes;
 		}
 
-		public sbyte[] Bytes()
+		public byte[] Bytes()
 		{
 			return _bytes;
 		}
 
-		public static BytesSchemaVersion Of(sbyte[] bytes)
+		public static BytesSchemaVersion Of(byte[] bytes)
 		{
 			return bytes != null ? new BytesSchemaVersion(bytes) : null;
 		}
@@ -53,7 +53,7 @@ namespace SharpPulsar.Protocol.Schema
 		/// <summary>
 		/// Get the data from the Bytes. </summary>
 		/// <returns> The underlying byte array </returns>
-		public virtual sbyte[] Get()
+		public virtual byte[] Get()
 		{
 			return this._bytes;
 		}
@@ -120,7 +120,7 @@ namespace SharpPulsar.Protocol.Schema
 		/// <param name="off"> offset to start at </param>
 		/// <param name="len"> Length to write </param>
 		/// <returns> string output </returns>
-		private static string toString(in sbyte[] b, int off, int len)
+		private static string toString(in byte[] b, int off, int len)
 		{
 			StringBuilder result = new StringBuilder();
 
@@ -165,10 +165,10 @@ namespace SharpPulsar.Protocol.Schema
 		/// <summary>
 		/// This interface helps to compare byte arrays.
 		/// </summary>
-		public interface ByteArrayComparator : IComparer<sbyte[]>
+		public interface ByteArrayComparator : IComparer<byte[]>
 		{
 
-			int Compare(in sbyte[] buffer1, int offset1, int length1, in sbyte[] buffer2, int offset2, int length2);
+			int Compare(in byte[] buffer1, int offset1, int length1, in byte[] buffer2, int offset2, int length2);
 		}
 
 		public class LexicographicByteArrayComparator : ByteArrayComparator
@@ -176,12 +176,12 @@ namespace SharpPulsar.Protocol.Schema
 
 			internal const long SerialVersionUid = -1915703761143534937L;
 
-			public int Compare(sbyte[] buffer1, sbyte[] buffer2)
+			public int Compare(byte[] buffer1, byte[] buffer2)
 			{
 				return Compare(buffer1, 0, buffer1.Length, buffer2, 0, buffer2.Length);
 			}
 
-			public virtual int Compare(in sbyte[] buffer1, int offset1, int length1, in sbyte[] buffer2, int offset2, int length2)
+			public virtual int Compare(in byte[] buffer1, int offset1, int length1, in byte[] buffer2, int offset2, int length2)
 			{
 
 				// short circuit equal case

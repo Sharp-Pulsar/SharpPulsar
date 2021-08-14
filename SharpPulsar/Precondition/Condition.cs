@@ -28,11 +28,11 @@ namespace SharpPulsar.Precondition
             }
         }
         
-        public static void CheckNotNull(object value)
+        public static void CheckNotNull(object value, string message = "")
         {
             if (value == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(message);
             }
 
         }

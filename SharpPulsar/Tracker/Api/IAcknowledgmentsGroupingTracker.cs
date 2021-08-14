@@ -1,8 +1,7 @@
 ﻿
 using System.Collections.Generic;
-using SharpPulsar.Api;
 using SharpPulsar.Batch;
-using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Tracker.Api

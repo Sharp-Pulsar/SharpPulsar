@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Akka.Actor;
 using Akka.Event;
 using DotNetty.Common.Utilities;
-using SharpPulsar.Api;
+using ProtoBuf;
+using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Impl;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 
@@ -41,7 +43,7 @@ namespace SharpPulsar.Batch
 	/// batched into multiple batch messages:
 	/// [(k1, v1), (k1, v2), (k1, v3)], [(k2, v1), (k2, v2), (k2, v3)], [(k3, v1), (k3, v2), (k3, v3)]
 	/// </summary>
-	public class BatchMessageKeyBasedContainer : AbstractBatchMessageContainer
+	internal class BatchMessageKeyBasedContainer<T> : AbstractBatchMessageContainer<T>
 	{
 
 		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
@@ -51,17 +53,16 @@ namespace SharpPulsar.Batch
         {
             _log = system.Log;
         }
-		public override bool Add(Message msg, Action<object, Exception> callback)
+		public override bool Add(Message<T> msg, Action<object, Exception> callback)
 		{
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{TopicName}] [{ProducerName}] add message to batch, num messages in batch so far is {NumMessagesInBatch}");
 			}
 			NumMessagesInBatch++;
-			CurrentBatchSize += msg.Payload.Length;
+			CurrentBatchSize += msg.Data.Length;
 			var key = GetKey(msg);
-			var part = _batches[key];
-			if (part == null)
+			if (!_batches.TryGetValue(key, out var part))
 			{
 				part = new KeyedBatch();
 				part.AddMsg(msg, callback);
@@ -71,6 +72,14 @@ namespace SharpPulsar.Batch
 				part.TopicName = TopicName;
 				part.ProducerName = ProducerName;
 				if (!_batches.ContainsKey(key)) _batches.Add(key, part);
+				if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
+				{
+					CurrentTxnidMostBits = (long)msg.Metadata.OriginalMetadata.TxnidMostBits;
+				}
+				if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
+				{
+					CurrentTxnidLeastBits = (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
+				}
 			}
 			else
 			{
@@ -105,7 +114,7 @@ namespace SharpPulsar.Batch
 
 		public override bool MultiBatches => true;
 
-        private OpSendMsg CreateOpSendMsg(KeyedBatch keyedBatch)
+        private ProducerActor<T>.OpSendMsg<T> CreateOpSendMsg(KeyedBatch keyedBatch)
 		{
             var encryptedPayload = keyedBatch.CompressedBatchMetadataAndPayload;
             if (Container.Configuration.EncryptionEnabled && Container.Crypto != null)
@@ -133,24 +142,33 @@ namespace SharpPulsar.Batch
 			long currentBatchSizeBytes = 0;
 			foreach (var message in keyedBatch.Messages)
 			{
-				currentBatchSizeBytes += message.Payload.Length;
+				currentBatchSizeBytes += message.Data.Length;
 			}
 
             keyedBatch.MessageMetadata.ProducerName = Container.ProducerName;
             keyedBatch.MessageMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 			keyedBatch.MessageMetadata.NumMessagesInBatch = numMessagesInBatch;
-			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, encryptedPayload);
 
-			var op = OpSendMsg.Create(keyedBatch.Messages, cmd, keyedBatch.SequenceId);
+			if (CurrentTxnidMostBits != -1)
+			{
+				keyedBatch.MessageMetadata.TxnidMostBits = (ulong)CurrentTxnidMostBits;
+			}
+			if (CurrentTxnidLeastBits != -1)
+			{
+				keyedBatch.MessageMetadata.TxnidLeastBits = (ulong)CurrentTxnidLeastBits;
+			}
+			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
+
+			var op = ProducerActor<T>.OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId);
 
 			op.NumMessagesInBatch = numMessagesInBatch;
 			op.BatchSizeByte = currentBatchSizeBytes;
 			return op;
 		}
 
-		public override IList<OpSendMsg> CreateOpSendMsgs()
+		public override IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
 		{
-			IList<OpSendMsg> result = new List<OpSendMsg>();
+			var result = new List<ProducerActor<T>.OpSendMsg<T>>();
 			var list = new List<KeyedBatch>(_batches.Values);
 			list.Sort(((o1, o2) => o1.SequenceId.CompareTo(o2.SequenceId)));
 			foreach (var keyedBatch in list)
@@ -164,7 +182,7 @@ namespace SharpPulsar.Batch
 			return result;
 		}
 
-		public override bool HasSameSchema(Message msg)
+		public override bool HasSameSchema(Message<T> msg)
 		{
 			var key = GetKey(msg);
 			var part = _batches[key];
@@ -172,18 +190,18 @@ namespace SharpPulsar.Batch
 			{
 				return true;
 			}
-			if (!(part.MessageMetadata.SchemaVersion?.Length > 0))
+			if (!(part.MessageMetadata.ShouldSerializeSchemaVersion()))
 			{
 				return msg.SchemaVersion == null;
 			}
 			return Equals(msg.SchemaVersion, part.MessageMetadata.SchemaVersion);
 		}
 
-		private string GetKey(Message msg)
+		private string GetKey(Message<T> msg)
 		{
 			if (msg.HasOrderingKey())
 			{
-				return Convert.ToBase64String((byte[])(object)msg.OrderingKey);
+				return Convert.ToBase64String(msg.OrderingKey);
 			}
 			return msg.Key;
 		}
@@ -193,8 +211,8 @@ namespace SharpPulsar.Batch
 			internal MessageMetadata MessageMetadata = new MessageMetadata();
 			// sequence id for this batch which will be persisted as a single entry by broker
 			internal long SequenceId = -1;
-			internal List<byte> BatchedMessageMetadataAndPayload;
-			internal IList<Message> Messages = new List<Message>();
+			internal List<byte> BatchedMessageMetadataAndPayload = new List<byte>();
+			internal IList<Message<T>> Messages = new List<Message<T>>();
 			internal Action<object, Exception> PreviousCallback = null;
 			internal CompressionType CompressionType;
 			internal CompressionCodec Compressor;
@@ -209,14 +227,17 @@ namespace SharpPulsar.Batch
 			{
 				get
 				{
+					var stream = Helpers.Serializer.MemoryManager.GetStream();
+					var messageWriter = new BinaryWriter(stream);
 					foreach (var msg in Messages)
 					{
-						var msgMetadata = msg.Metadata;
-						BatchedMessageMetadataAndPayload.AddRange(Commands.SerializeSingleMessageInBatchWithPayload(msgMetadata, msg.Payload));
-						
+						var msgMetadata = msg.Metadata.OriginalMetadata;
+						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+						messageWriter.Write(msg.Data.ToArray());
 					}
-					var uncompressedSize = BatchedMessageMetadataAndPayload.Count;
-					var compressedPayload = Compressor.Encode(BatchedMessageMetadataAndPayload.ToArray());
+					var batchedMessageMetadataAndPayload = stream.ToArray();
+					var uncompressedSize = batchedMessageMetadataAndPayload.Length;
+					var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
 					BatchedMessageMetadataAndPayload = null;
 					if (CompressionType != CompressionType.None)
 					{
@@ -231,24 +252,12 @@ namespace SharpPulsar.Batch
 				}
 			}
 
-			public virtual void AddMsg(Message msg, Action<object, Exception> callback)
+			public virtual void AddMsg(Message<T> msg, Action<object, Exception> callback)
 			{
 				if (Messages.Count == 0)
 				{
 					SequenceId = Commands.InitBatchMessageMetadata(MessageMetadata);
-					if (msg.HasKey())
-					{
-						MessageMetadata.PartitionKey = msg.Key;
-						if (msg.HasBase64EncodedKey())
-						{
-							MessageMetadata.PartitionKeyB64Encoded = true;
-						}
-					}
-					if (msg.HasOrderingKey())
-					{
-						MessageMetadata.OrderingKey = (byte[])(object)msg.OrderingKey;
-					}
-					BatchedMessageMetadataAndPayload.AddRange(msg.Payload);
+					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToArray());
 					FirstCallback = callback;
 				}
 ;
@@ -272,7 +281,7 @@ namespace SharpPulsar.Batch
 
 			public virtual void Clear()
 			{
-				Messages =  new List<Message>();
+				Messages =  new List<Message<T>>();
 				FirstCallback = null;
 				PreviousCallback = null;
 				MessageMetadata = new MessageMetadata();

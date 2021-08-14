@@ -1,5 +1,4 @@
 ﻿using System;
-using SharpPulsar.Impl;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +20,7 @@ using SharpPulsar.Impl;
 /// </summary>
 namespace SharpPulsar.Batch
 {
-	public class BatchMessageId : MessageId
+    public class BatchMessageId : MessageId
 	{
         private const int NoBatch = -1;
         public int BatchIndex { get; }
@@ -61,7 +60,6 @@ namespace SharpPulsar.Batch
 			}
 		}
 
-
 		public virtual int CompareTo(object o)
         {
             if (o is BatchMessageId other)
@@ -98,7 +96,7 @@ namespace SharpPulsar.Batch
 		{
 			if (obj is BatchMessageId other1)
 			{
-                return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex;
+                return LedgerId == other1.LedgerId && EntryId == other1.EntryId && PartitionIndex == other1.PartitionIndex && BatchIndex == other1.BatchIndex && BatchSize == other1.BatchSize;
 			}
 
             if (obj is MessageId other)
@@ -114,9 +112,9 @@ namespace SharpPulsar.Batch
 		}
 
 		// Serialization
-		public sbyte[] ToByteArray()
+		public override byte[] ToByteArray()
 		{
-			return ToByteArray(BatchIndex);
+			return ToByteArray(BatchIndex, BatchSize);
 		}
 
 		public virtual bool AckIndividual()
@@ -127,6 +125,10 @@ namespace SharpPulsar.Batch
 		public virtual bool AckCumulative()
 		{
 			return Acker.AckCumulative(BatchIndex);
+		}
+		public virtual bool AckCumulative(int batchsize)
+		{
+			return Acker.AckCumulative(batchsize);
 		}
 
 		public virtual int OutstandingAcksInSameBatch => Acker.OutstandingAcks;
@@ -147,14 +149,14 @@ namespace SharpPulsar.Batch
             var entryCompare = EntryId.CompareTo(m.EntryId);
             if (entryCompare != 0)
                 return entryCompare;
-            
-            var partitionCompare = PartitionIndex.CompareTo(m.PartitionIndex);
+
+			var batchCompare = BatchIndex.CompareTo(m.BatchIndex);
+			if (batchCompare != 0)
+				return batchCompare;
+
+			var partitionCompare = PartitionIndex.CompareTo(m.PartitionIndex);
             if (partitionCompare != 0)
                 return partitionCompare;
-            
-            var batchCompare = BatchIndex.CompareTo(m.BatchIndex);
-            if (batchCompare != 0)
-                return batchCompare;
 
             return 0;
         }

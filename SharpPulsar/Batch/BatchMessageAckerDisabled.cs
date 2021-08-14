@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -21,12 +20,12 @@
 namespace SharpPulsar.Batch
 {
 
-	public class BatchMessageAckerDisabled : BatchMessageAcker
+    public class BatchMessageAckerDisabled : BatchMessageAcker
 	{
 
 		public static readonly BatchMessageAckerDisabled Instance = new BatchMessageAckerDisabled();
 
-		private BatchMessageAckerDisabled() : base(new BatchBitSet(0), 0)
+		private BatchMessageAckerDisabled() : base(new BitArray(0, false), 0)
 		{
 		}
 

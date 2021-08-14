@@ -20,9 +20,15 @@ namespace SharpPulsar.Common.Entity
 {
 	public class ProducerResponse
 	{
-		public string ProducerName { get; set; }
-		public long LastSequenceId { get; set; }
-		public sbyte[] SchemaVersion { get; set; }
+		public string ProducerName { get;}
+		public long LastSequenceId { get;}
+		public byte[] SchemaVersion { get;}
+        public ProducerResponse(string name, long lastSeq, byte[] version)
+        {
+			ProducerName = name;
+			LastSequenceId = lastSeq;
+			SchemaVersion = version;
+        }
 	}
 
 }

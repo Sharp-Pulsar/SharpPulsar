@@ -45,12 +45,12 @@ namespace SharpPulsar.Common.Util
 
 		public static IHash Instance => instance;
 
-        public int MakeHash(sbyte[] b)
+        public int MakeHash(byte[] b)
 		{
 			return MakeHash0(b) & int.MaxValue;
 		}
 
-		private int MakeHash0(sbyte[] bytes)
+		private int MakeHash0(byte[] bytes)
         {
             var byt = (byte[]) (object) bytes;
 			var len = bytes.Length;

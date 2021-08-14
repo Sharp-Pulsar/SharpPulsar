@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Akka.Actor;
-using SharpPulsar.Api;
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Common.Compression;
-using SharpPulsar.Impl;
 using SharpPulsar.Protocol.Proto;
 
 /// <summary>
@@ -30,14 +27,14 @@ namespace SharpPulsar.Batch
     /// <summary>
 	/// Batch message container framework.
 	/// </summary>
-	public abstract class AbstractBatchMessageContainer : IBatchMessageContainerBase
+	internal abstract class AbstractBatchMessageContainer<T> : IBatchMessageContainerBase<T>
 	{
 		public abstract bool MultiBatches {get;}
 		public abstract void Discard(Exception ex);
 		public abstract bool Empty {get;}
 		public abstract void Clear();
-		public abstract bool HasSameSchema(Message msg);
-		public abstract bool Add(Message msg, Action<object, Exception> callback);
+		public abstract bool HasSameSchema(Message<T> msg);
+		public abstract bool Add(Message<T> msg, Action<object, Exception> callback);
 
 		private string _topicName;
 		private string _producerName;
@@ -47,13 +44,16 @@ namespace SharpPulsar.Batch
 		private int _numMessagesInBatch = 0;
 		private long _currentBatchSizeBytes = 0;
 
+		protected internal long CurrentTxnidMostBits = -1L;
+		protected internal long CurrentTxnidLeastBits = -1L;
+
 		private const int InitialBatchBufferSize = 1024;
 
 		// This will be the largest Size for a batch sent from this particular producer. This is used as a baseline to
 		// allocate a new buffer that can hold the entire batch without needing costly reallocations
 		private int _maxBatchSize = InitialBatchBufferSize;
 
-		public virtual bool HaveEnoughSpace(Message msg)
+		public virtual bool HaveEnoughSpace(Message<T> msg)
 		{
 			var messageSize = msg.Data.Length;
 			return ((_maxBytesInBatch <= 0 && (messageSize + _currentBatchSizeBytes) <= _producerContainer.MaxMessageSize) || (_maxBytesInBatch > 0 && (messageSize + _currentBatchSizeBytes) <= _maxBytesInBatch)) && (_maxNumMessagesInBatch <= 0 || _numMessagesInBatch < _maxNumMessagesInBatch);
@@ -83,12 +83,12 @@ namespace SharpPulsar.Batch
 
         public virtual string TopicName => _topicName;
 
-        public virtual IList<OpSendMsg> CreateOpSendMsgs()
+        public virtual IList<ProducerActor<T>.OpSendMsg<T>> CreateOpSendMsgs()
 		{
 			throw new NotSupportedException();
 		}
 
-		public virtual OpSendMsg CreateOpSendMsg()
+		public virtual ProducerActor<T>.OpSendMsg<T> CreateOpSendMsg()
 		{
 			throw new NotSupportedException();
 		}
@@ -103,14 +103,27 @@ namespace SharpPulsar.Batch
                 Producer = value.Producer;
 				_topicName = value.Configuration.TopicName;
 				_producerName = value.Configuration.ProducerName;
-				CompressionType = CompressionCodecProvider.ConvertToWireProtocol(value.Configuration.CompressionType);
+				CompressionType = CompressionCodecProvider.ConvertToWireProtocol((int)value.Configuration.CompressionType);
 				Compressor = CompressionCodecProvider.GetCompressionCodec((int)CompressionType);
 				_maxNumMessagesInBatch = value.Configuration.BatchingMaxMessages;
 				_maxBytesInBatch = value.Configuration.BatchingMaxBytes;
             }
 		}
-
-        public int MaxBatchSize
+		public virtual bool HasSameTxn(Message<T> msg)
+		{
+			if (!msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() || !msg.Metadata.OriginalMetadata.ShouldSerializeTxnidLeastBits())
+			{
+				return true;
+			}
+			if (CurrentTxnidMostBits == -1 || CurrentTxnidLeastBits == -1)
+			{
+				CurrentTxnidMostBits = (long)msg.Metadata.OriginalMetadata.TxnidMostBits;
+				CurrentTxnidLeastBits = (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
+				return true;
+			}
+			return CurrentTxnidMostBits == (long)msg.Metadata.OriginalMetadata.TxnidMostBits && CurrentTxnidLeastBits == (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
+		}
+		public int MaxBatchSize
         {
             get => _maxBatchSize;
             set => _maxBytesInBatch = value;

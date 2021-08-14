@@ -1,31 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>1.4.2.1</Version>
-    <Authors>Ebere Abanonu</Authors>
-    <Description>SharpPulsar is Apache Pulsar Client built using Akka.net</Description>
-    <PackageTags>Apache Pulsar, Akka.Net</PackageTags>
-    <PackageReleaseNotes>[Default] NLog Archive Every one hour
-
-Pass in NLog configurattion from outside
-
-Logs to logs.log</PackageReleaseNotes>
+    <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
+    
     <RepositoryUrl>https://github.com/eaba/SharpPulsar</RepositoryUrl>
     <PackageProjectUrl>https://github.com/eaba/SharpPulsar</PackageProjectUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <PackageIcon>SharpPulsar.jpg</PackageIcon>
     <PackageIconUrl />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Akka\InternalCommands\Reader\**" />
+    <Compile Remove="Akka\**" />
+    <Compile Remove="Messages\EventSource\**" />
     <Compile Remove="Protocol\Circe\**" />
     <Compile Remove="Protocol\Proto\Partial\**" />
-    <EmbeddedResource Remove="Akka\InternalCommands\Reader\**" />
+    <EmbeddedResource Remove="Akka\**" />
+    <EmbeddedResource Remove="Messages\EventSource\**" />
     <EmbeddedResource Remove="Protocol\Circe\**" />
     <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
-    <None Remove="Akka\InternalCommands\Reader\**" />
+    <None Remove="Akka\**" />
+    <None Remove="Messages\EventSource\**" />
     <None Remove="Protocol\Circe\**" />
     <None Remove="Protocol\Proto\Partial\**" />
     <None Include="SharpPulsar.jpg">
@@ -35,10 +29,8 @@ Logs to logs.log</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Impl\Schema\GenerateSchema.cs" />
-    <Compile Remove="Impl\Schema\KeyValueSchema.cs" />
-    <Compile Remove="Impl\Schema\KeyValueSchemaInfo.cs" />
-    <Compile Remove="Presto\FixJsonDataUtils.cs" />
+    <Compile Remove="Batch\BatchBitSet.cs" />
+    <Compile Remove="Schemas\GenerateSchema.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,66 +38,60 @@ Logs to logs.log</PackageReleaseNotes>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.12" />
+    <PackageReference Include="akka" Version="1.4.23" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
-    <PackageReference Include="Apache.Avro" Version="1.10.1" />
-    <PackageReference Include="App.Metrics.Concurrency" Version="2.0.2" />
-    <PackageReference Include="avroschemagenerator" Version="1.7.0" />
-    <PackageReference Include="DotNetty.Common" Version="0.6.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.14.0" />
-    <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
-    <PackageReference Include="IdentityModel" Version="4.5.0" />
+    <PackageReference Include="Apache.Avro" Version="1.10.2" />
+    <PackageReference Include="App.Metrics.Concurrency" Version="4.2.0" />
+    <PackageReference Include="avroschemagenerator" Version="1.9.0" />
+    <PackageReference Include="DotNetty.Common" Version="0.7.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.17.3" />
+    <PackageReference Include="IdentityModel" Version="5.1.0" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
-    <PackageReference Include="K4os.Compression.LZ4" Version="1.2.6" />
-    <PackageReference Include="Mail.dll" Version="3.0.20308.1141" />
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.2.12" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="5.0.8">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.22" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="Nito.AsyncEx.Tasks" Version="5.1.0" />
-    <PackageReference Include="NodaTime" Version="3.0.3" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.8" />
-    <PackageReference Include="protobuf-net" Version="3.0.73" />
-    <PackageReference Include="RestSharp" Version="106.11.7" />
-    <PackageReference Include="SharpZipLib" Version="1.3.1" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.1.3" />
+    <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.23" />
+    <PackageReference Include="Nager.PublicSuffix" Version="2.2.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NodaTime" Version="3.0.5" />
+    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.13.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
+    <PackageReference Include="protobuf-net" Version="3.0.101" />
+    <PackageReference Include="SharpPulsar.Admin" Version="1.1.7" />
+    <PackageReference Include="SharpPulsar.Sql" Version="2.0.0.12" />
+    <PackageReference Include="SharpZipLib" Version="1.3.2" />
     <PackageReference Include="Snappy.Standard" Version="0.2.0" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
-    <PackageReference Include="System.IO.Pipelines" Version="5.0.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
     <PackageReference Include="System.Net.NetworkInformation" Version="4.3.0" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="5.0.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-    <PackageReference Include="System.Text.Json" Version="5.0.0" />
-    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.4" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
+    <PackageReference Include="System.Text.Json" Version="5.0.2" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0" />
+    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.5" />
     <PackageReference Include="ZstdNet" Version="1.4.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Akka\Function\Api\Swagger.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Swagger.json</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Akka\Admin\Api\code-model-v1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Akka\Function\Api\Swagger.json">
-      <Generator>NSwagCodeGenerator</Generator>
-      <LastGenOutput>Swagger.cs</LastGenOutput>
-    </None>
     <None Include="readme.txt" pack="true" PackagePath=".">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Presto\Facebook\Type\zone-index.properties">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="SharpPulsar.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
   <Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
     <ItemGroup>
       <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />

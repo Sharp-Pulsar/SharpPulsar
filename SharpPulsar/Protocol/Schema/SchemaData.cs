@@ -1,5 +1,5 @@
-﻿using SharpPulsar.Common.Schema;
-using SharpPulsar.Protocol.Builder;
+﻿using SharpPulsar.Protocol.Builder;
+using SharpPulsar.Schemas;
 using SharpPulsar.Shared;
 using System.Collections.Generic;
 
@@ -33,7 +33,7 @@ namespace SharpPulsar.Protocol.Schema
 		public  bool IsDeleted { get; set; }
 		public  long Timestamp { get; set; }
 		public  string User { get; set; }
-		public  sbyte[] Data { get; set; }
+		public  byte[] Data { get; set; }
 		public IDictionary<string, string> Properties = new Dictionary<string, string>();
 
 		/// <summary>

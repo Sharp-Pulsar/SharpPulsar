@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Stats.Producer.Api;
+﻿using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,69 +20,78 @@ using SharpPulsar.Stats.Producer.Api;
 /// </summary>
 namespace SharpPulsar.Stats.Producer
 {
-	[Serializable]
-	public class ProducerStatsDisabled : IProducerStatsRecorder
+    public sealed class ProducerStatsDisabled : IProducerStatsRecorder
 	{
 		private const long SerialVersionUid = 1L;
 
-		internal static readonly IProducerStatsRecorder Instance = new ProducerStatsDisabled();
+		public static readonly ProducerStatsDisabled Instance = new ProducerStatsDisabled();
 
-		public virtual void IncrementSendFailed()
+		public void IncrementSendFailed()
 		{
 			// Do nothing
 		}
 
-		public virtual void IncrementSendFailed(long numMsgs)
+		public void IncrementSendFailed(long numMsgs)
 		{
 			// Do nothing
 		}
 
-		public virtual void IncrementNumAcksReceived(long latencyNs)
+		public void IncrementNumAcksReceived(long latencyNs)
 		{
 			// Do nothing
 		}
 
-		public virtual void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize)
+		public void UpdateNumMsgsSent(long numMsgs, long totalMsgsSize)
 		{
 			// Do nothing
 		}
 
-		public virtual void CancelStatsTimeout()
+		public void CancelStatsTimeout()
 		{
 			// Do nothing
 		}
 
-		public virtual long NumMsgsSent => 0;
+		public long NumMsgsSent => 0;
 
-        public virtual long NumBytesSent => 0;
+        public long NumBytesSent => 0;
 
-        public virtual long NumSendFailed => 0;
+        public long NumSendFailed => 0;
 
-        public virtual long NumAcksReceived => 0;
+        public long NumAcksReceived => 0;
 
-        public virtual long TotalMsgsSent => 0;
+        public long TotalMsgsSent => 0;
 
-        public virtual long TotalBytesSent => 0;
+        public long TotalBytesSent => 0;
 
-        public virtual long TotalSendFailed => 0;
+        public long TotalSendFailed => 0;
 
-        public virtual long TotalAcksReceived => 0;
+        public long TotalAcksReceived => 0;
 
-        public virtual double SendMsgsRate => 0;
+        public double SendMsgsRate => 0;
 
-        public virtual double SendBytesRate => 0;
+        public double SendBytesRate => 0;
 
-        public virtual double SendLatencyMillis50pct => 0;
+        public double SendLatencyMillis50pct => 0;
 
-        public virtual double SendLatencyMillis75pct => 0;
+        public double SendLatencyMillis75pct => 0;
 
-        public virtual double SendLatencyMillis95pct => 0;
+        public double SendLatencyMillis95pct => 0;
 
-        public virtual double SendLatencyMillis99pct => 0;
+        public double SendLatencyMillis99pct => 0;
 
-        public virtual double SendLatencyMillis999pct => 0;
+        public double SendLatencyMillis999pct => 0;
 
-        public virtual double SendLatencyMillisMax => 0;
+        public double SendLatencyMillisMax => 0;
+
+        public double SendLatencyMillis50Pct => 0;
+
+        public double SendLatencyMillis75Pct => 0;
+
+        public double SendLatencyMillis95Pct => 0;
+
+        public double SendLatencyMillis99Pct => 0;
+
+        public double SendLatencyMillis999Pct => 0;
     }
 
 }

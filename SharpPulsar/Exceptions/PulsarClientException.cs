@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,12 +21,10 @@ using System.IO;
 namespace SharpPulsar.Exceptions
 {
 
-	/// <summary>
-	/// Base type of exception thrown by Pulsar client.
-	/// </summary>
-	//JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-	//ORIGINAL LINE: @SuppressWarnings("serial") public class PulsarClientException extends java.io.IOException
-	public class PulsarClientException : IOException
+    /// <summary>
+    /// Base type of exception thrown by Pulsar client.
+    /// </summary>
+    public class PulsarClientException : Exception
 	{
 		private long _sequenceId = -1;
 		/// <summary>
@@ -700,6 +697,62 @@ namespace SharpPulsar.Exceptions
 		}
 
 		/// <summary>
+		/// Not allowed exception thrown by Pulsar client.
+		/// </summary>
+		public class NotAllowedException : PulsarClientException
+		{
+
+			/// <summary>
+			/// Constructs an {@code NotAllowedException} with the specified detail message.
+			/// </summary>
+			/// <param name="msg">
+			///        The detail message (which is saved for later retrieval
+			///        by the <seealso cref="getMessage()"/> method) </param>
+			public NotAllowedException(string msg) : base(msg)
+			{
+			}
+		}
+        /// <summary>
+        /// Producer was fenced by the broker.
+        /// </summary>
+        public class ProducerFencedException : PulsarClientException
+		{
+
+            /// <summary>
+            /// Constructs an {@code ProducerFencedException} with the specified detail message.
+            /// </summary>
+            /// <param name="msg">
+            ///        The detail message (which is saved for later retrieval
+            ///        by the <seealso cref="getMessage()"/> method) </param>
+            public ProducerFencedException(string msg) : base(msg)
+			{
+			}
+		}
+		/// <summary>
+		/// Consumer assign exception thrown by Pulsar client.
+		/// </summary>
+		public class TransactionConflictException : PulsarClientException
+		{
+
+			/// <summary>
+			/// Constructs an {@code TransactionConflictException} with the specified cause.
+			/// </summary>
+			/// <param name="t">
+			///        The cause (which is saved for later retrieval by the
+			///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+			///        and indicates that the cause is nonexistent or unknown.) </param>
+			public TransactionConflictException(Exception t) : base(t)
+			{
+			}
+
+			/// <summary>
+			/// Constructs an {@code TransactionConflictException} with the specified detail message. </summary>
+			/// <param name="msg"> The detail message. </param>
+			public TransactionConflictException(string msg) : base(msg)
+			{
+			}
+		}
+		/// <summary>
 		/// Crypto exception thrown by Pulsar client.
 		/// </summary>
 		public class CryptoException : PulsarClientException
@@ -714,9 +767,21 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
+		/// <summary>
+		/// Consumer assign exception thrown by Pulsar client.
+		/// </summary>
+		public class ConsumerAssignException : PulsarClientException
+		{
 
+			/// <summary>
+			/// Constructs an {@code ConsumerAssignException} with the specified detail message. </summary>
+			/// <param name="msg"> The detail message. </param>
+			public ConsumerAssignException(string msg) : base(msg)
+			{
+			}
+		}
 		// wrap an exception to enriching more info messages.
-		public static Exception wrap(Exception t, string msg)
+		public static Exception Wrap(Exception t, string msg)
 		{
 			msg += "\n" + t.Message;
 			// wrap an exception with new message info
@@ -821,6 +886,18 @@ namespace SharpPulsar.Exceptions
             {
                 return new CryptoException(msg);
             }
+            if (t is ConsumerAssignException)
+            {
+                return new ConsumerAssignException(msg);
+            }
+            if (t is NotAllowedException)
+            {
+                return new NotAllowedException(msg);
+            }
+            if (t is TransactionConflictException)
+            {
+                return new TransactionConflictException(msg);
+            }
             if (t is PulsarClientException)
             {
                 return new PulsarClientException(msg);
@@ -842,7 +919,7 @@ namespace SharpPulsar.Exceptions
 
             if (t is Exception)
             {
-                throw (Exception)t;
+                return new PulsarClientException(t);
             }
 
             // Unwrap the exception to keep the same exception type but a stack trace that includes the application calling

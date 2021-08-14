@@ -33,9 +33,9 @@ namespace SharpPulsar.Batch
         {
             _system = system;
         }
-		public virtual IBatchMessageContainer Build()
+		public virtual IBatchMessageContainer Build<T>()
 		{
-			return new BatchMessageKeyBasedContainer(_system);
+			return new BatchMessageKeyBasedContainer<T>(_system);
 		}
 	}
 

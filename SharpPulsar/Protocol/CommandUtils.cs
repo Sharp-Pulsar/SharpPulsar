@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SharpPulsar.Extension;
-using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,10 +25,10 @@ using HashMapHelper = SharpPulsar.Presto.HashMapHelper;
 /// </summary>
 namespace SharpPulsar.Protocol
 {
-	/// <summary>
-	/// Helper class to work with commands.
-	/// </summary>
-	public sealed class CommandUtils
+    /// <summary>
+    /// Helper class to work with Commands.
+    /// </summary>
+    public sealed class CommandUtils
 	{
 
 		private CommandUtils()

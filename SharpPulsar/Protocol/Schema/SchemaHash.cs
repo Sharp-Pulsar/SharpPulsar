@@ -18,11 +18,12 @@
 /// </summary>
 namespace SharpPulsar.Protocol.Schema
 {
-    using SharpPulsar.Api;
+    
+    using SharpPulsar.Interfaces;
     using System;
     using System.Security.Cryptography;
 
-    //using SchemaInfo = SharpPulsar.Schema.SchemaInfo;
+    //using SchemaInfo = SharpPulsar.Schemas.SchemaInfo;
 
     /// <summary>
     /// Schema hash wrapper with a HashCode inner type.
@@ -39,9 +40,9 @@ namespace SharpPulsar.Protocol.Schema
 			this._hash = hash;
 		}
 
-		public static SchemaHash Of(ISchema schema)
+		public static SchemaHash Of<T>(ISchema<T> schema)
 		{
-			var schem = schema != null? schema.SchemaInfo.Schema: Array.Empty<sbyte>();
+			var schem = schema != null? schema.SchemaInfo.Schema: Array.Empty<byte>();
 			return Of(schem);
 		}
 
@@ -50,15 +51,15 @@ namespace SharpPulsar.Protocol.Schema
 			return Of(schemaData.Data);
 		}
 
-		private static SchemaHash Of(sbyte[] schemaBytes)
+		private static SchemaHash Of(byte[] schemaBytes)
 		{
 			var scmBy = (byte[])(Array)schemaBytes;
 			return new SchemaHash(HashFunction.ComputeHash(scmBy));
 		}
 
-		public virtual sbyte[] AsBytes()
+		public virtual byte[] AsBytes()
 		{
-			var scmBy = (sbyte[])(Array)_hash;
+			var scmBy = (byte[])(Array)_hash;
 			return scmBy;
 		}
 	}

@@ -18,14 +18,13 @@
 /// </summary>
 
 using Akka.Actor;
-using DotNetty.Common.Utilities;
-using SharpPulsar.Impl;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Stats.Consumer.Api
 {
     public interface IConsumerStatsRecorder : IConsumerStats
     {
-        void UpdateNumMsgsReceived(Message message);
+        void UpdateNumMsgsReceived<T>(IMessage<T> message);
 
         void IncrementNumAcksSent(long numAcks);
 

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using SharpPulsar.Api;
+﻿using System.Collections.Generic;
+using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Tracker.Messages
@@ -14,7 +12,6 @@ namespace SharpPulsar.Tracker.Messages
             AckType = ackType;
             Properties = properties;
         }
-
         public IMessageId MessageId { get; } 
         public CommandAck.AckType AckType { get; } 
         public IDictionary<string, long> Properties { get; }

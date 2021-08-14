@@ -22,7 +22,7 @@ namespace SharpPulsar.Utility
     {
         public static byte[] Encrypt(byte[] data, byte[] key, byte[] encodingParam)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key).Trim()));
             var keys = (RsaKeyParameters)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -48,7 +48,7 @@ namespace SharpPulsar.Utility
         }
         public static byte[] Encrypt(byte[] data, byte[] key)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key).Trim()));
             var keys = (RsaKeyParameters)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -75,7 +75,7 @@ namespace SharpPulsar.Utility
 
         public static byte[] Decrypt(byte[] data, byte[] key, byte[] encodingParam)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key).Trim()));
             var keys = (AsymmetricCipherKeyPair)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -100,7 +100,7 @@ namespace SharpPulsar.Utility
         }
         public static byte[] Decrypt(byte[] data, byte[] key)
         {
-            var pr = new PemReader(new StringReader(StringHelper.NewString((sbyte[])(object)key).Trim()));
+            var pr = new PemReader(new StringReader(StringHelper.NewString(key).Trim()));
             var keys = (AsymmetricCipherKeyPair)pr.ReadObject();
 
             // Pure mathematical RSA implementation
@@ -158,8 +158,8 @@ namespace SharpPulsar.Utility
                 Key = key,
                 IV = iv,
                 Mode = CipherMode.CBC,
-                Padding = PaddingMode.Zeros
-            };
+                Padding = PaddingMode.ISO10126
+        };
 
             using var encrypt = aes.CreateEncryptor(aes.Key, aes.IV);
             output = encrypt.TransformFinalBlock(data, 0, data.Length);
@@ -177,8 +177,8 @@ namespace SharpPulsar.Utility
                 Key = key,
                 IV = iv,
                 Mode = CipherMode.CBC,
-                Padding = PaddingMode.Zeros
-            };
+                Padding = PaddingMode.ISO10126
+        };
             using var decrypt = aes.CreateDecryptor(aes.Key, aes.IV);
             output = decrypt.TransformFinalBlock(data, 0, data.Length);
             return output;

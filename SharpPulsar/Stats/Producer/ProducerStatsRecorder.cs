@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -6,9 +7,9 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
-using SharpPulsar.Api;
-using SharpPulsar.Impl.Conf;
-using SharpPulsar.Utility;
+
+using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -52,7 +53,7 @@ namespace SharpPulsar.Stats.Producer
         private readonly StripedLongAdder _totalAcksReceived;
         private static readonly NumberFormatInfo Dec = new NumberFormatInfo();
         private static readonly NumberFormatInfo ThroughputFormat = new NumberFormatInfo();
-        internal static double[] Latency = new double[256];
+        internal static List<double> Latency = new List<double>(256);
 
         public double SendMsgsRate { get; set; }
         public double SendBytesRate { get; set; }
@@ -141,8 +142,8 @@ namespace SharpPulsar.Stats.Producer
             _numAcksReceived.Increment();
             lock (Latency)
             {
-                var current = Latency.Length + 1;
-                Latency[current] = (TimeSpan.FromTicks(latencyNs).TotalMilliseconds);
+                //var current = Latency.Length + 1;
+                Latency.Add(TimeSpan.FromTicks(latencyNs).TotalMilliseconds);
             }
         }
 
@@ -235,7 +236,7 @@ namespace SharpPulsar.Stats.Producer
                 lock (Latency)
                 {
                     _latencyPctValues = GetQuantiles(Percentiles);
-                    Latency = new double[256];
+                    Latency = new List<double>(256);
                 }
 
                 SendMsgsRate = currentNumMsgsSent / elapsed;
@@ -274,9 +275,9 @@ namespace SharpPulsar.Stats.Producer
         //https://stackoverflow.com/questions/8137391/percentile-calculation
         public double[] GetQuantiles(double[] ranks)
         {
-            Array.Sort(Latency);
+            Array.Sort(Latency.ToArray());
             var quantiles = new double[ranks.Length];
-            var l = Latency.Length;
+            var l = Latency.Count;
             for (var i = 0; i < ranks.Length; i++)
             {
                 var rank = ranks[i];

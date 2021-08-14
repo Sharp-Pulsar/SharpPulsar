@@ -5,11 +5,10 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using App.Metrics.Concurrency;
-using DotNetty.Common.Utilities;
-using Microsoft.Extensions.Logging;
-using SharpPulsar.Impl;
-using SharpPulsar.Impl.Conf;
+using SharpPulsar.Configuration;
 using SharpPulsar.Stats.Consumer.Api;
+using SharpPulsar.Interfaces;
+using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +30,7 @@ using SharpPulsar.Stats.Consumer.Api;
 /// </summary>
 namespace SharpPulsar.Stats.Consumer
 {
-	public class ConsumerStatsRecorder : IConsumerStatsRecorder
+    public class ConsumerStatsRecorder<T> : IConsumerStatsRecorder
 	{
 
 		private const long SerialVersionUid = 1L;
@@ -80,7 +79,7 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
+		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData<T> conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
         {
             _system = system;
             _log = system.Log;
@@ -104,7 +103,7 @@ namespace SharpPulsar.Stats.Consumer
 			Init(conf);
 		}
 
-		private void Init(ConsumerConfigurationData conf)
+		private void Init(ConsumerConfigurationData<T> conf)
 		{
             try
 			{
@@ -159,7 +158,7 @@ namespace SharpPulsar.Stats.Consumer
                 _statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
 			}
 		}
-		public void UpdateNumMsgsReceived(Message message)
+		public void UpdateNumMsgsReceived(IMessage<T> message)
 		{
 			if (message != null)
 			{
@@ -225,8 +224,16 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksSent.Add(stats.TotalAcksSent);
 			_totalAcksFailed.Add(stats.TotalAcksFailed);
 		}
+		public virtual void UpdateNumMsgsReceived<T1>(IMessage<T1> message)
+		{
+			if (message != null)
+			{
+				_numMsgsReceived.Increment();
+				_numBytesReceived.Add(message.Data.Length);
+			}
+		}
 
-		public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
+        public virtual long NumMsgsReceived => _numMsgsReceived.GetValue();
 
 		public virtual long NumBytesReceived => _numBytesReceived.GetValue();
 
@@ -250,6 +257,32 @@ namespace SharpPulsar.Stats.Consumer
 
 		public virtual long TotalAcksFailed => _totalAcksFailed.GetValue();
 
-	}
+
+		public virtual int? MsgNumInReceiverQueue
+		{
+			get
+			{
+				/*if (_consumer is ConsumerBase)
+				{
+					return ((ConsumerBase<object>)_consumer).incomingMessages.size();
+				}*/
+				return null;
+			}
+		}
+
+		public virtual IDictionary<long, int> MsgNumInSubReceiverQueue
+		{
+			get
+			{
+				/*if (_consumer is MultiTopicsConsumerImpl)
+				{
+					IList<ConsumerImpl<object>> consumerList = ((MultiTopicsConsumerImpl)_consumer).Consumers;
+					return consumerList.ToDictionary((consumerImpl) => consumerImpl.consumerId, (consumerImpl) => consumerImpl.incomingMessages.size());
+				}*/
+				return null;
+			}
+		}
+
+    }
 
 }

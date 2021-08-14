@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Common.Enum;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.Collections.Generic;
 namespace SharpPulsar.Common.Entity
 {
 
-	/// <summary>
-	/// KeyShared policy for KeyShared subscription.
-	/// </summary>
-	public abstract class KeySharedPolicy
+    /// <summary>
+    /// KeyShared policy for KeyShared subscription.
+    /// </summary>
+    public abstract class KeySharedPolicy
 	{
 
 		protected internal KeySharedMode keySharedMode;
@@ -62,7 +61,7 @@ namespace SharpPulsar.Common.Entity
 
 			internal KeySharedPolicySticky()
 			{
-				this.keySharedMode = KeySharedMode.STICKY;
+				this.keySharedMode = KeySharedMode.Sticky;
 				this._ranges = new List<Range>();
 			}
 
@@ -113,7 +112,7 @@ namespace SharpPulsar.Common.Entity
 
 			internal KeySharedPolicyAutoSplit()
 			{
-				this.keySharedMode = KeySharedMode.AUTO_SPLIT;
+				this.keySharedMode = KeySharedMode.AutoSplit;
 			}
 
 			public override void Validate()

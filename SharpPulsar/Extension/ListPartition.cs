@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using SharpPulsar.Akka.InternalCommands;
-using SharpPulsar.Api;
-using SharpPulsar.Impl;
+using SharpPulsar.Messages;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Extension
 {
@@ -15,6 +14,13 @@ namespace SharpPulsar.Extension
                 .Select((x, i) => new { Index = i, Value = (MessageId)x })
                 .GroupBy(x => x.Index / chunkSize)
                 .Select(x => x.Select(v => v.Value).ToList())
+                .ToList();
+        }
+        public static IEnumerable<IList<TopicMessageId>> Collect(this IEnumerable<TopicMessageId> source)
+        {
+            return source
+                .GroupBy(x => x.TopicPartitionName)
+                .Select(x => x.Select(v => v).ToList())
                 .ToList();
         }
         public static List<List<MessageId>> PartitionMessageId(this ISet<IMessageId> source, int chunkSize)
