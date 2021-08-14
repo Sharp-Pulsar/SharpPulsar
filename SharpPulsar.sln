@@ -14,6 +14,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extras", "Extras", "{773E83
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Sql", "Extras\SharpPulsar.Sql\SharpPulsar.Sql.csproj", "{97C4473E-FBCC-4CCE-80AA-FF0B618F3B66}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Sql.Tests", "Extras\SharpPulsar.Sql.Tests\SharpPulsar.Sql.Tests.csproj", "{336A8BA1-B6AB-419E-9BC1-DB486564D029}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,12 +28,17 @@ Global
 		{97C4473E-FBCC-4CCE-80AA-FF0B618F3B66}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97C4473E-FBCC-4CCE-80AA-FF0B618F3B66}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97C4473E-FBCC-4CCE-80AA-FF0B618F3B66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{336A8BA1-B6AB-419E-9BC1-DB486564D029}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{336A8BA1-B6AB-419E-9BC1-DB486564D029}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{336A8BA1-B6AB-419E-9BC1-DB486564D029}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{336A8BA1-B6AB-419E-9BC1-DB486564D029}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{97C4473E-FBCC-4CCE-80AA-FF0B618F3B66} = {773E8308-7373-4B68-B8BA-E3FB6FF4868A}
+		{336A8BA1-B6AB-419E-9BC1-DB486564D029} = {773E8308-7373-4B68-B8BA-E3FB6FF4868A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A9D4BE7B-E00C-47EC-87B3-4064A8F6F75E}

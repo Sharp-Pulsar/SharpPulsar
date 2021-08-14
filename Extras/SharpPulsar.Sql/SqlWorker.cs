@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Akka.Actor;
+using Akka.Event;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 
@@ -9,41 +9,35 @@ namespace SharpPulsar.Sql
 {
     public class SqlWorker : ReceiveActor
     {
-
-        private readonly BufferBlock<SqlData> _buffer;
+        private IActorRef _sender;
+        private readonly ILoggingAdapter _log;
         public SqlWorker()
         {
-            _buffer = new BufferBlock<SqlData>();
-            ReceiveAsync<SqlSession>(async s=> await Query(s));
+            _log = Context.GetLogger();
+            ReceiveAsync<SqlSession>(async s =>
+            {
+                _sender = Sender;
+                await Query(s);
+            });
             Receive<IQueryResponse>(q =>
             {
-                _buffer.Post(new SqlData(q));
-            });
-            Receive<Read>(_ =>
-            {
-                _buffer.TryReceive(out var data);
-                Sender.Tell(data);
+                _sender.Tell(new AskResponse(new SqlData(q)));
             });
         }
-
-        protected override void Unhandled(object message)
-        {
-
-        }
-
+        
         private async ValueTask Query(SqlSession query)
         {
             try
             {
                 var q = query;
                 var executor = new Executor(q.ClientSession, q.ClientOptions, Self, Context.System.Log);
-                q.Log($"Executing: {q.ClientOptions.Execute}");
+                _log.Info($"Executing: {q.ClientOptions.Execute}");
                 await executor.Run();
             }
             catch (Exception ex)
             {
-                query.ExceptionHandler(ex);
-                Context.System.Log.Error(ex.ToString());
+                _log.Error(ex.ToString());
+                _sender.Tell(new AskResponse(ex));
             }
         }
         public static Props Prop()

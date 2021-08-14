@@ -4,23 +4,19 @@ using SharpPulsar.Sql.Presto;
 
 namespace SharpPulsar.Sql.Message
 {
-    public class LiveSqlQuery : ISqlQuery
+    public sealed class LiveSqlQuery
     {
-        public LiveSqlQuery(ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
+        public LiveSqlQuery(ClientOptions options, TimeSpan frequency, DateTime startAtPublishTime, string topic)
         {
             ClientOptions = options;
             Frequency = frequency;
             StartAtPublishTime = startAtPublishTime;
             Topic = topic;
-            Log = log;
-            ExceptionHandler = exceptionHandler;
         }
-        public Action<Exception> ExceptionHandler { get; }
-        public Action<string> Log { get; }
         /// <summary>
         /// Frequency in Milliseconds
         /// </summary>
-        public int Frequency { get; }
+        public TimeSpan Frequency { get; }
         /// <summary>
         /// Represents publish time
         /// </summary>
@@ -28,24 +24,20 @@ namespace SharpPulsar.Sql.Message
         public string Topic { get; }
         public ClientOptions ClientOptions { get; }
     }
-    public class LiveSqlSession 
+    public sealed class LiveSqlSession 
     {
-        public LiveSqlSession(ClientSession session, ClientOptions options, int frequency, DateTime startAtPublishTime, string topic, Action<string> log, Action<Exception> exceptionHandler)
+        public LiveSqlSession(ClientSession session, ClientOptions options, TimeSpan frequency, DateTime startAtPublishTime, string topic)
         {
             ClientSession = session;
             Frequency = frequency;
             StartAtPublishTime = startAtPublishTime;
             Topic = topic;
-            Log = log;
-            ExceptionHandler = exceptionHandler;
             ClientOptions = options;
         }
-        public Action<Exception> ExceptionHandler { get; }
-        public Action<string> Log { get; }
         /// <summary>
         /// Frequency in Milliseconds
         /// </summary>
-        public int Frequency { get; }
+        public TimeSpan Frequency { get; }
         /// <summary>
         /// Represents publish time
         /// </summary>
