@@ -700,7 +700,7 @@ namespace SharpPulsar
 			}
 			if(!HasPublishTime(chunkMsgMetadata.PublishTime))
 			{
-				chunkMsgMetadata.PublishTime = (ulong)ClientConfiguration.Clock.ToEpochTime();
+				chunkMsgMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
 
 				if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
 				{
