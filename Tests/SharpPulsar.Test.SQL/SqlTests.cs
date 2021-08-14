@@ -34,16 +34,14 @@ namespace SharpPulsar.Test.SQL
 		{
 			var topic = $"query_topics_avro_{Guid.NewGuid()}";
 			PublishMessages(topic, 5);
-			var sql = PulsarSystem.NewSql();
-			var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
-			var query = new SqlQuery(option, e => { _output.WriteLine(e.ToString()); }, _output.WriteLine);
+            var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 
-            Thread.Sleep(TimeSpan.FromSeconds(10));
-            sql.SendQuery(query);
+            var sql = PulsarSystem.Sql(option);
+
 			var receivedCount = 0;
 
             Thread.Sleep(TimeSpan.FromSeconds(10));
-            var response = sql.Read(TimeSpan.FromSeconds(30));
+            var response = sql.Execute(TimeSpan.FromSeconds(30));
             if (response != null)
             {
                 var data = response.Response;
@@ -67,7 +65,6 @@ namespace SharpPulsar.Test.SQL
                         _output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
                         break;
                 }
-                sql.SendQuery(query);
             }
 
             Assert.True(receivedCount > 1);
