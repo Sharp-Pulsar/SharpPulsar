@@ -2,22 +2,22 @@
 
 namespace SharpPulsar.Sql.Message
 {
-    public sealed class AskResponse
+    internal sealed class AskResponse
     {
         public bool Failed { get; }
         public object Data { get; }
         public Exception Exception { get; }
-        public AskResponse()
+        internal AskResponse()
         {
             Failed = false;
         }
-        public AskResponse(object data)
+        internal AskResponse(object data)
         {
             Failed = false;
             Data = data;
         }
 
-        public AskResponse(Exception exception)
+        internal AskResponse(Exception exception)
         {
             if (exception == null)
                 Failed = false;
