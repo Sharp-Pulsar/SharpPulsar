@@ -3,7 +3,6 @@ using Akka.Event;
 using Akka.Util;
 using Akka.Util.Internal;
 using DotNetty.Common.Utilities;
-using IdentityModel;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
@@ -700,24 +699,21 @@ namespace SharpPulsar
 			}
 			if(!HasPublishTime(chunkMsgMetadata.PublishTime))
 			{
-				chunkMsgMetadata.PublishTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis();
-
-				if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
-				{
-					_log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
-					chunkMsgMetadata.ProducerName = string.Empty;
-				}
-
-				chunkMsgMetadata.ProducerName = _producerName;
-
-				if(Conf.CompressionType != CompressionType.None)
-				{
-					chunkMsgMetadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
-				}
-				chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
+				chunkMsgMetadata.PublishTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();				
 			}
+            if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
+            {
+                _log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
+                chunkMsgMetadata.ProducerName = string.Empty;
+            }
+            chunkMsgMetadata.ProducerName = _producerName;
+            if (Conf.CompressionType != CompressionType.None)
+            {
+                chunkMsgMetadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
+            }
+            chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
 
-			if(CanAddToBatch(msg) && totalChunks <= 1)
+            if (CanAddToBatch(msg) && totalChunks <= 1)
 			{
                 Sender.Tell(NoMessageIdYet.Instance);
                 if (CanAddToCurrentBatch(msg))

@@ -237,10 +237,9 @@ namespace SharpPulsar
 			return this;
 		}
 
-		public ITypedMessageBuilder<T> EventTime(long timestamp)
+		public ITypedMessageBuilder<T> EventTime(DateTime timestamp)
 		{
-			Condition.CheckArgument(timestamp > 0, "Invalid timestamp : '%s'", timestamp);
-			_metadata.EventTime = (ulong)timestamp;
+			_metadata.EventTime = (ulong)DateTimeHelper.CurrentUnixTimeMillis(timestamp);
 			return this;
 		}
 
@@ -264,14 +263,22 @@ namespace SharpPulsar
 			_metadata.ReplicateToes.Add("__local__");
 			return this;
 		}
-		public ITypedMessageBuilder<T> DeliverAfter(long delay)
+        /// <summary>
+        /// delay is added to the current unix time in MILLISECONDS.
+        /// TotalMilliseconds is called on delay 
+        /// </summary>
+        /// <param name="delay"></param>
+        /// <returns></returns>
+		public ITypedMessageBuilder<T> DeliverAfter(TimeSpan delay)
 		{
-			return DeliverAt(DateTimeHelper.CurrentUnixTimeMillis() + delay);
+			return DeliverAt(DateTimeOffset.UtcNow.AddMilliseconds(delay.TotalMilliseconds));
 		}
 
-		public ITypedMessageBuilder<T> DeliverAt(long timestamp)
+		public ITypedMessageBuilder<T> DeliverAt(DateTimeOffset dateTime)
 		{
-			_metadata.DeliverAtTime = timestamp;
+            var unix = dateTime.ToUnixTimeMilliseconds();
+
+            _metadata.DeliverAtTime = unix;
 			return this;
 		}
 		
@@ -290,7 +297,10 @@ namespace SharpPulsar
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_EVENT_TIME, StringComparison.OrdinalIgnoreCase))
 			{
-				EventTime((long)d.Value);
+                    if (d.Value is DateTime offset)
+                        EventTime(offset);
+                    else
+                        throw new ArgumentException($"{d.Key} must of type DateTime");                    
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_SEQUENCE_ID, StringComparison.OrdinalIgnoreCase))
 			{
@@ -310,11 +320,14 @@ namespace SharpPulsar
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AFTER_SECONDS, StringComparison.OrdinalIgnoreCase))
 			{
-				DeliverAfter((long)d.Value);
+				DeliverAfter(TimeSpan.FromMilliseconds((long)d.Value));
 			}
 			else if (d.Key.Equals(ITypedMessageBuilder<T>.CONF_DELIVERY_AT, StringComparison.OrdinalIgnoreCase))
 			{
-				DeliverAt((long)d.Value);
+                    if(d.Value is DateTimeOffset offset)
+				        DeliverAt(offset);
+                    else
+                        throw new ArgumentException($"{d.Key} must of type DateTime");
 			}
             
             else
