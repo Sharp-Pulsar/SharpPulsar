@@ -457,7 +457,7 @@ class Build : NukeBuild
               .SetAssemblyVersion($"2.1.0.beta")
               .SetVersionPrefix("2.1.0")
               .SetPackageReleaseNotes($"[BREAKING CHANGES]{Environment.NewLine} Affected API => EventTime | DeliverAt | DeliverAfter!{Environment.NewLine} Change EventTime DeliverAt and DeliverAfter parameters from long to DateTime DateTimeOffSet and TimeSpan respectively to prevent users from passing in values not representing milliseconds which may lead to unexpected behavior!{Environment.NewLine} Assumption removed!")
-              .SetVersionSuffix($"beta.{BuildNumber}")
+              .SetVersionSuffix($"beta")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
