@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -118,7 +119,7 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> EventTime(long timestamp);
+		ITypedMessageBuilder<T> EventTime(DateTime timestamp);
 
 		/// <summary>
 		/// Specify a custom sequence id for the message being published.
@@ -164,10 +165,9 @@ namespace SharpPulsar.Interfaces
 		/// 
 		/// </para>
 		/// </summary>
-		/// <param name="timestamp">
-		///            absolute timestamp indicating when the message should be delivered to consumers </param>
+		/// <param name="timestamp">absolute timestamp indicating when the message should be delivered to consumers </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> DeliverAt(long timestamp);
+		ITypedMessageBuilder<T> DeliverAt(DateTimeOffset dateTime);
 
 		/// <summary>
 		/// Request to deliver the message only after the specified relative delay.
@@ -183,7 +183,7 @@ namespace SharpPulsar.Interfaces
 		/// <param name="unit">
 		///            the time unit for the delay </param>
 		/// <returns> the message builder instance </returns>
-		ITypedMessageBuilder<T> DeliverAfter(long delay);
+		ITypedMessageBuilder<T> DeliverAfter(TimeSpan timeSpan);
 
 		/// <summary>
 		/// Configure the <seealso cref="TypedMessageBuilder"/> from a config map, as an alternative compared

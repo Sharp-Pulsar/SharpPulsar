@@ -590,7 +590,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-					ReconsumeLater(m.Messages, (long)m.DelayTime.TotalMilliseconds);
+					ReconsumeLater(m.Messages, m.DelayTime);
                     Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
@@ -602,7 +602,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-					ReconsumeLater(m.Message, (long)m.DelayTime.TotalMilliseconds);
+					ReconsumeLater(m.Message, m.DelayTime);
                     Sender.Tell(new AskResponse());
 				}
                 catch (Exception ex)
@@ -838,7 +838,7 @@ namespace SharpPulsar
 						await DoAcknowledgeWithTxn (ack.MessageId, AckType.Cumulative, _properties, ack.Txn);
 						break;
 					case ReconsumeLaterCumulative<T> ack:
-						DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, (long)ack.DelayTime.TotalMilliseconds);
+						DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, ack.DelayTime);
                         _replyTo.Tell(new AskResponse());
                         break;
 					default:
@@ -950,7 +950,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private void ReconsumeLater(IMessage<T> message, long delayTime)
+		private void ReconsumeLater(IMessage<T> message, TimeSpan delayTime)
 		{
 			if (!Conf.RetryEnable)
 			{
@@ -974,7 +974,7 @@ namespace SharpPulsar
 			}
 		}
 
-		private void ReconsumeLater(IMessages<T> messages, long delayTime)
+		private void ReconsumeLater(IMessages<T> messages, TimeSpan delayTime)
 		{
 			try
 			{
@@ -1019,7 +1019,7 @@ namespace SharpPulsar
 		{
             _acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(messageIdList, ackType, properties));
 		}
-        private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, long delayTime)
+        private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
 		{
 			var messageId = message.MessageId;
 			if(messageId is TopicMessageId id)
@@ -1041,9 +1041,9 @@ namespace SharpPulsar
 				}
 				//return FutureUtil.FailedFuture(exception);
 			}
-			if(delayTime < 0)
+			if(delayTime.TotalMilliseconds < 0)
 			{
-				delayTime = 0;
+				delayTime = TimeSpan.Zero;
 			}
 			if(_retryLetterProducer == null)
 			{
@@ -1141,7 +1141,7 @@ namespace SharpPulsar
 						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema, builder.Build())
                             .Value(retryMessage.Value)
                             .Properties(propertiesMap);
-						if (delayTime > 0)
+						if (delayTime.TotalMilliseconds > 0)
 						{
 							typedMessageBuilderNew.DeliverAfter(delayTime);
 						}
