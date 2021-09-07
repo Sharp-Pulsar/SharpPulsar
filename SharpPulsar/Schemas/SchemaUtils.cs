@@ -224,7 +224,7 @@ namespace SharpPulsar.Schemas
 			return Avro.Schema.Parse(schemaJson);
 		}
 
-		public static ISchemaInfo ParseSchemaInfo<T>(ISchemaDefinition<T> schemaDefinition, SchemaType schemaType)
+        public static ISchemaInfo ParseSchemaInfo<T>(ISchemaDefinition<T> schemaDefinition, SchemaType schemaType)
 		{
 			return new SchemaInfoBuilder().SetSchema(CreateAvroSchema(schemaDefinition).ToString().GetBytes()).SetProperties(schemaDefinition.Properties).SetName("").SetType(schemaType).Build();
 		}

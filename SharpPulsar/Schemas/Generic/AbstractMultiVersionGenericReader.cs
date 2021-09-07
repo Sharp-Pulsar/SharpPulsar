@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Newtonsoft.Json.Linq;
-using SharpPulsar.Interfaces.Schema;
-
+﻿
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -23,23 +19,24 @@ using SharpPulsar.Interfaces.Schema;
 /// </summary>
 namespace SharpPulsar.Schemas.Generic
 {
+    using SharpPulsar.Schemas.Reader;
+    using SharpPulsar.Interfaces.ISchema;
+
     /// <summary>
-    /// Generic json record.
+    /// The abstract class of multi version generic reader.
     /// </summary>
-    public class GenericJsonRecord : VersionedGenericRecord
+    public abstract class AbstractMultiVersionGenericReader : AbstractMultiVersionAvroBaseReader<IGenericRecord>
     {
-        private readonly JToken _jToken;
-		public GenericJsonRecord(byte[] schemaVersion, IList<Field> fields, JToken jd) : base(schemaVersion, fields)
-		{
-			_jToken = jd;
-		}
 
+        // the flag controls whether to use the provided schema as reader schema
+        // to decode the messages. In `AUTO_CONSUME` mode, setting this flag to `false`
+        // allows decoding the messages using the schema associated with the messages.
+        protected internal readonly bool useProvidedSchemaAsReaderSchema;
 
-		new public object GetField(string fieldName)
-		{
-			return _jToken[fieldName].Value<JObject>().Properties().ToList();
+        protected internal AbstractMultiVersionGenericReader(bool useProvidedSchemaAsReaderSchema, ISchemaReader<IGenericRecord> providerSchemaReader, Avro.RecordSchema readerSchema) : base(providerSchemaReader, readerSchema)
+        {
+            this.useProvidedSchemaAsReaderSchema = useProvidedSchemaAsReaderSchema;
         }
 
-	}
-
+    }
 }

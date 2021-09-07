@@ -11,6 +11,7 @@ namespace SharpPulsar.Schemas.Generic
 {
     public class GenericAvroSchema : GenericSchema
     {
+        public static string OFFSET_PROP = "__AVRO_READ_OFFSET__";
         private readonly ISchemaInfo _schemaInfo;
         private readonly string _stringSchema;
         private readonly RecordSchema _avroSchema;
@@ -31,6 +32,21 @@ namespace SharpPulsar.Schemas.Generic
             Schema = _schemaInfo.Schema,
             Properties = new Dictionary<string, string>()
         };
+        internal GenericAvroSchema(SchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
+        {
+            Reader = new MultiVersionGenericAvroReader(useProvidedSchemaAsReaderSchema, _avroSchema);
+            Writer = new GenericAvroWriter(_avroSchema);
+
+            if (schemaInfo.Properties.ContainsKey(GenericAvroSchema.OFFSET_PROP))
+            {
+                //this.schema.addProp(GenericAvroSchema.OFFSET_PROP, schemaInfo.getProperties().get(GenericAvroSchema.OFFSET_PROP));
+            }
+        }
+
+        public override bool SupportSchemaVersioning()
+        {
+            return true;
+        }
 
         public override IGenericRecordBuilder NewRecordBuilder()
         {
@@ -118,11 +134,6 @@ namespace SharpPulsar.Schemas.Generic
         }
 
         public override bool RequireFetchingSchemaInfo()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool SupportSchemaVersioning()
         {
             throw new NotImplementedException();
         }

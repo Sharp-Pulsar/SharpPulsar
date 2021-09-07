@@ -20,7 +20,11 @@ namespace SharpPulsar.Schemas.Reader
 			this.providerSchemaReader = providerSchemaReader;
 		}
 
-		public T Read(byte[] bytes, int offset, int length)
+        public ISchemaReader<T> GetSchemaReader(byte[] schemaVersion)
+        {
+            return _readerCache.Get(BytesSchemaVersion.Of(schemaVersion));
+        }
+    public T Read(byte[] bytes, int offset, int length)
 		{
 			return providerSchemaReader.Read(bytes);
 		}
@@ -82,7 +86,7 @@ namespace SharpPulsar.Schemas.Reader
 		/// <summary>
 		/// TODO: think about how to make this async
 		/// </summary>
-		protected internal virtual ISchemaInfo GtSchemaInfoByVersion(byte[] schemaVersion)
+		protected internal virtual ISchemaInfo GetSchemaInfoByVersion(byte[] schemaVersion)
 		{
 			try
 			{

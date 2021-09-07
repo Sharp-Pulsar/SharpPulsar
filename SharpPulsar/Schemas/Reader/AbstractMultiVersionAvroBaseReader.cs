@@ -9,9 +9,9 @@ namespace SharpPulsar.Schemas.Reader
 	public abstract class AbstractMultiVersionAvroBaseReader<T> : AbstractMultiVersionReader<T>
 	{
 
-		protected internal Avro.Schema readerSchema;
+		protected internal Avro.RecordSchema readerSchema;
 
-		public AbstractMultiVersionAvroBaseReader(ISchemaReader<T> providerSchemaReader, Avro.Schema readerSchema) : base(providerSchemaReader)
+		public AbstractMultiVersionAvroBaseReader(ISchemaReader<T> providerSchemaReader, Avro.RecordSchema readerSchema) : base(providerSchemaReader)
 		{
 			this.readerSchema = readerSchema;
 		}
