@@ -33,7 +33,7 @@ namespace SharpPulsar.Schemas.Generic
         // allows decoding the messages using the schema associated with the messages.
         protected internal readonly bool useProvidedSchemaAsReaderSchema;
 
-        protected internal AbstractMultiVersionGenericReader(bool useProvidedSchemaAsReaderSchema, ISchemaReader<IGenericRecord> providerSchemaReader, Avro.RecordSchema readerSchema) : base(providerSchemaReader, readerSchema)
+        protected internal AbstractMultiVersionGenericReader(bool useProvidedSchemaAsReaderSchema, ISchemaReader<IGenericRecord> providerSchemaReader, Avro.Schema readerSchema) : base(providerSchemaReader, readerSchema)
         {
             this.useProvidedSchemaAsReaderSchema = useProvidedSchemaAsReaderSchema;
         }

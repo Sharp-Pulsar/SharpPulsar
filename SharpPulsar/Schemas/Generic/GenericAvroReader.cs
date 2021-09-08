@@ -28,12 +28,12 @@ using SharpPulsar.Interfaces.Schema;
 /// </summary>
 namespace SharpPulsar.Schemas.Generic
 {
-    using Schema = Avro.RecordSchema;
+    using Schema = Avro.Schema;
 
     public class GenericAvroReader : ISchemaReader<IGenericRecord>
     {
 
-        private readonly GenericDatumReader<GenericAvroRecord> _reader;
+        private readonly GenericDatumReader<GenericRecord> _reader;
         //private readonly MemoryStream _byteArrayOutputStream;
         private readonly IList<Field> _fields;
         private readonly Schema _schema;
@@ -47,15 +47,15 @@ namespace SharpPulsar.Schemas.Generic
         public GenericAvroReader(Schema writerSchema, Schema readerSchema, byte[] schemaVersion)
         {
             _schema = readerSchema;
-            _fields = _schema.Fields.Select(f => new Field(f.Name, f.Pos)).ToList();
+            _fields = ((Avro.RecordSchema)_schema).Fields.Select(f => new Field(f.Name, f.Pos)).ToList();
             _schemaVersion = schemaVersion;
             if (writerSchema == null)
             {
-                _reader = new GenericDatumReader<GenericAvroRecord>(null, readerSchema);
+                _reader = new GenericDatumReader<GenericRecord>(readerSchema, readerSchema);
             }
             else
             {
-                _reader = new GenericDatumReader<GenericAvroRecord>(writerSchema, readerSchema);
+                _reader = new GenericDatumReader<GenericRecord>(writerSchema, readerSchema);
             }
             //_byteArrayOutputStream = new MemoryStream();
             //_encoder =new BinaryEncoder(_byteArrayOutputStream);
@@ -77,7 +77,7 @@ namespace SharpPulsar.Schemas.Generic
             {
                 var decoder = new BinaryDecoder(inputStream);
                 var avroRecord = _reader.Read(default, decoder);
-                return new GenericAvroRecord(_schemaVersion, _schema, _fields, avroRecord.AvroRecord);
+                return new GenericAvroRecord(_schemaVersion, _schema, _fields, avroRecord);
             }
             catch (Exception e) when (e is IOException || e is System.IndexOutOfRangeException)
             {
@@ -108,7 +108,7 @@ namespace SharpPulsar.Schemas.Generic
                 }
                 Decoder decoder = new BinaryDecoder(stream);
                 var avroRecord = _reader.Read(default, decoder);
-                return new GenericAvroRecord(_schemaVersion, _schema, _fields, avroRecord.AvroRecord);
+                return new GenericAvroRecord(_schemaVersion, _schema, _fields, avroRecord);
             }
             catch (Exception e) when (e is IOException || e is System.IndexOutOfRangeException)
             {

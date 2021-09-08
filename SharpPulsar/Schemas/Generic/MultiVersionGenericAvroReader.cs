@@ -28,7 +28,7 @@ namespace SharpPulsar.Schemas.Generic
     public class MultiVersionGenericAvroReader : AbstractMultiVersionGenericReader
     {
 
-        public MultiVersionGenericAvroReader(bool useProvidedSchemaAsReaderSchema, Avro.RecordSchema readerSchema) : base(useProvidedSchemaAsReaderSchema, new GenericAvroReader(readerSchema), readerSchema)
+        public MultiVersionGenericAvroReader(bool useProvidedSchemaAsReaderSchema, Avro.Schema readerSchema) : base(useProvidedSchemaAsReaderSchema, new GenericAvroReader(readerSchema), readerSchema)
         {
         }
 
@@ -38,8 +38,8 @@ namespace SharpPulsar.Schemas.Generic
             if (schemaInfo != null)
             {
                 //LOG.info("Load schema reader for version({}), schema is : {}", SchemaUtils.GetStringSchemaVersion(schemaVersion.Get()), schemaInfo);
-                var writerSchema = (Avro.RecordSchema)SchemaUtils.ParseAvroSchema(schemaInfo.SchemaDefinition);
-                var readerSchema = useProvidedSchemaAsReaderSchema ? this.readerSchema : (Avro.RecordSchema)writerSchema;
+                var writerSchema = SchemaUtils.ParseAvroSchema(schemaInfo.SchemaDefinition);
+                var readerSchema = useProvidedSchemaAsReaderSchema ? ReaderSchema : writerSchema;
                 //readerSchema.GetProperty.addProp(GenericAvroSchema.OFFSET_PROP, schemaInfo.Properties.GetOrDefault(GenericAvroSchema.OFFSET_PROP, "0"));
 
                 return new GenericAvroReader(writerSchema, readerSchema, schemaVersion.Get());

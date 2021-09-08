@@ -36,7 +36,7 @@ namespace SharpPulsar.Schemas.Generic
             _record = record;
         }
 
-        new public object GetField(string fieldName)
+        public override object GetField(string fieldName)
         {
             var value = _record[fieldName];
             //I am not sure how to port this

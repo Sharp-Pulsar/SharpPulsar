@@ -54,9 +54,10 @@ namespace SharpPulsar.Schemas.Generic
             }
         }
 
-        public object GetField(string fieldName)
+        public virtual object GetField(string fieldName)
         {
-            return _fields.Where(f => f.Name.Equals(fieldName, System.StringComparison.CurrentCultureIgnoreCase));
+            var f = _fields.FirstOrDefault(f => f.Name.Equals(fieldName, System.StringComparison.CurrentCultureIgnoreCase));
+            return f;
         }
     }
 
