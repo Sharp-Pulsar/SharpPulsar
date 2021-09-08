@@ -22,9 +22,10 @@ namespace SharpPulsar.Schemas.Reader
 
         public ISchemaReader<T> GetSchemaReader(byte[] schemaVersion)
         {
-            return _readerCache.Get(BytesSchemaVersion.Of(schemaVersion));
+            var key = BytesSchemaVersion.Of(schemaVersion);
+           return  _readerCache.Get(key, new Func<BytesSchemaVersion, ISchemaReader<T>>(LoadReader));
         }
-    public T Read(byte[] bytes, int offset, int length)
+        public T Read(byte[] bytes, int offset, int length)
 		{
 			return providerSchemaReader.Read(bytes);
 		}
@@ -42,7 +43,8 @@ namespace SharpPulsar.Schemas.Reader
 		{
 			try
 			{
-				return schemaVersion == null ? Read(inputStream) : _readerCache.Get(BytesSchemaVersion.Of(schemaVersion)).Read(inputStream);
+                var key = BytesSchemaVersion.Of(schemaVersion);
+                return schemaVersion == null ? Read(inputStream) : _readerCache.Get(key, new Func<BytesSchemaVersion, ISchemaReader<T>>(LoadReader)).Read(inputStream);
 			}
 			catch (Exception e)
 			{
@@ -55,7 +57,14 @@ namespace SharpPulsar.Schemas.Reader
 		{
 			try
 			{
-				return schemaVersion == null ? Read(bytes) : _readerCache.Get(BytesSchemaVersion.Of(schemaVersion)).Read(bytes);
+                if (schemaVersion == null)
+                    return Read(bytes);
+                else
+                {
+                    var key = BytesSchemaVersion.Of(schemaVersion);
+                    var sc = _readerCache.Get(key, new Func<BytesSchemaVersion, ISchemaReader<T>>(LoadReader));
+                    return sc.Read(bytes);
+                }
 			}
 			catch (Exception e) when (e is AvroTypeException)
 			{
@@ -72,7 +81,7 @@ namespace SharpPulsar.Schemas.Reader
 		{
 			set
 			{
-				this.schemaInfoProvider = value;
+				schemaInfoProvider = value;
 			}
 		}
 
@@ -90,6 +99,9 @@ namespace SharpPulsar.Schemas.Reader
 		{
 			try
 			{
+                if (schemaInfoProvider == null)
+                    return null;
+
 				return schemaInfoProvider.GetSchemaByVersion(schemaVersion);
 			}
 			catch (Exception e)

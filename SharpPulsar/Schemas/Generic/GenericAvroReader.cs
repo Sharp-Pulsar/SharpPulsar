@@ -98,7 +98,7 @@ namespace SharpPulsar.Schemas.Generic
 
         public IGenericRecord Read(byte[] bytes, int offset, int length)
         {
-            using var stream = new MemoryStream(bytes);
+            var stream = new MemoryStream(bytes);
             stream.Seek(offset, SeekOrigin.Begin);
             try
             {
@@ -106,13 +106,17 @@ namespace SharpPulsar.Schemas.Generic
                 {
                     offset = _offset;
                 }
-                Decoder decoder = new BinaryDecoder(stream);
-                var avroRecord = _reader.Read(default, decoder);
+                var decoder = new BinaryDecoder(stream);
+                var avroRecord = _reader.Read(null, decoder);
                 return new GenericAvroRecord(_schemaVersion, _schema, _fields, avroRecord);
             }
             catch (Exception e) when (e is IOException || e is System.IndexOutOfRangeException)
             {
                 throw new SchemaSerializationException(e);
+            }
+            finally
+            {
+                stream.Dispose();
             }
             throw new NotImplementedException();
         }

@@ -56,8 +56,8 @@ namespace SharpPulsar.Test.Schema.Generic
         public virtual void TestDecodeWithMultiVersioningSupport()
         {
             GenericRecord dataForWriter = new GenericRecord((Avro.RecordSchema)writerSchema.AvroSchema);
-            dataForWriter.Add("field1", SchemaTestUtils.TestMultiVersionSchemaString);
-            dataForWriter.Add("field3", 0);
+            dataForWriter.Add("Field1", SchemaTestUtils.TestMultiVersionSchemaString);
+            dataForWriter.Add("Field3", 0);
             var fields = writerSchema.Fields;
             var record = readerSchema.Decode(writerSchema.Encode(new GenericAvroRecord(null, writerSchema.AvroSchema, fields, dataForWriter)), new byte[10]);
             Assert.Equal(SchemaTestUtils.TestMultiVersionSchemaString, record.GetField("Field1"));

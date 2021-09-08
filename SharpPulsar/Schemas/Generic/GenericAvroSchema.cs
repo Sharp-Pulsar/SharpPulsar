@@ -20,6 +20,10 @@ namespace SharpPulsar.Schemas.Generic
             Schema = _schemaInfo.Schema,
             Properties = new Dictionary<string, string>()
         };
+        public GenericAvroSchema(ISchemaInfo schemaInfo): this(schemaInfo, true)
+        {
+            
+        }
         public GenericAvroSchema(ISchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
         {
             _schemaInfo = schemaInfo;
