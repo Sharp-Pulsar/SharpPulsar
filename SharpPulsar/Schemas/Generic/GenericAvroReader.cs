@@ -85,21 +85,14 @@ namespace SharpPulsar.Schemas.Generic
             }
             finally
             {
-                try
-                {
-                    inputStream.Close();
-                }
-                catch (IOException e)
-                {
-                    //log.error("GenericAvroReader close inputStream close error", e);
-                }
+                inputStream.Close();
             }
         }
 
         public IGenericRecord Read(byte[] bytes, int offset, int length)
         {
             var stream = new MemoryStream(bytes);
-            stream.Seek(offset, SeekOrigin.Begin);
+            //stream.Seek(offset, SeekOrigin.Begin);
             try
             {
                 if (offset == 0 && _offset > 0)
@@ -118,7 +111,6 @@ namespace SharpPulsar.Schemas.Generic
             {
                 stream.Dispose();
             }
-            throw new NotImplementedException();
         }
 
         public virtual int Offset

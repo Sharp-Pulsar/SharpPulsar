@@ -78,7 +78,10 @@ namespace SharpPulsar.User
                 {
                     schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
                     if (schemaInfoProvider == null)
+                    {
                         _schemaProviderLoadingCache.Put(topicName, NewSchemaProvider(topicName));
+                        schemaInfoProvider = _schemaProviderLoadingCache.Get(topicName);
+                    }
                 }
                 catch (Exception e)
                 {

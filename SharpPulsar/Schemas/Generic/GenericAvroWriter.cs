@@ -47,7 +47,8 @@ namespace SharpPulsar.Schemas.Generic
                 {
                     _writer.Write(((GenericAvroRecord)message).AvroRecord, _encoder);
                     _encoder.Flush();
-                    return _byteArrayOutputStream.ToArray();
+                    var bytes = _byteArrayOutputStream.ToArray();
+                    return bytes;
                 }
                 catch (Exception e)
                 {
