@@ -57,6 +57,13 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// <param name="fieldName"> the field name </param>
 		/// <returns> the value object </returns>
 		object GetField(string fieldName);
+
+        /// <summary>
+		/// Retrieve the value of the provided <tt>fieldName</tt>.
+		/// </summary>
+		/// <param name="fieldName"> the field name </param>
+		/// <returns> the value object </returns>
+		object GetField(int pos);
     }
 
 }

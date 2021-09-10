@@ -36,6 +36,30 @@ namespace SharpPulsar.Schemas.Generic
             _record = record;
         }
 
+        public override object GetField(int pos)
+        {
+            var value = _record.GetValue(pos);
+            //I am not sure how to port this
+            /*if (value is Utf8)
+            {
+                return ((Utf8)value).ToString();
+            }*/
+
+            if (value is string utf8)
+            {
+                return utf8;
+            }
+            else if (value is Avro.Generic.GenericRecord avroRecord)
+            {
+                var recordSchema = avroRecord.Schema;
+                IList<Field> fields = recordSchema.Fields.Select(f => new Field(f.Name, f.Pos)).ToList();
+                return new GenericAvroRecord(SchemaVersion, _schema, fields, avroRecord);
+            }
+            else
+            {
+                return value;
+            }
+        }
         public override object GetField(string fieldName)
         {
             var value = _record[fieldName];

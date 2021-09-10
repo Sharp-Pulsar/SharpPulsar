@@ -35,11 +35,15 @@ namespace SharpPulsar.Schemas.Generic
 		}
 
 
-		new public object GetField(string fieldName)
+		public override object GetField(string fieldName)
 		{
 			return _jToken[fieldName].Value<JObject>().Properties().ToList();
         }
 
-	}
+        public override object GetField(int pos)
+        {
+            return _jToken[pos].Value<JObject>().Properties().ToList();
+        }
+    }
 
 }

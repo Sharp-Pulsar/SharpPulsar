@@ -42,7 +42,7 @@
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.10.2" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.2.0" />
-    <PackageReference Include="avroschemagenerator" Version="2.0.0-beta.14" />
+    <PackageReference Include="AvroSchemaGenerator" Version="2.0.0" />
     <PackageReference Include="DotNetty.Common" Version="0.7.0" />
     <PackageReference Include="Google.Protobuf" Version="3.17.3" />
     <PackageReference Include="IdentityModel" Version="5.1.0" />
