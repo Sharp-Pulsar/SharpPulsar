@@ -22,7 +22,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces.ISchema;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 
-namespace SharpPulsar.Impl.Schema.Generic
+namespace SharpPulsar.Schemas.Generic
 {
     public class GenericJsonWriter<T> : ISchemaWriter<T>
 	{

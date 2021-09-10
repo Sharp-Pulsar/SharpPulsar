@@ -2,6 +2,7 @@
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Protocol.Schema;
+using SharpPulsar.Schemas.Reader;
 using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationException;
 namespace SharpPulsar.Schemas
 {
@@ -113,22 +114,21 @@ namespace SharpPulsar.Schemas
             {
                 throw new System.NotSupportedException("This schema is not meant to be used for encoding");
             }
-            /*
-            public override Option<object> NativeSchema
+            
+            public object NativeSchema
             {
                 get
                 {
-                    if (ReaderConflict is AbstractMultiVersionReader)
+                    if (_reader is AbstractMultiVersionReader<T> abstractMultiVersionReader)
                     {
-                        AbstractMultiVersionReader abstractMultiVersionReader = (AbstractMultiVersionReader)ReaderConflict;
                         try
                         {
-                            SchemaReader schemaReader = abstractMultiVersionReader.getSchemaReader(SchemaVersion);
+                            var schemaReader = abstractMultiVersionReader.GetSchemaReader(SchemaVersion);
                             return schemaReader.NativeSchema;
                         }
-                        catch (ExecutionException err)
+                        catch (Exception err)
                         {
-                            throw new Exception(err.InnerException);
+                            throw;
                         }
                     }
                     else
@@ -137,7 +137,7 @@ namespace SharpPulsar.Schemas
                     }
                 }
             }
-            */
+            
         }
 
         private AbstractStructSchema<T> GetAbstractStructSchemaAtVersion(byte[] schemaVersion, ISchemaInfo schemaInfo)

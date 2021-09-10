@@ -11,19 +11,8 @@ namespace SharpPulsar.Schemas.Generic
 {
     public class GenericAvroSchema : GenericSchema
     {
+        public static string OFFSET_PROP = "__AVRO_READ_OFFSET__";
         private readonly ISchemaInfo _schemaInfo;
-        private readonly string _stringSchema;
-        private readonly RecordSchema _avroSchema;
-        private readonly GenericDatumReader<GenericRecord> _avroReader;
-        private readonly List<Field> _schemaFields;
-        public GenericAvroSchema(ISchemaInfo schemaInfo):base(schemaInfo)
-        {
-            _schemaInfo = schemaInfo;
-            _stringSchema = Encoding.UTF8.GetString(_schemaInfo.Schema);
-            _avroSchema = (RecordSchema)Avro.Schema.Parse(_stringSchema);
-            _avroReader = new GenericDatumReader<GenericRecord>(_avroSchema, _avroSchema);
-            _schemaFields = _avroSchema.Fields;
-        }
         public override ISchemaInfo SchemaInfo => new SchemaInfo 
         { 
             Name = "",
@@ -31,6 +20,27 @@ namespace SharpPulsar.Schemas.Generic
             Schema = _schemaInfo.Schema,
             Properties = new Dictionary<string, string>()
         };
+        public GenericAvroSchema(ISchemaInfo schemaInfo): this(schemaInfo, true)
+        {
+            
+        }
+        public GenericAvroSchema(ISchemaInfo schemaInfo, bool useProvidedSchemaAsReaderSchema) : base(schemaInfo)
+        {
+            _schemaInfo = schemaInfo;
+            var schema = Avro.Schema.Parse(schemaInfo.SchemaDefinition);
+            Reader = new MultiVersionGenericAvroReader(useProvidedSchemaAsReaderSchema, schema);
+            Writer = new GenericAvroWriter((RecordSchema)schema);
+
+            if (schemaInfo.Properties.ContainsKey(GenericAvroSchema.OFFSET_PROP))
+            {
+                //this.schema.addProp(GenericAvroSchema.OFFSET_PROP, schemaInfo.getProperties().get(GenericAvroSchema.OFFSET_PROP));
+            }
+        }
+
+        public override bool SupportSchemaVersioning()
+        {
+            return true;
+        }
 
         public override IGenericRecordBuilder NewRecordBuilder()
         {
@@ -118,11 +128,6 @@ namespace SharpPulsar.Schemas.Generic
         }
 
         public override bool RequireFetchingSchemaInfo()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool SupportSchemaVersioning()
         {
             throw new NotImplementedException();
         }

@@ -66,6 +66,10 @@ namespace SharpPulsar.Schemas
         {
             return null;
         }
+        public object GetField(int pos)
+        {
+            return null;
+        }
 
         public SchemaType SchemaType
         {

@@ -211,13 +211,13 @@ namespace SharpPulsar
 		{
 			return KeyValueSchema<byte[], byte[]>.KvBytes();
 		}
-
-		/// <summary>
-		/// Jsonify the schema info.
-		/// </summary>
-		/// <param name="schemaInfo"> the schema info </param>
-		/// <returns> the jsonified schema info </returns>
-		public static string JsonifySchemaInfo(SchemaInfo schemaInfo)
+        
+        /// <summary>
+        /// Jsonify the schema info.
+        /// </summary>
+        /// <param name="schemaInfo"> the schema info </param>
+        /// <returns> the jsonified schema info </returns>
+        public static string JsonifySchemaInfo(SchemaInfo schemaInfo)
 		{
 			return SchemaUtils.JsonifySchemaInfo(schemaInfo);
 		}
