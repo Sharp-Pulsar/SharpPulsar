@@ -86,6 +86,17 @@ namespace SharpPulsar.Interfaces.ISchema
 			{
 			}
 		}
-	}
+        /// <summary>
+		/// Returns the underling Schema if possible </summary>
+		/// <returns> the schema, or an empty Optional if it is not possible to access it </returns>
+		object NativeSchema
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+    }
 
 }

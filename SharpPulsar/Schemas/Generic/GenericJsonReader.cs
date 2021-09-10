@@ -25,7 +25,7 @@ using SchemaSerializationException = SharpPulsar.Exceptions.SchemaSerializationE
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema.Generic
+namespace SharpPulsar.Schemas.Generic
 {
 	//using Field = Api.Schema.Field;
 	public class GenericJsonReader : ISchemaReader<GenericJsonRecord>
