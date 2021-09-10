@@ -1,4 +1,5 @@
 ﻿using SharpPulsar.Interfaces.Schema;
+using SharpPulsar.Shared;
 using System.Collections.Generic;
 
 /// <summary>
@@ -25,8 +26,8 @@ namespace SharpPulsar.Interfaces.ISchema
     /// <summary>
     /// An interface represents a message with schema.
     /// </summary>
-    public interface IGenericRecord
-	{
+    public interface IGenericRecord : IGenericObject
+    {
 
 		/// <summary>
 		/// Return schema version.
@@ -45,7 +46,7 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// </summary>
 		/// <param name="field"> the field to retrieve the value </param>
 		/// <returns> the value object </returns>
-		virtual object GetField(Field field)
+		object GetField(Field field)
 		{
 			return GetField(field.Name);
 		}
@@ -57,6 +58,12 @@ namespace SharpPulsar.Interfaces.ISchema
 		/// <returns> the value object </returns>
 		object GetField(string fieldName);
 
-	}
+        /// <summary>
+		/// Retrieve the value of the provided <tt>fieldName</tt>.
+		/// </summary>
+		/// <param name="fieldName"> the field name </param>
+		/// <returns> the value object </returns>
+		object GetField(int pos);
+    }
 
 }

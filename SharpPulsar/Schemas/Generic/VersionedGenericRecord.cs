@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Interfaces.Schema;
 using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +21,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Impl.Schema.Generic
+namespace SharpPulsar.Schemas.Generic
 {
 
     /// <summary>
@@ -28,18 +29,41 @@ namespace SharpPulsar.Impl.Schema.Generic
     /// </summary>
     public abstract class VersionedGenericRecord : IGenericRecord
 	{
-		public abstract object GetField(string fieldName);
-		public abstract object GetField(Field field);
+        protected internal readonly byte[] _schemaVersion;
+        protected internal readonly IList<Field> _fields;
 
-        protected VersionedGenericRecord(byte[] schemaVersion, IList<Field> fields)
-		{
-            SchemaVersion = schemaVersion;
-			Fields = fields;
-		}
+        protected internal VersionedGenericRecord(byte[] schemaVersion, IList<Field> fields)
+        {
+            _schemaVersion = schemaVersion;
+            _fields = fields;
+        }
 
-		public virtual byte[] SchemaVersion { get; }
+        public byte[] SchemaVersion
+        {
+            get
+            {
+                return _schemaVersion;
+            }
+        }
 
-        public virtual IList<Field> Fields { get; }
+        public IList<Field> Fields
+        {
+            get
+            {
+                return _fields;
+            }
+        }
+
+        public virtual object GetField(string fieldName)
+        {
+            var f = _fields.FirstOrDefault(f => f.Name.Equals(fieldName, System.StringComparison.CurrentCultureIgnoreCase));
+            return f;
+        }
+        public virtual object GetField(int pos)
+        {
+            var f = _fields.FirstOrDefault(f => f.Index.Equals(pos));
+            return f;
+        }
     }
 
 }
