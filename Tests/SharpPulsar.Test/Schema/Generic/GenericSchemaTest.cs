@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Schema.Generic
         {
             var schema = AvroSchema<ComplexGenericData>.Of(typeof(ComplexGenericData));
             var genericSchema = GenericAvroSchema.Of(schema.SchemaInfo);
-
+            _output.WriteLine(schema.SchemaInfo.SchemaDefinition);
             var pBuilder = new ProducerConfigBuilder<IGenericRecord>()
             .Topic(_topic);
             var producer = _client.NewProducer(genericSchema, pBuilder);
@@ -107,7 +107,6 @@ namespace SharpPulsar.Test.Schema.Generic
     public class ComplexGenericData
     {
         public string Feature { get; set; }
-        [Required]
         public Dictionary<string, string> StringData { get; set; }
         public byte[] ComplexData { get; set; }
         
