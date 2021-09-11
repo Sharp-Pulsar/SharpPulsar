@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -38,7 +39,7 @@ namespace SharpPulsar.Test.Schema.Generic
         {
             var schema = AvroSchema<ComplexGenericData>.Of(typeof(ComplexGenericData));
             var genericSchema = GenericAvroSchema.Of(schema.SchemaInfo);
-
+            _output.WriteLine(schema.SchemaInfo.SchemaDefinition);
             var pBuilder = new ProducerConfigBuilder<IGenericRecord>()
             .Topic(_topic);
             var producer = _client.NewProducer(genericSchema, pBuilder);
@@ -48,7 +49,7 @@ namespace SharpPulsar.Test.Schema.Generic
             {
                 var dataForWriter = new GenericRecord((Avro.RecordSchema)genericSchema.AvroSchema);
                 dataForWriter.Add("Feature", "Education");
-                //dataForWriter.Add("StringData", new Dictionary<string, string> { { "Index", i.ToString() }, { "FirstName", "Ebere"}, { "LastName", "Abanonu" } });
+                dataForWriter.Add("StringData", new Dictionary<string, string> { { "Index", i.ToString() }, { "FirstName", "Ebere"}, { "LastName", "Abanonu" } });
                 dataForWriter.Add("ComplexData", ToBytes(new ComplexData { ProductId = i, Point = i*2, Sales = i*2*5}));
                 var record = new GenericAvroRecord(null, genericSchema.AvroSchema, genericSchema.Fields, dataForWriter);
                 var receipt = producer.Send(record);
@@ -68,10 +69,10 @@ namespace SharpPulsar.Test.Schema.Generic
                 Assert.NotNull(m);
                 var receivedMessage = m.Value;
                 var feature = receivedMessage.GetField("Feature").ToString();
-                //var strinData = (Dictionary<string, string>)receivedMessage.GetField("StringData");
+                var strinData = (Dictionary<string, object>)receivedMessage.GetField("StringData");
                 var complexData = FromBytes<ComplexData>((byte[])receivedMessage.GetField("ComplexData"));
                 _output.WriteLine(feature);
-                //_output.WriteLine(JsonSerializer.Serialize(strinData, new JsonSerializerOptions { WriteIndented = true }));
+                _output.WriteLine(JsonSerializer.Serialize(strinData, new JsonSerializerOptions { WriteIndented = true }));
                 _output.WriteLine(JsonSerializer.Serialize(complexData, new JsonSerializerOptions { WriteIndented = true }));
                 messageReceived++;
                 consumer.Acknowledge(m);
@@ -106,7 +107,7 @@ namespace SharpPulsar.Test.Schema.Generic
     public class ComplexGenericData
     {
         public string Feature { get; set; }
-        //public Dictionary<string, string> StringData { get; set; }
+        public Dictionary<string, string> StringData { get; set; }
         public byte[] ComplexData { get; set; }
         
     }
