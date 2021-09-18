@@ -43,7 +43,7 @@ namespace SharpPulsar.Sql.Tests
         [Fact(Skip = "")]
         public async Task Live_Sql()
         {
-            var topic = "keyvalue";
+            var topic = "sqltopic";
             var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}"" where __publish_time__ > {{time}}", Catalog = "pulsar", Schema = "public/default" };
             var sql = new LiveSqlInstance(_actorSystem, option, topic, TimeSpan.FromMilliseconds(5000), DateTime.Parse("1970-01-18 20:27:56.387"));
             await Task.Delay(TimeSpan.FromSeconds(10));

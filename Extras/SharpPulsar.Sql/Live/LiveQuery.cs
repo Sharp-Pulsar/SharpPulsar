@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Akka.Actor;
@@ -32,6 +34,12 @@ namespace SharpPulsar.Sql.Live
 
             Receive<IQueryResponse>(q =>
             {
+                if(q is DataResponse dr && dr.Data.Count > 0)
+                {
+                    var p = dr.Data.Max(x => DateTime.Parse(x["__publish_time__"].ToString()));
+                    _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
+                }    
+
                 buffer.Post(new LiveSqlData(q, _sql.Topic));
             });
             Receive<Read>(_ =>
