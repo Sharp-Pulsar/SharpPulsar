@@ -1037,7 +1037,7 @@ namespace SharpPulsar
 				{
 					var timeoutMessage = string.Format("{0:D} {1} timedout after ms {2:D}", request.RequestId, request.RequestType.Description, _operationTimeoutMs);
 					_log.Warning(timeoutMessage);
-                    val.Requester.Tell(new ClientExceptions(new PulsarClientException(new Exception(timeoutMessage))));
+                    val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
                 }
 			}
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);

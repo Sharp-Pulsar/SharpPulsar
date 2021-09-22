@@ -65,7 +65,7 @@ class Build : NukeBuild
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.TxnTest);
+    public static int Main () => Execute<Build>(x => x.PackBeta);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -129,7 +129,9 @@ class Build : NukeBuild
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
-                .SetConfiguration(Configuration));
+                .SetConfiguration(Configuration)
+                .SetAssemblyVersion(GetVersion())
+                .SetFileVersion(GetVersion()));
         });
     Target CompileAdmin => _ => _
         .DependsOn(RestoreAdmin)
@@ -415,9 +417,9 @@ class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetAssemblyVersion($"2.2.2")
-              .SetVersion($"2.2.2")
-              .SetPackageReleaseNotes($"[MAINTENANCE]{Environment.NewLine}Updated AvroSchemaGenerator to 2.2.0 which added support for enum/dictionary/list")
+              .SetAssemblyVersion(GetVersion())
+              .SetVersion(GetVersion())
+              .SetPackageReleaseNotes($"Respond with `AskRespone` when requests timeout")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
@@ -454,10 +456,9 @@ class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetAssemblyVersion($"2.2.2.beta")
-              .SetVersionPrefix("2.2.2")
-              .SetPackageReleaseNotes($"[MAINTENANCE]{Environment.NewLine}Updated AvroSchemaGenerator to 2.2.0 which added support for enum/dictionary/list")
-              .SetVersionSuffix($"beta")
+              .SetAssemblyVersion($"{GetVersion()}-beta")
+              .SetVersion($"{GetVersion()}-beta")
+              .SetPackageReleaseNotes($"Respond with `AskRespone` when requests timeout")
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
@@ -548,5 +549,9 @@ class Build : NukeBuild
     static void Information(string info)
     {
         Logger.Info(info);
+    }
+    static string GetVersion()
+    {
+        return "2.2.3";
     }
 }
