@@ -23,33 +23,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
-[GitHubActions("Build",
-    GitHubActionsImage.WindowsLatest,
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "main", "dev" },
-    
-    InvokedTargets = new[] { nameof(Compile) })]
-
-[GitHubActions("Tests",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "main", "dev" },
-    InvokedTargets = new[] { nameof(Test) })]
-
-[GitHubActions("Beta",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "dev" },
-    InvokedTargets = new[] { nameof(PushBeta) })]
-
-[GitHubActions("Publish",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main" },
-    InvokedTargets = new[] { nameof(Push) })]
 
 [GitHubActions("Admin",
     GitHubActionsImage.UbuntuLatest,
@@ -65,7 +38,7 @@ class Build : NukeBuild
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.TxnTest);
+    public static int Main () => Execute<Build>(x => x.TestAdmin);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -91,20 +64,7 @@ class Build : NukeBuild
     [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
     readonly string GitHubApiKey;
 
-    [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
-
-    AbsolutePath TestsDirectory => RootDirectory / "tests";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
-    AbsolutePath TestSourceDirectory => RootDirectory / "SharpPulsar.Test";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
-
-    Target Clean => _ => _
-        .Before(Restore)
-        .Executes(() =>
-        {
-            TestsDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
-            EnsureCleanDirectory(OutputDirectory);
-        });
 
     Target Restore => _ => _
         .Executes(() =>
@@ -121,16 +81,6 @@ class Build : NukeBuild
             DotNetRestore(s => s
                 .SetProjectFile(project));
         });
-
-    Target Compile => _ => _
-        .DependsOn(Restore)
-        .Executes(() =>
-        {
-            DotNetBuild(s => s
-                .SetProjectFile(Solution)
-                .SetNoRestore(InvokedTargets.Contains(Restore))
-                .SetConfiguration(Configuration));
-        });
     Target CompileAdmin => _ => _
         .DependsOn(RestoreAdmin)
         .Executes(() =>
@@ -142,65 +92,6 @@ class Build : NukeBuild
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration));
         });
-    Target RunMemoryAllocation => _ => _
-        .DependsOn(Compile)
-        .OnlyWhenStatic(() => IsLocalBuild)
-        .Executes(() =>
-        {
-            
-            var testAssembly = RootDirectory + "\\Tests\\SharpPulsar.Test.Memory\\bin\\Release\net5.0\\SharpPulsar.Test.Memory.dll";
-            DotMemoryUnit($"{XunitTasks.XunitPath.DoubleQuoteIfNeeded()} --propagate-exit-code -- {testAssembly}", timeout: 120_000);
-            //Nuke.Common.Tools.DotMemoryUnit.DotMemoryUnitTasks.DotMemoryUnit($"{XunitTasks.XunitPath.DoubleQuoteIfNeeded()} --propagate-exit-code -- {testAssembly}", timeout: 120_000);
-        });
-    Target Benchmark => _ => _
-        .DependsOn(Compile)
-        .OnlyWhenStatic(() => IsLocalBuild)
-        .Executes(() =>
-        {
-            var benchmarkAssembly = RootDirectory+"\\SharpPulsar.Benchmarks\\bin\\Release\\net5.0\\SharpPulsar.Benchmarks.exe";
-            var process = ProcessTasks.StartProcess(benchmarkAssembly);
-            process.AssertZeroExitCode();
-            var output = process.Output;
-        });
-    //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
-    Target Test => _ => _
-        .DependsOn(Compile)
-        .DependsOn(AdminPulsar)
-        .Executes(() =>
-        {
-            var testProject = "SharpPulsar.Test";
-            var project = Solution.GetProject(testProject);
-            Information($"Running tests from {project.Name}");
-
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                if (fw.StartsWith("net4")
-                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                {
-                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
-                    continue;
-                }
-
-                Information($"Running for {project.Name} ({fw}) ...");
-                try
-                {
-                    DotNetTest(c => c
-                        .SetProjectFile(project)
-                        .SetConfiguration(Configuration.ToString())
-                        .SetFramework(fw)
-                        //.SetDiagnosticsFile(TestsDirectory)
-                        //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                        .EnableNoBuild()); ;
-                }
-                catch (Exception ex)
-                {
-                    Information(ex.Message);
-                }
-            }
-        });
-
     Target TestAdmin => _ => _
         .DependsOn(CompileAdmin)
         .DependsOn(AdminPulsar)
@@ -239,45 +130,6 @@ class Build : NukeBuild
                 }
             }
         });
-
-    Target TxnTest => _ => _
-        .DependsOn(Test)
-        .Triggers(StopPulsar)
-        .Executes(() =>
-        {
-            var testProject = "SharpPulsar.Test.Transaction";
-            var project = Solution.GetProject(testProject);
-            Information($"Running tests from {project.Name}");
-
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                if (fw.StartsWith("net4")
-                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                {
-                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
-                    continue;
-                }
-
-                Information($"Running for {project.Name} ({fw}) ...");
-                try
-                {
-                    DotNetTest(c => c
-                        .SetProjectFile(project)
-                        .SetConfiguration(Configuration.ToString())
-                        .SetFramework(fw)
-                        //.SetDiagnosticsFile(TestsDirectory)
-                        //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                        .EnableNoBuild()); ;
-                }
-                catch (Exception ex)
-                {
-                    Information(ex.Message);
-                }
-            }
-        });
-
     Target StartPulsar => _ => _
         .DependsOn(CheckDockerVersion)
         .Executes(() =>
@@ -400,25 +252,6 @@ class Build : NukeBuild
         }
 
     });
-    Target Pack => _ => _
-      .DependsOn(Compile)
-      .Executes(() =>
-      {
-          var project = Solution.GetProject("SharpPulsar");
-          DotNetPack(s => s
-              .SetProject(project)
-              .SetConfiguration(Configuration)
-              .EnableNoBuild()
-              .EnableNoRestore()
-              .SetVersion("2.0.0")
-              .SetPackageReleaseNotes("Support Avro DateTime and Decimal Logical Types via `SpecificDatumReader<T>`")
-              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
-              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
-              .AddAuthors("Ebere Abanonu (@mestical)")
-              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
-
-      });
     Target PackAdmin => _ => _
         .DependsOn(TestAdmin)
         .Executes(() =>
@@ -429,9 +262,9 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .EnableNoRestore()
-                .SetAssemblyVersion($"1.1.{BuildNumber}")
-                .SetVersion($"1.1.{BuildNumber}")
-                .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo. How to use sample can be found here https://github.com/eaba/SharpPulsar/blob/Admin/Tests/SharpPulsar.Test.Admin/TransactionAPITest.cs")
+                .SetAssemblyVersion("1.2.0")
+                .SetVersion("1.2.0")
+                .SetPackageReleaseNotes("Fix NRE")
                 .SetDescription("Implements Apache Pulsar Admin and Function REST API.")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar")
                 .AddAuthors("Ebere Abanonu (@mestical)")
@@ -439,83 +272,6 @@ class Build : NukeBuild
                 .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
         });
-    Target PackBeta => _ => _
-      .DependsOn(Compile)
-      .Executes(() =>
-      {
-          var project = Solution.GetProject("SharpPulsar");
-          DotNetPack(s => s
-              .SetProject(project)
-              .SetConfiguration(Configuration)
-              .EnableNoBuild()
-              .EnableNoRestore()
-              .SetVersionPrefix("2.0.0")
-              .SetPackageReleaseNotes("Try to reduce allocation along hot paths")
-              .SetVersionSuffix($"beta.{BuildNumber}")
-              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
-              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
-              .AddAuthors("Ebere Abanonu (@mestical)")
-              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
-
-      });
-    Target PushBeta => _ => _
-      .DependsOn(PackBeta)
-      .Requires(() => NugetApiUrl)
-      .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
-      .Requires(() => !BuildNumber.IsNullOrEmpty())
-      .Requires(() => Configuration.Equals(Configuration.Release))
-      .Executes(() =>
-      {
-          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
-              .NotEmpty()
-              .Where(x => !x.EndsWith("symbols.nupkg"))
-              .ForEach(x =>
-              {
-                  DotNetNuGetPush(s => s
-                      .SetTargetPath(x)
-                      .SetSource(NugetApiUrl)
-                      .SetApiKey(NugetApiKey)
-                  );
-                  
-                  DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubApiKey)
-                      .SetSymbolApiKey(GitHubApiKey)
-                      .SetTargetPath(x)
-                      .SetSource(GithubSource)
-                      .SetSymbolSource(GithubSource));
-              });
-      });
-    Target Push => _ => _
-      .DependsOn(Pack)
-      .Requires(() => NugetApiUrl)
-      .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
-      .Requires(() => !BuildNumber.IsNullOrEmpty())
-      .Requires(() => Configuration.Equals(Configuration.Release))
-      .Executes(() =>
-      {
-          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
-              .NotEmpty()
-              .Where(x => !x.EndsWith("symbols.nupkg"))
-              .ForEach(x =>
-              {
-                  DotNetNuGetPush(s => s
-                      .SetTargetPath(x)
-                      .SetSource(NugetApiUrl)
-                      .SetApiKey(NugetApiKey)
-                  );
-                  
-                  DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubApiKey)
-                      .SetSymbolApiKey(GitHubApiKey)
-                      .SetTargetPath(x)
-                      .SetSource(GithubSource)
-                      .SetSymbolSource(GithubSource));
-              });
-      });
-
     Target ReleaseAdmin => _ => _
       .DependsOn(PackAdmin)
       .Requires(() => NugetApiUrl)

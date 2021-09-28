@@ -35,4 +35,36 @@
     <None Remove="..\.github\workflows\TxnTests.yml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Benchmark.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Beta.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Build.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Cancel.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\DotMemoryUnit.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Publish.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Tests.yml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="..\.github\workflows\Benchmark.yml" />
+  </ItemGroup>
+
 </Project>
