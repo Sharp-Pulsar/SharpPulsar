@@ -38,6 +38,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using Receive = Akka.Actor.Receive;
 
@@ -67,6 +68,7 @@ namespace SharpPulsar
 		private const int MaxRedeliverUnacknowledged = 1000;
 
 		private readonly long _consumerId;
+		private long _prevconsumerId;
 
 		// Number of messages that have delivered to the application. Every once in a while, this number will be sent to the
 		// broker to notify that we are ready to get (and store in the incoming messages queue) more messages
@@ -749,6 +751,11 @@ namespace SharpPulsar
                         if (e is PulsarClientException exception && PulsarClientException.IsRetriableError(e) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout)
                         {
                             await ReconnectLater(e);
+                        }
+                        else if (e is IncompatibleSchemaException se)
+                        {
+                            _log.Error($"Failed to connect consumer on IncompatibleSchemaException: {Topic}");
+                            _replyTo.Tell(new AskResponse(se));
                         }
                         else if (e is PulsarClientException.TopicDoesNotExistException)
                         {
@@ -2463,14 +2470,14 @@ namespace SharpPulsar
 			if (cnx != null)
 			{
 				_connectionHandler.Tell(new SetCnx(cnx));
-				cnx.Tell(new RegisterConsumer(_consumerId, Self));
+				cnx.Tell(new RegisterConsumer(_consumerId, _self));
 			}
 			var previousClientCnx = _clientCnxUsedForConsumerRegistration;
 			_clientCnxUsedForConsumerRegistration = cnx;
+            _prevconsumerId = _consumerId;
 			if (previousClientCnx != null && previousClientCnx != cnx)
 			{
-				var previousName = int.Parse(previousClientCnx.Path.Name);
-				previousClientCnx.Tell(new RemoveConsumer(previousName));
+				previousClientCnx.Tell(new RemoveConsumer(_prevconsumerId));
 			}
 		}
 

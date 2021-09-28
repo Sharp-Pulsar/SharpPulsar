@@ -419,7 +419,7 @@ class Build : NukeBuild
               .EnableNoRestore()
               .SetAssemblyVersion(GetVersion())
               .SetVersion(GetVersion())
-              .SetPackageReleaseNotes($"Respond with `AskRespone` when requests timeout")
+              .SetPackageReleaseNotes(GetReleasenote())
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
@@ -458,7 +458,7 @@ class Build : NukeBuild
               .EnableNoRestore()
               .SetAssemblyVersion($"{GetVersion()}-beta")
               .SetVersion($"{GetVersion()}-beta")
-              .SetPackageReleaseNotes($"Respond with `AskRespone` when requests timeout")
+              .SetPackageReleaseNotes(GetReleasenote())
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
@@ -552,6 +552,10 @@ class Build : NukeBuild
     }
     static string GetVersion()
     {
-        return "2.2.3";
+        return "2.2.4";
+    }
+    static string GetReleasenote()
+    {
+        return "Expose IncompatibleSchemaException to the consumer";
     }
 }
