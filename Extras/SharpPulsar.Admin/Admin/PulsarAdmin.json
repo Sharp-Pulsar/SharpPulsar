@@ -6625,6 +6625,42 @@
                         "description": "Invalid expiration time"
                     }
                 }
+            },
+            "delete": {
+                "tags": [
+                    "namespaces"
+                ],
+                "summary": "Remove subscription expiration time for namespace",
+                "description": "",
+                "operationId": "removeSubscriptionExpirationTime",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "403": {
+                        "description": "Don't have admin permission"
+                    },
+                    "404": {
+                        "description": "Tenant or cluster or namespace doesn't exist"
+                    }
+                }
             }
         },
         "/namespaces/{tenant}/{namespace}/subscriptionTypesEnabled": {
@@ -7740,6 +7776,14 @@
                         "type": "string"
                     },
                     {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
                         "name": "backlogQuotaType",
                         "in": "query",
                         "required": false,
@@ -7806,6 +7850,14 @@
                             "destination_storage",
                             "message_age"
                         ]
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -7859,18 +7911,17 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "$ref": "#/definitions/BacklogQuota"
-                            }
-                        }
-                    },
                     "403": {
                         "description": "Don't have admin permission"
                     },
@@ -8065,6 +8116,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8110,6 +8169,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -8165,6 +8232,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8277,6 +8352,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8319,6 +8402,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -8370,6 +8461,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8417,6 +8516,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8469,6 +8576,14 @@
                             "type": "integer",
                             "format": "int32"
                         }
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8508,6 +8623,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8555,6 +8678,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8597,6 +8728,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -8645,6 +8784,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8692,6 +8839,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8737,6 +8892,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -8791,6 +8954,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8929,6 +9100,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -8971,6 +9150,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -9019,6 +9206,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9363,6 +9558,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9408,6 +9611,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -9466,6 +9677,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9513,6 +9732,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9558,6 +9785,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -9613,6 +9848,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9660,6 +9903,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9705,6 +9956,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -9763,6 +10022,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9816,6 +10083,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9861,6 +10136,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -9919,6 +10202,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -9966,6 +10257,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10011,6 +10310,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -10069,6 +10376,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10122,6 +10437,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10164,6 +10487,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -10213,6 +10544,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10260,6 +10599,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10302,6 +10649,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -10351,6 +10706,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10398,16 +10761,17 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "integer",
-                            "format": "int32"
-                        }
-                    },
                     "403": {
                         "description": "Don't have admin permission"
                     },
@@ -10455,6 +10819,14 @@
                         "required": true,
                         "type": "integer",
                         "format": "int32"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10500,6 +10872,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10703,6 +11083,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -10745,6 +11133,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -10793,6 +11189,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11104,6 +11508,13 @@
                             "format": "int32",
                             "default": 0
                         }
+                    },
+                    {
+                        "name": "createLocalTopicOnly",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11474,6 +11885,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11519,6 +11938,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -11576,6 +12003,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11623,6 +12058,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11668,6 +12111,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -11722,6 +12173,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11775,6 +12234,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11820,6 +12287,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -11877,6 +12352,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11930,6 +12413,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -11975,6 +12466,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -12032,6 +12531,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -12174,6 +12681,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -12219,6 +12734,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -12273,6 +12796,22 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Subscribe rate for the specified topic",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/SubscribeRate"
+                        }
                     }
                 ],
                 "responses": {
@@ -12625,6 +13164,92 @@
                 }
             }
         },
+        "/non-persistent/{tenant}/{namespace}/{topic}/subscription/{subName}/replicatedSubscriptionStatus": {
+            "post": {
+                "tags": [
+                    "non-persistent topic"
+                ],
+                "summary": "Enable or disable a replicated subscription on a topic.",
+                "description": "",
+                "operationId": "setReplicatedSubscriptionStatus",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "description": "Specify the tenant",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "namespace",
+                        "in": "path",
+                        "description": "Specify the namespace",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "topic",
+                        "in": "path",
+                        "description": "Specify topic name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "subName",
+                        "in": "path",
+                        "description": "Name of subscription",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Whether to enable replicated subscription",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "Current broker doesn't serve the namespace of this topic"
+                    },
+                    "401": {
+                        "description": "Don't have permission to administrate resources on this tenant or subscriber is not authorized to access this operation"
+                    },
+                    "403": {
+                        "description": "Don't have admin permission"
+                    },
+                    "404": {
+                        "description": "Topic or subscription does not exist"
+                    },
+                    "405": {
+                        "description": "Operation not allowed on this topic"
+                    },
+                    "412": {
+                        "description": "Can't find owner for topic"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    },
+                    "503": {
+                        "description": "Failed to validate global cluster configuration"
+                    }
+                }
+            }
+        },
         "/non-persistent/{tenant}/{namespace}/{topic}/subscription/{subName}/resetcursor": {
             "post": {
                 "tags": [
@@ -12754,7 +13379,7 @@
                     {
                         "name": "timestamp",
                         "in": "path",
-                        "description": "time in minutes to reset back to (or minutes, hours, days, weeks eg:100m, 3h, 2d, 5w)",
+                        "description": "the timestamp to reset back",
                         "required": true,
                         "type": "integer",
                         "format": "int64"
@@ -13084,6 +13709,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -13129,6 +13762,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -13183,6 +13824,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -13230,6 +13879,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -13275,6 +13932,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -14063,6 +14728,14 @@
                         "type": "string"
                     },
                     {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
                         "name": "backlogQuotaType",
                         "in": "query",
                         "required": false,
@@ -14129,6 +14802,14 @@
                             "destination_storage",
                             "message_age"
                         ]
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14182,18 +14863,17 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "$ref": "#/definitions/BacklogQuota"
-                            }
-                        }
-                    },
                     "403": {
                         "description": "Don't have admin permission"
                     },
@@ -14388,6 +15068,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14433,6 +15121,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -14488,6 +15184,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14600,6 +15304,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14642,6 +15354,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -14693,6 +15413,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14740,6 +15468,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14792,6 +15528,14 @@
                             "type": "integer",
                             "format": "int32"
                         }
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14831,6 +15575,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14878,6 +15630,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -14920,6 +15680,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -14968,6 +15736,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15015,6 +15791,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15060,6 +15844,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -15114,6 +15906,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15252,6 +16052,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15294,6 +16102,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -15342,6 +16158,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15689,6 +16513,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15734,6 +16566,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -15792,6 +16632,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15839,6 +16687,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15884,6 +16740,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -15939,6 +16803,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -15986,6 +16858,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16031,6 +16911,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -16089,6 +16977,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16142,6 +17038,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16187,6 +17091,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -16245,6 +17157,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16292,6 +17212,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16337,6 +17265,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -16395,6 +17331,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16448,6 +17392,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16490,6 +17442,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -16539,6 +17499,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16586,6 +17554,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16628,6 +17604,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -16677,6 +17661,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16724,16 +17716,17 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "integer",
-                            "format": "int32"
-                        }
-                    },
                     "403": {
                         "description": "Don't have admin permission"
                     },
@@ -16781,6 +17774,14 @@
                         "required": true,
                         "type": "integer",
                         "format": "int32"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -16826,6 +17827,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17029,6 +18038,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17071,6 +18088,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -17119,6 +18144,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17430,6 +18463,13 @@
                             "format": "int32",
                             "default": 0
                         }
+                    },
+                    {
+                        "name": "createLocalTopicOnly",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17800,6 +18840,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17845,6 +18893,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -17902,6 +18958,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17949,6 +19013,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -17994,6 +19066,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -18048,6 +19128,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -18101,6 +19189,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -18146,6 +19242,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -18203,6 +19307,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -18256,6 +19368,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -18301,6 +19421,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -18358,6 +19486,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -18503,6 +19639,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -18548,6 +19692,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -18602,6 +19754,22 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Subscribe rate for the specified topic",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/SubscribeRate"
+                        }
                     }
                 ],
                 "responses": {
@@ -18954,6 +20122,92 @@
                 }
             }
         },
+        "/persistent/{tenant}/{namespace}/{topic}/subscription/{subName}/replicatedSubscriptionStatus": {
+            "post": {
+                "tags": [
+                    "persistent topic"
+                ],
+                "summary": "Enable or disable a replicated subscription on a topic.",
+                "description": "",
+                "operationId": "setReplicatedSubscriptionStatus",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "tenant",
+                        "in": "path",
+                        "description": "Specify the tenant",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "namespace",
+                        "in": "path",
+                        "description": "Specify the namespace",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "topic",
+                        "in": "path",
+                        "description": "Specify topic name",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "subName",
+                        "in": "path",
+                        "description": "Name of subscription",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "Whether to enable replicated subscription",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "Current broker doesn't serve the namespace of this topic"
+                    },
+                    "401": {
+                        "description": "Don't have permission to administrate resources on this tenant or subscriber is not authorized to access this operation"
+                    },
+                    "403": {
+                        "description": "Don't have admin permission"
+                    },
+                    "404": {
+                        "description": "Topic or subscription does not exist"
+                    },
+                    "405": {
+                        "description": "Operation not allowed on this topic"
+                    },
+                    "412": {
+                        "description": "Can't find owner for topic"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    },
+                    "503": {
+                        "description": "Failed to validate global cluster configuration"
+                    }
+                }
+            }
+        },
         "/persistent/{tenant}/{namespace}/{topic}/subscription/{subName}/resetcursor": {
             "post": {
                 "tags": [
@@ -19083,7 +20337,7 @@
                     {
                         "name": "timestamp",
                         "in": "path",
-                        "description": "time in minutes to reset back to (or minutes, hours, days, weeks eg:100m, 3h, 2d, 5w)",
+                        "description": "the timestamp to reset back",
                         "required": true,
                         "type": "integer",
                         "format": "int64"
@@ -19413,6 +20667,14 @@
                         "in": "query",
                         "required": false,
                         "type": "boolean"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -19458,6 +20720,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -19512,6 +20782,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -19559,6 +20837,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     }
                 ],
                 "responses": {
@@ -19604,6 +20890,14 @@
                         "in": "path",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "authoritative",
+                        "in": "query",
+                        "description": "Is authentication required to perform this operation",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false
                     },
                     {
                         "in": "body",
@@ -21344,24 +22638,6 @@
         "AuthPolicies": {
             "type": "object",
             "properties": {
-                "namespaceAuthentication": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "uniqueItems": true,
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "produce",
-                                "consume",
-                                "functions",
-                                "sources",
-                                "sinks",
-                                "packages"
-                            ]
-                        }
-                    }
-                },
                 "topicAuthentication": {
                     "type": "object",
                     "additionalProperties": {
@@ -21390,6 +22666,24 @@
                         "uniqueItems": true,
                         "items": {
                             "type": "string"
+                        }
+                    }
+                },
+                "namespaceAuthentication": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "produce",
+                                "consume",
+                                "functions",
+                                "sources",
+                                "sinks",
+                                "packages"
+                            ]
                         }
                     }
                 }
@@ -21446,15 +22740,15 @@
         "AutoTopicCreationOverride": {
             "type": "object",
             "properties": {
+                "topicType": {
+                    "type": "string"
+                },
                 "defaultNumPartitions": {
                     "type": "integer",
                     "format": "int32"
                 },
                 "allowAutoTopicCreation": {
                     "type": "boolean"
-                },
-                "topicType": {
-                    "type": "string"
                 }
             }
         },
@@ -21485,12 +22779,12 @@
                 "paddingChar": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
                 "paddingByte": {
                     "type": "string",
                     "format": "byte"
+                },
+                "name": {
+                    "type": "string"
                 },
                 "maxLineLength": {
                     "type": "integer",
@@ -21501,10 +22795,10 @@
         "BookieAffinityGroupData": {
             "type": "object",
             "properties": {
-                "bookkeeperAffinityGroupSecondary": {
+                "bookkeeperAffinityGroupPrimary": {
                     "type": "string"
                 },
-                "bookkeeperAffinityGroupPrimary": {
+                "bookkeeperAffinityGroupSecondary": {
                     "type": "string"
                 }
             }
@@ -21713,13 +23007,31 @@
             },
             "description": "The configuration data for a cluster"
         },
+        "CompactionStats": {
+            "type": "object",
+            "properties": {
+                "lastCompactionRemovedEventCount": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "lastCompactionSucceedTimestamp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "lastCompactionFailedTimestamp": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "lastCompactionDurationTimeInMills": {
+                    "type": "integer",
+                    "format": "int64"
+                }
+            }
+        },
         "CompletableFuture": {
             "type": "object",
             "properties": {
                 "done": {
-                    "type": "boolean"
-                },
-                "cancelled": {
                     "type": "boolean"
                 },
                 "completedExceptionally": {
@@ -21728,6 +23040,9 @@
                 "numberOfDependents": {
                     "type": "integer",
                     "format": "int32"
+                },
+                "cancelled": {
+                    "type": "boolean"
                 }
             }
         },
@@ -21737,15 +23052,15 @@
                 "done": {
                     "type": "boolean"
                 },
-                "cancelled": {
-                    "type": "boolean"
-                },
                 "completedExceptionally": {
                     "type": "boolean"
                 },
                 "numberOfDependents": {
                     "type": "integer",
                     "format": "int32"
+                },
+                "cancelled": {
+                    "type": "boolean"
                 }
             }
         },
@@ -21755,15 +23070,15 @@
                 "done": {
                     "type": "boolean"
                 },
-                "cancelled": {
-                    "type": "boolean"
-                },
                 "completedExceptionally": {
                     "type": "boolean"
                 },
                 "numberOfDependents": {
                     "type": "integer",
                     "format": "int32"
+                },
+                "cancelled": {
+                    "type": "boolean"
                 }
             }
         },
@@ -21793,26 +23108,26 @@
         "ConsumerStats": {
             "type": "object",
             "properties": {
-                "msgOutCounter": {
+                "msgThroughputOut": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "availablePermits": {
                     "type": "integer",
-                    "format": "int64"
+                    "format": "int32"
                 },
                 "bytesOutCounter": {
                     "type": "integer",
                     "format": "int64"
                 },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "msgThroughputOut": {
-                    "type": "number",
-                    "format": "double"
+                "msgOutCounter": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "connectedSince": {
                     "type": "string"
                 },
-                "chunkedMessageRate": {
+                "msgRateOut": {
                     "type": "number",
                     "format": "double"
                 },
@@ -21820,8 +23135,9 @@
                     "type": "number",
                     "format": "double"
                 },
-                "clientVersion": {
-                    "type": "string"
+                "chunkedMessageRate": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "unackedMessages": {
                     "type": "integer",
@@ -21848,15 +23164,14 @@
                 "readPositionWhenJoining": {
                     "type": "string"
                 },
+                "clientVersion": {
+                    "type": "string"
+                },
                 "keyHashRanges": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "availablePermits": {
-                    "type": "integer",
-                    "format": "int32"
                 },
                 "metadata": {
                     "type": "object",
@@ -21886,13 +23201,13 @@
                     "type": "integer",
                     "format": "int32"
                 },
-                "numericCodeAsString": {
-                    "type": "string"
-                },
                 "displayName": {
                     "type": "string"
                 },
                 "symbol": {
+                    "type": "string"
+                },
+                "numericCodeAsString": {
                     "type": "string"
                 }
             }
@@ -22012,24 +23327,21 @@
         "DeserializationConfig": {
             "type": "object",
             "properties": {
+                "problemHandlers": {
+                    "$ref": "#/definitions/LinkedNodeDeserializationProblemHandler"
+                },
                 "defaultPropertyInclusion": {
                     "$ref": "#/definitions/Value"
-                },
-                "annotationIntrospector": {
-                    "$ref": "#/definitions/AnnotationIntrospector"
                 },
                 "nodeFactory": {
                     "$ref": "#/definitions/JsonNodeFactory"
                 },
+                "annotationIntrospector": {
+                    "$ref": "#/definitions/AnnotationIntrospector"
+                },
                 "deserializationFeatures": {
                     "type": "integer",
                     "format": "int32"
-                },
-                "problemHandlers": {
-                    "$ref": "#/definitions/LinkedNodeDeserializationProblemHandler"
-                },
-                "attributes": {
-                    "$ref": "#/definitions/ContextAttributes"
                 },
                 "fullRootName": {
                     "$ref": "#/definitions/PropertyName"
@@ -22040,23 +23352,11 @@
                 "defaultVisibilityChecker": {
                     "$ref": "#/definitions/VisibilityCheckerObject"
                 },
+                "attributes": {
+                    "$ref": "#/definitions/ContextAttributes"
+                },
                 "rootName": {
                     "type": "string"
-                },
-                "annotationProcessingEnabled": {
-                    "type": "boolean"
-                },
-                "classIntrospector": {
-                    "$ref": "#/definitions/ClassIntrospector"
-                },
-                "timeZone": {
-                    "$ref": "#/definitions/TimeZone"
-                },
-                "locale": {
-                    "$ref": "#/definitions/Locale"
-                },
-                "handlerInstantiator": {
-                    "$ref": "#/definitions/HandlerInstantiator"
                 },
                 "propertyNamingStrategy": {
                     "$ref": "#/definitions/PropertyNamingStrategy"
@@ -22069,35 +23369,35 @@
                 },
                 "base64Variant": {
                     "$ref": "#/definitions/Base64Variant"
-                }
-            }
-        },
-        "DeserializationContext": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/DeserializationConfig"
+                },
+                "handlerInstantiator": {
+                    "$ref": "#/definitions/HandlerInstantiator"
+                },
+                "annotationProcessingEnabled": {
+                    "type": "boolean"
+                },
+                "classIntrospector": {
+                    "$ref": "#/definitions/ClassIntrospector"
                 },
                 "timeZone": {
                     "$ref": "#/definitions/TimeZone"
                 },
                 "locale": {
                     "$ref": "#/definitions/Locale"
-                },
-                "factory": {
-                    "$ref": "#/definitions/DeserializerFactory"
-                },
-                "annotationIntrospector": {
-                    "$ref": "#/definitions/AnnotationIntrospector"
-                },
-                "parser": {
-                    "$ref": "#/definitions/JsonParser"
-                },
+                }
+            }
+        },
+        "DeserializationContext": {
+            "type": "object",
+            "properties": {
                 "typeFactory": {
                     "$ref": "#/definitions/TypeFactory"
                 },
                 "nodeFactory": {
                     "$ref": "#/definitions/JsonNodeFactory"
+                },
+                "annotationIntrospector": {
+                    "$ref": "#/definitions/AnnotationIntrospector"
                 },
                 "contextualType": {
                     "$ref": "#/definitions/JavaType"
@@ -22111,6 +23411,21 @@
                 },
                 "arrayBuilders": {
                     "$ref": "#/definitions/ArrayBuilders"
+                },
+                "timeZone": {
+                    "$ref": "#/definitions/TimeZone"
+                },
+                "locale": {
+                    "$ref": "#/definitions/Locale"
+                },
+                "factory": {
+                    "$ref": "#/definitions/DeserializerFactory"
+                },
+                "config": {
+                    "$ref": "#/definitions/DeserializationConfig"
+                },
+                "parser": {
+                    "$ref": "#/definitions/JsonParser"
                 }
             }
         },
@@ -22195,10 +23510,6 @@
                 "oneMin": {
                     "$ref": "#/definitions/FunctionInstanceStatsDataBase"
                 },
-                "lastInvocation": {
-                    "type": "integer",
-                    "format": "int64"
-                },
                 "userMetrics": {
                     "type": "object",
                     "additionalProperties": {
@@ -22206,15 +23517,7 @@
                         "format": "double"
                     }
                 },
-                "receivedTotal": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "processedSuccessfullyTotal": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "systemExceptionsTotal": {
+                "lastInvocation": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -22225,24 +23528,24 @@
                 "avgProcessLatency": {
                     "type": "number",
                     "format": "double"
+                },
+                "processedSuccessfullyTotal": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "receivedTotal": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "systemExceptionsTotal": {
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         },
         "FunctionInstanceStatsDataBase": {
             "type": "object",
             "properties": {
-                "receivedTotal": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "processedSuccessfullyTotal": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "systemExceptionsTotal": {
-                    "type": "integer",
-                    "format": "int64"
-                },
                 "userExceptionsTotal": {
                     "type": "integer",
                     "format": "int64"
@@ -22250,6 +23553,18 @@
                 "avgProcessLatency": {
                     "type": "number",
                     "format": "double"
+                },
+                "processedSuccessfullyTotal": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "receivedTotal": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "systemExceptionsTotal": {
+                    "type": "integer",
+                    "format": "int64"
                 }
             }
         },
@@ -22425,13 +23740,40 @@
         "JavaType": {
             "type": "object",
             "properties": {
+                "javaLangObject": {
+                    "type": "boolean"
+                },
+                "arrayType": {
+                    "type": "boolean"
+                },
+                "throwable": {
+                    "type": "boolean"
+                },
                 "collectionLikeType": {
+                    "type": "boolean"
+                },
+                "mapLikeType": {
                     "type": "boolean"
                 },
                 "referencedType": {
                     "$ref": "#/definitions/JavaType"
                 },
-                "concrete": {
+                "valueHandler": {
+                    "type": "object"
+                },
+                "typeHandler": {
+                    "type": "object"
+                },
+                "contentValueHandler": {
+                    "type": "object"
+                },
+                "contentTypeHandler": {
+                    "type": "object"
+                },
+                "erasedSignature": {
+                    "type": "string"
+                },
+                "containerType": {
                     "type": "boolean"
                 },
                 "bindings": {
@@ -22440,8 +23782,14 @@
                 "keyType": {
                     "$ref": "#/definitions/JavaType"
                 },
+                "concrete": {
+                    "type": "boolean"
+                },
                 "contentType": {
                     "$ref": "#/definitions/JavaType"
+                },
+                "enumType": {
+                    "type": "boolean"
                 },
                 "interface": {
                     "type": "boolean"
@@ -22464,41 +23812,8 @@
                 "abstract": {
                     "type": "boolean"
                 },
-                "containerType": {
-                    "type": "boolean"
-                },
-                "arrayType": {
-                    "type": "boolean"
-                },
-                "throwable": {
-                    "type": "boolean"
-                },
-                "javaLangObject": {
-                    "type": "boolean"
-                },
                 "superClass": {
                     "$ref": "#/definitions/JavaType"
-                },
-                "valueHandler": {
-                    "type": "object"
-                },
-                "typeHandler": {
-                    "type": "object"
-                },
-                "mapLikeType": {
-                    "type": "boolean"
-                },
-                "contentValueHandler": {
-                    "type": "object"
-                },
-                "contentTypeHandler": {
-                    "type": "object"
-                },
-                "erasedSignature": {
-                    "type": "string"
-                },
-                "enumType": {
-                    "type": "boolean"
                 },
                 "typeName": {
                     "type": "string"
@@ -22514,9 +23829,6 @@
                 "codec": {
                     "$ref": "#/definitions/ObjectCodec"
                 },
-                "formatName": {
-                    "type": "string"
-                },
                 "inputDecorator": {
                     "$ref": "#/definitions/InputDecorator"
                 },
@@ -22528,14 +23840,23 @@
                 },
                 "rootValueSeparator": {
                     "type": "string"
+                },
+                "formatName": {
+                    "type": "string"
                 }
             }
         },
         "JsonGenerator": {
             "type": "object",
             "properties": {
+                "closed": {
+                    "type": "boolean"
+                },
                 "codec": {
                     "$ref": "#/definitions/ObjectCodec"
+                },
+                "characterEscapes": {
+                    "$ref": "#/definitions/CharacterEscapes"
                 },
                 "currentValue": {
                     "type": "object"
@@ -22547,6 +23868,9 @@
                 "formatFeatures": {
                     "type": "integer",
                     "format": "int32"
+                },
+                "prettyPrinter": {
+                    "$ref": "#/definitions/PrettyPrinter"
                 },
                 "outputContext": {
                     "$ref": "#/definitions/JsonStreamContext"
@@ -22562,15 +23886,6 @@
                     "type": "integer",
                     "format": "int32"
                 },
-                "closed": {
-                    "type": "boolean"
-                },
-                "prettyPrinter": {
-                    "$ref": "#/definitions/PrettyPrinter"
-                },
-                "characterEscapes": {
-                    "$ref": "#/definitions/CharacterEscapes"
-                },
                 "schema": {
                     "$ref": "#/definitions/FormatSchema"
                 }
@@ -22579,6 +23894,10 @@
         "JsonLocation": {
             "type": "object",
             "properties": {
+                "byteOffset": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "sourceRef": {
                     "type": "object"
                 },
@@ -22593,10 +23912,6 @@
                 "charOffset": {
                     "type": "integer",
                     "format": "int64"
-                },
-                "byteOffset": {
-                    "type": "integer",
-                    "format": "int64"
                 }
             }
         },
@@ -22606,8 +23921,24 @@
         "JsonParser": {
             "type": "object",
             "properties": {
+                "closed": {
+                    "type": "boolean"
+                },
+                "currentLocation": {
+                    "$ref": "#/definitions/JsonLocation"
+                },
                 "codec": {
                     "$ref": "#/definitions/ObjectCodec"
+                },
+                "binaryValue": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "byte"
+                    }
+                },
+                "currentValue": {
+                    "type": "object"
                 },
                 "parsingContext": {
                     "$ref": "#/definitions/JsonStreamContext"
@@ -22616,9 +23947,6 @@
                     "$ref": "#/definitions/JsonLocation"
                 },
                 "inputSource": {
-                    "type": "object"
-                },
-                "currentValue": {
                     "type": "object"
                 },
                 "featureMask": {
@@ -22723,9 +24051,11 @@
                 "valueAsString": {
                     "type": "string"
                 },
-                "textLength": {
-                    "type": "integer",
-                    "format": "int32"
+                "objectId": {
+                    "type": "object"
+                },
+                "typeId": {
+                    "type": "object"
                 },
                 "text": {
                     "type": "string"
@@ -22736,8 +24066,9 @@
                         "type": "string"
                     }
                 },
-                "currentLocation": {
-                    "$ref": "#/definitions/JsonLocation"
+                "textLength": {
+                    "type": "integer",
+                    "format": "int32"
                 },
                 "booleanValue": {
                     "type": "boolean"
@@ -22765,22 +24096,6 @@
                 "intValue": {
                     "type": "integer",
                     "format": "int32"
-                },
-                "closed": {
-                    "type": "boolean"
-                },
-                "binaryValue": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "format": "byte"
-                    }
-                },
-                "typeId": {
-                    "type": "object"
-                },
-                "objectId": {
-                    "type": "object"
                 },
                 "schema": {
                     "$ref": "#/definitions/FormatSchema"
@@ -22815,12 +24130,12 @@
                 "currentName": {
                     "type": "string"
                 },
+                "typeDesc": {
+                    "type": "string"
+                },
                 "entryCount": {
                     "type": "integer",
                     "format": "int32"
-                },
-                "typeDesc": {
-                    "type": "string"
                 },
                 "parent": {
                     "$ref": "#/definitions/JsonStreamContext"
@@ -23111,27 +24426,6 @@
                     "type": "number",
                     "format": "double"
                 },
-                "msgThroughputIn": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "msgThroughputOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "bandwidthIn": {
-                    "$ref": "#/definitions/ResourceUsage"
-                },
-                "directMemory": {
-                    "$ref": "#/definitions/ResourceUsage"
-                },
-                "lastUpdate": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "bandwidthOut": {
-                    "$ref": "#/definitions/ResourceUsage"
-                },
                 "underLoaded": {
                     "type": "boolean"
                 },
@@ -23141,10 +24435,31 @@
                 "loadReportType": {
                     "type": "string"
                 },
+                "msgThroughputIn": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "lastUpdate": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "directMemory": {
+                    "$ref": "#/definitions/ResourceUsage"
+                },
+                "msgThroughputOut": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "cpu": {
+                    "$ref": "#/definitions/ResourceUsage"
+                },
                 "memory": {
                     "$ref": "#/definitions/ResourceUsage"
                 },
-                "cpu": {
+                "bandwidthIn": {
+                    "$ref": "#/definitions/ResourceUsage"
+                },
+                "bandwidthOut": {
                     "$ref": "#/definitions/ResourceUsage"
                 }
             }
@@ -23428,23 +24743,12 @@
                     "type": "number",
                     "format": "double"
                 },
-                "averageMsgSize": {
-                    "type": "number",
-                    "format": "double"
+                "producerName": {
+                    "type": "string"
                 },
                 "msgThroughputIn": {
                     "type": "number",
                     "format": "double"
-                },
-                "msgRateIn": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "producerName": {
-                    "type": "string"
-                },
-                "connectedSince": {
-                    "type": "string"
                 },
                 "accessMode": {
                     "type": "string",
@@ -23454,9 +24758,16 @@
                         "WaitForExclusive"
                     ]
                 },
-                "producerId": {
-                    "type": "integer",
-                    "format": "int64"
+                "averageMsgSize": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "connectedSince": {
+                    "type": "string"
+                },
+                "msgRateIn": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "chunkedMessageRate": {
                     "type": "number",
@@ -23464,6 +24775,10 @@
                 },
                 "clientVersion": {
                     "type": "string"
+                },
+                "producerId": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "metadata": {
                     "type": "object",
@@ -23487,39 +24802,39 @@
                     "type": "number",
                     "format": "double"
                 },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
                 "msgThroughputOut": {
                     "type": "number",
                     "format": "double"
+                },
+                "replicationDelayInSeconds": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "msgRateIn": {
                     "type": "number",
                     "format": "double"
                 },
-                "replicationBacklog": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "inboundConnection": {
-                    "type": "string"
-                },
-                "inboundConnectedSince": {
-                    "type": "string"
-                },
-                "outboundConnection": {
-                    "type": "string"
+                "msgRateOut": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "msgRateExpired": {
                     "type": "number",
                     "format": "double"
                 },
+                "outboundConnection": {
+                    "type": "string"
+                },
+                "inboundConnectedSince": {
+                    "type": "string"
+                },
+                "inboundConnection": {
+                    "type": "string"
+                },
                 "outboundConnectedSince": {
                     "type": "string"
                 },
-                "replicationDelayInSeconds": {
+                "replicationBacklog": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -23535,7 +24850,17 @@
                     "type": "number",
                     "format": "double"
                 },
-                "msgOutCounter": {
+                "durable": {
+                    "type": "boolean"
+                },
+                "replicated": {
+                    "type": "boolean"
+                },
+                "msgThroughputOut": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "backlogSize": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -23543,18 +24868,15 @@
                     "type": "integer",
                     "format": "int64"
                 },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "msgThroughputOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "replicated": {
-                    "type": "boolean"
+                "msgOutCounter": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "nonContiguousDeletedMessagesRanges": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "nonContiguousDeletedMessagesRangesSerializedSize": {
                     "type": "integer",
                     "format": "int32"
                 },
@@ -23564,24 +24886,17 @@
                         "$ref": "#/definitions/ConsumerStats"
                     }
                 },
-                "durable": {
-                    "type": "boolean"
+                "msgRateOut": {
+                    "type": "number",
+                    "format": "double"
                 },
-                "nonContiguousDeletedMessagesRangesSerializedSize": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "msgRateExpired": {
+                "msgRateRedeliver": {
                     "type": "number",
                     "format": "double"
                 },
                 "chunkedMessageRate": {
                     "type": "integer",
                     "format": "int32"
-                },
-                "msgRateRedeliver": {
-                    "type": "number",
-                    "format": "double"
                 },
                 "msgBacklog": {
                     "type": "integer",
@@ -23604,6 +24919,10 @@
                 },
                 "activeConsumerName": {
                     "type": "string"
+                },
+                "msgRateExpired": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "totalMsgExpired": {
                     "type": "integer",
@@ -23637,20 +24956,16 @@
                 },
                 "type": {
                     "type": "string"
-                },
-                "backlogSize": {
-                    "type": "integer",
-                    "format": "int64"
                 }
             }
         },
         "NonPersistentTopicStats": {
             "type": "object",
             "properties": {
-                "replication": {
+                "subscriptions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/NonPersistentReplicatorStats"
+                        "$ref": "#/definitions/NonPersistentSubscriptionStats"
                     }
                 },
                 "publishers": {
@@ -23659,17 +24974,29 @@
                         "$ref": "#/definitions/NonPersistentPublisherStats"
                     }
                 },
-                "subscriptions": {
+                "replication": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/NonPersistentSubscriptionStats"
+                        "$ref": "#/definitions/NonPersistentReplicatorStats"
                     }
                 },
                 "msgDropRate": {
                     "type": "number",
                     "format": "double"
                 },
-                "msgOutCounter": {
+                "msgThroughputIn": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "msgThroughputOut": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "backlogSize": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "bytesInCounter": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -23681,51 +25008,24 @@
                     "type": "integer",
                     "format": "int64"
                 },
-                "averageMsgSize": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "msgThroughputIn": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "topicEpoch": {
+                "msgOutCounter": {
                     "type": "integer",
                     "format": "int64"
-                },
-                "bytesInCounter": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "storageSize": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "msgChunkPublished": {
-                    "type": "boolean"
-                },
-                "msgThroughputOut": {
-                    "type": "number",
-                    "format": "double"
                 },
                 "offloadedStorageSize": {
                     "type": "integer",
                     "format": "int64"
                 },
-                "deduplicationStatus": {
-                    "type": "string"
-                },
-                "msgRateIn": {
-                    "type": "number",
-                    "format": "double"
-                },
                 "waitingPublishers": {
                     "type": "integer",
                     "format": "int32"
+                },
+                "deduplicationStatus": {
+                    "type": "string"
+                },
+                "topicEpoch": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "nonContiguousDeletedMessagesRanges": {
                     "type": "integer",
@@ -23735,9 +25035,27 @@
                     "type": "integer",
                     "format": "int32"
                 },
-                "backlogSize": {
+                "compaction": {
+                    "$ref": "#/definitions/CompactionStats"
+                },
+                "averageMsgSize": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "msgChunkPublished": {
+                    "type": "boolean"
+                },
+                "storageSize": {
                     "type": "integer",
                     "format": "int64"
+                },
+                "msgRateIn": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "msgRateOut": {
+                    "type": "number",
+                    "format": "double"
                 }
             }
         },
@@ -23790,10 +25108,10 @@
         "ObjectCodec": {
             "type": "object",
             "properties": {
-                "factory": {
+                "jsonFactory": {
                     "$ref": "#/definitions/JsonFactory"
                 },
-                "jsonFactory": {
+                "factory": {
                     "$ref": "#/definitions/JsonFactory"
                 }
             }
@@ -23801,9 +25119,6 @@
         "ObjectMapper": {
             "type": "object",
             "properties": {
-                "factory": {
-                    "$ref": "#/definitions/JsonFactory"
-                },
                 "jsonFactory": {
                     "$ref": "#/definitions/JsonFactory"
                 },
@@ -23845,6 +25160,9 @@
                 },
                 "injectableValues": {
                     "$ref": "#/definitions/InjectableValues"
+                },
+                "factory": {
+                    "$ref": "#/definitions/JsonFactory"
                 }
             }
         },
@@ -23855,13 +25173,20 @@
                     "type": "integer",
                     "format": "int32"
                 },
-                "managedLedgerOffloadDriver": {
+                "s3ManagedLedgerOffloadRegion": {
                     "type": "string"
                 },
-                "offloadersDirectory": {
+                "s3ManagedLedgerOffloadBucket": {
                     "type": "string"
                 },
-                "managedLedgerOffloadMaxThreads": {
+                "s3ManagedLedgerOffloadServiceEndpoint": {
+                    "type": "string"
+                },
+                "s3ManagedLedgerOffloadMaxBlockSizeInBytes": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "s3ManagedLedgerOffloadReadBufferSizeInBytes": {
                     "type": "integer",
                     "format": "int32"
                 },
@@ -23897,43 +25222,18 @@
                 "fileSystemProfilePath": {
                     "type": "string"
                 },
+                "fileSystemURI": {
+                    "type": "string"
+                },
+                "managedLedgerOffloadBucket": {
+                    "type": "string"
+                },
                 "managedLedgerOffloadedReadPriority": {
                     "type": "string",
                     "enum": [
                         "BOOKKEEPER_FIRST",
                         "TIERED_STORAGE_FIRST"
                     ]
-                },
-                "s3ManagedLedgerOffloadRegion": {
-                    "type": "string"
-                },
-                "s3ManagedLedgerOffloadBucket": {
-                    "type": "string"
-                },
-                "s3ManagedLedgerOffloadServiceEndpoint": {
-                    "type": "string"
-                },
-                "s3ManagedLedgerOffloadMaxBlockSizeInBytes": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "s3ManagedLedgerOffloadReadBufferSizeInBytes": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "managedLedgerOffloadThresholdInBytes": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "managedLedgerOffloadDeletionLagInMillis": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "fileSystemURI": {
-                    "type": "string"
-                },
-                "managedLedgerOffloadBucket": {
-                    "type": "string"
                 },
                 "managedLedgerOffloadRegion": {
                     "type": "string"
@@ -23946,6 +25246,24 @@
                     "format": "int32"
                 },
                 "managedLedgerOffloadReadBufferSizeInBytes": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "managedLedgerOffloadThresholdInBytes": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "managedLedgerOffloadDeletionLagInMillis": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "managedLedgerOffloadDriver": {
+                    "type": "string"
+                },
+                "offloadersDirectory": {
+                    "type": "string"
+                },
+                "managedLedgerOffloadMaxThreads": {
                     "type": "integer",
                     "format": "int32"
                 }
@@ -24052,13 +25370,13 @@
                     "type": "integer",
                     "format": "int32"
                 },
+                "s3Driver": {
+                    "type": "boolean"
+                },
                 "gcsDriver": {
                     "type": "boolean"
                 },
                 "fileSystemDriver": {
-                    "type": "boolean"
-                },
-                "s3Driver": {
                     "type": "boolean"
                 }
             }
@@ -24715,13 +26033,13 @@
         "PropertyName": {
             "type": "object",
             "properties": {
+                "namespace": {
+                    "type": "string"
+                },
                 "empty": {
                     "type": "boolean"
                 },
                 "simpleName": {
-                    "type": "string"
-                },
-                "namespace": {
                     "type": "string"
                 }
             }
@@ -24763,23 +26081,12 @@
         "PublisherStats": {
             "type": "object",
             "properties": {
-                "averageMsgSize": {
-                    "type": "number",
-                    "format": "double"
+                "producerName": {
+                    "type": "string"
                 },
                 "msgThroughputIn": {
                     "type": "number",
                     "format": "double"
-                },
-                "msgRateIn": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "producerName": {
-                    "type": "string"
-                },
-                "connectedSince": {
-                    "type": "string"
                 },
                 "accessMode": {
                     "type": "string",
@@ -24789,9 +26096,16 @@
                         "WaitForExclusive"
                     ]
                 },
-                "producerId": {
-                    "type": "integer",
-                    "format": "int64"
+                "averageMsgSize": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "connectedSince": {
+                    "type": "string"
+                },
+                "msgRateIn": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "chunkedMessageRate": {
                     "type": "number",
@@ -24799,6 +26113,10 @@
                 },
                 "clientVersion": {
                     "type": "string"
+                },
+                "producerId": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "metadata": {
                     "type": "object",
@@ -24826,39 +26144,39 @@
                     "type": "number",
                     "format": "double"
                 },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
                 "msgThroughputOut": {
                     "type": "number",
                     "format": "double"
+                },
+                "replicationDelayInSeconds": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "msgRateIn": {
                     "type": "number",
                     "format": "double"
                 },
-                "replicationBacklog": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "inboundConnection": {
-                    "type": "string"
-                },
-                "inboundConnectedSince": {
-                    "type": "string"
-                },
-                "outboundConnection": {
-                    "type": "string"
+                "msgRateOut": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "msgRateExpired": {
                     "type": "number",
                     "format": "double"
                 },
+                "outboundConnection": {
+                    "type": "string"
+                },
+                "inboundConnectedSince": {
+                    "type": "string"
+                },
+                "inboundConnection": {
+                    "type": "string"
+                },
                 "outboundConnectedSince": {
                     "type": "string"
                 },
-                "replicationDelayInSeconds": {
+                "replicationBacklog": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -24894,15 +26212,15 @@
         "ResourceDescription": {
             "type": "object",
             "properties": {
+                "usagePct": {
+                    "type": "integer",
+                    "format": "int32"
+                },
                 "resourceUsage": {
                     "type": "object",
                     "additionalProperties": {
                         "$ref": "#/definitions/ResourceUsage"
                     }
-                },
-                "usagePct": {
-                    "type": "integer",
-                    "format": "int32"
                 }
             }
         },
@@ -24961,11 +26279,11 @@
         "ResourceUnit": {
             "type": "object",
             "properties": {
-                "resourceId": {
-                    "type": "string"
-                },
                 "availableResource": {
                     "$ref": "#/definitions/ResourceDescription"
+                },
+                "resourceId": {
+                    "type": "string"
                 }
             }
         },
@@ -25018,6 +26336,18 @@
         "SerializationConfig": {
             "type": "object",
             "properties": {
+                "defaultPropertyInclusion": {
+                    "$ref": "#/definitions/Value"
+                },
+                "filterProvider": {
+                    "$ref": "#/definitions/FilterProvider"
+                },
+                "defaultPrettyPrinter": {
+                    "$ref": "#/definitions/PrettyPrinter"
+                },
+                "annotationIntrospector": {
+                    "$ref": "#/definitions/AnnotationIntrospector"
+                },
                 "serializationInclusion": {
                     "type": "string",
                     "enum": [
@@ -25033,21 +26363,6 @@
                     "type": "integer",
                     "format": "int32"
                 },
-                "defaultPropertyInclusion": {
-                    "$ref": "#/definitions/Value"
-                },
-                "annotationIntrospector": {
-                    "$ref": "#/definitions/AnnotationIntrospector"
-                },
-                "filterProvider": {
-                    "$ref": "#/definitions/FilterProvider"
-                },
-                "defaultPrettyPrinter": {
-                    "$ref": "#/definitions/PrettyPrinter"
-                },
-                "attributes": {
-                    "$ref": "#/definitions/ContextAttributes"
-                },
                 "fullRootName": {
                     "$ref": "#/definitions/PropertyName"
                 },
@@ -25057,23 +26372,11 @@
                 "defaultVisibilityChecker": {
                     "$ref": "#/definitions/VisibilityCheckerObject"
                 },
+                "attributes": {
+                    "$ref": "#/definitions/ContextAttributes"
+                },
                 "rootName": {
                     "type": "string"
-                },
-                "annotationProcessingEnabled": {
-                    "type": "boolean"
-                },
-                "classIntrospector": {
-                    "$ref": "#/definitions/ClassIntrospector"
-                },
-                "timeZone": {
-                    "$ref": "#/definitions/TimeZone"
-                },
-                "locale": {
-                    "$ref": "#/definitions/Locale"
-                },
-                "handlerInstantiator": {
-                    "$ref": "#/definitions/HandlerInstantiator"
                 },
                 "propertyNamingStrategy": {
                     "$ref": "#/definitions/PropertyNamingStrategy"
@@ -25086,6 +26389,21 @@
                 },
                 "base64Variant": {
                     "$ref": "#/definitions/Base64Variant"
+                },
+                "handlerInstantiator": {
+                    "$ref": "#/definitions/HandlerInstantiator"
+                },
+                "annotationProcessingEnabled": {
+                    "type": "boolean"
+                },
+                "classIntrospector": {
+                    "$ref": "#/definitions/ClassIntrospector"
+                },
+                "timeZone": {
+                    "$ref": "#/definitions/TimeZone"
+                },
+                "locale": {
+                    "$ref": "#/definitions/Locale"
                 }
             }
         },
@@ -25095,14 +26413,20 @@
         "SerializerProvider": {
             "type": "object",
             "properties": {
+                "filterProvider": {
+                    "$ref": "#/definitions/FilterProvider"
+                },
                 "defaultNullKeySerializer": {
                     "$ref": "#/definitions/JsonSerializerObject"
                 },
                 "defaultNullValueSerializer": {
                     "$ref": "#/definitions/JsonSerializerObject"
                 },
-                "config": {
-                    "$ref": "#/definitions/SerializationConfig"
+                "typeFactory": {
+                    "$ref": "#/definitions/TypeFactory"
+                },
+                "annotationIntrospector": {
+                    "$ref": "#/definitions/AnnotationIntrospector"
                 },
                 "timeZone": {
                     "$ref": "#/definitions/TimeZone"
@@ -25110,17 +26434,11 @@
                 "locale": {
                     "$ref": "#/definitions/Locale"
                 },
-                "annotationIntrospector": {
-                    "$ref": "#/definitions/AnnotationIntrospector"
-                },
-                "filterProvider": {
-                    "$ref": "#/definitions/FilterProvider"
+                "config": {
+                    "$ref": "#/definitions/SerializationConfig"
                 },
                 "generator": {
                     "$ref": "#/definitions/JsonGenerator"
-                },
-                "typeFactory": {
-                    "$ref": "#/definitions/TypeFactory"
                 }
             }
         },
@@ -25214,7 +26532,17 @@
         "SubscriptionStats": {
             "type": "object",
             "properties": {
-                "msgOutCounter": {
+                "durable": {
+                    "type": "boolean"
+                },
+                "replicated": {
+                    "type": "boolean"
+                },
+                "msgThroughputOut": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "backlogSize": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -25222,18 +26550,15 @@
                     "type": "integer",
                     "format": "int64"
                 },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "msgThroughputOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "replicated": {
-                    "type": "boolean"
+                "msgOutCounter": {
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "nonContiguousDeletedMessagesRanges": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "nonContiguousDeletedMessagesRangesSerializedSize": {
                     "type": "integer",
                     "format": "int32"
                 },
@@ -25243,24 +26568,17 @@
                         "$ref": "#/definitions/ConsumerStats"
                     }
                 },
-                "durable": {
-                    "type": "boolean"
+                "msgRateOut": {
+                    "type": "number",
+                    "format": "double"
                 },
-                "nonContiguousDeletedMessagesRangesSerializedSize": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "msgRateExpired": {
+                "msgRateRedeliver": {
                     "type": "number",
                     "format": "double"
                 },
                 "chunkedMessageRate": {
                     "type": "integer",
                     "format": "int32"
-                },
-                "msgRateRedeliver": {
-                    "type": "number",
-                    "format": "double"
                 },
                 "msgBacklog": {
                     "type": "integer",
@@ -25283,6 +26601,10 @@
                 },
                 "activeConsumerName": {
                     "type": "string"
+                },
+                "msgRateExpired": {
+                    "type": "number",
+                    "format": "double"
                 },
                 "totalMsgExpired": {
                     "type": "integer",
@@ -25316,10 +26638,6 @@
                 },
                 "type": {
                     "type": "string"
-                },
-                "backlogSize": {
-                    "type": "integer",
-                    "format": "int64"
                 }
             }
         },
@@ -25401,7 +26719,25 @@
         "TopicStats": {
             "type": "object",
             "properties": {
-                "msgOutCounter": {
+                "msgThroughputIn": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "msgThroughputOut": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "backlogSize": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "subscriptions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/SubscriptionStats"
+                    }
+                },
+                "bytesInCounter": {
                     "type": "integer",
                     "format": "int64"
                 },
@@ -25413,53 +26749,13 @@
                     "type": "integer",
                     "format": "int64"
                 },
-                "averageMsgSize": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "msgThroughputIn": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "topicEpoch": {
+                "msgOutCounter": {
                     "type": "integer",
                     "format": "int64"
-                },
-                "bytesInCounter": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "msgRateOut": {
-                    "type": "number",
-                    "format": "double"
-                },
-                "replication": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/ReplicatorStats"
-                    }
-                },
-                "storageSize": {
-                    "type": "integer",
-                    "format": "int64"
-                },
-                "msgChunkPublished": {
-                    "type": "boolean"
-                },
-                "msgThroughputOut": {
-                    "type": "number",
-                    "format": "double"
                 },
                 "offloadedStorageSize": {
                     "type": "integer",
                     "format": "int64"
-                },
-                "deduplicationStatus": {
-                    "type": "string"
-                },
-                "msgRateIn": {
-                    "type": "number",
-                    "format": "double"
                 },
                 "publishers": {
                     "type": "array",
@@ -25471,6 +26767,19 @@
                     "type": "integer",
                     "format": "int32"
                 },
+                "replication": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ReplicatorStats"
+                    }
+                },
+                "deduplicationStatus": {
+                    "type": "string"
+                },
+                "topicEpoch": {
+                    "type": "integer",
+                    "format": "int64"
+                },
                 "nonContiguousDeletedMessagesRanges": {
                     "type": "integer",
                     "format": "int32"
@@ -25479,15 +26788,27 @@
                     "type": "integer",
                     "format": "int32"
                 },
-                "subscriptions": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/SubscriptionStats"
-                    }
+                "compaction": {
+                    "$ref": "#/definitions/CompactionStats"
                 },
-                "backlogSize": {
+                "averageMsgSize": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "msgChunkPublished": {
+                    "type": "boolean"
+                },
+                "storageSize": {
                     "type": "integer",
                     "format": "int64"
+                },
+                "msgRateIn": {
+                    "type": "number",
+                    "format": "double"
+                },
+                "msgRateOut": {
+                    "type": "number",
+                    "format": "double"
                 }
             }
         },
@@ -25835,10 +27156,13 @@
                 "clientAuthenticationPlugin": {
                     "type": "string"
                 },
-                "workerWebAddressTls": {
+                "functionMetadataTopic": {
                     "type": "string"
                 },
                 "clusterCoordinationTopic": {
+                    "type": "string"
+                },
+                "functionAssignmentTopic": {
                     "type": "string"
                 },
                 "tlsTrustChainBytes": {
@@ -25848,13 +27172,10 @@
                         "format": "byte"
                     }
                 },
-                "functionMetadataTopic": {
-                    "type": "string"
-                },
                 "workerWebAddress": {
                     "type": "string"
                 },
-                "functionAssignmentTopic": {
+                "workerWebAddressTls": {
                     "type": "string"
                 }
             }
@@ -25888,26 +27209,26 @@
         "WorkerService": {
             "type": "object",
             "properties": {
+                "functionsV2": {
+                    "$ref": "#/definitions/FunctionsV2WorkerService"
+                },
                 "workerConfig": {
                     "$ref": "#/definitions/WorkerConfig"
+                },
+                "sinks": {
+                    "$ref": "#/definitions/SinksWorkerService"
                 },
                 "functions": {
                     "$ref": "#/definitions/FunctionsWorkerService"
                 },
-                "functionsV2": {
-                    "$ref": "#/definitions/FunctionsV2WorkerService"
-                },
                 "workers": {
                     "$ref": "#/definitions/WorkersWorkerService"
-                },
-                "sources": {
-                    "$ref": "#/definitions/SourcesWorkerService"
                 },
                 "initialized": {
                     "type": "boolean"
                 },
-                "sinks": {
-                    "$ref": "#/definitions/SinksWorkerService"
+                "sources": {
+                    "$ref": "#/definitions/SourcesWorkerService"
                 }
             }
         },
@@ -25943,6 +27264,30 @@
                 },
                 "issuerX500Principal": {
                     "$ref": "#/definitions/X500Principal"
+                },
+                "subjectAlternativeNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "issuerAlternativeNames": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "keyUsage": {
+                    "type": "array",
+                    "items": {
+                        "type": "boolean"
+                    }
                 },
                 "version": {
                     "type": "integer",
@@ -26014,38 +27359,14 @@
                         "type": "string"
                     }
                 },
-                "keyUsage": {
-                    "type": "array",
-                    "items": {
-                        "type": "boolean"
-                    }
-                },
-                "subjectAlternativeNames": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "object"
-                        }
-                    }
-                },
-                "issuerAlternativeNames": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "object"
-                        }
-                    }
-                },
-                "nonCriticalExtensionOIDs": {
+                "criticalExtensionOIDs": {
                     "type": "array",
                     "uniqueItems": true,
                     "items": {
                         "type": "string"
                     }
                 },
-                "criticalExtensionOIDs": {
+                "nonCriticalExtensionOIDs": {
                     "type": "array",
                     "uniqueItems": true,
                     "items": {
