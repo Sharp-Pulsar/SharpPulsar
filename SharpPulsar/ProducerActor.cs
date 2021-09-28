@@ -398,7 +398,7 @@ namespace SharpPulsar
                 }
                 else if (ex is IncompatibleSchemaException se)
                 {
-                    _log.Error($"Failed to close producer on IncompatibleSchemaException: {Topic}");
+                    _log.Error($"Failed to connect producer on IncompatibleSchemaException: {Topic}");
                     _replyTo.Tell(new AskResponse(se));
                 }
                 else if (ex is TopicDoesNotExistException e)

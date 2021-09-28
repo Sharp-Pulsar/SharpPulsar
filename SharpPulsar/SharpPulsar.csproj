@@ -45,7 +45,7 @@
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.10.2" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.2.0" />
-    <PackageReference Include="AvroSchemaGenerator" Version="2.3.3" />
+    <PackageReference Include="AvroSchemaGenerator" Version="2.4.0" />
     <PackageReference Include="DotNetty.Common" Version="0.7.0" />
     <PackageReference Include="Google.Protobuf" Version="3.18.0" />
     <PackageReference Include="IdentityModel" Version="5.1.0" />
@@ -62,7 +62,7 @@
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.23" />
     <PackageReference Include="Nager.PublicSuffix" Version="2.2.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="NodaTime" Version="3.0.5" />
+    <PackageReference Include="NodaTime" Version="3.0.6" />
     <PackageReference Include="NSwag.ApiDescription.Client" Version="13.13.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
