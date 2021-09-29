@@ -372,8 +372,8 @@ class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetAssemblyVersion($"{GetVersion()}-beta")
-              .SetVersion($"{GetVersion()}-beta")
+              .SetAssemblyVersion($"{GetVersion()}-beta.{BuildNumber}")
+              .SetVersion($"{GetVersion()}-beta.{BuildNumber}")
               .SetPackageReleaseNotes(GetReleasenote())
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
@@ -448,6 +448,6 @@ class Build : NukeBuild
     }
     static string GetReleasenote()
     {
-        return "Expose IncompatibleSchemaException to the consumer";
+        return "Kill Actors if connection was not established";
     }
 }
