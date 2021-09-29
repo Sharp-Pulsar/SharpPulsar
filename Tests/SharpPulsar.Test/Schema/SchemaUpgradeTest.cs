@@ -77,6 +77,11 @@ namespace SharpPulsar.Test.Schema
             Assert.NotNull(msg);
             consumer1.Acknowledge(msg);
             consumer1.Unsubscribe();
+
+            producer.Close();
+            producer2.Close();
+            consumer.Close();
+            consumer1.Close();
         }
     }
 

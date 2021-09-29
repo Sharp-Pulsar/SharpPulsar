@@ -102,6 +102,11 @@ namespace SharpPulsar.User
             if (response.Failed)
                 throw response.Exception;
         }
+        public void Close() => CloseAsync().ConfigureAwait(false);
+        public async ValueTask CloseAsync()
+        {
+            await _readerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        }
         private async ValueTask<IMessage<T>> GetMessage()
         {
             var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);

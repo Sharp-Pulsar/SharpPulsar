@@ -81,7 +81,8 @@ namespace SharpPulsar.Test
 				Assert.NotNull(message);
 				_output.WriteLine($"message from topic: {message.Topic}");
 			}
-		}
+            consumer.Close();
+        }
 
 		private List<MessageId> PublishMessages(string topic, int count, string message)
 		{
@@ -96,7 +97,8 @@ namespace SharpPulsar.Test
 				var id = producer.NewMessage().Key(key).Value(data).Send();
 				keys.Add(id);
 			}
-			return keys;
+            producer.Close();
+            return keys;
 		}
 	}
 

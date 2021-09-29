@@ -54,9 +54,12 @@ namespace SharpPulsar.User
 
         public void Close()
         {
-            _producerActor.GracefulStop(TimeSpan.FromSeconds(5));
+            CloseAsync().GetAwaiter().GetResult();
         }
-
+        public async ValueTask CloseAsync()
+        {
+            await _producerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        }
         public void Flush()
         {
             _producerActor.Tell(Messages.Producer.Flush.Instance);

@@ -105,7 +105,7 @@ namespace SharpPulsar.Test
 			{
 				producer.Close();
 			}
-			reader.Stop();
+			reader.Close();
 		}
 		private void TestReadMessages(string topic, bool enableBatch)
 		{

@@ -49,21 +49,11 @@ namespace SharpPulsar.Test
 			var topicName2 = "persistent://public/default/reg-topic-2-" + key;
 			var topicName3 = "persistent://public/default/reg-topic-3-" + key;
 			var topicName4 = "non-persistent://public/default/reg-topic-4-" + key;
-			var pattern = new Regex("public/default/reg-topic.*");
+			var pattern = new Regex("public/default/reg-topic*");
 
 
 			// 2. create producer
 			var messagePredicate = "my-message-" + key + "-";
-
-            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .TopicsPattern(pattern)
-                .PatternAutoDiscoveryPeriod(2)
-                .ForceTopicCreation(true)
-                .SubscriptionName(subscriptionName)
-                .SubscriptionType(SubType.Shared)
-                .AckTimeout(TimeSpan.FromMilliseconds(2000)));
-
-            var totalMessages = 30;
 
 			var producer1 = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
 				.Topic(topicName1));
@@ -89,13 +79,20 @@ namespace SharpPulsar.Test
 
 			// 6. should receive all the message
 			var messageSet = 0;
+            var consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .TopicsPattern(pattern)
+                .PatternAutoDiscoveryPeriod(2)
+                .ForceTopicCreation(true)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Shared)
+                .AckTimeout(TimeSpan.FromMilliseconds(2000)));
             Thread.Sleep(TimeSpan.FromSeconds(10));
 			var message = consumer.Receive();
 			do
 			{
 				var m = (TopicMessage<byte[]>)message;
 				messageSet++;
-				consumer.Acknowledge(message);
+				consumer.Acknowledge(m.Message);
 				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
 				message = consumer.Receive();
 			} while(message != null);
