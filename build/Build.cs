@@ -50,12 +50,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     AutoGenerate = true,
     OnPushBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Push) })]
-
-[GitHubActions("Admin",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "admin" },
-    InvokedTargets = new[] { nameof(ReleaseAdmin) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -113,15 +107,6 @@ class Build : NukeBuild
                 .SetProjectFile(Solution));
         });
 
-    Target RestoreAdmin => _ => _
-        .Executes(() =>
-        {
-            var projectName = "SharpPulsar.Admin";
-            var project = Solution.GetProject(projectName);
-            DotNetRestore(s => s
-                .SetProjectFile(project));
-        });
-
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() =>
@@ -132,17 +117,6 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .SetAssemblyVersion(GetVersion())
                 .SetFileVersion(GetVersion()));
-        });
-    Target CompileAdmin => _ => _
-        .DependsOn(RestoreAdmin)
-        .Executes(() =>
-        {
-            var projectName = "SharpPulsar.Admin";
-            var project = Solution.GetProject(projectName);
-            DotNetBuild(s => s
-                .SetProjectFile(project)
-                .SetNoRestore(InvokedTargets.Contains(Restore))
-                .SetConfiguration(Configuration));
         });
     Target RunMemoryAllocation => _ => _
         .DependsOn(Compile)
@@ -208,45 +182,6 @@ class Build : NukeBuild
             Information($"Directory: { Solution.Directory}");
             Information($"Path: { Solution.Path}");
         });
-    Target TestAdmin => _ => _
-        .DependsOn(CompileAdmin)
-        .DependsOn(AdminPulsar)
-        .Triggers(StopPulsar)
-        .Executes(() =>
-        {
-            var testProject = "SharpPulsar.Test.Admin";
-            var project = Solution.GetProject(testProject);
-            Information($"Running tests from {project.Name}");
-
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                if (fw.StartsWith("net4")
-                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                {
-                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
-                    continue;
-                }
-
-                Information($"Running for {project.Name} ({fw}) ...");
-                try
-                {
-                    DotNetTest(c => c
-                        .SetProjectFile(project)
-                        .SetConfiguration(Configuration.ToString())
-                        .SetFramework(fw)
-                        //.SetDiagnosticsFile(TestsDirectory)
-                        //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                        .EnableNoBuild()); ;
-                }
-                catch (Exception ex)
-                {
-                    Information(ex.Message);
-                }
-            }
-        });
-
     Target TxnTest => _ => _
         .DependsOn(Test)
         .Triggers(StopPulsar)
@@ -427,25 +362,6 @@ class Build : NukeBuild
               .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
 
       });
-    Target PackAdmin => _ => _
-        .DependsOn(TestAdmin)
-        .Executes(() =>
-        {
-            var project = Solution.GetProject("SharpPulsar.Admin");
-            DotNetPack(s => s
-                .SetProject(project)
-                .SetConfiguration(Configuration)
-                .EnableNoBuild()
-                .EnableNoRestore()
-                .SetVersion($"1.0.0.{BuildNumber}")
-                .SetPackageReleaseNotes("First release SharpPulsar.Admin - this was taken from the main repo. How to use sample can be found here https://github.com/eaba/SharpPulsar/blob/Admin/Tests/SharpPulsar.Test.Admin/TransactionAPITest.cs")
-                .SetDescription("Implements Apache Pulsar Admin and Function REST API.")
-                .SetPackageTags("Apache Pulsar", "SharpPulsar")
-                .AddAuthors("Ebere Abanonu (@mestical)")
-                .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar/tree/Admin/Extras/SharpPulsar.Admin")
-                .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
-
-        });
     Target PackBeta => _ => _
       .DependsOn(Compile)
       .Executes(() =>
@@ -522,30 +438,6 @@ class Build : NukeBuild
                       .SetSymbolSource(GithubSource));
               });
       });
-
-    Target ReleaseAdmin => _ => _
-      .DependsOn(PackAdmin)
-      .Requires(() => NugetApiUrl)
-      .Requires(() => !AdminNugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
-      .Requires(() => !BuildNumber.IsNullOrEmpty())
-      .Requires(() => Configuration.Equals(Configuration.Release))
-      .Executes(() =>
-      {
-          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
-              .NotEmpty()
-              .Where(x => !x.EndsWith("symbols.nupkg"))
-              .ForEach(x =>
-              {
-                  DotNetNuGetPush(s => s
-                      .SetTargetPath(x)
-                      .SetSource(NugetApiUrl)
-                      .SetApiKey(AdminNugetApiKey)
-                  );
-              });
-      });
-
-
     static void Information(string info)
     {
         Logger.Info(info);

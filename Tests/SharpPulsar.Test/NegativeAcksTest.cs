@@ -119,7 +119,9 @@ namespace SharpPulsar.Test
 			var nu = consumer.Receive();
 			// There should be no more messages
 			Assert.Null(nu);
-		}
+            producer.Close();
+            consumer.Close();
+        }
 	}
 
 }

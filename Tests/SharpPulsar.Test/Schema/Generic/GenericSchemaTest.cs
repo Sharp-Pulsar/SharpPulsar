@@ -79,29 +79,22 @@ namespace SharpPulsar.Test.Schema.Generic
             }
 
             Assert.Equal(10, messageReceived);
+            producer.Close();
+            consumer.Close();
         }
         private byte[] ToBytes<T>(T obj)
         {
             if (obj == null)
                 return null;
 
-            var bf = new BinaryFormatter();
-            var ms = new MemoryStream();
-            bf.Serialize(ms, obj);
-
-            return ms.ToArray();
+            return JsonSerializer.SerializeToUtf8Bytes(obj,
+                     new JsonSerializerOptions { WriteIndented = false, IgnoreNullValues = true });
         }
 
         // Convert a byte array to an Object
         private T FromBytes<T>(byte[] array)
         {
-            var memStream = new MemoryStream();
-            var binForm = new BinaryFormatter();
-            memStream.Write(array, 0, array.Length);
-            memStream.Seek(0, SeekOrigin.Begin);
-            var obj = (T)binForm.Deserialize(memStream);
-
-            return obj;
+            return JsonSerializer.Deserialize<T>(new ReadOnlySpan<byte>(array));
         }
     }
     public class ComplexGenericData

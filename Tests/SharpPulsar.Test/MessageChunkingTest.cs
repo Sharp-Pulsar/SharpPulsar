@@ -88,8 +88,9 @@ namespace SharpPulsar.Test
 				consumer.Acknowledge(msgId);
 			}
 
-
-		}
+            producer.Close();
+            consumer.Close();
+        }
 		private void TestMessageOrderAndDuplicates<T>(ISet<T> messagesReceived, T receivedMessage, T expectedMessage)
 		{
 			// Make sure that messages are received in order

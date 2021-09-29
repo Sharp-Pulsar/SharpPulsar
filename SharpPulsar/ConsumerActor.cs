@@ -634,7 +634,6 @@ namespace SharpPulsar
                 try
                 {
 					Unsubscribe();
-                    Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
                 {
@@ -882,7 +881,7 @@ namespace SharpPulsar
 		{
 			if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
-				Sender.Tell(new Failure { Exception = new Exception("AlreadyClosedException: Consumer was already closed") });
+                Sender.Tell(new AskResponse(new AlreadyClosedException("AlreadyClosedException: Consumer was already closed")));
 			}
             else
             {
@@ -899,11 +898,14 @@ namespace SharpPulsar
 					_client.Tell(new CleanupConsumer(Self));
 					_log.Info($"[{Topic}][{Subscription}] Successfully unsubscribed from topic");
 					State.ConnectionState = HandlerState.State.Closed;
+                    Sender.Tell(new AskResponse());
 				}
 				else
 				{
-					Sender.Tell(false);
-					_log.Error(new PulsarClientException($"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}").ToString());
+                    var err = $"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}";
+
+                    Sender.Tell(new AskResponse(new PulsarClientException(err)));
+					_log.Error(err);
 				}
 			}
 		}

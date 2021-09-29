@@ -31,6 +31,7 @@ namespace SharpPulsar.Test.TLS
             producer.Topic(_topic);
             var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
+            stringProducerBuilder.Close();
         }
         [Fact(Skip = "Secured Pulsar Image not available at the server side")]
         public virtual void ConsumerInstantiation()
@@ -40,6 +41,7 @@ namespace SharpPulsar.Test.TLS
             consumer.SubscriptionName($"tls-test-sub-{Guid.NewGuid()}");
             var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
+            stringConsumerBuilder.Close();
         }
         [Fact(Skip = "Secured Pulsar Image not available at the server side")]
         public virtual void ReaderInstantiation()
@@ -49,6 +51,7 @@ namespace SharpPulsar.Test.TLS
             reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
+            stringReaderBuilder.Close();
         }
     }
 }

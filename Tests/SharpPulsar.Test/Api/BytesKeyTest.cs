@@ -31,13 +31,13 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Api
 {
     [Collection(nameof(PulsarTests))]
-    public class ByteKeysTestBatchTest
+    public class ByteKeysTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public ByteKeysTestBatchTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public ByteKeysTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
@@ -51,6 +51,7 @@ namespace SharpPulsar.Test.Api
             producer.Topic("ProducerInstantiation");
             var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
+            stringProducerBuilder.Close();
         }
         [Fact]
         public virtual void ConsumerInstantiation()
@@ -60,6 +61,7 @@ namespace SharpPulsar.Test.Api
             consumer.SubscriptionName($"test-sub-{Guid.NewGuid()}");
             var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
+            stringConsumerBuilder.Close();
         }
         [Fact]
         public virtual void ReaderInstantiation()
@@ -69,6 +71,7 @@ namespace SharpPulsar.Test.Api
             reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
+            stringReaderBuilder.Close();
         }
         [Fact]
         public void ProduceAndConsume()
@@ -103,6 +106,8 @@ namespace SharpPulsar.Test.Api
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
+            producer.Close();
+            consumer.Close();
         }
         [Fact]
         public void ProduceAndConsumeBatch()
@@ -144,7 +149,9 @@ namespace SharpPulsar.Test.Api
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.Equal($"TestMessage-{i}", receivedMessage);
             }
-            
+
+            producer.Close();
+            consumer.Close();
         }
         
     }
