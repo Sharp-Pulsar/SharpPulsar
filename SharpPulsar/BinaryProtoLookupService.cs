@@ -20,6 +20,7 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
+using System.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -405,10 +406,11 @@ namespace SharpPulsar
                 var response = askResponse.ConvertTo<GetTopicsOfNamespaceResponse>();
                 if (_log.IsDebugEnabled)
                 {
-                    _log.Debug($"[namespace: {ns}] Success get topics list in request: {_requestId}");
+                    _log.Debug($"[namespace: {ns}] Successfully got {response.Response.Topics.Count} topics list in request: {_requestId}");
                 }
                 var result = new List<string>();
-                foreach (var topic in response.Response.Topics)
+                var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
+                foreach (var topic in tpics)
                 {
                     var filtered = TopicName.Get(topic).PartitionedTopicName;
                     if (!result.Contains(filtered))
@@ -441,8 +443,7 @@ namespace SharpPulsar
                     await GetTopicsUnderNamespace(ns, mode, opTimeoutMs);
                 }
             }
-		}
-
+        }
 		protected override void Unhandled(object message)
         {
 			_log.Info($"Unhandled {message.GetType().FullName} received");
