@@ -50,7 +50,7 @@ namespace SharpPulsar
 		private readonly int _maxNumberOfRejectedRequestPerConnection;
 		private readonly int _rejectedRequestResetTimeSec = 60;
 		private int _protocolVersion;
-		private readonly long _operationTimeoutMs;
+		private readonly TimeSpan _operationTimeout;
 
 		private readonly ILoggingAdapter _log;
 
@@ -92,7 +92,7 @@ namespace SharpPulsar
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>>();
 			_authentication = conf.Authentication;
 			_maxNumberOfRejectedRequestPerConnection = conf.MaxNumberOfRejectedRequestPerConnection;
-			_operationTimeoutMs = conf.OperationTimeoutMs;
+			_operationTimeout = conf.OperationTimeout;
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
@@ -200,7 +200,7 @@ namespace SharpPulsar
         }
 		private void OnConnected()
 		{
-			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
+			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
 			//_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
 
@@ -1027,7 +1027,7 @@ namespace SharpPulsar
 			while (!_requestTimeoutQueue.IsEmpty)
 			{
 				var req = _requestTimeoutQueue.TryPeek(out var request);
-				if (!req || (DateTimeHelper.CurrentUnixTimeMillis() - request.CreationTimeMs) < _operationTimeoutMs)
+				if (!req || (DateTimeHelper.CurrentUnixTimeMillis() - request.CreationTimeMs) < _operationTimeout.TotalMilliseconds)
 				{
 					// if there is no request that is timed out then exit the loop
 					break;
@@ -1035,12 +1035,12 @@ namespace SharpPulsar
 				req = _requestTimeoutQueue.TryDequeue(out request);
 				if (_pendingRequests.Remove(request.RequestId, out var val))
 				{
-					var timeoutMessage = string.Format("{0:D} {1} timedout after ms {2:D}", request.RequestId, request.RequestType.Description, _operationTimeoutMs);
+					var timeoutMessage = string.Format("{0:D} {1} timedout after ms {2:D}", request.RequestId, request.RequestType.Description, _operationTimeout.TotalMilliseconds);
 					_log.Warning(timeoutMessage);
                     val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
                 }
 			}
-			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_operationTimeoutMs), Self, RequestTimeout.Instance, ActorRefs.NoSender);
+			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
 
 		}
 		public ReadOnlySequence<byte> NewConnectCommand()

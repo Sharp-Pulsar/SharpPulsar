@@ -48,7 +48,7 @@ namespace SharpPulsar
 		private readonly bool _useTls;
 		private readonly string _listenerName;
 		private readonly int _maxLookupRedirects;
-		private readonly long _operationTimeoutMs;
+		private readonly TimeSpan _operationTimeout;
 		private readonly IActorRef _connectionPool;
 		private readonly IActorRef _generator;
 		private IActorRef _clientCnx;
@@ -59,7 +59,7 @@ namespace SharpPulsar
 		private Backoff _getTopicsUnderNamespaceBackOff;
 		private Backoff _getPartitionedTopicMetadataBackOff;
 
-		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
+		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout)
 		{
 			_generator = idGenerator;
 			_context = Context;
@@ -68,7 +68,7 @@ namespace SharpPulsar
 			_maxLookupRedirects = maxLookupRedirects;
 			_serviceNameResolver = new PulsarServiceNameResolver(_log);
 			_listenerName = listenerName;
-			_operationTimeoutMs = operationTimeoutMs;
+			_operationTimeout = operationTimeout;
 			_connectionPool = connectionPool;
 			UpdateServiceUrl(serviceUrl);
 			Awaiting();
@@ -106,12 +106,12 @@ namespace SharpPulsar
 			{
                 try
                 {
-                    var opTimeoutMs = _operationTimeoutMs;
+                    var opTimeout = _operationTimeout;
                     _replyTo = Sender;
-                    _getPartitionedTopicMetadataBackOff = (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMax(TimeSpan.FromMinutes(1)).Create();
+                    _getPartitionedTopicMetadataBackOff = (new BackoffBuilder()).SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(opTimeout.Multiply(2)).SetMax(TimeSpan.FromMinutes(1)).Create();
 
                     await GetCnxAndRequestId();
-                    await GetPartitionedTopicMetadata(p.TopicName, opTimeoutMs);
+                    await GetPartitionedTopicMetadata(p.TopicName, opTimeout);
                 }
                 catch (Exception e)
                 {
@@ -136,11 +136,11 @@ namespace SharpPulsar
 			{
                 try
                 {
-                    var opTimeoutMs = _operationTimeoutMs;
-                    _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMax(TimeSpan.FromMinutes(1)).Create();
+                    var opTimeout = _operationTimeout;
+                    _getTopicsUnderNamespaceBackOff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMandatoryStop(opTimeout.Multiply(2)).SetMax(TimeSpan.FromMinutes(1)).Create();
                     _replyTo = Sender;
                     await GetCnxAndRequestId();
-                    await GetTopicsUnderNamespace(t.Namespace, t.Mode, opTimeoutMs);
+                    await GetTopicsUnderNamespace(t.Namespace, t.Mode, opTimeout);
                 }
                 catch (Exception e)
                 {
@@ -311,7 +311,7 @@ namespace SharpPulsar
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, long opTimeoutMs)
+		private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
 		{
 			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
@@ -319,7 +319,7 @@ namespace SharpPulsar
             if (askResponse.Failed)
             {
                 var e = askResponse.Exception;
-                var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeoutMs);
+                var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeout.TotalMilliseconds);
                 var reply = _replyTo;
                 var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
                 if (nextDelay <= 0 || isLookupThrottling)
@@ -331,10 +331,10 @@ namespace SharpPulsar
                 else
                 {
                     _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Message}");
-                    opTimeoutMs -= nextDelay;
+                    opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
                     var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                     _requestId = id.Id;
-                    await GetPartitionedTopicMetadata(topicName, opTimeoutMs);
+                    await GetPartitionedTopicMetadata(topicName, opTimeout);
                 }
             }
 
@@ -396,7 +396,7 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-        private async ValueTask GetTopicsUnderNamespace(NamespaceName ns, Mode mode, long opTimeoutMs)
+        private async ValueTask GetTopicsUnderNamespace(NamespaceName ns, Mode mode, TimeSpan opTimeout)
 		{
             try
             {
@@ -422,7 +422,7 @@ namespace SharpPulsar
             }
             catch 
             {
-                var nextDelay = Math.Min(_getTopicsUnderNamespaceBackOff.Next(), opTimeoutMs);
+                var nextDelay = Math.Min(_getTopicsUnderNamespaceBackOff.Next(), opTimeout.TotalMilliseconds);
                 var reply = _replyTo;
                 if (nextDelay <= 0)
                 {
@@ -431,7 +431,7 @@ namespace SharpPulsar
                 else
                 {
                     _log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
-                    opTimeoutMs -= nextDelay;
+                    opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
                     await Task.Delay(TimeSpan.FromMilliseconds(nextDelay)); 
 
                     var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
@@ -440,7 +440,7 @@ namespace SharpPulsar
 
                     _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {nextDelay} ms delay with requestid '{reqId.Id}'");
 
-                    await GetTopicsUnderNamespace(ns, mode, opTimeoutMs);
+                    await GetTopicsUnderNamespace(ns, mode, opTimeout);
                 }
             }
         }
@@ -449,9 +449,9 @@ namespace SharpPulsar
 			_log.Info($"Unhandled {message.GetType().FullName} received");
             base.Unhandled(message);
         }
-		public static Props Prop(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, long operationTimeoutMs)
+		public static Props Prop(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout)
         {
-			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeoutMs));
+			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeout));
         }
     }
     internal sealed class RetryGetTopicsUnderNamespace

@@ -57,7 +57,7 @@ namespace SharpPulsar.User
         public void ReloadLookUp()
         {
             _actorSystem.Stop(_lookup);
-            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeout), "BinaryProtoLookupService");
             _lookup.Tell(new SetClient(_client));
         }
 
@@ -639,7 +639,7 @@ namespace SharpPulsar.User
             if (metadata.Partitions > 0)
             {
                 var partitionActor = _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData)));
-                var co = await partitionActor.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                var co = await partitionActor.Ask<AskResponse>(Connect.Instance, _clientConfigurationData.OperationTimeout);
                 if (co.Failed)
                 {
                     await partitionActor.GracefulStop(TimeSpan.FromSeconds(5));
@@ -647,13 +647,13 @@ namespace SharpPulsar.User
                 }
 
                 _client.Tell(new AddProducer(partitionActor));
-                return new Producer<T>(partitionActor, schema, conf);
+                return new Producer<T>(partitionActor, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             else
             {
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
                 var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData)));
-                var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                var co = await producer.Ask<AskResponse>(Connect.Instance, _clientConfigurationData.OperationTimeout);
                 if (co.Failed)
                 {
                     await producer.GracefulStop(TimeSpan.FromSeconds(5));
@@ -662,7 +662,7 @@ namespace SharpPulsar.User
 
                 _client.Tell(new AddProducer(producer));
 
-                return new Producer<T>(producer, schema, conf);
+                return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             
         }

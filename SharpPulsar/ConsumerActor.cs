@@ -187,7 +187,7 @@ namespace SharpPulsar
 			_initialStartMessageId = _startMessageId;
 			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 			_availablePermits = 0;
-			_subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.OperationTimeoutMs;
+			_subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + (long)clientConfiguration.OperationTimeout.TotalMilliseconds;
 			_partitionIndex = partitionIndex;
 			_hasParentConsumer = hasParentConsumer;
 			_receiverQueueRefillThreshold = conf.ReceiverQueueSize / 2;
@@ -712,7 +712,7 @@ namespace SharpPulsar
             try
             {
                 
-                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs)).ConfigureAwait(false);
+                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
                 
                 if (result is CommandSuccessResponse _)
                 {
@@ -2265,12 +2265,12 @@ namespace SharpPulsar
 				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id")));
 			}
 
-			var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
-			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
+			var opTimeoutMs = _clientConfigurationData.OperationTimeout;
+			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(opTimeoutMs.Multiply(2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
 
 			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
-			await InternalGetLastMessageId(backoff, opTimeoutMs, getLastMessageId).ConfigureAwait(false);
+			await InternalGetLastMessageId(backoff, (long)opTimeoutMs.TotalMilliseconds, getLastMessageId).ConfigureAwait(false);
 			return await getLastMessageId.Task.ConfigureAwait(false);
 		}
 		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<GetLastMessageIdResponse> source)

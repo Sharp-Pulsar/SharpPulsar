@@ -87,7 +87,7 @@ namespace SharpPulsar
 			_transactionCoordinatorId = transactionCoordinatorId;
 			_timeoutQueue = new ConcurrentQueue<RequestTime>();
 			//_blockIfReachMaxPendingOps = true;
-			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.OperationTimeoutMs), Self, RunRequestTimeout.Instance, Nobody.Instance);
+			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(conf.OperationTimeout, Self, RunRequestTimeout.Instance, Nobody.Instance);
             ReceiveAsync<GrabCnx>(async _ => 
             {
                 _sender = Sender;
@@ -441,13 +441,13 @@ namespace SharpPulsar
 			{
 				return;
 			}
-			long timeToWaitMs;
+			TimeSpan timeToWaitMs;
 			if(_state.ConnectionState == HandlerState.State.Closing || _state.ConnectionState == HandlerState.State.Closed)
 			{
 				return;
 			}
 			RequestTime peeked;
-			while(_timeoutQueue.TryPeek(out peeked) && peeked.CreationTimeMs + _conf.OperationTimeoutMs - DateTimeHelper.CurrentUnixTimeMillis() <= 0)
+			while(_timeoutQueue.TryPeek(out peeked) && peeked.CreationTimeMs + _conf.OperationTimeout.TotalMilliseconds - DateTimeHelper.CurrentUnixTimeMillis() <= 0)
 			{
 				if(_timeoutQueue.TryDequeue(out var lastPolled))
 				{
@@ -468,21 +468,21 @@ namespace SharpPulsar
 
 			if(peeked == null)
 			{
-				timeToWaitMs = _conf.OperationTimeoutMs;
+				timeToWaitMs = _conf.OperationTimeout;
 			}
 			else
 			{
-				long diff = (peeked.CreationTimeMs + _conf.OperationTimeoutMs) - DateTimeHelper.CurrentUnixTimeMillis();
+				var diff = (peeked.CreationTimeMs + _conf.OperationTimeout.TotalMilliseconds) - DateTimeHelper.CurrentUnixTimeMillis();
 				if(diff <= 0)
 				{
-					timeToWaitMs = _conf.OperationTimeoutMs;
+					timeToWaitMs = _conf.OperationTimeout;
 				}
 				else
 				{
-					timeToWaitMs = diff;
+					timeToWaitMs = TimeSpan.FromMilliseconds(diff);
 				}
 			}
-			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), _self, RunRequestTimeout.Instance, Nobody.Instance);
+			_requestTimeout = _scheduler.ScheduleTellOnceCancelable(timeToWaitMs, _self, RunRequestTimeout.Instance, Nobody.Instance);
 		}
         
 		private void HandleConnectionClosed(IActorRef cnx)

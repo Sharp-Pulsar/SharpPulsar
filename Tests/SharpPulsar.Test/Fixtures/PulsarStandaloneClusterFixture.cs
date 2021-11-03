@@ -135,7 +135,7 @@ namespace SharpPulsar.Test.Fixtures
 
             client.EnableTransaction(enableTxn);
             if (operationTime > 0)
-                client.OperationTimeout(operationTime);
+                client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
 
             if (!string.IsNullOrWhiteSpace(authCertPath))
                 client.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authCertPath)));

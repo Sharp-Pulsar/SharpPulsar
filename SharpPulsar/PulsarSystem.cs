@@ -102,7 +102,7 @@ namespace SharpPulsar
             
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
-            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
             {
@@ -126,7 +126,7 @@ namespace SharpPulsar
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
-            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
             {

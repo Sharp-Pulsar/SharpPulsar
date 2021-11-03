@@ -114,7 +114,7 @@ namespace SharpPulsar.Transaction
                     try
                     {
                         var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-                        var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                        var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), _clientConfigurationData.OperationTimeout);
                         if (ask.Failed)
                         {
                             _sender.Tell(ask);
@@ -139,7 +139,7 @@ namespace SharpPulsar.Transaction
                 try
                 {
                     var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-                    var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                    var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), _clientConfigurationData.OperationTimeout);
                     if (ask.Failed)
                     {
                         _sender.Tell(ask);
