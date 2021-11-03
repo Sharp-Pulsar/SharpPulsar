@@ -943,33 +943,35 @@ namespace SharpPulsar
 
 		private void RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
-			var peek = IncomingMessages.Receive();
-			if (peek != null)
-			{
-				if(!messageIds.Contains(peek.MessageId))
-				{
-					// first message is not expired, then no message is expired in queue.
-					return;
-				}
+            var peek = IncomingMessages.Receive();
+            if (peek != null)
+            {
+                if (!messageIds.Contains(peek.MessageId))
+                {
+                    // first message is not expired, then no message is expired in queue.
+                    return;
+                }
 
-				// try not to remove elements that are added while we remove
-				var message = peek;
-				if (!(message is TopicMessage<T>))
-					throw new InvalidMessageException(message.GetType().FullName);
+                // try not to remove elements that are added while we remove
+                var message = peek;
+                if (!(message is TopicMessage<T>))
+                    throw new InvalidMessageException(message.GetType().FullName);
 
-				while(IncomingMessages.Count > 0)
-				{
-					IncomingMessagesSize -= message.Data.Length;
-					var messageId = message.MessageId;
-					if(!messageIds.Contains(messageId))
-					{
-						messageIds.Add(messageId);
-						break;
-					}
-					message = IncomingMessages.Receive();
-				}
-			}
-		}
+                if (IncomingMessages.TryReceiveAll(out var messageList))
+                {
+                    foreach (var m in messageList)
+                    {
+                        IncomingMessagesSize -= m.Data.Length;
+                        var messageId = m.MessageId;
+                        if (!messageIds.Contains(messageId))
+                        {
+                            messageIds.Add(messageId);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
 		private TopicName GetTopicName(string topic)
 		{

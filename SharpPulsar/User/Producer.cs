@@ -15,12 +15,14 @@ namespace SharpPulsar.User
         private readonly IActorRef _producerActor;
         private readonly ISchema<T> _schema;
         private readonly ProducerConfigurationData _conf;
+        private readonly TimeSpan _operationTimeout;
 
-        public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf)
+        public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout)
         {
             _producerActor = producer;
             _schema = schema;
             _conf = conf;
+            _operationTimeout = opTimeout;
         }
         public string Topic 
             => TopicAsync().GetAwaiter().GetResult();
@@ -58,7 +60,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask CloseAsync()
         {
-            await _producerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            await _producerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
         }
         public void Flush()
         {

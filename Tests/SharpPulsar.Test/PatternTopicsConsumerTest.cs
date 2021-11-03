@@ -85,24 +85,30 @@ namespace SharpPulsar.Test
                 .ForceTopicCreation(true)
                 .SubscriptionName(subscriptionName)
                 .SubscriptionType(SubType.Shared)
-                .AckTimeout(TimeSpan.FromMilliseconds(2000)));
+                .AckTimeout(TimeSpan.FromMilliseconds(60000)));
             Thread.Sleep(TimeSpan.FromSeconds(10));
 			var message = consumer.Receive();
-			do
-			{
-				var m = (TopicMessage<byte[]>)message;
-				messageSet++;
-				consumer.Acknowledge(m.Message);
-				_output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
-				message = consumer.Receive();
-			} while(message != null);
+            if(message == null)
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(10));
+                message = consumer.Receive();
+            }
 
+            while (message != null)
+            {
+                var m = (TopicMessage<byte[]>)message;
+                messageSet++;
+                consumer.Acknowledge(m);
+                _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
+                message = consumer.Receive();
+            }
 			consumer.Unsubscribe();
 			consumer.Close();
 			producer1.Close();
 			producer2.Close();
 			producer3.Close();
 			producer4.Close();
+            Assert.True(messageSet > 0);
 		}
 
 	}
