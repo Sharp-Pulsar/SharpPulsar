@@ -10,28 +10,30 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utility;
+using SharpPulsar.Utils;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.EventSource.Pulsar
 {
     public class PulsarSourceActor<T> : ReceiveActor
     {
-        private readonly EventMessageId _endId;
+        private readonly long _toOffset;
         private readonly IActorRef _child;
-        private EventMessageId _lastEventMessageId;
+        private long _lastEventMessageOffset;
         private ICancelable _flowSenderCancelable;
-        private readonly HttpClient _httpClient;
         private readonly IPulsarEventSourceMessage<T> _message;
         private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
-        public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema)
+        private long _currentOffset;
+        private long _totalOffset;
+        public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset,long toOffset, bool isLive, IPulsarEventSourceMessage<T> message, ISchema<T> schema)
         {
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
-            _httpClient = httpClient;
             _message = message;
-            _endId = endId;
-            _lastEventMessageId = endId;
+            _toOffset = toOffset;
+            _totalOffset = toOffset - fromOffset;
+            _lastEventMessageOffset = fromOffset; 
             var topicName = TopicName.Get(readerConfiguration.TopicName);
             IActorRef stateA = Context.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -84,8 +86,8 @@ namespace SharpPulsar.EventSource.Pulsar
             Receive<ReceivedMessage<T>>(m =>
             {
                 var c = m.Message;
-                var messageId = (MessageId)c.MessageId;
-                if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
+                var messageId = MessageIdUtils.GetOffset(m.Message.MessageId);
+                if (messageId <= _toOffset)
                 {
                     Context.Parent.Tell(c);
                     _child.Tell(new AcknowledgeMessage<T>(c));
@@ -103,7 +105,7 @@ namespace SharpPulsar.EventSource.Pulsar
             Receive<ReceivedMessage<T>>(c =>
             {
                 Context.Parent.Tell(c);
-                //_sequenceId++;
+                _currentOffset = MessageIdUtils.GetOffset(c.Message.MessageId);
             });
             _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);
         }
@@ -112,15 +114,11 @@ namespace SharpPulsar.EventSource.Pulsar
         {
             try
             {
-                var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
-                var statsResponse = adminRestapi.GetInternalStats(_topicName.NamespaceObject.Tenant,
-                    _topicName.NamespaceObject.LocalName, _topicName.LocalName);
-                var start = MessageIdHelper.NextFlow(statsResponse.Body);
-                if (start.Index > _lastEventMessageId.Index)
+                //STILL CLEAR WHAT TO DO HERE
+                if ((_currentOffset - _lastEventMessageOffset) <= _totalOffset)
                 {
-                    var permits = start.Index - _lastEventMessageId.Index;
-                    _child.Tell(new IncreaseAvailablePermits((int)permits));
-                    _lastEventMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
+                    _child.Tell(new IncreaseAvailablePermits((int)_totalOffset));
+                    _lastEventMessageOffset = _currentOffset;
                 }
             }
             finally
@@ -139,9 +137,9 @@ namespace SharpPulsar.EventSource.Pulsar
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, long fromSequenceId, ISchema<T> schema)
+        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, IPulsarEventSourceMessage<T> message, ISchema<T> schema)
         {
-            return Props.Create(()=> new PulsarSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, fromSequenceId, schema));
+            return Props.Create(()=> new PulsarSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, fromOffset, toOffset, isLive, message, schema));
         }
         public IStash Stash { get; set; }
     }
