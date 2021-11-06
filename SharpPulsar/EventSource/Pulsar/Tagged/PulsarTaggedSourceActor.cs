@@ -131,10 +131,10 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         {
             try
             {
-                //STILL NOT CLEAR WHAT TO DO HERE
-                if ((_currentOffset - _lastEventMessageOffset) <= _totalOffset)
-                {
-                    _child.Tell(new IncreaseAvailablePermits((int)_totalOffset));
+                var flow = _currentOffset - _lastEventMessageOffset;
+                if (flow > 0)
+                { 
+                    _child.Tell(new IncreaseAvailablePermits((int)flow));
                     _lastEventMessageOffset = _currentOffset;
                 }
             }
