@@ -7,21 +7,20 @@ using SharpPulsar.Common.Naming;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;
+using SharpPulsar.Utils;
 
 namespace SharpPulsar.EventSource.Presto
 {
     public class CurrentEventsByTopicActor : ReceiveActor
     {
         private readonly CurrentEventsByTopic _message;
-        private readonly HttpClient _httpClient;
         private readonly Admin.Public.Admin _admin;
         private readonly BufferBlock<IEventEnvelope> _buffer;
-        public CurrentEventsByTopicActor(CurrentEventsByTopic message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
+        public CurrentEventsByTopicActor(CurrentEventsByTopic message, BufferBlock<IEventEnvelope> buffer)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
             _buffer = buffer;
             _message = message;
-            _httpClient = httpClient;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic);
             Setup(partitions.Body, topic);
@@ -43,26 +42,22 @@ namespace SharpPulsar.EventSource.Presto
                 for (var i = 0; i < p.Partitions; i++)
                 {
                     var partitionTopic = TopicName.Get(topic).GetPartition(i);
-                    var msgId = GetMessageIds(partitionTopic);
+                    var msgId = GetMessageId();
                     var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer,msgId.Start, msgId.End, false, _httpClient, _message));
                     Context.Watch(child);
                 }
             }
             else
             {
-                var msgId = GetMessageIds(TopicName.Get(topic));
+                var msgId = GetMessageId();
                 var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, msgId.Start, msgId.End, false, _httpClient, _message));
                 Context.Watch(child);
             }
         }
-        private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
+
+        private MessageId GetMessageId()
         {
-            var stats = _admin.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
-            var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats.Body);
-            var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats.Body);
-            var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
-            return (startMessageId, endMessageId);
+            return (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
         }
         public static Props Prop(CurrentEventsByTopic message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
         {

@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Utils;
 
 namespace SharpPulsar.User.Events
 {
@@ -32,6 +33,24 @@ namespace SharpPulsar.User.Events
             _actorSystem = actorSystem;
             _fromMessageId = fromMessageId;
             _toMessageId = toMessageId;
+            _tenant = tenant;
+            _namespace = @namespace;
+            _topic = topic;
+            _brokerWebServiceUrl = brokerWebServiceUrl;
+            _conf = readerConfigBuilder;
+        }
+
+        public ReaderSourceBuilder(ClientConfigurationData clientConfiguration, ISchema<T> schema, ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
+        {
+            _clientConfiguration = clientConfiguration;
+            _schema = schema;
+            _client = client;
+            _lookup = lookup;
+            _cnxPool = cnxPool;
+            _generator = generator;
+            _actorSystem = actorSystem;
+            _fromMessageId = MessageIdUtils.GetOffset(IMessageId.Earliest);
+            _toMessageId = MessageIdUtils.GetOffset(IMessageId.Latest);
             _tenant = tenant;
             _namespace = @namespace;
             _topic = topic;

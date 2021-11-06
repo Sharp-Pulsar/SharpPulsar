@@ -150,6 +150,10 @@ namespace SharpPulsar
         {
             return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromMessageId, toMessageId, brokerWebServiceUrl);
         }
+        public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, string brokerWebServiceUrl) 
+        {
+            return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, brokerWebServiceUrl);
+        }
         public static SqlInstance Sql(ClientOptions options) 
         {
             return new SqlInstance(_actorSystem, options);

@@ -19,17 +19,17 @@ namespace SharpPulsar.User.Events
         private readonly string _namespace;
         private readonly string _topic;
 
-        private readonly long _fromSequenceId;
-        private readonly long _toSequenceId;
+        private readonly long _fromMessageId;
+        private readonly long _toMessageId;
         private readonly string _brokerWebServiceUrl;
         private readonly ActorSystem _actorSystem;
         private readonly ClientOptions _options;
         private readonly HashSet<string> _selectedColumns;
-        public SqlSourceMethod(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ClientOptions options, HashSet<string> selectedColumns)
+        public SqlSourceMethod(ActorSystem actorSystem, string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl, ClientOptions options, HashSet<string> selectedColumns)
         {
             _actorSystem = actorSystem;
-            _fromSequenceId = fromSequenceId;
-            _toSequenceId = toSequenceId;
+            _fromMessageId = fromMessageId;
+            _toMessageId = toMessageId;
             _tenant = tenant;
             _namespace = @namespace;
             _topic = topic;
@@ -41,7 +41,7 @@ namespace SharpPulsar.User.Events
         {
             var buffer = new BufferBlock<IEventEnvelope>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new CurrentEventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _options);
+            var msg = new CurrentEventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromMessageId, _toMessageId, _brokerWebServiceUrl, _options);
             var actor = _actorSystem.ActorOf(CurrentEventsByTopicActor.Prop(msg, new HttpClient(), buffer), actorName);
             
             return new SqlSource<IEventEnvelope>(_brokerWebServiceUrl, buffer, actor);
@@ -54,7 +54,7 @@ namespace SharpPulsar.User.Events
             
             var buffer = new BufferBlock<IEventEnvelope>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new CurrentEventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, tag, _options, _brokerWebServiceUrl);
+            var msg = new CurrentEventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromMessageId, _toMessageId, tag, _options, _brokerWebServiceUrl);
             var actor = _actorSystem.ActorOf(CurrentEventsByTagActor.Prop(msg, new HttpClient(), buffer), actorName);
 
             return new SqlSource<IEventEnvelope>(_brokerWebServiceUrl, buffer, actor);
@@ -64,7 +64,7 @@ namespace SharpPulsar.User.Events
         {
             var buffer = new BufferBlock<IEventEnvelope>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new EventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, _options, _brokerWebServiceUrl);
+            var msg = new EventsByTopic(_tenant, _namespace, _topic, _selectedColumns, _fromMessageId, _toMessageId, _options, _brokerWebServiceUrl);
             var actor = _actorSystem.ActorOf(EventsByTopicActor.Prop(msg, new HttpClient(), buffer), actorName);
 
             return new SqlSource<IEventEnvelope>(_brokerWebServiceUrl, buffer, actor);
@@ -77,7 +77,7 @@ namespace SharpPulsar.User.Events
 
             var buffer = new BufferBlock<IEventEnvelope>();
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new EventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromSequenceId, _toSequenceId, tag, _options, _brokerWebServiceUrl);
+            var msg = new EventsByTag(_tenant, _namespace, _topic, _selectedColumns, _fromMessageId, _toMessageId, tag, _options, _brokerWebServiceUrl);
             var actor = _actorSystem.ActorOf(EventsByTagActor.Prop(msg, new HttpClient(), buffer), actorName);
 
             return new SqlSource<IEventEnvelope>(_brokerWebServiceUrl, buffer, actor);

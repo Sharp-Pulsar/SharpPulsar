@@ -11,33 +11,28 @@ using SharpPulsar.Common;
 using SharpPulsar.Utility;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Messages.Requests;
+using SharpPulsar.Utils;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
     public class PulsarTaggedSourceActor<T> : ReceiveActor
     {
         private readonly IActorRef _pulsarManager;
-        private readonly EventMessageId _endId;
         private readonly IActorRef _child;
-        private EventMessageId _lastEventMessageId;
         private ICancelable _flowSenderCancelable;
-        private readonly HttpClient _httpClient;
-        private readonly IPulsarEventSourceMessage<T> _message;
-        private readonly TopicName _topicName;
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
-        private long _sequenceId;
-        public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema)
+        private readonly long _toOffset;
+        private long _currentOffset;
+        private long _totalOffset;
+        private long _lastEventMessageOffset;
+        public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, Tag tag, ISchema<T> schema)
         {
-            _sequenceId = fromSequenceId;
             _scheduler = Context.System.Scheduler.Advanced;
-            _topicName = TopicName.Get(message.Topic);
-            _httpClient = httpClient;
-            _message = message;
             _tag = tag;
-            _endId = endId;
-            _lastEventMessageId = endId;
-
+            _toOffset = toOffset;
+            _totalOffset = toOffset - fromOffset;
+            _lastEventMessageOffset = fromOffset;
             var topicName = TopicName.Get(readerConfiguration.TopicName);
             IActorRef stateA = Context.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var subscription = "player-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -99,8 +94,8 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             Receive<ReceivedMessage<T>>(m =>
             {
                 var c = m.Message;
-                var messageId = (MessageId)c.MessageId;
-                if (messageId.LedgerId <= _endId.LedgerId && messageId.EntryId <= _endId.EntryId)
+                var messageId = MessageIdUtils.GetOffset(m.Message.MessageId);
+                if (messageId <= _toOffset)
                 {
                     var props = c.Properties;
                     var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
@@ -108,7 +103,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     {
                         Context.Parent.Tell(c);
                     }
-                    _sequenceId++;
+                    //_sequenceId++;
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
             });
@@ -126,8 +121,8 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                 {
                     Context.Parent.Tell(c);
                 }
-
-                _sequenceId++;
+                _currentOffset = MessageIdUtils.GetOffset(c.Message.MessageId);
+                //_sequenceId++;
             });
             _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);
         }
@@ -136,15 +131,11 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
         {
             try
             {
-                var adminRestapi = new Admin.Public.Admin(_message.AdminUrl, _httpClient);
-                var stats = adminRestapi.GetInternalStats(_topicName.NamespaceObject.Tenant,
-                    _topicName.NamespaceObject.LocalName, _topicName.LocalName);
-                var start = MessageIdHelper.NextFlow(stats.Body);
-                if (start.Index > _lastEventMessageId.Index)
+                //STILL NOT CLEAR WHAT TO DO HERE
+                if ((_currentOffset - _lastEventMessageOffset) <= _totalOffset)
                 {
-                    var permits = start.Index - _lastEventMessageId.Index;
-                    _child.Tell(new IncreaseAvailablePermits((int)permits));
-                    _lastEventMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
+                    _child.Tell(new IncreaseAvailablePermits((int)_totalOffset));
+                    _lastEventMessageOffset = _currentOffset;
                 }
             }
             finally
@@ -163,9 +154,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, EventMessageId endId, bool isLive, HttpClient httpClient, IPulsarEventSourceMessage<T> message, Tag tag, long fromSequenceId, ISchema<T> schema)
+        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, Tag tag, ISchema<T> schema)
         {
-            return Props.Create(() => new PulsarTaggedSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, endId, isLive, httpClient, message, tag, fromSequenceId, schema));
+            return Props.Create(() => new PulsarTaggedSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, fromOffset, toOffset, isLive, tag, schema));
         }
         public IStash Stash { get; set; }
     }

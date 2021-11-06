@@ -18,19 +18,15 @@ namespace SharpPulsar.EventSource.Pulsar
     public class PulsarSourceActor<T> : ReceiveActor
     {
         private readonly long _toOffset;
-        private readonly IActorRef _child;
-        private long _lastEventMessageOffset;
-        private ICancelable _flowSenderCancelable;
-        private readonly IPulsarEventSourceMessage<T> _message;
-        private readonly TopicName _topicName;
-        private readonly IAdvancedScheduler _scheduler;
         private long _currentOffset;
         private long _totalOffset;
-        public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset,long toOffset, bool isLive, IPulsarEventSourceMessage<T> message, ISchema<T> schema)
+        private long _lastEventMessageOffset;
+        private readonly IActorRef _child;
+        private ICancelable _flowSenderCancelable;
+        private readonly IAdvancedScheduler _scheduler;
+        public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, ISchema<T> schema)
         {
             _scheduler = Context.System.Scheduler.Advanced;
-            _topicName = TopicName.Get(message.Topic);
-            _message = message;
             _toOffset = toOffset;
             _totalOffset = toOffset - fromOffset;
             _lastEventMessageOffset = fromOffset; 
@@ -114,7 +110,7 @@ namespace SharpPulsar.EventSource.Pulsar
         {
             try
             {
-                //STILL CLEAR WHAT TO DO HERE
+                //STILL NOT CLEAR WHAT TO DO HERE
                 if ((_currentOffset - _lastEventMessageOffset) <= _totalOffset)
                 {
                     _child.Tell(new IncreaseAvailablePermits((int)_totalOffset));
@@ -137,9 +133,9 @@ namespace SharpPulsar.EventSource.Pulsar
             _flowSenderCancelable?.Cancel();
         }
 
-        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, IPulsarEventSourceMessage<T> message, ISchema<T> schema)
+        public static Props Prop(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, ISchema<T> schema)
         {
-            return Props.Create(()=> new PulsarSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, fromOffset, toOffset, isLive, message, schema));
+            return Props.Create(()=> new PulsarSourceActor<T>(client, readerConfiguration, clientActor, lookup, cnxPool, generator, fromOffset, toOffset, isLive, schema));
         }
         public IStash Stash { get; set; }
     }

@@ -21,8 +21,9 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly ISchema<T> _schema;
         private readonly BufferBlock<IMessage<T>> _buffer;
         private readonly Admin.Public.Admin _admin;
-        public EventsByTopicActor(EventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
+        public EventsByTopicActor(EventsByTopic<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
+            var httpClient = new HttpClient();
             _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
             _message = message;
             _schema = schema;
@@ -58,15 +59,14 @@ namespace SharpPulsar.EventSource.Pulsar
                     var msgId = GetMessageId();
                     var newMsgId = new MessageId(msgId.LedgerId, msgId.EntryId, i);
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, newMsgId, (int)(_message.ToMessageId - _message.FromMessageId));
-                    Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, true, _httpClient, _message, _message.FromMessageId, _schema));
-                    
+                    Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, true, _schema));                    
                 }
             }
             else
             {
                 var msgId = GetMessageId();
                 var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId, (int)(_message.ToMessageId - _message.FromMessageId));
-                Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator,  msgId.End, true, _httpClient, _message, msgId.Start.Index, _schema));
+                Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, true, _schema));
             }
         }
         private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, MessageId msgId, int permits)
@@ -81,9 +81,9 @@ namespace SharpPulsar.EventSource.Pulsar
         {
             return (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
         }
-        public static Props Prop(EventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
+        public static Props Prop(EventsByTopic<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            return Props.Create(() => new EventsByTopicActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema));
+            return Props.Create(() => new EventsByTopicActor<T>(message, client, lookup, cnxPool, generator, schema));
         }
     }
 }

@@ -12,14 +12,14 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// </summary>
     public sealed class CurrentEventsByTopic : IPrestoEventSourceMessage
     {
-        public CurrentEventsByTopic(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, string adminUrl, ClientOptions options)
+        public CurrentEventsByTopic(string tenant, string ns, string topic, HashSet<string> columns, long fromMessageId, long toMessageId, string adminUrl, ClientOptions options)
         {
             Tenant = tenant;
             Namespace = ns;
             Topic = topic;
             Columns = columns;
-            FromSequenceId = fromSequenceId;
-            ToSequenceId = toSequenceId;
+            FromMessageId = fromMessageId;
+            ToMessageId = toMessageId;
             Source = SourceType.Presto;
             AdminUrl = adminUrl;
             Options = options;
@@ -29,8 +29,8 @@ namespace SharpPulsar.EventSource.Messages.Presto
         public string Namespace { get; }
         public string Topic { get; }
         public string AdminUrl { get; }
-        public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
-        public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
+        public long FromMessageId { get; } //Compute ledgerId and entryId for this 
+        public long ToMessageId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ClientOptions Options { get; }
         public HashSet<string> Columns { get; }

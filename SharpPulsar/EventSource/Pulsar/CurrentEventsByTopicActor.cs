@@ -9,13 +9,13 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Admin.Admin.Models;
+using SharpPulsar.Utils;
 
 namespace SharpPulsar.EventSource.Pulsar
 {
     public class CurrentEventsByTopicActor<T> : ReceiveActor
     {
         private readonly CurrentEventsByTopic<T> _message;
-        private readonly HttpClient _httpClient;
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
         private readonly IActorRef _lookup;
@@ -23,11 +23,10 @@ namespace SharpPulsar.EventSource.Pulsar
         private readonly ISchema<T> _schema;
         private readonly Admin.Public.Admin _admin;
         private readonly BufferBlock<IMessage<T>> _buffer;
-        public CurrentEventsByTopicActor(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
+        public CurrentEventsByTopicActor(CurrentEventsByTopic<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
             _message = message;
-            _httpClient = httpClient;
             _schema = schema;
             _buffer = new BufferBlock<IMessage<T>>();
             _client = client;
@@ -67,41 +66,36 @@ namespace SharpPulsar.EventSource.Pulsar
                 {
                     var partitionTopic = TopicName.Get(topic).GetPartition(i);
                     var partitionName = partitionTopic.ToString();
-                    var msgId = GetMessageIds(partitionTopic);
-                    var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, msgId.Start,
-                        (int) (msgId.End.Index - msgId.Start.Index)); 
-                    var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema));
+                    var msgId = GetMessageId();
+                    var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, new MessageId(msgId.LedgerId, msgId.EntryId, i),
+                        (int) (_message.ToMessageId - _message.FromMessageId)); 
+                    var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false, _message, _schema));
                     Context.Watch(child);
                 }
             }
             else
             {
-                var msgId = GetMessageIds(TopicName.Get(topic));
-                var permits = (int)(msgId.End.Index - msgId.Start.Index);
-                var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId.Start, permits);
-                var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, msgId.End, false, _httpClient, _message, msgId.Start.Index, _schema));
+                var msgId = GetMessageId();
+                var permits = (int)(_message.ToMessageId - _message.FromMessageId);
+                var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId, permits);
+                var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false,  _message, _schema));
                 Context.Watch(child);
             }
         }
-        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, EventMessageId start, int permits)
+        private ReaderConfigurationData<T> PrepareConsumerConfiguration(ReaderConfigurationData<T> readerConfiguration, string topic, MessageId messageId, int permits)
         {
             readerConfiguration.TopicName = topic;
-            readerConfiguration.StartMessageId = new MessageId(start.LedgerId, start.EntryId, -1);
+            readerConfiguration.StartMessageId = messageId;
             readerConfiguration.ReceiverQueueSize = permits;
             return readerConfiguration;
         }
-        private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
+        private MessageId GetMessageId()
         {
-            var stats = _admin.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
-            var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats.Body);
-            var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats.Body);
-            var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
-            return (startMessageId, endMessageId);
+            return (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
         }
-        public static Props Prop(CurrentEventsByTopic<T> message, HttpClient httpClient, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
+        public static Props Prop(CurrentEventsByTopic<T> message, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, ISchema<T> schema)
         {
-            return Props.Create(()=> new CurrentEventsByTopicActor<T>(message, httpClient, client, lookup, cnxPool, generator, schema));
+            return Props.Create(()=> new CurrentEventsByTopicActor<T>(message, client, lookup, cnxPool, generator, schema));
         }
     }
 }
