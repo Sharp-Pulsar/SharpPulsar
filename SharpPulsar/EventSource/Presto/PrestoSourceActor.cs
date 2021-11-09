@@ -24,7 +24,6 @@ namespace SharpPulsar.EventSource.Presto
         private readonly IAdvancedScheduler _scheduler;
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _self;
-        private long _fromMessageId;
         private long _currentOffset;
         private int _partitionIndex;
         private long _queryRange;
@@ -36,6 +35,7 @@ namespace SharpPulsar.EventSource.Presto
             _scheduler = Context.System.Scheduler.Advanced;
             _topicName = TopicName.Get(message.Topic);
             _message = message;
+            _toMessageId = message.ToMessageId;
             _lastEventMessageId = _message.FromMessageId;
             _partitionIndex = ((MessageId)MessageIdUtils.GetMessageId(message.FromMessageId)).PartitionIndex;
             _queryRange = message.ToMessageId - message.FromMessageId;

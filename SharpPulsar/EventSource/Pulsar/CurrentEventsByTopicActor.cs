@@ -69,7 +69,7 @@ namespace SharpPulsar.EventSource.Pulsar
                     var msgId = GetMessageId();
                     var config = PrepareConsumerConfiguration(_message.Configuration, partitionName, new MessageId(msgId.LedgerId, msgId.EntryId, i),
                         (int) (_message.ToMessageId - _message.FromMessageId)); 
-                    var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false, _message, _schema));
+                    var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false, _schema));
                     Context.Watch(child);
                 }
             }
@@ -78,7 +78,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 var msgId = GetMessageId();
                 var permits = (int)(_message.ToMessageId - _message.FromMessageId);
                 var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId, permits);
-                var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false,  _message, _schema));
+                var child = Context.ActorOf(PulsarSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false, _schema));
                 Context.Watch(child);
             }
         }

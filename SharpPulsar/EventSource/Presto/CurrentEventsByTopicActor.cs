@@ -41,27 +41,20 @@ namespace SharpPulsar.EventSource.Presto
             {
                 for (var i = 0; i < p.Partitions; i++)
                 {
-                    var partitionTopic = TopicName.Get(topic).GetPartition(i);
-                    var msgId = GetMessageId();
-                    var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer,msgId.Start, msgId.End, false, _httpClient, _message));
+                    var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, false, _message));
                     Context.Watch(child);
                 }
             }
             else
             {
-                var msgId = GetMessageId();
-                var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, msgId.Start, msgId.End, false, _httpClient, _message));
+                var child = Context.ActorOf(PrestoSourceActor.Prop(_buffer, false, _message));
                 Context.Watch(child);
             }
         }
 
-        private MessageId GetMessageId()
+        public static Props Prop(CurrentEventsByTopic message, BufferBlock<IEventEnvelope> buffer)
         {
-            return (MessageId)MessageIdUtils.GetMessageId(_message.FromMessageId);
-        }
-        public static Props Prop(CurrentEventsByTopic message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
-        {
-            return Props.Create(()=> new CurrentEventsByTopicActor(message, httpClient, buffer));
+            return Props.Create(()=> new CurrentEventsByTopicActor(message, buffer));
         }
     }
 }

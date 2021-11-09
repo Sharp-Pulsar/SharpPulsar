@@ -41,7 +41,9 @@ namespace SharpPulsar.Utils
 		{
 			// Demultiplex ledgerId and entryId from offset
 			var ledgerId = (long)((ulong)offset >> 28);
-			var entryId = offset & 0x0F_FF_FF_FFL;
+            //var it = 0x0F_FF_FF_FFL;
+
+            var entryId = offset & 0x0F_FF_FF_FFL;
 
 			return new MessageId(ledgerId, entryId, -1);
 		}
