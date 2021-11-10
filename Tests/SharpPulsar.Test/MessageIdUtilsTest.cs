@@ -1,4 +1,5 @@
 ﻿
+using SharpPulsar.Interfaces;
 using SharpPulsar.Utils;
 using Xunit;
 

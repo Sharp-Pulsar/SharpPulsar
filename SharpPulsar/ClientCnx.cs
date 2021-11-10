@@ -1032,12 +1032,14 @@ namespace SharpPulsar
 					// if there is no request that is timed out then exit the loop
 					break;
 				}
-				req = _requestTimeoutQueue.TryDequeue(out request);
-				if (_pendingRequests.Remove(request.RequestId, out var val))
-				{
-					var timeoutMessage = string.Format("{0:D} {1} timedout after ms {2:D}", request.RequestId, request.RequestType.Description, _operationTimeout.TotalMilliseconds);
-					_log.Warning(timeoutMessage);
-                    val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
+				if(_requestTimeoutQueue.TryDequeue(out request))
+                {
+                    if (_pendingRequests.Remove(request.RequestId, out var val))
+                    {
+                        var timeoutMessage = $"{request.RequestId} {request.RequestType.Description} timedout after ms {_operationTimeout.TotalMilliseconds}";
+                        _log.Warning(timeoutMessage);
+                        val.Requester.Tell(new AskResponse(new PulsarClientException(new Exception(timeoutMessage))));
+                    }
                 }
 			}
 			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);

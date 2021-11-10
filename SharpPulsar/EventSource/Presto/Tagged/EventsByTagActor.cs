@@ -11,50 +11,36 @@ namespace SharpPulsar.EventSource.Presto.Tagged
     public class EventsByTagActor : ReceiveActor
     {
         private readonly EventsByTag _message;
-        private readonly HttpClient _httpClient;
         private readonly Admin.Public.Admin _admin;
         private readonly BufferBlock<IEventEnvelope> _buffer;
-        public EventsByTagActor(EventsByTag message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
+        public EventsByTagActor(EventsByTag message, BufferBlock<IEventEnvelope> buffer)
         {
-            _admin = new Admin.Public.Admin(message.AdminUrl, httpClient);
+            _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());
             _message = message;
-            _httpClient = httpClient;
             _buffer = buffer;
             var topic = $"persistent://{message.Tenant}/{message.Namespace}/{message.Topic}";
             var partitions = _admin.GetPartitionedMetadata(message.Tenant, message.Namespace, message.Topic, true);
-            Setup(partitions.Body, topic);
+            Setup(partitions.Body);
         }
 
-        private void Setup(PartitionedTopicMetadata p, string topic)
+        private void Setup(PartitionedTopicMetadata p)
         {
             if (p.Partitions > 0)
             {
                 for (var i = 0; i < p.Partitions; i++)
                 {
-                    var partitionTopic = TopicName.Get(topic).GetPartition(i);
-                    var msgId = GetMessageIds(partitionTopic);
-                    Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, msgId.Start, msgId.End, true, _httpClient, _message, _message.Tag));
+                    Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
 
                 }
             }
             else
             {
-                var msgId = GetMessageIds(TopicName.Get(topic));
-                Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, msgId.Start, msgId.End, true, _httpClient, _message, _message.Tag));
+                Context.ActorOf(PrestoTaggedSourceActor.Prop(_buffer, true, _message, _message.Tag));
             }
-        }        
-        private (EventMessageId Start, EventMessageId End) GetMessageIds(TopicName topic)
+        } 
+        public static Props Prop(EventsByTag message, BufferBlock<IEventEnvelope> buffer)
         {
-            var stats = _admin.GetInternalStats(topic.NamespaceObject.Tenant, topic.NamespaceObject.LocalName, topic.LocalName);
-            var start = MessageIdHelper.Calculate(_message.FromSequenceId, stats.Body);
-            var startMessageId = new EventMessageId(start.Ledger, start.Entry, start.Index);
-            var end = MessageIdHelper.Calculate(_message.ToSequenceId, stats.Body);
-            var endMessageId = new EventMessageId(end.Ledger, end.Entry, end.Index);
-            return (startMessageId, endMessageId);
-        }
-        public static Props Prop(EventsByTag message, HttpClient httpClient, BufferBlock<IEventEnvelope> buffer)
-        {
-            return Props.Create(() => new EventsByTagActor(message, httpClient, buffer));
+            return Props.Create(() => new EventsByTagActor(message, buffer));
         }
     }
 }

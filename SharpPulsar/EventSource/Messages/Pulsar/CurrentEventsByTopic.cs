@@ -11,13 +11,13 @@ namespace SharpPulsar.EventSource.Messages.Pulsar
     /// </summary>
     public sealed class CurrentEventsByTopic<T> : IPulsarEventSourceMessage<T>
     {
-        public CurrentEventsByTopic(string tenant, string ns, string topic, long fromSequenceId, long toSequenceId, string adminUrl, ReaderConfigurationData<T> configuration, ClientConfigurationData clientConfiguration)
+        public CurrentEventsByTopic(string tenant, string ns, string topic, long fromMessageId, long toMessageId, string adminUrl, ReaderConfigurationData<T> configuration, ClientConfigurationData clientConfiguration)
         {
             Tenant = tenant;
             Namespace = ns;
             Topic = topic;
-            FromSequenceId = fromSequenceId;
-            ToSequenceId = toSequenceId;
+            FromMessageId = fromMessageId;
+            ToMessageId = toMessageId;
             Source = SourceType.Pulsar;
             AdminUrl = adminUrl;
             Configuration = configuration;
@@ -28,8 +28,8 @@ namespace SharpPulsar.EventSource.Messages.Pulsar
         public string Namespace { get; }
         public string Topic { get; }
         public string AdminUrl { get; }
-        public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
-        public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
+        public long FromMessageId { get; } //Compute ledgerId and entryId for this 
+        public long ToMessageId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ReaderConfigurationData<T> Configuration { get; }
         public ClientConfigurationData ClientConfiguration { get; }

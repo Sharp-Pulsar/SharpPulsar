@@ -165,6 +165,7 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
+                        .SetLoggers("GitHubActions")
                         //.SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
@@ -208,6 +209,7 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
+                        .SetLoggers("GitHubActions")
                         //.SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
@@ -448,6 +450,6 @@ class Build : NukeBuild
     }
     static string GetReleasenote()
     {
-        return "Kill Actors if connection was not established";
+        return "Changed EventSourcing internal working: Offset determined from actual MessageId!";
     }
 }

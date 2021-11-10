@@ -15,15 +15,15 @@ namespace SharpPulsar.User.Events
         private readonly string _namespace;
         private readonly string _topic;
 
-        private long _fromSequenceId;
-        private long _toSequenceId;
+        private long _fromMessageId = -1;
+        private long _toMessageId = -1;
         private string _brokerWebServiceUrl;
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _cnxPool;
         private readonly IActorRef _client;
         private readonly IActorRef _lookup;
         private readonly IActorRef _generator;
-        public EventSourceBuilder(ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl)
+        public EventSourceBuilder(ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl)
         {
             if (actorSystem == null)
                 throw new ArgumentException("actorSystem is null");
@@ -40,10 +40,10 @@ namespace SharpPulsar.User.Events
             if (string.IsNullOrWhiteSpace(tenant))
                 throw new ArgumentException("Tenant is missing");
 
-            if (fromSequenceId < 0)
+            if (fromMessageId < 0)
                 throw new ArgumentException("FromSequenceId need to be greater than zero");
 
-            if (toSequenceId <= fromSequenceId)
+            if (toMessageId <= fromMessageId)
                 throw new ArgumentException("ToSequenceId need to be greater than FromSequenceId");
 
             _client = client;
@@ -51,8 +51,8 @@ namespace SharpPulsar.User.Events
             _cnxPool = cnxPool;
             _generator = generator;
             _actorSystem = actorSystem;
-            _fromSequenceId = fromSequenceId;
-            _toSequenceId = toSequenceId;
+            _fromMessageId = fromMessageId;
+            _toMessageId = toMessageId;
             _tenant = tenant;
             _namespace = @namespace;
             _topic = topic;
@@ -67,7 +67,7 @@ namespace SharpPulsar.User.Events
             if (readerConfigBuilder == null)
                 throw new NullReferenceException(nameof(readerConfigBuilder));
 
-            return new ReaderSourceBuilder<T>(clientConfiguration, schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, readerConfigBuilder);
+            return new ReaderSourceBuilder<T>(clientConfiguration, schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, readerConfigBuilder);
         }
 
         public SqlSourceBuilder Sql(ClientOptions options, HashSet<string> selectedColumns)
@@ -85,8 +85,8 @@ namespace SharpPulsar.User.Events
 
             if (!string.IsNullOrWhiteSpace(options.Execute))
                 throw new ArgumentException("Please leave the Execute empty");
-
-            return new SqlSourceBuilder(_actorSystem, _tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, options, selectedColumns);
+  
+            return new SqlSourceBuilder(_actorSystem, _tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, options, selectedColumns);
         }
     }
 }

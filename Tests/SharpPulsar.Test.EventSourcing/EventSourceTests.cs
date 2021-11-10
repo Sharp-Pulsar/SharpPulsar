@@ -5,8 +5,10 @@ using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.Test.EventSourcing.Fixtures;
 using SharpPulsar.User;
+using SharpPulsar.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,10 +37,12 @@ namespace SharpPulsar.Test.EventSourcing
 		public virtual void SqlSourceTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
-			PublishMessages(topic, 50);
+			var ids = PublishMessages(topic, 50);
+            var start = MessageIdUtils.GetOffset(ids.First());
+            var end = MessageIdUtils.GetOffset(ids.Last());
 			var cols = new HashSet<string> { "text", "EventTime" };
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-			var source = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+			var source = _pulsarSystem.EventSource("public", "default", topic, start, end,"http://127.0.0.1:8080")
 				.Sql(option, cols)
 				.SourceMethod()
 				.CurrentEvents();
@@ -56,11 +60,11 @@ namespace SharpPulsar.Test.EventSourcing
 						case EventEnvelope dr:
 							_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
 							break;
-						case StatsResponse sr:
-							_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+						case EventStats sr:
+							_output.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
 							break;
-						case ErrorResponse er:
-							_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+						case EventError er:
+							_output.WriteLine(JsonSerializer.Serialize(er.Error, new JsonSerializerOptions { WriteIndented = true }));
 							break;
 					}
 
@@ -75,10 +79,12 @@ namespace SharpPulsar.Test.EventSourcing
 		public virtual void SqlSourceTaggedTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
-			PublishMessages(topic, 50);
-			var cols = new HashSet<string> { "text", "EventTime" };
+            var ids = PublishMessages(topic, 50);
+            var start = MessageIdUtils.GetOffset(ids.First());
+            var end = MessageIdUtils.GetOffset(ids.Last());
+            var cols = new HashSet<string> { "text", "EventTime" };
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-			var source = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+			var source = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
 				.Sql(option, cols)
 				.SourceMethod()
 				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
@@ -96,13 +102,13 @@ namespace SharpPulsar.Test.EventSourcing
 						case EventEnvelope dr:
 							_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
 							break;
-						case StatsResponse sr:
-							_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
-							break;
-						case ErrorResponse er:
-							_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
-							break;
-					}
+                        case EventStats sr:
+                            _output.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                            break;
+                        case EventError er:
+                            _output.WriteLine(JsonSerializer.Serialize(er.Error, new JsonSerializerOptions { WriteIndented = true }));
+                            break;
+                    }
 
 				}
 				if (receivedCount == 0)
@@ -114,22 +120,28 @@ namespace SharpPulsar.Test.EventSourcing
 		public virtual async Task ReaderSourceTest()
 		{
 			var topic = $"reader-topics-{Guid.NewGuid()}";
-			PublishMessages(topic, 50);
+            var ids = PublishMessages(topic, 50);
+            var start = MessageIdUtils.GetOffset(ids.First());
+            var end = MessageIdUtils.GetOffset(ids.Last());
 
-			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
+            var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 1000, "http://127.0.0.1:8080")
+			var reader = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
 				.Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
 				.SourceMethod()
 				.CurrentEvents();
 
-			var receivedCount = 0;
-            await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
+            //let leave some time to wire everything up
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            var receivedCount = 0;
+            while(receivedCount == 0)
             {
-                receivedCount++;
-                _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
-                if (receivedCount == 0)
-                    Thread.Sleep(TimeSpan.FromSeconds(10));
+                await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
+                {
+                    receivedCount++;
+                    _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
+                }
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
             Assert.True(receivedCount > 0);
 		}
@@ -137,41 +149,49 @@ namespace SharpPulsar.Test.EventSourcing
 		public virtual async Task ReaderSourceTaggedTest()
 		{
 			var topic = $"reader-topics-{Guid.NewGuid()}";
-			PublishMessages(topic, 50);
+            var ids = PublishMessages(topic, 50);
+            var start = MessageIdUtils.GetOffset(ids.First());
+            var end = MessageIdUtils.GetOffset(ids.Last());
 
-			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
+            var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 1000, "http://127.0.0.1:8080")
+			var reader = _pulsarSystem.EventSource("public", "default", topic, start, end, "http://127.0.0.1:8080")
 				.Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
 				.SourceMethod()
 				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
 
-			var receivedCount = 0;
-            await foreach(var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
+            //let leave some time to wire everything up
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            var receivedCount = 0;
+            while (receivedCount == 0)
             {
-                receivedCount++;
-                _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
-                if (receivedCount == 0)
-                    Thread.Sleep(TimeSpan.FromSeconds(10));
-            }  
+                await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
+                {
+                    receivedCount++;
+                    _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));                    
+                }
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+            
 			Assert.True(receivedCount > 0);
 		}
-		private ISet<string> PublishMessages(string topic, int count)
+		private ISet<MessageId> PublishMessages(string topic, int count)
 		{
-			ISet<string> keys = new HashSet<string>();
+			var ids = new HashSet<MessageId>();
 			var builder = new ProducerConfigBuilder<DataOp>()
 				.Topic(topic);
 			var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
 			for (var i = 0; i < count; i++)
 			{
 				var key = "key" + i;
+                MessageId id = null;
 				if(i % 2 == 0)
-					producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
+					id = producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
 				else
-					producer.NewMessage().Key(key).Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
-				keys.Add(key);
+					id = producer.NewMessage().Key(key).Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
+				ids.Add(id);
 			}
-			return keys;
+			return ids;
 		}
 	}
 	public class DataOp

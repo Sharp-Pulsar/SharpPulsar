@@ -16,8 +16,8 @@ namespace SharpPulsar.User.Events
         private readonly string _namespace;
         private readonly string _topic;
 
-        private long _fromSequenceId;
-        private long _toSequenceId;
+        private long _fromMessageId;
+        private long _toMessageId;
         private string _brokerWebServiceUrl;
         private readonly ReaderConfigBuilder<T> _conf;
         private readonly ClientConfigurationData _clientConfiguration;
@@ -28,7 +28,7 @@ namespace SharpPulsar.User.Events
         private readonly IActorRef _generator;
         private readonly ISchema<T> _schema;
 
-        public ReaderSourceMethod(ClientConfigurationData clientConfiguration, ISchema<T> schema, ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
+        public ReaderSourceMethod(ClientConfigurationData clientConfiguration, ISchema<T> schema, ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl, ReaderConfigBuilder<T> readerConfigBuilder)
         {
             _clientConfiguration = clientConfiguration;
             _schema = schema;
@@ -37,8 +37,8 @@ namespace SharpPulsar.User.Events
             _cnxPool = cnxPool;
             _generator = generator;
             _actorSystem = actorSystem;
-            _fromSequenceId = fromSequenceId;
-            _toSequenceId = toSequenceId;
+            _fromMessageId = fromMessageId;
+            _toMessageId = toMessageId;
             _tenant = tenant;
             _namespace = @namespace;
             _topic = topic;
@@ -49,16 +49,16 @@ namespace SharpPulsar.User.Events
         public ReaderSource<T> Events()
         {
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new EventsByTopic<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
-            var actor = _actorSystem.ActorOf(EventsByTopicActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema), actorName);
+            var msg = new EventsByTopic<T>(_tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(EventsByTopicActor<T>.Prop(msg,  _client, _lookup, _cnxPool, _generator, _schema), actorName);
             
             return new ReaderSource<T>(_brokerWebServiceUrl, actor);           
         }
         public ReaderSource<T> CurrentEvents()
         {
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new CurrentEventsByTopic<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
-            var actor = _actorSystem.ActorOf(CurrentEventsByTopicActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema), actorName);
+            var msg = new CurrentEventsByTopic<T>(_tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(CurrentEventsByTopicActor<T>.Prop(msg, _client, _lookup, _cnxPool, _generator, _schema), actorName);
            
             return new ReaderSource<T>(_brokerWebServiceUrl, actor);
         }
@@ -69,8 +69,8 @@ namespace SharpPulsar.User.Events
                 throw new ArgumentException("Tag is null");
 
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new EventsByTag<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, tag, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
-            var actor = _actorSystem.ActorOf(EventsByTagActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema), actorName);
+            var msg = new EventsByTag<T>(_tenant, _namespace, _topic, _fromMessageId, _toMessageId, tag, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(EventsByTagActor<T>.Prop(msg, _client, _lookup, _cnxPool, _generator, _schema), actorName);
             
             return new ReaderSource<T>(_brokerWebServiceUrl, actor);
         }
@@ -80,8 +80,8 @@ namespace SharpPulsar.User.Events
                 throw new ArgumentException("Tag is null");
 
             var actorName = Regex.Replace(_topic, @"[^\w\d]", "");
-            var msg = new CurrentEventsByTag<T>(_tenant, _namespace, _topic, _fromSequenceId, _toSequenceId, tag, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
-            var actor = _actorSystem.ActorOf(CurrentEventsByTagActor<T>.Prop(msg, new System.Net.Http.HttpClient(), _client, _lookup, _cnxPool, _generator, _schema), actorName);
+            var msg = new CurrentEventsByTag<T>(_tenant, _namespace, _topic, _fromMessageId, _toMessageId, tag, _brokerWebServiceUrl, _conf.ReaderConfigurationData, _clientConfiguration);
+            var actor = _actorSystem.ActorOf(CurrentEventsByTagActor<T>.Prop(msg, _client, _lookup, _cnxPool, _generator, _schema), actorName);
             
             return new ReaderSource<T>(_brokerWebServiceUrl, actor);
         }

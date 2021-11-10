@@ -16,12 +16,12 @@ namespace SharpPulsar.EventSource.Messages.Presto
     /// </summary>
     public sealed class EventsByTag : IPrestoEventSourceMessage
     {
-        public EventsByTag(string tenant, string ns, string topic, HashSet<string> columns, long fromSequenceId, long toSequenceId, Tag tag, ClientOptions options, string adminUrl)
+        public EventsByTag(string tenant, string ns, string topic, HashSet<string> columns, long fromMessageId, long toMessageId, Tag tag, ClientOptions options, string adminUrl)
         {
             Tenant = tenant;
             Namespace = ns;
-            FromSequenceId = fromSequenceId;
-            ToSequenceId = toSequenceId;
+            FromMessageId = fromMessageId;
+            ToMessageId = toMessageId;
             Tag = tag;
             Source = SourceType.Presto;
             Topic = topic;
@@ -33,8 +33,8 @@ namespace SharpPulsar.EventSource.Messages.Presto
         public string Tenant { get; }
         public string Namespace { get; }
         public string Topic { get; }
-        public long FromSequenceId { get; } //Compute ledgerId and entryId for this 
-        public long ToSequenceId { get; } //Compute ledgerId and entryId for this 
+        public long FromMessageId { get; } //Compute ledgerId and entryId for this 
+        public long ToMessageId { get; } //Compute ledgerId and entryId for this 
         public SourceType Source { get; }
         public ClientOptions Options { get; }
         public HashSet<string> Columns { get; }
