@@ -31,18 +31,6 @@ namespace SharpPulsar.User.Events
             _options = options;
             _selectedColumns = selectedColumns;
         }
-        public SqlSourceBuilder(ActorSystem actorSystem, string tenant, string @namespace, string topic, string brokerWebServiceUrl, ClientOptions options, HashSet<string> selectedColumns)
-        {
-            _actorSystem = actorSystem;
-            _fromMessageId = MessageIdUtils.GetOffset(IMessageId.Earliest);
-            _toMessageId = MessageIdUtils.GetOffset(IMessageId.Latest);
-            _tenant = tenant;
-            _namespace = @namespace;
-            _topic = topic;
-            _brokerWebServiceUrl = brokerWebServiceUrl;
-            _options = options;
-            _selectedColumns = selectedColumns;
-        }
         public SqlSourceMethod SourceMethod()
         {
             return new SqlSourceMethod(_actorSystem, _tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, _options, _selectedColumns);

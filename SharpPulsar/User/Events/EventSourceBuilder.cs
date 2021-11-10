@@ -58,33 +58,6 @@ namespace SharpPulsar.User.Events
             _topic = topic;
             _brokerWebServiceUrl = brokerWebServiceUrl;
         }
-         public EventSourceBuilder(ActorSystem actorSystem, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef generator, string tenant, string @namespace, string topic, string brokerWebServiceUrl)
-        {
-            if (actorSystem == null)
-                throw new ArgumentException("actorSystem is null");
-
-            if (string.IsNullOrWhiteSpace(brokerWebServiceUrl))
-                throw new ArgumentException("AdminUrl is missing");
-
-            if (string.IsNullOrWhiteSpace(topic))
-                throw new ArgumentException("Topic is missing");
-
-            if (string.IsNullOrWhiteSpace(@namespace))
-                throw new ArgumentException("Namespace is missing");
-
-            if (string.IsNullOrWhiteSpace(tenant))
-                throw new ArgumentException("Tenant is missing");
-
-            _client = client;
-            _lookup = lookup;
-            _cnxPool = cnxPool;
-            _generator = generator;
-            _actorSystem = actorSystem;
-            _tenant = tenant;
-            _namespace = @namespace;
-            _topic = topic;
-            _brokerWebServiceUrl = brokerWebServiceUrl;
-        }
 
         public ReaderSourceBuilder<T> Reader<T>(ClientConfigurationData clientConfiguration, ReaderConfigBuilder<T> readerConfigBuilder, ISchema<T> schema)
         {
@@ -93,9 +66,7 @@ namespace SharpPulsar.User.Events
 
             if (readerConfigBuilder == null)
                 throw new NullReferenceException(nameof(readerConfigBuilder));
-            if(_fromMessageId == -1)
-                return new ReaderSourceBuilder<T>(clientConfiguration, schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _brokerWebServiceUrl, readerConfigBuilder);
-             
+
             return new ReaderSourceBuilder<T>(clientConfiguration, schema, _actorSystem, _client, _lookup, _cnxPool, _generator, _tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, readerConfigBuilder);
         }
 
@@ -114,10 +85,7 @@ namespace SharpPulsar.User.Events
 
             if (!string.IsNullOrWhiteSpace(options.Execute))
                 throw new ArgumentException("Please leave the Execute empty");
-
-            if (_fromMessageId == -1)
-                return new SqlSourceBuilder(_actorSystem, _tenant, _namespace, _topic, _brokerWebServiceUrl, options, selectedColumns);
-                
+  
             return new SqlSourceBuilder(_actorSystem, _tenant, _namespace, _topic, _fromMessageId, _toMessageId, _brokerWebServiceUrl, options, selectedColumns);
         }
     }

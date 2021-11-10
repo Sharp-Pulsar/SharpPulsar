@@ -101,7 +101,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
                     var tagged = props.FirstOrDefault(x => x.Key.Equals(_tag.Key, StringComparison.OrdinalIgnoreCase) && x.Value.Equals(_tag.Value, StringComparison.OrdinalIgnoreCase));
                     if (!string.IsNullOrWhiteSpace(tagged.Value))
                     {
-                        Context.Parent.Tell(c);
+                        Context.Parent.Tell(m);
                     }
                     //_sequenceId++;
                 }

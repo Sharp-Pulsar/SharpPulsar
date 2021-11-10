@@ -19,16 +19,16 @@ namespace SharpPulsar.EventSource.Pulsar
     {
         private readonly long _toOffset;
         private long _currentOffset;
-        private long _totalOffset;
         private long _lastEventMessageOffset;
         private readonly IActorRef _child;
+        private readonly IActorRef _parent;
         private ICancelable _flowSenderCancelable;
         private readonly IAdvancedScheduler _scheduler;
         public PulsarSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, ISchema<T> schema)
         {
             _scheduler = Context.System.Scheduler.Advanced;
             _toOffset = toOffset;
-            _totalOffset = toOffset - fromOffset;
+            _parent = Context.Parent;
             _lastEventMessageOffset = fromOffset; 
             var topicName = TopicName.Get(readerConfiguration.TopicName);
             IActorRef stateA = Context.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
@@ -85,7 +85,7 @@ namespace SharpPulsar.EventSource.Pulsar
                 var messageId = MessageIdUtils.GetOffset(m.Message.MessageId);
                 if (messageId <= _toOffset)
                 {
-                    Context.Parent.Tell(c);
+                    _parent.Tell(m);
                     _child.Tell(new AcknowledgeMessage<T>(c));
                     _child.Tell(new MessageProcessed<T>(c));
                     //_sequenceId++;
@@ -100,7 +100,7 @@ namespace SharpPulsar.EventSource.Pulsar
         {
             Receive<ReceivedMessage<T>>(c =>
             {
-                Context.Parent.Tell(c);
+                _parent.Tell(c);
                 _currentOffset = MessageIdUtils.GetOffset(c.Message.MessageId);
             });
             _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(60), SendFlow);
@@ -122,12 +122,6 @@ namespace SharpPulsar.EventSource.Pulsar
                 _flowSenderCancelable = _scheduler.ScheduleOnceCancelable(TimeSpan.FromSeconds(5), SendFlow);
             }
         }
-        protected override void Unhandled(object message)
-        {
-            //Since we have saved the last consumed sequence id before the timeout,
-            //we can discard any Messages, they will be replayed after all, from the last saved sequence id
-        }
-
         protected override void PostStop()
         {
             _flowSenderCancelable?.Cancel();

@@ -29,6 +29,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             _message = message;
             _schema = schema;
             _client = client;
+            _buffer = new BufferBlock<IMessage<T>>();
             _cnxPool = cnxPool;
             _lookup = lookup;
             _generator = generator;
@@ -76,7 +77,7 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
             {
                 var msgId = GetMessageId();
                 var config = PrepareConsumerConfiguration(_message.Configuration, topic, msgId, (int)(_message.ToMessageId - _message.FromMessageId));
-                var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.ToMessageId, _message.FromMessageId, false, _message.Tag, _schema));
+                var child = Context.ActorOf(PulsarTaggedSourceActor<T>.Prop(_message.ClientConfiguration, config, _client, _lookup, _cnxPool, _generator, _message.FromMessageId, _message.ToMessageId, false, _message.Tag, _schema));
                 Context.Watch(child);
             }
         }

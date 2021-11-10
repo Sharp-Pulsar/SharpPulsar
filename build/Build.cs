@@ -450,6 +450,6 @@ class Build : NukeBuild
     }
     static string GetReleasenote()
     {
-        return "Kill Actors if connection was not established";
+        return "Changed EventSourcing internal working: Offset determined from actual MessageId!";
     }
 }
