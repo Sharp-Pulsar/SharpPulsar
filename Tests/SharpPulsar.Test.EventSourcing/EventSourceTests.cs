@@ -30,15 +30,15 @@ namespace SharpPulsar.Test.EventSourcing
 			_pulsarSystem = fixture.PulsarSystem;
 			_clientConfigurationData = fixture.ClientConfigurationData;
         }
-		[Fact(Skip = "Issue with sql-worker on github action")]
-		//[Fact]
+		//[Fact(Skip = "Issue with sql-worker on github action")]
+		[Fact]
 		public virtual void SqlSourceTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
-			PublishMessages(topic, 50);
+			var ids = PublishMessages(topic, 50);
 			var cols = new HashSet<string> { "text", "EventTime" };
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-			var source = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+			var source = _pulsarSystem.EventSource("public", "default", topic,/* 0, 50, */"http://127.0.0.1:8080")
 				.Sql(option, cols)
 				.SourceMethod()
 				.CurrentEvents();
@@ -56,11 +56,11 @@ namespace SharpPulsar.Test.EventSourcing
 						case EventEnvelope dr:
 							_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
 							break;
-						case StatsResponse sr:
-							_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+						case EventStats sr:
+							_output.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
 							break;
-						case ErrorResponse er:
-							_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+						case EventError er:
+							_output.WriteLine(JsonSerializer.Serialize(er.Error, new JsonSerializerOptions { WriteIndented = true }));
 							break;
 					}
 
@@ -70,15 +70,15 @@ namespace SharpPulsar.Test.EventSourcing
 			}
 			Assert.True(receivedCount > 0);
 		}
-		[Fact(Skip = "Issue with sql-worker on github action")]
-		//[Fact]
+		//[Fact(Skip = "Issue with sql-worker on github action")]
+		[Fact]
 		public virtual void SqlSourceTaggedTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
 			PublishMessages(topic, 50);
 			var cols = new HashSet<string> { "text", "EventTime" };
 			var option = new ClientOptions { Server = "http://127.0.0.1:8081" };
-			var source = _pulsarSystem.EventSource("public", "default", topic, 0, 50, "http://127.0.0.1:8080")
+			var source = _pulsarSystem.EventSource("public", "default", topic, /* 0, 50, */ "http://127.0.0.1:8080")
 				.Sql(option, cols)
 				.SourceMethod()
 				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
@@ -96,13 +96,13 @@ namespace SharpPulsar.Test.EventSourcing
 						case EventEnvelope dr:
 							_output.WriteLine(JsonSerializer.Serialize(dr, new JsonSerializerOptions { WriteIndented = true }));
 							break;
-						case StatsResponse sr:
-							_output.WriteLine(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
-							break;
-						case ErrorResponse er:
-							_output.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
-							break;
-					}
+                        case EventStats sr:
+                            _output.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                            break;
+                        case EventError er:
+                            _output.WriteLine(JsonSerializer.Serialize(er.Error, new JsonSerializerOptions { WriteIndented = true }));
+                            break;
+                    }
 
 				}
 				if (receivedCount == 0)
@@ -118,7 +118,7 @@ namespace SharpPulsar.Test.EventSourcing
 
 			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 1000, "http://127.0.0.1:8080")
+			var reader = _pulsarSystem.EventSource("public", "default", topic, /* 0, 1000, */ "http://127.0.0.1:8080")
 				.Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
 				.SourceMethod()
 				.CurrentEvents();
@@ -141,7 +141,7 @@ namespace SharpPulsar.Test.EventSourcing
 
 			var conf = new ReaderConfigBuilder<DataOp>().Topic(topic);
 
-			var reader = _pulsarSystem.EventSource("public", "default", topic, 0, 1000, "http://127.0.0.1:8080")
+			var reader = _pulsarSystem.EventSource("public", "default", topic, /* 0, 1000, */"http://127.0.0.1:8080")
 				.Reader(_clientConfigurationData, conf, AvroSchema<DataOp>.Of(typeof(DataOp)))
 				.SourceMethod()
 				.CurrentTaggedEvents(new Messages.Consumer.Tag("twitter", "mestical"));
