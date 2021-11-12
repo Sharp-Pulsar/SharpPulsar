@@ -1336,6 +1336,10 @@ namespace SharpPulsar
 		{
             var ms = received;
             var messageId = ms.MessageId;
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
+            }
             var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 
             var mn = (short)0x0e01;
@@ -1345,33 +1349,29 @@ namespace SharpPulsar
 			{
 				// discard message with checksum error
 				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
+                return;
             }
-            else
-            {
-                try
-                {
-                    var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
-                    if (isDub)
-                    {
-                        if (_log.IsDebugEnabled)
-                        {
-                            _log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
-                        }
-                        _log.Info("MessageReceived: 10");
-                        IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
-                        _log.Info("MessageReceived: 11");
-                    }
-                    else
-                        ProcessMessage(ms);
 
-                }
-                catch (Exception ex)
+            try
+            {
+                var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
+                if (isDub)
                 {
-                    _log.Error(ex.ToString());
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
+                    }
+                    IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
                 }
-            }	
-			
-		}
+                else
+                    ProcessMessage(ms);
+
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.ToString());
+            }
+        }
 
 		private void ProcessMessage(MessageReceived received)
         {
@@ -1379,23 +1379,21 @@ namespace SharpPulsar
             var data = received.Payload.ToArray();
 			var redeliveryCount = received.RedeliveryCount;
 			IList<long> ackSet = messageId.AckSets;
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
-			}
+			
 			var msgMetadata = received.Metadata;
+			var brokerEntryMetadata = received.BrokerEntryMetadata;
 			var numMessages = msgMetadata.NumMessagesInBatch;
 			var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 
 				&& Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
 			var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 			var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
+            var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
             if (decryptedPayload == null)
             {
                 // Message was discarded or CryptoKeyReader isn't implemented
                 return;
             }
-            var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
 			
             // uncompress decryptedPayload and release decryptedPayload-ByteBuf
@@ -1406,6 +1404,12 @@ namespace SharpPulsar
             {
 
                 // Message was discarded on decompression error
+                return;
+            }
+            if (Conf.PayloadProcessor != null)
+            {
+                // uncompressedPayload is released in this method so we don't need to call release() again
+                ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet);
                 return;
             }
             // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
@@ -1459,7 +1463,49 @@ namespace SharpPulsar
                 TriggerListener(numMessages);
             }
         }
-		private bool HasNumMessagesInBatch(MessageMetadata m)
+        private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet)
+        {
+            var msgPayload = MessagePayload.Create(new ReadOnlySequence<byte>(payload));
+            
+            var entryContext = MessagePayloadContext.Get(brokerEntryMetadata, messageMetadata, messageId, this, redeliveryCount, ackSet);
+            // JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
+            // ORIGINAL LINE: final java.util.concurrent.atomic.AtomicInteger skippedMessages = new java.util.concurrent.atomic.AtomicInteger(0);
+            var skippedMessages = 0;
+            try
+            {
+                Conf.PayloadProcessor.Process(payload, entryContext, schema, message =>
+                {
+                    if (message != null)
+                    {
+                        ExecuteNotifyCallback((Message<T>)message);
+                    }
+                    else
+                    {
+                        skippedMessages++;
+                    }
+                });
+            }
+            catch (Exception Throwable)
+            {
+                _log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch");
+                DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.BatchDeSerializeError);
+            }
+            finally
+            {
+                entryContext.Recycle();
+                payload.Release(); // byteBuf.release() is called in this method
+            }
+
+            if (skippedMessages > 0)
+            {
+                IncreaseAvailablePermits(Cnx(), SkippedMessages.get());
+            }
+
+            InternalPinnedExecutor.execute(() => TryTriggerListener());
+        }
+
+
+        private bool HasNumMessagesInBatch(MessageMetadata m)
 		{
 			var should = m.ShouldSerializeNumMessagesInBatch();
 			return should;

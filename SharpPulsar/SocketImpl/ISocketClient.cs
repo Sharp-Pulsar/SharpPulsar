@@ -8,7 +8,7 @@ namespace SharpPulsar.SocketImpl
     {
         string RemoteConnectionId { get; }
         void Disconnected();
-        IObservable<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> ReceiveMessageObservable { get; }
+        IObservable<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> ReceiveMessageObservable { get; }
 
         void SendMessage(ReadOnlySequence<byte> message);
     }

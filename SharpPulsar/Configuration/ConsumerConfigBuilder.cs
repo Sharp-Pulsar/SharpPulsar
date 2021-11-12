@@ -298,6 +298,11 @@ namespace SharpPulsar.Configuration
             _conf.AckReceiptEnabled = isAckReceiptEnabled;
             return this;
 		}
+		public ConsumerConfigBuilder<T> SetPayloadProcessor(IMessagePayloadProcessor payloadProcessor)
+		{
+            _conf.PayloadProcessor = payloadProcessor;
+            return this;
+		}
 
 		public ConsumerConfigBuilder<T> SubscriptionTopicsMode(RegexSubscriptionMode mode)
 		{

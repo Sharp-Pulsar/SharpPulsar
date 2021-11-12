@@ -646,7 +646,7 @@ namespace SharpPulsar.Interfaces
         /// </ul>
         /// </summary>
         /// <returns> statistic for the consumer </returns>
-        IConsumerStats Stats { get; }
+        ConsumerStats Stats { get; }
 
         /// <summary>
         /// Get statistics for the consumer.
@@ -664,7 +664,7 @@ namespace SharpPulsar.Interfaces
         /// </ul>
         /// </summary>
         /// <returns> statistic for the consumer </returns>s
-        ValueTask<IConsumerStats> StatsAsync();
+        ValueTask<ConsumerStats> StatsAsync();
 
         /// <summary>
         /// Close the consumer and stop the broker to push more messages.

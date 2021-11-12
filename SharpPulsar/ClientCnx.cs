@@ -346,7 +346,7 @@ namespace SharpPulsar
 				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
-		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)
+		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -361,7 +361,7 @@ namespace SharpPulsar
 				BatchSize = msg.MessageId.BatchSize,
 				BatchIndex = msg.MessageId.BatchIndex
 			};
-			var message = new MessageReceived(metadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
+			var message = new MessageReceived(metadata, brokerEntryMetadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
@@ -435,14 +435,20 @@ namespace SharpPulsar
 			if (_pendingRequests.TryGetValue(requestId, out var producer))
 			{
 				_pendingRequests.Remove(requestId);
-				producer.Requester.Tell(new AskResponse(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion)));
+				producer.Requester.Tell(new AskResponse(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion, GetTopicEpoch(success), success.ProducerReady)));
 			}
 			else
 			{
 				_log.Warning($"Received unknown request id from server: {success.RequestId}");
 			}
 		}
+        private long? GetTopicEpoch(CommandProducerSuccess success)
+        {
+            if (success.ShouldSerializeTopicEpoch())
+                return (long)success.TopicEpoch;
 
+            return null;
+        }
 		private void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
 		{
 			if (_log.IsDebugEnabled)
@@ -840,7 +846,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber) args)
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber) args)
 		{
 			var cmd = args.command;
 			switch (cmd.type)
@@ -851,7 +857,7 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
-					HandleMessage(msg, args.metadata, args.payload, args.checkSum, args.magicNumber);
+					HandleMessage(msg, args.metadata, args.brokerEntryMetadata, args.payload, args.checkSum, args.magicNumber);
 					break;
 				case BaseCommand.Type.GetLastMessageIdResponse:
 					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);

@@ -22,12 +22,17 @@ namespace SharpPulsar.Common.Entity
 	{
 		public string ProducerName { get;}
 		public long LastSequenceId { get;}
+		public long? TopicEpoch { get;}
 		public byte[] SchemaVersion { get;}
-        public ProducerResponse(string name, long lastSeq, byte[] version)
+
+        public bool ProducerReady { get; }
+        public ProducerResponse(string name, long lastSeq, byte[] version, long? topicEpoch, bool producerReady)
         {
 			ProducerName = name;
 			LastSequenceId = lastSeq;
 			SchemaVersion = version;
+            TopicEpoch = topicEpoch;
+            ProducerReady = producerReady;
         }
 	}
 

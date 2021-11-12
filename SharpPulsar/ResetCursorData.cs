@@ -31,11 +31,13 @@ namespace SharpPulsar
                 LedgerId = batchMessageId.LedgerId;
                 EntryId = batchMessageId.EntryId;
                 BatchIndex = batchMessageId.BatchIndex;
+                PartitionIndex = batchMessageId.PartitionIndex;
             }
             else if (messageId is MessageId msgId)
             {
                 LedgerId = msgId.LedgerId;
                 EntryId = msgId.EntryId;
+                PartitionIndex = msgId.PartitionIndex;
             }
             else if (messageId is TopicMessageId)
             {
