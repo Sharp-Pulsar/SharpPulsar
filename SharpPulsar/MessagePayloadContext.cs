@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Linq;
 using SharpPulsar.Batch;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Protocol.Proto;
@@ -24,30 +27,37 @@ using SharpPulsar.Protocol.Proto;
 namespace SharpPulsar
 {
 
-    public class MessagePayloadContext : IMessagePayloadContext
+    public class MessagePayloadContext<T> : IMessagePayloadContext<T>
     {        
         private BrokerEntryMetadata _brokerEntryMetadata;
         private MessageMetadata _messageMetadata;
         private SingleMessageMetadata _singleMessageMetadata;
         private MessageId _messageId;
-        private ConsumerImpl<object> _consumer;
         private int _redeliveryCount;
         private BatchMessageAcker _acker;
-        private BitSetRecyclable _ackBitSet;
+        private BitSet _ackBitSet;
+        private Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, IMessage<T>> _asSingleMessage;
+        private Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, IMessage<T>> _newSingleMessage;
+        private Func<MessageMetadata, bool> _isBatch;
 
-        // JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-        // ORIGINAL LINE: public static MessagePayloadContextImpl get(final org.apache.pulsar.common.api.proto.BrokerEntryMetadata brokerEntryMetadata, @NonNull final org.apache.pulsar.common.api.proto.MessageMetadata messageMetadata, @NonNull final MessageIdImpl messageId, @NonNull final ConsumerImpl<?> consumer, final int redeliveryCount, final java.util.List<long> ackSet)
-        public static MessagePayloadContext Get<T1>(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, MessageId messageId, ConsumerImpl<T1> consumer, in int redeliveryCount, in IList<long> ackSet)
+        public static MessagePayloadContext<T> Get(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, MessageId messageId, int redeliveryCount, IList<long> ackSet, 
+            Func<MessageMetadata, bool> isbacth, 
+            Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, IMessage<T>> asSingleMessage,
+            Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, IMessage<T>> newSingleMessage)
         {
-            var context = new MessagePayloadContext();
-            context._brokerEntryMetadata = brokerEntryMetadata;
-            context._messageMetadata = messageMetadata;
-            context._singleMessageMetadata = new SingleMessageMetadata();
-            context._messageId = messageId;
-            context._consumer = consumer;
-            context._redeliveryCount = redeliveryCount;
+            var context = new MessagePayloadContext<T>
+            {
+                _brokerEntryMetadata = brokerEntryMetadata,
+                _messageMetadata = messageMetadata,
+                _singleMessageMetadata = new SingleMessageMetadata(),
+                _messageId = messageId,
+                _redeliveryCount = redeliveryCount,
+                _isBatch = isbacth,
+                _asSingleMessage = asSingleMessage,
+                _newSingleMessage = newSingleMessage
+            };
             context._acker = BatchMessageAcker.NewAcker(context.NumMessages);
-            context._ackBitSet = ackSet != null && ackSet.Count > 0 ? BitSetRecyclable.ValueOf(SafeCollectionUtils.LongListToArray(ackSet)) : null;
+            context._ackBitSet = ackSet != null && ackSet.Count > 0 ? BitSet.ValueOf(ackSet.ToArray()) : null;
             return context;
         }
 
@@ -57,14 +67,9 @@ namespace SharpPulsar
             _messageMetadata = null;
             _singleMessageMetadata = null;
             _messageId = null;
-            _consumer = null;
             _redeliveryCount = 0;
             _acker = null;
-            if (ackBitSet != null)
-            {
-                ackBitSet.Recycle();
-                ackBitSet = null;
-            }
+            _ackBitSet = null;
         }
 
         public virtual string GetProperty(string key)
@@ -91,33 +96,34 @@ namespace SharpPulsar
         {
             get
             {
-                return consumer.IsBatch(messageMetadata);
+                return _isBatch(_messageMetadata);
             }
         }
 
-        public virtual Message<T> GetMessageAt<T>(int index, int numMessages, IMessagePayload payload, bool containMetadata, ISchema<T> schema)
+        public virtual IMessage<T> GetMessageAt(int index, int numMessages, IMessagePayload payload, bool containMetadata, ISchema<T> schema)
         {
             var payloadBuffer = MessagePayloadUtils.ConvertToArray(payload);
             try
             {
-                return consumer.NewSingleMessage(index, numMessages, _brokerEntryMetadata, _messageMetadata, _singleMessageMetadata, payloadBuffer, _messageId, schema, containMetadata, _ackBitSet, _acker, _redeliveryCount);
+                return _newSingleMessage(index, numMessages, _brokerEntryMetadata, _messageMetadata, _singleMessageMetadata, payloadBuffer, _messageId, schema, containMetadata, _ackBitSet, _acker, _redeliveryCount);
             }
             finally
             {
-                PayloadBuffer.release();
+                //PayloadBuffer.release();
             }
         }
 
-        public virtual Message<T> AsSingleMessage<T>(IMessagePayload payload, ISchema<T> schema)
+        public virtual IMessage<T> AsSingleMessage(IMessagePayload payload, ISchema<T> schema)
         {
             var payloadBuffer = MessagePayloadUtils.ConvertToArray(payload);
             try
             {
-                return consumer.NewMessage(_messageId, _brokerEntryMetadata, _messageMetadata, payloadBuffer, schema, _redeliveryCount);
+                //return consumer.NewMessage(_messageId, _brokerEntryMetadata, _messageMetadata, payloadBuffer, schema, _redeliveryCount);
+                return (IMessage<T>)_asSingleMessage(_messageId, _brokerEntryMetadata, _messageMetadata, new ReadOnlySequence<byte>(payloadBuffer), schema, _redeliveryCount);
             }
             finally
             {
-                payloadBuffer.release();
+                
             }
         }
     }

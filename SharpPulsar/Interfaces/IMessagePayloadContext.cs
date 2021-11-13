@@ -22,7 +22,7 @@ namespace SharpPulsar.Interfaces
     // / <summary>
     // / The context of the message payload, which usually represents a batched message (batch) or a single message.
     // / </summary>
-    public interface IMessagePayloadContext
+    public interface IMessagePayloadContext<T>
     {
 
         // / <summary>
@@ -60,7 +60,7 @@ namespace SharpPulsar.Interfaces
         // / @implNote The `index` and `numMessages` parameters are used to create the message id with batch index.
         // /   If `containMetadata` is true, parse the single message metadata from the payload first. The fields of single
         // /   message metadata will overwrite the same fields of the entry's metadata. </returns>
-        IMessage<T> GetMessageAt<T>(int index, int numMessages, IMessagePayload payload, bool containMetadata, ISchema<T> schema);
+        IMessage<T> GetMessageAt(int index, int numMessages, IMessagePayload payload, bool containMetadata, ISchema<T> schema);
 
         // / <summary>
         // / Convert the given payload to a single message if the entry is not a batch.
@@ -69,7 +69,7 @@ namespace SharpPulsar.Interfaces
         // / <param name="schema"> the schema of the message </param>
         // / @param <T> </param>
         // / <returns> the created message </returns>
-        IMessage<T> AsSingleMessage<T>(IMessagePayload payload, ISchema<T> schema);
+        IMessage<T> AsSingleMessage(IMessagePayload payload, ISchema<T> schema);
     }
 
 }
