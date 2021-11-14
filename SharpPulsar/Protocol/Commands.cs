@@ -278,6 +278,15 @@ namespace SharpPulsar.Protocol
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
+            if (messageData.ShouldSerializeTotalChunkMsgSize() && messageData.TotalChunkMsgSize > 1)
+            {
+                send.IsChunk = true;
+            }
+
+            if (messageData.ShouldSerializeMarkerType())
+            {
+                send.Marker = true;
+            }
             var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
             return new ReadOnlySequence<byte>(serialized);
 		}
@@ -302,11 +311,16 @@ namespace SharpPulsar.Protocol
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
-            if (messageData.TotalChunkMsgSize > 1)
+            if (messageData.ShouldSerializeTotalChunkMsgSize() && messageData.TotalChunkMsgSize > 1)
             {
                 send.IsChunk = true;
             }
-			var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
+
+            if (messageData.ShouldSerializeMarkerType())
+            {
+                send.Marker = true;
+            }
+            var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
 			return new ReadOnlySequence<byte>(serialized);
 		}
 
@@ -951,7 +965,7 @@ namespace SharpPulsar.Protocol
 			
 		}
 
-		public static ReadOnlySequence<byte> NewEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, TxnAction txnAction)
+		public static ReadOnlySequence<byte> NewEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, TxnAction txnAction, long lowWaterMark)
 		{
             var txnEndOnPartition = new CommandEndTxnOnPartition
             {
@@ -959,7 +973,8 @@ namespace SharpPulsar.Protocol
                 TxnidLeastBits = (ulong) txnIdLeastBits,
                 TxnidMostBits = (ulong) txnIdMostBits,
                 Topic = topic,
-                TxnAction = txnAction
+                TxnAction = txnAction,
+                TxnidLeastBitsOfLowWatermark = (ulong)lowWaterMark
             };
             return Serializer.Serialize(txnEndOnPartition.ToBaseCommand());
 			
@@ -967,7 +982,7 @@ namespace SharpPulsar.Protocol
 		}
 
 		
-		public static ReadOnlySequence<byte> NewEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, Subscription subscription, TxnAction txnAction)
+		public static ReadOnlySequence<byte> NewEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, Subscription subscription, TxnAction txnAction, long lowWaterMark)
 		{
             var commandEndTxnOnSubscription = new CommandEndTxnOnSubscription
             {
@@ -975,7 +990,8 @@ namespace SharpPulsar.Protocol
                 TxnidLeastBits = (ulong) txnIdLeastBits,
                 TxnidMostBits = (ulong) txnIdMostBits,
                 Subscription = subscription,
-                TxnAction = txnAction
+                TxnAction = txnAction,
+                TxnidLeastBitsOfLowWatermark = (ulong)lowWaterMark
             };
             return Serializer.Serialize(commandEndTxnOnSubscription.ToBaseCommand());
 			
