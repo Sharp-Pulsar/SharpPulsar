@@ -409,7 +409,9 @@ namespace SharpPulsar
                     _log.Debug($"[namespace: {ns}] Successfully got {response.Response.Topics.Count} topics list in request: {_requestId}");
                 }
                 var result = new List<string>();
-                var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
+                //https://github.com/apache/pulsar/issues/12727
+                //var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
+                var tpics = response.Response.Topics;
                 foreach (var topic in tpics)
                 {
                     var filtered = TopicName.Get(topic).PartitionedTopicName;
