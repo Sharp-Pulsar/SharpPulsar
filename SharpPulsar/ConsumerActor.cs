@@ -38,6 +38,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
 using Receive = Akka.Actor.Receive;
 
@@ -67,6 +68,7 @@ namespace SharpPulsar
 		private const int MaxRedeliverUnacknowledged = 1000;
 
 		private readonly long _consumerId;
+		private long _prevconsumerId;
 
 		// Number of messages that have delivered to the application. Every once in a while, this number will be sent to the
 		// broker to notify that we are ready to get (and store in the incoming messages queue) more messages
@@ -185,7 +187,7 @@ namespace SharpPulsar
 			_initialStartMessageId = _startMessageId;
 			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 			_availablePermits = 0;
-			_subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.OperationTimeoutMs;
+			_subscribeTimeout = DateTimeHelper.CurrentUnixTimeMillis() + (long)clientConfiguration.OperationTimeout.TotalMilliseconds;
 			_partitionIndex = partitionIndex;
 			_hasParentConsumer = hasParentConsumer;
 			_receiverQueueRefillThreshold = conf.ReceiverQueueSize / 2;
@@ -632,7 +634,6 @@ namespace SharpPulsar
                 try
                 {
 					Unsubscribe();
-                    Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
                 {
@@ -711,7 +712,7 @@ namespace SharpPulsar
             try
             {
                 
-                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs)).ConfigureAwait(false);
+                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
                 
                 if (result is CommandSuccessResponse _)
                 {
@@ -749,6 +750,11 @@ namespace SharpPulsar
                         if (e is PulsarClientException exception && PulsarClientException.IsRetriableError(e) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout)
                         {
                             await ReconnectLater(e);
+                        }
+                        else if (e is IncompatibleSchemaException se)
+                        {
+                            _log.Error($"Failed to connect consumer on IncompatibleSchemaException: {Topic}");
+                            _replyTo.Tell(new AskResponse(se));
                         }
                         else if (e is PulsarClientException.TopicDoesNotExistException)
                         {
@@ -875,7 +881,7 @@ namespace SharpPulsar
 		{
 			if(State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
-				Sender.Tell(new Failure { Exception = new Exception("AlreadyClosedException: Consumer was already closed") });
+                Sender.Tell(new AskResponse(new AlreadyClosedException("AlreadyClosedException: Consumer was already closed")));
 			}
             else
             {
@@ -892,11 +898,14 @@ namespace SharpPulsar
 					_client.Tell(new CleanupConsumer(Self));
 					_log.Info($"[{Topic}][{Subscription}] Successfully unsubscribed from topic");
 					State.ConnectionState = HandlerState.State.Closed;
+                    Sender.Tell(new AskResponse());
 				}
 				else
 				{
-					Sender.Tell(false);
-					_log.Error(new PulsarClientException($"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}").ToString());
+                    var err = $"The client is not connected to the broker when unsubscribing the subscription {Subscription} of the topic {_topicName}";
+
+                    Sender.Tell(new AskResponse(new PulsarClientException(err)));
+					_log.Error(err);
 				}
 			}
 		}
@@ -2256,12 +2265,12 @@ namespace SharpPulsar
 				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id")));
 			}
 
-			var opTimeoutMs = _clientConfigurationData.OperationTimeoutMs;
-			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(TimeSpan.FromMilliseconds(opTimeoutMs * 2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
+			var opTimeoutMs = _clientConfigurationData.OperationTimeout;
+			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(opTimeoutMs.Multiply(2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
 
 			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
-			await InternalGetLastMessageId(backoff, opTimeoutMs, getLastMessageId).ConfigureAwait(false);
+			await InternalGetLastMessageId(backoff, (long)opTimeoutMs.TotalMilliseconds, getLastMessageId).ConfigureAwait(false);
 			return await getLastMessageId.Task.ConfigureAwait(false);
 		}
 		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<GetLastMessageIdResponse> source)
@@ -2463,14 +2472,14 @@ namespace SharpPulsar
 			if (cnx != null)
 			{
 				_connectionHandler.Tell(new SetCnx(cnx));
-				cnx.Tell(new RegisterConsumer(_consumerId, Self));
+				cnx.Tell(new RegisterConsumer(_consumerId, _self));
 			}
 			var previousClientCnx = _clientCnxUsedForConsumerRegistration;
 			_clientCnxUsedForConsumerRegistration = cnx;
+            _prevconsumerId = _consumerId;
 			if (previousClientCnx != null && previousClientCnx != cnx)
 			{
-				var previousName = int.Parse(previousClientCnx.Path.Name);
-				previousClientCnx.Tell(new RemoveConsumer(previousName));
+				previousClientCnx.Tell(new RemoveConsumer(_prevconsumerId));
 			}
 		}
 

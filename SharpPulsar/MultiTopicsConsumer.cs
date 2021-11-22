@@ -49,7 +49,7 @@ using static SharpPulsar.Protocol.Proto.CommandAck;
 namespace SharpPulsar
 {
 
-    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>, IWithUnboundedStash
+    internal class MultiTopicsConsumer<T> : ConsumerActorBase<T>
 	{
 
 		internal const string DummyTopicNamePrefix = "MultiTopicsConsumer-";
@@ -148,12 +148,15 @@ namespace SharpPulsar
 			if(conf.TopicNames.Count == 0)
 			{
 				State.ConnectionState = HandlerState.State.Ready;
-				Ready();
             }
-            else
-            {
-                Self.Tell(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), createTopicIfDoesNotExist));
-            }
+            Ready();
+        }
+		private void Ready()
+		{			// start track and auto subscribe partition increasement
+			if (_internalConfig.AutoUpdatePartitions)
+			{
+				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsIntervalSeconds), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+			}
             ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
             {
                 foreach (var topic in s.Topics)
@@ -168,7 +171,6 @@ namespace SharpPulsar
                     StartReceivingMessages(_consumers.Values.ToList());
                     _log.Info("[{}] [{}] Created topics consumer with {} sub-consumers", Topic, Subscription, AllTopicPartitionsNumber);
                     Sender.Tell(new AskResponse());
-                    Become(Ready);
                 }
                 else
                 {
@@ -178,15 +180,7 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(new PulsarClientException(msg)));
                 }
             });
-            ReceiveAny(_ => Stash.Stash());
-        }
-		private void Ready()
-		{			// start track and auto subscribe partition increasement
-			if (_internalConfig.AutoUpdatePartitions)
-			{
-				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsIntervalSeconds), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
-			}
-			Receive<SendState>(_ =>
+            Receive<SendState>(_ =>
 			{
 				StateActor.Tell(new SetConumerState(State.ConnectionState));
 			});
@@ -465,8 +459,6 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-
-			Stash.UnstashAll();
 		}
         
         // subscribe one more given topic
@@ -951,33 +943,35 @@ namespace SharpPulsar
 
 		private void RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
-			var peek = IncomingMessages.Receive();
-			if (peek != null)
-			{
-				if(!messageIds.Contains(peek.MessageId))
-				{
-					// first message is not expired, then no message is expired in queue.
-					return;
-				}
+            var peek = IncomingMessages.Receive();
+            if (peek != null)
+            {
+                if (!messageIds.Contains(peek.MessageId))
+                {
+                    // first message is not expired, then no message is expired in queue.
+                    return;
+                }
 
-				// try not to remove elements that are added while we remove
-				var message = peek;
-				if (!(message is TopicMessage<T>))
-					throw new InvalidMessageException(message.GetType().FullName);
+                // try not to remove elements that are added while we remove
+                var message = peek;
+                if (!(message is TopicMessage<T>))
+                    throw new InvalidMessageException(message.GetType().FullName);
 
-				while(IncomingMessages.Count > 0)
-				{
-					IncomingMessagesSize -= message.Data.Length;
-					var messageId = message.MessageId;
-					if(!messageIds.Contains(messageId))
-					{
-						messageIds.Add(messageId);
-						break;
-					}
-					message = IncomingMessages.Receive();
-				}
-			}
-		}
+                if (IncomingMessages.TryReceiveAll(out var messageList))
+                {
+                    foreach (var m in messageList)
+                    {
+                        IncomingMessagesSize -= m.Data.Length;
+                        var messageId = m.MessageId;
+                        if (!messageIds.Contains(messageId))
+                        {
+                            messageIds.Add(messageId);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
 		private TopicName GetTopicName(string topic)
 		{
@@ -1287,7 +1281,6 @@ namespace SharpPulsar
 			}
 		}
 
-        public IStash Stash { get; set; }
 
         internal override void Pause()
 		{

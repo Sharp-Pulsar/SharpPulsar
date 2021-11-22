@@ -118,9 +118,9 @@ namespace SharpPulsar.Configuration
             return this;
         }
 
-        public PulsarClientConfigBuilder OperationTimeout(int operationTimeout)
+        public PulsarClientConfigBuilder OperationTimeout(TimeSpan operationTimeout)
         {
-            _conf.OperationTimeoutMs = operationTimeout;
+            _conf.OperationTimeout = operationTimeout;
             return this;
         }
 

@@ -61,7 +61,8 @@ namespace SharpPulsar.Test.Api
             }
 
             _output.WriteLine("Successfully received " + numReceived + " messages");
-
+            producer.Close();
+            consumer.Close();
         }
 
         [Fact]
@@ -102,7 +103,8 @@ namespace SharpPulsar.Test.Api
             }
 
             _output.WriteLine("Successfully received " + numReceived + " messages");
-
+            producer.Close();
+            consumer.Close();
         }
 
         [Fact]
@@ -141,7 +143,8 @@ namespace SharpPulsar.Test.Api
             }
 
             _output.WriteLine("Successfully received " + numReceived + " messages");
-
+            producer.Close();
+            consumer.Close();
         }
     }
 }

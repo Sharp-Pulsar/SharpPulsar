@@ -74,7 +74,7 @@ namespace SharpPulsar.Configuration
 
 		public ConsumerCryptoFailureAction CryptoFailureAction { get; set; } = ConsumerCryptoFailureAction.Fail;
 
-		public int PatternAutoDiscoveryPeriod { get; set; } = 5;
+		public int PatternAutoDiscoveryPeriod { get; set; } = 30;
 
 	    public SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
 

@@ -87,6 +87,8 @@ namespace SharpPulsar.Test.Api
                 messageReceived++;
             }
             Assert.Equal(20, messageReceived);
+            producer.Close();
+            consumer.Close();
         }
 
 	}

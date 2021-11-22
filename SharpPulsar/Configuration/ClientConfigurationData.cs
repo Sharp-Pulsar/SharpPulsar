@@ -53,7 +53,7 @@ namespace SharpPulsar.Configuration
 		public bool TlsAllowInsecureConnection { get; set; } = false;
 		public string ProxyServiceUrl { get; set; }
         public ProxyProtocol? ProxyProtocol { get; set; }
-		public int OperationTimeoutMs { get; set; } = 30000;
+		public TimeSpan OperationTimeout { get; set; } = TimeSpan.FromSeconds(3);
         public int WebServicePort { get; set; } = 8080;
 
         public string WebServiceScheme { get; set; } = "http";

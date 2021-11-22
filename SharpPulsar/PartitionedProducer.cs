@@ -158,7 +158,7 @@ namespace SharpPulsar
 				var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
 				var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration)));
-                var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
+                var co = await producer.Ask<AskResponse>(Connect.Instance, ClientConfiguration.OperationTimeout);
                 if (!co.Failed)
                 {
                     _producers.Add(producer);
@@ -357,7 +357,7 @@ namespace SharpPulsar
 					var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					var producer = _context.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, partitionIndex, Schema, Interceptors, ClientConfiguration)));
-                    var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(ClientConfiguration.OperationTimeoutMs));
+                    var co = await producer.Ask<AskResponse>(Connect.Instance, ClientConfiguration.OperationTimeout);
                     if(!co.Failed)
                     {
                         _producers.Add(producer);

@@ -200,7 +200,7 @@ namespace SharpPulsar
 
 			_connectionHandler = Context.ActorOf(ConnectionHandler.Prop(clientConfiguration, State, new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(clientConfiguration.InitialBackoffIntervalMs)).SetMax(TimeSpan.FromMilliseconds(clientConfiguration.MaxBackoffIntervalMs)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(), Self));
 
-			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.OperationTimeoutMs;
+			_createProducerTimeout = DateTimeHelper.CurrentUnixTimeMillis() + (long)clientConfiguration.OperationTimeout.TotalMilliseconds;
 			if(conf.BatchingEnabled)
 			{
 				var containerBuilder = conf.BatcherBuilder;
@@ -398,7 +398,7 @@ namespace SharpPulsar
                 }
                 else if (ex is IncompatibleSchemaException se)
                 {
-                    _log.Error($"Failed to close producer on IncompatibleSchemaException: {Topic}");
+                    _log.Error($"Failed to connect producer on IncompatibleSchemaException: {Topic}");
                     _replyTo.Tell(new AskResponse(se));
                 }
                 else if (ex is TopicDoesNotExistException e)

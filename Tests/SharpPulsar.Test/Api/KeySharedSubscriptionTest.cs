@@ -69,7 +69,11 @@ namespace SharpPulsar.Test.Api
 					.Send();
             }
 			Receive(new List<Consumer<byte[]>>{ consumer1, consumer2, consumer3 });
-		}
+            producer.Close();
+            consumer1.Close();
+            consumer2.Close();
+            consumer3.Close();
+        }
 
 		[Fact]
         public void TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorNoBatch()

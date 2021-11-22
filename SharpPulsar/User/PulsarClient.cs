@@ -57,7 +57,7 @@ namespace SharpPulsar.User
         public void ReloadLookUp()
         {
             _actorSystem.Stop(_lookup);
-            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeout), "BinaryProtoLookupService");
             _lookup.Tell(new SetClient(_client));
         }
 
@@ -261,10 +261,11 @@ namespace SharpPulsar.User
                     cloneConf.TopicNames.Remove(topicName);
                     consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, true, _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
                     var response = await consumer.Ask<AskResponse>(new Subscribe(topic, metadata.Partitions)).ConfigureAwait(false);
-                    if (response.Failed)
-                        throw response.Exception;
-
-
+                    if (response.Failed) 
+                    {
+                        await consumer.GracefulStop(TimeSpan.FromSeconds(5));
+                        throw response.Exception; 
+                    }
                     _client.Tell(new AddConsumer(consumer));
 
                     return new Consumer<T>(state, consumer, schema, conf);
@@ -275,8 +276,12 @@ namespace SharpPulsar.User
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
                     consumer = _actorSystem.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, true, _clientConfigurationData)));
                     var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
+                    
                     if (response.Failed)
+                    {
+                        await consumer.GracefulStop(TimeSpan.FromSeconds(5));
                         throw response.Exception;
+                    }
                     _client.Tell(new AddConsumer(consumer));
                     return new Consumer<T>(state, consumer, schema, conf);
                 }
@@ -297,7 +302,10 @@ namespace SharpPulsar.User
             var response = await consumer.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
 
             if (response.Failed)
+            {
+                await consumer.GracefulStop(TimeSpan.FromSeconds(5));
                 throw response.Exception;
+            }
 
             _client.Tell(new AddConsumer(consumer));
 
@@ -310,6 +318,7 @@ namespace SharpPulsar.User
             var subscriptionMode = ConvertRegexSubscriptionMode(conf.RegexSubscriptionMode);
             var destination = TopicName.Get(regex);
             var namespaceName = destination.NamespaceObject;
+            IActorRef consumer = null;
             try
             {
                 var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
@@ -327,14 +336,23 @@ namespace SharpPulsar.User
                 topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
                 var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 
-                var consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value,  _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
-                
+                consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value,  _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                var response = await consumer.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
+
+                if (response.Failed)
+                {
+                    await consumer.GracefulStop(TimeSpan.FromSeconds(5));
+                    throw response.Exception;
+                }
                 _client.Tell(new AddConsumer(consumer));
 
                 return new Consumer<T>(state, consumer, schema, conf);
             }
             catch(Exception e)
             {
+                if(consumer != null)
+                    await consumer.GracefulStop(TimeSpan.FromSeconds(5));
+
                 _actorSystem.Log.Warning($"[{namespaceName}] Failed to get topics under namespace");
                 throw e;
             }
@@ -480,7 +498,10 @@ namespace SharpPulsar.User
                     var response = await reader.Ask<AskResponse>(new Subscribe(topic, metadata.Partitions)).ConfigureAwait(false);
 
                     if (response.Failed)
+                    {
+                        await reader.GracefulStop(TimeSpan.FromSeconds(5));
                         throw response.Exception;
+                    }
 
                     _client.Tell(new AddConsumer(reader));
 
@@ -492,7 +513,10 @@ namespace SharpPulsar.User
                     reader = _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData)));
                     var response = await reader.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
                     if (response.Failed)
+                    {
+                        await reader.GracefulStop(TimeSpan.FromSeconds(5));
                         throw response.Exception;
+                    }
 
                     _client.Tell(new AddConsumer(reader));
 
@@ -512,7 +536,10 @@ namespace SharpPulsar.User
             var response = await reader.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
 
             if (response.Failed)
+            {
+                await reader.GracefulStop(TimeSpan.FromSeconds(5));
                 throw response.Exception;
+            }
 
             _client.Tell(new AddConsumer(reader));
 
@@ -612,24 +639,30 @@ namespace SharpPulsar.User
             if (metadata.Partitions > 0)
             {
                 var partitionActor = _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData)));
-                var co = await partitionActor.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                var co = await partitionActor.Ask<AskResponse>(Connect.Instance, _clientConfigurationData.OperationTimeout);
                 if (co.Failed)
+                {
+                    await partitionActor.GracefulStop(TimeSpan.FromSeconds(5));
                     throw co.Exception;
+                }
 
                 _client.Tell(new AddProducer(partitionActor));
-                return new Producer<T>(partitionActor, schema, conf);
+                return new Producer<T>(partitionActor, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             else
             {
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
                 var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData)));
-                var co = await producer.Ask<AskResponse>(Connect.Instance, TimeSpan.FromMilliseconds(_clientConfigurationData.OperationTimeoutMs));
+                var co = await producer.Ask<AskResponse>(Connect.Instance, _clientConfigurationData.OperationTimeout);
                 if (co.Failed)
+                {
+                    await producer.GracefulStop(TimeSpan.FromSeconds(5));
                     throw co.Exception;
+                }
 
                 _client.Tell(new AddProducer(producer));
 
-                return new Producer<T>(producer, schema, conf);
+                return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             
         }

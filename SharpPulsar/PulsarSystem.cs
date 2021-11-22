@@ -102,7 +102,7 @@ namespace SharpPulsar
             
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
-            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
             {
@@ -126,7 +126,7 @@ namespace SharpPulsar
             _conf = conf;
             _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
             _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
-            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeoutMs), "BinaryProtoLookupService");
+            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout), "BinaryProtoLookupService");
 
             if (conf.EnableTransaction)
             {
@@ -146,10 +146,11 @@ namespace SharpPulsar
         {
             return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
         }
-        public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromSequenceId, long toSequenceId, string brokerWebServiceUrl) 
+        public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl) 
         {
-            return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromSequenceId, toSequenceId, brokerWebServiceUrl);
+            return new EventSourceBuilder(_actorSystem, _client, _lookup, _cnxPool, _generator, tenant, @namespace, topic, fromMessageId, toMessageId, brokerWebServiceUrl);
         }
+
         public static SqlInstance Sql(ClientOptions options) 
         {
             return new SqlInstance(_actorSystem, options);

@@ -58,6 +58,8 @@ namespace SharpPulsar.Test
 				}
 			}
 			Assert.True(receivedCount > 6);
-		}
+            producer.Close();
+            consumer.Close();
+        }
 	}
 }
