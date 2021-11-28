@@ -22,6 +22,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Auth;
+using SharpPulsar.Protocol;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -115,11 +116,11 @@ namespace SharpPulsar.SocketImpl
         }
 
 
-        public IObservable<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> ReceiveMessageObservable =>
-               Observable.Create<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
+        public IObservable<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> ReceiveMessageObservable =>
+               Observable.Create<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
 
 
-        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> observer, CancellationToken cancellationToken = default)
+        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> observer, CancellationToken cancellationToken = default)
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
@@ -148,6 +149,7 @@ namespace SharpPulsar.SocketImpl
                                     var consumed = buffer.GetPosition(frameLength);
                                     if (command.type == BaseCommand.Type.Message)
                                     {
+                                        var brokerMetadata = Commands.ParseBrokerEntryMetadataIfExist(reader);
                                         var magicNumber = reader.ReadInt16().Int16FromBigEndian();
                                         var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
                                         var metadataPointer = stream.Position;
@@ -158,12 +160,12 @@ namespace SharpPulsar.SocketImpl
                                         var payload = reader.ReadBytes(payloadLength);
                                         stream.Seek(metadataPointer, SeekOrigin.Begin);
                                         var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-                                        observer.OnNext((command, metadata, new ReadOnlySequence<byte>(payload), messageCheckSum == calculatedCheckSum, magicNumber));
+                                        observer.OnNext((command, metadata, brokerMetadata, new ReadOnlySequence<byte>(payload), messageCheckSum == calculatedCheckSum, magicNumber));
                                         //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                     }
                                     else
                                     {
-                                        observer.OnNext((command, null, ReadOnlySequence<byte>.Empty, false, 0));
+                                        observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, 0));
                                     }
                                     if (readresult.IsCompleted)
                                         _pipeReader.AdvanceTo(buffer.Start, buffer.End);

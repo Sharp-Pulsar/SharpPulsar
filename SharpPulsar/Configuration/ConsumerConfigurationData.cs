@@ -7,6 +7,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Precondition;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -58,7 +59,10 @@ namespace SharpPulsar.Configuration
 		public long AckTimeoutMillis { get; set; } = 0;
 		public bool AckReceiptEnabled { get; set; } = false;
 
-		public long TickDurationMillis { get; set; } = 1000;
+        [NonSerialized]
+        public IMessagePayloadProcessor PayloadProcessor = null;
+
+        public long TickDurationMillis { get; set; } = 1000;
 
 		public int PriorityLevel { get; set; } = 0;
 

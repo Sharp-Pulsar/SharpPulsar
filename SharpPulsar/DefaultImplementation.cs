@@ -277,16 +277,19 @@ namespace SharpPulsar
 		{
 			return EncodeKeyValueSchemaInfo("KeyValue", keySchema, valueSchema, keyValueEncodingType);
 		}
-
-		/// <summary>
-		/// Encode key & value into schema into a KeyValue schema.
-		/// </summary>
-		/// <param name="schemaName"> the final schema name </param>
-		/// <param name="keySchema"> the key schema </param>
-		/// <param name="valueSchema"> the value schema </param>
-		/// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
-		/// <returns> the final schema info </returns>
-		public static ISchemaInfo EncodeKeyValueSchemaInfo<K, V>(string schemaName, ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
+        public static IMessagePayloadFactory NewDefaultMessagePayloadFactory()
+        {
+            return new MessagePayloadFactory();
+        }
+        /// <summary>
+        /// Encode key & value into schema into a KeyValue schema.
+        /// </summary>
+        /// <param name="schemaName"> the final schema name </param>
+        /// <param name="keySchema"> the key schema </param>
+        /// <param name="valueSchema"> the value schema </param>
+        /// <param name="keyValueEncodingType"> the encoding type to encode and decode key value pair </param>
+        /// <returns> the final schema info </returns>
+        public static ISchemaInfo EncodeKeyValueSchemaInfo<K, V>(string schemaName, ISchema<K> keySchema, ISchema<V> valueSchema, KeyValueEncodingType keyValueEncodingType)
 		{
 			return KeyValueSchemaInfo.EncodeKeyValueSchemaInfo(schemaName, keySchema, valueSchema, keyValueEncodingType);
 			//return catchExceptions(() => (SchemaInfo)getStaticMethod("org.apache.pulsar.client.impl.schema.KeyValueSchemaInfo", "encodeKeyValueSchemaInfo", typeof(string), typeof(Schema), typeof(Schema), typeof(KeyValueEncodingType)).invoke(null, schemaName, keySchema, valueSchema, keyValueEncodingType));

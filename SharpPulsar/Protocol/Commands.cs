@@ -18,6 +18,8 @@ using SharpPulsar.Transaction;
 using SharpPulsar.Helpers;
 using SharpPulsar.Batch;
 using Serializer = SharpPulsar.Helpers.Serializer;
+using SharpPulsar.Extension;
+using Akka.Util.Internal;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -66,17 +68,19 @@ namespace SharpPulsar.Protocol
 		{
 			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, originalPrincipal, clientAuthData, clientAuthMethod);
 		}
-
-		public static ReadOnlySequence<byte> NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
+        private static void SetFeatureFlags(FeatureFlags flags)
+        {
+            flags.SupportsAuthRefresh = true;
+            flags.SupportsBrokerEntryMetadata = true;
+        }
+        public static ReadOnlySequence<byte> NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
 		{
+            
             var connect = new CommandConnect
             {
                 ClientVersion = libVersion ?? "Pulsar Client", 
-                AuthMethodName = authMethodName,
-				FeatureFlags = new FeatureFlags { SupportsAuthRefresh = true}
-
+                AuthMethodName = authMethodName
             };
-
             if ("ycav1".Equals(authMethodName))
 			{
 				// Handle the case of a client that gets updated before the broker and starts sending the string auth method
@@ -111,6 +115,7 @@ namespace SharpPulsar.Protocol
 				connect.OriginalAuthMethod = originalAuthMethod;
 			}
 			connect.ProtocolVersion = protocolVersion;
+            SetFeatureFlags(connect.FeatureFlags);
 			return Serializer.Serialize(connect.ToBaseCommand());
 		}
 
@@ -119,8 +124,7 @@ namespace SharpPulsar.Protocol
             var connect = new CommandConnect
             {
                 ClientVersion = libVersion, 
-                AuthMethodName = authMethodName,
-				FeatureFlags = new FeatureFlags { SupportsAuthRefresh = true}
+                AuthMethodName = authMethodName
             };
 
             if (!string.IsNullOrWhiteSpace(targetBroker))
@@ -149,6 +153,7 @@ namespace SharpPulsar.Protocol
 				connect.OriginalAuthMethod = originalAuthMethod;
 			}
 			connect.ProtocolVersion = protocolVersion;
+            SetFeatureFlags(connect.FeatureFlags);
             var ba = connect.ToBaseCommand();
             return Serializer.Serialize(ba);
         }
@@ -273,6 +278,15 @@ namespace SharpPulsar.Protocol
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
+            if (messageData.ShouldSerializeTotalChunkMsgSize() && messageData.TotalChunkMsgSize > 1)
+            {
+                send.IsChunk = true;
+            }
+
+            if (messageData.ShouldSerializeMarkerType())
+            {
+                send.Marker = true;
+            }
             var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
             return new ReadOnlySequence<byte>(serialized);
 		}
@@ -297,11 +311,16 @@ namespace SharpPulsar.Protocol
 			{
 				send.TxnidMostBits = (ulong)txnIdMostBits;
 			}
-            if (messageData.TotalChunkMsgSize > 1)
+            if (messageData.ShouldSerializeTotalChunkMsgSize() && messageData.TotalChunkMsgSize > 1)
             {
                 send.IsChunk = true;
             }
-			var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
+
+            if (messageData.ShouldSerializeMarkerType())
+            {
+                send.Marker = true;
+            }
+            var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
 			return new ReadOnlySequence<byte>(serialized);
 		}
 
@@ -364,8 +383,7 @@ namespace SharpPulsar.Protocol
 
             if (schemaInfo != null)
             {
-                var schema = GetSchema(schemaInfo);
-                subscribe.Schema = schema;
+                ConvertSchema(schemaInfo, subscribe.Schema);
             }
 
 			return Serializer.Serialize(subscribe.ToBaseCommand());
@@ -457,7 +475,7 @@ namespace SharpPulsar.Protocol
             if (reader.ReadInt16() == MagicBrokerEntryMetadata)
             {
                 reader.BaseStream.Seek(2, SeekOrigin.Current);
-                var brokerEntryMetadataSize = reader.ReadInt32();
+                //var brokerEntryMetadataSize = reader.ReadInt32();
                 var brokerEntryMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(reader.BaseStream, PrefixStyle.Fixed32BigEndian);
                 //brokerEntryMetadata.parseFrom(headerAndPayloadWithBrokerEntryMetadata, brokerEntryMetadataSize);
                 return brokerEntryMetadata;
@@ -520,17 +538,16 @@ namespace SharpPulsar.Protocol
 			
 		}
 
-		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata)
+		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, IDictionary<string, string> metadata, bool isTxnEnabled)
 		{
-			return NewProducer(topic, producerId, requestId, producerName, false, metadata);
+			return NewProducer(topic, producerId, requestId, producerName, false, metadata, isTxnEnabled);
 		}
 
-		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata)
+		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, bool isTxnEnabled)
 		{
-			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Common.ProducerAccessMode.Shared);
+			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Common.ProducerAccessMode.Shared, null, isTxnEnabled);
 		}
-
-		private static Proto.Schema.Type GetSchemaType(SchemaType type)
+        private static Proto.Schema.Type GetSchemaType(SchemaType type)
 		{
 			if (type.Value < 0)
 			{
@@ -566,47 +583,63 @@ namespace SharpPulsar.Protocol
 				return SchemaType.ValueOf(type.Value);
 			}
 		}
-		private static Proto.Schema GetSchema(ISchemaInfo schemaInfo)
+		private static Proto.Schema GetSchem(ISchemaInfo schemaInfo)
 		{
             var schema = new Proto.Schema
             {
                 Name = schemaInfo.Name,
-                SchemaData = (byte[]) (object) schemaInfo.Schema,
+                SchemaData = schemaInfo.Schema,
                 type = GetSchemaType(schemaInfo.Type)
             };
             schema.Properties.AddRange(schemaInfo.Properties.ToList().Select(entry => new KeyValue{Key = entry.Key, Value = entry.Value}).ToList());
 			
 			return schema;
 		}
+        private static void ConvertSchema(ISchemaInfo SchemaInfo, Proto.Schema schema)
+        {
+            schema.Name = SchemaInfo.Name;
+            schema.SchemaData = SchemaInfo.Schema;
+            schema.type = GetSchemaType(SchemaInfo.Type);
 
-		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode)
+            SchemaInfo.Properties.SetOfKeyValuePairs().ForEach(entry =>
+            {
+                if (entry.Key != null && entry.Value != null)
+                {
+                    schema.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
+                }
+            });
+        }
+
+        public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled)
 		{
             var producer = new CommandProducer
             {
-                Topic = topic, 
-                ProducerId = (ulong) producerId, 
-                RequestId = (ulong) requestId, 
-                Epoch = (ulong) epoch,
-                ProducerAccessMode = ConvertProducerAccessMode(accessMode)
+                Topic = topic,
+                ProducerId = (ulong)producerId,
+                RequestId = (ulong)requestId,
+                Epoch = (ulong)epoch,
+                ProducerAccessMode = ConvertProducerAccessMode(accessMode),
+                TxnEnabled = isTxnEnabled
             };
 			
-            if (!ReferenceEquals(producerName, null))
+            if (!string.IsNullOrWhiteSpace(producerName))
 			{
 				producer.ProducerName = producerName;
 			}
 			producer.UserProvidedProducerName = userProvidedProducerName;
 			producer.Encrypted = encrypted;
 
-			producer.Metadatas.AddRange(CommandUtils.ToKeyValueList(metadata));
+            if (metadata.Count > 0)
+                metadata.ForEach(x => producer.Metadatas.Add(new KeyValue { Key = x.Key, Value = x.Value}));
 
 			if (null != schemaInfo)
 			{
-				producer.Schema = GetSchema(schemaInfo);
+                ConvertSchema(schemaInfo, producer.Schema);
 			}
+            if (topicEpoch.HasValue)
+                producer.TopicEpoch = (ulong)topicEpoch.Value;
 
-			return Serializer.Serialize(producer.ToBaseCommand());
-			
-			
+			return Serializer.Serialize(producer.ToBaseCommand());			
 		}
 
 		public static ReadOnlySequence<byte> NewPartitionMetadataRequest(string topic, long requestId)
@@ -866,8 +899,9 @@ namespace SharpPulsar.Protocol
 		{
             var getOrCreateSchema = new CommandGetOrCreateSchema
             {
-                RequestId = (ulong) requestId, Topic = topic, Schema = GetSchema(schemaInfo)
+                RequestId = (ulong) requestId, Topic = topic, Schema = new Proto.Schema()
             };
+            ConvertSchema(schemaInfo, getOrCreateSchema.Schema);
             return Serializer.Serialize(getOrCreateSchema.ToBaseCommand());
 			
 			
@@ -931,7 +965,7 @@ namespace SharpPulsar.Protocol
 			
 		}
 
-		public static ReadOnlySequence<byte> NewEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, TxnAction txnAction)
+		public static ReadOnlySequence<byte> NewEndTxnOnPartition(long requestId, long txnIdLeastBits, long txnIdMostBits, string topic, TxnAction txnAction, long lowWaterMark)
 		{
             var txnEndOnPartition = new CommandEndTxnOnPartition
             {
@@ -939,7 +973,8 @@ namespace SharpPulsar.Protocol
                 TxnidLeastBits = (ulong) txnIdLeastBits,
                 TxnidMostBits = (ulong) txnIdMostBits,
                 Topic = topic,
-                TxnAction = txnAction
+                TxnAction = txnAction,
+                TxnidLeastBitsOfLowWatermark = (ulong)lowWaterMark
             };
             return Serializer.Serialize(txnEndOnPartition.ToBaseCommand());
 			
@@ -947,7 +982,7 @@ namespace SharpPulsar.Protocol
 		}
 
 		
-		public static ReadOnlySequence<byte> NewEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, Subscription subscription, TxnAction txnAction)
+		public static ReadOnlySequence<byte> NewEndTxnOnSubscription(long requestId, long txnIdLeastBits, long txnIdMostBits, Subscription subscription, TxnAction txnAction, long lowWaterMark)
 		{
             var commandEndTxnOnSubscription = new CommandEndTxnOnSubscription
             {
@@ -955,7 +990,8 @@ namespace SharpPulsar.Protocol
                 TxnidLeastBits = (ulong) txnIdLeastBits,
                 TxnidMostBits = (ulong) txnIdMostBits,
                 Subscription = subscription,
-                TxnAction = txnAction
+                TxnAction = txnAction,
+                TxnidLeastBitsOfLowWatermark = (ulong)lowWaterMark
             };
             return Serializer.Serialize(commandEndTxnOnSubscription.ToBaseCommand());
 			

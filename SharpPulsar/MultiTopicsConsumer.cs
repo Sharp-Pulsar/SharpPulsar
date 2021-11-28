@@ -928,7 +928,7 @@ namespace SharpPulsar
 				}
 				_stats.Reset();
 
-				_consumers.Values.ForEach(async consumer => _stats.UpdateCumulativeStats(await consumer.Ask<IConsumerStats>(GetStats.Instance)));
+				_consumers.Values.ForEach(async consumer => _stats.UpdateCumulativeStats(await consumer.Ask<ConsumerStats>(GetStats.Instance)));
 				return _stats;
 			}
 		}
