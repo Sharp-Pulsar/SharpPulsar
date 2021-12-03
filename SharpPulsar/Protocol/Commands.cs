@@ -79,7 +79,8 @@ namespace SharpPulsar.Protocol
             var connect = new CommandConnect
             {
                 ClientVersion = libVersion ?? "Pulsar Client", 
-                AuthMethodName = authMethodName
+                AuthMethodName = authMethodName,
+                FeatureFlags = new FeatureFlags()
             };
             if ("ycav1".Equals(authMethodName))
 			{
@@ -124,7 +125,8 @@ namespace SharpPulsar.Protocol
             var connect = new CommandConnect
             {
                 ClientVersion = libVersion, 
-                AuthMethodName = authMethodName
+                AuthMethodName = authMethodName,
+                FeatureFlags = new FeatureFlags()
             };
 
             if (!string.IsNullOrWhiteSpace(targetBroker))

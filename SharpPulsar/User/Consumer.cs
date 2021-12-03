@@ -37,9 +37,9 @@ namespace SharpPulsar.User
         public async ValueTask<string> SubscriptionAsync() 
             => await _consumerActor.Ask<string>(GetSubscription.Instance).ConfigureAwait(false);
 
-        public ConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
-        public async ValueTask<ConsumerStats> StatsAsync() 
-            => await _consumerActor.Ask<ConsumerStats>(GetStats.Instance).ConfigureAwait(false);
+        public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
+        public async ValueTask<IConsumerStats> StatsAsync() 
+            => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
 
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
         public async ValueTask<IMessageId> LastMessageIdAsync() 

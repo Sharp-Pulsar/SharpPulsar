@@ -96,7 +96,7 @@ namespace SharpPulsar.Stats.Consumer
 			// do nothing
 		}
 
-		public void UpdateCumulativeStats(ConsumerStats stats)
+		public void UpdateCumulativeStats(IConsumerStats stats)
 		{
 			// do nothing
 		}

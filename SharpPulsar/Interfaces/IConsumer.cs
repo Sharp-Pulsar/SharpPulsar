@@ -1,8 +1,8 @@
-﻿using SharpPulsar.Stats.Consumer.Api;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Stats.Consumer.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -646,7 +646,7 @@ namespace SharpPulsar.Interfaces
         /// </ul>
         /// </summary>
         /// <returns> statistic for the consumer </returns>
-        ConsumerStats Stats { get; }
+        IConsumerStats Stats { get; }
 
         /// <summary>
         /// Get statistics for the consumer.
@@ -664,7 +664,7 @@ namespace SharpPulsar.Interfaces
         /// </ul>
         /// </summary>
         /// <returns> statistic for the consumer </returns>s
-        ValueTask<ConsumerStats> StatsAsync();
+        ValueTask<IConsumerStats> StatsAsync();
 
         /// <summary>
         /// Close the consumer and stop the broker to push more messages.

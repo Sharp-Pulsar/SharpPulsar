@@ -75,6 +75,7 @@ namespace SharpPulsar.Test
             Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < totalMessages - 1; i++)
 			{
+                Thread.Sleep(TimeSpan.FromSeconds(20));
 				msg = consumer.Receive();
 				var receivedMessage = Encoding.UTF8.GetString(msg.Data);
 				_output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");
