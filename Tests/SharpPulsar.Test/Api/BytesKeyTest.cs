@@ -82,12 +82,6 @@ namespace SharpPulsar.Test.Api
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
-                .ForceTopicCreation(true)
-                .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
-            var consumer = _client.NewConsumer(consumerBuilder);
-
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(topic);
             var producer = _client.NewProducer(producerBuilder);
@@ -96,6 +90,12 @@ namespace SharpPulsar.Test.Api
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .Send();
+
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
+            var consumer = _client.NewConsumer(consumerBuilder);
 
             Thread.Sleep(TimeSpan.FromSeconds(10));
             var message = consumer.Receive();

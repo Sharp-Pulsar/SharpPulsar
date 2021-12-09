@@ -385,7 +385,7 @@ namespace SharpPulsar.Protocol
 
             if (schemaInfo != null)
             {
-                ConvertSchema(schemaInfo, subscribe.Schema);
+                subscribe.Schema = ConvertSchema(schemaInfo);
             }
 
 			return Serializer.Serialize(subscribe.ToBaseCommand());
@@ -597,11 +597,14 @@ namespace SharpPulsar.Protocol
 			
 			return schema;
 		}
-        private static void ConvertSchema(ISchemaInfo SchemaInfo, Proto.Schema schema)
+        private static Proto.Schema ConvertSchema(ISchemaInfo SchemaInfo)
         {
-            schema.Name = SchemaInfo.Name;
-            schema.SchemaData = SchemaInfo.Schema;
-            schema.type = GetSchemaType(SchemaInfo.Type);
+            var schema = new Proto.Schema
+            {
+                Name = SchemaInfo.Name,
+                SchemaData = SchemaInfo.Schema,
+                type = GetSchemaType(SchemaInfo.Type)
+            };
 
             SchemaInfo.Properties.SetOfKeyValuePairs().ForEach(entry =>
             {
@@ -610,6 +613,7 @@ namespace SharpPulsar.Protocol
                     schema.Properties.Add(new KeyValue { Key = entry.Key, Value = entry.Value });
                 }
             });
+            return schema;
         }
 
         public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled)
@@ -621,22 +625,22 @@ namespace SharpPulsar.Protocol
                 RequestId = (ulong)requestId,
                 Epoch = (ulong)epoch,
                 ProducerAccessMode = ConvertProducerAccessMode(accessMode),
-                TxnEnabled = isTxnEnabled
+                TxnEnabled = isTxnEnabled,
+                UserProvidedProducerName = userProvidedProducerName,
+                Encrypted = encrypted,
+                Schema = new Proto.Schema()
             };
 			
             if (!string.IsNullOrWhiteSpace(producerName))
 			{
 				producer.ProducerName = producerName;
 			}
-			producer.UserProvidedProducerName = userProvidedProducerName;
-			producer.Encrypted = encrypted;
-
             if (metadata.Count > 0)
                 metadata.ForEach(x => producer.Metadatas.Add(new KeyValue { Key = x.Key, Value = x.Value}));
 
-			if (null != schemaInfo)
+			if (schemaInfo != null)
 			{
-                ConvertSchema(schemaInfo, producer.Schema);
+                producer.Schema = ConvertSchema(schemaInfo);
 			}
             if (topicEpoch.HasValue)
                 producer.TopicEpoch = (ulong)topicEpoch.Value;
@@ -901,9 +905,9 @@ namespace SharpPulsar.Protocol
 		{
             var getOrCreateSchema = new CommandGetOrCreateSchema
             {
-                RequestId = (ulong) requestId, Topic = topic, Schema = new Proto.Schema()
+                RequestId = (ulong) requestId, Topic = topic, Schema = ConvertSchema(schemaInfo)
             };
-            ConvertSchema(schemaInfo, getOrCreateSchema.Schema);
+            
             return Serializer.Serialize(getOrCreateSchema.ToBaseCommand());
 			
 			
