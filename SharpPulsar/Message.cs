@@ -253,7 +253,7 @@ namespace SharpPulsar
                 return msg;
             }
 
-            Commands.ParseMessageMetadata(headersAndPayloadWithBrokerEntryMetadata/*, msg.Metadata*/);
+            //Commands.ParseMessageMetadata(headersAndPayloadWithBrokerEntryMetadata/*, msg.Metadata*/);
             msg._payload = headersAndPayloadWithBrokerEntryMetadata;
             msg._messageId = null;
             msg._topic = null;

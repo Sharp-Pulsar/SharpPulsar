@@ -153,7 +153,8 @@ namespace SharpPulsar.SocketImpl
                                         var magicNumber = reader.ReadInt16().Int16FromBigEndian();
                                         var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
                                         var metadataPointer = stream.Position;
-                                        var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                        var metadata = Commands.ParseMessageMetadata(reader);
+                                        //var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
                                         var payloadPointer = stream.Position;
                                         var metadataLength = (int)(payloadPointer - metadataPointer);
                                         var payloadLength = frameLength - (int)payloadPointer;
@@ -180,7 +181,10 @@ namespace SharpPulsar.SocketImpl
                         }
                     }
 
-                    catch { }
+                    catch(Exception ex) 
+                    {
+                        _logger.Error(ex.ToString());
+                    }
                 }
 
                 _pipeReader?.Complete();

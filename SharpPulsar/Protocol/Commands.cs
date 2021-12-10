@@ -46,7 +46,8 @@ namespace SharpPulsar.Protocol
 
 		// default message Size for transfer
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
-		public const int MessageSizeFramePadding = 10 * 1024;
+        public const short MagicCrc32c = 0x0e01;
+        public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
         public const short MagicBrokerEntryMetadata = 0x0e02;
 
@@ -208,9 +209,10 @@ namespace SharpPulsar.Protocol
 		}
 
 
-		public static bool HasChecksum(  ReadOnlySequence<byte> buffer)
+		public static bool HasChecksum(BinaryReader reader)
         {
-            return true; //buffer.GetShort(buffer.ReaderIndex) == MagicCrc32C;
+            var magic = reader.ReadInt16();
+            return magic == MagicCrc32c;
         }
 
 		/// <summary>
@@ -219,32 +221,33 @@ namespace SharpPulsar.Protocol
 		/// <para>Note: This method assume the checksum presence was already verified before.
 		/// </para>
 		/// </summary>
-		public static int ReadChecksum(  ReadOnlySequence<byte> buffer)
+		public static int ReadChecksum(BinaryReader reader)
 		{
-			//buffer.SkipBytes(2); //skip magic bytes
-            return -1;// buffer.ReadInt();
+            reader.SkipBytes(2);
+            return reader.ReadInt32();
 		}
 
-		public static void SkipChecksumIfPresent(  ReadOnlySequence<byte> buffer)
+		public static void SkipChecksumIfPresent(BinaryReader reader)
 		{
-			if (HasChecksum(buffer))
+			if (HasChecksum(reader))
 			{
-				ReadChecksum(buffer);
+				ReadChecksum(reader);
 			}
 		}
 		
-		public static MessageMetadata ParseMessageMetadata(ReadOnlySequence<byte> buffer)
+		public static MessageMetadata ParseMessageMetadata(BinaryReader reader)
 		{
 			try
 			{
                 // initially reader-index may point to start of broker entry metadata :
                 // increment reader-index to start_of_headAndPayload to parse metadata
-                SkipBrokerEntryMetadataIfExist(buffer);
-                //SkipChecksumIfPresent(buffer);
-                var bufferbytes = buffer.ToArray();
-                return bufferbytes.FromByteArray<MessageMetadata>();
-			}
-			catch (IOException e)
+                SkipBrokerEntryMetadataIfExist(reader);
+                SkipChecksumIfPresent(reader);
+                var metadataSize = ((int)reader.ReadUInt32()).IntFromBigEndian();
+                var metadata = reader.ReadBytes(metadataSize);
+                return Serializer.Deserialize<MessageMetadata>(new ReadOnlySequence<byte>(metadata));
+            }
+			catch (Exception e)
 			{
 				throw new Exception(e.Message, e);
 			}
@@ -431,23 +434,19 @@ namespace SharpPulsar.Protocol
 			
 			
 		}
-        public static ReadOnlySequence<byte> SkipBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
+        public static void SkipBrokerEntryMetadataIfExist(BinaryReader reader)
         {
-            var payload = headerAndPayloadWithBrokerEntryMetadata.ToArray();
-            var memory = Serializer.MemoryManager.GetStream();
-            memory.Write(payload, 0, payload.Length);
-            var reader = new BinaryReader(memory);
-            var readerIndex = reader.BaseStream.Position;
-            if (reader.ReadInt16() == MagicBrokerEntryMetadata)
+            var magic = reader.ReadInt16();
+            if (magic == MagicBrokerEntryMetadata)
             {
                 var brokerEntryMetadataSize = reader.ReadInt32();
                 reader.BaseStream.Position = reader.BaseStream.Position + brokerEntryMetadataSize;
             }
             else
             {
-                reader.BaseStream.Position =  readerIndex;
+                reader.BaseStream.Position =  0;
             }
-            return new ReadOnlySequence<byte>(memory.ToArray());
+            //return new ReadOnlySequence<byte>(reader.BaseStream.ToByteArrays());
         }
         public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
         {
@@ -471,20 +470,17 @@ namespace SharpPulsar.Protocol
         }
         public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(BinaryReader reader)
         {
-            var readerIndex = reader.BaseStream.Position;
-            reader.BaseStream.Seek(readerIndex, SeekOrigin.Current);
-            //if (reader.getShort(readerIndex) == MagicBrokerEntryMetadata)
-            if (reader.ReadInt16() == MagicBrokerEntryMetadata)
+            var magic = reader.ReadInt16();
+            if (magic == MagicBrokerEntryMetadata)
             {
-                reader.BaseStream.Seek(2, SeekOrigin.Current);
-                //var brokerEntryMetadataSize = reader.ReadInt32();
+                var brokerEntryMetadataSize = reader.ReadInt32();
                 var brokerEntryMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(reader.BaseStream, PrefixStyle.Fixed32BigEndian);
-                //brokerEntryMetadata.parseFrom(headerAndPayloadWithBrokerEntryMetadata, brokerEntryMetadataSize);
                 return brokerEntryMetadata;
             }
 
             return null;
         }
+        
         public static BrokerEntryMetadata PeekBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
         {
             var payload = headerAndPayloadWithBrokerEntryMetadata.ToArray();
@@ -627,8 +623,7 @@ namespace SharpPulsar.Protocol
                 ProducerAccessMode = ConvertProducerAccessMode(accessMode),
                 TxnEnabled = isTxnEnabled,
                 UserProvidedProducerName = userProvidedProducerName,
-                Encrypted = encrypted,
-                Schema = new Proto.Schema()
+                Encrypted = encrypted
             };
 			
             if (!string.IsNullOrWhiteSpace(producerName))

@@ -81,6 +81,12 @@ namespace SharpPulsar.Helpers
             stream.Seek(0L, SeekOrigin.Begin);
             return stream.ToArray();
         }
+        public static T Deserialize<T>(ReadOnlySequence<byte> sequence)
+        {
+            using var ms = new MemoryStream(sequence.ToArray());
+            var o = ProtoBuf.Serializer.Deserialize<T>(ms);
+            return o;
+        }
         public static byte[] ToBigEndianBytes(uint integer)
         {
             var union = new UIntUnion(integer);

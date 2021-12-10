@@ -76,24 +76,25 @@ namespace SharpPulsar.Test.Api
         [Fact]
         public void ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
+            var topic = $"persistent://public/default/produce-consume-topic";
 
             var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
-            var producerBuilder = new ProducerConfigBuilder<byte[]>();
+            /*var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(topic);
             var producer = _client.NewProducer(producerBuilder);
 
             producer.NewMessage().KeyBytes(byteKey)
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
-               .Send();
+               .Send();*/
 
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
                 .Topic(topic)
-                .ForceTopicCreation(true)
+                //.StartMessageId(77L, 0L, -1, 0)
+                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = _client.NewConsumer(consumerBuilder);
 
@@ -106,7 +107,7 @@ namespace SharpPulsar.Test.Api
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            producer.Close();
+            //producer.Close();
             consumer.Close();
         }
         [Fact]
