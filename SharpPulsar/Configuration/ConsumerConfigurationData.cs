@@ -50,7 +50,7 @@ namespace SharpPulsar.Configuration
         public bool UseTls { get; set; } = false;
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public long AcknowledgementsGroupTimeMicros { get; set; } = 100;
+		public TimeSpan AcknowledgementsGroupTime { get; set; } = TimeSpan.FromMilliseconds(100);
 
 		public long NegativeAckRedeliveryDelayMs { get; set; } = 30000;
 

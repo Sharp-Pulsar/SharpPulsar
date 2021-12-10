@@ -49,7 +49,7 @@ namespace SharpPulsar.Test.Api
             builder.SubscriptionName("sub-TestUnAckMessageRedeliveryWithReceive");
             builder.AckTimeout(TimeSpan.FromMilliseconds(8000));
             builder.ForceTopicCreation(true);
-            builder.AcknowledgmentGroupTime(0);
+            builder.AcknowledgmentGroupTime(TimeSpan.Zero);
             builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);
             var consumer = _client.NewConsumer(builder);
 

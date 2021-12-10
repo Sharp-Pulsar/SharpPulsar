@@ -103,7 +103,8 @@ namespace SharpPulsar.Test.SQL
                 .SubscriptionName($"my-subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
                 .AckTimeout(TimeSpan.FromMilliseconds(20000))
                 .ForceTopicCreation(true)
-                .AcknowledgmentGroupTime(0);
+                
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
             var consumer = _client.NewConsumer(jsonSchem, builder);
             var producerConfig = new ProducerConfigBuilder<JournalEntry>()
                 .ProducerName(topic.Split("/").Last())
@@ -160,7 +161,7 @@ namespace SharpPulsar.Test.SQL
                 .SubscriptionName($"subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
                 .AckTimeout(TimeSpan.FromMilliseconds(20000))
                 .ForceTopicCreation(true)
-                .AcknowledgmentGroupTime(0);
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
             var consumer = _client.NewConsumer(jsonSchem, builder);
             var producerConfig = new ProducerConfigBuilder<KeyValue<string, string>>()
                 .ProducerName(topic.Split("/").Last())

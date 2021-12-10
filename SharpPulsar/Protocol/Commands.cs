@@ -210,9 +210,11 @@ namespace SharpPulsar.Protocol
 
 		public static bool HasChecksum(ReadOnlySequence<byte> reader)
         {
-            //var magic = reader.ReadInt16();
-            //return magic == Constants.MagicNumber;
-            return true;
+            if (reader.StartsWith(Constants.MagicNumber))
+            {
+                return reader.ReadUInt32(Constants.MagicNumber.Length, true) == CRC32C.Calculate(reader.Slice(Constants.MetadataSizeOffset));
+            }
+            return false;
         }
 
 		/// <summary>
@@ -244,9 +246,8 @@ namespace SharpPulsar.Protocol
                 // increment reader-index to start_of_headAndPayload to parse metadata
                 var skipped = SkipBrokerEntryMetadataIfExist(reader);
                 SkipChecksumIfPresent(skipped);
-                var metadataSize = ((int)reader.ReadUInt32()).IntFromBigEndian();
-                var metadata = reader.ReadBytes(metadataSize);
-                return Serializer.Deserialize<MessageMetadata>(new ReadOnlySequence<byte>(metadata));
+                var metadataSize = skipped.ReadUInt32(Constants.MetadataSizeOffset, true);
+                return Serializer.Deserialize<MessageMetadata>(skipped.Slice(Constants.MetadataOffset, metadataSize));
             }
 			catch (Exception e)
 			{
@@ -435,17 +436,17 @@ namespace SharpPulsar.Protocol
 		}
         public static ReadOnlySequence<byte> SkipBrokerEntryMetadataIfExist(ReadOnlySequence<byte> reader)
         {
-            var magic = reader.ReadUInt32(0, true);
+            var magic = reader.ReadUInt32(2, true);
             if (magic == MagicBrokerEntryMetadata)
             {
                 var brokerEntryMetadataSize = reader.Slice(2).ReadUInt32(0, true);
-                return reader.Slice(4, brokerEntryMetadataSize);
+                return reader.Slice(1, brokerEntryMetadataSize);
             }
             return reader;
         }
         public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayload)
         {
-            var magic = headerAndPayload.ReadUInt32(0, true);
+            var magic = headerAndPayload.ReadUInt32(2, true);
             if (magic == MagicBrokerEntryMetadata)
             {
                 var brokerEntryMetadataSize = headerAndPayload.Slice(2).ReadUInt32(0, true);

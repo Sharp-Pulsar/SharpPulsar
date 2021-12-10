@@ -49,7 +49,7 @@ namespace SharpPulsar.Test.Tracker
 		public void TestAckTracker()
 		{
 			var builder = new ConsumerConfigBuilder<byte[]>();
-			builder.AcknowledgmentGroupTime(10000);
+			builder.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000));
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
@@ -131,7 +131,7 @@ namespace SharpPulsar.Test.Tracker
 		public  void TestImmediateAckingTracker()
 		{
 			var builder = new ConsumerConfigBuilder<byte[]>();
-			builder.AcknowledgmentGroupTime(0);
+			builder.AcknowledgmentGroupTime(TimeSpan.Zero);
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
@@ -165,7 +165,7 @@ namespace SharpPulsar.Test.Tracker
 		public void TestAckTrackerMultiAck()
 		{
 			var builder = new ConsumerConfigBuilder<byte[]>();
-			builder.AcknowledgmentGroupTime((long)ConvertTimeUnits.ConvertMillisecondsToMicroseconds(10000));
+			builder.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000));
 			builder.Topic($"TestAckTracker-{Guid.NewGuid()}");
 			builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
 			var conf = builder.ConsumerConfigurationData;
