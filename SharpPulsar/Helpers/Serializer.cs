@@ -2,9 +2,7 @@
 using System.Buffers;
 using System.IO;
 using Microsoft.IO;
-using ProtoBuf;
 using SharpPulsar.Common;
-using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Helpers
@@ -13,79 +11,42 @@ namespace SharpPulsar.Helpers
     {
         public static RecyclableMemoryStreamManager MemoryManager = new RecyclableMemoryStreamManager();
         
+        public static T Deserialize<T>(ReadOnlySequence<byte> sequence) => ProtoBuf.Serializer.Deserialize<T>(sequence);
+
         public static ReadOnlySequence<byte> Serialize(BaseCommand command)
         {
-            var stream = MemoryManager.GetStream();
-            var writer = new BinaryWriter(stream);
-            // write fake totalLength
-            for (var i = 0; i < 4; i++)
-                stream.WriteByte(0);
+            // / Wire format
+            // [TOTAL_SIZE] [CMD_SIZE][CMD]
+            var commandBytes = Serialize<BaseCommand>(command);
+            var commandSizeBytes = ToBigEndianBytes((uint)commandBytes.Length);
+            var totalSizeBytes = ToBigEndianBytes((uint)commandBytes.Length + 4);
 
-            // write commandPayload
-            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
-            var frameSize = (int)stream.Length;
-
-            var totalSize = frameSize - 4;
-
-            //write total size and command size
-            stream.Seek(0L, SeekOrigin.Begin);
-            writer.Write(totalSize.IntToBigEndian());
-            stream.Seek(0L, SeekOrigin.Begin);
-            return new ReadOnlySequence<byte>(stream.ToArray());
+            return new SequenceBuilder<byte>()
+                .Append(totalSizeBytes)
+                .Append(commandSizeBytes)
+                .Append(commandBytes)
+                .Build();
         }
-        public static byte[] Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload) 
+
+        public static ReadOnlySequence<byte> Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload)
         {
-            var stream = MemoryManager.GetStream();
-            var writer = new BinaryWriter(stream);
-            // write fake totalLength
-            for (var i = 0; i < 4; i++)
-                stream.WriteByte(0);
+            // Wire format
+            // [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
+            var commandBytes = Serialize<BaseCommand>(command);
+            var commandSizeBytes = ToBigEndianBytes((uint)commandBytes.Length);
 
-            // write commandPayload
-            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
+            var metadataBytes = Serialize(metadata);
+            var metadataSizeBytes = ToBigEndianBytes((uint)metadataBytes.Length);
 
-            var stream1Size = (int)stream.Length;
+            var sb = new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload);
+            var checksum = CRC32C.Calculate(sb.Build());
 
-            // write magic number 0x0e01 0x0e, 0x01
-            stream.WriteByte(14);
-            stream.WriteByte(1);
-
-            for (var i = 0; i < 4; i++)
-                stream.WriteByte(0);
-            // write metadata
-            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, metadata, PrefixStyle.Fixed32BigEndian);
-
-            var stream2Size = (int)stream.Length;
-            var totalMetadataSize = stream2Size - stream1Size - 6;
-
-            // write payload
-            stream.Write(payload.ToArray(), 0, (int)payload.Length);
-
-            var frameSize = (int)stream.Length;
-            var totalSize = frameSize - 4;
-            var payloadSize = frameSize - stream2Size;
-
-            var crcStart = stream1Size + 2;
-            var crcPayloadStart = crcStart + 4;
-
-            //write CRC
-            stream.Seek(crcPayloadStart, SeekOrigin.Begin);
-            var crc = (int)CRC32C.Get(0u, stream, totalMetadataSize + payloadSize);
-            stream.Seek(crcStart, SeekOrigin.Begin);
-            writer.Write(crc.IntToBigEndian());
-
-            //write total size and command size
-            stream.Seek(0L, SeekOrigin.Begin);
-            writer.Write(totalSize.IntToBigEndian());
-
-            stream.Seek(0L, SeekOrigin.Begin);
-            return stream.ToArray();
-        }
-        public static T Deserialize<T>(ReadOnlySequence<byte> sequence)
-        {
-            using var ms = new MemoryStream(sequence.ToArray());
-            var o = ProtoBuf.Serializer.Deserialize<T>(ms);
-            return o;
+            return sb.Prepend(ToBigEndianBytes(checksum))
+                .Prepend(Constants.MagicNumber)
+                .Prepend(commandBytes)
+                .Prepend(commandSizeBytes)
+                .Prepend(ToBigEndianBytes((uint)sb.Length))
+                .Build();
         }
         public static byte[] ToBigEndianBytes(uint integer)
         {
@@ -96,6 +57,12 @@ namespace SharpPulsar.Helpers
                 return new[] { union.B0, union.B1, union.B2, union.B3 };
         }
         public static byte[] GetBytes<T>(T item)
+        {
+            using var ms = new MemoryStream();
+            ProtoBuf.Serializer.Serialize(ms, item);
+            return ms.ToArray();
+        }
+        private static byte[] Serialize<T>(T item)
         {
             using var ms = new MemoryStream();
             ProtoBuf.Serializer.Serialize(ms, item);

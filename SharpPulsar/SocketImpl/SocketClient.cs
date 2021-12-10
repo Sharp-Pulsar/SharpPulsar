@@ -1,5 +1,4 @@
 ﻿using Akka.Event;
-using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
@@ -23,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Auth;
 using SharpPulsar.Protocol;
+using SharpPulsar.Helpers;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -124,15 +124,54 @@ namespace SharpPulsar.SocketImpl
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
-               
-                while (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    try
+                    while (!cancellationToken.IsCancellationRequested)
                     {
+
                         var readresult = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var buffer = readresult.Buffer;
-                        var length = (int)buffer.Length;
+                        while (true)
+                        {
+                            if (buffer.Length < 4)
+                                break;
+
+                            var frameSize = buffer.ReadUInt32(0, true);
+                            var totalSize = frameSize + 4;
+
+                            if (buffer.Length < totalSize)
+                                break;
+                            var frame = buffer.Slice(4, frameSize);
+                            var commandSize = frame.ReadUInt32(0, true);
+                            var command = Serializer.Deserialize<BaseCommand>(frame.Slice(4, commandSize));
+                            if (command.type == BaseCommand.Type.Message)
+                            {
+                                var pl = buffer.Slice(commandSize + 4);
+                                var brokerMetadata = Commands.ParseBrokerEntryMetadataIfExist(buffer);
+                                var magicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
+                                var metadataPointer = stream.Position;
+                                var metadata = Commands.ParseMessageMetadata(buffer);
+                                //var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                var payloadPointer = stream.Position;
+                                var metadataLength = (int)(payloadPointer - metadataPointer);
+                                var payloadLength = frameLength - (int)payloadPointer;
+                                var payload = reader.ReadBytes(payloadLength);
+                                stream.Seek(metadataPointer, SeekOrigin.Begin);
+                                var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
+                                observer.OnNext((command, metadata, brokerMetadata, new ReadOnlySequence<byte>(payload), messageCheckSum == calculatedCheckSum, magicNumber));
+                                //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
+                            }
+                            else
+                            {
+                                observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, 0));
+                            }
+                            if (readresult.IsCompleted)
+                                _pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                            else
+                                _pipeReader.AdvanceTo(consumed);
+                        }
                         if (length >= 8)
                         {
                             var array = ArrayPool<byte>.Shared.Rent(length);
@@ -145,33 +184,7 @@ namespace SharpPulsar.SocketImpl
                                 var frameLength = totalength + 4;
                                 if (length >= frameLength)
                                 {
-                                    var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                                    var consumed = buffer.GetPosition(frameLength);
-                                    if (command.type == BaseCommand.Type.Message)
-                                    {
-                                        var brokerMetadata = Commands.ParseBrokerEntryMetadataIfExist(reader);
-                                        var magicNumber = reader.ReadInt16().Int16FromBigEndian();
-                                        var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
-                                        var metadataPointer = stream.Position;
-                                        var metadata = Commands.ParseMessageMetadata(reader);
-                                        //var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                                        var payloadPointer = stream.Position;
-                                        var metadataLength = (int)(payloadPointer - metadataPointer);
-                                        var payloadLength = frameLength - (int)payloadPointer;
-                                        var payload = reader.ReadBytes(payloadLength);
-                                        stream.Seek(metadataPointer, SeekOrigin.Begin);
-                                        var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-                                        observer.OnNext((command, metadata, brokerMetadata, new ReadOnlySequence<byte>(payload), messageCheckSum == calculatedCheckSum, magicNumber));
-                                        //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
-                                    }
-                                    else
-                                    {
-                                        observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, 0));
-                                    }
-                                    if (readresult.IsCompleted)
-                                        _pipeReader.AdvanceTo(buffer.Start, buffer.End);
-                                    else
-                                        _pipeReader.AdvanceTo(consumed);
+                                   
                                 }
                             }
                             finally
@@ -181,15 +194,12 @@ namespace SharpPulsar.SocketImpl
                         }
                     }
 
-                    catch(Exception ex) 
-                    {
-                        _logger.Error(ex.ToString());
-                    }
+                    _pipeReader?.Complete();
+                    observer.OnCompleted();
+
                 }
-
-                _pipeReader?.Complete();
-                observer.OnCompleted();
-
+                catch { }
+                
             });
         }
 

@@ -46,7 +46,6 @@ namespace SharpPulsar.Protocol
 
 		// default message Size for transfer
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
-        public const short MagicCrc32c = 0x0e01;
         public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
         public const short MagicBrokerEntryMetadata = 0x0e02;
@@ -209,10 +208,11 @@ namespace SharpPulsar.Protocol
 		}
 
 
-		public static bool HasChecksum(BinaryReader reader)
+		public static bool HasChecksum(ReadOnlySequence<byte> reader)
         {
-            var magic = reader.ReadInt16();
-            return magic == MagicCrc32c;
+            //var magic = reader.ReadInt16();
+            //return magic == Constants.MagicNumber;
+            return true;
         }
 
 		/// <summary>
@@ -221,13 +221,14 @@ namespace SharpPulsar.Protocol
 		/// <para>Note: This method assume the checksum presence was already verified before.
 		/// </para>
 		/// </summary>
-		public static int ReadChecksum(BinaryReader reader)
+		public static int ReadChecksum(ReadOnlySequence<byte> reader)
 		{
-            reader.SkipBytes(2);
-            return reader.ReadInt32();
+            //reader.SkipBytes(2);
+            //return reader.ReadInt32();
+            return 1;
 		}
 
-		public static void SkipChecksumIfPresent(BinaryReader reader)
+		public static void SkipChecksumIfPresent(ReadOnlySequence<byte> reader)
 		{
 			if (HasChecksum(reader))
 			{
@@ -235,14 +236,14 @@ namespace SharpPulsar.Protocol
 			}
 		}
 		
-		public static MessageMetadata ParseMessageMetadata(BinaryReader reader)
+		public static MessageMetadata ParseMessageMetadata(ReadOnlySequence<byte> reader)
 		{
 			try
 			{
                 // initially reader-index may point to start of broker entry metadata :
                 // increment reader-index to start_of_headAndPayload to parse metadata
-                SkipBrokerEntryMetadataIfExist(reader);
-                SkipChecksumIfPresent(reader);
+                var skipped = SkipBrokerEntryMetadataIfExist(reader);
+                SkipChecksumIfPresent(skipped);
                 var metadataSize = ((int)reader.ReadUInt32()).IntFromBigEndian();
                 var metadata = reader.ReadBytes(metadataSize);
                 return Serializer.Deserialize<MessageMetadata>(new ReadOnlySequence<byte>(metadata));
@@ -292,8 +293,7 @@ namespace SharpPulsar.Protocol
             {
                 send.Marker = true;
             }
-            var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
-            return new ReadOnlySequence<byte>(serialized);
+            return Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
 		}
 
 		public static ReadOnlySequence<byte> NewSend(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, long txnIdLeastBits, long txnIdMostBits, MessageMetadata messageData,   ReadOnlySequence<byte> payload)
@@ -325,8 +325,7 @@ namespace SharpPulsar.Protocol
             {
                 send.Marker = true;
             }
-            var serialized = Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
-			return new ReadOnlySequence<byte>(serialized);
+            return Serializer.Serialize(send.ToBaseCommand(), messageData, payload);
 		}
 
 		public static ReadOnlySequence<byte> NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, long resetStartMessageBackInSeconds)
@@ -434,35 +433,23 @@ namespace SharpPulsar.Protocol
 			
 			
 		}
-        public static void SkipBrokerEntryMetadataIfExist(BinaryReader reader)
+        public static ReadOnlySequence<byte> SkipBrokerEntryMetadataIfExist(ReadOnlySequence<byte> reader)
         {
-            var magic = reader.ReadInt16();
+            var magic = reader.ReadUInt32(0, true);
             if (magic == MagicBrokerEntryMetadata)
             {
-                var brokerEntryMetadataSize = reader.ReadInt32();
-                reader.BaseStream.Position = reader.BaseStream.Position + brokerEntryMetadataSize;
+                var brokerEntryMetadataSize = reader.Slice(2).ReadUInt32(0, true);
+                return reader.Slice(4, brokerEntryMetadataSize);
             }
-            else
-            {
-                reader.BaseStream.Position =  0;
-            }
-            //return new ReadOnlySequence<byte>(reader.BaseStream.ToByteArrays());
+            return reader;
         }
-        public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayloadWithBrokerEntryMetadata)
+        public static BrokerEntryMetadata ParseBrokerEntryMetadataIfExist(ReadOnlySequence<byte> headerAndPayload)
         {
-            var payload = headerAndPayloadWithBrokerEntryMetadata.ToArray();
-            var memory = Serializer.MemoryManager.GetStream();
-            memory.Write(payload, 0, payload.Length);
-            var reader = new BinaryReader(memory);
-            var readerIndex = reader.BaseStream.Position;
-            reader.BaseStream.Seek(readerIndex, SeekOrigin.Current);
-            //if (reader.getShort(readerIndex) == MagicBrokerEntryMetadata)
-            if (reader.ReadInt16() == MagicBrokerEntryMetadata)
+            var magic = headerAndPayload.ReadUInt32(0, true);
+            if (magic == MagicBrokerEntryMetadata)
             {
-                reader.BaseStream.Seek(2, SeekOrigin.Current);
-                var brokerEntryMetadataSize = reader.ReadInt32();
-                var brokerEntryMetadata = ProtoBuf.Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(memory, PrefixStyle.Fixed32BigEndian);
-                //brokerEntryMetadata.parseFrom(headerAndPayloadWithBrokerEntryMetadata, brokerEntryMetadataSize);
+                var brokerEntryMetadataSize = headerAndPayload.Slice(2).ReadUInt32(0, true);
+                var brokerEntryMetadata = Serializer.Deserialize<BrokerEntryMetadata>(headerAndPayload.Slice(4, brokerEntryMetadataSize));
                 return brokerEntryMetadata;
             }
 
