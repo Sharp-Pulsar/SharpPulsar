@@ -132,63 +132,67 @@ namespace SharpPulsar.SocketImpl
 
                         var buffer = result.Buffer;
 
-                        if (buffer.Length < 4)
-                            break;
-                        // Wire format
-                        // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-                        // | 4 bytes  | |4 bytes | |CMD_SIZE|
-
-                        var frameSize = buffer.ReadUInt32(0, true);
-                        var totalSize = frameSize + 4;
-
-                        if (buffer.Length < totalSize)
-                            break;
-                        var frame = buffer.Slice(4, frameSize);
-                        var commandSize = frame.ReadUInt32(0, true);
-                        var command = Serializer.Deserialize<BaseCommand>(frame.Slice(4, commandSize));
-                        if (command.type == BaseCommand.Type.Message)
+                        var length = (int)buffer.Length;
+                        if (length >= 8) 
                         {
-                            var b = frame.Slice(commandSize + 4);
-                            BrokerEntryMetadata brokerEntryMetadata = null;
-                            var brokerEntryMetadataMagicNumber = b.ReadUInt32(2, true);
-                            if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
+                            // Wire format
+                            // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
+                            // | 4 bytes  | |4 bytes | |CMD_SIZE|
+
+                            var frameSize = buffer.ReadUInt32(0, true);
+                            var totalSize = frameSize + 4;
+                            if (length >= totalSize)
                             {
-                                var brokerEntrySlice = b.Slice(2);
-                                var brokerEntryMetadataSize = brokerEntrySlice.ReadUInt32(0, true);
-                                brokerEntryMetadata = Serializer.Deserialize<BrokerEntryMetadata>(brokerEntrySlice.Slice(4, brokerEntryMetadataSize));
-                                b = brokerEntrySlice.Slice(brokerEntryMetadataSize + 4);
+                                var consumed = buffer.GetPosition(totalSize);
+                                var frame = buffer.Slice(4, frameSize);
+                                var commandSize = frame.ReadUInt32(0, true);
+                                var command = Serializer.Deserialize<BaseCommand>(frame.Slice(4, commandSize));
+                                if (command.type == BaseCommand.Type.Message)
+                                {
+                                    var b = frame.Slice(commandSize + 4);
+                                    BrokerEntryMetadata brokerEntryMetadata = null;
+                                    var brokerEntryMetadataMagicNumber = b.ReadUInt32(2, true);
+                                    if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
+                                    {
+                                        var brokerEntrySlice = b.Slice(2);
+                                        var brokerEntryMetadataSize = brokerEntrySlice.ReadUInt32(0, true);
+                                        brokerEntryMetadata = Serializer.Deserialize<BrokerEntryMetadata>(brokerEntrySlice.Slice(4, brokerEntryMetadataSize));
+                                        b = brokerEntrySlice.Slice(brokerEntryMetadataSize + 4);
+                                    }
+                                    var hasMagicNumber = b.StartsWith(Constants.MagicNumber);
+                                    b = b.Slice(Constants.MagicNumber.Length);
+                                    var messageCheckSum = b.ReadUInt32(0, true);
+                                    b = b.Slice(4);
+                                    var metadataSize = b.ReadUInt32(0, true);
+                                    var metadata = Serializer.Deserialize<MessageMetadata>(b.Slice(4, metadataSize));
+
+                                    var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(b);
+
+                                    var payload = new ReadOnlySequence<byte>(b.Slice(metadataSize + 4).ToArray());
+                                    observer.OnNext((command, metadata, brokerEntryMetadata, payload, hasValidCheckSum, hasMagicNumber));
+                                    //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
+                                }
+                                else
+                                {
+                                    observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, false));
+                                }
+                                if (result.IsCompleted)
+                                    _pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                                else
+                                    _pipeReader.AdvanceTo(consumed);
                             }
-                            var hasMagicNumber = b.StartsWith(Constants.MagicNumber);
-                            b = b.Slice(Constants.MagicNumber.Length);
-                            var messageCheckSum = b.ReadUInt32(0, true);
-                            b = b.Slice(4);
-                            var metadataSize = b.ReadUInt32(0, true);
-                            var metadata = Serializer.Deserialize<MessageMetadata>(b.Slice(4, metadataSize));
 
-                            var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(b);
-
-                            var payload = new ReadOnlySequence<byte>(b.Slice(metadataSize + 4).ToArray()); 
-                            observer.OnNext((command, metadata, brokerEntryMetadata, payload, hasValidCheckSum, hasMagicNumber));
-                            //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                         }
-                        else
-                        {
-                            observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, false));
-                        }
-                        buffer = buffer.Slice(totalSize);
-                        if (result.IsCompleted)
-                            break;
-
-                        _pipeReader.AdvanceTo(buffer.Start);
                     }
-
-                    _pipeReader?.Complete();
-                    observer.OnCompleted();
-
                 }
                 catch(Exception ex) 
                 {
                     _logger.Error(ex.ToString());
+                }
+                finally
+                {
+                    await _pipeReader.CompleteAsync().ConfigureAwait(false);
+                    observer.OnCompleted();
                 }
                 
             });

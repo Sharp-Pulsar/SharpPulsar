@@ -2,7 +2,9 @@
 using System.Buffers;
 using System.IO;
 using Microsoft.IO;
+using ProtoBuf;
 using SharpPulsar.Common;
+using SharpPulsar.Extension;
 using SharpPulsar.Protocol.Proto;
 
 namespace SharpPulsar.Helpers
@@ -40,7 +42,6 @@ namespace SharpPulsar.Helpers
 
             var sb = new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload);
             var checksum = CRC32C.Calculate(sb.Build());
-
             return sb.Prepend(ToBigEndianBytes(checksum))
                 .Prepend(Constants.MagicNumber)
                 .Prepend(commandBytes)

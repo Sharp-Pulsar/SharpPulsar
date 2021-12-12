@@ -1059,14 +1059,18 @@ namespace SharpPulsar.Protocol
             singleMessageMetadata.SequenceId = (ulong)sequenceId;
 			return singleMessageMetadata;
 		}
-		public static ReadOnlySequence<byte> SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadataBuilder, ReadOnlySequence<byte> payload)
+		public static ReadOnlySequence<byte> SerializeSingleMessageInBatchWithPayload(SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload)
 		{
-			singleMessageMetadataBuilder.PayloadSize = (int)payload.Length;
-			var metadataBytes = Serializer.GetBytes(singleMessageMetadataBuilder);
+			singleMessageMetadata.PayloadSize = (int)payload.Length;
+			var metadataBytes = Serializer.GetBytes(singleMessageMetadata);
             var metadataSizeBytes = Serializer.ToBigEndianBytes((uint)metadataBytes.Length);
             try
             {
-               return new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload).Build();
+               return new SequenceBuilder<byte>()
+                    .Append(metadataSizeBytes)
+                    .Append(metadataBytes)
+                    .Append(payload)
+                    .Build();
                
             }
             catch (IOException e)

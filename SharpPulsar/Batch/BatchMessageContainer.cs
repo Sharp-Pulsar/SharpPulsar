@@ -7,6 +7,7 @@ using Akka.Event;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Helpers;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 
@@ -102,24 +103,22 @@ namespace SharpPulsar.Batch
 		{
 			get
 			{
-				var stream = Helpers.Serializer.MemoryManager.GetStream();
-				var messageWriter = new BinaryWriter(stream);
-
-				for (int i = 0, n = _messages.Count; i < n; i++)
+                var builder = new SequenceBuilder<byte>();
+                for (int i = 0, n = _messages.Count; i < n; i++)
 				{					
 					try
 					{
 						var msg = _messages[i];
 						var msgMetadata = msg.Metadata.OriginalMetadata;
-						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-						messageWriter.Write(msg.Data.ToArray());
+                        var message = Commands.SerializeSingleMessageInBatchWithPayload(Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), msg.Data);
+                        builder.Append(message);
 					}
 					catch (Exception ex)
 					{
 						throw ex;
 					}
 				}
-				var batchedMessageMetadataAndPayload = stream.ToArray();
+				var batchedMessageMetadataAndPayload = builder.Build().ToArray();
 
 				var uncompressedSize = batchedMessageMetadataAndPayload.Length;
 				var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);

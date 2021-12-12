@@ -41,8 +41,8 @@ namespace SharpPulsar.Test.Api
         {
             _output = output;
             _client = fixture.Client;
-            //_topic = $"persistent://public/default/my-topic-Batch-{Guid.NewGuid()}";
-            _topic = "my-topic-batch-bf719df3";
+            _topic = $"persistent://public/default/my-topic-Batch-{Guid.NewGuid()}";
+            //_topic = "my-topic-batch-bf719df3";
         }
 
         [Fact]
@@ -126,11 +126,12 @@ namespace SharpPulsar.Test.Api
             var consumer = _client.NewConsumer(consumerBuilder);
 
 
-            var producerBuilder = new ProducerConfigBuilder<byte[]>();
-            producerBuilder.Topic(_topic);
-            producerBuilder.EnableBatching(true);
-            producerBuilder.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000));
-            producerBuilder.BatchingMaxMessages(5);
+            var producerBuilder = new ProducerConfigBuilder<byte[]>()
+                .Topic(_topic)
+                .EnableBatching(true)
+                .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000))
+                .BatchingMaxMessages(5);
+
             var producer = _client.NewProducer(producerBuilder);
 
             for (var i = 0; i < 5; i++)

@@ -13,6 +13,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
+using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
@@ -1172,17 +1173,13 @@ namespace SharpPulsar
         {
             try
             {
-                using var stream = new MemoryStream(o.Msg.Data.ToArray());
-                using var reader = new BinaryReader(stream);
-                var sizeStream = stream.Length;
-                stream.Seek(4L, SeekOrigin.Begin);
-                var sizeCmd = reader.ReadInt32().IntFromBigEndian();
-                stream.Seek((long)10 + sizeCmd, SeekOrigin.Begin);
-
-                var checkSum = reader.ReadInt32().IntFromBigEndian();
-                var checkSumPayload = ((int)sizeStream) - 14 - sizeCmd;
-                var computedCheckSum = (int)CRC32C.Get(0u, stream, checkSumPayload);
-                return checkSum != computedCheckSum;
+                var frame = o.Msg.Data.Slice(4);
+                var cmdSize = frame.ReadUInt32(0, true);
+                frame = frame.Slice(4, cmdSize);
+                frame = frame.Slice(Helpers.Constants.MagicNumber.Length);
+                var messageCheckSum = frame.ReadUInt32(0, true);
+                frame = frame.Slice(4);
+                return messageCheckSum == CRC32C.Calculate(frame);
             }
             catch(Exception ex)
             {
