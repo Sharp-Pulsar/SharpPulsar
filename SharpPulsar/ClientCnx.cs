@@ -346,7 +346,7 @@ namespace SharpPulsar
 				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
-		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)
+		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidCheckSum, bool hasMagicNumber)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -361,7 +361,7 @@ namespace SharpPulsar
 				BatchSize = msg.MessageId.BatchSize,
 				BatchIndex = msg.MessageId.BatchIndex
 			};
-			var message = new MessageReceived(metadata, brokerEntryMetadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
+			var message = new MessageReceived(metadata, brokerEntryMetadata, payload, id, (int)msg.RedeliveryCount, hasValidCheckSum, hasMagicNumber);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
@@ -846,7 +846,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber) args)
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidCheckSum, bool hasMagicNumber) args)
 		{
 			var cmd = args.command;
 			switch (cmd.type)
@@ -857,7 +857,7 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
-					HandleMessage(msg, args.metadata, args.brokerEntryMetadata, args.payload, args.checkSum, args.magicNumber);
+					HandleMessage(msg, args.metadata, args.brokerEntryMetadata, args.payload, args.hasValidCheckSum, args.hasMagicNumber);
 					break;
 				case BaseCommand.Type.GetLastMessageIdResponse:
 					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);

@@ -600,6 +600,7 @@ namespace SharpPulsar
 
 		private async ValueTask Send(IMessage<T> message)
 		{
+            //TODO: create local function for callback
 			Condition.CheckArgument(message is Message<T>);
 			var maxMessageSize = (int)_maxMessageSize;
 			if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)

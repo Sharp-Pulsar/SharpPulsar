@@ -1342,10 +1342,7 @@ namespace SharpPulsar
             }
             var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 
-            var mn = (short)0x0e01;
-            var startsWith = received.MagicNumber == mn;
-            var hascheckum = received.CheckSum;
-            if (!(startsWith && hascheckum))
+            if (!received.HasMagicNumber && !received.HasValidCheckSum)
 			{
 				// discard message with checksum error
 				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
