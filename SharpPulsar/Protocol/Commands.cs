@@ -124,9 +124,10 @@ namespace SharpPulsar.Protocol
 		{
             var connect = new CommandConnect
             {
-                ClientVersion = libVersion, 
+                ClientVersion = libVersion,
                 AuthMethodName = authMethodName,
-                FeatureFlags = new FeatureFlags()
+                FeatureFlags = new FeatureFlags(),
+                ProtocolVersion = protocolVersion
             };
 
             if (!string.IsNullOrWhiteSpace(targetBroker))
@@ -154,7 +155,6 @@ namespace SharpPulsar.Protocol
 			{
 				connect.OriginalAuthMethod = originalAuthMethod;
 			}
-			connect.ProtocolVersion = protocolVersion;
             SetFeatureFlags(connect.FeatureFlags);
             var ba = connect.ToBaseCommand();
             return Serializer.Serialize(ba);

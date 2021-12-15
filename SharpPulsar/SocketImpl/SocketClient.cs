@@ -23,6 +23,8 @@ using System.Threading.Tasks;
 using SharpPulsar.Auth;
 using SharpPulsar.Protocol;
 using SharpPulsar.Helpers;
+using ProtoBuf;
+using Serializer = ProtoBuf.Serializer;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -131,45 +133,45 @@ namespace SharpPulsar.SocketImpl
                         var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var buffer = result.Buffer;
-
                         var length = (int)buffer.Length;
                         if (length >= 8) 
                         {
+                            using var stream = new MemoryStream(buffer.ToArray());
+                            using var reader = new BinaryReader(stream);
                             // Wire format
                             // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
                             // | 4 bytes  | |4 bytes | |CMD_SIZE|
 
-                            var frameSize = buffer.ReadUInt32(0, true);
+                            var frameSize = reader.ReadInt32().IntFromBigEndian();
                             var totalSize = frameSize + 4;
                             if (length >= totalSize)
                             {
                                 var consumed = buffer.GetPosition(totalSize);
-                                var frame = buffer.Slice(4, frameSize);
-                                var commandSize = frame.ReadUInt32(0, true);
-                                var command = Serializer.Deserialize<BaseCommand>(frame.Slice(4, commandSize));
+                                var commandSize = reader.ReadInt32().IntFromBigEndian();
+                                var commandBytes = reader.ReadBytes(commandSize);
+                                var command = Serializer.Deserialize<BaseCommand>(new ReadOnlySequence<byte>(commandBytes));
                                 if (command.type == BaseCommand.Type.Message)
                                 {
-                                    var b = frame.Slice(commandSize + 4);
                                     BrokerEntryMetadata brokerEntryMetadata = null;
-                                    var brokerEntryMetadataMagicNumber = b.ReadUInt32(2, true);
+                                    var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
                                     if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
                                     {
-                                        var brokerEntrySlice = b.Slice(2);
-                                        var brokerEntryMetadataSize = brokerEntrySlice.ReadUInt32(0, true);
-                                        brokerEntryMetadata = Serializer.Deserialize<BrokerEntryMetadata>(brokerEntrySlice.Slice(4, brokerEntryMetadataSize));
-                                        b = brokerEntrySlice.Slice(brokerEntryMetadataSize + 4);
+                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);                                        
                                     }
-                                    var hasMagicNumber = b.StartsWith(Constants.MagicNumber);
-                                    b = b.Slice(Constants.MagicNumber.Length);
-                                    var messageCheckSum = b.ReadUInt32(0, true);
-                                    b = b.Slice(4);
-                                    var metadataSize = b.ReadUInt32(0, true);
-                                    var metadata = Serializer.Deserialize<MessageMetadata>(b.Slice(4, metadataSize));
+                                    var magicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                    var hasMagicNumber = magicNumber == BitConverter.ToUInt16(Constants.MagicNumber, 0);
+                                    var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
 
-                                    var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(b);
+                                    var metadataOffset = stream.Position;
+                                    var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                    var payloadOffset = stream.Position;
+                                    var metadataLength = (int)(payloadOffset - metadataOffset);
+                                    var payloadLength = totalSize - (int)payloadOffset;
+                                    var payload = reader.ReadBytes(payloadLength);
+                                    stream.Seek(metadataOffset, SeekOrigin.Begin);
 
-                                    var payload = new ReadOnlySequence<byte>(b.Slice(metadataSize + 4).ToArray());
-                                    observer.OnNext((command, metadata, brokerEntryMetadata, payload, hasValidCheckSum, hasMagicNumber));
+                                    var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(new ReadOnlySequence<byte>(reader.ReadBytes(metadataLength + payloadLength)));
+                                    observer.OnNext((command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
                                     //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                 }
                                 else

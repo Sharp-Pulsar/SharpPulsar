@@ -77,7 +77,7 @@ namespace SharpPulsar.Test.Api
         [Fact]
         public void ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/produce-consume";
+            var topic = $"persistent://public/default/produce-consume-1";
 
             var r = new Random(0);
             var byteKey = new byte[1000];
@@ -100,7 +100,10 @@ namespace SharpPulsar.Test.Api
             var consumer = _client.NewConsumer(consumerBuilder);
 
             Thread.Sleep(TimeSpan.FromSeconds(10));
-            var message = consumer.Receive();
+            var message = (Message<byte[]>)consumer.Receive();
+
+            if (message != null)
+                _output.WriteLine($"BrokerEntryMetadata messages index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
             Assert.Equal(byteKey, message.KeyBytes);
 
