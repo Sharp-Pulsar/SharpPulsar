@@ -69,7 +69,10 @@ namespace SharpPulsar.Test.Api
             Thread.Sleep(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCount; ++i)
             {
-                var m = consumer.Receive();
+                var m = (Message<byte[]>)consumer.Receive();
+                if (m != null)
+                    _output.WriteLine($"BrokerEntryMetadata[timestamp:{m.BrokerEntryMetadata.BrokerTimestamp} index: {m.BrokerEntryMetadata?.Index.ToString()}");
+
                 var receivedMessage = Encoding.UTF8.GetString(m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.NotNull(receivedMessage);

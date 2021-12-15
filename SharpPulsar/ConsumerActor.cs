@@ -1433,6 +1433,7 @@ namespace SharpPulsar
                     return;
                 }
                 var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages);
+                message.BrokerEntryMetadata = received.BrokerEntryMetadata;
                 try
                 {
                     // Enqueue the message so that it can be retrieved when application calls receive()

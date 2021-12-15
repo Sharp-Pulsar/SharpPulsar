@@ -77,7 +77,7 @@ namespace SharpPulsar.Test.Api
         [Fact]
         public void ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/produce-consume-1";
+            var topic = $"persistent://public/default/produce-consume-2";
 
             var r = new Random(0);
             var byteKey = new byte[1000];
@@ -103,7 +103,7 @@ namespace SharpPulsar.Test.Api
             var message = (Message<byte[]>)consumer.Receive();
 
             if (message != null)
-                _output.WriteLine($"BrokerEntryMetadata messages index: {message.BrokerEntryMetadata?.Index.ToString()}");
+                _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
             Assert.Equal(byteKey, message.KeyBytes);
 
@@ -148,7 +148,10 @@ namespace SharpPulsar.Test.Api
             Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {
-                var message = consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive();
+                if (message != null)
+                    _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
+
                 Assert.Equal(byteKey, message.KeyBytes);
                 Assert.True(message.HasBase64EncodedKey());
                 var receivedMessage = Encoding.UTF8.GetString(message.Data);

@@ -159,8 +159,8 @@ namespace SharpPulsar.SocketImpl
                                         brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);                                        
                                     }
                                     var magicNumber = reader.ReadInt16().Int16FromBigEndian();
-                                    var hasMagicNumber = magicNumber == BitConverter.ToUInt16(Constants.MagicNumber, 0);
-                                    var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
+                                    var hasMagicNumber = magicNumber == 3585;
+                                    var messageCheckSum = (uint)reader.ReadInt32().IntFromBigEndian();
 
                                     var metadataOffset = stream.Position;
                                     var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
@@ -170,7 +170,7 @@ namespace SharpPulsar.SocketImpl
                                     var payload = reader.ReadBytes(payloadLength);
                                     stream.Seek(metadataOffset, SeekOrigin.Begin);
 
-                                    var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(new ReadOnlySequence<byte>(reader.ReadBytes(metadataLength + payloadLength)));
+                                    var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(new ReadOnlySequence<byte>(reader.ReadBytes(totalSize - (int)metadataOffset)));
                                     observer.OnNext((command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
                                     //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                 }
