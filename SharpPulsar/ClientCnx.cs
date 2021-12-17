@@ -791,7 +791,7 @@ namespace SharpPulsar
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new NewTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
+				handler.Tell(new NewTxnResponse(command, GetExceptionByServerError(command.Error, command.Message)));
 			}
 		}
 
@@ -819,7 +819,7 @@ namespace SharpPulsar
 			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new EndTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
+				handler.Tell(new EndTxnResponse(command));
 			}
 		}
 
@@ -1011,6 +1011,7 @@ namespace SharpPulsar
                 case ServerError.TransactionCoordinatorNotFound:
                     return new PulsarClientException.TransactionCoordinatorNotFoundException(errorMsg);
                 case ServerError.UnknownError:
+                    return null;
 				default:
 					return new PulsarClientException(errorMsg);
 			}

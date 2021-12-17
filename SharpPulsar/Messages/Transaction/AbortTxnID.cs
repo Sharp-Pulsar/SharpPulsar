@@ -5,6 +5,7 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class AbortTxnID
     {
         public TxnID TxnID { get; }
+
         public AbortTxnID(TxnID txnID)
         {
             TxnID = txnID;
