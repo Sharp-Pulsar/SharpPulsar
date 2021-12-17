@@ -728,10 +728,27 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
-		/// <summary>
-		/// Consumer assign exception thrown by Pulsar client.
-		/// </summary>
-		public class TransactionConflictException : PulsarClientException
+
+        /// <summary>
+        /// Transaction Coordinator Not Found.
+        /// </summary>
+        public class TransactionCoordinatorNotFoundException : PulsarClientException
+        {
+
+            /// <summary>
+            /// Constructs an {@code ProducerFencedException} with the specified detail message.
+            /// </summary>
+            /// <param name="msg">
+            ///        The detail message (which is saved for later retrieval
+            ///        by the <seealso cref="getMessage()"/> method) </param>
+            public TransactionCoordinatorNotFoundException(string msg) : base(msg)
+            {
+            }
+        }
+        /// <summary>
+        /// Consumer assign exception thrown by Pulsar client.
+        /// </summary>
+        public class TransactionConflictException : PulsarClientException
 		{
 
 			/// <summary>

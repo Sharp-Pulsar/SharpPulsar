@@ -381,8 +381,24 @@ namespace SharpPulsar
 				consumer.Tell(new ActiveConsumerChanged(change.IsActive));
 			}
 		}
+        private void HandleNewTcClientConnectResponse(CommandTcClientConnectResponse response)
+        {
+            var requestId = (long)response.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                if (response.Error != ServerError.UnknownError)
+                {
+                    CheckServerError(response.Error, response.Message);
+                    var ex = GetPulsarClientException(response.Error, response.Message);
+                    req.Requester.Tell(new AskResponse(ex));
+                }
+                else
+                    req.Requester.Tell(new AskResponse());
+            }
+        }
 
-		private void HandleSuccess(CommandSuccess success)
+        private void HandleSuccess(CommandSuccess success)
 		{
 			Condition.CheckArgument(_state == State.Ready);
 
@@ -871,6 +887,9 @@ namespace SharpPulsar
 				case BaseCommand.Type.Success:
 					HandleSuccess(cmd.Success);
 					break;
+				case BaseCommand.Type.TcClientConnectResponse:
+                    HandleNewTcClientConnectResponse(cmd.tcClientConnectResponse);
+					break;
 				case BaseCommand.Type.SendReceipt:
 					HandleSendReceipt(cmd.SendReceipt);
 					break;
@@ -989,6 +1008,8 @@ namespace SharpPulsar
 					return new PulsarClientException.TransactionConflictException(errorMsg);
                 case ServerError.ProducerFenced:
                     return new PulsarClientException.ProducerFencedException(errorMsg);
+                case ServerError.TransactionCoordinatorNotFound:
+                    return new PulsarClientException.TransactionCoordinatorNotFoundException(errorMsg);
                 case ServerError.UnknownError:
 				default:
 					return new PulsarClientException(errorMsg);

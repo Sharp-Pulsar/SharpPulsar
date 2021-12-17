@@ -119,8 +119,16 @@ namespace SharpPulsar.Protocol
             SetFeatureFlags(connect.FeatureFlags);
 			return Serializer.Serialize(connect.ToBaseCommand());
 		}
-
-		public static ReadOnlySequence<byte> NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
+        public static ReadOnlySequence<byte> NewTcClientConnectRequest(long tcId, long requestId)
+        {
+            var tcClientConnect = new CommandTcClientConnectRequest
+            {
+                TcId = (ulong)tcId,
+                RequestId = (ulong)requestId
+            };
+            return Serializer.Serialize(tcClientConnect.ToBaseCommand());
+        }
+        public static ReadOnlySequence<byte> NewConnect(string authMethodName, AuthData authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, AuthData originalAuthData, string originalAuthMethod)
 		{
             var connect = new CommandConnect
             {
