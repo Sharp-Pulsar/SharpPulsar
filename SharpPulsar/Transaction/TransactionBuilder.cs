@@ -2,6 +2,7 @@
 using Akka.Event;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Transaction;
 using System;
 using System.Threading.Tasks;
@@ -64,12 +65,14 @@ namespace SharpPulsar.Transaction
             //       After getting the transaction id, all the operations are handled by the
             //       `Transaction`
             var timeout = (long)_txnTimeoutMs.TotalMilliseconds;
-            var txnID = await _transactionCoordinatorClient.Ask<NewTxnResponse>(new NewTxn(timeout)).ConfigureAwait(false);
+            var ask = await _transactionCoordinatorClient.Ask<AskResponse>(new NewTxn(timeout)).ConfigureAwait(false);
 
-            if (!(txnID.Error is NoException))
-                throw txnID.Error;
+            if (ask.Failed)
+                throw ask.Exception;
 
-			if(_log.IsDebugEnabled)
+            var txnID = ask.ConvertTo<TxnID>();
+
+            if (_log.IsDebugEnabled)
                 _log.Debug($"Success to new txn. txnID: ({txnID.MostSigBits}:{txnID.LeastSigBits})");
 
             var transaction = _actorSystem.ActorOf(TransactionActor.Prop(_client, timeout, txnID.LeastSigBits, txnID.MostSigBits));

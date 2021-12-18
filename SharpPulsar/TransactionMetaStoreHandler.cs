@@ -51,7 +51,7 @@ namespace SharpPulsar
 		private object[] _invokeArg;
 		private IActorRef _replyTo;
 		private IActorRef _self;
-		private long _requestId = -1;
+		//private long _requestId = -1;
 		private IActorRef _clientCnx;
         private IActorContext _context;
         private readonly ConcurrentDictionary<long, OpBase<object>> pendingRequests = new ConcurrentDictionary<long, OpBase<object>>();
@@ -133,74 +133,38 @@ namespace SharpPulsar
 				_replyTo = Sender;
 				_invokeArg = new object[] { t.TxnRequestTimeoutMs };            
 
-                Become(() => GetCnxAndRequestId(()=>{ return NewTransaction(_invokeArg); }));
+                GetCnxAndRequestId(()=>{ return NewTransaction(_invokeArg); });
 			});
 			Receive<AddPublishPartitionToTxn>(p => 
 			{
 				_replyTo = Sender;
 				_invokeArg = new object[] { p.TxnID, p.Topics, Sender };
-                Become(() => GetCnxAndRequestId(() => { return AddPublishPartitionToTxn(_invokeArg); }));
+                GetCnxAndRequestId(() => { return AddPublishPartitionToTxn(_invokeArg); });
             });
 			Receive<AbortTxnID>(a => 
 			{
 				_replyTo = Sender;
 				_invokeArg = new object[] { a.TxnID, Sender, TxnAction.Abort };
-                Become(() => GetCnxAndRequestId(() => { return EndTxn(_invokeArg); }));
+                GetCnxAndRequestId(() => { return EndTxn(_invokeArg); });
             });
 			Receive<CommitTxnID>(c =>
             {
                 _replyTo = Sender;
                 _invokeArg = new object[] { c.TxnID, Sender, TxnAction.Commit};
-                Become(() => GetCnxAndRequestId(() => { return EndTxn(_invokeArg); }));
+                GetCnxAndRequestId(() => { return EndTxn(_invokeArg); });
             });
 			Receive<AddSubscriptionToTxn>(s => 
 			{
 				_replyTo = Sender;
 				_invokeArg = new object[] { s.TxnID, s.Subscriptions };
-                Become(() => GetCnxAndRequestId(() => { return AddSubscriptionToTxn(_invokeArg); }));
+                GetCnxAndRequestId(() => { return AddSubscriptionToTxn(_invokeArg); });
 			});
 			Stash?.UnstashAll();
 		}
 		private void GetCnxAndRequestId(Func<Task<object>> action)
 		{
-			_clientCnx = null;
-			_requestId = -1;
-			Receive<AskResponse>(m =>
-			{
-                if(m.Data != null)
-				    _clientCnx = m.ConvertTo<IActorRef>();
-
-				_generator.Tell(NewRequestId.Instance);
-			});
-			Receive<NewRequestIdResponse>(m =>
-			{
-				_requestId = m.Id;
-                var task = action();
-                if (!task.IsFaulted)
-                {
-                    switch(task.Result)
-                    {
-                        case NewTxnResponse newTxnRs:
-                            HandleNewTxnResponse(newTxnRs.Response);
-                            break;
-                        case AddSubscriptionToTxnResponse subRes:
-                            HandleAddSubscriptionToTxnResponse(subRes.Response);
-                            break;
-                        case AddPublishPartitionToTxnResponse pubRes:
-                            HandleAddPublishPartitionToTxnResponse(pubRes.Response);
-                            break;
-                        case EndTxnResponse endRes:
-                            HandleEndTxnResponse(endRes.Response);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                Become(Listening);
-            });
-			ReceiveAny(_ => Stash.Stash());
-			_connectionHandler.Tell(GetCnx.Instance);
-		}
+            action();
+        }
 		public static Props Prop(long transactionCoordinatorId, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ClientConfigurationData conf, TaskCompletionSource<object> connectFuture)
         {
 			return Props.Create(()=> new TransactionMetaStoreHandler(transactionCoordinatorId, lookup, cnxPool, idGenerator, topic, conf, connectFuture));
@@ -222,8 +186,8 @@ namespace SharpPulsar
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
             var cmd = Commands.NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, action);
-            var op = OpForVoidCallBack.Create(cmd, callback, _conf);
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
+            var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewEndTxn");
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
             {
                 pendingRequests.TryAdd(requestId, op);
                 _timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
@@ -255,7 +219,7 @@ namespace SharpPulsar
             Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
             {
                 pendingRequests.TryRemove(requestId, out OpBase<object> opB);
-                OpForTxnIdCallBack op = (OpForTxnIdCallBack)opB;
+                var op = (OpForTxnIdCallBack)opB;
                 if (op == null)
                 {
                     if (_log.IsDebugEnabled)
@@ -283,7 +247,7 @@ namespace SharpPulsar
                         pendingRequests.TryAdd(requestId, op);
                         _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
                         {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+                            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
                             {
                                 if (!pendingRequests.ContainsKey(requestId))
                                 {
@@ -293,7 +257,7 @@ namespace SharpPulsar
                                     }
                                     return;
                                 }
-                                if (!CheckStateAndSendRequest(op).GetAwaiter().GetResult())
+                                if (!await CheckStateAndSendRequest(op))
                                 {
                                     pendingRequests.TryRemove(requestId, out _);
                                 }
@@ -303,7 +267,6 @@ namespace SharpPulsar
                     }
                     _log.Error($"Got {BaseCommand.Type.EndTxn} for request {requestId} error {error}");
                 }
-                OnResponse(op);
             });
         }
         private async ValueTask HandleConnectionOpened(IActorRef cnx)
@@ -316,6 +279,7 @@ namespace SharpPulsar
                 pendingRequests.Clear();
                 return;
             }
+            _clientCnx = cnx;
             _connectionHandler.Tell(new SetCnx(cnx));
 			cnx.Tell(new RegisterTransactionMetaStoreHandler(_transactionCoordinatorId, _self));
             var protocolVersionResponse = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false);
@@ -325,7 +289,7 @@ namespace SharpPulsar
                 var reid = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 var requestId = reid.Id;
                 var cmd = Commands.NewTcClientConnectRequest(_transactionCoordinatorId, requestId);
-                var response = await _clientCnx.Ask<AskResponse>(new Payload(cmd, _requestId, "NewTcClientConnectRequest"));
+                var response = await _clientCnx.Ask<AskResponse>(new Payload(cmd, requestId, "NewTcClientConnectRequest"));
                 if (!response.Failed)
                 {
                     _log.Info($"Transaction coordinator client connect success! tcId : {_transactionCoordinatorId}");
@@ -374,7 +338,7 @@ namespace SharpPulsar
             {
                 _log.Debug("New transaction with timeout in secs {}", timeout);
             }
-            TaskCompletionSource<object> callback = new TaskCompletionSource<object>();
+            var callback = new TaskCompletionSource<object>();
             if (!CanSendRequest(callback))
             {
                return callback.Task;
@@ -382,11 +346,11 @@ namespace SharpPulsar
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
             var cmd = Commands.NewTxn(_transactionCoordinatorId, requestId, timeout);
-            var op = OpForTxnIdCallBack.Create(cmd, callback, _conf);
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=> 
+            var op = OpForTxnIdCallBack.Create(cmd, callback, _conf, requestId, "NewTxn");
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> 
             {
                 pendingRequests.TryAdd(requestId, op);
-                _timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), _requestId));
+                _timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
                 if (!await CheckStateAndSendRequest(op))
                 {
                     pendingRequests.TryRemove(requestId, out _);
@@ -415,7 +379,7 @@ namespace SharpPulsar
             Akka.Dispatch.ActorTaskScheduler.RunTask(()=> 
             {
                 pendingRequests.TryRemove(requestId, out OpBase<object> opB);
-                OpForTxnIdCallBack op = (OpForTxnIdCallBack)opB;
+                var op = (OpForTxnIdCallBack)opB;
                 if (op == null)
                 {
                     if (_log.IsDebugEnabled)
@@ -443,7 +407,7 @@ namespace SharpPulsar
                         pendingRequests.TryAdd(requestId, op);
                         _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
                         {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(()=> 
+                            Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=> 
                             {
                                 if (!pendingRequests.ContainsKey(requestId))
                                 {
@@ -453,7 +417,7 @@ namespace SharpPulsar
                                     }
                                     return;
                                 }
-                                if (!CheckStateAndSendRequest(op).GetAwaiter().GetResult())
+                                if (!await CheckStateAndSendRequest(op))
                                 {
                                     pendingRequests.TryRemove(requestId, out _);
                                 }
@@ -463,7 +427,6 @@ namespace SharpPulsar
                     }
                     _log.Error($"Got {BaseCommand.Type.NewTxn.GetType().Name} for request {requestId} error {error}");
                 }
-                OnResponse(op);
             });
 		}
         private bool CheckIfNeedRetryByError<T>(ServerError error, string Message, OpBase<T> op)
@@ -501,7 +464,7 @@ namespace SharpPulsar
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
             var cmd = Commands.NewAddPartitionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, partitions);
-            var op = OpForVoidCallBack.Create(cmd, callback, _conf);
+            var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewAddPartitionToTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> 
             {
                 pendingRequests.TryAdd(requestId, op);
@@ -549,7 +512,7 @@ namespace SharpPulsar
                     {
                         _log.Debug($"Add publish partition for request {requestId} success.");
                     }
-                    op.Callback.SetResult(null);
+                    op.Callback.SetResult(new RegisterProducedTopicResponse(null));
                 }
                 else
                 {
@@ -562,7 +525,7 @@ namespace SharpPulsar
                         pendingRequests.TryAdd(requestId, op);
                         _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
                         {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+                            Akka.Dispatch.ActorTaskScheduler.RunTask(async () =>
                             {
                                 if (!pendingRequests.ContainsKey(requestId))
                                 {
@@ -572,7 +535,7 @@ namespace SharpPulsar
                                     }
                                     return;
                                 }
-                                if (!CheckStateAndSendRequest(op).GetAwaiter().GetResult())
+                                if (!await CheckStateAndSendRequest(op))
                                 {
                                     pendingRequests.TryRemove(requestId, out _);
                                 }
@@ -580,9 +543,11 @@ namespace SharpPulsar
                         });
                         return;
                     }
+                    else
+                        op.Callback.SetResult(new RegisterProducedTopicResponse(error.Value));
+
                     _log.Error($"{BaseCommand.Type.AddPartitionToTxn} for request {requestId} error {error} with txnID {txnID}.");
                 }
-                OnResponse(op);
             });
         }
         
@@ -602,12 +567,12 @@ namespace SharpPulsar
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
             var cmd = Commands.NewAddSubscriptionToTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, subscriptionList);
-            var op = OpForVoidCallBack.Create(cmd, callback, _conf);
+            var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewAddSubscriptionToTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=> 
             {
                 pendingRequests.TryAdd(requestId, op);
                 _timeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId));
-                if (! await CheckStateAndSendRequest(op))
+                if (!await CheckStateAndSendRequest(op))
                 {
                     pendingRequests.TryRemove(requestId, out _);
                 }
@@ -662,7 +627,7 @@ namespace SharpPulsar
                         pendingRequests.TryAdd(requestId, op);
                         _context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(op.Backoff.Next()), () =>
                         {
-                            Akka.Dispatch.ActorTaskScheduler.RunTask(() =>
+                            Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
                             {
                                 if (!pendingRequests.ContainsKey(requestId))
                                 {
@@ -672,7 +637,7 @@ namespace SharpPulsar
                                     }
                                     return;
                                 }
-                                if (!CheckStateAndSendRequest(op).GetAwaiter().GetResult())
+                                if (!await CheckStateAndSendRequest(op))
                                 {
                                     pendingRequests.TryRemove(requestId, out _);
                                 }
@@ -682,7 +647,6 @@ namespace SharpPulsar
                     }
                     _log.Error($"{BaseCommand.Type.AddSubscriptionToTxn} failed for request {requestId} error {error}.");
                 }
-                OnResponse(op);
             });
         }
 
@@ -711,15 +675,51 @@ namespace SharpPulsar
             }*/
             return true;
         }
-        private async ValueTask<bool> CheckStateAndSendRequest(OpBase<object> op)
+        private async Task<bool> CheckStateAndSendRequest(OpBase<object> op)
         {
             switch (_state.ConnectionState)
             {
                 case HandlerState.State.Ready:
                     if (_clientCnx != null)
                     {
-                        var response = await _clientCnx.Ask<object>(new Payload(op.Cmd, op.RequestId, ""));
-                        op.Callback.SetResult(response);
+                        var response = await _clientCnx.Ask<object>(new Payload(op.Cmd, op.RequestId, op.Method));
+                        switch (response)
+                        {
+                            case NewTxnResponse newTxn:
+                                try
+                                {
+                                    HandleNewTxnResponse(newTxn.Response);
+                                    var result = op.Callback.Task.Result;
+                                    _replyTo.Tell(new AskResponse(result));
+                                }
+                                catch(Exception ex)
+                                {
+                                    _replyTo.Tell(new AskResponse(ex));
+                                }
+                                break;
+                            case AddSubscriptionToTxnResponse subRes:
+                                HandleAddSubscriptionToTxnResponse(subRes.Response);
+                                break;
+                            case AddPublishPartitionToTxnResponse pubRes:
+                                try
+                                {
+                                    HandleAddPublishPartitionToTxnResponse(pubRes.Response);
+                                    var result = op.Callback.Task.Result;
+                                    _replyTo.Tell(new RegisterProducedTopicResponse(null));
+                                }
+                                catch (Exception ex)
+                                {
+                                    _replyTo.Tell(new RegisterProducedTopicResponse(ServerError.UnknownError));
+                                }
+                                break;
+                            case EndTxnResponse endRes: 
+                                HandleEndTxnResponse(endRes.Response);
+                                break;
+                            default:
+                                break;
+                        }
+
+                        OnResponse(op);
                     }
                     else
                     {
@@ -770,11 +770,11 @@ namespace SharpPulsar
 			switch(serverError)
 			{
 				case ServerError.TransactionCoordinatorNotFound:
-					return new TransactionCoordinatorClientException.CoordinatorNotFoundException(msg);
+					return new CoordinatorNotFoundException(msg);
 				case ServerError.InvalidTxnStatus:
-					return new TransactionCoordinatorClientException.InvalidTxnStatusException(msg);
+					return new InvalidTxnStatusException(msg);
 				case ServerError.TransactionNotFound:
-					return new TransactionCoordinatorClientException.TransactionNotFoundException(msg);
+					return new TransactionNotFoundException(msg);
 				default:
 					return new TransactionCoordinatorClientException(msg);
 			}
@@ -848,22 +848,25 @@ namespace SharpPulsar
             protected internal TaskCompletionSource<T> Callback;
             protected internal Backoff Backoff;
             protected internal long RequestId;
+            protected internal string Method;
 
             internal abstract void Recycle();
         }
         private class OpForTxnIdCallBack : OpBase<object>
         {
 
-            internal static OpForTxnIdCallBack Create(ReadOnlySequence<byte> cmd, TaskCompletionSource<object> callback, ClientConfigurationData client)
+            internal static OpForTxnIdCallBack Create(ReadOnlySequence<byte> cmd, TaskCompletionSource<object> callback, ClientConfigurationData client, long requestid, string method)
             {
-                OpForTxnIdCallBack Op = new OpForTxnIdCallBack
+                var Op = new OpForTxnIdCallBack
                 {
                     Callback = callback,
                     Cmd = cmd,
                     Backoff = (new BackoffBuilder())
                     .SetInitialTime(TimeSpan.FromMilliseconds(client.InitialBackoffIntervalMs))
                     .SetMax(TimeSpan.FromMilliseconds(client.MaxBackoffIntervalMs / 10))
-                    .SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create()
+                    .SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(),
+                    RequestId = requestid,
+                    Method = method
                 };
                 return Op;
             }
@@ -874,19 +877,24 @@ namespace SharpPulsar
                 Cmd = ReadOnlySequence<byte>.Empty;
                 Callback = null;
                 RequestId = -1;
+                Method = string.Empty;
             }
         }
         private class OpForVoidCallBack : OpBase<object>
         {
-            internal static OpForVoidCallBack Create(ReadOnlySequence<byte> cmd, TaskCompletionSource<object> callback, ClientConfigurationData client)
+            internal static OpForVoidCallBack Create(ReadOnlySequence<byte> cmd, TaskCompletionSource<object> callback, ClientConfigurationData client, long requestid, string method)
             {
-                OpForVoidCallBack Op = new OpForVoidCallBack();
-                Op.Callback = callback;
-                Op.Cmd = cmd;
-                Op.Backoff = (new BackoffBuilder())
+                var Op = new OpForVoidCallBack
+                {
+                    Callback = callback,
+                    Cmd = cmd,
+                    Backoff = (new BackoffBuilder())
                     .SetInitialTime(TimeSpan.FromMilliseconds(client.InitialBackoffIntervalMs))
                     .SetMax(TimeSpan.FromMilliseconds(client.MaxBackoffIntervalMs / 10))
-                    .SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
+                    .SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create(),
+                    RequestId = requestid,
+                    Method = method
+                };
                 return Op;
             }
 
@@ -895,6 +903,8 @@ namespace SharpPulsar
                 Backoff = null;
                 Cmd = ReadOnlySequence<byte>.Empty;
                 Callback = null;
+                RequestId = -1;
+                Method = string.Empty;
             }
 
         }

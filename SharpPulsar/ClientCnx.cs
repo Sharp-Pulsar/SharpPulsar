@@ -147,12 +147,8 @@ namespace SharpPulsar
                         break;
                     case "NewAddSubscriptionToTxn":
                     case "NewAddPartitionToTxn":
-                        _socketClient.SendMessage(p.Bytes);
-                        break;
                     case "NewTxn":
                     case "NewEndTxn":
-                        _socketClient.SendMessage(p.Bytes);
-                        break;
                     default:
                         SendRequest(p.Bytes, p.RequestId);
                         break;
@@ -788,39 +784,63 @@ namespace SharpPulsar
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new NewTxnResponse(command, GetExceptionByServerError(command.Error, command.Message)));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new NewTxnResponse(command, GetExceptionByServerError(command.Error, command.Message)));
-			}
+				handler.Tell();
+			}*/
 		}
 
 		private void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new AddPublishPartitionToTxnResponse(command));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
 				handler.Tell(new AddPublishPartitionToTxnResponse(command));
-			}
+			}*/
 		}
 
 		private void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new AddSubscriptionToTxnResponse(command));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
 				handler.Tell(new AddSubscriptionToTxnResponse(command));
-			}
+			}*/
 		}
 
 
 		private void HandleEndTxnResponse(CommandEndTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new EndTxnResponse(command));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
 				handler.Tell(new EndTxnResponse(command));
-			}
+			}*/
 		}
 
 		private IActorRef CheckAndGetTransactionMetaStoreHandler(long tcId)

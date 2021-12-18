@@ -24,9 +24,14 @@ namespace SharpPulsar.Messages.Transaction
     public sealed class EndTxnResponse
     {
         public CommandEndTxnResponse Response { get; }
+        public TransactionCoordinatorClientException Error{get;}
         public EndTxnResponse(CommandEndTxnResponse response)
         {
             Response = response;
+        }
+        public EndTxnResponse(TransactionCoordinatorClientException error)
+        {
+            Error = error;
         }
     }
     public sealed class AddPublishPartitionToTxnResponse

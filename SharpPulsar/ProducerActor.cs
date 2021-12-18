@@ -595,7 +595,7 @@ namespace SharpPulsar
             while(res.Error == ServerError.TransactionCoordinatorNotFound)
                 res = await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic));
 
-            if (res.Error == ServerError.UnknownError)
+            if (res.Error == null || res.Error == ServerError.UnknownError)
                 await InternalSend(message);
         }
 
