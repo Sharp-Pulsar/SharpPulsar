@@ -19,35 +19,74 @@ namespace SharpPulsar.Helpers
         {
             // / Wire format
             // [TOTAL_SIZE] [CMD_SIZE][CMD]
-            var commandBytes = Serialize<BaseCommand>(command);
-            var commandSizeBytes = ToBigEndianBytes((uint)commandBytes.Length);
-            var totalSizeBytes = ToBigEndianBytes((uint)commandBytes.Length + 4);
+            var stream = MemoryManager.GetStream();
+            var writer = new BinaryWriter(stream);
+            // write fake totalLength
+            for (var i = 0; i < 4; i++)
+                stream.WriteByte(0);
 
-            return new SequenceBuilder<byte>()
-                .Append(totalSizeBytes)
-                .Append(commandSizeBytes)
-                .Append(commandBytes)
-                .Build();
+            // write commandPayload
+            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
+            var frameSize = (int)stream.Length;
+
+            var totalSize = frameSize - 4;
+
+            //write total size and command size
+            stream.Seek(0L, SeekOrigin.Begin);
+            writer.Write(totalSize.IntToBigEndian());
+            stream.Seek(0L, SeekOrigin.Begin);
+            return new ReadOnlySequence<byte>(stream.ToArray());
         }
 
         public static ReadOnlySequence<byte> Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload)
         {
             // Wire format
             // [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
-            var commandBytes = Serialize<BaseCommand>(command);
-            var commandSizeBytes = ToBigEndianBytes((uint)commandBytes.Length);
+            var stream = MemoryManager.GetStream();
+            var writer = new BinaryWriter(stream);
+            // write fake totalLength
+            for (var i = 0; i < 4; i++)
+                stream.WriteByte(0);
 
-            var metadataBytes = Serialize(metadata);
-            var metadataSizeBytes = ToBigEndianBytes((uint)metadataBytes.Length);
+            // write commandPayload
+            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, command, PrefixStyle.Fixed32BigEndian);
 
-            var sb = new SequenceBuilder<byte>().Append(metadataSizeBytes).Append(metadataBytes).Append(payload);
-            var checksum = CRC32C.Calculate(sb.Build());
-            return sb.Prepend(ToBigEndianBytes(checksum))
-                .Prepend(Constants.MagicNumber)
-                .Prepend(commandBytes)
-                .Prepend(commandSizeBytes)
-                .Prepend(ToBigEndianBytes((uint)sb.Length))
-                .Build();
+            var stream1Size = (int)stream.Length;
+
+            // write magic number 0x0e01 0x0e, 0x01
+            stream.WriteByte(14);
+            stream.WriteByte(1);
+
+            for (var i = 0; i < 4; i++)
+                stream.WriteByte(0);
+            // write metadata
+            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, metadata, PrefixStyle.Fixed32BigEndian);
+
+            var stream2Size = (int)stream.Length;
+            var totalMetadataSize = stream2Size - stream1Size - 6;
+
+            // write payload
+            stream.Write(payload.ToArray(), 0, (int)payload.Length);
+
+            var frameSize = (int)stream.Length;
+            var totalSize = frameSize - 4;
+            var payloadSize = frameSize - stream2Size;
+
+            var crcStart = stream1Size + 2;
+            var crcPayloadStart = crcStart + 4;
+
+            //write CRC
+            stream.Seek(crcPayloadStart, SeekOrigin.Begin);
+            var crc = (int)CRC32C.Get(0u, stream, totalMetadataSize + payloadSize);
+            stream.Seek(crcStart, SeekOrigin.Begin);
+            writer.Write(crc.IntToBigEndian());
+
+            //write total size and command size
+            stream.Seek(0L, SeekOrigin.Begin);
+            writer.Write(totalSize.IntToBigEndian());
+
+            stream.Seek(0L, SeekOrigin.Begin);
+            return new ReadOnlySequence<byte>(stream.ToArray());
         }
         public static byte[] ToBigEndianBytes(uint integer)
         {

@@ -175,12 +175,6 @@ namespace SharpPulsar.Transaction
                 Sender.Tell(new RegisterProducedTopicResponse(null));
 		}
 
-        protected override bool AroundReceive(Receive receive, object message)
-        {
-            _log.Info($"Received: {message.GetType().FullName}");
-            return base.AroundReceive(receive, message);
-        }
-
         private void RegisterSendOp(IMessageId send)
 		{
 			_sendList.Add(send);

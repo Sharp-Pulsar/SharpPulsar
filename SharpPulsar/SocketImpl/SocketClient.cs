@@ -147,18 +147,24 @@ namespace SharpPulsar.SocketImpl
                             if (length >= totalSize)
                             {
                                 var consumed = buffer.GetPosition(totalSize);
-                                var commandSize = reader.ReadInt32().IntFromBigEndian();
-                                var commandBytes = reader.ReadBytes(commandSize);
-                                var command = Serializer.Deserialize<BaseCommand>(new ReadOnlySequence<byte>(commandBytes));
+                                //var commandSize = reader.ReadInt32().IntFromBigEndian();
+                                //var commandBytes = reader.ReadBytes(commandSize);
+                                //var command = Serializer.Deserialize<BaseCommand>(new ReadOnlySequence<byte>(commandBytes));
+                                var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
                                 if (command.type == BaseCommand.Type.Message)
                                 {
                                     BrokerEntryMetadata brokerEntryMetadata = null;
+                                    var brokerEntryMetadataPosition = stream.Position;
                                     var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
                                     if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
                                     {
                                         brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);                                        
                                     }
-                                    var magicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                    else
+                                        //we need to rewind to the brokerEntryMetadataPosition
+                                        stream.Seek(brokerEntryMetadataPosition, SeekOrigin.Begin);
+
+                                    var magicNumber = (uint)reader.ReadInt16().Int16FromBigEndian();
                                     var hasMagicNumber = magicNumber == 3585;
                                     var messageCheckSum = (uint)reader.ReadInt32().IntFromBigEndian();
 
@@ -169,8 +175,8 @@ namespace SharpPulsar.SocketImpl
                                     var payloadLength = totalSize - (int)payloadOffset;
                                     var payload = reader.ReadBytes(payloadLength);
                                     stream.Seek(metadataOffset, SeekOrigin.Begin);
-
-                                    var hasValidCheckSum = messageCheckSum == CRC32C.Calculate(new ReadOnlySequence<byte>(reader.ReadBytes(totalSize - (int)metadataOffset)));
+                                    var calculatedCheckSum = (uint)CRC32C.Get(0u, stream, metadataLength + payloadLength);
+                                    var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
                                     observer.OnNext((command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
                                     //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                 }

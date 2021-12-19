@@ -7,7 +7,6 @@ using Akka.Event;
 using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Exceptions;
-using SharpPulsar.Helpers;
 using SharpPulsar.Protocol;
 using SharpPulsar.Protocol.Proto;
 
@@ -101,39 +100,41 @@ namespace SharpPulsar.Batch
 
 		private byte[] CompressedBatchMetadataAndPayload
 		{
-			get
-			{
-                var builder = new SequenceBuilder<byte>();
-                for (int i = 0, n = _messages.Count; i < n; i++)
-				{					
-					try
-					{
-						var msg = _messages[i];
-						var msgMetadata = msg.Metadata.OriginalMetadata;
-                        var message = Commands.SerializeSingleMessageInBatchWithPayload(Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), msg.Data);
-                        builder.Append(message);
-					}
-					catch (Exception ex)
-					{
-						throw ex;
-					}
-				}
-				var batchedMessageMetadataAndPayload = builder.Build().ToArray();
+            get
+            {
+                var stream = Helpers.Serializer.MemoryManager.GetStream();
+                var messageWriter = new BinaryWriter(stream);
 
-				var uncompressedSize = batchedMessageMetadataAndPayload.Length;
-				var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
-				if (CompressionType != CompressionType.None)
-				{
-					_messageMetadata.Compression = CompressionType;
-					_messageMetadata.UncompressedSize = (uint)uncompressedSize;
-				}
-    
-				// Update the current max batch Size using the uncompressed Size, which is what we need in any case to
-				// accumulate the batch content
-				MaxBatchSize = (int)Math.Max(MaxBatchSize, uncompressedSize);
-				return compressedPayload;
-			}
-		}
+                for (int i = 0, n = _messages.Count; i < n; i++)
+                {
+                    try
+                    {
+                        var msg = _messages[i];
+                        var msgMetadata = msg.Metadata.OriginalMetadata;
+                        Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+                        messageWriter.Write(msg.Data.ToArray());
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                }
+                var batchedMessageMetadataAndPayload = stream.ToArray();
+
+                var uncompressedSize = batchedMessageMetadataAndPayload.Length;
+                var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
+                if (CompressionType != CompressionType.None)
+                {
+                    _messageMetadata.Compression = CompressionType;
+                    _messageMetadata.UncompressedSize = (uint)uncompressedSize;
+                }
+
+                // Update the current max batch Size using the uncompressed Size, which is what we need in any case to
+                // accumulate the batch content
+                MaxBatchSize = (int)Math.Max(MaxBatchSize, uncompressedSize);
+                return compressedPayload;
+            }
+        }
 
 		public override void Clear()
 		{

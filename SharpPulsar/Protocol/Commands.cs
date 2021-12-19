@@ -10,7 +10,6 @@ using SharpPulsar.Protocol.Schema;
 using System.Linq;
 using System.Text;
 using ProtoBuf;
-using SharpPulsar.Protocol.Extension;
 using KeySharedMode = SharpPulsar.Protocol.Proto.KeySharedMode;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Common;

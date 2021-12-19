@@ -77,7 +77,7 @@ namespace SharpPulsar.Test.Api
         [Fact]
         public void ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/produce-consume-2";
+            var topic = $"persistent://public/default/produce-consume-3";
 
             var r = new Random(0);
             var byteKey = new byte[1000];

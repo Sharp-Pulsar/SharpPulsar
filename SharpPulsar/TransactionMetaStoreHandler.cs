@@ -186,7 +186,7 @@ namespace SharpPulsar
             var reid = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
             var requestId = reid.Id;
             var cmd = Commands.NewEndTxn(requestId, txnID.LeastSigBits, txnID.MostSigBits, action);
-            var op = OpForVoidCallBack.Create(cmd, callback, _conf, requestId, "NewEndTxn");
+            var op = OpForTxnIdCallBack.Create(cmd, callback, _conf, requestId, "NewEndTxn");
             Akka.Dispatch.ActorTaskScheduler.RunTask(async() =>
             {
                 pendingRequests.TryAdd(requestId, op);
@@ -707,13 +707,22 @@ namespace SharpPulsar
                                     var result = op.Callback.Task.Result;
                                     _replyTo.Tell(new RegisterProducedTopicResponse(null));
                                 }
-                                catch (Exception ex)
+                                catch
                                 {
                                     _replyTo.Tell(new RegisterProducedTopicResponse(ServerError.UnknownError));
                                 }
                                 break;
-                            case EndTxnResponse endRes: 
-                                HandleEndTxnResponse(endRes.Response);
+                            case EndTxnResponse endRes:
+                                try
+                                {
+                                    HandleEndTxnResponse(endRes.Response);
+                                    var result = op.Callback.Task.Result;
+                                    _replyTo.Tell(new EndTxnResponse(NoException.Instance));
+                                }
+                                catch(Exception ex)
+                                {
+                                    _replyTo.Tell(new EndTxnResponse(new TransactionCoordinatorClientException(ex)));
+                                }
                                 break;
                             default:
                                 break;
