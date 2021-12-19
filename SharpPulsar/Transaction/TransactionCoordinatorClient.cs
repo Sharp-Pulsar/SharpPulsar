@@ -106,6 +106,7 @@ namespace SharpPulsar.Transaction
             {
                 _log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
             }
+            List<Task<object>> connectFutureList = new List<Task<object>>();
             if (partitionMeta.Partitions > 0)
             {
                 _handlers = new List<IActorRef>(partitionMeta.Partitions);
@@ -114,10 +115,8 @@ namespace SharpPulsar.Transaction
                     try
                     {
                         var tcs = new TaskCompletionSource<object>();
-                        
+                        connectFutureList.Add(tcs.Task);
                         var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
-                        var task = tcs.Task;
-                        var reslt = task.Result;
                         _handlers.Add(handler);
                         _handlerMap.Add(i, handler);
                     }
@@ -128,7 +127,6 @@ namespace SharpPulsar.Transaction
                         break;
                     }
                 }
-                _sender.Tell(new AskResponse(_handlers.Count));
             }
             else
             {
@@ -136,25 +134,19 @@ namespace SharpPulsar.Transaction
                 try
                 {
                     var tcs = new TaskCompletionSource<object>();
+                    connectFutureList.Add(tcs.Task);
                     var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
                     var ask = tcs.Task;
-                    if (ask.IsFaulted)
-                    {
-                        _sender.Tell(ask.Result);
-                        return;
-                    }
-                    else
-                    {
-                        _handlers.Add(handler);
-                        _handlerMap.Add(0, handler);
-                    }
+                    _handlers.Add(handler);
+                    _handlerMap.Add(0, handler);
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
                 }
-                _sender.Tell(new AskResponse(_handlers.Count));
             }
+            Task.WaitAll(connectFutureList.ToArray());
+            _sender.Tell(new AskResponse(_handlers.Count));
             Become(Ready);
         }
 		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
