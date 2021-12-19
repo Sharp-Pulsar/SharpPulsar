@@ -57,6 +57,7 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] Compacted Topics	
 - [x] Multiple Topics	
 - [x] Regex Consumer
+- [x] Broker Entry Metadata
 
 # Reader
 - [x] User-defined properties	
