@@ -147,12 +147,8 @@ namespace SharpPulsar
                         break;
                     case "NewAddSubscriptionToTxn":
                     case "NewAddPartitionToTxn":
-                        _socketClient.SendMessage(p.Bytes);
-                        break;
                     case "NewTxn":
                     case "NewEndTxn":
-                        _socketClient.SendMessage(p.Bytes);
-                        break;
                     default:
                         SendRequest(p.Bytes, p.RequestId);
                         break;
@@ -346,7 +342,7 @@ namespace SharpPulsar
 				producer.Tell(new AckReceived(sequenceId, highestSequenceId, ledgerId, entryId));
 		}
 
-		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)
+		private void HandleMessage(CommandMessage msg, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidCheckSum, bool hasMagicNumber)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -361,7 +357,7 @@ namespace SharpPulsar
 				BatchSize = msg.MessageId.BatchSize,
 				BatchIndex = msg.MessageId.BatchIndex
 			};
-			var message = new MessageReceived(metadata, payload, id, (int)msg.RedeliveryCount, checkSum, magicNumber);
+			var message = new MessageReceived(metadata, brokerEntryMetadata, payload, id, (int)msg.RedeliveryCount, hasValidCheckSum, hasMagicNumber);
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
@@ -381,8 +377,24 @@ namespace SharpPulsar
 				consumer.Tell(new ActiveConsumerChanged(change.IsActive));
 			}
 		}
+        private void HandleNewTcClientConnectResponse(CommandTcClientConnectResponse response)
+        {
+            var requestId = (long)response.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                if (response.Error != ServerError.UnknownError)
+                {
+                    CheckServerError(response.Error, response.Message);
+                    var ex = GetPulsarClientException(response.Error, response.Message);
+                    req.Requester.Tell(new AskResponse(ex));
+                }
+                else
+                    req.Requester.Tell(new AskResponse());
+            }
+        }
 
-		private void HandleSuccess(CommandSuccess success)
+        private void HandleSuccess(CommandSuccess success)
 		{
 			Condition.CheckArgument(_state == State.Ready);
 
@@ -435,14 +447,20 @@ namespace SharpPulsar
 			if (_pendingRequests.TryGetValue(requestId, out var producer))
 			{
 				_pendingRequests.Remove(requestId);
-				producer.Requester.Tell(new AskResponse(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion)));
+				producer.Requester.Tell(new AskResponse(new ProducerResponse(success.ProducerName, success.LastSequenceId, success.SchemaVersion, GetTopicEpoch(success), success.ProducerReady)));
 			}
 			else
 			{
 				_log.Warning($"Received unknown request id from server: {success.RequestId}");
 			}
 		}
+        private long? GetTopicEpoch(CommandProducerSuccess success)
+        {
+            if (success.ShouldSerializeTopicEpoch())
+                return (long)success.TopicEpoch;
 
+            return null;
+        }
 		private void HandleLookupResponse(CommandLookupTopicResponse lookupResult)
 		{
 			if (_log.IsDebugEnabled)
@@ -766,39 +784,63 @@ namespace SharpPulsar
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new NewTxnResponse(command, GetExceptionByServerError(command.Error, command.Message)));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new NewTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
-			}
+				handler.Tell();
+			}*/
 		}
 
 		private void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new AddPublishPartitionToTxnResponse(command));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
 				handler.Tell(new AddPublishPartitionToTxnResponse(command));
-			}
+			}*/
 		}
 
 		private void HandleAddSubscriptionToTxnResponse(CommandAddSubscriptionToTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new AddSubscriptionToTxnResponse(command));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
 				handler.Tell(new AddSubscriptionToTxnResponse(command));
-			}
+			}*/
 		}
 
 
 		private void HandleEndTxnResponse(CommandEndTxnResponse command)
 		{
-			var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
+            var requestId = (long)command.RequestId;
+            if (_pendingRequests.TryGetValue(requestId, out var req))
+            {
+                _pendingRequests.Remove(requestId);
+                req.Requester.Tell(new EndTxnResponse(command));
+            }
+            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
 			if (handler != null)
 			{
-				handler.Tell(new EndTxnResponse((long)command.RequestId, (long)command.TxnidLeastBits, (long)command.TxnidMostBits, GetExceptionByServerError(command.Error, command.Message)));
-			}
+				handler.Tell(new EndTxnResponse(command));
+			}*/
 		}
 
 		private IActorRef CheckAndGetTransactionMetaStoreHandler(long tcId)
@@ -840,7 +882,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber) args)
+		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidCheckSum, bool hasMagicNumber) args)
 		{
 			var cmd = args.command;
 			switch (cmd.type)
@@ -851,7 +893,7 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Message:
 					var msg = cmd.Message;
-					HandleMessage(msg, args.metadata, args.payload, args.checkSum, args.magicNumber);
+					HandleMessage(msg, args.metadata, args.brokerEntryMetadata, args.payload, args.hasValidCheckSum, args.hasMagicNumber);
 					break;
 				case BaseCommand.Type.GetLastMessageIdResponse:
 					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);
@@ -864,6 +906,9 @@ namespace SharpPulsar
 					break;
 				case BaseCommand.Type.Success:
 					HandleSuccess(cmd.Success);
+					break;
+				case BaseCommand.Type.TcClientConnectResponse:
+                    HandleNewTcClientConnectResponse(cmd.tcClientConnectResponse);
 					break;
 				case BaseCommand.Type.SendReceipt:
 					HandleSendReceipt(cmd.SendReceipt);
@@ -983,7 +1028,10 @@ namespace SharpPulsar
 					return new PulsarClientException.TransactionConflictException(errorMsg);
                 case ServerError.ProducerFenced:
                     return new PulsarClientException.ProducerFencedException(errorMsg);
+                case ServerError.TransactionCoordinatorNotFound:
+                    return new PulsarClientException.TransactionCoordinatorNotFoundException(errorMsg);
                 case ServerError.UnknownError:
+                    return null;
 				default:
 					return new PulsarClientException(errorMsg);
 			}

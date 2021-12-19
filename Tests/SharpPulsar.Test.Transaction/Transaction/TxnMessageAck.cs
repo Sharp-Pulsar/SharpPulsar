@@ -35,7 +35,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.SubscriptionName(subName)
                 .ForceTopicCreation(true)
 				.EnableBatchIndexAcknowledgment(true)
-				.AcknowledgmentGroupTime(0);
+				.AcknowledgmentGroupTime(TimeSpan.Zero);
 
 			var consumer = _client.NewConsumer(consumerBuilder);
 

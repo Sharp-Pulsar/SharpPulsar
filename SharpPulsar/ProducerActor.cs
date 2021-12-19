@@ -13,6 +13,7 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Crypto;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Extension;
+using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Messages;
@@ -101,8 +102,9 @@ namespace SharpPulsar
 		private readonly IDictionary<string, string> _metadata;
 
 		private Option<byte[]> _schemaVersion = null;
+        private long? _topicEpoch = null;
 
-		private readonly IActorRef _connectionHandler;
+        private readonly IActorRef _connectionHandler;
 		private readonly IActorRef _self;
 		private IActorRef _sender;
 		private int _protocolVersion;
@@ -112,11 +114,13 @@ namespace SharpPulsar
 		private readonly IScheduler _scheduler;
 		private IActorRef _replyTo;
 		private long _requestId = -1;
+        private readonly bool _isTxnEnabled;
 		private long _maxMessageSize;
 		private IActorRef _cnx;
 
         public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration) : base(client, lookup, cnxPool, topic, conf, schema, interceptors, clientConfiguration)
 		{
+            _isTxnEnabled = clientConfiguration.EnableTransaction;
 			_self = Self;
 			_generator = idGenerator;
 			_scheduler = Context.System.Scheduler;
@@ -383,7 +387,7 @@ namespace SharpPulsar
             var epochResponse = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
             var epoch = epochResponse.Epoch;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode);
+            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled);
             var payload = new Payload(cmd, _requestId, "NewProducer");
             var request = await _cnx.Ask<AskResponse>(payload);
             if (request.Failed)
@@ -464,7 +468,11 @@ namespace SharpPulsar
                     var res = request.ConvertTo<ProducerResponse>();
                     var producerName = res.ProducerName;
                     var lastSequenceId = res.LastSequenceId;
-
+                    if (Conf.AccessMode != Common.ProducerAccessMode.Shared && !_topicEpoch.HasValue)
+                    {
+                        _log.Info($"[{Topic}] [{_producerName}] Producer epoch is {res.TopicEpoch}");
+                    }
+                    _topicEpoch = res.TopicEpoch;
                     _schemaVersion = new Option<byte[]>(res.SchemaVersion);
 
                     if (_schemaVersion.HasValue)
@@ -587,12 +595,13 @@ namespace SharpPulsar
             while(res.Error == ServerError.TransactionCoordinatorNotFound)
                 res = await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic));
 
-            if (res.Error == ServerError.UnknownError)
+            if (res.Error == null || res.Error == ServerError.UnknownError)
                 await InternalSend(message);
         }
 
 		private async ValueTask Send(IMessage<T> message)
 		{
+            //TODO: create local function for callback
 			Condition.CheckArgument(message is Message<T>);
 			var maxMessageSize = (int)_maxMessageSize;
 			if (Conf.ChunkingEnabled && Conf.MaxMessageSize > 0)
@@ -1164,17 +1173,13 @@ namespace SharpPulsar
         {
             try
             {
-                using var stream = new MemoryStream(o.Msg.Data.ToArray());
-                using var reader = new BinaryReader(stream);
-                var sizeStream = stream.Length;
-                stream.Seek(4L, SeekOrigin.Begin);
-                var sizeCmd = reader.ReadInt32().IntFromBigEndian();
-                stream.Seek((long)10 + sizeCmd, SeekOrigin.Begin);
-
-                var checkSum = reader.ReadInt32().IntFromBigEndian();
-                var checkSumPayload = ((int)sizeStream) - 14 - sizeCmd;
-                var computedCheckSum = (int)CRC32C.Get(0u, stream, checkSumPayload);
-                return checkSum != computedCheckSum;
+                var frame = o.Msg.Data.Slice(4);
+                var cmdSize = frame.ReadUInt32(0, true);
+                frame = frame.Slice(4, cmdSize);
+                frame = frame.Slice(Helpers.Constants.MagicNumber.Length);
+                var messageCheckSum = frame.ReadUInt32(0, true);
+                frame = frame.Slice(4);
+                return messageCheckSum == CRC32C.Calculate(frame);
             }
             catch(Exception ex)
             {

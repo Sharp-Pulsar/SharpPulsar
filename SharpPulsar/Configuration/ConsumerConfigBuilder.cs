@@ -219,10 +219,9 @@ namespace SharpPulsar.Configuration
             return this;
 		}
 
-		public ConsumerConfigBuilder<T> AcknowledgmentGroupTime(long delayMs)
+		public ConsumerConfigBuilder<T> AcknowledgmentGroupTime(TimeSpan delayMs)
         {
-            Condition.CheckArgument(delayMs >= 0, "acknowledgmentGroupTime needs to be >= 0");
-            _conf.AcknowledgementsGroupTimeMicros = delayMs;
+            _conf.AcknowledgementsGroupTime = delayMs;
             return this;
 		}
 
@@ -296,6 +295,11 @@ namespace SharpPulsar.Configuration
 		public ConsumerConfigBuilder<T> IsAckReceiptEnabled(bool isAckReceiptEnabled)
 		{
             _conf.AckReceiptEnabled = isAckReceiptEnabled;
+            return this;
+		}
+		public ConsumerConfigBuilder<T> SetPayloadProcessor(IMessagePayloadProcessor payloadProcessor)
+		{
+            _conf.PayloadProcessor = payloadProcessor;
             return this;
 		}
 

@@ -1336,42 +1336,39 @@ namespace SharpPulsar
 		{
             var ms = received;
             var messageId = ms.MessageId;
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
+            }
             var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 
-            var mn = (short)0x0e01;
-            var startsWith = received.MagicNumber == mn;
-            var hascheckum = received.CheckSum;
-            if (!(startsWith && hascheckum))
+            if (!received.HasMagicNumber && !received.HasValidCheckSum)
 			{
 				// discard message with checksum error
 				DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.ChecksumMismatch);
+                return;
             }
-            else
-            {
-                try
-                {
-                    var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
-                    if (isDub)
-                    {
-                        if (_log.IsDebugEnabled)
-                        {
-                            _log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
-                        }
-                        _log.Info("MessageReceived: 10");
-                        IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
-                        _log.Info("MessageReceived: 11");
-                    }
-                    else
-                        ProcessMessage(ms);
 
-                }
-                catch (Exception ex)
+            try
+            {
+                var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
+                if (isDub)
                 {
-                    _log.Error(ex.ToString());
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Topic}] [{Subscription}] Ignoring message as it was already being acked earlier by same consumer {ConsumerName}/{msgId}");
+                    }
+                    IncreaseAvailablePermits(_clientCnx, ms.Metadata.NumMessagesInBatch);
                 }
-            }	
-			
-		}
+                else
+                    ProcessMessage(ms);
+
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.ToString());
+            }
+        }
 
 		private void ProcessMessage(MessageReceived received)
         {
@@ -1379,23 +1376,21 @@ namespace SharpPulsar
             var data = received.Payload.ToArray();
 			var redeliveryCount = received.RedeliveryCount;
 			IList<long> ackSet = messageId.AckSets;
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}][{Subscription}] Received message: {messageId.ledgerId}/{messageId.entryId}");
-			}
+			
 			var msgMetadata = received.Metadata;
+			var brokerEntryMetadata = received.BrokerEntryMetadata;
 			var numMessages = msgMetadata.NumMessagesInBatch;
 			var isChunkedMessage = msgMetadata.NumChunksFromMsg > 1 
 				&& Conf.SubscriptionType != CommandSubscribe.SubType.Shared;
 
 			var msgId = new MessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex);
 			var decryptedPayload = DecryptPayloadIfNeeded(messageId, msgMetadata, data, _clientCnx);
+            var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
             if (decryptedPayload == null)
             {
                 // Message was discarded or CryptoKeyReader isn't implemented
                 return;
             }
-            var isMessageUndecryptable = IsMessageUndecryptable(msgMetadata);
 
 			
             // uncompress decryptedPayload and release decryptedPayload-ByteBuf
@@ -1406,6 +1401,12 @@ namespace SharpPulsar
             {
 
                 // Message was discarded on decompression error
+                return;
+            }
+            if (Conf.PayloadProcessor != null)
+            {
+                // uncompressedPayload is released in this method so we don't need to call release() again
+                ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet);
                 return;
             }
             // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
@@ -1422,7 +1423,7 @@ namespace SharpPulsar
                     }
                 }
 
-                if (IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
+                if (_topicName.Persistent && IsSameEntry(messageId) && IsPriorEntryIndex((long)messageId.entryId))
                 {
                     // We need to discard entries that were prior to startMessageId
                     if (_log.IsDebugEnabled)
@@ -1432,6 +1433,7 @@ namespace SharpPulsar
                     return;
                 }
                 var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages);
+                message.BrokerEntryMetadata = received.BrokerEntryMetadata;
                 try
                 {
                     // Enqueue the message so that it can be retrieved when application calls receive()
@@ -1450,7 +1452,7 @@ namespace SharpPulsar
             else
             {
                 // handle batch message enqueuing; uncompressed payload has all messages in batch
-                ReceiveIndividualMessagesFromBatch(msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx);
+                ReceiveIndividualMessagesFromBatch(brokerEntryMetadata, msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx);
 
             }
 
@@ -1459,7 +1461,188 @@ namespace SharpPulsar
                 TriggerListener(numMessages);
             }
         }
-		private bool HasNumMessagesInBatch(MessageMetadata m)
+        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount)
+        {
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {index} in batch");
+            }
+            using var stream = new MemoryStream(payload);
+            using var binaryReader = new BinaryReader(stream);
+            byte[] singleMessagePayload = null;
+            try
+            {
+                if (containMetadata)
+                {
+                    singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                     singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+
+                    singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+                }
+
+                // If the topic is non-persistent, we should not ignore any messages.
+                if (_topicName.Persistent && IsSameEntry(messageId) && IsPriorBatchIndex(index))
+                {
+                    // If we are receiving a batch message, we need to discard messages that were prior
+                    // to the startMessageId
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
+                    }
+                    return null;
+                }
+
+                if (singleMessageMetadata != null && singleMessageMetadata.CompactedOut)
+                {
+                    // message has been compacted out, so don't send to the user
+                    return null;
+                }
+
+                if (ackBitSet != null && ackBitSet.Get(index, index) != null)
+                {
+                    return null;
+                }
+
+                var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
+
+                var payloadBuffer = (singleMessagePayload != null) ? singleMessagePayload : payload.ToArray();
+                
+                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(payloadBuffer), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false);
+                message.BrokerEntryMetadata = brokerEntryMetadata;
+                return message;
+            }
+            catch (Exception e) when (e is IOException || e is InvalidOperationException)
+            {
+                throw e;
+            }
+            finally
+            {
+                if (singleMessagePayload != null)
+                {
+                    singleMessagePayload = null;
+                }
+            }
+        }
+        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, MemoryStream stream, BinaryReader binaryReader, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount)
+        {
+            if (_log.IsDebugEnabled)
+            {
+                _log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {index} in batch");
+            }
+            
+            byte[] singleMessagePayload = null;
+            SingleMessageMetadata singleMessageMetadata = null;
+            try
+            {
+                if (containMetadata)
+                {
+                    singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                    singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
+
+                }
+
+                // If the topic is non-persistent, we should not ignore any messages.
+                if (_topicName.Persistent && IsSameEntry(messageId) && IsPriorBatchIndex(index))
+                {
+                    // If we are receiving a batch message, we need to discard messages that were prior
+                    // to the startMessageId
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
+                    }
+                    return null;
+                }
+
+                if (singleMessageMetadata != null && singleMessageMetadata.CompactedOut)
+                {
+                    // message has been compacted out, so don't send to the user
+                    return null;
+                }
+
+                if (ackBitSet != null && ackBitSet.Get(index, index) != null)
+                {
+                    return null;
+                }
+
+                var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
+
+                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false);
+                message.BrokerEntryMetadata = brokerEntryMetadata;
+                return message;
+            }
+            catch (Exception e) when (e is IOException || e is InvalidOperationException)
+            {
+                throw e;
+            }
+            finally
+            {
+                if (singleMessagePayload != null)
+                {
+                    singleMessagePayload = null;
+                }
+            }
+        }
+
+        protected Message<T> NewMessage(MessageId messageId, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema, int redeliveryCount)
+        {
+            var Message = Message<T>.Create(_topicName.ToString(), messageId, messageMetadata, payload, CreateEncryptionContext(messageMetadata), _clientCnx, schema, redeliveryCount, false);
+            Message.BrokerEntryMetadata = brokerEntryMetadata;
+            return Message;
+        }
+        protected internal virtual bool IsBatch(MessageMetadata messageMetadata)
+        {
+            // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
+            // and return undecrypted payload
+            return !IsMessageUndecryptable(messageMetadata) && (messageMetadata.ShouldSerializeNumMessagesInBatch() || messageMetadata.NumMessagesInBatch != 1);
+        }
+        private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet)
+        {
+            var msgPayload = MessagePayload.Create(new ReadOnlySequence<byte>(payload));
+            
+            var entryContext = MessagePayloadContext<T>.Get(brokerEntryMetadata, messageMetadata, messageId, redeliveryCount, ackSet, IsBatch, NewMessage, NewSingleMessage);
+            
+            var skippedMessages = 0;
+            try
+            {
+                Conf.PayloadProcessor.Process(msgPayload, entryContext, schema, message =>
+                {
+                    if (message != null)
+                    {
+                        EnqueueMessageAndCheckBatchReceive(message);
+                    }
+                    else
+                    {
+                        skippedMessages++;
+                    }
+                });
+            }
+            catch (Exception throwable)
+            {
+                _log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch");
+                DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.BatchDeSerializeError);
+            }
+            finally
+            {
+                entryContext.Recycle();
+                //payload.Release(); // byteBuf.release() is called in this method
+            }
+
+            if (skippedMessages > 0)
+            {
+                IncreaseAvailablePermits(_clientCnx, skippedMessages);
+            }
+
+            TryTriggerListener();
+        }
+
+        private void TryTriggerListener()
+        {
+            if (Listener != null)
+            {
+                TriggerListener();
+            }
+        }
+        private bool HasNumMessagesInBatch(MessageMetadata m)
 		{
 			var should = m.ShouldSerializeNumMessagesInBatch();
 			return should;
@@ -1526,7 +1709,7 @@ namespace SharpPulsar
 				return null;
 			}
 
-
+            
 			// last chunk received: so, stitch chunked-messages and clear up chunkedMsgBuffer
 			if(_log.IsDebugEnabled)
 			{
@@ -1542,8 +1725,11 @@ namespace SharpPulsar
 			return uncompressedPayload;
 		}
 
-		protected internal virtual void TriggerListener(int numMessages)
+		protected internal virtual void TriggerListener(int numMessages = 0)
 		{
+            if (numMessages == 0)
+                numMessages = IncomingMessages.Count;
+
 			for (var i = 0; i < numMessages; i++)
 			{
 				if (!IncomingMessages.TryReceive(out var msg))
@@ -1568,7 +1754,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
+		private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
 		{
 			var batchSize = msgMetadata.NumMessagesInBatch;
 			// create ack tracker for entry aka batch
@@ -1593,51 +1779,13 @@ namespace SharpPulsar
 			{
 				for (var i = 0; i < batchSize; ++i)
 				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{Subscription}] [{ConsumerName}] processing message num - {i} in batch");
-					}
-					var singleMessageMetadata = Serializer.DeserializeWithLengthPrefix<SingleMessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-					var singleMessagePayload = binaryReader.ReadBytes(singleMessageMetadata.PayloadSize);
-					
-					if (IsSameEntry(messageId) && IsPriorBatchIndex(i))
-					{
-						// If we are receiving a batch message, we need to discard messages that were prior
-						// to the startMessageId
-						if(_log.IsDebugEnabled)
-						{
-							_log.Debug($"[{Subscription}] [{ConsumerName}] Ignoring message from before the startMessageId: {_startMessageId}");
-						}
-						++skippedMessages;
-						continue;
-					}
+                    var message = NewSingleMessage(i, batchSize, brokerEntryMetadata, msgMetadata, stream, binaryReader, new MessageId((long)messageId.ledgerId, (long)messageId.entryId, i), Schema, true, ackBitSet, acker, redeliveryCount);
 
-					if(singleMessageMetadata.CompactedOut)
-					{
-						++skippedMessages;
-						continue;
-					}
-
-					var ackSetCount = ackSet?.Count ?? 0;
-					var result = new byte[ackSetCount * sizeof(long)];
-					var ack = ackSet?.ToArray() ?? new long[0];
-					Buffer.BlockCopy(ack, 0, result, 0, result.Length);
-					var bitArray = new BitArray(result);
-					if (bitArray.Length > 0)
-					{
-						if (bitArray.Get(i))
-						{
-							++skippedMessages;
-							continue;
-						}
-					}
-
-					var batchMessageId = new BatchMessageId((long)messageId.ledgerId, (long)messageId.entryId, PartitionIndex, i, batchSize, acker);
-                    var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), cnx, Schema, redeliveryCount, _poolMessages);
-                    if(possibleToDeadLetter != null)
-					{
-						possibleToDeadLetter.Add(message);
-					}
+                    if (message == null)
+                    {
+                        ++skippedMessages;
+                        continue;
+                    }
 					_ = EnqueueMessageAndCheckBatchReceive(message);
 				}
 				if (ackBitSet != null)
@@ -1688,13 +1836,16 @@ namespace SharpPulsar
 		{
 			return _startMessageId != null && messageId.ledgerId == (ulong)_startMessageId.LedgerId && messageId.entryId == (ulong)_startMessageId.EntryId;
 		}
-
-		/// <summary>
-		/// Record the event that one message has been processed by the application.
-		/// 
-		/// Periodically, it sends a Flow command to notify the broker that it can push more messages
-		/// </summary>
-		private void MessageProcessed(IMessage<T> msg)
+        private bool IsSameEntry(MessageId MessageId)
+        {
+            return _startMessageId != null && MessageId.LedgerId == _startMessageId.LedgerId && MessageId.EntryId == _startMessageId.EntryId;
+        }
+        /// <summary>
+        /// Record the event that one message has been processed by the application.
+        /// 
+        /// Periodically, it sends a Flow command to notify the broker that it can push more messages
+        /// </summary>
+        private void MessageProcessed(IMessage<T> msg)
 		{
 			var currentCnx = _clientCnx;
 			var msgCnx = ((Message<T>)msg).Cnx();
@@ -1877,16 +2028,27 @@ namespace SharpPulsar
 			}
 		}
 
-
 		private void DiscardCorruptedMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
 		{
 			_log.Error($"[{Topic}][{Subscription}] Discarding corrupted message at {messageId.ledgerId}:{messageId.entryId}");
 			DiscardMessage(messageId, currentCnx, validationError);
 		}
 
-		private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
+        private void DiscardCorruptedMessage(MessageId messageId, IActorRef currentCnx, ValidationError validationError)
+        {
+            _log.Error($"[{Topic}][{Subscription}] Discarding corrupted message at {messageId.LedgerId}:{messageId.EntryId}");
+            DiscardMessage(messageId, currentCnx, validationError);
+        }
+        private void DiscardMessage(MessageIdData messageId, IActorRef currentCnx, ValidationError validationError)
 		{
 			var cmd = Commands.NewAck(_consumerId, (long)messageId.ledgerId, (long)messageId.entryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
+			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
+			IncreaseAvailablePermits(currentCnx);
+			Stats.IncrementNumReceiveFailed();
+		}
+        private void DiscardMessage(MessageId messageId, IActorRef currentCnx, ValidationError validationError)
+		{
+			var cmd = Commands.NewAck(_consumerId, (long)messageId.LedgerId, (long)messageId.EntryId, null, AckType.Individual, validationError, new Dictionary<string, long>());
 			currentCnx.Tell(new Payload(cmd, -1, "NewAck"));
 			IncreaseAvailablePermits(currentCnx);
 			Stats.IncrementNumReceiveFailed();

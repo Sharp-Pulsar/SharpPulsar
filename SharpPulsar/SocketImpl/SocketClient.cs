@@ -1,5 +1,4 @@
 ﻿using Akka.Event;
-using ProtoBuf;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Extension;
@@ -22,6 +21,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Auth;
+using SharpPulsar.Protocol;
+using SharpPulsar.Helpers;
+using ProtoBuf;
+using Serializer = ProtoBuf.Serializer;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -115,75 +118,91 @@ namespace SharpPulsar.SocketImpl
         }
 
 
-        public IObservable<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> ReceiveMessageObservable =>
-               Observable.Create<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
+        public IObservable<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> ReceiveMessageObservable =>
+               Observable.Create<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
 
 
-        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload, bool checkSum, short magicNumber)> observer, CancellationToken cancellationToken = default)
+        IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> observer, CancellationToken cancellationToken = default)
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
-               
-                while (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    try
+                    while (!cancellationToken.IsCancellationRequested)
                     {
-                        var readresult = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                        var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
-                        var buffer = readresult.Buffer;
+                        var buffer = result.Buffer;
                         var length = (int)buffer.Length;
-                        if (length >= 8)
+                        if (length >= 8) 
                         {
-                            var array = ArrayPool<byte>.Shared.Rent(length);
-                            try
+                            using var stream = new MemoryStream(buffer.ToArray());
+                            using var reader = new BinaryReader(stream);
+                            // Wire format
+                            // [TOTAL_SIZE] [CMD_SIZE] [CMD] [BROKER_ENTRY_METADATA_MAGIC_NUMBER] [BROKER_ENTRY_METADATA_SIZE] [BROKER_ENTRY_METADATA] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
+                            // | 4 bytes  | |4 bytes | |CMD_SIZE|
+
+                            var frameSize = reader.ReadInt32().IntFromBigEndian();
+                            var totalSize = frameSize + 4;
+                            if (length >= totalSize)
                             {
-                                buffer.CopyTo(array);
-                                using var stream = new MemoryStream(array);
-                                using var reader = new BinaryReader(stream);
-                                var totalength = reader.ReadInt32().IntFromBigEndian();
-                                var frameLength = totalength + 4;
-                                if (length >= frameLength)
+                                var consumed = buffer.GetPosition(totalSize);
+                                //var commandSize = reader.ReadInt32().IntFromBigEndian();
+                                //var commandBytes = reader.ReadBytes(commandSize);
+                                //var command = Serializer.Deserialize<BaseCommand>(new ReadOnlySequence<byte>(commandBytes));
+                                var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
+                                if (command.type == BaseCommand.Type.Message)
                                 {
-                                    var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
-                                    var consumed = buffer.GetPosition(frameLength);
-                                    if (command.type == BaseCommand.Type.Message)
+                                    BrokerEntryMetadata brokerEntryMetadata = null;
+                                    var brokerEntryMetadataPosition = stream.Position;
+                                    var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
+                                    if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
                                     {
-                                        var magicNumber = reader.ReadInt16().Int16FromBigEndian();
-                                        var messageCheckSum = reader.ReadInt32().IntFromBigEndian();
-                                        var metadataPointer = stream.Position;
-                                        var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
-                                        var payloadPointer = stream.Position;
-                                        var metadataLength = (int)(payloadPointer - metadataPointer);
-                                        var payloadLength = frameLength - (int)payloadPointer;
-                                        var payload = reader.ReadBytes(payloadLength);
-                                        stream.Seek(metadataPointer, SeekOrigin.Begin);
-                                        var calculatedCheckSum = (int)CRC32C.Get(0u, stream, metadataLength + payloadLength);
-                                        observer.OnNext((command, metadata, new ReadOnlySequence<byte>(payload), messageCheckSum == calculatedCheckSum, magicNumber));
-                                        //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
+                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);                                        
                                     }
                                     else
-                                    {
-                                        observer.OnNext((command, null, ReadOnlySequence<byte>.Empty, false, 0));
-                                    }
-                                    if (readresult.IsCompleted)
-                                        _pipeReader.AdvanceTo(buffer.Start, buffer.End);
-                                    else
-                                        _pipeReader.AdvanceTo(consumed);
+                                        //we need to rewind to the brokerEntryMetadataPosition
+                                        stream.Seek(brokerEntryMetadataPosition, SeekOrigin.Begin);
+
+                                    var magicNumber = (uint)reader.ReadInt16().Int16FromBigEndian();
+                                    var hasMagicNumber = magicNumber == 3585;
+                                    var messageCheckSum = (uint)reader.ReadInt32().IntFromBigEndian();
+
+                                    var metadataOffset = stream.Position;
+                                    var metadata = Serializer.DeserializeWithLengthPrefix<MessageMetadata>(stream, PrefixStyle.Fixed32BigEndian);
+                                    var payloadOffset = stream.Position;
+                                    var metadataLength = (int)(payloadOffset - metadataOffset);
+                                    var payloadLength = totalSize - (int)payloadOffset;
+                                    var payload = reader.ReadBytes(payloadLength);
+                                    stream.Seek(metadataOffset, SeekOrigin.Begin);
+                                    var calculatedCheckSum = (uint)CRC32C.Get(0u, stream, metadataLength + payloadLength);
+                                    var hasValidCheckSum = messageCheckSum == calculatedCheckSum;
+                                    observer.OnNext((command, metadata, brokerEntryMetadata, new ReadOnlySequence<byte>(payload), hasValidCheckSum, hasMagicNumber));
+                                    //|> invalidArgIf((<>) MagicNumber) "Invalid magicNumber" |> ignore
                                 }
+                                else
+                                {
+                                    observer.OnNext((command, null, null, ReadOnlySequence<byte>.Empty, false, false));
+                                }
+                                if (result.IsCompleted)
+                                    _pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                                else
+                                    _pipeReader.AdvanceTo(consumed);
                             }
-                            finally
-                            {
-                                ArrayPool<byte>.Shared.Return(array);
-                            }
+
                         }
                     }
-
-                    catch { }
                 }
-
-                _pipeReader?.Complete();
-                observer.OnCompleted();
-
+                catch(Exception ex) 
+                {
+                    _logger.Error(ex.ToString());
+                }
+                finally
+                {
+                    await _pipeReader.CompleteAsync().ConfigureAwait(false);
+                    observer.OnCompleted();
+                }
+                
             });
         }
 

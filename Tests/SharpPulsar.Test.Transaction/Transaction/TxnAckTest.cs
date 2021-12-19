@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.SubscriptionName($"test-{Guid.NewGuid()}")
                 .ForceTopicCreation(true)
 				.EnableBatchIndexAcknowledgment(true)
-				.AcknowledgmentGroupTime(5000)
+				.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000))
 				.SubscriptionType(SubType.Failover);
 
 			var consumer = _client.NewConsumer(consumerBuilder);
@@ -106,7 +106,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.Topic(normalTopic)
                 .ForceTopicCreation(true)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
-				.AcknowledgmentGroupTime(5000)
+				.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000))
 				.EnableBatchIndexAcknowledgment(true)
 				.SubscriptionType(SubType.Shared);
 
@@ -177,7 +177,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.Topic(normalTopic)
                 .ForceTopicCreation(true)
 				.SubscriptionName($"test-{Guid.NewGuid()}")
-				.AcknowledgmentGroupTime(5000)
+				.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000))
 				.SubscriptionType(SubType.Shared);
 
 			var consumer = _client.NewConsumer(consumerBuilder);

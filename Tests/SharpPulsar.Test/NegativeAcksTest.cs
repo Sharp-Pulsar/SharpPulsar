@@ -63,7 +63,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"sub1-{Guid.NewGuid()}")
                 .AckTimeout(TimeSpan.FromMilliseconds(ackTimeout))
                 .ForceTopicCreation(true)
-                .AcknowledgmentGroupTime(0)
+                .AcknowledgmentGroupTime(TimeSpan.Zero)
                 .NegativeAckRedeliveryDelay(TimeSpan.FromMilliseconds(negAcksDelayMillis))
                 .SubscriptionType(subscriptionType);
 			var consumer = _client.NewConsumer(builder);

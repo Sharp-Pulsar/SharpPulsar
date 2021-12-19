@@ -46,14 +46,7 @@ namespace SharpPulsar.Test
 		{
 			//this.conf.MaxMessageSize = 5;
 			const int totalMessages = 3;
-			var topicName = $"persistent://public/default/my-topic1-{DateTimeHelper.CurrentUnixTimeMillis()}";
-			var builder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(topicName)
-                .SubscriptionName("my-subscriber-name")
-                .AckTimeout(TimeSpan.FromMilliseconds(20000))
-                .ForceTopicCreation(true)
-                .AcknowledgmentGroupTime(0);
-			var consumer = _client.NewConsumer(builder);
+			var topicName = $"persistent://public/default/my-topic1-{DateTimeHelper.CurrentUnixTimeMillis()}";			
 
 			var pBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(topicName)
@@ -68,13 +61,17 @@ namespace SharpPulsar.Test
 				publishedMessages.Add(message);
 				producer.Send(Encoding.UTF8.GetBytes(message));
 			}
-
-			IMessage<byte[]> msg = null;
+            var builder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topicName)
+                .SubscriptionName("my-subscriber-name");
+            var consumer = _client.NewConsumer(builder);
+            IMessage<byte[]> msg = null;
 			ISet<string> messageSet = new HashSet<string>();
 			IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
             Thread.Sleep(TimeSpan.FromSeconds(5));
 			for (var i = 0; i < totalMessages - 1; i++)
 			{
+                Thread.Sleep(TimeSpan.FromSeconds(20));
 				msg = consumer.Receive();
 				var receivedMessage = Encoding.UTF8.GetString(msg.Data);
 				_output.WriteLine($"[{i}] - Published [{publishedMessages[i]}] Received message: [{receivedMessage}]");

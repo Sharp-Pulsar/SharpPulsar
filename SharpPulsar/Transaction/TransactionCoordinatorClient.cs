@@ -106,6 +106,7 @@ namespace SharpPulsar.Transaction
             {
                 _log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
             }
+            List<Task<object>> connectFutureList = new List<Task<object>>();
             if (partitionMeta.Partitions > 0)
             {
                 _handlers = new List<IActorRef>(partitionMeta.Partitions);
@@ -113,50 +114,39 @@ namespace SharpPulsar.Transaction
                 {
                     try
                     {
-                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-                        var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), _clientConfigurationData.OperationTimeout);
-                        if (ask.Failed)
-                        {
-                            _sender.Tell(ask);
-                            break;
-                        }
-                        if (ask.Data.ToString().Equals("Ready"))
-                        {
-                            _handlers.Add(handler);
-                            _handlerMap.Add(i, handler);
-                        }
+                        var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        connectFutureList.Add(tcs.Task);
+                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
+                        _handlers.Add(handler);
+                        _handlerMap.Add(i, handler);
                     }
                     catch (Exception ex)
                     {
                         _log.Error(ex.ToString());
+                        _sender.Tell(new AskResponse(ex));
+                        break;
                     }
                 }
-                _sender.Tell(new AskResponse(_handlers.Count));
             }
             else
             {
                 _handlers = new List<IActorRef>(1);
                 try
                 {
-                    var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-                    var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), _clientConfigurationData.OperationTimeout);
-                    if (ask.Failed)
-                    {
-                        _sender.Tell(ask);
-                        return;
-                    }
-                    if (ask.Data.ToString().Equals("Ready"))
-                    {
-                        _handlers.Add(handler);
-                        _handlerMap.Add(0, handler);
-                    }
+                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    connectFutureList.Add(tcs.Task);
+                    var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
+                    var ask = tcs.Task;
+                    _handlers.Add(handler);
+                    _handlerMap.Add(0, handler);
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
                 }
-                _sender.Tell(new AskResponse(_handlers.Count));
             }
+            Task.WaitAll(connectFutureList.ToArray());
+            _sender.Tell(new AskResponse(_handlers.Count));
             Become(Ready);
         }
 		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
@@ -176,9 +166,9 @@ namespace SharpPulsar.Transaction
 		}
 		private void CreateTransaction(NewTxn txn)
         {
-			Receive<NewTxnResponse>(ntx => 
+			Receive<AskResponse>(askR => 
 			{
-				_replyTo.Tell(ntx);
+				_replyTo.Tell(askR);
 				_replyTo = null;
 				Become(Ready);
 			});
@@ -247,7 +237,7 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(commit.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
+                Sender.Tell(new EndTxnResponse(new TransactionCoordinatorClientException("")));
             }
 			else
 				handler.Forward(commit);
@@ -258,7 +248,7 @@ namespace SharpPulsar.Transaction
 			if(!_handlerMap.TryGetValue(abort.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(abort.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
+                Sender.Tell(new EndTxnResponse(new TransactionCoordinatorClientException("")));
             }
 			else
 				handler.Forward(abort);

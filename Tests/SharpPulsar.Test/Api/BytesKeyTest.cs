@@ -42,6 +42,7 @@ namespace SharpPulsar.Test.Api
             _output = output;
             _client = fixture.Client;
             _topic = $"persistent://public/default/my-topic-Batch-{Guid.NewGuid()}";
+            //_topic = "my-topic-batch-bf719df3";
         }
 
         [Fact]
@@ -76,17 +77,11 @@ namespace SharpPulsar.Test.Api
         [Fact]
         public void ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/my-topic-{Guid.NewGuid()}";
+            var topic = $"persistent://public/default/produce-consume-3";
 
             var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
-
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
-                .ForceTopicCreation(true)
-                .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
-            var consumer = _client.NewConsumer(consumerBuilder);
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(topic);
@@ -97,8 +92,18 @@ namespace SharpPulsar.Test.Api
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .Send();
 
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                //.StartMessageId(77L, 0L, -1, 0)
+                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
+                .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
+            var consumer = _client.NewConsumer(consumerBuilder);
+
             Thread.Sleep(TimeSpan.FromSeconds(10));
-            var message = consumer.Receive();
+            var message = (Message<byte[]>)consumer.Receive();
+
+            if (message != null)
+                _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
             Assert.Equal(byteKey, message.KeyBytes);
 
@@ -106,7 +111,7 @@ namespace SharpPulsar.Test.Api
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            producer.Close();
+            //producer.Close();
             consumer.Close();
         }
         [Fact]
@@ -124,11 +129,12 @@ namespace SharpPulsar.Test.Api
             var consumer = _client.NewConsumer(consumerBuilder);
 
 
-            var producerBuilder = new ProducerConfigBuilder<byte[]>();
-            producerBuilder.Topic(_topic);
-            producerBuilder.EnableBatching(true);
-            producerBuilder.BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000));
-            producerBuilder.BatchingMaxMessages(5);
+            var producerBuilder = new ProducerConfigBuilder<byte[]>()
+                .Topic(_topic)
+                .EnableBatching(true)
+                .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000))
+                .BatchingMaxMessages(5);
+
             var producer = _client.NewProducer(producerBuilder);
 
             for (var i = 0; i < 5; i++)
@@ -139,10 +145,13 @@ namespace SharpPulsar.Test.Api
                     .Send();
             }
 
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {
-                var message = consumer.Receive();
+                var message = (Message<byte[]>)consumer.Receive();
+                if (message != null)
+                    _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
+
                 Assert.Equal(byteKey, message.KeyBytes);
                 Assert.True(message.HasBase64EncodedKey());
                 var receivedMessage = Encoding.UTF8.GetString(message.Data);
