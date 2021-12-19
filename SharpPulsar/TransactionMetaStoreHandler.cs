@@ -698,7 +698,16 @@ namespace SharpPulsar
                                 }
                                 break;
                             case AddSubscriptionToTxnResponse subRes:
-                                HandleAddSubscriptionToTxnResponse(subRes.Response);
+                                try
+                                {
+                                    HandleAddSubscriptionToTxnResponse(subRes.Response);
+                                    var result = op.Callback.Task.Result;
+                                    _replyTo.Tell(new AskResponse(true));
+                                }
+                                catch(Exception ex)
+                                {
+                                    _replyTo.Tell(new AskResponse(new PulsarClientException(ex.ToString())));
+                                }
                                 break;
                             case AddPublishPartitionToTxnResponse pubRes:
                                 try
