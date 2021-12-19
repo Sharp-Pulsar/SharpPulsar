@@ -106,7 +106,7 @@ namespace SharpPulsar
             {
                 if (askResponse.Failed)
                 {
-                    _connectFuture.SetException(askResponse.Exception);
+                    _connectFuture.TrySetException(askResponse.Exception);
                 }
                 var o = askResponse.ConvertTo<ConnectionOpened>();
                 await HandleConnectionOpened(o.ClientCnx);
@@ -121,7 +121,7 @@ namespace SharpPulsar
                 _log.Error("Transaction meta handler with transaction coordinator id {} connection failed.", _transactionCoordinatorId, f.Exception);
                 if (!_connectFuture.Task.IsCompleted)
                 {
-                    _connectFuture.SetException(f.Exception);
+                    _connectFuture.TrySetException(f.Exception);
                 }
             });
             Receive<RunRequestTimeout>(t =>
@@ -178,7 +178,7 @@ namespace SharpPulsar
             {
                 _log.Debug($"End txn {txnID}, action {action}", txnID, action);
             }
-            var callback = new TaskCompletionSource<object>();
+            var callback = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!CanSendRequest(callback))
             {
                 return callback.Task;
@@ -234,7 +234,7 @@ namespace SharpPulsar
                     {
                         _log.Debug($"Got end txn response success for request {requestId}");
                     }
-                    op.Callback.SetResult(null);
+                    op.Callback.TrySetResult(null);
                 }
                 else
                 {
@@ -297,12 +297,12 @@ namespace SharpPulsar
                     {
                         _state.ConnectionState = HandlerState.State.Closed;
                         await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-                        _connectFuture.SetResult(null);
+                        _connectFuture.TrySetResult(null);
                     }
 
                     if (!_connectFuture.Task.IsCompletedSuccessfully)
                     {
-                        _connectFuture.SetResult(null);
+                        _connectFuture.TrySetResult(null);
                     }
                     _connectionHandler.Tell(ResetBackoff.Instance);
                 }
@@ -326,7 +326,7 @@ namespace SharpPulsar
                 if (!_state.ChangeToReadyState())
                 {
                     await cnx.GracefulStop(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-                    _connectFuture.SetResult(null);
+                    _connectFuture.TrySetResult(null);
                 }
             }
 		}
@@ -338,7 +338,7 @@ namespace SharpPulsar
             {
                 _log.Debug("New transaction with timeout in secs {}", timeout);
             }
-            var callback = new TaskCompletionSource<object>();
+            var callback = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!CanSendRequest(callback))
             {
                return callback.Task;
@@ -394,7 +394,7 @@ namespace SharpPulsar
                     {
                         _log.Debug($"Got new txn response {txnID} for request {requestId}");
                     }
-                    op.Callback.SetResult(txnID);
+                    op.Callback.TrySetResult(txnID);
                 }
                 else
                 {
@@ -442,7 +442,7 @@ namespace SharpPulsar
 
             if (op != null)
             {
-                op.Callback.SetException(GetExceptionByServerError(error, Message));
+                op.Callback.TrySetException(GetExceptionByServerError(error, Message));
             }
             return false;
         }
@@ -456,7 +456,7 @@ namespace SharpPulsar
             {
                 _log.Debug($"Add publish partition {partitions} to txn {txnID}");
             }
-            var callback = new TaskCompletionSource<object>();
+            var callback = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!CanSendRequest(callback))
             {
                 return callback.Task;
@@ -512,7 +512,7 @@ namespace SharpPulsar
                     {
                         _log.Debug($"Add publish partition for request {requestId} success.");
                     }
-                    op.Callback.SetResult(new RegisterProducedTopicResponse(null));
+                    op.Callback.TrySetResult(new RegisterProducedTopicResponse(null));
                 }
                 else
                 {
@@ -544,7 +544,7 @@ namespace SharpPulsar
                         return;
                     }
                     else
-                        op.Callback.SetResult(new RegisterProducedTopicResponse(error.Value));
+                        op.Callback.TrySetResult(new RegisterProducedTopicResponse(error.Value));
 
                     _log.Error($"{BaseCommand.Type.AddPartitionToTxn} for request {requestId} error {error} with txnID {txnID}.");
                 }
@@ -559,7 +559,7 @@ namespace SharpPulsar
             {
                 _log.Debug($"Add subscription {subscriptionList} to txn {txnID}.");
             }
-            var callback = new TaskCompletionSource<object>();
+            var callback = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (!CanSendRequest(callback))
             {
                 return callback.Task;
@@ -613,7 +613,7 @@ namespace SharpPulsar
                     {
                         _log.Debug($"Add subscription to txn success for request {requestId}.");
                     }
-                    op.Callback.SetResult(null);
+                    op.Callback.TrySetResult(null);
                 }
                 else
                 {
@@ -739,16 +739,16 @@ namespace SharpPulsar
                     return true;
                 case HandlerState.State.Closing:
                 case HandlerState.State.Closed:
-                    op.Callback.SetException(new MetaStoreHandlerNotReadyException("Transaction meta store handler for tcId " + _transactionCoordinatorId + " is closing or closed."));
+                    op.Callback.TrySetException(new MetaStoreHandlerNotReadyException("Transaction meta store handler for tcId " + _transactionCoordinatorId + " is closing or closed."));
                     OnResponse(op);
                     return false;
                 case HandlerState.State.Failed:
                 case HandlerState.State.Uninitialized:
-                    op.Callback.SetException(new MetaStoreHandlerNotReadyException("Transaction meta store handler for tcId " + _transactionCoordinatorId + " not connected."));
+                    op.Callback.TrySetException(new MetaStoreHandlerNotReadyException("Transaction meta store handler for tcId " + _transactionCoordinatorId + " not connected."));
                     OnResponse(op);
                     return false;
                 default:
-                    op.Callback.SetException(new MetaStoreHandlerNotReadyException(_transactionCoordinatorId));
+                    op.Callback.TrySetException(new MetaStoreHandlerNotReadyException(_transactionCoordinatorId));
                     OnResponse(op);
                     return false;
             }
@@ -767,7 +767,7 @@ namespace SharpPulsar
                     pendingRequests.TryRemove(k, out OpBase<object> op);
                     if (op != null && !op.Callback.Task.IsCompleted)
                     {
-                        op.Callback.SetException(new PulsarClientException.AlreadyClosedException("Could not get response from transaction meta store when " + "the transaction meta store has already close."));
+                        op.Callback.TrySetException(new PulsarClientException.AlreadyClosedException("Could not get response from transaction meta store when " + "the transaction meta store has already close."));
                         OnResponse(op);
                     }
                 });

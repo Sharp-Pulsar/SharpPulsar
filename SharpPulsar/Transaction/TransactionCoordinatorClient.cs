@@ -114,7 +114,7 @@ namespace SharpPulsar.Transaction
                 {
                     try
                     {
-                        var tcs = new TaskCompletionSource<object>();
+                        var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                         connectFutureList.Add(tcs.Task);
                         var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
                         _handlers.Add(handler);
@@ -133,7 +133,7 @@ namespace SharpPulsar.Transaction
                 _handlers = new List<IActorRef>(1);
                 try
                 {
-                    var tcs = new TaskCompletionSource<object>();
+                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                     connectFutureList.Add(tcs.Task);
                     var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
                     var ask = tcs.Task;
