@@ -248,17 +248,7 @@ class Build : NukeBuild
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("clusters", "create", "standalone-cluster", "--url", "http://localhost:8080")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
                 .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces","create", "tnx/ns1")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
@@ -279,36 +269,6 @@ class Build : NukeBuild
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://pulsar/system/transaction_coordinator_assign", "--partitions", "16")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/testReadFromPartition", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithBatchingWithMessageInclusive", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithoutBatchingWithMessageInclusive", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithBatching", "--partitions", "3")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("topics", "create-partitioned-topic", "persistent://public/default/TestReadMessageWithoutBatching", "--partitions", "3")
             );
            /*DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
