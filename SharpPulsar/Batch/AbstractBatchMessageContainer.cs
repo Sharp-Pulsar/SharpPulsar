@@ -34,7 +34,7 @@ namespace SharpPulsar.Batch
 		public abstract bool Empty {get;}
 		public abstract void Clear();
 		public abstract bool HasSameSchema(Message<T> msg);
-		public abstract bool Add(Message<T> msg, Action<object, Exception> callback);
+		public abstract bool Add(Message<T> msg, SendCallback<T> callback);
 
 		private string _topicName;
 		private string _producerName;
