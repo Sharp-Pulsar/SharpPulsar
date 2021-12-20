@@ -44,9 +44,11 @@ namespace SharpPulsar
 		protected internal readonly ClientConfigurationData ClientConfiguration;
 		protected internal HandlerState State;
 		private readonly string _topic;
+        protected internal TaskCompletionSource<IActorRef> ProducerCreatedFuture;
 
-        protected ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
-		{			
+        protected ProducerActorBase(IActorRef client, IActorRef lookup, IActorRef cnxPool, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData configurationData)
+		{
+            ProducerCreatedFuture = producerCreatedFuture;
 			ClientConfiguration = configurationData;
 			Client = client;
 			_topic = topic;

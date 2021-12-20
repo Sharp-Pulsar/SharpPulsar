@@ -123,6 +123,11 @@ namespace SharpPulsar.Configuration
             _conf.OperationTimeout = operationTimeout;
             return this;
         }
+        public PulsarClientConfigBuilder LookupTimeout(TimeSpan lookupTimeout)
+        {
+            _conf.LookupTimeout = lookupTimeout;
+            return this;
+        }
 
         public PulsarClientConfigBuilder ConnectionsPerBroker(int connectionsPerBroker)
         {
