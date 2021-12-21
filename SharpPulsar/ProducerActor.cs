@@ -322,9 +322,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-                    Context.Watch(Sender);
-                    _watchedActors.Add(Sender.Path.Name, Sender);
-					await InternalSend(m.Message);
+					await InternalSend(m.Message, m.Callback);
 				}
                 catch(Exception ex)
                 {
@@ -335,9 +333,7 @@ namespace SharpPulsar
 			{
 				try
                 {
-                    Context.Watch(Sender);
-                    _watchedActors.Add(Sender.Path.Name, Sender);
-                    await InternalSendWithTxn(m.Message, m.Txn);
+                    await InternalSendWithTxn(m.Message, m.Txn, m.Callback);
                 }
 				catch (Exception ex)
 				{
@@ -623,9 +619,8 @@ namespace SharpPulsar
 			return await Task.FromResult(_lastSequenceIdPublished);
 		}
 
-		internal override async ValueTask InternalSend(IMessage<T> message)
+		internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> future)
         {
-            var future = new TaskCompletionSource<Message<T>>();
             _sender = Sender;
 			var interceptorMessage = (Message<T>) BeforeSend(message);
 			if(Interceptors != null)
@@ -635,21 +630,21 @@ namespace SharpPulsar
             }
             var callback = new SendCallback<T>(this, future, interceptorMessage);
             await Send(interceptorMessage, callback);
-            var msg = await callback.Future.Task;
 		}
-		private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+		private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
         {
            
             if (txn == null)
             {
-                await InternalSend(message);
+                await InternalSend(message, callback);
             }
             else
             {
                 await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic))
                     .ContinueWith(async task =>
                     {
-                        await InternalSend(message);
+                        var cb = callback;
+                        await InternalSend(message, cb);
                     });
             }
         }
@@ -981,7 +976,7 @@ namespace SharpPulsar
             if (!Commands.PeerSupportsGetOrCreateSchema(_protocolVersion))
             {
                 var err = new PulsarClientException.NotSupportedException($"The command `GetOrCreateSchema` is not supported for the protocol version {_protocolVersion}. The producer is {_producerName}, topic is {base.Topic}");
-                _sender.Tell(new AskResponse(err));
+                _log.Error(err.ToString());
             }
             var request = Commands.NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
             var payload = new Payload(request, _requestId, "SendGetOrCreateSchema");
@@ -1003,7 +998,7 @@ namespace SharpPulsar
                     _log.Warning($"[{Topic}] [{_producerName}] GetOrCreateSchema error: [{schemaResponse.Response.ErrorCode}:{schemaResponse.Response.ErrorMessage}]");
                     msg.SetSchemaState(Message<T>.SchemaState.Broken);
                     var ex = new IncompatibleSchemaException(schemaResponse.Response.ErrorMessage);
-                    _sender.Tell(new AskResponse(ex));
+                    _log.Error(ex.ToString());
                 }
                 else
                 {
@@ -1455,7 +1450,7 @@ namespace SharpPulsar
 
 				if (State.ChangeToReadyState())
 				{
-                    _replyTo.Tell(new AskResponse(response));
+                    ProducerCreatedFuture.TrySetResult(_self);
 				}
 				return;
 			}

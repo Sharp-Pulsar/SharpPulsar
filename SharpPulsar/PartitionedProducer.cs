@@ -108,11 +108,10 @@ namespace SharpPulsar
 				try
 				{
 					//get excepyion vai out
-					await InternalSend(m.Message);
+					await InternalSend(m.Message, m.Callback);
 				}
 				catch (Exception ex)
                 {
-                    Sender.Tell(ex);
                     _log.Error(ex.ToString());
 				}
 			});
@@ -120,7 +119,7 @@ namespace SharpPulsar
 			{
 				try
 				{
-					InternalSendWithTxn(m.Message, m.Txn);
+					InternalSendWithTxn(m.Message, m.Txn, m.Callback);
 				}
 				catch (Exception ex)
 				{
@@ -191,7 +190,7 @@ namespace SharpPulsar
 
 		}
 
-		internal override async ValueTask InternalSend(IMessage<T> message)
+		internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
 		{
 			switch (State.ConnectionState)
 			{
@@ -200,34 +199,34 @@ namespace SharpPulsar
                     break; // Ok
                 case HandlerState.State.Closing:
                 case HandlerState.State.Closed:
-                    Sender.Tell(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+                    callback.TrySetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
                     return;
                 case HandlerState.State.Terminated:
-                    Sender.Tell(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+                    callback.TrySetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
                     return;
                 case HandlerState.State.ProducerFenced:
-                    Sender.Tell(new PulsarClientException.ProducerFencedException("Producer was fenced"));
+                    callback.TrySetException(new PulsarClientException.ProducerFencedException("Producer was fenced"));
                     return;
                 case HandlerState.State.Failed:
                 case HandlerState.State.Uninitialized:
-                    Sender.Tell(new PulsarClientException.NotConnectedException());
+                    callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
 
 			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
-				var msg = new ConsistentHashableEnvelope(new InternalSend<T>(message), message.Key);
+				var msg = new ConsistentHashableEnvelope(new InternalSend<T>(message, callback), message.Key);
 				_router.Tell(msg, Sender);
 			}
 			else
 			{
-				_router.Tell(new InternalSend<T>(message), Sender);
+				_router.Tell(new InternalSend<T>(message, callback), Sender);
 			}
 
             await Task.CompletedTask;
         }
 
-		private void InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+        private void InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
 		{
             switch (State.ConnectionState)
             {
@@ -236,28 +235,28 @@ namespace SharpPulsar
                     break; // Ok
                 case HandlerState.State.Closing:
                 case HandlerState.State.Closed:
-                    Sender.Tell(new PulsarClientException.AlreadyClosedException("Producer already closed"));
+                    callback.TrySetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
                     return;
                 case HandlerState.State.Terminated:
-                    Sender.Tell(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
+                    callback.TrySetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
                     return;
                 case HandlerState.State.ProducerFenced:
-                    Sender.Tell(new PulsarClientException.ProducerFencedException("Producer was fenced"));
+                    callback.TrySetException(new PulsarClientException.ProducerFencedException("Producer was fenced"));
                     return;
                 case HandlerState.State.Failed:
                 case HandlerState.State.Uninitialized:
-                    Sender.Tell(new PulsarClientException.NotConnectedException());
+                    callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
 
             if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
-				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn), message.Key);
+				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
 				_router.Tell(msg, Sender);
 			}
             else
 			{
-				_router.Tell(new InternalSendWithTxn<T>(message, txn), Sender);
+				_router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
 			}
 		}
 
