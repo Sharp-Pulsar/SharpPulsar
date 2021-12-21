@@ -53,7 +53,7 @@ namespace SharpPulsar.Batch
         {
             _log = system.Log;
         }
-		public override bool Add(Message<T> msg, Action<object, Exception> callback)
+		public override bool Add(Message<T> msg, SendCallback<T> callback)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -102,7 +102,7 @@ namespace SharpPulsar.Batch
 			try
 			{
 				// Need to protect ourselves from any exception being thrown in the future handler from the application
-				_batches.ToList().ForEach(x => x.Value.FirstCallback(null, ex));
+				_batches.ToList().ForEach(x => x.Value.FirstCallback.SendComplete(ex));
 			}
 			catch (Exception t)
 			{
@@ -159,7 +159,7 @@ namespace SharpPulsar.Batch
 			}
 			var cmd = Commands.NewSend(Container.ProducerId, keyedBatch.SequenceId, numMessagesInBatch, keyedBatch.MessageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
 
-			var op = ProducerActor<T>.OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId);
+			var op = ProducerActor<T>.OpSendMsg<T>.Create((List<Message<T>>)keyedBatch.Messages, cmd, keyedBatch.SequenceId, keyedBatch.FirstCallback);
 
 			op.NumMessagesInBatch = numMessagesInBatch;
 			op.BatchSizeByte = currentBatchSizeBytes;
@@ -213,7 +213,7 @@ namespace SharpPulsar.Batch
 			internal long SequenceId = -1;
 			internal List<byte> BatchedMessageMetadataAndPayload = new List<byte>();
 			internal IList<Message<T>> Messages = new List<Message<T>>();
-			internal Action<object, Exception> PreviousCallback = null;
+			internal SendCallback<T> PreviousCallback = null;
 			internal CompressionType CompressionType;
 			internal CompressionCodec Compressor;
 			internal int MaxBatchSize;
@@ -221,7 +221,7 @@ namespace SharpPulsar.Batch
 			internal string ProducerName;
 
 			// keep track of callbacks for individual messages being published in a batch
-			internal Action<object, Exception> FirstCallback;
+			internal SendCallback<T> FirstCallback;
 
 			public virtual byte[] CompressedBatchMetadataAndPayload
 			{
@@ -252,7 +252,7 @@ namespace SharpPulsar.Batch
 				}
 			}
 
-			public virtual void AddMsg(Message<T> msg, Action<object, Exception> callback)
+			public virtual void AddMsg(Message<T> msg, SendCallback<T> callback)
 			{
 				if (Messages.Count == 0)
 				{
@@ -260,7 +260,10 @@ namespace SharpPulsar.Batch
 					BatchedMessageMetadataAndPayload.AddRange(msg.Data.ToArray());
 					FirstCallback = callback;
 				}
-;
+                if (PreviousCallback != null)
+                {
+                    PreviousCallback.AddCallback(msg, callback);
+                }
                 PreviousCallback = callback;
 				Messages.Add(msg);
 			}
@@ -270,7 +273,7 @@ namespace SharpPulsar.Batch
 				try
                 {
                     // Need to protect ourselves from any exception being thrown in the future handler from the application
-                    FirstCallback(null, ex);
+                    FirstCallback.SendComplete(ex);
                 }
 				catch (Exception t)
 				{

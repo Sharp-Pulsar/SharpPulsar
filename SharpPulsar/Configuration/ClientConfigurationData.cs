@@ -53,7 +53,9 @@ namespace SharpPulsar.Configuration
 		public bool TlsAllowInsecureConnection { get; set; } = false;
 		public string ProxyServiceUrl { get; set; }
         public ProxyProtocol? ProxyProtocol { get; set; }
-		public TimeSpan OperationTimeout { get; set; } = TimeSpan.FromSeconds(3);
+        private long _memoryLimitBytes = 0;
+        public TimeSpan OperationTimeout { get; set; } = TimeSpan.FromSeconds(3);
+		public TimeSpan LookupTimeout { get; set; } = TimeSpan.FromSeconds(10);
         public int WebServicePort { get; set; } = 8080;
 
         public string WebServiceScheme { get; set; } = "http";
@@ -99,7 +101,14 @@ namespace SharpPulsar.Configuration
 			}
             set => _useTls = value;
         }
-
+        public long MemoryLimitBytes 
+        {
+            get { return _memoryLimitBytes; }
+            set 
+            {
+                _memoryLimitBytes = value;
+            }
+        }
         public string ServiceUrl
         {
             get => _serviceUrl;
