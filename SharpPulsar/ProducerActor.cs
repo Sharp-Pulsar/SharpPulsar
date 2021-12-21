@@ -1496,7 +1496,7 @@ namespace SharpPulsar
 					// Set the callback to timeout on every message, then clear the pending queue.
 					_log.Info($"[{Topic}] [{_producerName}] Message send timed out. Failing {_pendingMessages.Count} messages");
 
-					var te = new PulsarClientException.TimeoutException($"The producer {_producerName} can not send message to the topic {Topic} within given timeout: {firstMsg.Msg.SequenceId}");
+					var te = new PulsarClientException.TimeoutException($"The producer {_producerName} can not send message to the topic {Topic} within given timeout: {Conf.SendTimeoutMs}");
 					FailPendingMessages(_cnx, te);
 					_stats.IncrementSendFailed(_pendingMessages.Count);
 					// Since the pending queue is cleared now, set timer to expire after configured value.
