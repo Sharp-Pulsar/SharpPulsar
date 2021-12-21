@@ -100,8 +100,12 @@ namespace SharpPulsar
                 {
                     _producer.Tell(new InternalSend<T>(message, tcs));
                 }
-
+                if (_conf.BatchingEnabled)
+                    return null;
                 var response = await tcs.Task;
+                if (response == null)
+                    return null;
+
                 return (MessageId)response.MessageId;
             }
             catch

@@ -205,9 +205,9 @@ namespace SharpPulsar
 				});
 			}
 
-			if(conf.SendTimeoutMs > 0)
+			if(conf.SendTimeoutMs.TotalMilliseconds > 0)
 			{
-				_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(conf.SendTimeoutMs), Self, RunSendTimeout.Instance, ActorRefs.NoSender);
+				_sendTimeout = _scheduler.ScheduleTellOnceCancelable(conf.SendTimeoutMs, Self, RunSendTimeout.Instance, ActorRefs.NoSender);
 			}
             
             _lookupDeadline = TimeSpan.FromMilliseconds(DateTimeHelper.CurrentUnixTimeMillis() + clientConfiguration.LookupTimeout.TotalMilliseconds);
@@ -724,16 +724,16 @@ namespace SharpPulsar
                 }
                 */
                 var readStartIndex = 0;
-				var sequenceId = (ulong)_msgIdGenerator;
+				var sequenceId = _msgIdGenerator;
 
                 if (msgMetadata.SequenceId == 0)
                 {
-                    msgMetadata.SequenceId = sequenceId;
+                    msgMetadata.SequenceId = (ulong)sequenceId;
                     _msgIdGenerator++;
                 }
                 else
                 {
-                    sequenceId = msgMetadata.SequenceId;
+                    sequenceId = (long)msgMetadata.SequenceId;
                 }
                 var uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
 
@@ -798,7 +798,7 @@ namespace SharpPulsar
             */
             return true;
         }
-        private async ValueTask SerializeAndSendMessage(Message<T> msg, byte[] payload, MessageMetadata msgMetadata, ulong sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, bool compressed, int compressedPayloadSize, int uncompressedSize, SendCallback<T> callback)
+        private async ValueTask SerializeAndSendMessage(Message<T> msg, byte[] payload, MessageMetadata msgMetadata, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, bool compressed, int compressedPayloadSize, int uncompressedSize, SendCallback<T> callback)
 		{
 			var chunkPayload = compressedPayload;
 			var chunkMsgMetadata = msgMetadata;
@@ -840,10 +840,10 @@ namespace SharpPulsar
 				{
 					// should trigger complete the batch message, new message will add to a new batch and new batch
 					// sequence id use the new message, so that broker can handle the message duplication
-					if(sequenceId <= (ulong)LastSequenceIdPushed)
+					if(sequenceId <= LastSequenceIdPushed)
 					{
 						_isLastSequenceIdPotentialDuplicated = true;
-						if(sequenceId <= (ulong)_lastSequenceIdPublished)
+						if(sequenceId <= _lastSequenceIdPublished)
 						{
 							_log.Warning($"Message with sequence id {sequenceId} is definitely a duplicate");
 						}
@@ -871,6 +871,10 @@ namespace SharpPulsar
 							{
 								await BatchMessageAndSend();
 							}
+                            /*else
+                            {
+                                callback.Future.TrySetResult(null);
+                            }*/
 						}
 						_isLastSequenceIdPotentialDuplicated = false;
 					}
@@ -1483,13 +1487,13 @@ namespace SharpPulsar
 			if (!_pendingMessages.TryPeek(out var firstMsg))
 			{
 				// If there are no pending messages, reset the timeout to the configured value.
-				timeToWaitMs = Conf.SendTimeoutMs;
+				timeToWaitMs = (long)Conf.SendTimeoutMs.TotalMilliseconds;
 			}
 			else
 			{
 				// If there is at least one message, calculate the diff between the message timeout and the elapsed
 				// time since first message was created.
-				var diff = Conf.SendTimeoutMs - (DateTimeHelper.CurrentUnixTimeMillis() - firstMsg.CreatedAt);
+				var diff = Conf.SendTimeoutMs.TotalMilliseconds - (DateTimeHelper.CurrentUnixTimeMillis() - firstMsg.CreatedAt);
 				if (diff <= 0)
 				{
 					// The diff is less than or equal to zero, meaning that the message has been timed out.
@@ -1500,15 +1504,15 @@ namespace SharpPulsar
 					FailPendingMessages(_cnx, te);
 					_stats.IncrementSendFailed(_pendingMessages.Count);
 					// Since the pending queue is cleared now, set timer to expire after configured value.
-					timeToWaitMs = Conf.SendTimeoutMs;
-				}
+					timeToWaitMs = (long)Conf.SendTimeoutMs.TotalMilliseconds;
+                }
 				else
 				{
 					// The diff is greater than zero, set the timeout to the diff value
-					timeToWaitMs = diff; 
+					timeToWaitMs = (long)diff; 
 				}
 			}
-			_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), Self, RunSendTimeout.Instance, ActorRefs.NoSender);
+			_sendTimeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(timeToWaitMs), _self, RunSendTimeout.Instance, ActorRefs.NoSender);
 
 		}
 
@@ -1599,25 +1603,6 @@ namespace SharpPulsar
 				_log.Warning($"[{Topic}] [{_producerName}] error while closing out batch -- {t}");
                 op.SendComplete(new PulsarClientException(t, op.SequenceId));
             }
-		}
-		private void SendComplete(Message<T> interceptorMessage, long createdAt, long firstSentAt, long lastSentAt, long retryCount, Exception e)
-		{
-			if (e != null &&  e is PulsarClientException.TimeoutException te)
-			{
-				var sequenceid = te.SequenceId;
-				var ns = DateTimeHelper.CurrentUnixTimeMillis();
-				var errMsg = string.Format("{0} : createdAt {1} ms ago, firstSentAt {2} ms ago, lastSentAt {3} ns ago, retryCount {4}, sequenceId {5}", te.Message, ns - createdAt, ns - firstSentAt, ns - lastSentAt, retryCount, sequenceid);
-
-				_stats.IncrementSendFailed();
-				OnSendAcknowledgement(interceptorMessage, null, e);
-				_log.Error(errMsg);
-			}
-			else
-			{
-				OnSendAcknowledgement(interceptorMessage, interceptorMessage.MessageId, null);
-				_stats.IncrementNumAcksReceived(DateTimeHelper.CurrentUnixTimeMillis() - createdAt);
-			}
-
 		}
 
 		private async ValueTask RecoverProcessOpSendMsgFrom(Message<T> from)

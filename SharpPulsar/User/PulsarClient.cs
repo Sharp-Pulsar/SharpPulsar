@@ -268,7 +268,7 @@ namespace SharpPulsar.User
                     }
                     _client.Tell(new AddConsumer(consumer));
 
-                    return new Consumer<T>(state, consumer, schema, conf);
+                    return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
                 else
                 {
@@ -283,7 +283,7 @@ namespace SharpPulsar.User
                         throw response.Exception;
                     }
                     _client.Tell(new AddConsumer(consumer));
-                    return new Consumer<T>(state, consumer, schema, conf);
+                    return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
             }
             catch(Exception e)
@@ -309,7 +309,7 @@ namespace SharpPulsar.User
 
             _client.Tell(new AddConsumer(consumer));
 
-            return new Consumer<T>(state, consumer, schema, conf);
+            return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
         }
 
         private async ValueTask<Consumer<T>> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
@@ -346,7 +346,7 @@ namespace SharpPulsar.User
                 }
                 _client.Tell(new AddConsumer(consumer));
 
-                return new Consumer<T>(state, consumer, schema, conf);
+                return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             catch(Exception e)
             {

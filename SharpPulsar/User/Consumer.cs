@@ -21,13 +21,15 @@ namespace SharpPulsar.User
         private readonly ConsumerConfigurationData<T> _conf;
         private readonly IActorRef _consumerActor;
         private readonly IActorRef _stateActor;
+        private readonly TimeSpan _operationTimeout;
 
-        public Consumer(IActorRef stateActor, IActorRef consumer, ISchema<T> schema, ConsumerConfigurationData<T> conf)
+        public Consumer(IActorRef stateActor, IActorRef consumer, ISchema<T> schema, ConsumerConfigurationData<T> conf, TimeSpan operationTimeout)
         {
             _stateActor = stateActor;
             _consumerActor = consumer;
             _schema = schema;
             _conf = conf;
+            _operationTimeout = operationTimeout;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
         public async ValueTask<string> TopicAsync() 
@@ -146,7 +148,7 @@ namespace SharpPulsar.User
         public void Close() => CloseAsync().ConfigureAwait(false);
         public async ValueTask CloseAsync()
         {
-            await _consumerActor.GracefulStop(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            await _consumerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
         }
         public bool HasReachedEndOfTopic() 
             => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();

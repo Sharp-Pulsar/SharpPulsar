@@ -110,7 +110,7 @@ namespace SharpPulsar.Test.SQL
                 .ProducerName(topic.Split("/").Last())
                 .Topic(topic)
                 .Schema(jsonSchem)
-                .SendTimeout(10000);
+                .SendTimeout(TimeSpan.FromMilliseconds(10000));
 
             var producer = _client.NewProducer(jsonSchem, producerConfig);
 
@@ -167,7 +167,7 @@ namespace SharpPulsar.Test.SQL
                 .ProducerName(topic.Split("/").Last())
                 .Topic(topic)
                 .Schema(jsonSchem)
-                .SendTimeout(10000);
+                .SendTimeout(TimeSpan.FromMilliseconds(10000));
 
             var producer = _client.NewProducer(jsonSchem, producerConfig);
 

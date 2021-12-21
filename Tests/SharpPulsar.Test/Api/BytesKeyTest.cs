@@ -116,7 +116,7 @@ namespace SharpPulsar.Test.Api
             consumer.Close();
         }
         [Fact]
-        public async Task ProduceAndConsumeBatch()
+        public void ProduceAndConsumeBatch()
 		{
 
             var r = new Random(0);
@@ -132,21 +132,25 @@ namespace SharpPulsar.Test.Api
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(_topic)
-                .SendTimeout(10000)
+                .SendTimeout(TimeSpan.FromMilliseconds(10000))
                 .EnableBatching(true)
-                .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000))
+                .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(120000))
                 .BatchingMaxMessages(5);
 
             var producer = _client.NewProducer(producerBuilder);
-            var tasks = new List<Task<MessageId>>();
 
             for (var i = 0; i < 5; i++)
             {
-                await producer.NewMessage().KeyBytes(byteKey)
+                 var id =    producer.NewMessage().KeyBytes(byteKey)
                     .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                     .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}"))
-                    .SendAsync();
+                    .Send();
+                if(id == null)
+                    _output.WriteLine($"Id is null");
+                else
+                    _output.WriteLine($"Id: {id}");
             }
+            producer.Flush();
             Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {

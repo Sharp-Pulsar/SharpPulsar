@@ -119,7 +119,7 @@ namespace SharpPulsar.Configuration
             return this;
         }
 
-        public ProducerConfigBuilder<T> SendTimeout(long sendTimeoutMs)
+        public ProducerConfigBuilder<T> SendTimeout(TimeSpan sendTimeoutMs)
         {
             _conf.SetSendTimeoutMs(sendTimeoutMs);
             return this;

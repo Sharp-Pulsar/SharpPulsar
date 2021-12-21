@@ -73,6 +73,7 @@ namespace SharpPulsar.Batch
                     // the first message
                     _messageMetadata.SequenceId = (ulong)msg.SequenceId;
                     _lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
+
                     _firstCallback = callback;
                     _batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
                     if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
@@ -91,7 +92,10 @@ namespace SharpPulsar.Batch
                     return false;
                 }
 			}
-
+            if (_previousCallback != null)
+            {
+                _previousCallback.AddCallback(msg, callback);
+            }
             _previousCallback = callback;
 			CurrentBatchSize += msg.Data.Length;
 			_messages.Add(msg);
@@ -140,7 +144,7 @@ namespace SharpPulsar.Batch
 
                 // Update the current max batch Size using the uncompressed Size, which is what we need in any case to
                 // accumulate the batch content
-                MaxBatchSize = (int)Math.Max(MaxBatchSize, uncompressedSize);
+                MaxBatchSize = Math.Max(MaxBatchSize, uncompressedSize);
                 return compressedPayload;
             }
         }
