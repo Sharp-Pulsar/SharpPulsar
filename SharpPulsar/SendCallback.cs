@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Akka.Actor;
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar
 {
     internal class SendCallback<T> : ISendCallback<T>
     {
-        private readonly IActorRef _outerInstance;
+        private readonly ProducerActor<T> _outerInstance;
 
         private TaskCompletionSource<Message<T>> _future;
 
@@ -15,7 +14,7 @@ namespace SharpPulsar
         private ISendCallback<T> _nextCallback;
         private Message<T> _nextMsg;
         private long _createdAt;
-        public SendCallback(IActorRef outerInstance, TaskCompletionSource<Message<T>> future, Message<T> interceptorMessage)
+        public SendCallback(ProducerActor<T> outerInstance, TaskCompletionSource<Message<T>> future, Message<T> interceptorMessage)
         {
             _outerInstance = outerInstance;
             _future = future;
@@ -36,15 +35,15 @@ namespace SharpPulsar
             {
                 if (e != null)
                 {
-                    outerInstance.stats.incrementSendFailed();
-                    onSendAcknowledgement(_interceptorMessage, null, e);
+                    _outerInstance._stats.IncrementSendFailed();
+                    _outerInstance.OnSendAcknowledgement(_interceptorMessage, null, e);
                     _future.TrySetException(e);
                 }
                 else
                 {
-                    onSendAcknowledgement(interceptorMessage, interceptorMessage.getMessageId(), null);
+                    _outerInstance.OnSendAcknowledgement(_interceptorMessage, _interceptorMessage.MessageId, null);
                     _future.TrySetResult(_interceptorMessage);
-                    outerInstance.stats.incrementNumAcksReceived(System.nanoTime() - CreatedAt);
+                    _outerInstance._stats.IncrementNumAcksReceived(DateTimeOffset.Now.ToUnixTimeMilliseconds() - _createdAt);
                 }
             }
             finally
@@ -62,15 +61,15 @@ namespace SharpPulsar
                 {
                     if (e != null)
                     {
-                        outerInstance.stats.incrementSendFailed();
-                        onSendAcknowledgement(msg, null, e);
+                        _outerInstance._stats.IncrementSendFailed();
+                        _outerInstance.OnSendAcknowledgement(msg, null, e);
                         sendCallback.Future.TrySetException(e);
                     }
                     else
                     {
-                        onSendAcknowledgement(msg, msg.MessageId, null);
+                        _outerInstance.OnSendAcknowledgement(msg, msg.MessageId, null);
                         sendCallback.Future.TrySetResult(msg);
-                        outerInstance.stats.incrementNumAcksReceived(System.nanoTime() - CreatedAt);
+                        _outerInstance._stats.IncrementNumAcksReceived(DateTimeOffset.Now.ToUnixTimeMilliseconds() - _createdAt);
                     }
                     _nextMsg = _nextCallback.NextMessage;
                     _nextCallback = _nextCallback.NextSendCallback;

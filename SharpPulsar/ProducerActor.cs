@@ -89,7 +89,7 @@ namespace SharpPulsar
 		private readonly int _partitionIndex;
 		private ISchemaInfo _schemaInfo;
 
-		private readonly IProducerStatsRecorder _stats;
+		protected internal IProducerStatsRecorder _stats;
 
 		private readonly CompressionCodec _compressor;
 
@@ -633,7 +633,7 @@ namespace SharpPulsar
 
 				_ = interceptorMessage.Properties;
             }
-            var callback = new SendCallback<T>(_self, future, interceptorMessage);
+            var callback = new SendCallback<T>(this, future, interceptorMessage);
             await Send(interceptorMessage, callback);
             var msg = await callback.Future.Task;
 		}
