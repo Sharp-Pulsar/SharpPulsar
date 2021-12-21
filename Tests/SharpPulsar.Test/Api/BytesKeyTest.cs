@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -131,20 +132,25 @@ namespace SharpPulsar.Test.Api
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(_topic)
+                .SendTimeout(TimeSpan.FromMilliseconds(10000))
                 .EnableBatching(true)
-                .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(10000))
+                .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(120000))
                 .BatchingMaxMessages(5);
 
             var producer = _client.NewProducer(producerBuilder);
 
             for (var i = 0; i < 5; i++)
             {
-                producer.NewMessage().KeyBytes(byteKey)
+                 var id =    producer.NewMessage().KeyBytes(byteKey)
                     .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                     .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}"))
                     .Send();
+                if(id == null)
+                    _output.WriteLine($"Id is null");
+                else
+                    _output.WriteLine($"Id: {id}");
             }
-
+            producer.Flush();
             Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {

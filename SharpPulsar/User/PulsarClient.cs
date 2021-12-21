@@ -268,7 +268,7 @@ namespace SharpPulsar.User
                     }
                     _client.Tell(new AddConsumer(consumer));
 
-                    return new Consumer<T>(state, consumer, schema, conf);
+                    return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
                 else
                 {
@@ -283,7 +283,7 @@ namespace SharpPulsar.User
                         throw response.Exception;
                     }
                     _client.Tell(new AddConsumer(consumer));
-                    return new Consumer<T>(state, consumer, schema, conf);
+                    return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
             }
             catch(Exception e)
@@ -309,7 +309,7 @@ namespace SharpPulsar.User
 
             _client.Tell(new AddConsumer(consumer));
 
-            return new Consumer<T>(state, consumer, schema, conf);
+            return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
         }
 
         private async ValueTask<Consumer<T>> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
@@ -346,7 +346,7 @@ namespace SharpPulsar.User
                 }
                 _client.Tell(new AddConsumer(consumer));
 
-                return new Consumer<T>(state, consumer, schema, conf);
+                return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             catch(Exception e)
             {
@@ -638,31 +638,37 @@ namespace SharpPulsar.User
             }
             if (metadata.Partitions > 0)
             {
-                var partitionActor = _actorSystem.ActorOf(Props.Create(()=> new PartitionedProducer<T>(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData)));
-                var co = await partitionActor.Ask<AskResponse>(Connect.Instance, _clientConfigurationData.OperationTimeout);
-                if (co.Failed)
+                var tcs = new TaskCompletionSource<IActorRef>();
+                var partitionActor = _actorSystem.ActorOf(PartitionedProducer<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, tcs));
+                
+                try
+                {
+                    var producer = await tcs.Task;
+                    _client.Tell(new AddProducer(producer));
+                    return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
+                }
+                catch(Exception ex)
                 {
                     await partitionActor.GracefulStop(TimeSpan.FromSeconds(5));
-                    throw co.Exception;
+                    throw ex;
                 }
-
-                _client.Tell(new AddProducer(partitionActor));
-                return new Producer<T>(partitionActor, schema, conf, _clientConfigurationData.OperationTimeout);
             }
             else
             {
+                var tcs = new TaskCompletionSource<IActorRef>();
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
-                var producer = _actorSystem.ActorOf(Props.Create(()=> new ProducerActor<T>(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, -1, schema, interceptors, _clientConfigurationData)));
-                var co = await producer.Ask<AskResponse>(Connect.Instance, _clientConfigurationData.OperationTimeout);
-                if (co.Failed)
+                _actorSystem.ActorOf(ProducerActor<T>.Prop(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, tcs, -1, schema, interceptors, _clientConfigurationData));
+                try
                 {
-                    await producer.GracefulStop(TimeSpan.FromSeconds(5));
-                    throw co.Exception;
+                    var producer = await tcs.Task;
+                    _client.Tell(new AddProducer(producer));
+
+                    return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
-
-                _client.Tell(new AddProducer(producer));
-
-                return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
+                catch
+                {
+                    throw;
+                }
             }
             
         }

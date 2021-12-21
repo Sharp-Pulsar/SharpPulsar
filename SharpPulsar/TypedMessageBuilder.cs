@@ -91,27 +91,22 @@ namespace SharpPulsar
             try
             {
                 var message = await Message().ConfigureAwait(false);
-                object obj = null;
+                var tcs = new TaskCompletionSource<Message<T>>();
                 if (_txn != null)
                 {
-                    obj = await _producer.Ask(new InternalSendWithTxn<T>(message, _txn.Txn), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
+                    _producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, tcs));
                 }
                 else
                 {
-                    obj = await _producer.Ask(new InternalSend<T>(message), TimeSpan.FromMilliseconds(_conf.SendTimeoutMs)).ConfigureAwait(false);
-                    //obj = await _producer.Ask(new InternalSend<T>(message)).ConfigureAwait(false);
+                    _producer.Tell(new InternalSend<T>(message, tcs));
                 }
-                switch(obj)
-                {
-                    case MessageId msgid:
-                        return msgid;
-                    case NoMessageIdYet _:
-                        return null;
-                    case PulsarClientException ex:
-                        throw ex;
-                    default:
-                        throw new Exception(obj.ToString());
-                }
+                if (_conf.BatchingEnabled)
+                    return null;
+                var response = await tcs.Task;
+                if (response == null)
+                    return null;
+
+                return (MessageId)response.MessageId;
             }
             catch
             {

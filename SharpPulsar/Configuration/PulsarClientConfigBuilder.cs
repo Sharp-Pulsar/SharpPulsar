@@ -123,6 +123,11 @@ namespace SharpPulsar.Configuration
             _conf.OperationTimeout = operationTimeout;
             return this;
         }
+        public PulsarClientConfigBuilder LookupTimeout(TimeSpan lookupTimeout)
+        {
+            _conf.LookupTimeout = lookupTimeout;
+            return this;
+        }
 
         public PulsarClientConfigBuilder ConnectionsPerBroker(int connectionsPerBroker)
         {
@@ -172,7 +177,14 @@ namespace SharpPulsar.Configuration
             _conf.MaxNumberOfRejectedRequestPerConnection = maxNumberOfRejectedRequestPerConnection;
             return this;
         }
+        public PulsarClientConfigBuilder MemoryLimitBytes(long memoryLimitBytes)
+        {
+            if(memoryLimitBytes < 1)
+                throw new ArgumentNullException("MemoryLimitBytes must be greater than 0");
 
+            _conf.MemoryLimitBytes = memoryLimitBytes;
+            return this;
+        }
         public PulsarClientConfigBuilder ConnectionTimeout(TimeSpan duration)
         {
             _conf.ConnectionTimeoutMs = (int)duration.TotalMilliseconds;

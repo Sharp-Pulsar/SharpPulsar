@@ -55,7 +55,7 @@ namespace SharpPulsar.Configuration
 
 		private long _autoUpdatePartitionsIntervalSeconds = 60;
         public bool UseTls { get; set; } = false;
-		public long SendTimeoutMs { get; set; } = 30000;
+		public TimeSpan SendTimeoutMs { get; set; } = TimeSpan.FromMilliseconds(30000);
         public MessageRoutingMode MessageRoutingMode { get; set; } = MessageRoutingMode.RoundRobinMode;
 		public HashingScheme HashingScheme { get; set; } = HashingScheme.JavaStringHash;
 
@@ -145,9 +145,9 @@ namespace SharpPulsar.Configuration
 			return _batchingPartitionSwitchFrequencyByPublishDelay * (long)BatchingMaxPublishDelayMs;
 		}
 
-		public void SetSendTimeoutMs(long sendTimeoutMs)
+		public void SetSendTimeoutMs(TimeSpan sendTimeoutMs)
 		{
-			if (sendTimeoutMs < 0)
+			if (sendTimeoutMs.TotalMilliseconds < 0)
 				throw new ArgumentException("sendTimeout needs to be >= 0");
 			SendTimeoutMs = sendTimeoutMs;
 		}

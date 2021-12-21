@@ -42,7 +42,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.EnableBatching(false)
-				.SendTimeout(0);
+				.SendTimeout(TimeSpan.Zero);
 
 			var producer = _client.NewProducer(producerBuilder);
 

@@ -35,7 +35,7 @@ namespace SharpPulsar
         /// <param name="msg"> message will add to the batch message container </param>
         /// <param name="callback"> message send callback </param>
         /// <returns> true if the batch is full, otherwise false </returns>
-        bool Add(Message<T> msg, Action<object, Exception> callback);
+        bool Add(Message<T> msg, SendCallback<T> callback);
 
         /// <summary>
         /// Check the batch message container have enough space for the message want to add.
