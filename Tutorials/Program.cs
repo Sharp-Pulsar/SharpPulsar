@@ -308,7 +308,7 @@ namespace Tutorials
             var txn = (Transaction)pulsarClient.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
 
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
-                .SendTimeout(0)
+                .SendTimeout(TimeSpan.Zero)
                 .Topic(myTopic));
 
             var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
@@ -402,13 +402,13 @@ namespace Tutorials
                 .SubscriptionName($"my-subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
                 .AckTimeout(TimeSpan.FromMilliseconds(20000))
                 .ForceTopicCreation(true)
-                .AcknowledgmentGroupTime(0);
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
             var consumer = client.NewConsumer(jsonSchem, builder);
             var producerConfig = new ProducerConfigBuilder<JournalEntry>()
                 .ProducerName(topic.Split("/").Last())
                 .Topic(topic)
                 .Schema(jsonSchem)
-                .SendTimeout(10000);
+                .SendTimeout(TimeSpan.FromMilliseconds(10000));
 
             var producer = client.NewProducer(jsonSchem, producerConfig);
 
@@ -460,14 +460,14 @@ namespace Tutorials
                 .SubscriptionName(subName)
                 .ForceTopicCreation(true)
                 .EnableBatchIndexAcknowledgment(true)
-                .AcknowledgmentGroupTime(0);
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
 
             var consumer = client.NewConsumer(consumerBuilder);
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(topic)
                 .EnableBatching(false)
-                .SendTimeout(0);
+                .SendTimeout(TimeSpan.Zero);
 
             var producer = client.NewProducer(producerBuilder);
 
@@ -528,13 +528,13 @@ namespace Tutorials
                 .SubscriptionName($"subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
                 .AckTimeout(TimeSpan.FromMilliseconds(20000))
                 .ForceTopicCreation(true)
-                .AcknowledgmentGroupTime(0);
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
             var consumer = client.NewConsumer(jsonSchem, builder);
             var producerConfig = new ProducerConfigBuilder<KeyValue<string, string>>()
                 .ProducerName(topic.Split("/").Last())
                 .Topic(topic)
                 .Schema(jsonSchem)
-                .SendTimeout(10000);
+                .SendTimeout(TimeSpan.FromMilliseconds(10000));
 
             var producer = client.NewProducer(jsonSchem, producerConfig);
 
