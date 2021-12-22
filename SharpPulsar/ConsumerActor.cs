@@ -163,12 +163,12 @@ namespace SharpPulsar
 		private IActorRef _clientCnxUsedForConsumerRegistration;
 		private readonly Dictionary<string, long> _properties = new Dictionary<string, long>();
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData):this
-			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfigurationData)
+        public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture) :this
+			(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture)
 		{
 		}
 
-		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, listenerExecutor, schema)
+		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture)
 		{
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
@@ -317,7 +317,15 @@ namespace SharpPulsar
             
             Ready();
 		}
+        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
+        {
+            return Props.Create(()=> new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, schema, createTopicIfDoesNotExist, clientConfigurationData, subscribeFuture));
+        }
 
+        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
+        {
+            return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
+        }
         private async ValueTask Connect(AskResponse response)
         {
             if (response.Failed)
