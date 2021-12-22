@@ -125,15 +125,15 @@ namespace SharpPulsar
 			_startMessageId = startMessageId != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
 			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 
-			if (conf.AckTimeoutMillis != 0)
+			if (conf.AckTimeout != 0)
 			{
-				if (conf.TickDurationMillis > 0)
+				if (conf.TickDuration > 0)
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeoutMillis, conf.TickDurationMillis, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedTopicMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeout, conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedTopicMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf.AckTimeoutMillis), "UnAckedTopicMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(UnAckedChunckedMessageIdSequenceMap, Self, conf.AckTimeout), "UnAckedTopicMessageTracker");
 				}
 			}
 			else
@@ -155,7 +155,7 @@ namespace SharpPulsar
 		{			// start track and auto subscribe partition increasement
 			if (_internalConfig.AutoUpdatePartitions)
 			{
-				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsIntervalSeconds), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsInterval), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
 			}
             ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
             {

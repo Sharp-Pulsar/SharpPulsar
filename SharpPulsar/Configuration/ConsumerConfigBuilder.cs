@@ -63,7 +63,7 @@ namespace SharpPulsar.Configuration
 
         public ConsumerConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessageMillis(long expireTime)
         {
-            _conf.ExpireTimeOfIncompleteChunkedMessageMillis = expireTime;
+            _conf.ExpireTimeOfIncompleteChunkedMessage = expireTime;
             return this;
         }
 
@@ -160,7 +160,7 @@ namespace SharpPulsar.Configuration
 		{
 			var toms = timeSpan.TotalMilliseconds;
 			Condition.CheckArgument(toms == 0 ||  toms >= _minAckTimeoutMillis, "Ack timeout should be greater than " + _minAckTimeoutMillis + " ms");
-			_conf.AckTimeoutMillis = (long)toms;
+			_conf.AckTimeout = (long)toms;
             return this;
 		}
 
@@ -169,7 +169,7 @@ namespace SharpPulsar.Configuration
 			var toms = timeSpan.TotalMilliseconds;
 
             Condition.CheckArgument(toms < _minTickTimeMillis, "Ack timeout tick time should be greater than " + _minTickTimeMillis + " ms");
-			_conf.TickDurationMillis = (long)toms;
+			_conf.TickDuration = (long)toms;
             return this;
 		}
 
@@ -177,7 +177,7 @@ namespace SharpPulsar.Configuration
         {
             var redeliveryDelayMs = (long)timeSpan.TotalMilliseconds;
             Condition.CheckArgument(redeliveryDelayMs >= 0, "redeliveryDelay needs to be >= 0");
-            _conf.NegativeAckRedeliveryDelayMs = redeliveryDelayMs;
+            _conf.NegativeAckRedeliveryDelay = redeliveryDelayMs;
             return this;
 		}
 
@@ -297,6 +297,11 @@ namespace SharpPulsar.Configuration
             _conf.AckReceiptEnabled = isAckReceiptEnabled;
             return this;
 		}
+        public ConsumerConfigBuilder<T> StartPaused(bool startPaused)
+		{
+            _conf.StartPaused = startPaused;
+            return this;
+		}
 		public ConsumerConfigBuilder<T> SetPayloadProcessor(IMessagePayloadProcessor payloadProcessor)
 		{
             _conf.PayloadProcessor = payloadProcessor;
@@ -334,9 +339,9 @@ namespace SharpPulsar.Configuration
 		{
 			if (deadLetterPolicy != null)
 			{
-				if (_conf.AckTimeoutMillis == 0)
+				if (_conf.AckTimeout == 0)
 				{
-					_conf.AckTimeoutMillis = _defaultAckTimeoutMillisForDeadLetter;
+					_conf.AckTimeout = _defaultAckTimeoutMillisForDeadLetter;
 				}
 				_conf.DeadLetterPolicy = deadLetterPolicy;
 			}
@@ -355,12 +360,12 @@ namespace SharpPulsar.Configuration
 
 		public ConsumerConfigBuilder<T> ExpireTimeOfIncompleteChunkedMessage(TimeSpan timeSpan)
 		{
-			_conf.ExpireTimeOfIncompleteChunkedMessageMillis = (long)timeSpan.TotalMilliseconds;
+			_conf.ExpireTimeOfIncompleteChunkedMessage = (long)timeSpan.TotalMilliseconds;
 			return null;
 		}
 		public ConsumerConfigBuilder<T> AutoUpdatePartitionsInterval(TimeSpan timeSpan)
 		{
-			_conf.SetAutoUpdatePartitionsIntervalSeconds((int)timeSpan.TotalSeconds);
+			_conf.SetAutoUpdatePartitionsInterval((int)timeSpan.TotalSeconds);
 			return this;
 		}
 		public ConsumerConfigBuilder<T> AutoUpdatePartitions(bool autoUpdate)

@@ -58,7 +58,7 @@ namespace SharpPulsar.Tracker
             _log = Context.GetLogger();
             _self = Self;
             _consumer = consumer;
-			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
+			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelay, MinNackDelayMs);
 			_timerIntervalMs = _nackDelayMs / 3;
             _unack = unack;
             Ready();

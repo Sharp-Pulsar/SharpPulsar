@@ -40,7 +40,6 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandAck;
-using Receive = Akka.Actor.Receive;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -170,6 +169,7 @@ namespace SharpPulsar
 
 		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture)
 		{
+            Paused = conf.StartPaused;
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
 			_ackRequests = new Dictionary<long, (IMessageId messageid, TxnID txnid)>();
@@ -198,10 +198,10 @@ namespace SharpPulsar
 			_createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 			_maxPendingChuckedMessage = conf.MaxPendingChuckedMessage;
 			_pendingChunckedMessageUuidQueue = new Queue<string>();
-			ExpireTimeOfIncompleteChunkedMessageMillis = conf.ExpireTimeOfIncompleteChunkedMessageMillis;
+			ExpireTimeOfIncompleteChunkedMessageMillis = conf.ExpireTimeOfIncompleteChunkedMessage;
 			_autoAckOldestChunkedMessageOnQueueFull = conf.AutoAckOldestChunkedMessageOnQueueFull;
 
-			if(clientConfiguration.StatsIntervalSeconds > 0)
+			if(clientConfiguration.StatsIntervalSeconds.TotalMilliseconds > 0)
 			{
 				_stats = new ConsumerStatsRecorder<T>(Context.System, conf, _topicName.ToString(), ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds);
 			}
@@ -212,15 +212,15 @@ namespace SharpPulsar
 
 			_duringSeek = false;
 
-			if(conf.AckTimeoutMillis > 0)
+			if(conf.AckTimeout.TotalMilliseconds > 0)
 			{
-				if(conf.TickDurationMillis > 0)
+				if(conf.TickDuration > 0)
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, Math.Min(conf.TickDurationMillis, conf.AckTimeoutMillis), Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, Math.Min(conf.TickDuration, conf.AckTimeout), Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeoutMillis, 0, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, 0, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 			}
 			else
@@ -1882,7 +1882,7 @@ namespace SharpPulsar
 
 		protected internal virtual void TrackMessage(IMessageId messageId)
 		{
-			if(Conf.AckTimeoutMillis > 0)
+			if(Conf.AckTimeout > 0)
 			{
                 MessageId id;
                 if (messageId is BatchMessageId msgId)
