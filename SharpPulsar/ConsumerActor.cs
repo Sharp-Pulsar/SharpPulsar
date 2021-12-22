@@ -146,7 +146,7 @@ namespace SharpPulsar
 
 		private readonly Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
 		private int _pendingChunckedMessageCount = 0;
-		protected internal long ExpireTimeOfIncompleteChunkedMessageMillis = 0;
+		protected internal TimeSpan ExpireTimeOfIncompleteChunkedMessageMillis = TimeSpan.Zero;
 		private bool _expireChunkMessageTaskScheduled = false;
 		private int _maxPendingChuckedMessage;
 		// if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
@@ -214,13 +214,13 @@ namespace SharpPulsar
 
 			if(conf.AckTimeout.TotalMilliseconds > 0)
 			{
-				if(conf.TickDuration > 0)
+				if(conf.TickDuration.TotalMilliseconds > 0)
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, Math.Min(conf.TickDuration, conf.AckTimeout), Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, conf.TickDuration > conf.AckTimeout? conf.AckTimeout: conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, 0, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, TimeSpan.Zero, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 			}
 			else
@@ -316,6 +316,7 @@ namespace SharpPulsar
 			_topicNameWithoutPartition = _topicName.PartitionedTopicName;
             
             Ready();
+            GrabCnx();
 		}
         public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
@@ -360,9 +361,13 @@ namespace SharpPulsar
                 _replyTo.Tell(new AskResponse(new PulsarClientException(e)));
             }
         }
-		private void Ready()
+		private void GrabCnx()
         {
-            ReceiveAsync<Connect>(async _ =>
+            _connectionHandler.Tell(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
+        }
+        private void Ready()
+        {
+            ReceiveAsync<AskResponse>(async _ =>
             {
                 _replyTo = Sender;
                 var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from consumer: {ConsumerName}"));

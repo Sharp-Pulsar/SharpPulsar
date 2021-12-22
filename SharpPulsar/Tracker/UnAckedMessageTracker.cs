@@ -241,7 +241,7 @@ namespace SharpPulsar.Tracker
             Clear();
         }
 
-        public static Props Prop(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer, IActorRef unack)
+        public static Props Prop(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack)
         {
             return Props.Create(()=> new UnAckedMessageTracker(ackTimeoutMillis, tickDurationInMs, consumer, unack));
         }

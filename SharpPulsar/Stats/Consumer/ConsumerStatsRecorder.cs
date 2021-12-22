@@ -79,7 +79,7 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData<T> conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
+		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData<T> conf, string topic, string consumerName, string subscription, TimeSpan statsIntervalSeconds)
         {
             _system = system;
             _log = system.Log;
