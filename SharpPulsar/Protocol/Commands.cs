@@ -362,6 +362,7 @@ namespace SharpPulsar.Protocol
                 initialPosition = subscriptionInitialPosition,
                 ReplicateSubscriptionState = isReplicated,
                 ForceTopicCreation = createTopicIfDoesNotExist
+                
             };
 
             if (keySharedPolicy != null)

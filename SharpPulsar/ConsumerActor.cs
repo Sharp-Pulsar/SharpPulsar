@@ -91,9 +91,12 @@ namespace SharpPulsar
 		private readonly int _priorityLevel;
 		private readonly SubscriptionMode _subscriptionMode;
 		private BatchMessageId _startMessageId;
-		private IActorContext _context;
+		private IActorContext _context; 
+        private readonly IList<Exception> _previousExceptions = new List<Exception>();
 
-		private IActorRef _lookup;
+
+
+        private IActorRef _lookup;
 		private IActorRef _cnxPool;
 
 		private long _requestId;
@@ -142,7 +145,9 @@ namespace SharpPulsar
 		private volatile IActorRef _retryLetterProducer;
 		private volatile IActorRef _replyTo;
 
-		protected internal bool Paused;
+        private long _subscribeDeadline = 0; // gets set on first successful connection
+
+        protected internal bool Paused;
 
 		private readonly Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
 		private int _pendingChunckedMessageCount = 0;
@@ -327,19 +332,11 @@ namespace SharpPulsar
         {
             return Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, startMessageRollbackDurationInSec, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture));
         }
-        private async ValueTask Connect(AskResponse response)
+        private async ValueTask ConnectionOpened(ConnectionOpened c)
         {
-            if (response.Failed)
-            {
-                _replyTo.Tell(response);
-                return;
-            }
-
             try
             {
-
-                var c = response.ConvertTo<ConnectionOpened>();
-                _clientCnx = c.ClientCnx;
+                _previousExceptions.Clear();
                 _maxMessageSize = (int)c.MaxMessageSize;
                 _protocolVersion = c.ProtocolVersion;
                 if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
@@ -349,16 +346,132 @@ namespace SharpPulsar
                     DeregisterFromClientCnx();
                     _client.Tell(new CleanupConsumer(Self));
                     ClearReceiverQueue();
-                    _replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is in a closing state")));
+                    SubscribeFuture.TrySetException(new PulsarClientException("Consumer is in a closing state"));
                     return;
                 }
-                SetCnx(_clientCnx);
+                _clientCnx = c.ClientCnx;
+                _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
+
                 var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
-                await Connecting(id).ConfigureAwait(false);
+                var requestId = id.Id;
+                if (_duringSeek)
+                {
+                    _acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
+                }
+
+                _subscribeDeadline = DateTimeHelper.CurrentUnixTimeMillis() + (long)_clientConfigurationData.OperationTimeout.TotalMilliseconds;
+
+                var currentSize = IncomingMessages.Count;
+
+                _startMessageId = ClearReceiverQueue();
+
+                if (_possibleSendToDeadLetterTopicMessages != null)
+                {
+                    _possibleSendToDeadLetterTopicMessages.Clear();
+                }
+
+                var isDurable = _subscriptionMode == SubscriptionMode.Durable;
+                MessageIdData startMessageIdData = null;
+                if (isDurable)
+                {
+                    // For regular durable subscriptions, the message id from where to restart will be determined by the broker.
+                    startMessageIdData = null;
+                }
+                else if (_startMessageId != null)
+                {
+                    // For non-durable we are going to restart from the next entry
+                    var builder = new MessageIdData
+                    {
+                        ledgerId = (ulong)_startMessageId.LedgerId,
+                        entryId = (ulong)_startMessageId.EntryId
+                    };
+                    if (_startMessageId is BatchMessageId _)
+                    {
+                        builder.BatchIndex = _startMessageId.BatchIndex;
+                    }
+
+                }
+
+                var si = Schema.SchemaInfo;
+                if (si != null && (si.Type == SchemaType.BYTES || si.Type == SchemaType.NONE))
+                {
+                    // don't set schema for Schema.BYTES
+                    si = null;
+                }
+                // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
+                var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
+                var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+
+                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
+
+                if (result is CommandSuccessResponse _)
+                {
+                    if (State.ChangeToReadyState())
+                    {
+                        ConsumerIsReconnectedToBroker(_clientCnx, currentSize);
+                    }
+                    else
+                    {
+                        State.ConnectionState = HandlerState.State.Closed;
+                        DeregisterFromClientCnx();
+                        _client.Tell(new CleanupConsumer(_self));
+                        //await _clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
+                        SubscribeFuture.TrySetException(new PulsarClientException("Consumer is closed"));
+                        return;
+                    }
+                    ResetBackoff();
+                    var firstTimeConnect = SubscribeFuture.TrySetResult(_self);
+                    if (!(firstTimeConnect && _hasParentConsumer) && Conf.ReceiverQueueSize != 0)
+                    {
+                        IncreaseAvailablePermits(Conf.ReceiverQueueSize);
+                    }
+                }
+                else if (result is AskResponse response)
+                {
+                    if (response.Failed)
+                    {
+                        DeregisterFromClientCnx();
+                        var e = response.Exception;
+                        if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+                        {
+                            await _clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
+                            SubscribeFuture.TrySetException(new PulsarClientException("Consumer is in a closing state"));
+                            return;
+                        }
+                        else if (!SubscribeFuture.Task.IsCompleted)
+                        {
+                            State.ConnectionState = HandlerState.State.Closed;
+                            CloseConsumerTasks();
+                            SubscribeFuture.TrySetException(PulsarClientException.Wrap(e, $"Failed to subscribe the topic {_topicName} with subscription name {Subscription} when connecting to the broker"));
+
+                            _client.Tell(new CleanupConsumer(_self));
+                        }
+                        else if (e is PulsarClientException.TopicDoesNotExistException)
+                        {
+                            var msg = $"[{Topic}][{Subscription}] Closed consumer because topic does not exist anymore";
+                            State.ConnectionState = HandlerState.State.Failed;
+                            CloseConsumerTasks();
+                            _client.Tell(new CleanupConsumer(Self));
+                            _log.Warning(msg);
+                            SubscribeFuture.TrySetException((new PulsarClientException(msg));
+                        }
+                        else
+                        {
+                            await ReconnectLater(e);
+                        }
+                    }
+                    else
+                    {
+                        SubscribeFuture.TrySetResult(_self);
+
+                    }
+                }
+                else if (result is ConnectionFailed failed)
+                    await ReconnectLater(failed);
             }
             catch (Exception e)
             {
-                _replyTo.Tell(new AskResponse(new PulsarClientException(e)));
+                SubscribeFuture.TrySetException(new PulsarClientException(e));
             }
         }
 		private void GrabCnx()
@@ -367,11 +480,15 @@ namespace SharpPulsar
         }
         private void Ready()
         {
-            ReceiveAsync<AskResponse>(async _ =>
+            ReceiveAsync<AskResponse>(async ask =>
             {
-                _replyTo = Sender;
-                var askResponse = await _connectionHandler.Ask<AskResponse>(new GrabCnx($"Create connection from consumer: {ConsumerName}"));
-                await Connect(askResponse).ConfigureAwait(false);
+                if (ask.Failed)
+                {
+                    ConnectionFailed(ask.Exception);
+                    return;
+                }
+
+                await ConnectionOpened(ask.ConvertTo<ConnectionOpened>()).ConfigureAwait(false);
             });
             Receive<PossibleSendToDeadLetterTopicMessagesRemove>(s =>
             {
@@ -682,125 +799,7 @@ namespace SharpPulsar
 
 		private async ValueTask Connecting(NewRequestIdResponse id)
 		{
-            var requestId = id.Id;
-            _startMessageId = ClearReceiverQueue();
-            if (_possibleSendToDeadLetterTopicMessages != null)
-            {
-                _possibleSendToDeadLetterTopicMessages.Clear();
-            }
-
-            var isDurable = _subscriptionMode == SubscriptionMode.Durable;
-            MessageIdData startMessageIdData = null;
-            if (isDurable)
-            {
-                // For regular durable subscriptions, the message id from where to restart will be determined by the broker.
-                startMessageIdData = null;
-            }
-            else if (_startMessageId != null)
-            {
-                // For non-durable we are going to restart from the next entry
-                var builder = new MessageIdData
-                {
-                    ledgerId = (ulong)_startMessageId.LedgerId,
-                    entryId = (ulong)_startMessageId.EntryId
-                };
-                if (_startMessageId is BatchMessageId _)
-                {
-                    builder.BatchIndex = _startMessageId.BatchIndex;
-                }
-
-            }
-
-            var si = Schema.SchemaInfo;
-            if (si != null && (SchemaType.BYTES == si.Type || SchemaType.NONE == si.Type))
-            {
-                // don't set schema for Schema.BYTES
-                si = null;
-            }
-            // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
-            var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-            var request = Commands.NewSubscribe(base.Topic, base.Subscription, _consumerId, requestId, base.SubType, _priorityLevel, base.ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
-
-            _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
-            try
-            {
-                
-                var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
-                
-                if (result is CommandSuccessResponse _)
-                {
-                    int currentSize;
-                    isDurable = _subscriptionMode == SubscriptionMode.Durable;
-                    currentSize = IncomingMessages.Count;
-                    if (State.ChangeToReadyState())
-                    {
-                        ConsumerIsReconnectedToBroker(_clientCnx, currentSize);
-                    }
-                    else
-                    {
-                        State.ConnectionState = HandlerState.State.Closed;
-                        DeregisterFromClientCnx();
-                        _client.Tell(new CleanupConsumer(Self));
-                        await _clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
-                        _replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is closed")));
-                        return;
-                    }
-                    ResetBackoff(isDurable);
-                }
-                else if (result is AskResponse response)
-                {
-                    if (response.Failed)
-                    {
-                        DeregisterFromClientCnx();
-                        var e = response.Exception;
-                        if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-                        {
-                            await _clientCnx.GracefulStop(TimeSpan.FromSeconds(1));
-                            _replyTo.Tell(new AskResponse(new PulsarClientException("Consumer is in a closing state")));
-                            return;
-                        }
-                        _log.Warning($"[{Topic}][{Subscription}] Failed to subscribe to topic on");
-                        if (e is PulsarClientException exception && PulsarClientException.IsRetriableError(e) && DateTimeHelper.CurrentUnixTimeMillis() < _subscribeTimeout)
-                        {
-                            await ReconnectLater(e);
-                        }
-                        else if (e is IncompatibleSchemaException se)
-                        {
-                            _log.Error($"Failed to connect consumer on IncompatibleSchemaException: {Topic}");
-                            _replyTo.Tell(new AskResponse(se));
-                        }
-                        else if (e is PulsarClientException.TopicDoesNotExistException)
-                        {
-                            var msg = $"[{Topic}][{Subscription}] Closed consumer because topic does not exist anymore";
-                            State.ConnectionState = HandlerState.State.Failed;
-                            CloseConsumerTasks();
-                            _client.Tell(new CleanupConsumer(Self));
-                            _log.Warning(msg);
-                            _replyTo.Tell(new AskResponse(new PulsarClientException(msg)));
-                            Context.Stop(_self);
-                        }
-                        else
-                        {
-                            await ReconnectLater(e);
-                        }
-                    }
-                    else if (response.Data is ConnectionAlreadySet)
-                    {
-                        _replyTo.Tell(new AskResponse());
-                    }
-                    else
-                    {
-                        _replyTo.Tell(response);
-
-                    }
-                }
-                else if(result is ConnectionFailed c)
-                    ConnectionFailed(c.Exception);
-            }
-            catch (Exception e)
-            {
-                _replyTo.Tell(new AskResponse(new PulsarClientException(e)));
-            }
+            
 		}
 		private async ValueTask Acknowledge(IAcknowledge ack)
         {
@@ -1214,7 +1213,8 @@ namespace SharpPulsar
 			var currentMessageQueue = new List<IMessage<T>>(IncomingMessages.Count);
 			var mcount = IncomingMessages.Count;
 			var n = 0;
-			while (n < mcount)
+            //incomingMessages.drainTo(CurrentMessageQueue);
+            while (n < mcount)
 			{
 				if(IncomingMessages.TryReceive(out var m))
 					currentMessageQueue.Add(m);
@@ -2627,14 +2627,9 @@ namespace SharpPulsar
 		}
 
 		
-		private void ResetBackoff(bool isDurable)
+		private void ResetBackoff()
 		{
 			_connectionHandler.Tell(Messages.Requests.ResetBackoff.Instance);
-            if (!(_hasParentConsumer && isDurable) && Conf.ReceiverQueueSize != 0)
-            {
-                IncreaseAvailablePermits(_clientCnx, Conf.ReceiverQueueSize);
-            }
-            _replyTo.Tell(new AskResponse());
         }
 
 		private void ConnectionClosed(IActorRef cnx)
@@ -2666,7 +2661,7 @@ namespace SharpPulsar
 		internal virtual async ValueTask ReconnectLater(Exception exception)
 		{
 			var askResponse = await _connectionHandler.Ask<AskResponse>(new ReconnectLater(exception)).ConfigureAwait(false);
-            await Connect(askResponse).ConfigureAwait(false);
+            await ConnectionOpened(askResponse).ConfigureAwait(false);
         }
 
         protected override void Unhandled(object message)
