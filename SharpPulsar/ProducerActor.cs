@@ -228,7 +228,7 @@ namespace SharpPulsar
 			{
 				_batchMessageContainer = null;
 			}
-			if (clientConfiguration.StatsIntervalSeconds > 0)
+			if (clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero)
 			{
 				_stats = new ProducerStatsRecorder(Context.System, ProducerName().GetAwaiter().GetResult(), topic, Configuration.MaxPendingMessages);
 			}

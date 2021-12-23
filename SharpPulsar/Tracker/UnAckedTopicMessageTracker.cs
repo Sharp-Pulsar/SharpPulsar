@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Tracker.Messages;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -34,9 +35,9 @@ namespace SharpPulsar.Tracker
 				RemoveTopicMessages(m.Topic);
 			});
 		}
-		public static Props Prop(IActorRef unack, IActorRef consumerBase, long ackTimeoutMillis)
+		public static Props Prop(IActorRef unack, IActorRef consumerBase, TimeSpan ackTimeout)
         {
-			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeoutMillis));
+			return Props.Create(() => new UnAckedTopicMessageTracker(unack, consumerBase, ackTimeout));
         }
 		public static Props Prop(IActorRef unack, IActorRef consumerBase, long ackTimeoutMillis, long tickDurationMillis)
         {

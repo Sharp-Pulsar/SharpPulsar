@@ -274,7 +274,7 @@ namespace SharpPulsar.User
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(Props.Create(()=> new ConsumerActor<T>(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, _actorSystem.Scheduler.Advanced, partitionIndex, false, null, schema, true, _clientConfigurationData)));
+                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, null, schema, true, _clientConfigurationData));
                     var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
                     
                     if (response.Failed)

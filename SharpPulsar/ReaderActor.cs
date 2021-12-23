@@ -96,7 +96,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData));
 			}
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m, Sender);

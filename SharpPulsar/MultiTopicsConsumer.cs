@@ -105,7 +105,7 @@ namespace SharpPulsar
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), listenerExecutor, schema)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), schema)
 		{
 			_context = Context;
 			_generator = idGenerator;
@@ -125,9 +125,9 @@ namespace SharpPulsar
 			_startMessageId = startMessageId != null ? new BatchMessageId(MessageId.ConvertToMessageId(startMessageId)) : null;
 			_startMessageRollbackDurationInSec = startMessageRollbackDurationInSec;
 
-			if (conf.AckTimeout != 0)
+			if (conf.AckTimeout != TimeSpan.Zero)
 			{
-				if (conf.TickDuration > 0)
+				if (conf.TickDuration > TimeSpan.Zero)
 				{
 					_unAckedMessageTracker = Context.ActorOf(UnAckedTopicMessageTracker.Prop(conf.AckTimeout, conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedTopicMessageTracker");
 				}
@@ -142,7 +142,7 @@ namespace SharpPulsar
 			}
 
 			_internalConfig = InternalConsumerConfig;
-			_stats = _clientConfiguration.StatsIntervalSeconds > 0 ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
+			_stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
 						
 
 			if(conf.TopicNames.Count == 0)
@@ -155,7 +155,7 @@ namespace SharpPulsar
 		{			// start track and auto subscribe partition increasement
 			if (_internalConfig.AutoUpdatePartitions)
 			{
-				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), TimeSpan.FromSeconds(_internalConfig.AutoUpdatePartitionsInterval), Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), _internalConfig.AutoUpdatePartitionsInterval, Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
 			}
             ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
             {
@@ -1121,7 +1121,7 @@ namespace SharpPulsar
 				consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, createIfDoesNotExist, _clientConfiguration)));
 			}
             else
-			    consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration)));
+			    consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration));
             
             var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
             return (consumer, response);
@@ -1336,7 +1336,7 @@ namespace SharpPulsar
 					var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
 					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					var configurationData = InternalConsumerConfig;
-					var newConsumer = _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, Context.System.Scheduler.Advanced, partitionIndex, true, null, Schema, true, _clientConfiguration)));
+					var newConsumer = _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, null, Schema, true, _clientConfiguration)));
 					if (_paused)
 					{
 						newConsumer.Tell(Messages.Consumer.Pause.Instance);

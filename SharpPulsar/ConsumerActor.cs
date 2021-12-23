@@ -146,7 +146,7 @@ namespace SharpPulsar
 
 		private readonly Dictionary<string, ChunkedMessageCtx> _chunkedMessagesMap = new Dictionary<string, ChunkedMessageCtx>();
 		private int _pendingChunckedMessageCount = 0;
-		protected internal TimeSpan ExpireTimeOfIncompleteChunkedMessageMillis = TimeSpan.Zero;
+		protected internal TimeSpan ExpireTimeOfIncompleteChunkedMessage = TimeSpan.Zero;
 		private bool _expireChunkMessageTaskScheduled = false;
 		private int _maxPendingChuckedMessage;
 		// if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
@@ -198,7 +198,7 @@ namespace SharpPulsar
 			_createTopicIfDoesNotExist = createTopicIfDoesNotExist;
 			_maxPendingChuckedMessage = conf.MaxPendingChuckedMessage;
 			_pendingChunckedMessageUuidQueue = new Queue<string>();
-			ExpireTimeOfIncompleteChunkedMessageMillis = conf.ExpireTimeOfIncompleteChunkedMessage;
+			ExpireTimeOfIncompleteChunkedMessage = conf.ExpireTimeOfIncompleteChunkedMessage;
 			_autoAckOldestChunkedMessageOnQueueFull = conf.AutoAckOldestChunkedMessageOnQueueFull;
 
 			if(clientConfiguration.StatsIntervalSeconds.TotalMilliseconds > 0)
@@ -1669,9 +1669,9 @@ namespace SharpPulsar
 		{
 			
 			// Lazy task scheduling to expire incomplete chunk message
-			if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessageMillis > 0)
+			if (!_expireChunkMessageTaskScheduled && ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds > 0)
 			{				
-				Context.System.Scheduler.Advanced.ScheduleRepeatedly(TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), TimeSpan.FromMilliseconds(ExpireTimeOfIncompleteChunkedMessageMillis), RemoveExpireIncompleteChunkedMessages);
+				Context.System.Scheduler.Advanced.ScheduleRepeatedly(ExpireTimeOfIncompleteChunkedMessage, ExpireTimeOfIncompleteChunkedMessage, RemoveExpireIncompleteChunkedMessages);
 				_expireChunkMessageTaskScheduled = true;
 			}
 
@@ -1699,7 +1699,7 @@ namespace SharpPulsar
 				chunkedMsgCtx?.Recycle();
 				_chunkedMessagesMap.Remove(msgMetadata.Uuid);
 				IncreaseAvailablePermits(cnx);
-				if(ExpireTimeOfIncompleteChunkedMessageMillis > 0 && DateTimeHelper.CurrentUnixTimeMillis() > ((long)msgMetadata.PublishTime + ExpireTimeOfIncompleteChunkedMessageMillis))
+				if(ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds > 0 && DateTimeHelper.CurrentUnixTimeMillis() > ((long)msgMetadata.PublishTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds))
 				{
 					DoAcknowledge(msgId, AckType.Individual, new Dictionary<string, long>(), null);
 				}
@@ -1887,7 +1887,7 @@ namespace SharpPulsar
 
 		protected internal virtual void TrackMessage(IMessageId messageId)
 		{
-			if(Conf.AckTimeout > 0)
+			if(Conf.AckTimeout > TimeSpan.Zero)
 			{
                 MessageId id;
                 if (messageId is BatchMessageId msgId)
@@ -2697,7 +2697,7 @@ namespace SharpPulsar
 
 		private void RemoveExpireIncompleteChunkedMessages()
 		{
-			if(ExpireTimeOfIncompleteChunkedMessageMillis <= 0)
+			if(ExpireTimeOfIncompleteChunkedMessage <= TimeSpan.Zero)
 			{
 				return;
 			}
@@ -2706,7 +2706,7 @@ namespace SharpPulsar
 			while(!ReferenceEquals((messageUUID = _pendingChunckedMessageUuidQueue.Dequeue()), null))
 			{
 				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
-				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessageMillis))
+				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds))
 				{
 					RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
 				}
