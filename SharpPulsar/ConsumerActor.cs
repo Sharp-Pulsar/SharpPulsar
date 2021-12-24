@@ -515,6 +515,10 @@ namespace SharpPulsar
             {
                 OnAcknowledge(on.MessageId, on.Exception);
             });
+            Receive<SetTerminated>(on =>
+            {
+                SetTerminated();
+            });
             Receive<OnAcknowledgeCumulative>(on =>
             {
                 OnAcknowledgeCumulative(on.MessageId, on.Exception);
@@ -2343,9 +2347,10 @@ namespace SharpPulsar
 			}
 		}
 
-		private async ValueTask<bool> HasMessageAvailable()
+		private TaskCompletionSource<bool> HasMessageAvailable()
 		{
-			try
+            TaskCompletionSource<bool> booleanFuture = new TaskCompletionSource<bool>();
+            try
 			{
 				if (_lastDequeuedMessageId == IMessageId.Earliest)
 				{
@@ -2353,75 +2358,105 @@ namespace SharpPulsar
 					// allow the last one to be read when read head inclusively.
 					if (_startMessageId.Equals(IMessageId.Latest))
 					{
-						var response = await InternalGetLastMessageId();
+						var future = InternalGetLastMessageId();
 						if(_resetIncludeHead)
                         {
-							Seek(response.LastMessageId);
+							future.Task.ContinueWith((lastMessageIdResponse)=> Seek(lastMessageIdResponse.Result.LastMessageId));
 						}
-						var lastMessageId = MessageId.ConvertToMessageId(response.LastMessageId);
-						var markDeletePosition = MessageId.ConvertToMessageId(response.MarkDeletePosition);
-						if (markDeletePosition != null)
-						{
-							var result = markDeletePosition.CompareTo(lastMessageId);
-							if (lastMessageId.EntryId < 0)
-							{
-								return false;
-							}
-							else
-							{
-								return _resetIncludeHead ? result <= 0 : result < 0;
-							}
-						}
-						else if (lastMessageId == null || lastMessageId.EntryId < 0)
-						{
-							return false;
-						}
-						else
-						{
-							return _resetIncludeHead;
-						}
+                        future.Task.ContinueWith(response =>
+                        {
+                            if (response.IsFaulted)
+                            {
+                                _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command: {response.Exception}");
+                                booleanFuture.TrySetException(response.Exception);
+                                return;
+                            }
+                            var lastMessageId = MessageId.ConvertToMessageId(response.Result.LastMessageId);
+                            var markDeletePosition = MessageId.ConvertToMessageId(response.Result.MarkDeletePosition);
+                            if (markDeletePosition != null)
+                            {
+                                var result = markDeletePosition.CompareTo(lastMessageId);
+                                if (lastMessageId.EntryId < 0)
+                                {
+                                    CompletehasMessageAvailableWithValue(booleanFuture, false);
+                                }
+                                else
+                                {
+                                    CompletehasMessageAvailableWithValue(booleanFuture, _resetIncludeHead ? result <= 0 : result < 0);
+                                }
+                            }
+                            else if (lastMessageId == null || lastMessageId.EntryId < 0)
+                            {
+                                CompletehasMessageAvailableWithValue(booleanFuture, false);
+                            }
+                            else
+                            {
+                                CompletehasMessageAvailableWithValue(booleanFuture, _resetIncludeHead);
+                            }
+                        });
+                        return booleanFuture;
 					}
-
 					if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
 					{
-						return true;
-					}
-
-					_lastMessageIdInBroker = await LastMessageId();
-					if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-
+                        CompletehasMessageAvailableWithValue(booleanFuture, true);
+                        return booleanFuture;
+                    }
+                    LastMessageId().ContinueWith(task =>
+                    {
+                        if (task.IsFaulted)
+                        {
+                            _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command");
+                            booleanFuture.TrySetException(task.Exception);
+                            return;
+                        }
+                        var messageId = task.Result;
+                        _lastMessageIdInBroker = messageId;
+                        if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
+                        {
+                            CompletehasMessageAvailableWithValue(booleanFuture, true);
+                        }
+                        else
+                        {
+                            CompletehasMessageAvailableWithValue(booleanFuture, false);
+                        }
+                    });
+                    return booleanFuture;
 				}
 				else
 				{
 					// read before, use lastDequeueMessage for comparison
 					if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
 					{
-						return true;
-					}
-
-					_lastMessageIdInBroker = await LastMessageId();
-					if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
+                        CompletehasMessageAvailableWithValue(booleanFuture, true);
+                        return booleanFuture;
+                    }
+                    LastMessageId().ContinueWith(task =>
+                    {
+                        if (task.IsFaulted)
+                        {
+                            _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command");
+                            booleanFuture.TrySetException(task.Exception);
+                            return;
+                        }
+                        var messageId = task.Result;
+                        _lastMessageIdInBroker = messageId;
+                        if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
+                        {
+                            CompletehasMessageAvailableWithValue(booleanFuture, true);
+                        }
+                        else
+                        {
+                            CompletehasMessageAvailableWithValue(booleanFuture, false);
+                        }
+                    });
 				}
 
 			}
 			catch(Exception e)
 			{
-				throw PulsarClientException.Unwrap(e);
+				booleanFuture.TrySetException(PulsarClientException.Unwrap(e));
 			}
+            return booleanFuture;
 		}
 
 		private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId messageId, bool inclusive)
@@ -2439,13 +2474,20 @@ namespace SharpPulsar
 			return false;
 		}
 
-		private async ValueTask<IMessageId> LastMessageId()
+		private async Task<IMessageId> LastMessageId()
 		{
-			var last = await InternalGetLastMessageId();
-			return last.LastMessageId;
+			return await InternalGetLastMessageId().Task.ContinueWith(id=> id.Result.LastMessageId);
 		}
-		private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageId()
+        private void CompletehasMessageAvailableWithValue(TaskCompletionSource<bool> future, bool value)
+        {
+            Akka.Dispatch.ActorTaskScheduler.RunTask(()=> 
+            {
+                future.TrySetResult(value);
+            });
+        }
+        private TaskCompletionSource<GetLastMessageIdResponse> InternalGetLastMessageId()
 		{
+
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
 				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id")));
@@ -2456,8 +2498,8 @@ namespace SharpPulsar
 
 			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
 
-			await InternalGetLastMessageId(backoff, (long)opTimeoutMs.TotalMilliseconds, getLastMessageId).ConfigureAwait(false);
-			return await getLastMessageId.Task.ConfigureAwait(false);
+			InternalGetLastMessageId(backoff, (long)opTimeoutMs.TotalMilliseconds, getLastMessageId).AsTask().Wait();
+			return getLastMessageId;
 		}
 		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<GetLastMessageIdResponse> source)
 		{
