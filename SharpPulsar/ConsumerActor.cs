@@ -33,6 +33,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -92,7 +93,7 @@ namespace SharpPulsar
 		private readonly SubscriptionMode _subscriptionMode;
 		private BatchMessageId _startMessageId;
 		private IActorContext _context; 
-        private readonly IList<Exception> _previousExceptions = new List<Exception>();
+        private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
 
 
 
@@ -158,7 +159,7 @@ namespace SharpPulsar
 		// the topic) then it guards against broken chuncked message which was not fully published
 		private bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
-		private readonly Queue<string> _pendingChunckedMessageUuidQueue;
+		private Queue<string> _pendingChunckedMessageUuidQueue;
 
 		private readonly bool _createTopicIfDoesNotExist;
 		protected IActorRef _self;
@@ -350,6 +351,7 @@ namespace SharpPulsar
                     return;
                 }
                 _clientCnx = c.ClientCnx;
+                SetCnx(c.ClientCnx);
                 _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
 
                 var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
@@ -453,11 +455,11 @@ namespace SharpPulsar
                             CloseConsumerTasks();
                             _client.Tell(new CleanupConsumer(Self));
                             _log.Warning(msg);
-                            SubscribeFuture.TrySetException((new PulsarClientException(msg));
+                            SubscribeFuture.TrySetException(new PulsarClientException(msg));
                         }
                         else
                         {
-                            await ReconnectLater(e);
+                            ReconnectLater(e);
                         }
                     }
                     else
@@ -467,7 +469,7 @@ namespace SharpPulsar
                     }
                 }
                 else if (result is ConnectionFailed failed)
-                    await ReconnectLater(failed);
+                    ConnectionFailed(failed.Exception);
             }
             catch (Exception e)
             {
@@ -1287,23 +1289,31 @@ namespace SharpPulsar
 			var timeout = DateTimeHelper.CurrentUnixTimeMillis() > _subscribeTimeout;
 			if((nonRetriableError || timeout))
 			{
-				State.ConnectionState = HandlerState.State.Failed;
-                string msg;
-                if (nonRetriableError)
-				{
-					msg = $"[{Topic}] Consumer creation failed for consumer {_consumerId} with unretriableError: {exception}";
-				}
-				else
-				{
-					msg = $"[{Topic}] Consumer creation failed for consumer {_consumerId} after timeout";
-				}
-				_log.Info(msg);
-				CloseConsumerTasks();
-				DeregisterFromClientCnx();
-				_client.Tell(new CleanupConsumer(Self));
-				_replyTo.Tell(new PulsarClientException(msg));
+                exception.SetPreviousExceptions(_previousExceptions);
+                if (SubscribeFuture.TrySetException(exception))
+                {
+                    State.ConnectionState = HandlerState.State.Failed;
+                    string msg;
+                    if (nonRetriableError)
+                    {
+                        msg = $"[{Topic}] Consumer creation failed for consumer {_consumerId} with unretriableError: {exception}";
+                    }
+                    else
+                    {
+                        msg = $"[{Topic}] Consumer creation failed for consumer {_consumerId} after timeout";
+                    }
+                    _log.Info(msg);
+                    CloseConsumerTasks();
+                    DeregisterFromClientCnx();
+                    _client.Tell(new CleanupConsumer(_self));
+                }
+                
 			}
-		}
+            else
+            {
+                _previousExceptions.Add(exception);
+            }
+        }
 
 		private void CleanupAtClose(Exception exception)
 		{
@@ -1312,6 +1322,7 @@ namespace SharpPulsar
 			CloseConsumerTasks();
 			DeregisterFromClientCnx();
 			_client.Tell(new CleanupConsumer(Self));
+            
 		}
 
 		private void CloseConsumerTasks()
@@ -2643,7 +2654,11 @@ namespace SharpPulsar
 			{
 				_connectionHandler.Tell(new SetCnx(cnx));
 				cnx.Tell(new RegisterConsumer(_consumerId, _self));
-			}
+                /*if (Conf.AckReceiptEnabled && !Commands.PeerSupportsAckReceipt(value.getRemoteEndpointProtocolVersion()))
+                {
+                    log.warn("Server don't support ack for receipt! " + "ProtoVersion >=17 support! nowVersion : {}", value.getRemoteEndpointProtocolVersion());
+                }*/
+            }
 			var previousClientCnx = _clientCnxUsedForConsumerRegistration;
 			_clientCnxUsedForConsumerRegistration = cnx;
             _prevconsumerId = _consumerId;
@@ -2658,10 +2673,9 @@ namespace SharpPulsar
 			SetCnx(null);
 		}
 
-		internal virtual async ValueTask ReconnectLater(Exception exception)
+		private void ReconnectLater(Exception exception)
 		{
-			var askResponse = await _connectionHandler.Ask<AskResponse>(new ReconnectLater(exception)).ConfigureAwait(false);
-            await ConnectionOpened(askResponse).ConfigureAwait(false);
+			 _connectionHandler.Tell(new ReconnectLater(exception));           
         }
 
         protected override void Unhandled(object message)
@@ -2697,13 +2711,14 @@ namespace SharpPulsar
 				return;
 			}
 			ChunkedMessageCtx chunkedMsgCtx = null;
-			string messageUUID;
-			while(!ReferenceEquals((messageUUID = _pendingChunckedMessageUuidQueue.Dequeue()), null))
+            
+            while (_pendingChunckedMessageUuidQueue.TryDequeue(out var messageUUID))
 			{
 				chunkedMsgCtx = !string.IsNullOrWhiteSpace(messageUUID) ? _chunkedMessagesMap[messageUUID] : null;
 				if(chunkedMsgCtx != null && DateTimeHelper.CurrentUnixTimeMillis() > (chunkedMsgCtx.ReceivedTime + ExpireTimeOfIncompleteChunkedMessage.TotalMilliseconds))
 				{
-					RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
+                    _pendingChunckedMessageUuidQueue = new Queue<string>(_pendingChunckedMessageUuidQueue.Where(x => !x.Equals(messageUUID)));
+                    RemoveChunkMessage(messageUUID, chunkedMsgCtx, true);
 				}
 				else
 				{
@@ -2741,7 +2756,7 @@ namespace SharpPulsar
 			}
 			if(chunkedMsgCtx.ChunkedMsgBuffer != null)
 			{
-				chunkedMsgCtx.ChunkedMsgBuffer = null;
+				chunkedMsgCtx.ChunkedMsgBuffer = new List<byte>();
 			}
 			chunkedMsgCtx.Recycle();
 			_pendingChunckedMessageCount--;
