@@ -21,6 +21,7 @@ using SharpPulsar.Tls;
 using SharpPulsar.Messages.Requests;
 using System.Net;
 using SharpPulsar.SocketImpl;
+using System.Threading.Tasks;
 
 namespace SharpPulsar
 {
@@ -61,8 +62,9 @@ namespace SharpPulsar
 		private string _remoteHostName;
 		private bool _isTlsHostnameVerificationEnable;
 		private readonly ClientConfigurationData _clientConfigurationData;
+        private readonly TaskCompletionSource<object> _connectionFuture;
 
-		private readonly TlsHostnameVerifier _hostnameVerifier;
+        private readonly TlsHostnameVerifier _hostnameVerifier;
 
 		private ICancelable _timeoutTask;
 
@@ -71,12 +73,13 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, string targetBroker = "") : this(conf, endPoint, Commands.CurrentProtocolVersion, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<object> connectionFuture, string targetBroker) : this(conf, endPoint, Commands.CurrentProtocolVersion, connectionFuture, targetBroker)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, string targetBroker = "")
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<object> connectionFuture, string targetBroker)
 		{
+            _connectionFuture = connectionFuture;
 			_parent = Context.Parent;
 			_pendingReceive = new List<byte>();
 			_log = Context.GetLogger();
@@ -86,8 +89,8 @@ namespace SharpPulsar
 			_hostnameVerifier = new TlsHostnameVerifier(Context.GetLogger());
 			_proxyToTargetBrokerAddress = targetBroker;
 			_socketClient = (SocketClient)SocketClient.CreateClient(conf, endPoint, endPoint.Host, Context.System.Log);
-			//_socketClient.OnConnect += OnConnected;
-			_socketClient.OnDisconnect += OnDisconnected;
+			
+            _socketClient.OnDisconnect += OnDisconnected;
 			Condition.CheckArgument(conf.MaxLookupRequest > conf.ConcurrentLookupRequest);
 			_waitingLookupRequests = new LinkedList<KeyValuePair<long, KeyValuePair<ReadOnlySequence<byte>, LookupDataResult>>>();
 			_authentication = conf.Authentication;
@@ -96,31 +99,47 @@ namespace SharpPulsar
 			_state = State.None;
 			_isTlsHostnameVerificationEnable = conf.TlsHostnameVerificationEnable;
 			_protocolVersion = protocolVersion;
-            ReceiveAsync<Connect>(async _ =>
-            {
-                _sender = Sender;
-                try
-                {
-                    await _socketClient.Connect();
-                    OnConnected();
-                }
-                catch (Exception e)
-                {
-                   _sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
-                }
-            });
-
-            Receive<ConnectionOpened>(o =>
-            {
-                _sender.Tell(new AskResponse(o));
-                _sender = null;
-                Become(Ready);
-            });
-            ReceiveAny(_=> Stash.Stash());
-			
+            _socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=> await Connect());			
 		}
+        private async ValueTask Connect()
+        {
+            try
+            {
+                await _socketClient.Connect();
+                _timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, _self, RequestTimeout.Instance, ActorRefs.NoSender);
 
-        private void Ready()
+                //_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
+
+                if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
+                {
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"{_remoteHostName} Connected to broker");
+                    }
+                }
+                else
+                {
+                    _log.Info($"{_remoteHostName} Connected through proxy to target broker at {_proxyToTargetBrokerAddress}");
+                }
+                // Send CONNECT command
+                await _socketClient.SendMessage(NewConnectCommand());
+                _state = State.SentConnectFrame;
+            }
+            catch(Exception ex)
+            {
+                _connectionFuture.TrySetException(ex);
+            }
+        }
+        public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<object> connectionFuture, string targetBroker = "")
+        {
+            return Props.Create(()=> new ClientCnx(conf, endPoint, connectionFuture, targetBroker));
+        }
+        public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<object> connectionFuture, string targetBroker)
+        {
+            return Props.Create(()=> new ClientCnx(conf, endPoint, protocolVersion, connectionFuture, targetBroker));
+        }
+        private void Receives()
         {
 
             Receive<Payload>(p =>
@@ -177,8 +196,8 @@ namespace SharpPulsar
             Receive<RemoveConsumer>(m => {
                 RemoveConsumer(m.ConsumerId);
             });
-            Receive<SendPing>(m => {
-                _socketClient.SendMessage(_pong);
+            ReceiveAsync<SendPing>(async m => {
+                await _socketClient.SendMessage(_pong);
             });
             Receive<RequestTimeout>(m => {
                 CheckRequestTimeout();
@@ -196,25 +215,7 @@ namespace SharpPulsar
         }
 		private void OnConnected()
 		{
-			_timeoutTask = Context.System.Scheduler.ScheduleTellOnceCancelable(_operationTimeout, Self, RequestTimeout.Instance, ActorRefs.NoSender);
-
-			//_sendPing = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(30), Self, SendPing.Instance, ActorRefs.NoSender);
-
-			if (string.IsNullOrWhiteSpace(_proxyToTargetBrokerAddress))
-			{
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"{_remoteHostName} Connected to broker");
-				}
-			}
-			else
-			{
-				_log.Info($"{_remoteHostName} Connected through proxy to target broker at {_proxyToTargetBrokerAddress}");
-			}
-			// Send CONNECT command
-			_socketClient.SendMessage(NewConnectCommand());
-			_state = State.SentConnectFrame;
-			_socketClient.ReceiveMessageObservable.Subscribe(OnCommandReceived);
+			
 		}
 		private void OnDisconnected()
 		{
@@ -283,11 +284,13 @@ namespace SharpPulsar
 			// set remote protocol version to the correct version before we complete the connection future
 			_protocolVersion = connected.ProtocolVersion;
 			_state = State.Ready;
-			_self.Tell(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
+			_connectionFuture.TrySetResult(new ConnectionOpened(_self, connected.MaxMessageSize, _protocolVersion));
+            Receives();
         }
 
 		private void HandleAuthChallenge(CommandAuthChallenge authChallenge)
 		{
+            
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{

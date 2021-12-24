@@ -253,9 +253,17 @@ namespace SharpPulsar
 				await RemoveConsumer(t.Topic);
 			});
 			ReceiveAsync<HasMessageAvailable>(async _ => {
-				var has = await HasMessageAvailable();
-				Sender.Tell(has);
-			});
+                try
+                {
+                    var has = await HasMessageAvailable();
+                    Sender.Tell(new AskResponse(has));
+                }
+                catch (Exception ex)
+                {
+
+                    Sender.Tell(new AskResponse(ex));
+                }
+            });
 			Receive<GetNumMessagesInQueue>(_ => {
 				var num = NumMessagesInQueue();
 				Sender.Tell(num);
@@ -895,10 +903,12 @@ namespace SharpPulsar
 			{
                 try
                 {
-					var s = await c.Ask<bool>(Messages.Consumer.HasMessageAvailable.Instance);
-					if (!s)
-						return false;
-				}
+                    var response = await c.Ask<AskResponse>(Messages.Consumer.HasMessageAvailable.Instance).ConfigureAwait(false);
+                    if (response.Failed)
+                        return false;
+
+                    return response.ConvertTo<bool>();
+                }
                 catch
                 {
 					return false;

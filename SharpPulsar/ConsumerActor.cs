@@ -640,8 +640,16 @@ namespace SharpPulsar
 				Pause();
 			});
 			ReceiveAsync<HasMessageAvailable>(async _ => {
-				var has = await HasMessageAvailable();
-                Sender.Tell(has);
+                try
+                {
+                    var has = await HasMessageAvailable().Task;
+                    Sender.Tell(new AskResponse(has));
+                }
+                catch(Exception ex)
+                {
+
+                    Sender.Tell(new AskResponse(ex));
+                }
 			});
 			Receive<GetNumMessagesInQueue>(_ => {
 				var num = NumMessagesInQueue();
@@ -2308,7 +2316,8 @@ namespace SharpPulsar
 				var cnx = _clientCnx;
 
 				_log.Info($"[{Topic}][{Subscription}] Seek subscription to message id {messageId}");
-				cnx.Tell(new SendRequestWithId(seek, requestId, true)); _log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to message id {messageId}");
+				cnx.Tell(new SendRequestWithId(seek, requestId, true)); 
+                _log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to message id {messageId}");
 				_acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
 				_seekMessageId = new BatchMessageId((MessageId)messageId);
 				_duringSeek = true;
@@ -2347,7 +2356,35 @@ namespace SharpPulsar
 			}
 		}
 
-		private TaskCompletionSource<bool> HasMessageAvailable()
+        private TaskCompletionSource<object> SeekInternal(long requestId, ReadOnlySequence<byte> seek, IMessageId seekId, string seekBy)
+        {
+            TaskCompletionSource<object> seekFuture = new TaskCompletionSource<object>();
+            var cnx = _clientCnx;
+
+            var originSeekMessageId = _seekMessageId;
+            _seekMessageId = new BatchMessageId((MessageId)seekId);
+            _duringSeek = true;
+            _log.Info($"[{Topic}][{Subscription}] Seeking subscription to {seekBy}");
+
+            Cnx.sendRequestWithId(Seek, RequestId).thenRun(() =>
+            {
+                log.info("[{}][{}] Successfully reset subscription to {}", topic, subscription, SeekBy);
+                acknowledgmentsGroupingTracker.flushAndClean();
+                LastDequeuedMessageId = MessageId.earliest;
+                clearIncomingMessages();
+                SeekFuture.complete(null);
+            }).exceptionally(e =>
+            {
+                seekMessageId = OriginSeekMessageId;
+                duringSeek.set(false);
+                log.error("[{}][{}] Failed to reset subscription: {}", topic, subscription, e.getCause().getMessage());
+                SeekFuture.completeExceptionally(PulsarClientException.wrap(e.getCause(), string.Format("Failed to seek the subscription {0} of the topic {1} to {2}", subscription, topicName.ToString(), SeekBy)));
+                return null;
+            });
+            return SeekFuture;
+        }
+
+        private TaskCompletionSource<bool> HasMessageAvailable()
 		{
             TaskCompletionSource<bool> booleanFuture = new TaskCompletionSource<bool>();
             try

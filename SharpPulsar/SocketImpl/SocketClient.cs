@@ -146,10 +146,7 @@ namespace SharpPulsar.SocketImpl
                             var totalSize = frameSize + 4;
                             if (length >= totalSize)
                             {
-                                var consumed = buffer.GetPosition(totalSize);
-                                //var commandSize = reader.ReadInt32().IntFromBigEndian();
-                                //var commandBytes = reader.ReadBytes(commandSize);
-                                //var command = Serializer.Deserialize<BaseCommand>(new ReadOnlySequence<byte>(commandBytes));
+                                var consumed = buffer.GetPosition(totalSize);                                
                                 var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
                                 if (command.type == BaseCommand.Type.Message)
                                 {
@@ -206,9 +203,9 @@ namespace SharpPulsar.SocketImpl
             });
         }
 
-        public void SendMessage(ReadOnlySequence<byte> message)
+        public async ValueTask SendMessage(ReadOnlySequence<byte> message)
         {
-            _ = _pipeline.Send(message);
+            await _pipeline.Send(message);
         }
 
         public void Dispose()
