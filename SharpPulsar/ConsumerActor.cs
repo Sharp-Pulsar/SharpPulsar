@@ -138,7 +138,7 @@ namespace SharpPulsar
 
 		private readonly DeadLetterPolicy _deadLetterPolicy;
 
-		private IActorRef _deadLetterProducer;
+		private Producer<byte[]> _deadLetterProducer;
 
 		private int _maxMessageSize;
 		private int _protocolVersion;
@@ -812,11 +812,6 @@ namespace SharpPulsar
 			});
         }
 
-
-		private async ValueTask Connecting(NewRequestIdResponse id)
-		{
-            
-		}
 		private async ValueTask Acknowledge(IAcknowledge ack)
         {
             try
@@ -2191,29 +2186,23 @@ namespace SharpPulsar
 				var messagesFromQueue = RemoveExpiredMessagesFromQueue(messageIds);
 
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
-				foreach(var batch in batches)
+				foreach(var ids in batches)
                 {
-					var messageIdDatas = new List<MessageIdData>();
-					foreach(var msgId in batch)
-                    {
-						if(!ProcessPossibleToDLQ(msgId))
+                    GetRedeliveryMessageIdData(ids)
+                        .AsTask()
+                        .ContinueWith(task =>
                         {
-							messageIdDatas.Add(
-							new MessageIdData
-							{
-								Partition = msgId.PartitionIndex,
-								ledgerId = (ulong)msgId.LedgerId,
-								entryId = (ulong)msgId.EntryId
-							});
-                        }
-                    }
-
-					if (messageIdDatas.Count > 0)
-					{
-						var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdDatas);
-						var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
-						cnx.Tell(payload);
-					}
+                            if(task.Exception == null)
+                            {
+                                var messageIdData = task.Result;
+                                if (messageIdData.Count > 0)
+                                {
+                                    var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
+                                    var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
+                                    cnx.Tell(payload);
+                                }
+                            }
+                        });
 				}
 				if(messagesFromQueue > 0)
 				{
@@ -2250,11 +2239,21 @@ namespace SharpPulsar
                 {
                     var future = ProcessPossibleToDLQ(messageId);
                     futures.Add(future);
-                    future.thenAccept(sendToDLQ =>
+                    future.Task.ContinueWith(task =>
                     {
+                        var sendToDLQ = false;
+                        if (task.Exception == null)
+                            sendToDLQ = task.Result;
+
                         if (!sendToDLQ)
                         {
-                            data.Add((new MessageIdData()).setPartition(messageId.getPartitionIndex()).setLedgerId(messageId.getLedgerId()).setEntryId(messageId.getEntryId()));
+                            var msgIdData = new MessageIdData
+                            {
+                                Partition = messageId.PartitionIndex,
+                                ledgerId = (ulong)messageId.LedgerId,
+                                entryId = (ulong)messageId.EntryId
+                            };
+                            data.Add(msgIdData);
                         }
                     });
                 });
@@ -2266,10 +2265,9 @@ namespace SharpPulsar
             }
             return await tcs.Task;
         }
-        private bool ProcessPossibleToDLQ(IMessageId messageId)
+        private TaskCompletionSource<bool> ProcessPossibleToDLQ(IMessageId messageId)
 		{
 			IList<IMessage<T>> deadLetterMessages = null;
-            var builder = new ProducerConfigBuilder<T>();
 
             if (_possibleSendToDeadLetterTopicMessages != null)
 			{
@@ -2282,46 +2280,109 @@ namespace SharpPulsar
 					deadLetterMessages = _possibleSendToDeadLetterTopicMessages.GetValueOrNull(messageId);
 				}
 			}
-			if(deadLetterMessages != null)
-			{
-				if(_deadLetterProducer == null)
-				{
-					try
-					{
-						var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
-						builder.Topic(_deadLetterPolicy.DeadLetterTopic);
-						builder.EnableBatching(false);
-						_deadLetterProducer = client.NewProducer(Schema, builder).GetProducer;
-					}
-					catch(Exception e)
-					{
-						_log.Error($"Create dead letter producer exception with topic: {_deadLetterPolicy.DeadLetterTopic} => {e}");
-					}
-				}
-				if(_deadLetterProducer != null)
-				{
-					try
-					{
-						foreach(var message in deadLetterMessages)
-						{
-							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build())
-                                .Value(message.Value)
-                                .Properties(message.Properties)
-                                .Send();
-						}
-						DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null).GetAwaiter().GetResult();
-						return true;
-					}
-					catch(Exception e)
-					{
-						_log.Error($"Send to dead letter topic exception with topic: {_deadLetterPolicy.DeadLetterTopic}, messageId: {messageId} => {e}");
-					}
-				}
-			}
-			return false;
-		}
+            var result = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if(deadLetterMessages != null)
+            {
+                try
+                {
+                    InitDeadLetterProducerIfNeeded();
+                    var finalDeadLetterMessages = deadLetterMessages;
+                    var finalMessageId = messageId;
+                    foreach (var message in finalDeadLetterMessages)
+                    {
+                        var originMessageIdStr = GetOriginMessageIdStr(message);
+                        var originTopicNameStr = GetOriginTopicNameStr(message);
+                        _deadLetterProducer.NewMessage(ISchema<object>.AutoProduceBytes(message.ReaderSchema.Value))
+                            .Value(message.Data.ToArray())
+                            .Properties(GetPropertiesMap(message, originMessageIdStr, originTopicNameStr))
+                            .SendAsync().AsTask().ContinueWith(task =>
+                            {
+                                if (task.IsFaulted)
+                                {
+                                    _log.Warning($"[{Topic}] [{Subscription}] [{ConsumerName}] Failed to send DLQ message to {finalMessageId} for message id {task.Exception}");
+                                    result.TrySetResult(false);
+                                    return;
+                                }
+                                var messageIdInDLQ = task.Result;
+                                _possibleSendToDeadLetterTopicMessages.Remove(finalMessageId);
+                                DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null)
+                                .AsTask()
+                                .ContinueWith(tsk => 
+                                {
+                                    if (tsk.Exception != null)
+                                    {
+                                        _log.Warning($"[{_topicName}] [{Subscription}] [{ConsumerName}] Failed to acknowledge the message {finalMessageId} of the original topic but send to the DLQ successfully:{tsk.Exception}");
+                                    }
+                                    else
+                                    {
+                                        result.TrySetResult(true);
+                                    }
 
-		internal override TaskCompletionSource<object> Seek(IMessageId messageId)
+                                });
+                            });
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error($"Send to dead letter topic exception with topic: {_deadLetterPolicy.DeadLetterTopic}, messageId: {messageId} => {e}");
+                }
+            }
+            return result;
+		}
+        private SortedDictionary<string, string> GetPropertiesMap(IMessage<T> message, string originMessageIdStr, string originTopicNameStr)
+        {
+            var propertiesMap = new SortedDictionary<string, string>();
+            if (message.Properties != null)
+            {
+                propertiesMap = new SortedDictionary<string, string>(message.Properties);
+            }
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyRealTopic)) 
+                propertiesMap.Add(RetryMessageUtil.SystemPropertyRealTopic, originTopicNameStr);
+            
+            if (!propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyOriginMessageId)) 
+                propertiesMap.Add(RetryMessageUtil.SystemPropertyOriginMessageId, originMessageIdStr);
+            
+            return propertiesMap;
+        }
+        private string GetOriginMessageIdStr(IMessage<T> message)
+        {
+            if (message is TopicMessage<T> m)
+            {
+                return ((TopicMessageId)m.MessageId).InnerMessageId.ToString();
+            }
+            else if (message is Message<T> msg)
+            {
+                return msg.MessageId.ToString();
+            }
+            return null;
+        }
+
+        private string GetOriginTopicNameStr(IMessage<T> message)
+        {
+            if (message is TopicMessage<T> m)
+            {
+                return ((TopicMessageId)m.MessageId).TopicName;
+            }
+            else if (message is Message<T> msg)
+            {
+                return msg.Topic;
+            }
+            return null;
+        }
+        private void InitDeadLetterProducerIfNeeded()
+        {
+            if (_deadLetterProducer == null)
+            {
+                var builder = new ProducerConfigBuilder<byte[]>()
+                       .Topic(_deadLetterPolicy.DeadLetterTopic)
+                       .EnableBatching(false);
+                var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
+
+                _deadLetterProducer = client.NewProducer(ISchema<byte>.AutoProduceBytes(Schema), builder);
+
+            }
+        }
+        internal override TaskCompletionSource<object> Seek(IMessageId messageId)
 		{
             var seekBy = $"the message {messageId}";
             var tcs = new TaskCompletionSource<object>();
