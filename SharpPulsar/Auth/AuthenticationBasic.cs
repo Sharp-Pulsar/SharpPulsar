@@ -33,22 +33,19 @@ namespace SharpPulsar.Auth
 
 		public string AuthMethodName => "basic";
 
-        public  IAuthenticationDataProvider AuthData
-		{
-			get
-			{
-				try
-				{
-					return new AuthenticationDataBasic(_userId, _password);
-				}
-				catch (System.Exception e)
-				{
-					throw PulsarClientException.Unwrap(e);
-				}
-			}
-		}
+        public IAuthenticationDataProvider GetAuthData()
+        {
+            try
+            {
+                return new AuthenticationDataBasic(_userId, _password);
+            }
+            catch (System.Exception e)
+            {
+                throw PulsarClientException.Unwrap(e);
+            }
+        }
 
-		public void Configure(IDictionary<string, string> authParams)
+        public void Configure(IDictionary<string, string> authParams)
 		{
 			var jsonString = JsonSerializer.Serialize(authParams);
 			Configure(jsonString);

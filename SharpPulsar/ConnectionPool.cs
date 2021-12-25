@@ -133,37 +133,38 @@ namespace SharpPulsar
         }
 		private async ValueTask<ConnectionOpened> CreateConnection(DnsEndPoint logicalAddress, DnsEndPoint physicalAddress, int connectionKey)
 		{
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"Connection for {logicalAddress} not found in cache");
-			}
-			var targetBroker = $"{physicalAddress.Host}:{physicalAddress.Port}";
-
-			if (!logicalAddress.Equals(physicalAddress))
-				targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
-
-			var cnx = _context.ActorOf(Props.Create(() => new ClientCnx(_clientConfig, physicalAddress, targetBroker)), $"{targetBroker}{connectionKey}".ToAkkaNaming());
-            var ask = await cnx.Ask<AskResponse>(Connect.Instance);
-            if (ask.Failed)
+            IActorRef cnx = ActorRefs.NoSender;
+            try
             {
-                //in a situation where we cannot connect, and since this will be retried,
-                //in order to avoid conflicting actor names, lets kill it
-                _context.Stop(cnx);
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Connection for {logicalAddress} not found in cache");
+                }
+                var targetBroker = $"{physicalAddress.Host}:{physicalAddress.Port}";
+
+                if (!logicalAddress.Equals(physicalAddress))
+                    targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
+                var tcs = new TaskCompletionSource<ConnectionOpened>();
+                cnx = _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, tcs, targetBroker), $"{targetBroker}{connectionKey}".ToAkkaNaming());
+                var connection = await tcs.Task;
+                
+                if (_pool.TryGetValue(_logicalEndpoint, out _))
+                {
+                    _pool[_logicalEndpoint][_randomKey] = connection;
+                }
+                else
+                {
+                    _pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { _randomKey, connection } });
+                }
+
+                return connection;
+            }
+            catch
+            {
+                Context.Stop(cnx);
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                throw ask.Exception;
+                throw;
             }
-
-            var connection = ask.ConvertTo<ConnectionOpened>();
-            if (_pool.TryGetValue(_logicalEndpoint, out _))
-            {
-                _pool[_logicalEndpoint][_randomKey] = connection;
-            }
-            else
-            {
-                _pool.Add(_logicalEndpoint, new Dictionary<int, ConnectionOpened> { { _randomKey, connection } });
-            }
-
-            return connection;
         }
 		private void CleanupConnection(DnsEndPoint address, int connectionKey)
 		{

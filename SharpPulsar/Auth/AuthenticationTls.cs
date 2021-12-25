@@ -56,21 +56,17 @@ namespace SharpPulsar.Auth
 
 		public string AuthMethodName => "tls";
 
-
-        public IAuthenticationDataProvider AuthData
-		{
-            get
+        public IAuthenticationDataProvider GetAuthData()
+        {
+            try
             {
-                try
-                {
-                    return new AuthenticationDataTls(CertFilePath, _password);
-                }
-                catch (Exception e)
-                {
-                    throw new PulsarClientException(e.ToString());
-                }
+                return new AuthenticationDataTls(CertFilePath, _password);
             }
-		}
+            catch (Exception e)
+            {
+                throw new PulsarClientException(e.ToString());
+            }
+        }
         public virtual void Configure(string encodedAuthParamString)
         {
             IDictionary<string, string> authParamsMap = null;

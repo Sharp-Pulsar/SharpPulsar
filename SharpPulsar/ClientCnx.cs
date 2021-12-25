@@ -8,7 +8,6 @@ using SharpPulsar.Protocol;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Collections.Concurrent;
 using SharpPulsar.Exceptions;
 using Akka.Util.Internal;
@@ -62,7 +61,7 @@ namespace SharpPulsar
 		private string _remoteHostName;
 		private bool _isTlsHostnameVerificationEnable;
 		private readonly ClientConfigurationData _clientConfigurationData;
-        private readonly TaskCompletionSource<object> _connectionFuture;
+        private readonly TaskCompletionSource<ConnectionOpened> _connectionFuture;
 
         private readonly TlsHostnameVerifier _hostnameVerifier;
 
@@ -73,11 +72,11 @@ namespace SharpPulsar
 
 		// Added for mutual authentication.
 		private IAuthenticationDataProvider _authenticationDataProvider;
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<object> connectionFuture, string targetBroker) : this(conf, endPoint, Commands.CurrentProtocolVersion, connectionFuture, targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker) : this(conf, endPoint, Commands.CurrentProtocolVersion, connectionFuture, targetBroker)
 		{
 		}
 
-		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<object> connectionFuture, string targetBroker)
+		public ClientCnx(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker)
 		{
             _connectionFuture = connectionFuture;
 			_parent = Context.Parent;
@@ -131,45 +130,46 @@ namespace SharpPulsar
                 _connectionFuture.TrySetException(ex);
             }
         }
-        public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<object> connectionFuture, string targetBroker = "")
+        public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker = "")
         {
             return Props.Create(()=> new ClientCnx(conf, endPoint, connectionFuture, targetBroker));
         }
-        public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<object> connectionFuture, string targetBroker)
+        public static Props Prop(ClientConfigurationData conf, DnsEndPoint endPoint, int protocolVersion, TaskCompletionSource<ConnectionOpened> connectionFuture, string targetBroker)
         {
             return Props.Create(()=> new ClientCnx(conf, endPoint, protocolVersion, connectionFuture, targetBroker));
         }
         private void Receives()
         {
 
-            Receive<Payload>(p =>
+            ReceiveAsync<Payload>(async p =>
             {
+                _sender = Sender;
                 switch (p.Command)
                 {
                     case "NewLookup":
-                        NewLookup(p.Bytes, p.RequestId);
+                        await NewLookup (p.Bytes, p.RequestId);
                         break;
                     case "NewAckForReceipt":
-                        NewAckForReceipt(p.Bytes, p.RequestId);
+                        await NewAckForReceipt(p.Bytes, p.RequestId);
                         break;
                     case "NewGetTopicsOfNamespaceRequest":
-                        NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
+                        await NewGetTopicsOfNamespace(p.Bytes, p.RequestId);
                         break;
                     case "SendGetLastMessageId":
-                        SendGetLastMessageId(p.Bytes, p.RequestId);
+                        await SendGetLastMessageId(p.Bytes, p.RequestId);
                         break;
                     case "SendGetRawSchema":
-                        SendGetRawSchema(p.Bytes, p.RequestId);
+                        await SendGetRawSchema(p.Bytes, p.RequestId);
                         break;
                     case "SendGetOrCreateSchema":
-                        SendGetOrCreateSchema(p.Bytes, p.RequestId);
+                        await SendGetOrCreateSchema(p.Bytes, p.RequestId);
                         break;
                     case "NewAddSubscriptionToTxn":
                     case "NewAddPartitionToTxn":
                     case "NewTxn":
                     case "NewEndTxn":
                     default:
-                        SendRequest(p.Bytes, p.RequestId);
+                        await SendRequest(p.Bytes, p.RequestId);
                         break;
 
                 }
@@ -205,21 +205,23 @@ namespace SharpPulsar
             Receive<RegisterTransactionMetaStoreHandler>(h => {
                 RegisterTransactionMetaStoreHandler(h.TransactionCoordinatorId, h.Coordinator);
             });
-            Receive<SendRequestWithId>(r => {
-                SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
+            ReceiveAsync<SendRequestWithId>(async r => {
+                _sender = Sender;
+                await SendRequestWithId(r.Message, r.RequestId, r.NeedsResponse);
             });
             Receive<RemoteEndpointProtocolVersion>(r => {
                 Sender.Tell(new RemoteEndpointProtocolVersionResponse(_protocolVersion));
             });
-            Stash?.UnstashAll();
         }
-		private void OnConnected()
-		{
-			
-		}
 		private void OnDisconnected()
 		{
 			_log.Info($"{_remoteHostName} Disconnected");
+
+            if (_connectionFuture.Task.IsCompleted)
+            {
+                _connectionFuture.TrySetException(new PulsarClientException("Connection already closed"));
+            }               
+
 			var e = new PulsarClientException("Disconnected from server at " + _remoteHostName);
 
 
@@ -255,9 +257,9 @@ namespace SharpPulsar
 			}
 
 		}
-        private void NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
+        private async Task NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
         {
-            _ = SendRequestAndHandleTimeout(request, requestId, RequestType.AckResponse);
+            await SendRequestAndHandleTimeout(request, requestId, RequestType.AckResponse);
         }
         protected override void PostStop()
 		{
@@ -294,26 +296,62 @@ namespace SharpPulsar
 			// mutual authn. If auth not complete, continue auth; if auth complete, complete connectionFuture.
 			try
 			{
-				var assemblyName = Assembly.GetCallingAssembly().GetName();
-				var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(authChallenge.Challenge.auth_data));
-				var auth = new AuthData { auth_data = (authData.Bytes) };
-				var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
-				var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion);
+                Condition.CheckArgument(authChallenge.Challenge != null);
+                Condition.CheckArgument(authChallenge.Challenge.auth_data != null);
 
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"Mutual auth {_authentication.AuthMethodName}");
-				}
+                if(Auth.AuthData.RefreshAuthDataBytes.Equals(authChallenge.Challenge.auth_data))
+                {
+                    try
+                    {
+                        _authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
+                    }
+                    catch (PulsarClientException e)
+                    {
+                        _log.Error($"Error when refreshing authentication data provider: {e}");
+                        _connectionFuture.TrySetException(e);
+                        return;
+                    }
+                }
+                try
+                {
+                    var authData = _authenticationDataProvider.Authenticate(Auth.AuthData.Of(authChallenge.Challenge.auth_data));
+                    if (!authData.IsComplete())
+                    {
+                        _connectionFuture.TrySetException(new PulsarClientException.UnsupportedAuthenticationException(new ArgumentException()));
+                        return;
+                    }
+                    var auth = new AuthData { auth_data = (authData.Bytes) };
+                    var request = Commands.NewAuthResponse(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1");
 
-				_socketClient.SendMessage(request);
-				if (_state == State.SentConnectFrame)
-				{
-					_state = State.Connecting;
-				}
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"Mutual auth {_authentication.AuthMethodName}");
+                    }
+
+                    _socketClient.SendMessage(request).AsTask()
+                        .ContinueWith(task =>
+                        {
+                            if (task.IsFaulted)
+                            {
+                                _log.Warning($"Failed to send request for mutual auth to broker: {task.Exception}");
+                                _connectionFuture.TrySetException(task.Exception);
+                            }
+                        }); 
+                    if (_state == State.SentConnectFrame)
+                    {
+                        _state = State.Connecting;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _connectionFuture.TrySetException(ex);
+                }
+				
 			}
 			catch (Exception e)
 			{
 				_log.Error($"Error mutual verify: {e}");
+                _connectionFuture.TrySetException(e);
 			}
 		}
 
@@ -503,14 +541,14 @@ namespace SharpPulsar
                 requester.Tell(new AskResponse(ex));
             }
 		}
-		private void HandlePing(CommandPing ping)
+		private async Task HandlePing(CommandPing ping)
 		{
 			// Immediately reply success to ping requests
 			if (_log.IsEnabled(LogLevel.DebugLevel))
 			{
 				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
 			}
-			_socketClient.SendMessage(_pong);
+			await _socketClient.SendMessage(_pong);
 		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
@@ -566,7 +604,7 @@ namespace SharpPulsar
 		// caller of this method needs to be protected under pendingLookupRequestSemaphore
 		private void AddPendingLookupRequests(long requestId, ReadOnlySequence<byte> message)
 		{
-			_pendingRequests.Add(requestId, (message, Sender));
+			_pendingRequests.Add(requestId, (message, _sender));
 		}
 
 		private bool RemovePendingLookupRequest(long requestId, out IActorRef actor)
@@ -623,8 +661,15 @@ namespace SharpPulsar
             }
             else if (error.Error == ServerError.AuthenticationError)
             {
-                response = new AskResponse(new PulsarClientException.AuthenticationException(error.Message));
+                _connectionFuture.TrySetException(new PulsarClientException.AuthenticationException(error.Message));
                 _log.Error("Failed to authenticate the client");
+                return;
+            }
+            else if (error.Error == ServerError.NotAllowedError)
+            {
+                _log.Error($"Get not allowed error, {error.Message}");
+                _connectionFuture.TrySetException(new PulsarClientException.NotAllowedException(error.Message));
+                return;
             }
             else
                 response = new AskResponse(GetPulsarClientException(error.Error, error.Message));
@@ -669,25 +714,25 @@ namespace SharpPulsar
 			}
 		}
 
-		private bool HandshakeCompleted
-		{
-			get
-			{
-				return _state == State.Ready;
-			}
-		}
-
         public IStash Stash { get; set; }
 
-        private void NewLookup(ReadOnlySequence<byte> request, long requestId)
+        private async Task NewLookup(ReadOnlySequence<byte> request, long requestId)
 		{
-			AddPendingLookupRequests(requestId, request);
-			_socketClient.SendMessage(request);
+            try
+            {
+                await _socketClient.SendMessage(request);
+                AddPendingLookupRequests(requestId, request);
+
+            }
+            catch (Exception ex)
+            {
+                _sender.Tell(PulsarClientException.Unwrap(ex));
+            }
 		}
 
-		private void NewGetTopicsOfNamespace(ReadOnlySequence<byte> request, long requestId)
+		private async Task NewGetTopicsOfNamespace(ReadOnlySequence<byte> request, long requestId)
 		{
-			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
+			await SendRequestAndHandleTimeout(request, requestId, RequestType.GetTopics);
 		}
 
 		private void HandleGetTopicsOfNamespaceSuccess(CommandGetTopicsOfNamespaceResponse success)
@@ -743,46 +788,55 @@ namespace SharpPulsar
 				_log.Warning($"Received unknown request id from server: {requestId}");
 		}
 
-		private void SendRequestWithId(ReadOnlySequence<byte> cmd, long requestId, bool reply)
+		private async Task SendRequestWithId(ReadOnlySequence<byte> cmd, long requestId, bool reply)
 		{
-			SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
+			await SendRequestAndHandleTimeout(cmd, requestId, RequestType.Command);
 		}
 
-		private bool SendRequestAndHandleTimeout(ReadOnlySequence<byte> requestMessage, long requestId, RequestType requestType)
+		private async Task<bool> SendRequestAndHandleTimeout(ReadOnlySequence<byte> requestMessage, long requestId, RequestType requestType)
 		{
-			_pendingRequests.Add(requestId, (requestMessage, Sender));
-			_socketClient.SendMessage(requestMessage);
-			/*var task = _socketClient.Execute(requestMessage); 
-			if (task.IsFaulted)
-			{
-				_log.Warning($"Failed to send {requestType.Description} to broker: {task.Exception}");
-				_pendingRequests.Remove(requestId);
-				return false;
-			}*/
-			_requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
-			return true;
-		}
-		private void SendRequest(ReadOnlySequence<byte> requestMessage, long requestId)
-		{
-			if (requestId >= 0)
-				_pendingRequests.Add(requestId, (requestMessage, Sender));
+            try
+            {
+                await _socketClient.SendMessage(requestMessage);
+                _pendingRequests.Add(requestId, (requestMessage, _sender));
 
-			_socketClient.SendMessage(requestMessage);
+                _requestTimeoutQueue.Enqueue(new RequestTime(DateTimeHelper.CurrentUnixTimeMillis(), requestId, requestType));
+                return true;
+            }
+            catch(Exception ex)
+            {
+                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+            }
+            return false;
+		}
+		private async Task SendRequest(ReadOnlySequence<byte> requestMessage, long requestId)
+		{
+            try
+            {
+                await _socketClient.SendMessage(requestMessage);
+                if (requestId >= 0)
+                    _pendingRequests.Add(requestId, (requestMessage, _sender));
+            }
+            catch(Exception ex)
+            {
+                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
+            }
+
+        }
+
+        private async Task SendGetLastMessageId(ReadOnlySequence<byte> request, long requestId)
+		{
+			await SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
 		}
 
-		private void SendGetLastMessageId(ReadOnlySequence<byte> request, long requestId)
+		private async Task SendGetRawSchema(ReadOnlySequence<byte> request, long requestId)
 		{
-			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetLastMessageId);
+			await SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
 		}
 
-		private void SendGetRawSchema(ReadOnlySequence<byte> request, long requestId)
+		private async Task SendGetOrCreateSchema(ReadOnlySequence<byte> request, long requestId)
 		{
-			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetSchema);
-		}
-
-		private void SendGetOrCreateSchema(ReadOnlySequence<byte> request, long requestId)
-		{
-			_ = SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
+			await SendRequestAndHandleTimeout(request, requestId, RequestType.GetOrCreateSchema);
 		}
 
 		private void HandleNewTxnResponse(CommandNewTxnResponse command)
@@ -793,11 +847,6 @@ namespace SharpPulsar
                 _pendingRequests.Remove(requestId);
                 req.Requester.Tell(new NewTxnResponse(command, GetExceptionByServerError(command.Error, command.Message)));
             }
-            /*var handler = CheckAndGetTransactionMetaStoreHandler((long)command.TxnidMostBits);
-			if (handler != null)
-			{
-				handler.Tell();
-			}*/
 		}
 
 		private void HandleAddPartitionToTxnResponse(CommandAddPartitionToTxnResponse command)
@@ -1102,12 +1151,9 @@ namespace SharpPulsar
 			// each channel will have a mutual client/server pair, mutual client evaluateChallenge with init data,
 			// and return authData to server.
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
-			var authData = _authenticationDataProvider.Authenticate(new Auth.AuthData(Auth.AuthData.InitAuthData));
-			var assemblyName = Assembly.GetCallingAssembly().GetName();
+			var authData = _authenticationDataProvider.Authenticate(Auth.AuthData.InitAuthData);
 			var auth = new AuthData { auth_data = (authData.Bytes) };
-			var clientVersion = assemblyName.Name + " " + assemblyName.Version.ToString(3);
-
-			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, clientVersion, _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State

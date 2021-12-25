@@ -35,7 +35,7 @@ namespace SharpPulsar.Auth
 
         public byte[] Bytes;
 
-		public bool Complete => Bytes == null;
+		public bool IsComplete() => Bytes == null;
         public static AuthData Of(byte[] authData)
         {
             return new AuthData(authData);

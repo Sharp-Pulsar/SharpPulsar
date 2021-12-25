@@ -22,7 +22,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Auth;
 using SharpPulsar.Protocol;
-using SharpPulsar.Helpers;
 using ProtoBuf;
 using Serializer = ProtoBuf.Serializer;
 
@@ -70,7 +69,7 @@ namespace SharpPulsar.SocketImpl
                 _clientCertificates = conf.ClientCertificates;
 
             if (conf.Authentication is AuthenticationTls tls)
-                _clientCertificates = tls.AuthData.TlsCertificates;
+                _clientCertificates = tls.GetAuthData().TlsCertificates;
 
             if (conf.TrustedCertificateAuthority != null)
                 _trustedCertificateAuthority = conf.TrustedCertificateAuthority;
@@ -84,9 +83,6 @@ namespace SharpPulsar.SocketImpl
             _logger = logger;
 
             _targetServerName = hostName;
-            //_heartbeat.Start();
-
-            //_connectonId = $"{_networkstream.}";
 
         }
         public async ValueTask Connect()
@@ -111,12 +107,6 @@ namespace SharpPulsar.SocketImpl
                 return _connectonId;
             }
         }
-
-        void HeartbeatProcess(HeartbeatEvent @event)
-        {
-            _logger.Debug($"{DateTime.Now}----{RemoteConnectionId} Disconnect....");
-        }
-
 
         public IObservable<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> ReceiveMessageObservable =>
                Observable.Create<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)>((observer) => ReaderSchedule(observer, cancellation.Token));
