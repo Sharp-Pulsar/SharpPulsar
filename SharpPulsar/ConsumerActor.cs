@@ -2235,8 +2235,38 @@ namespace SharpPulsar
 				cnx.Tell(PoisonPill.Instance);
 			}
 		}
+        private async ValueTask<IList<MessageIdData>> GetRedeliveryMessageIdData(IList<MessageId> messageIds)
+        {
+            var tcs = new TaskCompletionSource<IList<MessageIdData>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (messageIds == null || messageIds.Count == 0)
+            {
+                 tcs.SetResult(new List<MessageIdData>());
+            }
+            else
+            {
+                IList<MessageIdData> data = new List<MessageIdData>(messageIds.Count);
+                var futures = new List<TaskCompletionSource<bool>>(messageIds.Count);
+                messageIds.ForEach(messageId =>
+                {
+                    var future = ProcessPossibleToDLQ(messageId);
+                    futures.Add(future);
+                    future.thenAccept(sendToDLQ =>
+                    {
+                        if (!sendToDLQ)
+                        {
+                            data.Add((new MessageIdData()).setPartition(messageId.getPartitionIndex()).setLedgerId(messageId.getLedgerId()).setEntryId(messageId.getEntryId()));
+                        }
+                    });
+                });
+                var t = await Task.WhenAll(futures.Select(x => x.Task).ToArray()).ContinueWith(t => {
 
-		private bool ProcessPossibleToDLQ(IMessageId messageId)
+                    tcs.TrySetResult(data);
+                    return tcs;
+                });
+            }
+            return await tcs.Task;
+        }
+        private bool ProcessPossibleToDLQ(IMessageId messageId)
 		{
 			IList<IMessage<T>> deadLetterMessages = null;
             var builder = new ProducerConfigBuilder<T>();
