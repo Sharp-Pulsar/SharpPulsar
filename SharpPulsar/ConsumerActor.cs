@@ -143,7 +143,7 @@ namespace SharpPulsar
 		private int _maxMessageSize;
 		private int _protocolVersion;
 
-		private volatile IActorRef _retryLetterProducer;
+		private volatile Producer<T> _retryLetterProducer;
 		private volatile IActorRef _replyTo;
 
         private long _subscribeDeadline = 0; // gets set on first successful connection
@@ -867,8 +867,16 @@ namespace SharpPulsar
 						await DoAcknowledgeWithTxn (ack.MessageId, AckType.Cumulative, _properties, ack.Txn);
 						break;
 					case ReconsumeLaterCumulative<T> ack:
-						DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, ack.DelayTime);
-                        _replyTo.Tell(new AskResponse());
+                        try
+                        {
+                            var tcs = DoReconsumeLater(ack.Message, AckType.Cumulative, _properties, ack.DelayTime);
+                            await tcs.Task;
+                            _replyTo.Tell(new AskResponse());
+                        }
+                        catch(Exception ex)
+                        {
+                            _replyTo.Tell(new AskResponse(ex));
+                        }
                         break;
 					default:
 						_log.Warning($"{cumulative.GetType().FullName} not supported");
@@ -990,7 +998,8 @@ namespace SharpPulsar
 			}
 			try
 			{
-				DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime);
+				var tcs = DoReconsumeLater(message, AckType.Individual, new Dictionary<string, long>(), delayTime);
+                tcs.Task.Wait();
 			}
 			catch (Exception e)
 			{
@@ -1051,10 +1060,17 @@ namespace SharpPulsar
 		{
             _acknowledgmentsGroupingTracker.Tell(new AddListAcknowledgment(messageIdList, ackType, properties));
 		}
-        private void DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
+        private TaskCompletionSource<object> DoReconsumeLater(IMessage<T> message, AckType ackType, IDictionary<string, long> properties, TimeSpan delayTime)
 		{
-			var messageId = message.MessageId;
-			if(messageId is TopicMessageId id)
+            var result = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var messageId = message.MessageId;
+            if (messageId == null)
+            {
+                result.TrySetException(new PulsarClientException.InvalidMessageException("Cannot handle message with null messageId"));
+                return result;
+            }
+            if (messageId is TopicMessageId id)
 			{
 				messageId = id.InnerMessageId;
 			}
@@ -1071,118 +1087,110 @@ namespace SharpPulsar
 				{
 					OnAcknowledgeCumulative(messageId, exception);
 				}
-				//return FutureUtil.FailedFuture(exception);
+                result.TrySetException(exception);
+
+                return result;
 			}
 			if(delayTime.TotalMilliseconds < 0)
 			{
 				delayTime = TimeSpan.Zero;
 			}
-			if(_retryLetterProducer == null)
+            try
+            {
+                if (_retryLetterProducer == null)
+                {
+                    var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
+                    var builder = new ProducerConfigBuilder<T>()
+                    .Topic(_deadLetterPolicy.RetryLetterTopic)
+                    .EnableBatching(false);
+                    _retryLetterProducer = client.NewProducer(Schema, builder);
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error($"Create retry letter producer exception with topic: {_deadLetterPolicy.RetryLetterTopic}:{e}");
+            }
+            if (_retryLetterProducer != null)
 			{
 				try
 				{
-					if(_retryLetterProducer == null)
-					{
-						var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
-						var builder = new ProducerConfigBuilder<T>()
-                        .Topic(_deadLetterPolicy.RetryLetterTopic)
-                        .EnableBatching(false);
-						_retryLetterProducer = client.NewProducer(Schema, builder).GetProducer;
-					}
-				}
-				catch(Exception e)
-				{
-					_log.Error($"Create retry letter producer exception with topic: {_deadLetterPolicy.RetryLetterTopic}:{e}");
-				}
-			}
-			if(_retryLetterProducer != null)
-			{
-				try
-				{
-                    var builder = new ProducerConfigBuilder<T>();
-                    Message<T> retryMessage = null;
-					string originMessageIdStr = null;
-					string originTopicNameStr = null;
-					if(message is TopicMessage<T> tm)
-					{
-						retryMessage = (Message<T>)tm.Message;
-						originMessageIdStr = ((TopicMessageId) tm.MessageId).InnerMessageId.ToString();
-						originTopicNameStr = ((TopicMessageId) tm.MessageId).TopicName;
-					}
-					else if(message is Message<T> m)
-					{
-						retryMessage = m;
-						originMessageIdStr = m.MessageId.ToString();
-						originTopicNameStr = m.Topic;
-					}
-					var propertiesMap = new SortedDictionary<string, string>();
-					var reconsumetimes = 1;
-					if(message.Properties != null)
-					{
-						message.Properties.ForEach(x=> new KeyValuePair<string, string>(x.Key, x.Value));
-					}
+                    var retryMessage = GetMessage(message);
+                    var originMessageIdStr = GetOriginMessageIdStr(message);
+                    var originTopicNameStr = GetOriginTopicNameStr(message);
 
-					if(propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyReconsumetimes))
-					{
-						reconsumetimes = Convert.ToInt32(propertiesMap.GetValueOrNull(RetryMessageUtil.SystemPropertyReconsumetimes));
-						reconsumetimes = reconsumetimes + 1;
+                    var propertiesMap = GetPropertiesMap(message, originMessageIdStr, originTopicNameStr);
+                    var reconsumetimes = 1;
+                    if (propertiesMap.ContainsKey(RetryMessageUtil.SystemPropertyReconsumetimes))
+                    {
+                        reconsumetimes = int.Parse(propertiesMap[RetryMessageUtil.SystemPropertyReconsumetimes]);
+                        reconsumetimes = reconsumetimes + 1;
+                    }
+                    propertiesMap[RetryMessageUtil.SystemPropertyReconsumetimes] = reconsumetimes.ToString();
+                    propertiesMap[RetryMessageUtil.SystemPropertyDelayTime] = delayTime.TotalMilliseconds.ToString();
 
-					}
-					else
-					{
-						propertiesMap[RetryMessageUtil.SystemPropertyRealTopic] = originTopicNameStr;
-						propertiesMap[RetryMessageUtil.SystemPropertyOriginMessageId] = originMessageIdStr;
-					}
+                    var finalMessageId = messageId;
+                    if (reconsumetimes > _deadLetterPolicy.MaxRedeliverCount && !string.IsNullOrWhiteSpace(_deadLetterPolicy.DeadLetterTopic))
+                    {
+                        try
+                        {
+                            InitDeadLetterProducerIfNeeded();
+                        }
+                        catch(Exception ex)
+                        {
+                            result.TrySetException(ex);
+                            _deadLetterProducer = null;
+                            return result;
+                        }
 
-					propertiesMap[RetryMessageUtil.SystemPropertyReconsumetimes] = reconsumetimes.ToString();
-					propertiesMap[RetryMessageUtil.SystemPropertyDelayTime] = delayTime.ToString();
-
-				   if(reconsumetimes > _deadLetterPolicy.MaxRedeliverCount)
-				   {
-					   ProcessPossibleToDLQ((MessageId)messageId);
-						if(_deadLetterProducer == null)
-						{
-							try
-							{
-								if(_deadLetterProducer == null)
-								{
-									var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
-									builder.Topic(_deadLetterPolicy.DeadLetterTopic);
-									builder.EnableBatching(false);
-									_deadLetterProducer = client.NewProducer(Schema, builder).GetProducer;
-								}
-							}
-							catch(Exception e)
-							{
-							   _log.Error("Create dead letter producer exception with topic: {}", _deadLetterPolicy.DeadLetterTopic, e);
-							}
-						}
-						if (_deadLetterProducer != null)
-						{
-							propertiesMap[RetryMessageUtil.SystemPropertyRealTopic] = originTopicNameStr;
-							propertiesMap[RetryMessageUtil.SystemPropertyOriginMessageId] = originMessageIdStr;
-							var typedMessageBuilderNew = new TypedMessageBuilder<T>(_deadLetterProducer, Schema, builder.Build())
-                                .Value(retryMessage.Value)
-                                .Properties(propertiesMap)
-                                .Send();
-							DoAcknowledge(messageId, ackType, properties, null);
-						}
-				   }
-					else
-					{
-						var typedMessageBuilderNew = new TypedMessageBuilder<T>(_retryLetterProducer, Schema, builder.Build())
-                            .Value(retryMessage.Value)
+                        var typedMessageBuilderNew = _deadLetterProducer.NewMessage(ISchema<T>.AutoProduceBytes(retryMessage.ReaderSchema().Value))
+                            .Value(retryMessage.Data.ToArray())
                             .Properties(propertiesMap);
-						if (delayTime.TotalMilliseconds > 0)
-						{
-							typedMessageBuilderNew.DeliverAfter(delayTime);
-						}
-						if(message.HasKey())
-						{
-							typedMessageBuilderNew.Key(message.Key);
-						}
-						typedMessageBuilderNew.Send();
-						DoAcknowledge(messageId, ackType, properties, null);
+
+                        typedMessageBuilderNew.SendAsync().AsTask().ContinueWith(task =>
+                        {
+                            if(task.Exception != null)
+                            {
+                                result.TrySetException(task.Exception);
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    DoAcknowledge(finalMessageId, ackType, properties, null);
+                                    result.TrySetResult(null);
+                                }
+                                catch(Exception ex)
+                                {
+                                    result.TrySetException(ex);
+                                }
+                            }                            
+                        });
+                    }                    
+					else
+					{
+                        var typedMessageBuilderNew = _retryLetterProducer.NewMessage()
+                            .Value(retryMessage.Value).Properties(propertiesMap);
+                        if (delayTime > TimeSpan.Zero)
+                        {
+                            typedMessageBuilderNew.DeliverAfter(delayTime);
+                        }
+                        if (message.HasKey())
+                        {
+                            typedMessageBuilderNew.Key(message.Key);
+                        }
+                        typedMessageBuilderNew.SendAsync().AsTask()
+                            .ContinueWith(__ =>
+                            {
+                                try
+                                {
+                                    DoAcknowledge(finalMessageId, ackType, properties, null);
+                                    result.TrySetResult(null);
+                                }
+                                catch(Exception ex)
+                                {
+                                    result.TrySetException(ex);
+                                }
+                            });
 					}
 				}
 				catch(Exception e)
@@ -1196,10 +1204,32 @@ namespace SharpPulsar
 					RedeliverUnacknowledged(messageIds);
 				}
 			}
-
-		}
-
-		internal override void NegativeAcknowledge(IMessageId messageId)
+            else
+            {
+                var finalMessageId = messageId;
+                result.TrySetException(new NullReferenceException("deadletterproducer"));
+                var messageIds = new HashSet<IMessageId>
+                    {
+                        finalMessageId
+                    };
+                _unAckedMessageTracker.Tell(new Remove(finalMessageId));
+                RedeliverUnacknowledged(messageIds);
+            }
+            return result;
+        }
+        private Message<T> GetMessage(IMessage<T> message)
+        {
+            if (message is TopicMessage<T> m)
+            {
+                return (Message<T>)m.Message;
+            }
+            else if (message is Message<T> ms)
+            {
+                return ms;
+            }
+            return null;
+        }
+        internal override void NegativeAcknowledge(IMessageId messageId)
 		{
 			_negativeAcksTracker.Tell(new Add(messageId));
 
@@ -2285,7 +2315,16 @@ namespace SharpPulsar
             {
                 try
                 {
-                    InitDeadLetterProducerIfNeeded();
+                    try
+                    {
+                        InitDeadLetterProducerIfNeeded();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.TrySetException(ex);
+                        _deadLetterProducer = null;
+                        return result;
+                    }
                     var finalDeadLetterMessages = deadLetterMessages;
                     var finalMessageId = messageId;
                     foreach (var message in finalDeadLetterMessages)
