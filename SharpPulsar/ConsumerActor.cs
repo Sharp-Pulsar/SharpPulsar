@@ -784,11 +784,12 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<SeekMessageId>(m => 
+			ReceiveAsync<SeekMessageId>(async m => 
 			{
                 try
                 {
-					Seek(m.MessageId);
+					var tcs = Seek(m.MessageId);
+                    await tcs.Task;
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -796,11 +797,12 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<SeekTimestamp>(m => 
+			ReceiveAsync<SeekTimestamp>(async m => 
 			{
                 try
                 {
-					Seek(m.Timestamp);
+                    var tcs =  Seek(m.Timestamp);
+                    await tcs.Task;
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -2289,76 +2291,50 @@ namespace SharpPulsar
 			return false;
 		}
 
-		internal override void Seek(IMessageId messageId)
+		internal override TaskCompletionSource<object> Seek(IMessageId messageId)
 		{
-			try
-			{
-				
-				var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				var requestId = result.Id;
+            var seekBy = $"the message {messageId}";
+            var tcs = new TaskCompletionSource<object>();
+            if (SeekCheckState(seekBy, tcs))
+            {
+                var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+                var requestId = result.Id;
                 var seek = ReadOnlySequence<byte>.Empty;
-				if (messageId is BatchMessageId msgId)
-				{
-					// Initialize ack set
-					var ackSet = BitSet.Create();
-					ackSet.Set(0, msgId.BatchSize);
-					ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
-					var ackSetArr = ackSet.ToLongArray();
+                if (messageId is BatchMessageId msgId)
+                {
+                    // Initialize ack set
+                    var ackSet = BitSet.Create();
+                    ackSet.Set(0, msgId.BatchSize);
+                    ackSet.Clear(0, Math.Max(msgId.BatchIndex, 0));
+                    var ackSetArr = ackSet.ToLongArray();
 
-					seek = Commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
-				}
-				else
-				{
-					var msgid = (MessageId)messageId;
-					seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
-				}
+                    seek = Commands.NewSeek(_consumerId, requestId, msgId.LedgerId, msgId.EntryId, ackSetArr);
+                }
+                else
+                {
+                    var msgid = (MessageId)messageId;
+                    seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
+                }
+                SeekInternal(requestId, seek, messageId, seekBy, tcs);
+            }            
+            return tcs;
+        }
 
-				var cnx = _clientCnx;
-
-				_log.Info($"[{Topic}][{Subscription}] Seek subscription to message id {messageId}");
-				cnx.Tell(new SendRequestWithId(seek, requestId, true)); 
-                _log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to message id {messageId}");
-				_acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
-				_seekMessageId = new BatchMessageId((MessageId)messageId);
-				_duringSeek = true;
-				_lastDequeuedMessageId = IMessageId.Earliest;
-				IncomingMessages.Empty();
-				IncomingMessagesSize = 0;
-			}
-			catch(Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
-		}
-
-		internal override void Seek(long timestamp)
+		internal override TaskCompletionSource<object> Seek(long timestamp)
 		{
-			try
-			{
-				var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				var requestId = result.Id;
-				var seek = Commands.NewSeek(_consumerId, requestId, timestamp);
-				var cnx = _clientCnx;
+            var tcs = new TaskCompletionSource<object>();
+            var seekBy = $"the timestamp {timestamp:D}";
+            if (SeekCheckState(seekBy, tcs))
+            {
+                var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+                var requestId = result.Id;
+                SeekInternal(requestId, Commands.NewSeek(_consumerId, requestId, timestamp), IMessageId.Earliest, seekBy, tcs);
+            };
+            return tcs;
+        }
 
-				_log.Info($"[{Topic}][{Subscription}] Seek subscription to publish time {timestamp}");
-				cnx.Tell(new SendRequestWithId(seek, requestId));
-				_log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to publish time {timestamp}");
-				_acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
-				_seekMessageId = new BatchMessageId((MessageId)IMessageId.Earliest);
-				_duringSeek = true;
-				_lastDequeuedMessageId = IMessageId.Earliest;
-				IncomingMessages.Empty();
-				IncomingMessagesSize = 0;
-			}
-			catch(Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
-		}
-
-        private TaskCompletionSource<object> SeekInternal(long requestId, ReadOnlySequence<byte> seek, IMessageId seekId, string seekBy)
-        {
-            TaskCompletionSource<object> seekFuture = new TaskCompletionSource<object>();
+        private void SeekInternal(long requestId, ReadOnlySequence<byte> seek, IMessageId seekId, string seekBy, TaskCompletionSource<object> seekFuture)
+        {           
             var cnx = _clientCnx;
 
             var originSeekMessageId = _seekMessageId;
@@ -2366,27 +2342,42 @@ namespace SharpPulsar
             _duringSeek = true;
             _log.Info($"[{Topic}][{Subscription}] Seeking subscription to {seekBy}");
 
-            Cnx.sendRequestWithId(Seek, RequestId).thenRun(() =>
+            cnx.Ask(new SendRequestWithId(seek, requestId)).ContinueWith(task => 
             {
-                log.info("[{}][{}] Successfully reset subscription to {}", topic, subscription, SeekBy);
-                acknowledgmentsGroupingTracker.flushAndClean();
-                LastDequeuedMessageId = MessageId.earliest;
-                clearIncomingMessages();
-                SeekFuture.complete(null);
-            }).exceptionally(e =>
-            {
-                seekMessageId = OriginSeekMessageId;
-                duringSeek.set(false);
-                log.error("[{}][{}] Failed to reset subscription: {}", topic, subscription, e.getCause().getMessage());
-                SeekFuture.completeExceptionally(PulsarClientException.wrap(e.getCause(), string.Format("Failed to seek the subscription {0} of the topic {1} to {2}", subscription, topicName.ToString(), SeekBy)));
-                return null;
+                if (task.IsFaulted)
+                {
+                    _seekMessageId = originSeekMessageId;
+                    _duringSeek = false;
+                    _log.Error($"[{Topic}][{Subscription}] Failed to reset subscription: {task.Exception}");
+                    seekFuture.TrySetException(PulsarClientException.Wrap(task.Exception, $"Failed to seek the subscription {Subscription} of the topic {Topic} to {seekBy}"));
+                    return;
+                }
+                _log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to {seekBy}");
+                _acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
+                _lastDequeuedMessageId = IMessageId.Earliest;
+                IncomingMessages.Empty();
+                seekFuture.TrySetResult(null);
             });
-            return SeekFuture;
         }
+        private bool SeekCheckState(string seekBy, TaskCompletionSource<object> seekFuture)
+        {
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                seekFuture.TrySetException(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}"));
+                return false;
+            }
 
+            if (!Connected())
+            {
+                seekFuture.TrySetException(new PulsarClientException($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}"));
+                return false;
+            }
+
+            return true;
+        }
         private TaskCompletionSource<bool> HasMessageAvailable()
 		{
-            TaskCompletionSource<bool> booleanFuture = new TaskCompletionSource<bool>();
+            TaskCompletionSource<bool> booleanFuture = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             try
 			{
 				if (_lastDequeuedMessageId == IMessageId.Earliest)
@@ -2398,7 +2389,11 @@ namespace SharpPulsar
 						var future = InternalGetLastMessageId();
 						if(_resetIncludeHead)
                         {
-							future.Task.ContinueWith((lastMessageIdResponse)=> Seek(lastMessageIdResponse.Result.LastMessageId));
+							future.Task.ContinueWith(async (lastMessageIdResponse)=> 
+                            {
+                                var tcs = Seek(lastMessageIdResponse.Result.LastMessageId);
+                                await tcs.Task;
+                            });
 						}
                         future.Task.ContinueWith(response =>
                         {
@@ -2533,7 +2528,7 @@ namespace SharpPulsar
 			var opTimeoutMs = _clientConfigurationData.OperationTimeout;
 			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(opTimeoutMs.Multiply(2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
 
-			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>();
+			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			InternalGetLastMessageId(backoff, (long)opTimeoutMs.TotalMilliseconds, getLastMessageId).AsTask().Wait();
 			return getLastMessageId;
