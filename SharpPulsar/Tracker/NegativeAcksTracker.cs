@@ -63,7 +63,7 @@ namespace SharpPulsar.Tracker
             _unack = unack;
             Ready();
             //_timeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
-            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, Self, Trigger.Instance, ActorRefs.NoSender);
+            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
         private void Ready()
         {
@@ -106,7 +106,7 @@ namespace SharpPulsar.Tracker
             _consumer.Tell(new OnNegativeAcksSend(messagesToRedeliver));
             _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
 
-            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, Self, Trigger.Instance, ActorRefs.NoSender);
+            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
 
         private void Add(IMessageId messageId)
@@ -126,7 +126,7 @@ namespace SharpPulsar.Tracker
             {
                 // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
                 // nack immediately following the current one will be batched into the same redeliver request.
-                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, Self, Trigger.Instance, ActorRefs.NoSender);
+                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
             }
         }
 	}

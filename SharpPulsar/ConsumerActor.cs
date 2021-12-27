@@ -223,11 +223,11 @@ namespace SharpPulsar
 			{
 				if(conf.TickDuration.TotalMilliseconds > 0)
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, conf.TickDuration > conf.AckTimeout? conf.AckTimeout: conf.TickDuration, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, conf.TickDuration > conf.AckTimeout? conf.AckTimeout: conf.TickDuration, _self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 				else
 				{
-					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, TimeSpan.Zero, Self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
+					_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTracker.Prop(conf.AckTimeout, TimeSpan.Zero, _self, UnAckedChunckedMessageIdSequenceMap), "UnAckedMessageTracker");
 				}
 			}
 			else
@@ -235,7 +235,7 @@ namespace SharpPulsar
 				_unAckedMessageTracker = Context.ActorOf(UnAckedMessageTrackerDisabled.Prop(), "UnAckedMessageTrackerDisabled");
 			}
 
-			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, Self, UnAckedChunckedMessageIdSequenceMap));
+			_negativeAcksTracker = Context.ActorOf(NegativeAcksTracker<T>.Prop(conf, _self, UnAckedChunckedMessageIdSequenceMap));
 			// Create msgCrypto if not created already
 			if (conf.CryptoKeyReader != null)
 			{
@@ -277,7 +277,7 @@ namespace SharpPulsar
 						
 			if(_topicName.Persistent)
 			{
-				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(UnAckedChunckedMessageIdSequenceMap, Self, idGenerator, _consumerId, _connectionHandler, conf));
+				_acknowledgmentsGroupingTracker = Context.ActorOf(PersistentAcknowledgmentsGroupingTracker<T>.Prop(UnAckedChunckedMessageIdSequenceMap, _self, idGenerator, _consumerId, _connectionHandler, conf));
 			}
 			else
 			{

@@ -58,7 +58,7 @@ namespace SharpPulsar
 		private readonly Dictionary<string, IActorRef> _consumers;
 
 		// Map <topic, numPartitions>, store partition number for each topic
-		protected internal readonly Dictionary<string, int> TopicsMap;
+		protected internal readonly Dictionary<string, int> PartitionedTopics;
 
 		// Queue of partition consumers on which we have stopped calling receiveAsync() because the
 		// shared incoming queue was full
@@ -77,7 +77,7 @@ namespace SharpPulsar
 		private readonly IActorRef _generator;
 		private readonly IActorRef _stateActor;
 
-		private bool _paused = false;
+        private bool _paused = false;
 		// timeout related to auto check and subscribe partition increasement
 		private ICancelable _partitionsAutoUpdateTimeout = null;
 
@@ -94,18 +94,18 @@ namespace SharpPulsar
 
 		private readonly IActorRef _self;
 		private readonly IActorContext _context;
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, createTopicIfDoesNotExist, clientConfiguration)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
 		{
 		}
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, listenerExecutor, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration)
-		{
-		}
-
-		public MultiTopicsConsumer(IActorRef stateActor,IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, listenerExecutor, schema, createTopicIfDoesNotExist, null, 0, clientConfiguration)
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this (stateActor, client, lookup, cnxPool, idGenerator, DummyTopicNamePrefix + Utility.ConsumerName.GenerateRandomName(), conf, schema, createTopicIfDoesNotExist, startMessageId, startMessageRollbackDurationInSec, clientConfiguration, subscribeFuture)
 		{
 		}
 
-		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), schema)
+		public MultiTopicsConsumer(IActorRef stateActor,IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : this(stateActor, client, lookup, cnxPool, idGenerator, singleTopic, conf, schema, createTopicIfDoesNotExist, null, 0, clientConfiguration, subscribeFuture)
+		{
+		}
+
+		public MultiTopicsConsumer(IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string singleTopic, ConsumerConfigurationData<T> conf, ISchema<T> schema, bool createTopicIfDoesNotExist, IMessageId startMessageId, long startMessageRollbackDurationInSec, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, singleTopic, conf, Math.Max(2, conf.ReceiverQueueSize), schema, subscribeFuture)
 		{
 			_context = Context;
 			_generator = idGenerator;
@@ -117,7 +117,7 @@ namespace SharpPulsar
 			_self = Self;
 			_scheduler = Context.System.Scheduler;
 			_clientConfiguration = clientConfiguration;
-			TopicsMap = new Dictionary<string, int>();
+			PartitionedTopics = new Dictionary<string, int>();
 			_consumers = new Dictionary<string, IActorRef>();
 			_pausedConsumers = new Queue<IActorRef>();
 			_sharedQueueResumeThreshold = MaxReceiverQueueSize / 2;
@@ -143,43 +143,46 @@ namespace SharpPulsar
 
 			_internalConfig = InternalConsumerConfig;
 			_stats = _clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ConsumerStatsRecorder<T>(Context.System, conf, Topic, ConsumerName, Subscription, clientConfiguration.StatsIntervalSeconds) : ConsumerStatsDisabled.Instance;
-						
 
-			if(conf.TopicNames.Count == 0)
+            if (_internalConfig.AutoUpdatePartitions)
+            {
+                _partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), _internalConfig.AutoUpdatePartitionsInterval, Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
+            }
+            if (conf.TopicNames.Count == 0)
 			{
 				State.ConnectionState = HandlerState.State.Ready;
+                subscribeFuture.TrySetResult(Self);
+                return;
             }
-            Ready();
-        }
-		private void Ready()
-		{			// start track and auto subscribe partition increasement
-			if (_internalConfig.AutoUpdatePartitions)
-			{
-				_partitionsAutoUpdateTimeout = _scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(60000), _internalConfig.AutoUpdatePartitionsInterval, Self, UpdatePartitionSub.Instance, ActorRefs.NoSender);
-			}
-            ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async s =>
-            {
-                foreach (var topic in s.Topics)
-                {
-                    _ = await Subscribe(topic, s.CreateTopicIfDoesNotExist);
-                }
+            Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames.ToList()), "Topics is empty or invalid.");
 
-                if (AllTopicPartitionsNumber == TopicsMap.Values.Sum())
+            var futures = conf.TopicNames.Select(t => Subscribe(t, createTopicIfDoesNotExist).AsTask()).ToArray();
+            Task.WhenAll(futures).ContinueWith(task =>
+            {
+                if(task.Exception == null)
                 {
-                    MaxReceiverQueueSize = AllTopicPartitionsNumber;
+                    if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
+                    {
+                        MaxReceiverQueueSize = AllTopicPartitionsNumber; 
+                    }
                     State.ConnectionState = HandlerState.State.Ready;
                     StartReceivingMessages(_consumers.Values.ToList());
-                    _log.Info("[{}] [{}] Created topics consumer with {} sub-consumers", Topic, Subscription, AllTopicPartitionsNumber);
-                    Sender.Tell(new AskResponse());
+                    _log.Info($"[{Topic}] [{Subscription}] Created topics consumer with {AllTopicPartitionsNumber} sub-consumers");
+                    
+                    subscribeFuture.TrySetResult(_self); 
                 }
                 else
                 {
-                    var msg = $"[{Topic}] [{Subscription}] Failed to create all topics consumer with {AllTopicPartitionsNumber} sub-consumers so far";
-
-                    _log.Warning(msg);
-                    Sender.Tell(new AskResponse(new PulsarClientException(msg)));
+                    Close();
+                    _log.Warning($"[{Topic}] Failed to subscribe topics: {task.Exception.Message}, closing consumer");
+                    //log.error("[{}] Failed to unsubscribe after failed consumer creation: {}", topic, closeEx.getMessage());
+                    subscribeFuture.TrySetException(task.Exception);
                 }
             });
+            Ready();
+        }
+		private void Ready()
+		{
             Receive<SendState>(_ =>
 			{
 				StateActor.Tell(new SetConumerState(State.ConnectionState));
@@ -194,12 +197,8 @@ namespace SharpPulsar
             });
             ReceiveAsync<UpdatePartitionSub>(async s =>
 			{
-				await SubscribeIncreasedTopicPartitions(Topic);
-			});
-			
-			ReceiveAsync<Subscribe>(async s =>
-			{
-				await Subscribe(s.TopicName, s.NumberOfPartitions);
+				var tcs = SubscribeIncreasedTopicPartitions(Topic);
+                await tcs.Task;
 			});
 			Receive<MessageProcessed<T>>(s =>
 			{
@@ -207,8 +206,7 @@ namespace SharpPulsar
 			});
 			ReceiveAsync<SubscribeAndCreateTopicIfDoesNotExist>(async s =>
 			{
-				var (_, response) = await Subscribe(s.TopicName, s.CreateTopicIfDoesNotExist);
-                Sender.Tell(response);
+				await Subscribe(s.TopicName, s.CreateTopicIfDoesNotExist);
 			});
 			Receive<GetLastDisconnectedTimestamp>(m =>
 			{
@@ -470,22 +468,25 @@ namespace SharpPulsar
 		}
         
         // subscribe one more given topic
-        private async ValueTask<(IActorRef consumer, AskResponse response)> Subscribe(string topicName, bool createTopicIfDoesNotExist)
+        protected internal async ValueTask Subscribe(string topicName, bool createTopicIfDoesNotExist)
 		{
 			var topicNameInstance = GetTopicName(topicName);
 			if (topicNameInstance == null)
 			{
-				return (null, new AskResponse(new PulsarClientException.AlreadyClosedException("Topic name not valid")));
+                _log.Error($"{new PulsarClientException.AlreadyClosedException("Topic name not valid")}");
+                return;
 			}
 			var fullTopicName = topicNameInstance.ToString();
-			if (TopicsMap.ContainsKey(fullTopicName) || TopicsMap.ContainsKey(topicNameInstance.PartitionedTopicName))
+			if (PartitionedTopics.ContainsKey(fullTopicName) || PartitionedTopics.ContainsKey(topicNameInstance.PartitionedTopicName))
 			{
-                return (null, new AskResponse(new PulsarClientException.AlreadyClosedException("Already subscribed to " + topicName)));
+               _log.Error($"{new PulsarClientException.AlreadyClosedException("Already subscribed to" + topicName)}");
+                return;
 			}
 
-			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
-			{
-                return (null, new AskResponse(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed")));
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                _log.Error($"{new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed")}");
+                return;
 			}
 
 			var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
@@ -493,11 +494,11 @@ namespace SharpPulsar
             {
                 var error = $"[{fullTopicName}] Failed to get partitioned topic metadata: {result.Exception}";
                 _log.Warning(error);
-                return (null, new AskResponse(new PulsarClientException(error)));
+                throw result.Exception;
             }
 
             var metadata = result.ConvertTo<PartitionedTopicMetadata>();
-            return await SubscribeTopicPartitions(fullTopicName, metadata.Partitions, createTopicIfDoesNotExist);
+            await SubscribeTopicPartitions(fullTopicName, metadata.Partitions, createTopicIfDoesNotExist);
             
 		}
 		private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe(ISchema<T> schema, string topicName)
@@ -842,7 +843,7 @@ namespace SharpPulsar
 			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		internal override void Seek(IMessageId messageId)
+		internal override TaskCompletionSource<object> Seek(IMessageId messageId)
 		{
 			try
 			{
@@ -861,18 +862,13 @@ namespace SharpPulsar
 			{
                 Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
 			}
+            return null;
 		}
 
-		internal override void Seek(long timestamp)
+		internal override TaskCompletionSource<object> Seek(long timestamp)
 		{
-			try
-			{
-				_consumers.Values.ForEach(c => c.Tell(new SeekTimestamp(timestamp)));
-			}
-			catch(Exception e)
-			{
-				throw PulsarClientException.Unwrap(e);
-			}
+            _consumers.Values.ForEach(c => c.Tell(new SeekTimestamp(timestamp)));
+            return null;
 		}
 
 
@@ -1006,7 +1002,7 @@ namespace SharpPulsar
 			var fullTopicName = GetFullTopicName(topic);
 			if(!ReferenceEquals(fullTopicName, null))
 			{
-				TopicsMap.Remove(topic);
+				PartitionedTopics.Remove(topic);
 			}
 		}
 
@@ -1018,7 +1014,7 @@ namespace SharpPulsar
 				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException("Topic name not valid")));
 			}
 			var fullTopicName = topicNameInstance.ToString();
-			if(TopicsMap.ContainsKey(fullTopicName) || TopicsMap.ContainsKey(topicNameInstance.PartitionedTopicName))
+			if(PartitionedTopics.ContainsKey(fullTopicName) || PartitionedTopics.ContainsKey(topicNameInstance.PartitionedTopicName))
 			{
                 Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException("Already subscribed to " + topicName)));
 			}
@@ -1028,24 +1024,16 @@ namespace SharpPulsar
                 Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException("Topics Consumer was already closed")));
 			}
 			
-			var response = await SubscribeTopicPartitions(fullTopicName, numberPartitions, true);
-            Sender.Tell(response.response);
+			await SubscribeTopicPartitions(fullTopicName, numberPartitions, true);
 		}
 
-		private async ValueTask<(IActorRef consumer, AskResponse response)> SubscribeTopicPartitions(string topicName, int numPartitions, bool createIfDoesNotExist)
+		private async ValueTask SubscribeTopicPartitions(string topicName, int numPartitions, bool createIfDoesNotExist)
 		{
-            try
-            {
-                var schemaClone = await PreProcessSchemaBeforeSubscribe(Schema, topicName).ConfigureAwait(false);
-                return await DoSubscribeTopicPartitions(schemaClone, topicName, numPartitions, createIfDoesNotExist);
-            }
-            catch(Exception ex)
-            {
-                return (null, new AskResponse(new PulsarClientException(ex)));
-            }
-		}
-
-		private async ValueTask<(IActorRef consumer, AskResponse response)> DoSubscribeTopicPartitions(ISchema<T> schema, string topicName, int numPartitions, bool createIfDoesNotExist)
+            var schemaClone = await PreProcessSchemaBeforeSubscribe(Schema, topicName).ConfigureAwait(false);
+            await DoSubscribeTopicPartitions(schemaClone, topicName, numPartitions, createIfDoesNotExist);
+        }
+        //here
+		private async ValueTask DoSubscribeTopicPartitions(ISchema<T> schema, string topicName, int numPartitions, bool createIfDoesNotExist)
 		{
 			if (_log.IsDebugEnabled)
 			{
@@ -1056,13 +1044,13 @@ namespace SharpPulsar
 			{
 				// Below condition is true if subscribeAsync() has been invoked second time with same
 				// topicName before the first invocation had reached this point.
-				if(TopicsMap.TryGetValue(topicName, out var parts))
+				if(PartitionedTopics.TryGetValue(topicName, out var parts))
 				{
 					var errorMessage = $"[{Topic}] Failed to subscribe for topic [{topicName}] in topics consumer. Topic is already being subscribed for in other thread.";
 					_log.Warning(errorMessage);
-					return (null, new AskResponse(new PulsarClientException(errorMessage)));
+					throw new PulsarClientException(errorMessage);
 				}
-				TopicsMap.Add(topicName, numPartitions);
+				PartitionedTopics.Add(topicName, numPartitions);
 				AllTopicPartitionsNumber += numPartitions;
 
 				var receiverQueueSize = Math.Min(Conf.ReceiverQueueSize, Conf.MaxTotalReceiverQueueSizeAcrossPartitions / numPartitions);
@@ -1070,44 +1058,40 @@ namespace SharpPulsar
 				configurationData.ReceiverQueueSize = receiverQueueSize;
 				for(var i = 0; i < numPartitions; i++)
                 {
-					var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
-					var partitionName = TopicName.Get(topicName).GetPartition(i).ToString();
-					var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist);
-					if(!newConsumer.response.Failed)
-                        _consumers.Add(partitionName, newConsumer.consumer);
+                    try
+                    {
+                        var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
+                        var partitionName = TopicName.Get(topicName).GetPartition(i).ToString();
+                        var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist).Task;
+                        
+                        _consumers.Add(partitionName, newConsumer);
+                    }
+                    catch { }
 				}
-                if (_consumers.Count > 0)
-                    return (_consumers.First().Value, new AskResponse());
-                else 
-                    return (null, new AskResponse(new PulsarClientException("Failed to subscribe to consumers")));
             }
 			else
 			{
-				if (TopicsMap.TryGetValue(topicName, out var parts))
+				if (PartitionedTopics.TryGetValue(topicName, out var parts))
 				{
 					var errorMessage = $"[{Topic}] Failed to subscribe for topic [{topicName}] in topics consumer. Topic is already being subscribed for in other thread.";
 					_log.Warning(errorMessage);
-                    return (null, new AskResponse(new PulsarClientException(errorMessage)));
+                    throw new PulsarClientException(errorMessage);
 				}
-				TopicsMap.Add(topicName, 1);
+				PartitionedTopics.Add(topicName, 1);
 				++AllTopicPartitionsNumber;
 				var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
-
-                var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist);
-                if (!newConsumer.response.Failed)
-                    _consumers.Add(topicName, newConsumer.consumer);
-                else
-                    return newConsumer;
-			}
+                var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist).Task;
+                _consumers.Add(topicName, newConsumer);
+            }
 
 			if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
 			{
 				MaxReceiverQueueSize = AllTopicPartitionsNumber;
 			}
-			var numTopics = TopicsMap.Values.Sum();
+			var numTopics = PartitionedTopics.Values.Sum();
 			var currentAllTopicsPartitionsNumber = AllTopicPartitionsNumber;
 			if(currentAllTopicsPartitionsNumber != numTopics)
-				return (null, new AskResponse(PulsarClientException.Unwrap(new ArgumentException("allTopicPartitionsNumber " + currentAllTopicsPartitionsNumber + " not equals expected: " + numTopics))));
+				throw PulsarClientException.Unwrap(new ArgumentException("allTopicPartitionsNumber " + currentAllTopicsPartitionsNumber + " not equals expected: " + numTopics));
 
 			var recFromTops = new List<IActorRef>();
 			foreach(var c in _consumers.Values)
@@ -1116,25 +1100,20 @@ namespace SharpPulsar
 				if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(TopicName.Get(topicName).PartitionedTopicName))
 					recFromTops.Add(c);
 			}
-			StartReceivingMessages(recFromTops);
-			_log.Info($"[{Topic}] [{Subscription}] Success subscribe new topic {topicName} in topics consumer, partitions: {numPartitions}, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
-
-            return (null, new AskResponse());
-			//HandleSubscribeOneTopicError(topicName, ex, subscribeResult);
 		}
 
-        private async ValueTask<(IActorRef consumer, AskResponse response)> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
+        private TaskCompletionSource<IActorRef> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
         {
-            IActorRef consumer = null;
-			if (conf.ReceiverQueueSize == 0)
+            var tcs = new TaskCompletionSource<IActorRef>();
+
+            if (conf.ReceiverQueueSize == 0)
 			{
-				consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, createIfDoesNotExist, _clientConfiguration)));
+				Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, Context.System.Scheduler.Advanced, partitionIndex, false, _startMessageId, schema, createIfDoesNotExist, _clientConfiguration, tcs)));
 			}
             else
-			    consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration));
+			   Context.ActorOf(ConsumerActor<T>.Prop(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, true, _startMessageId, _startMessageRollbackDurationInSec, schema, createIfDoesNotExist, _clientConfiguration, tcs));
             
-            var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
-            return (consumer, response);
+            return tcs;
 		}
 		// handling failure during subscribe new topic, unsubscribe success created partitions
 		private async ValueTask HandleSubscribeOneTopicError(string topicName, Exception error)
@@ -1262,25 +1241,45 @@ namespace SharpPulsar
 			_log.Info($"[{topicName}] [{Subscription}] [{ConsumerName}] Removed Topics Consumer, allTopicPartitionsNumber: {AllTopicPartitionsNumber}");
 
 		}
+        // Check topics are valid.
+        // - each topic is valid,
+        // - topic names are unique.
+        private bool TopicNamesValid(List<string> topics)
+        {
+            if(topics != null && topics.Count >= 1)
+                throw new ArgumentException("topics should contain more than 1 topic");
 
+            var result = topics.Where(topic => !TopicName.IsValid(topic)).FirstOrDefault();
 
-		// get topics name
-		internal virtual IList<string> Topics
+            if (result != null && result.Count() > 0)
+            {
+
+                _log.Warning($"Received invalid topic name: {result[0]}");
+                return false;
+            }
+
+            // check topic names are unique
+            var set = new HashSet<string>(topics);
+            if (set.Count == topics.Count)
+            {
+                return true;
+            }
+            else
+            {
+                _log.Warning($"Topic names not unique. unique/all : {set.Count}/{topics.Count}");
+                return false;
+            }
+        }
+
+        // get topics name
+        internal virtual IList<string> Topics
 		{
 			get
 			{
-				return TopicsMap.Keys.ToList();
+				return PartitionedTopics.Keys.ToList();
 			}
 		}
 
-		// get partitioned topics name
-		internal virtual IList<string> PartitionedTopics
-		{
-			get
-			{
-				return _consumers.Keys.ToList();
-			}
-		}
 
 		// get partitioned consumers
 		internal virtual IList<IActorRef> Consumers
@@ -1318,55 +1317,98 @@ namespace SharpPulsar
 		}
 
 		// subscribe increased partitions for a given topic
-		private async ValueTask SubscribeIncreasedTopicPartitions(string topic)
+		private TaskCompletionSource<object> SubscribeIncreasedTopicPartitions(string topic)
 		{
-			var topicName = TopicName.Get(topic);
-            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
-            if (result.Failed)
-                throw result.Exception;
-            
-            var metadata = result.ConvertTo<PartitionedTopicMetadata>();
-			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
-			var oldPartitionNumber = TopicsMap.GetValueOrNull(topic);
-			var currentPartitionNumber = topics.Count;
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{topicName}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-			}
-			if (oldPartitionNumber == currentPartitionNumber)
-			{
-				return;
-			}
-			else if (oldPartitionNumber < currentPartitionNumber)
-			{
-				AllTopicPartitionsNumber = currentPartitionNumber;
-				IList<string> newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
-				foreach (var partitionName in newPartitions)
-				{
-					var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
-					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					var configurationData = InternalConsumerConfig;
-					var newConsumer = _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, null, Schema, true, _clientConfiguration)));
-					if (_paused)
-					{
-						newConsumer.Tell(Messages.Consumer.Pause.Instance);
-					}
-					_consumers.Add(partitionName, newConsumer);
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var oldPartitionNumber = PartitionedTopics.GetValueOrNull(topic);
+            var topicName = TopicName.Get(topic);
+            _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName))
+                .ContinueWith( async task => 
+                {
+                    var result = task.Result;
 
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"[{topicName}] create consumer {Topic} for partitionName: {partitionName}");
-					}
-				}
-				var newConsumerList = newPartitions.Select(partitionTopic => _consumers.GetValueOrNull(partitionTopic)).ToList();
-				StartReceivingMessages(newConsumerList);
-				//_log.warn("[{}] Failed to subscribe {} partition: {} - {} : {}", Topic, topicName, oldPartitionNumber, currentPartitionNumber, ex);
-			}
-			else
-			{
-				_log.Error($"[{topicName}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-				//future.completeExceptionally(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
-			}
+
+                    if ( result.Failed)
+                    {
+                        tcs.TrySetException(result.Exception);
+                        return;
+                    }
+
+                    var metadata = result.ConvertTo<PartitionedTopicMetadata>();
+                    var topics = GetPartitionsForTopic(topicName, metadata).ToList();
+                    var currentPartitionNumber = topics.Where(topic => TopicName.Get(topic).Partitioned).ToList().Count;
+                    if (_log.IsDebugEnabled)
+                    {
+                        _log.Debug($"[{topicName}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                    }
+                    if (oldPartitionNumber == currentPartitionNumber)
+                    {
+                        tcs.TrySetResult(null);
+                        // topic partition number not changed
+                        return;
+                    }
+                    else if (currentPartitionNumber == PartitionedTopicMetadata.NonPartitioned)
+                    {
+                        // The topic was initially partitioned but then it was deleted. We keep it in the topics
+                        PartitionedTopics.Add(topic, 0);
+
+                        AllTopicPartitionsNumber -= oldPartitionNumber;
+                        var futures = new List<Task>();
+                        foreach (var it in _consumers)
+                        {
+                            var e = it;
+                            var PartitionedTopicName = TopicName.Get(e.Key).PartitionedTopicName;
+                            if (PartitionedTopicName.Equals(topicName))
+                            {
+                                futures.Add(e.Value.GracefulStop(TimeSpan.FromSeconds(5)));
+                                _consumers.Remove(e.Key);
+                            }
+                        }
+                        await Task.WhenAll(futures.ToArray()).ContinueWith(_=> tcs.TrySetResult(null));
+                    }
+                    else if (oldPartitionNumber < currentPartitionNumber)
+                    {
+                        AllTopicPartitionsNumber = currentPartitionNumber;
+                        IList<string> newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
+                        foreach (var partitionName in newPartitions)
+                        {
+                            var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
+                            var partitionIndex = TopicName.GetPartitionIndex(partitionName);
+                            var configurationData = InternalConsumerConfig;
+                            var consumerTcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            try
+                            {
+                                _context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, _stateActor, _client, _lookup, _cnxPool, _generator, partitionName, configurationData, partitionIndex, true, null, Schema, true, _clientConfiguration, consumerTcs)));
+                                var newConsumer = await consumerTcs.Task;
+                                if (_paused)
+                                {
+                                    newConsumer.Tell(Messages.Consumer.Pause.Instance);
+                                }
+                                _consumers.Add(partitionName, newConsumer);
+
+                                if (_log.IsDebugEnabled)
+                                {
+                                    _log.Debug($"[{topicName}] create consumer {Topic} for partitionName: {partitionName}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _log.Warning($"[{Topic}] Failed to subscribe {topicName} partition: {oldPartitionNumber} - {currentPartitionNumber} : {ex}");
+                            }
+                            tcs.TrySetResult(null);
+                        }
+                        var newConsumerList = newPartitions.Select(partitionTopic => _consumers.GetValueOrNull(partitionTopic)).ToList();
+                        StartReceivingMessages(newConsumerList);
+                        //_log.warn("[{}] Failed to subscribe {} partition: {} - {} : {}", Topic, topicName, oldPartitionNumber, currentPartitionNumber, ex);
+                    }
+                    else
+                    {
+                        _log.Error($"[{topicName}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                        tcs.TrySetException(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
+                    }
+
+                });
+            return tcs;
 		}
 		private async ValueTask<IMessageId> LastMessageId()
 		{

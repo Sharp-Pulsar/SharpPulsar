@@ -75,7 +75,7 @@ namespace SharpPulsar
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
-					TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
+					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
 				}
 				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
 				var oldTopics = Topics;
