@@ -1102,7 +1102,7 @@ namespace SharpPulsar
             {
                 if(finalFuture.Exception != null)
                 {
-                    HandleSubscribeOneTopicError(topicName, finalFuture.Exception, subscribeResult);
+                    await HandleSubscribeOneTopicError(topicName, finalFuture.Exception, subscribeResult);
                     return;
                 }
                 if (AllTopicPartitionsNumber > MaxReceiverQueueSize)
@@ -1161,6 +1161,7 @@ namespace SharpPulsar
 				{
 					_log.Warning($"[{Topic}] Failed to subscribe for topic [{topicName}] in topics consumer, subscribe error: {error}");
 					RemoveTopic(topicName);
+                    subscribeResult.TrySetException(error);
 				}
 			}
 		}
@@ -1223,7 +1224,7 @@ namespace SharpPulsar
             {
 				State.ConnectionState = HandlerState.State.Failed;
 				_log.Error($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {except?.Exception}");
-                SubscribeFuture.TrySetException(new PulsarClientException($"[{topicName}] [{Subscription}] [{ConsumerName}] Could not unsubscribe Topics Consumer: {except?.Exception}"));
+                
 			}
 		}
 
