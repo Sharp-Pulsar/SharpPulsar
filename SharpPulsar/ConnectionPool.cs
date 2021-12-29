@@ -23,8 +23,7 @@ namespace SharpPulsar
 		private readonly int _maxConnectionsPerHosts;
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
-		private IActorRef _replyTo;
-		private int _randomKey;
+        private int _randomKey;
 		private DnsEndPoint _logicalEndpoint;
 		public ConnectionPool(ClientConfigurationData conf)
 		{

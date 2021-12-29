@@ -121,7 +121,7 @@ namespace SharpPulsar.Test.Fixtures
             var authParamsString = @"{""tlsCertFile"":""Certs/admin.pfx""}";
             var authCertPath = "Certs/ca.cert.pem";
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
-            var statsInterval = int.Parse(clienConfigSetting.GetSection("stats-interval").Value);
+            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
             var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
             var enableTls = true;
