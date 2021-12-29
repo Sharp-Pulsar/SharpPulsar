@@ -38,7 +38,11 @@ namespace SharpPulsar.User
         public bool HasMessageAvailable() => HasMessageAvailableAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> HasMessageAvailableAsync()
         {
-            return await _readerActor.Ask<bool>(Messages.Consumer.HasMessageAvailable.Instance).ConfigureAwait(false);
+            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.HasMessageAvailable.Instance).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+
+            return response.ConvertTo<bool>();
         }
 
         public bool HasReachedEndOfTopic() => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();

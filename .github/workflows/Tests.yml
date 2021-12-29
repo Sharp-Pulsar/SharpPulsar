@@ -39,20 +39,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Setup dotnet 2
+      - name: Setup SDKs
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 2.2.*
-
-      - name: Setup dotnet 3
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.*
-
-      - name: Setup dotnet 5
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 5.0.*
+          dotnet-version: |
+            2.1.*
+            5.0.*
+            6.0.*
 
       - uses: actions/checkout@v1
       - name: Cache .tmp, ~/.nuget/packages

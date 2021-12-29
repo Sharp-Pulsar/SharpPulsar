@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Protocol.Proto;
 using System;
 using System.Buffers;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -10,6 +11,6 @@ namespace SharpPulsar.SocketImpl
         void Disconnected();
         IObservable<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> ReceiveMessageObservable { get; }
 
-        void SendMessage(ReadOnlySequence<byte> message);
+        ValueTask SendMessage(ReadOnlySequence<byte> message);
     }
 }

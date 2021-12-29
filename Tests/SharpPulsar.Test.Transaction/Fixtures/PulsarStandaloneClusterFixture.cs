@@ -121,7 +121,7 @@ namespace SharpPulsar.Test.Transaction.Fixtures
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
             var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
-            var statsInterval = int.Parse(clienConfigSetting.GetSection("stats-interval").Value);
+            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
             var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
             var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);

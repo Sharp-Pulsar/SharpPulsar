@@ -8,6 +8,7 @@ using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using static SharpPulsar.Exceptions.PulsarClientException;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
@@ -39,8 +40,8 @@ namespace SharpPulsar
 		internal abstract void Resume();
 		internal abstract void Pause();
 		internal abstract bool Connected();
-		internal abstract void Seek(long timestamp);
-		internal abstract void Seek(IMessageId messageId);
+		internal abstract TaskCompletionSource<object> Seek(long timestamp);
+		internal abstract TaskCompletionSource<object> Seek(IMessageId messageId);
 		internal abstract IConsumerStatsRecorder Stats { get; }
 
 		internal enum ConsumerType
@@ -54,7 +55,6 @@ namespace SharpPulsar
 		private readonly string _consumerName;
 		protected internal readonly IMessageListener<T> Listener;
 		protected internal readonly IConsumerEventListener ConsumerEventListener;
-		protected internal readonly IAdvancedScheduler ListenerExecutor;
 		protected internal BufferBlock<IMessage<T>> IncomingMessages;
 		protected internal IActorRef UnAckedChunckedMessageIdSequenceMap;
 
@@ -68,8 +68,11 @@ namespace SharpPulsar
 		private readonly ICancelable _stateUpdater;
 		protected internal HandlerState State;
 		private readonly string _topic;
-		public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, IAdvancedScheduler listenerExecutor, ISchema<T> schema)
+        protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
+
+        public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
+            SubscribeFuture = subscribeFuture;
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
                 Interceptors = new ConsumerInterceptors<T>(Context.System, conf.Interceptors);
 
@@ -87,7 +90,6 @@ namespace SharpPulsar
             IncomingMessages = new BufferBlock<IMessage<T>>();
 			UnAckedChunckedMessageIdSequenceMap = Context.ActorOf(Tracker.UnAckedChunckedMessageIdSequenceMap.Prop());
 
-			ListenerExecutor = listenerExecutor;
 			Schema = schema;
 			
 			if (conf.BatchReceivePolicy != null)

@@ -40,7 +40,7 @@ namespace SharpPulsar
 
         public IStash Stash { get; set; }
 
-        public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData)
+        public MultiTopicsReader(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
 			_generator = idGenerator;
 			var subscription = "multiTopicsReader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -83,13 +83,8 @@ namespace SharpPulsar
 			{
 				consumerConfiguration.KeySharedPolicy = KeySharedPolicy.StickyHashRange().GetRanges(readerConfiguration.KeyHashRanges.ToArray());
 			}
-			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, listenerExecutor, schema, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData)));
+			_consumer = Context.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, client, lookup, cnxPool, _generator, consumerConfiguration, schema, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, clientConfigurationData, subscribeFuture)));
 
-            ReceiveAsync<SubscribeAndCreateTopicsIfDoesNotExist>(async subs => 
-            {
-                _sender = Sender;
-                await SubscribeAndCreateTopics(subs);
-            });
             ReceiveAsync<Subscribe>(async sub => 
             {
                 _sender = Sender;
@@ -126,17 +121,9 @@ namespace SharpPulsar
                 _consumer.Tell(m, Sender);
             });
         }
-        private async ValueTask SubscribeAndCreateTopics(SubscribeAndCreateTopicsIfDoesNotExist subs)
+        public static Props Prop(IActorRef state, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            try
-            {
-                var response = await _consumer.Ask<AskResponse>(subs).ConfigureAwait(false);
-                _sender.Tell(response);
-            }
-            catch(Exception ex)
-            {
-                _sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
-            }
+            return Props.Create(()=> new MultiTopicsReader<T>(state, client, lookup, cnxPool, idGenerator, readerConfiguration, schema, clientConfigurationData, subscribeFuture));
         }
         private async ValueTask SubscribeToTopic(Subscribe sub)
         {

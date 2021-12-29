@@ -36,7 +36,10 @@ namespace SharpPulsar.Common.Partition
 		{
 			Partitions = partitions;
 		}
-
-	}
+        // / <summary>
+        // / A topic with '0' partitions is treated like non-partitioned topic.
+        // / </summary>
+        public const int NonPartitioned = 0;
+    }
 
 }

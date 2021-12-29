@@ -39,7 +39,7 @@ namespace SharpPulsar.Stats.Consumer
         private readonly string _topic;
         private readonly string _name;
         private readonly string _subscription;
-		private readonly long _statsIntervalSeconds;
+		private readonly TimeSpan _statsIntervalSeconds;
 		private readonly StripedLongAdder _numMsgsReceived;
 		private readonly StripedLongAdder _numBytesReceived;
 		private readonly StripedLongAdder _numReceiveFailed;
@@ -79,7 +79,7 @@ namespace SharpPulsar.Stats.Consumer
 			_totalAcksFailed = new StripedLongAdder();
 		}
 
-		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData<T> conf, string topic, string consumerName, string subscription, long statsIntervalSeconds)
+		public ConsumerStatsRecorder(ActorSystem system, ConsumerConfigurationData<T> conf, string topic, string consumerName, string subscription, TimeSpan statsIntervalSeconds)
         {
             _system = system;
             _log = system.Log;
@@ -115,7 +115,7 @@ namespace SharpPulsar.Stats.Consumer
 			}
 
 			_oldTime = DateTime.Now.Millisecond;
-			_statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
+			_statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(_statsIntervalSeconds, StatsAction);
 		}
 
         private void StatsAction()
@@ -155,7 +155,7 @@ namespace SharpPulsar.Stats.Consumer
 			finally
 			{
 				// schedule the next stat info
-                _statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(_statsIntervalSeconds), StatsAction);
+                _statTimeout = _system.Scheduler.Advanced.ScheduleOnceCancelable(_statsIntervalSeconds, StatsAction);
 			}
 		}
 		public void UpdateNumMsgsReceived(IMessage<T> message)

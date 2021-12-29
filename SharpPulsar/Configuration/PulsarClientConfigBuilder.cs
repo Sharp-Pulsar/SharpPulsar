@@ -147,7 +147,7 @@ namespace SharpPulsar.Configuration
             return this;
         }
 
-        public PulsarClientConfigBuilder StatsInterval(long statsIntervalSeconds)
+        public PulsarClientConfigBuilder StatsInterval(TimeSpan statsIntervalSeconds)
         {
             _conf.StatsIntervalSeconds = statsIntervalSeconds;
             return this;
