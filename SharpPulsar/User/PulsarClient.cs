@@ -242,6 +242,7 @@ namespace SharpPulsar.User
         private async ValueTask<Consumer<T>> DoSingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var topic = conf.SingleTopic;
+            var tcs = new TaskCompletionSource<IActorRef>();
             try
             {
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
@@ -249,7 +250,6 @@ namespace SharpPulsar.User
                 {
                     _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
                 }
-                IActorRef consumer;
                 var state = _actorSystem.ActorOf(Props.Create(()=> new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
                 {
@@ -259,31 +259,35 @@ namespace SharpPulsar.User
                     var cloneConf = conf;
                     var topicName = cloneConf.SingleTopic;
                     cloneConf.TopicNames.Remove(topicName);
-                    consumer = _actorSystem.ActorOf(Props.Create<MultiTopicsConsumer<T>>(state, _client, _lookup, _cnxPool, _generator, topicName, conf, _actorSystem.Scheduler.Advanced, schema, true, _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
-                    var response = await consumer.Ask<AskResponse>(new Subscribe(topic, metadata.Partitions)).ConfigureAwait(false);
-                    if (response.Failed) 
+                    var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.Prop(state, _client, _lookup, _cnxPool, _generator, topicName, conf, schema, true, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    try
                     {
-                        await consumer.GracefulStop(TimeSpan.FromSeconds(5));
-                        throw response.Exception; 
+                        var cnsr = await tcs.Task.ConfigureAwait(false);
+                        _client.Tell(new AddConsumer(cnsr));
+                        return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
                     }
-                    _client.Tell(new AddConsumer(consumer));
-
-                    return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
+                    catch
+                    {
+                        await consumer.GracefulStop(TimeSpan.FromSeconds(1));
+                        throw;
+                    }
                 }
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
-                    consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, null, schema, true, _clientConfigurationData));
-                    var response = await consumer.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
-                    
-                    if (response.Failed)
+                    var consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, null, schema, true, _clientConfigurationData, tcs));
+                    try
                     {
-                        await consumer.GracefulStop(TimeSpan.FromSeconds(5));
-                        throw response.Exception;
+                        var cnsr = await tcs.Task.ConfigureAwait(false);
+                        _client.Tell(new AddConsumer(cnsr));
+                        return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
                     }
-                    _client.Tell(new AddConsumer(consumer));
-                    return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
+                    catch
+                    {
+                        await consumer.GracefulStop(TimeSpan.FromSeconds(1));
+                        throw;
+                    }
                 }
             }
             catch(Exception e)
@@ -297,19 +301,12 @@ namespace SharpPulsar.User
         {
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames), "Topics is empty or invalid.");
 
+            var tcs = new TaskCompletionSource<IActorRef>();
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
-            var consumer = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsConsumer<T>(state, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, conf.ForceTopicCreation, _clientConfigurationData)), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
-            var response = await consumer.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
-
-            if (response.Failed)
-            {
-                await consumer.GracefulStop(TimeSpan.FromSeconds(5));
-                throw response.Exception;
-            }
-
-            _client.Tell(new AddConsumer(consumer));
-
-            return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
+            var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.Prop(state, _client, _lookup, _cnxPool, _generator, conf, schema, conf.ForceTopicCreation, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+            var cnsr = await tcs.Task.ConfigureAwait(false);
+            _client.Tell(new AddConsumer(cnsr));
+            return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
 
         private async ValueTask<Consumer<T>> PatternTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
@@ -319,43 +316,26 @@ namespace SharpPulsar.User
             var destination = TopicName.Get(regex);
             var namespaceName = destination.NamespaceObject;
             IActorRef consumer = null;
-            try
+            var tcs = new TaskCompletionSource<IActorRef>();
+            var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+            if (ask.Failed)
+                throw ask.Exception;
+
+            var result = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
+            var topics = result.Topics;
+            if (_actorSystem.Log.IsDebugEnabled)
             {
-                var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
-                if (ask.Failed)
-                    throw ask.Exception;
-
-                var result = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
-                var topics = result.Topics;
-                if (_actorSystem.Log.IsDebugEnabled)
-                {
-                    _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
-                    topics.ForEach(topicName => _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
-                }
-                var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
-                topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
-                var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
-                
-                consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value,  _clientConfigurationData), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
-                var response = await consumer.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
-
-                if (response.Failed)
-                {
-                    await consumer.GracefulStop(TimeSpan.FromSeconds(5));
-                    throw response.Exception;
-                }
-                _client.Tell(new AddConsumer(consumer));
-
-                return new Consumer<T>(state, consumer, schema, conf, _clientConfigurationData.OperationTimeout);
+                _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
+                topics.ForEach(topicName => _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
             }
-            catch(Exception e)
-            {
-                if(consumer != null)
-                    await consumer.GracefulStop(TimeSpan.FromSeconds(5));
+            var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
+            topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
+            var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
 
-                _actorSystem.Log.Warning($"[{namespaceName}] Failed to get topics under namespace");
-                throw e;
-            }
+            consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
+            var cnsr = await tcs.Task.ConfigureAwait(false);
+            _client.Tell(new AddConsumer(cnsr));
+            return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
         private IList<string> TopicsPatternFilter(IList<string> original, Regex topicsPattern)
         {
@@ -481,6 +461,7 @@ namespace SharpPulsar.User
             var topic = conf.TopicName;
             try
             {
+                var tcs = new TaskCompletionSource<IActorRef>();
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
                 if (_actorSystem.Log.IsDebugEnabled)
                 {
@@ -490,37 +471,22 @@ namespace SharpPulsar.User
                 {
                     throw new PulsarClientException("The partitioned topic startMessageId is illegal");
                 }
-                IActorRef reader;
                 var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
                 {
-                    reader = _actorSystem.ActorOf(Props.Create(()=> new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData)));
-                    var response = await reader.Ask<AskResponse>(new Subscribe(topic, metadata.Partitions)).ConfigureAwait(false);
-
-                    if (response.Failed)
-                    {
-                        await reader.GracefulStop(TimeSpan.FromSeconds(5));
-                        throw response.Exception;
-                    }
-
-                    _client.Tell(new AddConsumer(reader));
-
-                    return new Reader<T>(stateA, reader, schema, conf);
+                    _actorSystem.ActorOf(MultiTopicsReader<T>.Prop(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs));
+                    var cnsr = await tcs.Task.ConfigureAwait(false);
+                    _client.Tell(new AddConsumer(cnsr));
+                    return new Reader<T>(stateA, cnsr, schema, conf);
                 }
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
-                    reader = _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData)));
-                    var response = await reader.Ask<AskResponse>(Connect.Instance).ConfigureAwait(false);
-                    if (response.Failed)
-                    {
-                        await reader.GracefulStop(TimeSpan.FromSeconds(5));
-                        throw response.Exception;
-                    }
-
-                    _client.Tell(new AddConsumer(reader));
-
-                    return new Reader<T>(stateA, reader, schema, conf);
+                    _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
+                    
+                    var cnsr = await tcs.Task.ConfigureAwait(false);
+                    _client.Tell(new AddConsumer(cnsr));
+                    return new Reader<T>(stateA, cnsr, schema, conf);
                 }
             }
             catch(Exception ex)
@@ -531,19 +497,12 @@ namespace SharpPulsar.User
         }
         private async ValueTask<Reader<T>> CreateMultiTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
+            var tcs = new TaskCompletionSource<IActorRef>();
             var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
-            var reader = _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, _actorSystem.Scheduler.Advanced, schema, _clientConfigurationData)));
-            var response = await reader.Ask<AskResponse>(new SubscribeAndCreateTopicsIfDoesNotExist(conf.TopicNames.ToList(), true)).ConfigureAwait(false);
-
-            if (response.Failed)
-            {
-                await reader.GracefulStop(TimeSpan.FromSeconds(5));
-                throw response.Exception;
-            }
-
-            _client.Tell(new AddConsumer(reader));
-
-            return new Reader<T>(stateA, reader, schema, conf);
+            _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
+            var cnsr = await tcs.Task.ConfigureAwait(false);
+            _client.Tell(new AddConsumer(cnsr));
+            return new Reader<T>(stateA, cnsr, schema, conf);
         }
         public TransactionBuilder NewTransaction()
         {

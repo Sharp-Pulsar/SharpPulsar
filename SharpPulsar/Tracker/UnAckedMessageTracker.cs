@@ -36,30 +36,30 @@ namespace SharpPulsar.Tracker
         private readonly ILoggingAdapter _log;
         private ICancelable _timeout;
         private readonly IActorRef _consumer;
-        private readonly long _tickDurationInMs;
-        private readonly long _ackTimeoutMillis;
+        private readonly TimeSpan _tickDuration;
+        private readonly TimeSpan _ackTimeout;
         private readonly IScheduler _scheduler;
         private IActorRef _unack;
 
-        public UnAckedMessageTracker(long ackTimeoutMillis, long tickDurationInMs, IActorRef consumer, IActorRef unack)
+        public UnAckedMessageTracker(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack)
         {
-            Precondition.Condition.CheckArgument(tickDurationInMs > 0 && ackTimeoutMillis >= tickDurationInMs);
+            Precondition.Condition.CheckArgument(tickDurationInMs > TimeSpan.Zero && ackTimeoutMillis >= tickDurationInMs);
             _scheduler = Context.System.Scheduler;
             _consumer = consumer;
             _log = Context.System.Log;
-            _tickDurationInMs = tickDurationInMs;
-            _ackTimeoutMillis = ackTimeoutMillis;
+            _tickDuration = tickDurationInMs;
+            _ackTimeout = ackTimeoutMillis;
             _unack = unack;
             MessageIdPartitionMap = new ConcurrentDictionary<IMessageId, SortedSet<IMessageId>>();
             TimePartitions = new Queue<SortedSet<IMessageId>>();
 
-            var blankPartitions = (int) Math.Ceiling((double) ackTimeoutMillis / _tickDurationInMs);
+            var blankPartitions = (int) Math.Ceiling((double) ackTimeoutMillis.TotalMilliseconds / _tickDuration.TotalMilliseconds);
             for (var i = 0; i < blankPartitions + 1; i++)
             {
                 TimePartitions.Enqueue(new SortedSet<IMessageId>());
             }
             BecomeReady();
-            _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
+            _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
 
         }
         private void BecomeReady()
@@ -124,7 +124,7 @@ namespace SharpPulsar.Tracker
                 }
             }
 
-            _timeout = _scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_ackTimeoutMillis), Self, RunJob.Instance, ActorRefs.NoSender);
+            _timeout = _scheduler.ScheduleTellOnceCancelable(_ackTimeout, Self, RunJob.Instance, ActorRefs.NoSender);
 
         }
 
