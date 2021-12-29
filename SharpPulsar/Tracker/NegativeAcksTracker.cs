@@ -37,8 +37,8 @@ namespace SharpPulsar.Tracker
 	{
 
 		private Dictionary<IMessageId, long> _nackedMessages;
-		private readonly long _nackDelayMs;
-		private readonly long _timerIntervalMs;
+		private readonly TimeSpan _nackDelayMs;
+		private readonly TimeSpan _timerIntervalMs;
         private IActorRef _consumer;
         private IActorRef _unack;
         private IActorRef _self;
@@ -48,7 +48,7 @@ namespace SharpPulsar.Tracker
         private ICancelable _timeout;
 
 		// Set a min delay to allow for grouping nacks within a single batch
-		private static readonly long MinNackDelayMs = 100;
+		private static readonly TimeSpan MinNackDelayMs = TimeSpan.FromMilliseconds(100);
 
         public IStash Stash { get; set; }
 
@@ -58,12 +58,12 @@ namespace SharpPulsar.Tracker
             _log = Context.GetLogger();
             _self = Self;
             _consumer = consumer;
-			_nackDelayMs = Math.Max(conf.NegativeAckRedeliveryDelayMs, MinNackDelayMs);
-			_timerIntervalMs = _nackDelayMs / 3;
+			_nackDelayMs = conf.NegativeAckRedeliveryDelay > MinNackDelayMs? conf.NegativeAckRedeliveryDelay: MinNackDelayMs;
+			_timerIntervalMs = _nackDelayMs.Divide(3);
             _unack = unack;
             Ready();
             //_timeout = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), TimeSpan.FromMilliseconds(_timerIntervalMs), _self, Trigger.Instance, ActorRefs.NoSender);
-            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
+            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
         private void Ready()
         {
@@ -106,7 +106,7 @@ namespace SharpPulsar.Tracker
             _consumer.Tell(new OnNegativeAcksSend(messagesToRedeliver));
             _consumer.Tell(new RedeliverUnacknowledgedMessageIds(messagesToRedeliver));
 
-            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
+            _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
         }
 
         private void Add(IMessageId messageId)
@@ -120,13 +120,13 @@ namespace SharpPulsar.Tracker
             {
                 _nackedMessages = new Dictionary<IMessageId, long>();
             }
-            _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + _nackDelayMs;
+            _nackedMessages[messageId] = DateTimeHelper.CurrentUnixTimeMillis() + (long)_nackDelayMs.TotalMilliseconds;
 
             if (_timeout == null)
             {
                 // Schedule a task and group all the redeliveries for same period. Leave a small buffer to allow for
                 // nack immediately following the current one will be batched into the same redeliver request.
-                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromMilliseconds(_timerIntervalMs), Self, Trigger.Instance, ActorRefs.NoSender);
+                _timeout = Context.System.Scheduler.ScheduleTellOnceCancelable(_timerIntervalMs, _self, Trigger.Instance, ActorRefs.NoSender);
             }
         }
 	}

@@ -362,6 +362,7 @@ namespace SharpPulsar.Protocol
                 initialPosition = subscriptionInitialPosition,
                 ReplicateSubscriptionState = isReplicated,
                 ForceTopicCreation = createTopicIfDoesNotExist
+                
             };
 
             if (keySharedPolicy != null)
@@ -437,9 +438,7 @@ namespace SharpPulsar.Protocol
 
             var messageId = new MessageIdData {ledgerId = (ulong) ledgerId, entryId = (ulong) entryId, AckSets = ackSet};
             seek.MessageId = messageId;
-			return Serializer.Serialize(seek.ToBaseCommand());
-			
-			
+			return Serializer.Serialize(seek.ToBaseCommand());			
 		}
         public static ReadOnlySequence<byte> SkipBrokerEntryMetadataIfExist(ReadOnlySequence<byte> reader)
         {

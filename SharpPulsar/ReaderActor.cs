@@ -10,6 +10,7 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utility;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -37,7 +38,7 @@ namespace SharpPulsar
 		private readonly IActorRef _consumer;
 		private readonly IActorRef _generator;
 
-		public ReaderActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData)
+		public ReaderActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
 			_generator = idGenerator;
 			var subscription = "reader-" + ConsumerName.Sha1Hex(Guid.NewGuid().ToString()).Substring(0, 10);
@@ -92,11 +93,11 @@ namespace SharpPulsar
 			int partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
 			if (consumerConfiguration.ReceiverQueueSize == 0)
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, schema, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(Props.Create(() => new ZeroQueueConsumer<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, readerConfiguration.StartMessageId, schema, true, clientConfigurationData, subscribeFuture)));
 			}
 			else
 			{
-				_consumer = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, listenerExecutor, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData)));
+				_consumer = Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateActor, client, lookup, cnxPool, _generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, false, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, clientConfigurationData, subscribeFuture));
 			}
 			Receive<HasReachedEndOfTopic>(m => {
 				_consumer.Tell(m, Sender);
@@ -129,7 +130,12 @@ namespace SharpPulsar
 				_consumer.Tell(m, Sender);
 			});
 		}
-		private class MessageListenerAnonymousInnerClass : IMessageListener<T>
+		
+        public static Props Prop(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ReaderConfigurationData<T> readerConfiguration, IAdvancedScheduler listenerExecutor, ISchema<T> schema, ClientConfigurationData clientConfigurationData, TaskCompletionSource<IActorRef> subscribeFuture)
+        {
+            return Props.Create(()=> new ReaderActor<T>(consumerId, stateActor, client, lookup, cnxPool, idGenerator, readerConfiguration, schema, clientConfigurationData, subscribeFuture));
+        }
+        private class MessageListenerAnonymousInnerClass : IMessageListener<T>
 		{
 			private readonly IActorRef _outerInstance;
 

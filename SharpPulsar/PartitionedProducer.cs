@@ -65,7 +65,7 @@ namespace SharpPulsar
 			_context = Context;
 			_producers = new List<IActorRef>(numPartitions);
 			_topicMetadata = new TopicMetadata(numPartitions);
-			_stats = clientConfiguration.StatsIntervalSeconds > 0 ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
+			_stats = clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
 			_log = Context.GetLogger();
 			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -70,8 +71,9 @@ namespace SharpPulsar.EventSource.Pulsar
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
-            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client)));
-            _child.Tell(Connect.Instance);
+            var tcs = new TaskCompletionSource<IActorRef>();
+            Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
+            _child = tcs.Task.GetAwaiter().GetResult();
             if (isLive)
                 LiveConsume();
             else Consume();

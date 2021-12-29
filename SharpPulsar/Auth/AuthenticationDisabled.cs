@@ -38,7 +38,10 @@ namespace SharpPulsar.Auth
 
 		public string AuthMethodName => "none";
 
-        public IAuthenticationDataProvider AuthData => nullData;
+        public IAuthenticationDataProvider GetAuthData()
+        {
+            return nullData;
+        }
 
         public void Configure(string encodedAuthParamString)
 		{
