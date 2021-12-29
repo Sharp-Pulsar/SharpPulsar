@@ -825,7 +825,7 @@ namespace SharpPulsar
 				switch (ack)
 				{
 					case AcknowledgeMessage<T> m:
-						await DoAcknowledgeWithTxn(m.Message.MessageId, AckType.Individual, _properties, null).Task;
+					    await DoAcknowledgeWithTxn(m.Message.MessageId, AckType.Individual, _properties, null).Task;
 						break;
 					case AcknowledgeMessageId id:
                         await DoAcknowledgeWithTxn(id.MessageId, AckType.Individual, _properties, null).Task;
@@ -3070,6 +3070,7 @@ namespace SharpPulsar
 			else
             {
                 DoAcknowledge(messageId, ackType, properties, txn);
+                ackFuture.TrySetResult(null);
             }
             return ackFuture;
         }

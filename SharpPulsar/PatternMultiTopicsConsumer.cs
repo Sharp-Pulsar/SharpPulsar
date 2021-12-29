@@ -79,7 +79,7 @@ namespace SharpPulsar
 				}
 				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
 				var oldTopics = Topics;
-				OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
+				await OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
 				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
             }
 			catch(Exception ex)
@@ -117,7 +117,7 @@ namespace SharpPulsar
             }
 		}
 
-		private void  OnTopicsAdded(ICollection<string> addedTopics)
+		private async ValueTask  OnTopicsAdded(ICollection<string> addedTopics)
 		{
 			if (addedTopics.Count == 0)
 			{				
@@ -125,7 +125,7 @@ namespace SharpPulsar
 			}
 			foreach(var t in addedTopics)
             {
-                _self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
+                await Subscribe(t, false);
             }
 		}
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)
