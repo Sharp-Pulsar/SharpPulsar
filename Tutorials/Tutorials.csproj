@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SharpPulsar" Version="2.9.0-beta.44" />
+    <PackageReference Include="SharpPulsar" Version="2.9.0-beta.45" />
   </ItemGroup>
 
   <ItemGroup>
