@@ -236,10 +236,13 @@ class Build : NukeBuild
                try
                {
                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+
+                   Information("Apache Pulsar running on: http://127.0.0.1");
                    return;
                }
-               catch
+               catch(Exception ex)
                {
+                   Information(ex.ToString());
                    waitTries--;
                    await Task.Delay(5000).ConfigureAwait(false);
                }
