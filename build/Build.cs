@@ -163,7 +163,7 @@ class Build : NukeBuild
                     .SetLoggers("GitHubActions")
                     //.SetDiagnosticsFile(TestsDirectory)
                     //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild()); 
             }
             catch (Exception ex)
@@ -178,7 +178,7 @@ class Build : NukeBuild
             Information($"Path: { Solution.Path}");
         });
     Target TxnTest => _ => _
-        .DependsOn(Test)
+        .DependsOn(Compile)
         .Triggers(StopPulsar)
         .Executes(() =>
         {
@@ -194,7 +194,7 @@ class Build : NukeBuild
                     .SetLoggers("GitHubActions")
                     //.SetDiagnosticsFile(TestsDirectory)
                     //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild()); ;
             }
             catch (Exception ex)
