@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
@@ -204,7 +206,7 @@ class Build : NukeBuild
 
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
-      .Executes(() =>
+      .Executes(async () =>
        {
            DockerTasks.DockerRun(b =>
             b
@@ -218,7 +220,33 @@ class Build : NukeBuild
             .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", @"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", @"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", @"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
             .SetCommand("bash")
             .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-            //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
+           //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
+
+           var waitTries = 20;
+
+           using var handler = new HttpClientHandler
+           {
+               AllowAutoRedirect = true
+           };
+
+           using var client = new HttpClient(handler);
+
+           while (waitTries > 0)
+           {
+               try
+               {
+                   await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                   return;
+               }
+               catch
+               {
+                   waitTries--;
+                   await Task.Delay(5000).ConfigureAwait(false);
+               }
+           }
+
+           throw new Exception("Unable to confirm Pulsar has initialized");
+
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)
