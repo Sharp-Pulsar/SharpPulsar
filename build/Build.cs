@@ -153,17 +153,17 @@ class Build : NukeBuild
             var testProject = "SharpPulsar.Test";
             var project = Solution.GetProject(testProject);
 
-            Information($"Running for {project.Name} (net6.0) ...");
+            Information($"Running for {project.Name} (net5.0) ...");
             try
             {
                 DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net6.0")
+                    .SetFramework("net5.0")
                     .SetLoggers("GitHubActions")
                     //.SetDiagnosticsFile(TestsDirectory)
                     //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
                     .EnableNoBuild()); 
             }
             catch (Exception ex)
@@ -178,23 +178,23 @@ class Build : NukeBuild
             Information($"Path: { Solution.Path}");
         });
     Target TxnTest => _ => _
-        .DependsOn(Compile)
+        .DependsOn(Test)
         .Triggers(StopPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test.Transaction";
             var project = Solution.GetProject(testProject);
-            Information($"Running for {project.Name} (net6.0) ...");
+            Information($"Running for {project.Name} (net5.0) ...");
             try
             {
                 DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net6.0")
+                    .SetFramework("net5.0")
                     .SetLoggers("GitHubActions")
                     //.SetDiagnosticsFile(TestsDirectory)
                     //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
                     .EnableNoBuild()); ;
             }
             catch (Exception ex)

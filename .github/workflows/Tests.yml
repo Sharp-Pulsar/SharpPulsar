@@ -54,9 +54,6 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      
-      - name: Run Test'
-        run: ./build.cmd Test
-      
-      - name: Run Txn Test'
+          
+      - name: Run Tests'
         run: ./build.cmd TxnTest
