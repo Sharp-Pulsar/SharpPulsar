@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
@@ -69,11 +67,7 @@ class Build : NukeBuild
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
-    [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
-
-
-    const string _binGlob = "**/bin";
-    const string _objGlob = "**/obj";
+    [GitVersion(Framework = "net5.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
     [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
@@ -102,10 +96,10 @@ class Build : NukeBuild
         .Before(Restore)
         .Executes(() =>
         {
-            RootDirectory.GlobDirectories(_binGlob, _objGlob).ForEach(DeleteDirectory);
-            TestsDirectory.GlobDirectories(_binGlob, _objGlob).ForEach(DeleteDirectory);
-            EnsureCleanDirectory(ArtifactsDirectory);
+            TestsDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
+            EnsureCleanDirectory(OutputDirectory);
         });
+
     Target Restore => _ => _
         .Executes(() =>
         {
@@ -146,29 +140,41 @@ class Build : NukeBuild
         });
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
-        .DependsOn(AdminPulsar)
         .DependsOn(Compile)
+        .DependsOn(AdminPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test";
             var project = Solution.GetProject(testProject);
+            Information($"Running tests from {project.Name}");
 
-            Information($"Running for {project.Name} (net5.0) ...");
-            try
+            foreach (var fw in project.GetTargetFrameworks())
             {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net5.0")
-                    .SetLoggers("GitHubActions")
-                    //.SetDiagnosticsFile(TestsDirectory)
-                    //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                    .EnableNoBuild()); 
-            }
-            catch (Exception ex)
-            {
-                Information(ex.Message);
+                if (fw.StartsWith("net4")
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
+                {
+                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                    continue;
+                }
+
+                Information($"Running for {project.Name} ({fw}) ...");
+                try
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        .SetLoggers("GitHubActions")
+                        //.SetDiagnosticsFile(TestsDirectory)
+                        //.SetLogger("trx")
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild()); ;
+                }
+                catch (Exception ex)
+                {
+                    Information(ex.Message);
+                }
             }
         });
     Target TestPaths => _ => _
@@ -184,28 +190,41 @@ class Build : NukeBuild
         {
             var testProject = "SharpPulsar.Test.Transaction";
             var project = Solution.GetProject(testProject);
-            Information($"Running for {project.Name} (net5.0) ...");
-            try
+            Information($"Running tests from {project.Name}");
+
+            foreach (var fw in project.GetTargetFrameworks())
             {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net5.0")
-                    .SetLoggers("GitHubActions")
-                    //.SetDiagnosticsFile(TestsDirectory)
-                    //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                    .EnableNoBuild()); ;
-            }
-            catch (Exception ex)
-            {
-                Information(ex.Message);
+                if (fw.StartsWith("net4")
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
+                {
+                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
+                    continue;
+                }
+
+                Information($"Running for {project.Name} ({fw}) ...");
+                try
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        .SetLoggers("GitHubActions")
+                        //.SetDiagnosticsFile(TestsDirectory)
+                        //.SetLogger("trx")
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild()); ;
+                }
+                catch (Exception ex)
+                {
+                    Information(ex.Message);
+                }
             }
         });
 
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
-      .Executes(async () =>
+      .Executes(() =>
        {
            DockerTasks.DockerRun(b =>
             b
@@ -215,45 +234,17 @@ class Build : NukeBuild
             .SetPublish("6650:6650", "8080:8080","8081:8081", "2181:2181")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
-            .SetImage("apachepulsar/pulsar-all:2.9.1")
+            .SetImage("apachepulsar/pulsar-all:2.9.0")
             .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", @"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", @"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", @"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
             .SetCommand("bash")
             .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-           //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-
-           var waitTries = 20;
-
-           using var handler = new HttpClientHandler
-           {
-               AllowAutoRedirect = true
-           };
-
-           using var client = new HttpClient(handler);
-
-           while (waitTries > 0)
-           {
-               try
-               {
-                   await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-
-                   Information("Apache Pulsar running on: http://127.0.0.1");
-                   return;
-               }
-               catch(Exception ex)
-               {
-                   Information(ex.ToString());
-                   waitTries--;
-                   await Task.Delay(5000).ConfigureAwait(false);
-               }
-           }
-
-           throw new Exception("Unable to confirm Pulsar has initialized");
-
+            //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)
       .Executes(() =>
        {
+           Thread.Sleep(TimeSpan.FromSeconds(30));
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
