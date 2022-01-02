@@ -163,8 +163,8 @@ class Build : NukeBuild
                     .SetLoggers("GitHubActions")
                     //.SetDiagnosticsFile(TestsDirectory)
                     //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Diagnostic)
-                    .EnableNoBuild()); ;
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .EnableNoBuild()); 
             }
             catch (Exception ex)
             {
@@ -194,7 +194,7 @@ class Build : NukeBuild
                     .SetLoggers("GitHubActions")
                     //.SetDiagnosticsFile(TestsDirectory)
                     //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Diagnostic)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
                     .EnableNoBuild()); ;
             }
             catch (Exception ex)
