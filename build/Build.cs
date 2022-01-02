@@ -146,8 +146,7 @@ class Build : NukeBuild
         });
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
-        //.DependsOn(AdminPulsar)
-        .DependsOn(StartPulsar)
+        .DependsOn(AdminPulsar)
         .DependsOn(Compile)
         .Executes(() =>
         {
@@ -255,7 +254,6 @@ class Build : NukeBuild
       .DependsOn(StartPulsar)
       .Executes(() =>
        {
-           Thread.Sleep(TimeSpan.FromSeconds(30));
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
