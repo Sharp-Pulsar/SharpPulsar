@@ -41,14 +41,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.29" />
+    <PackageReference Include="akka" Version="1.4.31" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.11.0" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
     <PackageReference Include="AvroSchemaGenerator" Version="2.4.1" />
     <PackageReference Include="DotNetty.Common" Version="0.7.1" />
     <PackageReference Include="Google.Protobuf" Version="3.19.1" />
-    <PackageReference Include="IdentityModel" Version="5.2.0" />
+    <PackageReference Include="IdentityModel" Version="6.0.0" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.16" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />

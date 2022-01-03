@@ -20,31 +20,19 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "Tutorials/**"
-      - "README.md"
 
 jobs:
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SDKs
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: |
-            5.0.*
-            6.0.*
-
       - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Push'
-        run: ./build.cmd Push --nuget_api_key ${{ secrets.NUGET_API_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
-        env:
-          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: ./build.cmd Push

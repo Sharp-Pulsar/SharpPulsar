@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
@@ -59,7 +61,7 @@ class Build : NukeBuild
     ///   - Microsoft VSCode           https://nuke.build/vscode 
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.PackBeta);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -234,7 +236,7 @@ class Build : NukeBuild
             .SetPublish("6650:6650", "8080:8080","8081:8081", "2181:2181")
             .SetMount("source=pulsardata,target=/pulsar/data")
             .SetMount("source=pulsarconf,target=/pulsar/conf")
-            .SetImage("apachepulsar/pulsar-all:2.9.0")
+            .SetImage("apachepulsar/pulsar-all:2.9.1")
             .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", @"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", @"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", @"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
             .SetCommand("bash")
             .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
@@ -242,9 +244,34 @@ class Build : NukeBuild
        });
     Target AdminPulsar => _ => _
       .DependsOn(StartPulsar)
-      .Executes(() =>
+      .Executes(async () =>
        {
-           Thread.Sleep(TimeSpan.FromSeconds(30));
+           var waitTries = 20;
+
+           using var handler = new HttpClientHandler
+           {
+               AllowAutoRedirect = true
+           };
+
+           using var client = new HttpClient(handler);
+
+           while (waitTries > 0)
+           {
+               try
+               {
+                   await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                   Information("Apache Pulsar Server live at: http://127.0.0.1");
+                   return;
+               }
+               catch(Exception ex)
+               {
+                   Information(ex.Message);
+                   waitTries--;
+                   await Task.Delay(5000).ConfigureAwait(false);
+               }
+           }
+
+           throw new Exception("Unable to confirm Pulsar has initialized");
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")

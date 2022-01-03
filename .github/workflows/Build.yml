@@ -31,19 +31,12 @@ jobs:
     name: windows-latest
     runs-on: windows-latest
     steps:
-      - name: Setup SDKs
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: |
-            5.0.*
-            6.0.*
-
       - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Compile'
@@ -52,20 +45,12 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SDKs
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: |
-            2.1.*
-            5.0.*
-            6.0.*
-      
       - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Compile'
