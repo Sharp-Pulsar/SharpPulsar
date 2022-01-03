@@ -143,7 +143,7 @@ class Build : NukeBuild
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
         .DependsOn(Compile)
-        .DependsOn(AdminPulsar)
+        //.DependsOn(AdminPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test";
@@ -186,8 +186,8 @@ class Build : NukeBuild
             Information($"Path: { Solution.Path}");
         });
     Target TxnTest => _ => _
-        .DependsOn(Test)
-        .Triggers(StopPulsar)
+        //.DependsOn(Test)
+        //.Triggers(StopPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test.Transaction";
@@ -269,7 +269,7 @@ class Build : NukeBuild
            throw new Exception("Unable to confirm Pulsar has initialized");
        });
     Target AdminPulsar => _ => _
-      .DependsOn(StartPulsar)
+      //.DependsOn(StartPulsar)
       .Executes(() =>
        {
            

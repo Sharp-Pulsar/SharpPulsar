@@ -46,5 +46,18 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Test'
+     
+      - name: Run 'StartPulsar'
+        run: ./build.cmd StartPulsar
+     
+      - name: Run 'AdminPulsar'
+        run: ./build.cmd AdminPulsar
+     
+      - name: Run 'Tests'
         run: ./build.cmd Test
+     
+      - name: Run 'Txn Tests'
+        run: ./build.cmd TxnTest
+     
+      - name: Run 'StopPulsar'
+        run: ./build.cmd StopPulsar
