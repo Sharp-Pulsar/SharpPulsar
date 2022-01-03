@@ -226,7 +226,7 @@ class Build : NukeBuild
 
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
-      .Executes(() =>
+      .Executes(async () =>
        {
            DockerTasks.DockerRun(b =>
             b
@@ -240,12 +240,7 @@ class Build : NukeBuild
             .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", @"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", @"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", @"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
             .SetCommand("bash")
             .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-            //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-       });
-    Target AdminPulsar => _ => _
-      .DependsOn(StartPulsar)
-      .Executes(async () =>
-       {
+           //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
            var waitTries = 20;
 
            using var handler = new HttpClientHandler
@@ -263,7 +258,7 @@ class Build : NukeBuild
                    Information("Apache Pulsar Server live at: http://127.0.0.1");
                    return;
                }
-               catch(Exception ex)
+               catch (Exception ex)
                {
                    Information(ex.Message);
                    waitTries--;
@@ -272,6 +267,12 @@ class Build : NukeBuild
            }
 
            throw new Exception("Unable to confirm Pulsar has initialized");
+       });
+    Target AdminPulsar => _ => _
+      .DependsOn(StartPulsar)
+      .Executes(() =>
+       {
+           
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
