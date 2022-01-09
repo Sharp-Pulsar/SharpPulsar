@@ -52,7 +52,7 @@ namespace SharpPulsar.Test.Fixtures
         }
         public async Task InitializeAsync()
         {
-            SetupSystem();
+            await SetupSystem();
             await DeployPulsar();
         }
         public async Task DeployPulsar()
@@ -118,7 +118,7 @@ namespace SharpPulsar.Test.Fixtures
             if (process.ExitCode != 0)
                 throw new Exception($"Exit code {process.ExitCode} when running process {name} with arguments {arguments}");
         }
-        private void SetupSystem()
+        private async ValueTask SetupSystem()
         {
             var client = new PulsarClientConfigBuilder();
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -154,7 +154,7 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            var system = PulsarSystem.GetInstance(client);
+            var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;

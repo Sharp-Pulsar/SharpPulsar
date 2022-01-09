@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Transaction.Fixtures;
@@ -27,7 +28,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 		}
 
 		[Fact]
-		public void TxnAckTestBatchedFailoverSub()
+		public async Task TxnAckTestBatchedFailoverSub()
 		{
 			var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 
@@ -39,66 +40,74 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000))
 				.SubscriptionType(SubType.Failover);
 
-			var consumer = _client.NewConsumer(consumerBuilder);
-
 			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.EnableBatching(true)
 				.BatchingMaxMessages(100);
 
-			var producer = _client.NewProducer(producerBuilder);
+			var producer = await _client.NewProducerAsync(producerBuilder);
 
-			for (var retryCnt = 0; retryCnt < 1; retryCnt++)
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+            var receivedMessageCount = 0;   
+
+            for (var retryCnt = 0; retryCnt < 1; retryCnt++)
 			{
-				var txn = Txn;
+				var txn = await Txn();
 				//Thread.Sleep(TimeSpan.FromSeconds(30));
 				var messageCnt = 100;
 				// produce normal messages
 				for (var i = 0; i < messageCnt; i++)
 				{
-					producer.NewMessage().Value("hello".GetBytes()).Send();
+					await producer.NewMessage().Value("hello".GetBytes()).SendAsync();
 				}
 
                 // consume and ack messages with txn
-				Thread.Sleep(TimeSpan.FromSeconds(5));
+				await Task.Delay(TimeSpan.FromSeconds(5));
                 for (var i = 0; i < messageCnt; i++)
 				{
-					var msg = consumer.Receive();
-					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					var msg = await consumer.ReceiveAsync();
+					if(msg != null)
+                    {
+                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                        await consumer.AcknowledgeAsync(msg.MessageId, txn);
+                        receivedMessageCount++;
+                    }
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive();
-				Assert.Null(message);
+				var message = await consumer.ReceiveAsync();
+                Assert.Null(message);
 
 				// 1) txn abort
-				txn.Abort();
+				await txn.AbortAsync();
 
 				// after transaction abort, the messages could be received
-				var commitTxn = Txn;
+				var commitTxn = await Txn();
                 //Thread.Sleep(TimeSpan.FromSeconds(5));
-                Thread.Sleep(TimeSpan.FromSeconds(30));
+                await Task.Delay(TimeSpan.FromSeconds(30));
                 for (var i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive();
-					Assert.NotNull(message);
-					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					message = await consumer.ReceiveAsync();
+					if(message != null)
+                    {
+                        await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
+                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                        receivedMessageCount++;
+                    }
 				}
 
 				// 2) ack committed by a new txn
-				commitTxn.Commit();
+				await commitTxn.CommitAsync();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive();
+				message = await consumer.ReceiveAsync();
 				Assert.Null(message);
 			}
+            Assert.True(receivedMessageCount > 75);
 		}
 
 		[Fact]
-		public void TxnAckTestBatchedSharedSub()
+		public async Task TxnAckTestBatchedSharedSub()
 		{
 			var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 
@@ -110,66 +119,73 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.EnableBatchIndexAcknowledgment(true)
 				.SubscriptionType(SubType.Shared);
 
-			var consumer = _client.NewConsumer(consumerBuilder);
-
 			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(normalTopic)
 				.EnableBatching(true)
 				.BatchingMaxMessages(100);
 
-			var producer = _client.NewProducer(producerBuilder);
+			var producer = await _client.NewProducerAsync(producerBuilder);
 
-			for (var retryCnt = 0; retryCnt < 2; retryCnt++)
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+            var receivedMessageCount = 0;
+
+            for (var retryCnt = 0; retryCnt < 2; retryCnt++)
 			{
-				var txn = Txn;
+				var txn = await Txn();
 
 				var messageCnt = 100;
 				// produce normal messages
 				for (var i = 0; i < messageCnt; i++)
 				{
-					producer.NewMessage().Value("hello".GetBytes()).Send();
+					await producer.NewMessage().Value("hello".GetBytes()).SendAsync();
 				}
 
                 // consume and ack messages with txn
-                Thread.Sleep(TimeSpan.FromSeconds(5));
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 for (var i = 0; i < messageCnt; i++)
 				{
 					var msg = consumer.Receive();
-					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					if(msg != null)
+                    {
+                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                        await consumer.AcknowledgeAsync(msg.MessageId, txn);
+                       receivedMessageCount++;
+                    }
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive();
+				var message = await consumer.ReceiveAsync();
 				Assert.Null(message);
 
 				// 1) txn abort
-				txn.Abort();
+				await txn.AbortAsync();
 
 				// after transaction abort, the messages could be received
-				var commitTxn = Txn;
-                Thread.Sleep(TimeSpan.FromSeconds(5));
+				var commitTxn = await Txn();
+                await Task.Delay(TimeSpan.FromSeconds(5));
                 for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
-					Assert.NotNull(message);
-					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                    if(message != null)
+                    {
+                        await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
+                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                    }
 				}
 
 				// 2) ack committed by a new txn
-				commitTxn.Commit();
-                Thread.Sleep(TimeSpan.FromSeconds(5));
+				await commitTxn.CommitAsync();
+                await Task.Delay(TimeSpan.FromSeconds(5));
 
                 // after transaction commit, the messages can't be received
-                message = consumer.Receive();
+                message = await consumer.ReceiveAsync();
 				Assert.Null(message);
-			}
-		}
+            }
+            Assert.True(receivedMessageCount > 75);
+        }
 
 		[Fact]
-		public void TxnAckTestSharedSub()
+		public async Task TxnAckTestSharedSub()
 		{
 			var normalTopic = _nAMESPACE1 + $"/normal-topic-{Guid.NewGuid()}";
 
@@ -180,66 +196,69 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.AcknowledgmentGroupTime(TimeSpan.FromMilliseconds(5000))
 				.SubscriptionType(SubType.Shared);
 
-			var consumer = _client.NewConsumer(consumerBuilder);
-
 			var producerBuilder = new ProducerConfigBuilder<byte[]>();
 			producerBuilder.Topic(normalTopic); ;
 
-			var producer = _client.NewProducer(producerBuilder);
+			var producer = await _client.NewProducerAsync(producerBuilder);
 
-			for (var retryCnt = 0; retryCnt < 2; retryCnt++)
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+            var receivedMessageCount = 0;
+
+            for (var retryCnt = 0; retryCnt < 2; retryCnt++)
 			{
-				var txn = Txn;
+				var txn = await Txn();
 
 				var messageCnt = 50;
 				// produce normal messages
 				for (var i = 0; i < messageCnt; i++)
 				{
-					producer.NewMessage().Value("hello".GetBytes()).Send();
+					await producer.NewMessage().Value("hello".GetBytes()).SendAsync();
 				}
 
 				// consume and ack messages with txn
 				for (var i = 0; i < messageCnt; i++)
 				{
-					var msg = consumer.Receive();
-					Assert.NotNull(msg);
-					_output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-					consumer.Acknowledge(msg.MessageId, txn);
+					var msg = await consumer.ReceiveAsync();
+					if(msg != null)
+                    {
+                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                        await consumer.AcknowledgeAsync(msg.MessageId, txn);
+                        receivedMessageCount++;
+                    }
 				}
 
 				// the messages are pending ack state and can't be received
-				var message = consumer.Receive();
+				var message = await consumer.ReceiveAsync();
 				Assert.Null(message);
 
 				// 1) txn abort
-				txn.Abort();
+				await txn.AbortAsync();
 
 				// after transaction abort, the messages could be received
-				var commitTxn = Txn;
-				//Thread.Sleep(TimeSpan.FromSeconds(30));
+				var commitTxn = await Txn();
+				await Task.Delay(TimeSpan.FromSeconds(30));
 				for (var i = 0; i < messageCnt; i++)
 				{
-					message = consumer.Receive();
-					Assert.NotNull(message);
-					consumer.Acknowledge(message.MessageId, commitTxn);
-					_output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+					message = await consumer.ReceiveAsync();
+					if(message != null)
+                    {
+                        await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
+                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                        receivedMessageCount++;
+                    }
 				}
 
 				// 2) ack committed by a new txn
-				commitTxn.Commit();
+				await commitTxn.CommitAsync();
 
 				// after transaction commit, the messages can't be received
-				message = consumer.Receive();
+				message = await consumer.ReceiveAsync();
 				Assert.Null(message);
 			}
+            Assert.True(receivedMessageCount > 75);
 		}
-		private User.Transaction Txn
-		{
 
-			get
-			{
-				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
-			}
-		}
-	}
+        private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
+
+    }
 }

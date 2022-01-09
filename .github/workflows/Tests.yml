@@ -20,18 +20,11 @@ on:
   push:
     branches:
       - main
-      - dev    
-    paths-ignore:
-      - "Tutorials/**"
-      - "README.md"
-
+      - dev
   pull_request:
     branches:
       - main
-      - dev    
-    paths-ignore:
-      - "Tutorials/**"
-      - "README.md"
+      - dev
 
 jobs:
   ubuntu-latest:
@@ -43,17 +36,16 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: |
-            2.1.*
-            5.0.*
             6.0.*
 
       - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run TxnTest'
+
+      - name: Run 'Tests'
         run: ./build.cmd TxnTest

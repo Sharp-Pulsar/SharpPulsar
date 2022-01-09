@@ -9,7 +9,7 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_Publish --host GitHubActions
+#         nuke --generate-configuration GitHubActions_Beta --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
@@ -20,9 +20,6 @@ on:
   push:
     branches:
       - dev
-    paths-ignore:
-      - "Tutorials/**"
-      - "README.md"
 
 jobs:
   ubuntu-latest:
@@ -33,19 +30,14 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: |
-            2.1.*
-            5.0.*
             6.0.*
-
       - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Push Beta'
-        run: ./build.cmd PushBeta --nuget_api_key ${{ secrets.NUGET_API_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
-        env:
-          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      - name: Publish beta
+        run: ./build.cmd PushBeta

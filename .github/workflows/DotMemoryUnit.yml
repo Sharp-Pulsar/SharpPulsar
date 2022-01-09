@@ -35,8 +35,6 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: |
-            2.1.*
-            5.0.*
             6.0.*
 
       - uses: actions/checkout@v1
@@ -47,5 +45,5 @@ jobs:
             .tmp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd RunMemoryAllocation'
+      - name: Benchmark
         run: ./build.cmd RunMemoryAllocation

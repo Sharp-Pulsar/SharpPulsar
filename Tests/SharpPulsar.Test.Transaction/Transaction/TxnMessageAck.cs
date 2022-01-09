@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Transaction.Fixtures;
 using SharpPulsar.User;
@@ -25,7 +26,7 @@ namespace SharpPulsar.Test.Transaction.Transaction
 			_client = fixture.Client;
 		}
 		[Fact]
-		public void TxnMessageAckTest()
+		public async Task TxnMessageAckTest()
 		{
 			var topic = $"{_topicMessageAckTest}-{Guid.NewGuid()}";
 			var subName = $"test-{Guid.NewGuid()}";
@@ -37,75 +38,70 @@ namespace SharpPulsar.Test.Transaction.Transaction
 				.EnableBatchIndexAcknowledgment(true)
 				.AcknowledgmentGroupTime(TimeSpan.Zero);
 
-			var consumer = _client.NewConsumer(consumerBuilder);
-
 			var producerBuilder = new ProducerConfigBuilder<byte[]>()
 				.Topic(topic)
 				.EnableBatching(false)
 				.SendTimeout(TimeSpan.Zero);
 
-			var producer = _client.NewProducer(producerBuilder);
+			var producer = await _client.NewProducerAsync(producerBuilder);
 
-			var txn = Txn;
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+
+            var txn = await Txn();
 
 			var messageCnt = 10;
 			for (var i = 0; i < messageCnt; i++)
 			{
-				producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
+				await producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).SendAsync();
 			}
 			_output.WriteLine("produce transaction messages finished");
 
 			// Can't receive transaction messages before commit.
-			var message = consumer.Receive();
+			var message = await consumer.ReceiveAsync();
 			Assert.Null(message);
 			_output.WriteLine("transaction messages can't be received before transaction committed");
 
-			txn.Commit();
+			await txn.CommitAsync();
 
 			var ackedMessageCount = 0;
 			var receiveCnt = 0;
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCnt; i++)
 			{
-				message = consumer.Receive();
+				message = await consumer.ReceiveAsync();
 				Assert.NotNull(message);
 				receiveCnt++;
 				if (i % 2 == 0)
 				{
-					consumer.Acknowledge(message);
+					await consumer.AcknowledgeAsync(message);
 					ackedMessageCount++;
 				}
 			}
 			Assert.Equal(messageCnt, receiveCnt);
 
-			message = consumer.Receive();
+			message = await consumer.ReceiveAsync();
 			Assert.Null(message);
 
-			consumer.RedeliverUnacknowledgedMessages();
+			await consumer.RedeliverUnacknowledgedMessagesAsync();
 
-			Thread.Sleep(TimeSpan.FromSeconds(10));
+			await Task.Delay(TimeSpan.FromSeconds(10));
 			receiveCnt = 0;
 			for (var i = 0; i < messageCnt; i++)
 			{
-				message = consumer.Receive();
+				message = await consumer.ReceiveAsync();
 				Assert.NotNull(message);
-				consumer.Acknowledge(message);
+				await consumer.AcknowledgeAsync(message);
 				receiveCnt++;
 			}
 			Assert.Equal(messageCnt - ackedMessageCount, receiveCnt);
 
-			message = consumer.Receive();
+			message = await consumer.ReceiveAsync();
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}
-		private User.Transaction Txn
-		{
 
-			get
-			{
-				return (User.Transaction)_client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
-			}
-		}
+        private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
-	}
+
+    }
 }

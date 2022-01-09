@@ -3,7 +3,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using Google.Protobuf;
+using Google.Protobuf; 
 using SharpPulsar.Shared;
 using AuthData = SharpPulsar.Protocol.Proto.AuthData;
 using SharpPulsar.Protocol.Schema;

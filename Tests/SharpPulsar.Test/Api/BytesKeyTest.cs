@@ -47,36 +47,36 @@ namespace SharpPulsar.Test.Api
         }
 
         [Fact]
-        public virtual void ProducerInstantiation()
+        public async Task ProducerInstantiation()
         {
             var producer = new ProducerConfigBuilder<string>();
             producer.Topic("ProducerInstantiation");
-            var stringProducerBuilder = _client.NewProducer(new StringSchema(), producer);
+            var stringProducerBuilder = await _client.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
             stringProducerBuilder.Close();
         }
         [Fact]
-        public virtual void ConsumerInstantiation()
+        public async Task ConsumerInstantiation()
         {
             var consumer = new ConsumerConfigBuilder<string>();
             consumer.Topic("ConsumerInstantiation");
             consumer.SubscriptionName($"test-sub-{Guid.NewGuid()}");
-            var stringConsumerBuilder = _client.NewConsumer(new StringSchema(), consumer);
+            var stringConsumerBuilder = await _client.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
             stringConsumerBuilder.Close();
         }
         [Fact]
-        public virtual void ReaderInstantiation()
+        public async Task ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
             reader.Topic("ReaderInstantiation");
             reader.StartMessageId(IMessageId.Earliest);
-            var stringReaderBuilder = _client.NewReader(new StringSchema(), reader);
+            var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
             stringReaderBuilder.Close();
         }
         [Fact]
-        public void ProduceAndConsume()
+        public async Task ProduceAndConsume()
         {
             var topic = $"persistent://public/default/produce-consume-3";
 
@@ -86,22 +86,22 @@ namespace SharpPulsar.Test.Api
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>();
             producerBuilder.Topic(topic);
-            var producer = _client.NewProducer(producerBuilder);
+            var producer = await _client.NewProducerAsync(producerBuilder);
 
-            producer.NewMessage().KeyBytes(byteKey)
+            await producer.NewMessage().KeyBytes(byteKey)
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
-               .Send();
+               .SendAsync();
 
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
                 .Topic(topic)
                 //.StartMessageId(77L, 0L, -1, 0)
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
-            var consumer = _client.NewConsumer(consumerBuilder);
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
             Thread.Sleep(TimeSpan.FromSeconds(10));
-            var message = (Message<byte[]>)consumer.Receive();
+            var message = (Message<byte[]>)await consumer.ReceiveAsync();
 
             if (message != null)
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
@@ -113,10 +113,10 @@ namespace SharpPulsar.Test.Api
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
             //producer.Close();
-            consumer.Close();
+            await consumer.CloseAsync();
         }
         [Fact]
-        public void ProduceAndConsumeBatch()
+        public async Task ProduceAndConsumeBatch()
 		{
 
             var r = new Random(0);
@@ -127,7 +127,7 @@ namespace SharpPulsar.Test.Api
                 .Topic(_topic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
-            var consumer = _client.NewConsumer(consumerBuilder);
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
@@ -137,24 +137,24 @@ namespace SharpPulsar.Test.Api
                 .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(120000))
                 .BatchingMaxMessages(5);
 
-            var producer = _client.NewProducer(producerBuilder);
+            var producer = await _client.NewProducerAsync(producerBuilder);
 
             for (var i = 0; i < 5; i++)
             {
-                 var id =    producer.NewMessage().KeyBytes(byteKey)
+                 var id = await producer.NewMessage().KeyBytes(byteKey)
                     .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                     .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}"))
-                    .Send();
+                    .SendAsync();
                 if(id == null)
                     _output.WriteLine($"Id is null");
                 else
                     _output.WriteLine($"Id: {id}");
             }
             producer.Flush();
-            Thread.Sleep(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {
-                var message = (Message<byte[]>)consumer.Receive();
+                var message = (Message<byte[]>) await consumer.ReceiveAsync();
                 if (message != null)
                     _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
@@ -165,8 +165,8 @@ namespace SharpPulsar.Test.Api
                 Assert.Equal($"TestMessage-{i}", receivedMessage);
             }
 
-            producer.Close();
-            consumer.Close();
+            await producer.CloseAsync();
+            await consumer.CloseAsync();
         }
         
     }
