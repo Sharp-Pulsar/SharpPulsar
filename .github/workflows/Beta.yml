@@ -39,5 +39,8 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Publish beta
-        run: ./build.cmd PushBeta
+      - name: Run publish Beta'
+        run: ./build.cmd PushBeta --nuget_api_key ${{ secrets.NUGET_API_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }} --build_number ${{ github.run_number }}
+        env:
+          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
