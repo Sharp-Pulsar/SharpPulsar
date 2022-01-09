@@ -17,7 +17,7 @@ namespace SharpPulsar
     public sealed class PulsarSystem
     {
         private static PulsarSystem _instance;
-        private static readonly object Lock = new object();
+        private static readonly Nito.AsyncEx.AsyncLock _lock = new Nito.AsyncEx.AsyncLock();
         private static ActorSystem _actorSystem;
         private readonly ClientConfigurationData _conf;
         private readonly IActorRef _cnxPool;
@@ -43,7 +43,7 @@ namespace SharpPulsar
         {
             if (_instance == null)
             {
-                lock (Lock)
+                using (await _lock.LockAsync().ConfigureAwait(false))
                 {
                     if (_instance == null)
                     {
@@ -53,29 +53,24 @@ namespace SharpPulsar
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null)
+        public static async Task<PulsarSystem> GetInstance(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null)
         {
             if (_instance == null)
             {
-                lock (Lock)
+                using (await _lock.LockAsync().ConfigureAwait(false))
                 {
                     if (_instance == null)
                     {
-                        _instance = new PulsarSystem(conf, logSetup, config);
+                        _instance = await CreateActorSystem(conf, logSetup, config);
+                        
                     }
                 }
             }
             return _instance;
         }
-        private PulsarSystem(PulsarClientConfigBuilder confBuilder, Action logSetup, Config confg)
+        private static async Task<PulsarSystem> CreateActorSystem(PulsarClientConfigBuilder conf, Action logSetup, Config config)
         {
-
-            _conf = confBuilder.ClientConfigurationData;
-            var conf = _conf;
-            var logging = logSetup ?? _logSetup;
-            logging();
-            _conf = conf;
-            var config = confg ?? ConfigurationFactory.ParseString(@"
+            var confg = config ?? ConfigurationFactory.ParseString(@"
             akka
             {
                 loglevel = DEBUG
@@ -96,24 +91,36 @@ namespace SharpPulsar
                 {
                     exit-clr = on
                 }
-            }"
-            );
-            _actorSystem = ActorSystem.Create("Pulsar", config);
-            
-            _cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(conf), "ConnectionPool");
-            _generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
-            _lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, conf.ServiceUrl, conf.ListenerName, conf.UseTls, conf.MaxLookupRequest, conf.OperationTimeout), "BinaryProtoLookupService");
+            }");
+            var clientConf = conf.ClientConfigurationData;
+            var actorSystem = ActorSystem.Create("Pulsar", config);
 
-            if (conf.EnableTransaction)
+            var cnxPool = _actorSystem.ActorOf(ConnectionPool.Prop(clientConf), "ConnectionPool");
+            var generator = _actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
+            var lookup = _actorSystem.ActorOf(BinaryProtoLookupService.Prop(cnxPool, generator, clientConf.ServiceUrl, clientConf.ListenerName, clientConf.UseTls, clientConf.MaxLookupRequest, clientConf.OperationTimeout), "BinaryProtoLookupService");
+            IActorRef tcClient = ActorRefs.Nobody;
+            if (clientConf.EnableTransaction)
             {
-                _tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(_lookup, _cnxPool, _generator, conf));
-                var cos = _tcClient.Ask<AskResponse>("Start").GetAwaiter().GetResult();
-                if (cos.Failed)
-                    throw cos.Exception;
-
-                if ((int)cos.Data <= 0)
-                    throw new Exception($"Tranaction Coordinator has '{cos}' transaction handler");
-            } 
+                var tcs = new TaskCompletionSource<object>();   
+                tcClient = _actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs));
+                var count = await tcs.Task;
+                if ((int)count <= 0)
+                    throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
+            }
+            return  new PulsarSystem(actorSystem, conf, logSetup, cnxPool, generator, lookup, tcClient);
+        }
+        private PulsarSystem(ActorSystem actorSystem, PulsarClientConfigBuilder confBuilder, Action logSetup, IActorRef cnxPool, IActorRef generator, IActorRef lookup, IActorRef tcClient)
+        {
+            _actorSystem = actorSystem;
+            _cnxPool = cnxPool;
+            _generator = generator; 
+            _lookup = lookup;
+            _tcClient = tcClient;
+            _conf = confBuilder.ClientConfigurationData;
+            var conf = _conf;
+            var logging = logSetup ?? _logSetup;
+            logging();
+            _conf = conf; 
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
             _lookup.Tell(new SetClient(_client));
 

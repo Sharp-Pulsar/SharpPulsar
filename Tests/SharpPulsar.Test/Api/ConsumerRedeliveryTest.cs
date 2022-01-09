@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixtures;
 using SharpPulsar.User;
@@ -41,7 +42,7 @@ namespace SharpPulsar.Test.Api
         }
 
         [Fact]
-        public void TestUnAckMessageRedeliveryWithReceive()
+        public async Task TestUnAckMessageRedeliveryWithReceive()
         {
             var topic = $"persistent://public/default/async-unack-redelivery-{Guid.NewGuid()}";
             var builder = new ConsumerConfigBuilder<byte[]>();
@@ -51,25 +52,25 @@ namespace SharpPulsar.Test.Api
             builder.ForceTopicCreation(true);
             builder.AcknowledgmentGroupTime(TimeSpan.Zero);
             builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);
-            var consumer = _client.NewConsumer(builder);
+            var consumer = await _client.NewConsumerAsync(builder);
 
             var pBuilder = new ProducerConfigBuilder<byte[]>();
             pBuilder.Topic(topic);
-            var producer = _client.NewProducer(pBuilder);
+            var producer = await _client.NewProducerAsync(pBuilder);
 
             const int messageCount = 10;
 
             for (var i = 0; i < messageCount; i++)
             {
-                var receipt = producer.Send(Encoding.UTF8.GetBytes("my-message-" + i));
+                var receipt = await producer.SendAsync(Encoding.UTF8.GetBytes("my-message-" + i));
                 _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
             }
 
             var messageReceived = 0;
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCount; ++i)
             {
-                var m = (Message<byte[]>)consumer.Receive();
+                var m = (Message<byte[]>)await consumer.ReceiveAsync();
                 if (m != null)
                     _output.WriteLine($"BrokerEntryMetadata[timestamp:{m.BrokerEntryMetadata.BrokerTimestamp} index: {m.BrokerEntryMetadata?.Index.ToString()}");
 
@@ -80,18 +81,18 @@ namespace SharpPulsar.Test.Api
             }
 			
 			Assert.Equal(10, messageReceived);
-            Thread.Sleep(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(10));
             for (var i = 0; i < messageCount; i++)
             {
-                var m = consumer.Receive();
+                var m = await consumer.ReceiveAsync();
                 var receivedMessage = Encoding.UTF8.GetString(m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.NotNull(receivedMessage);
                 messageReceived++;
             }
             Assert.Equal(20, messageReceived);
-            producer.Close();
-            consumer.Close();
+            await producer.CloseAsync();
+            await consumer.CloseAsync();
         }
 
 	}

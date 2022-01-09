@@ -48,26 +48,20 @@ namespace SharpPulsar.Transaction
 		private IActorRef _lookup;
 		private IActorRef _cnxPool;
 		private IActorRef _replyTo;
-        private IActorRef _sender;
+        private readonly TaskCompletionSource<object> _tcs;
 
-		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
+        private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
+		public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
 		{
 			_cnxPool = cnxPool;
 			_lookup = lookup;
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
-            ReceiveAsync<string>(async st=> 
-            {
-                _sender = Sender;
-
-                if(st.Equals("Start")) 
-                    await StartCoordinator();
-            });
-			ReceiveAny(_=> Stash.Stash());
-		}
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
+            Ready();
+        }
 
 		private void Ready()
         {
@@ -82,7 +76,7 @@ namespace SharpPulsar.Transaction
 			Receive<CommitTxnID>(Commit);
 			Stash?.UnstashAll();
 		}
-		private async ValueTask StartCoordinator()
+		private async ValueTask StartCoordinator(TaskCompletionSource<object> tc)
         {
             var retryCount = 0;
 			_state = TransactionCoordinatorClientState.Starting;
@@ -97,7 +91,7 @@ namespace SharpPulsar.Transaction
 
             if (result.Failed)
             {
-                _sender.Tell(result);
+                tc.TrySetException(result.Exception);
                 return;
             }
 
@@ -123,7 +117,7 @@ namespace SharpPulsar.Transaction
                     catch (Exception ex)
                     {
                         _log.Error(ex.ToString());
-                        _sender.Tell(new AskResponse(ex));
+                        tc.TrySetException(ex);
                         break;
                     }
                 }
@@ -145,13 +139,17 @@ namespace SharpPulsar.Transaction
                     _log.Error(ex.ToString());
                 }
             }
-            Task.WaitAll(connectFutureList.ToArray());
-            _sender.Tell(new AskResponse(_handlers.Count));
-            Become(Ready);
+            await Task.WhenAll(connectFutureList.ToArray()).ContinueWith(task => 
+            {
+                if (task.Exception != null)
+                    tc.TrySetException(task.Exception);
+                else
+                    tc.TrySetResult(_handlers.Count);
+            });
         }
-		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
+		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
         {
-			return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf));
+			return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf, tcs));
         }
 		private string GetTCAssignTopicName(int partition)
 		{
