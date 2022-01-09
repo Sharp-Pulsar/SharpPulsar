@@ -143,6 +143,7 @@ class Build : NukeBuild
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
         .DependsOn(Compile)
+        .Partition(2)
         //.DependsOn(AdminPulsar)
         .Executes(() =>
         {
@@ -167,11 +168,11 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
-                        .SetLoggers("GitHubActions")
+                        .SetLoggers("GitHubActions")                        
                         //.SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                        .EnableNoBuild()); ;
+                        .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                        .EnableNoBuild());
                 }
                 catch (Exception ex)
                 {
@@ -186,6 +187,7 @@ class Build : NukeBuild
             Information($"Path: { Solution.Path}");
         });
     Target TxnTest => _ => _
+        .Partition(2)
         //.DependsOn(Test)
         //.Triggers(StopPulsar)
         .Executes(() =>
@@ -214,7 +216,7 @@ class Build : NukeBuild
                         .SetLoggers("GitHubActions")
                         //.SetDiagnosticsFile(TestsDirectory)
                         //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
                         .EnableNoBuild()); ;
                 }
                 catch (Exception ex)
