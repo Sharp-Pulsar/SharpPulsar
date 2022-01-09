@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using SharpPulsar.Configuration;
@@ -15,11 +16,11 @@ namespace SharpPulsar.Benchmarks.Bench
         private PulsarSystem _pulsarSystem;
 
         [GlobalSetup]
-        public void Setup()
+        public async Task Setup()
         {
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650");
-            _pulsarSystem = PulsarSystem.GetInstance(clientConfig);
+            _pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
 
             _client = _pulsarSystem.NewClient();
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using SharpPulsar.Configuration;
@@ -21,23 +22,23 @@ namespace SharpPulsar.Benchmarks.Bench
         public int Iterations;
 
         [GlobalSetup]
-        public void Setup()
+        public async Task Setup()
         {
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl("pulsar://localhost:6650");
-            _pulsarSystem = PulsarSystem.GetInstance(clientConfig);
+            _pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
 
             _client = _pulsarSystem.NewClient();
 
 
-            _consumer = _client.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+            _consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
                 .Topic(_benchTopic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"bench-sub-{Guid.NewGuid()}")
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
 
 
-            _producer = _client.NewProducer(new ProducerConfigBuilder<byte[]>()
+            _producer = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
                .Topic(_benchTopic));
         }
         [GlobalCleanup]
