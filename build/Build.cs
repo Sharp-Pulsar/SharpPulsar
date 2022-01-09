@@ -244,7 +244,7 @@ class Build : NukeBuild
            throw new Exception("Unable to confirm Pulsar has initialized");
        });
     Target AdminPulsar => _ => _
-      //.DependsOn(StartPulsar)
+      .DependsOn(StartPulsar)
       .Executes(() =>
        {
            
