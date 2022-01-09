@@ -143,41 +143,27 @@ class Build : NukeBuild
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
         .DependsOn(Compile)
-        .Partition(2)
-        //.DependsOn(AdminPulsar)
+        .DependsOn(AdminPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test";
             var project = Solution.GetProject(testProject);
             Information($"Running tests from {project.Name}");
 
-            foreach (var fw in project.GetTargetFrameworks())
+            try
             {
-                if (fw.StartsWith("net4")
-                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                {
-                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
-                    continue;
-                }
-
-                Information($"Running for {project.Name} ({fw}) ...");
-                try
-                {
-                    DotNetTest(c => c
-                        .SetProjectFile(project)
-                        .SetConfiguration(Configuration.ToString())
-                        .SetFramework(fw)
-                        .SetLoggers("GitHubActions")                        
-                        //.SetDiagnosticsFile(TestsDirectory)
-                        //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                        .EnableNoBuild());
-                }
-                catch (Exception ex)
-                {
-                    Information(ex.Message);
-                }
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework("net6.0")
+                    .SetLoggers("GitHubActions")
+                    //.SetDiagnosticsFile(TestsDirectory)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .EnableNoBuild());
+            }
+            catch (Exception ex)
+            {
+                Information(ex.Message);
             }
         });
     Target TestPaths => _ => _
@@ -187,42 +173,29 @@ class Build : NukeBuild
             Information($"Path: { Solution.Path}");
         });
     Target TxnTest => _ => _
-        .Partition(2)
-        //.DependsOn(Test)
-        //.Triggers(StopPulsar)
+        .Partition(4)
+        .DependsOn(Test)
+        .Triggers(StopPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test.Transaction";
             var project = Solution.GetProject(testProject);
             Information($"Running tests from {project.Name}");
-
-            foreach (var fw in project.GetTargetFrameworks())
+            try
             {
-                if (fw.StartsWith("net4")
-                    && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                    && Environment.GetEnvironmentVariable("FORCE_LINUX_TESTS") != "1")
-                {
-                    Information($"Skipping {project.Name} ({fw}) tests on Linux - https://github.com/mono/mono/issues/13969");
-                    continue;
-                }
-
-                Information($"Running for {project.Name} ({fw}) ...");
-                try
-                {
-                    DotNetTest(c => c
-                        .SetProjectFile(project)
-                        .SetConfiguration(Configuration.ToString())
-                        .SetFramework(fw)
-                        .SetLoggers("GitHubActions")
-                        //.SetDiagnosticsFile(TestsDirectory)
-                        //.SetLogger("trx")
-                        .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                        .EnableNoBuild()); ;
-                }
-                catch (Exception ex)
-                {
-                    Information(ex.Message);
-                }
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework("net6.0")
+                    .SetLoggers("GitHubActions")
+                    //.SetDiagnosticsFile(TestsDirectory)
+                    //.SetLogger("trx")
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .EnableNoBuild()); ;
+            }
+            catch (Exception ex)
+            {
+                Information(ex.Message);
             }
         });
 

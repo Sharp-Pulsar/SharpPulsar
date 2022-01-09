@@ -35,7 +35,6 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: |
-            5.0.*
             6.0.*
 
       - uses: actions/checkout@v1
@@ -46,18 +45,6 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-     
-      - name: Run 'StartPulsar'
-        run: ./build.cmd StartPulsar
-     
-      - name: Run 'AdminPulsar'
-        run: ./build.cmd AdminPulsar
-     
+
       - name: Run 'Tests'
-        run: ./build.cmd Test
-     
-      - name: Run 'Txn Tests'
         run: ./build.cmd TxnTest
-     
-      - name: Run 'StopPulsar'
-        run: ./build.cmd StopPulsar

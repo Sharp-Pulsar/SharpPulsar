@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: |
-            5.0.*
             6.0.*
       - uses: actions/checkout@v1
       - name: Cache .nuke/temp, ~/.nuget/packages
@@ -40,5 +39,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd PushBeta'
+      - name: Publish beta
         run: ./build.cmd PushBeta
