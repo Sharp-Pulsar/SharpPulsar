@@ -3057,7 +3057,7 @@ namespace SharpPulsar
                 txn.Ask(new RegisterAckedTopic(Topic, Subscription)).ContinueWith(task =>
                 {
                     var msgid = messageId;
-                    if (task.Exception != null)
+                    if (!task.IsFaulted)
                     {
                         DoAcknowledge(msgid, ackType, properties, txn);
                         ackFuture.TrySetResult(null);
