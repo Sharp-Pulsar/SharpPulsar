@@ -33,34 +33,8 @@ using System.Collections.Generic;
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
-[GitHubActions("Build",
-    GitHubActionsImage.WindowsLatest,
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "main", "dev" },
-    
-    InvokedTargets = new[] { nameof(Compile) })]
 
-[GitHubActions("Tests",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "main", "dev" },
-    InvokedTargets = new[] { nameof(Test) })]
-
-[GitHubActions("Beta",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "dev" },
-    InvokedTargets = new[] { nameof(PushBeta) })]
-
-[GitHubActions("Publish",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main" },
-    InvokedTargets = new[] { nameof(Push) })]
-class Build : NukeBuild
+partial class Build : NukeBuild
 {
     /// Support plugins are available for:
     ///   - JetBrains ReSharper        https://nuke.build/resharper
