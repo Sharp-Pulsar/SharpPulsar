@@ -2,9 +2,11 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Nuke.Common;
+using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
@@ -21,6 +23,12 @@ using Nuke.Common.Utilities.Collections;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using static Nuke.Common.ChangeLog.ChangelogTasks;
+using static Nuke.Common.Tools.Git.GitTasks;
+using static Nuke.Common.Tools.BenchmarkDotNet.BenchmarkDotNetTasks;
+using Nuke.Common.Tools.DocFX;
+using System.IO;
+using System.Collections.Generic;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
@@ -94,6 +102,21 @@ class Build : NukeBuild
     AbsolutePath TestSourceDirectory => RootDirectory / "SharpPulsar.Test";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
+    AbsolutePath DocSiteDirectory => RootDirectory / "docs" / "_site";
+    public string ChangelogFile => RootDirectory / "CHANGELOG.md";
+    public AbsolutePath DocFxDir => RootDirectory / "docs";
+    public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
+
+    static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
+        null
+        : JsonSerializer.Deserialize<JsonElement>(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT"));
+
+    public ChangeLog Changelog => ReadChangelog(ChangelogFile);
+
+    public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
+    public string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
+
+
     Target Clean => _ => _
         .Before(Restore)
         .Executes(() =>
@@ -119,6 +142,36 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .SetAssemblyVersion(GetVersion())
                 .SetFileVersion(GetVersion()));
+        });
+    IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
+
+    Target RunChangelog => _ => _
+        .Executes(() =>
+        {
+            // GitVersion.SemVer appends the branch name to the version numer (this is good for pre-releases)
+            // If you are executing this under a branch that is not beta or alpha - that is final release branch
+            // you can update the switch block to reflect your release branch name
+            var vNext = string.Empty;
+            var branch = GitVersion.BranchName;
+            switch (branch)
+            {
+                case "main":
+                case "master":
+                    vNext = GitVersion.MajorMinorPatch;
+                    break;
+                default:
+                    vNext = GitVersion.SemVer;
+                    break;
+            }
+            FinalizeChangelog(ChangelogFile, vNext, GitRepository);
+
+            Git($"add {ChangelogFile}");
+            Git($"commit -m \"Finalize {Path.GetFileName(ChangelogFile)} for {vNext}.\"");
+
+            //To sign your commit
+            //Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {vNext}.\"");
+
+            Git($"tag -f {GitVersion.SemVer}");
         });
     Target RunMemoryAllocation => _ => _
         .DependsOn(Compile)
