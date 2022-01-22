@@ -41,13 +41,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.31" />
+    <PackageReference Include="akka" Version="1.4.32" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.11.0" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
     <PackageReference Include="AvroSchemaGenerator" Version="2.4.1" />
     <PackageReference Include="DotNetty.Common" Version="0.7.1" />
-    <PackageReference Include="Google.Protobuf" Version="3.19.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.19.3" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
     <PackageReference Include="JsonSubTypes" Version="1.8.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.16" />
@@ -83,7 +83,7 @@
     <PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.1" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="6.0.0" />
-    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.5" />
+    <PackageReference Include="zlib.net-mutliplatform" Version="1.0.6" />
     <PackageReference Include="ZstdNet" Version="1.4.5" />
   </ItemGroup>
 

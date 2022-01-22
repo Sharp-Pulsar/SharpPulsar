@@ -2440,7 +2440,7 @@ namespace SharpPulsar
         internal override TaskCompletionSource<object> Seek(IMessageId messageId)
 		{
             var seekBy = $"the message {messageId}";
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             if (SeekCheckState(seekBy, tcs))
             {
                 var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
@@ -2468,7 +2468,7 @@ namespace SharpPulsar
 
 		internal override TaskCompletionSource<object> Seek(long timestamp)
 		{
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var seekBy = $"the timestamp {timestamp:D}";
             if (SeekCheckState(seekBy, tcs))
             {

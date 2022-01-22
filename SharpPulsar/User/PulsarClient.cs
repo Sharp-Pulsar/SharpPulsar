@@ -242,7 +242,7 @@ namespace SharpPulsar.User
         private async ValueTask<Consumer<T>> DoSingleTopicSubscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
             var topic = conf.SingleTopic;
-            var tcs = new TaskCompletionSource<IActorRef>();
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
             try
             {
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
@@ -301,7 +301,7 @@ namespace SharpPulsar.User
         {
             Condition.CheckArgument(conf.TopicNames.Count == 0 || TopicNamesValid(conf.TopicNames), "Topics is empty or invalid.");
 
-            var tcs = new TaskCompletionSource<IActorRef>();
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.Prop(state, _client, _lookup, _cnxPool, _generator, conf, schema, conf.ForceTopicCreation, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var cnsr = await tcs.Task.ConfigureAwait(false);
@@ -316,7 +316,7 @@ namespace SharpPulsar.User
             var destination = TopicName.Get(regex);
             var namespaceName = destination.NamespaceObject;
             IActorRef consumer = null;
-            var tcs = new TaskCompletionSource<IActorRef>();
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
             var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -461,7 +461,7 @@ namespace SharpPulsar.User
             var topic = conf.TopicName;
             try
             {
-                var tcs = new TaskCompletionSource<IActorRef>();
+                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
                 if (_actorSystem.Log.IsDebugEnabled)
                 {
@@ -497,7 +497,7 @@ namespace SharpPulsar.User
         }
         private async ValueTask<Reader<T>> CreateMultiTopicReader<T>(ReaderConfigurationData<T> conf, ISchema<T> schema)
         {
-            var tcs = new TaskCompletionSource<IActorRef>();
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
             var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
             var cnsr = await tcs.Task.ConfigureAwait(false);
@@ -597,7 +597,7 @@ namespace SharpPulsar.User
             }
             if (metadata.Partitions > 0)
             {
-                var tcs = new TaskCompletionSource<IActorRef>();
+                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var partitionActor = _actorSystem.ActorOf(PartitionedProducer<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, tcs));
                 
                 try
@@ -614,7 +614,7 @@ namespace SharpPulsar.User
             }
             else
             {
-                var tcs = new TaskCompletionSource<IActorRef>();
+                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
                 _actorSystem.ActorOf(ProducerActor<T>.Prop(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, tcs, -1, schema, interceptors, _clientConfigurationData));
                 try

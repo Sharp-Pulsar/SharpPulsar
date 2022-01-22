@@ -491,7 +491,7 @@ namespace SharpPulsar
         // subscribe one more given topic
         protected internal async ValueTask Subscribe(string topicName, bool createTopicIfDoesNotExist)
 		{
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var topicNameInstance = GetTopicName(topicName);
 			if (topicNameInstance == null)
 			{
@@ -1136,7 +1136,7 @@ namespace SharpPulsar
 
         private TaskCompletionSource<IActorRef> CreateConsumer(long consumerId, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, ISchema<T> schema, bool createIfDoesNotExist)
         {
-            var tcs = new TaskCompletionSource<IActorRef>();
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             if (conf.ReceiverQueueSize == 0)
 			{                

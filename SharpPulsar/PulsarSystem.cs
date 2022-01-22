@@ -111,7 +111,7 @@ namespace SharpPulsar
             {
                 try
                 {
-                    var tcs = new TaskCompletionSource<object>();
+                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                     tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs));
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
