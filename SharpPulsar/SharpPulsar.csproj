@@ -12,34 +12,6 @@
     <Version>1.0.0</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="Akka\**" />
-    <Compile Remove="Messages\EventSource\**" />
-    <Compile Remove="Protocol\Circe\**" />
-    <Compile Remove="Protocol\Proto\Partial\**" />
-    <EmbeddedResource Remove="Akka\**" />
-    <EmbeddedResource Remove="Messages\EventSource\**" />
-    <EmbeddedResource Remove="Protocol\Circe\**" />
-    <EmbeddedResource Remove="Protocol\Proto\Partial\**" />
-    <None Remove="Akka\**" />
-    <None Remove="Messages\EventSource\**" />
-    <None Remove="Protocol\Circe\**" />
-    <None Remove="Protocol\Proto\Partial\**" />
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
-    <None Include="SharpPulsar.jpg">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Batch\BatchBitSet.cs" />
-    <Compile Remove="Schemas\GenerateSchema.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="NLog.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.32" />
@@ -89,6 +61,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="SharpPulsar.jpg">
+          <Pack>True</Pack>
+          <PackagePath></PackagePath>
+    </None>
     <None Include="readme.txt" pack="true" PackagePath=".">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
