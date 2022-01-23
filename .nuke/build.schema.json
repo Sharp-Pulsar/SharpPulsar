@@ -99,16 +99,14 @@
               "CheckDockerVersion",
               "Clean",
               "Compile",
-              "Pack",
-              "PackBeta",
-              "Push",
-              "PushBeta",
+              "CreateNuget",
+              "PublishNuget",
               "Restore",
+              "RunChangelog",
               "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
               "Test",
-              "TestPaths",
               "TxnTest"
             ]
           }
@@ -129,16 +127,14 @@
               "CheckDockerVersion",
               "Clean",
               "Compile",
-              "Pack",
-              "PackBeta",
-              "Push",
-              "PushBeta",
+              "CreateNuget",
+              "PublishNuget",
               "Restore",
+              "RunChangelog",
               "RunMemoryAllocation",
               "StartPulsar",
               "StopPulsar",
               "Test",
-              "TestPaths",
               "TxnTest"
             ]
           }

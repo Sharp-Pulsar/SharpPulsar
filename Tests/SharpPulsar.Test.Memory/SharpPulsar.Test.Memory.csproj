@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="ConsoleTables" Version="2.4.2" />
-    <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="JetBrains.dotMemoryUnit" Version="3.1.20200127.214830" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
     <PackageReference Include="microsoft.extensions.configuration.fileextensions" Version="6.0.0" />

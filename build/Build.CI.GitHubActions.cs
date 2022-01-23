@@ -4,33 +4,25 @@ using Nuke.Common.CI.GitHubActions.Configuration;
 using Nuke.Common.Execution;
 using Nuke.Common.Utilities;
 
-[CustomGitHubActions("Build",
+[CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "main", "dev" },
-
+    OnPullRequestBranches = new[] { "release" },
     InvokedTargets = new[] { nameof(Compile) })]
 
-[CustomGitHubActions("Tests",
+[CustomGitHubActions("pr_validation",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "main", "dev" },
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) })]
 
-[CustomGitHubActions("Beta",
+[CustomGitHubActions("release",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "dev" },
-    InvokedTargets = new[] { nameof(PushBeta) })]
-
-[CustomGitHubActions("Publish",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main" },
-    InvokedTargets = new[] { nameof(Push) })]
+    OnPushBranches = new[] { "release" },
+    InvokedTargets = new[] { nameof(PublishNuget) })]
 
 partial class Build
 {

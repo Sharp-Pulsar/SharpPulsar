@@ -24,10 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Build.CI.GitHubActions.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="..\.github\workflows\ci.yml" />
   </ItemGroup>
 
@@ -37,10 +33,6 @@
 
   <ItemGroup>
     <None Remove="..\.github\workflows\TxnTests.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Build.CI.GitHubActions.cs" />
   </ItemGroup>
 
 </Project>

@@ -5,16 +5,16 @@
 #
 #     - To turn off auto-generation set:
 #
-#         [GitHubActions (AutoGenerate = false)]
+#         [CustomGitHubActions (AutoGenerate = false)]
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_Build --host GitHubActions
+#         nuke --generate-configuration GitHubActions_build --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Build
+name: build
 
 on:
   push:
@@ -23,20 +23,20 @@ on:
       - dev
   pull_request:
     branches:
-      - main
-      - dev
+      - release
 
 jobs:
   windows-latest:
     name: windows-latest
     runs-on: windows-latest
     steps:
-      - name: Setup SDKs
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: |
-            6.0.*
       - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.*
       - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
@@ -44,18 +44,19 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Compile
+      - name: Run './build.cmd Compile'
         run: ./build.cmd Compile
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SDKs
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: |
-            6.0.*
       - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.*
       - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
@@ -63,5 +64,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Compile
+      - name: Run './build.cmd Compile'
         run: ./build.cmd Compile

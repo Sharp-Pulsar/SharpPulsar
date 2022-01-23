@@ -25,6 +25,7 @@ using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.ChangeLog.ChangelogTasks;
 using static Nuke.Common.Tools.Git.GitTasks;
+using static Nuke.Common.Tools.DocFX.DocFXTasks;
 using static Nuke.Common.Tools.BenchmarkDotNet.BenchmarkDotNetTasks;
 using Nuke.Common.Tools.DocFX;
 using System.IO;
@@ -71,11 +72,10 @@ partial class Build : NukeBuild
 
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
 
-    AbsolutePath TestsDirectory => RootDirectory / "tests";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
-    AbsolutePath TestSourceDirectory => RootDirectory / "SharpPulsar.Test";
-    AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
-
+    AbsolutePath Output => RootDirectory / "bin";
+    AbsolutePath OutputNuget => Output / "nuget";
+    AbsolutePath OutputTests => RootDirectory / "TestResults";
+    AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
     AbsolutePath DocSiteDirectory => RootDirectory / "docs" / "_site";
     public string ChangelogFile => RootDirectory / "CHANGELOG.md";
     public AbsolutePath DocFxDir => RootDirectory / "docs";
@@ -95,11 +95,14 @@ partial class Build : NukeBuild
         .Before(Restore)
         .Executes(() =>
         {
-            TestsDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
-            EnsureCleanDirectory(OutputDirectory);
+            RootDirectory
+            .GlobDirectories("**/bin", "**/obj", Output, OutputTests, OutputPerfTests, OutputNuget, DocSiteDirectory)
+            .ForEach(DeleteDirectory);
+            EnsureCleanDirectory(Output);
         });
 
     Target Restore => _ => _
+        .DependsOn(Clean)
         .Executes(() =>
         {
             DotNetRestore(s => s
@@ -110,40 +113,37 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
+            var version = LatestVersion;
+            var vers = $"{version.Version.Major}.{version.Version.Minor}.{version.Version.Patch}";
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
-                .SetAssemblyVersion(GetVersion())
-                .SetFileVersion(GetVersion()));
+                .SetAssemblyVersion(vers)
+                .SetFileVersion(vers));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
     Target RunChangelog => _ => _
         .Executes(() =>
         {
-            // GitVersion.SemVer appends the branch name to the version numer (this is good for pre-releases)
-            // If you are executing this under a branch that is not beta or alpha - that is final release branch
-            // you can update the switch block to reflect your release branch name
             var vNext = string.Empty;
+            Information(GitVersion.SemVer);
             var branch = GitVersion.BranchName;
             switch (branch)
             {
                 case "main":
                 case "master":
-                    vNext = GitVersion.MajorMinorPatch;
                     break;
                 default:
-                    vNext = GitVersion.SemVer;
+                    Assert.Fail($"Current branch:'{branch}'. You can only execute this in main branch");
                     break;
             }
             FinalizeChangelog(ChangelogFile, vNext, GitRepository);
 
             Git($"add {ChangelogFile}");
-            Git($"commit -m \"Finalize {Path.GetFileName(ChangelogFile)} for {vNext}.\"");
 
-            //To sign your commit
-            //Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {vNext}.\"");
+            Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {vNext}.\"");
 
             Git($"tag -f {GitVersion.SemVer}");
         });
@@ -170,10 +170,13 @@ partial class Build : NukeBuild
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target Test => _ => _
         .DependsOn(Compile)
-        .DependsOn(AdminPulsar)
+        .DependsOn(SetupPulsar)
         .Executes(() =>
         {
             var testProject = "SharpPulsar.Test";
+            var projects = Solution.GetProjects("*.Test")
+            .Where(x=> !x.Name.EndsWith("EventSourcing") 
+                    && !x.Name.EndsWith("Memory"));
             var project = Solution.GetProject(testProject);
             Information($"Running tests from {project.Name}");
 
@@ -193,12 +196,37 @@ partial class Build : NukeBuild
                 Information(ex.Message);
             }
         });
-    Target TestPaths => _ => _
+    //--------------------------------------------------------------------------------
+    // Documentation 
+    //--------------------------------------------------------------------------------
+    Target DocsInit => _ => _
+        .DependsOn(Compile)
         .Executes(() =>
         {
-            Information($"Directory: { Solution.Directory}");
-            Information($"Path: { Solution.Path}");
+            DocFXInit(s => s.SetOutputFolder(DocFxDir).SetQuiet(true));
         });
+    Target DocsMetadata => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            DocFXMetadata(s => s
+            .SetProjects(DocFxDirJson)
+            .SetLogLevel(DocFXLogLevel.Verbose));
+        });
+
+    Target DocBuild => _ => _
+        .DependsOn(DocsMetadata)
+        .Executes(() =>
+        {
+            DocFXBuild(s => s
+            .SetConfigFile(DocFxDirJson)
+            .SetLogLevel(DocFXLogLevel.Verbose));
+        });
+
+    Target ServeDocs => _ => _
+        .DependsOn(DocBuild)
+        .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir)));
+
     Target TxnTest => _ => _
         .Partition(4)
         .DependsOn(Test)
@@ -208,25 +236,22 @@ partial class Build : NukeBuild
             var testProject = "SharpPulsar.Test.Transaction";
             var project = Solution.GetProject(testProject);
             Information($"Running tests from {project.Name}");
-            try
+            foreach(var fw in project.GetTargetFrameworks())
             {
                 DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net6.0")
-                    .SetLoggers("GitHubActions")
-                    //.SetDiagnosticsFile(TestsDirectory)
-                    //.SetLogger("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
-                    .EnableNoBuild()); ;
-            }
-            catch (Exception ex)
-            {
-                Information(ex.Message);
-            }
+                    .SetFramework(fw)
+                    .SetResultsDirectory(OutputTests)
+                    .SetProcessWorkingDirectory(Directory.GetParent(project).FullName)
+                    .SetLoggers("trx")
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .EnableNoBuild());
+            }            
         });
 
     Target StartPulsar => _ => _
+      .Before(SetupPulsar)
       .DependsOn(CheckDockerVersion)
       .Executes(async () =>
        {
@@ -241,7 +266,7 @@ partial class Build : NukeBuild
             .SetImage("apachepulsar/pulsar-all:2.9.1")
             .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", @"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", @"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", @"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
             .SetCommand("bash")
-            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
+            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
            //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
            var waitTries = 20;
 
@@ -270,41 +295,29 @@ partial class Build : NukeBuild
 
            throw new Exception("Unable to confirm Pulsar has initialized");
        });
-    Target AdminPulsar => _ => _
+    Target SetupPulsar => _ => _
+      .Before(Test)
       .DependsOn(StartPulsar)
       .Executes(() =>
        {
-           
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
-                .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces","create", "public/deduplication")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-retention", "public/default","--time","3600", "--size", "-1")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
+                .SetArgs("namespaces", "set-retention", "public/default","--time","3600")
             );
            DockerTasks.DockerExec(x => x
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar-admin")
                 .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
             );
-           /*DockerTasks.DockerExec(x => x
+           DockerTasks.DockerExec(x => x
+                .SetDetach(true)
+                .SetInteractive(true)   
                 .SetContainer("pulsar_test")
                 .SetCommand("bin/pulsar")
-                .SetArgs("sql-worker", "run")
-            );*/
+                //.SetArgs("sql-worker", "run")
+                .SetArgs("sql-worker", "start")//as daemon process
+            );
        });
     Target CheckDockerVersion => _ => _
       .DependsOn(CheckBranch)
@@ -335,86 +348,39 @@ partial class Build : NukeBuild
         }
 
     });
-    Target Pack => _ => _
+    Target CreateNuget => _ => _
       .DependsOn(Compile)
       .Executes(() =>
       {
+          var version = LatestVersion;
           var project = Solution.GetProject("SharpPulsar");
           DotNetPack(s => s
               .SetProject(project)
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetAssemblyVersion(GetVersion())
-              .SetVersion(GetVersion())
-              .SetPackageReleaseNotes(GetReleasenote())
+              .SetIncludeSymbols(true)
+              .SetAssemblyVersion(version.Version.ToString())
+              .SetFileVersion(version.Version.ToString())
+              .SetVersion(version.Version.ToString())
+              .SetPackageReleaseNotes(GetNuGetReleaseNotes(ChangelogFile, GitRepository))
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
-              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven","Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
               .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
+              .SetOutputDirectory(OutputNuget)); 
 
       });
-    Target PackBeta => _ => _
-      .DependsOn(Compile)
-      .Executes(() =>
-      {
-          var project = Solution.GetProject("SharpPulsar");
-          DotNetPack(s => s
-              .SetProject(project)
-              .SetConfiguration(Configuration)
-              .EnableNoBuild()
-              .EnableNoRestore()
-              .SetAssemblyVersion($"{GetVersion()}-beta.{BuildNumber}")
-              .SetVersion($"{GetVersion()}-beta.{BuildNumber}")
-              .SetPackageReleaseNotes(GetReleasenote())
-              .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
-              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Sourcing", "Distributed System", "Microservice")
-              .AddAuthors("Ebere Abanonu (@mestical)")
-              .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(ArtifactsDirectory / "nuget")); ;
-
-      });
-    Target PushBeta => _ => _
-      .DependsOn(PackBeta)
+    Target PublishNuget => _ => _
+      .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
       .Requires(() => !GitHubApiKey.IsNullOrEmpty())
-      .Requires(() => !BuildNumber.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {
-          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
-              .NotEmpty()
-              .Where(x => !x.EndsWith("symbols.nupkg"))
-              .ForEach(x =>
-              {
-                  DotNetNuGetPush(s => s
-                      .SetTargetPath(x)
-                      .SetSource(NugetApiUrl)
-                      .SetApiKey(NugetApiKey)
-                  );
-                  
-                  DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubApiKey)
-                      .SetSymbolApiKey(GitHubApiKey)
-                      .SetTargetPath(x)
-                      .SetSource(GithubSource)
-                      .SetSymbolSource(GithubSource));
-              });
-      });
-    Target Push => _ => _
-      .DependsOn(Pack)
-      .Requires(() => NugetApiUrl)
-      .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
-      .Requires(() => !BuildNumber.IsNullOrEmpty())
-      .Requires(() => Configuration.Equals(Configuration.Release))
-      .Executes(() =>
-      {
-          GlobFiles(ArtifactsDirectory / "nuget", "*.nupkg")
-              .NotEmpty()
-              .Where(x => !x.EndsWith("symbols.nupkg"))
+          OutputNuget.GlobFiles("*.nupkg")
+              .Where(x => !x.ToString().EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
                   DotNetNuGetPush(s => s
@@ -433,14 +399,6 @@ partial class Build : NukeBuild
       });
     static void Information(string info)
     {
-        Logger.Info(info);
-    }
-    static string GetVersion()
-    {
-        return "2.9.0";
-    }
-    static string GetReleasenote()
-    {
-        return $"Implement feature and changes introduced in Apache Pulsar 2.9.0 (and 2.9.1): {Environment.NewLine} - BrokerEntryMetadata";
+        Serilog.Log.Information(info);
     }
 }

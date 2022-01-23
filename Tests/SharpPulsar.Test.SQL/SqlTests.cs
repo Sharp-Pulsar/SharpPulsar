@@ -70,8 +70,8 @@ namespace SharpPulsar.Test.SQL
             Assert.True(receivedCount > 1);
         }
 
-        [Fact(Skip = "Issue with sql-worker on github action")]
-        //[Fact]
+        //[Fact(Skip = "Issue with sql-worker on github action")]
+        [Fact]
         public void TestAvro()
         {
             PlainAvroProducer($"journal-{Guid.NewGuid()}");

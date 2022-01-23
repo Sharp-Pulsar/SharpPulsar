@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		CHANGELOG.md = CHANGELOG.md
+		docker-compose.yml = docker-compose.yml
+		Dockerfile = Dockerfile
 		gitversion.yml = gitversion.yml
 	EndProjectSection
 EndProject
@@ -101,8 +103,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ssl", "ssl", "{59623902-830
 		docker\latest-version-image\ssl\user1.key-pk8.pem = docker\latest-version-image\ssl\user1.key-pk8.pem
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{B5D60816-9F9A-4551-B860-C68281EBF748}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -157,7 +157,6 @@ Global
 		{1ED8187D-303F-4768-8341-FD8B15A54972} = {BE51FF3B-EA56-4609-8CB7-A3BB1C3C081A}
 		{6F7B7EDC-2647-4CB9-8768-AD580B65FDED} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
 		{59623902-830D-4D6F-B1D0-DA74CD18B0DA} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
-		{B5D60816-9F9A-4551-B860-C68281EBF748} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A9D4BE7B-E00C-47EC-87B3-4064A8F6F75E}

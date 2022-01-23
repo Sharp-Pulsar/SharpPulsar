@@ -5,33 +5,34 @@
 #
 #     - To turn off auto-generation set:
 #
-#         [GitHubActions (AutoGenerate = false)]
+#         [CustomGitHubActions (AutoGenerate = false)]
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_Publish --host GitHubActions
+#         nuke --generate-configuration GitHubActions_release --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Publish
+name: release
 
 on:
   push:
     branches:
-      - main
+      - release
 
 jobs:
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SDKs
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: |
-            6.0.*
       - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.*
       - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
@@ -39,7 +40,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Publish new release
-        run: ./build.cmd Push --nuget_api_key ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }} --gh_api_key ${{ secrets.GITHUB_TOKEN }}
-        env:
-          SHARP_PULSAR_NUGET_API_KEY: ${{ secrets.SHARP_PULSAR__NUGET_API_KEY }}
+      - name: Run './build.cmd PublishNuget'
+        run: ./build.cmd PublishNuget

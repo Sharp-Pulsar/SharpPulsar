@@ -32,8 +32,8 @@ namespace SharpPulsar.Test.EventSourcing
 			_pulsarSystem = fixture.PulsarSystem;
 			_clientConfigurationData = fixture.ClientConfigurationData;
         }
-		[Fact(Skip = "Issue with sql-worker on github action")]
-		//[Fact]
+		//[Fact(Skip = "Issue with sql-worker on github action")]
+		[Fact]
 		public virtual void SqlSourceTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
@@ -74,8 +74,8 @@ namespace SharpPulsar.Test.EventSourcing
 			}
 			Assert.True(receivedCount > 0);
 		}
-		[Fact(Skip = "Issue with sql-worker on github action")]
-		//[Fact]
+		//[Fact(Skip = "Issue with sql-worker on github action")]
+		[Fact]
 		public virtual void SqlSourceTaggedTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";

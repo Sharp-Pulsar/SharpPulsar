@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="microsoft.extensions.configuration.fileextensions" Version="6.0.0" />
     <PackageReference Include="microsoft.extensions.configuration.json" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
