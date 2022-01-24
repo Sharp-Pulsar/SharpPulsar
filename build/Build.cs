@@ -127,8 +127,6 @@ partial class Build : NukeBuild
     Target RunChangelog => _ => _
         .Executes(() =>
         {
-            var vNext = string.Empty;
-            Information(GitVersion.SemVer);
             var branch = GitVersion.BranchName;
             switch (branch)
             {
@@ -139,11 +137,11 @@ partial class Build : NukeBuild
                     Assert.Fail($"Current branch:'{branch}'. You can only execute this in main branch");
                     break;
             }
-            FinalizeChangelog(ChangelogFile, vNext, GitRepository);
+            FinalizeChangelog(ChangelogFile, GitVersion.SemVer, GitRepository);
 
             Git($"add {ChangelogFile}");
 
-            Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {vNext}.\"");
+            Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.SemVer}.\"");
 
             Git($"tag -f {GitVersion.SemVer}");
         });
