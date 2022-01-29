@@ -3,31 +3,18 @@ using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public abstract class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        private readonly PulsarTestcontainerConfiguration _configuration = new PulsarTestcontainerConfiguration();
+        public readonly PulsarTestcontainerConfiguration Configuration = new PulsarTestcontainerConfiguration();
 
         public PulsarFixture()
         {
-            Container = new TestcontainersBuilder<PulsarTestcontainer>()
-              .WithPulsar(_configuration)
-              .WithName($"test-core")              
-              .WithPortBinding(6650)
-              .WithPortBinding(8080)
-              .WithPortBinding(8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081)
-              .Build();
+            Container = BuildContainer();
         }
+        public abstract PulsarTestcontainer BuildContainer();
         public PulsarTestcontainer Container { get; }
         public virtual Task InitializeAsync()
-        {
-            /*var imge = new ImageFromDockerfileBuilder()
-                .WithName("sharp-pulsar:2.9.1")                
-                .WithDockerfileDirectory(".")
-                .WithDeleteIfExists(false)
-                .Build().GetAwaiter().GetResult();*/
+        {            
            return Container.StartAsync();
         }
 
@@ -38,7 +25,7 @@ namespace SharpPulsar.TestContainer
 
         public void Dispose()
         {
-            _configuration.Dispose();
+            Configuration.Dispose();
         }
     }
 }

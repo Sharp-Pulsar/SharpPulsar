@@ -16,6 +16,7 @@ using Akka.Actor;
 
 namespace SharpPulsar.Test.Fixtures
 {
+    using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
     using SharpPulsar.TestContainer;
@@ -51,6 +52,20 @@ namespace SharpPulsar.Test.Fixtures
                 .SetBasePath(outputPath)
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
+        }
+        public override PulsarTestcontainer BuildContainer()
+        {
+            return new TestcontainersBuilder<PulsarTestcontainer>()
+               .WithPulsar(Configuration)
+               .WithName($"test-core")
+               .WithPortBinding(6650)
+               .WithPortBinding(8080)
+               .WithPortBinding(8081)
+               .WithExposedPort(6650)
+               .WithExposedPort(8080)
+               .WithExposedPort(8081)
+               .WithCleanUp(true)
+               .Build();
         }
         public override async Task InitializeAsync()
         {

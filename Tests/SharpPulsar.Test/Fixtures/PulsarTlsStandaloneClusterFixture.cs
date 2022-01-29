@@ -14,6 +14,7 @@
 
 namespace SharpPulsar.Test.Fixtures
 {
+    using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
     using SharpPulsar.TestContainer;
@@ -42,8 +43,24 @@ namespace SharpPulsar.Test.Fixtures
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
+        public override PulsarTestcontainer BuildContainer()
+        {
+            return new TestcontainersBuilder<PulsarTestcontainer>()
+               .WithPulsar(Configuration)
+               .WithName($"test-core-tls")
+               .WithPortBinding(6651)
+               .WithExposedPort(6651)
+               .WithCleanUp(true)
+               .Build();
+        }
         public override async Task InitializeAsync()
         {
+            //need to build custom pulsar image for tls testing
+            var imge = await new ImageFromDockerfileBuilder()
+                .WithName("sharp-pulsar:2.9.1")                
+                .WithDockerfileDirectory(".")
+                .WithDeleteIfExists(false)
+                .Build();
             await base.InitializeAsync();
             await SetupSystem();
         }
