@@ -53,7 +53,7 @@ namespace SharpPulsar.Test.Api
             producer.Topic("ProducerInstantiation");
             var stringProducerBuilder = await _client.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
-            stringProducerBuilder.Close();
+            await stringProducerBuilder.CloseAsync();
         }
         [Fact]
         public async Task ConsumerInstantiation()
@@ -68,12 +68,20 @@ namespace SharpPulsar.Test.Api
         [Fact]
         public async Task ReaderInstantiation()
         {
-            var reader = new ReaderConfigBuilder<string>();
-            reader.Topic("ReaderInstantiation");
-            reader.StartMessageId(IMessageId.Earliest);
-            var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
-            Assert.NotNull(stringReaderBuilder);
-            stringReaderBuilder.Close();
+            try
+            {
+                var reader = new ReaderConfigBuilder<string>();
+                reader.Topic("ReaderInstantiation");
+                reader.StartMessageId(IMessageId.Earliest);
+                var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
+                Assert.NotNull(stringReaderBuilder);
+                await stringReaderBuilder.CloseAsync();
+
+            }
+            catch (Exception ex)
+            {
+                Assert.False(false);
+            }
         }
         [Fact]
         public async Task ProduceAndConsume()
@@ -100,7 +108,7 @@ namespace SharpPulsar.Test.Api
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            Thread.Sleep(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(10));
             var message = (Message<byte[]>)await consumer.ReceiveAsync();
 
             if (message != null)

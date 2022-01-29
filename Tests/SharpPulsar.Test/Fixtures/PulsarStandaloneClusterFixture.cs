@@ -18,6 +18,7 @@ namespace SharpPulsar.Test.Fixtures
 {
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
+    using SharpPulsar.TestContainer;
     using SharpPulsar.User;
     using System;
     using System.Diagnostics;
@@ -39,7 +40,7 @@ namespace SharpPulsar.Test.Fixtures
 
     //docker run -it --env PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true --env PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650 -p 8080:8080 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf apachepulsar/pulsar-all:2.9.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
     //docker run -it --env PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650 -p 8080:8080 --mount source=pulsarconf,target=/pulsar/conf apachepulsar/pulsar-all:2.9.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
-    public class PulsarStandaloneClusterFixture : IAsyncLifetime
+    public class PulsarStandaloneClusterFixture : PulsarFixture
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
@@ -51,73 +52,15 @@ namespace SharpPulsar.Test.Fixtures
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public async Task InitializeAsync()
+        public override async Task InitializeAsync()
         {
+            await base.InitializeAsync();
             await SetupSystem();
-            await DeployPulsar();
         }
-        public async Task DeployPulsar()
+        public override async Task DisposeAsync()
         {
-            //TakeDownPulsar(); // clean-up if anything was left running from previous run
-
-            //RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
-
-            var waitTries = 20;
-
-            using var handler = new HttpClientHandler
-            {
-                AllowAutoRedirect = true
-            };
-
-            using var client = new HttpClient(handler);
-
-            while (waitTries > 0)
-            {
-                try
-                {
-                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-                    return;
-                }
-                catch
-                {
-                    waitTries--;
-                    await Task.Delay(5000).ConfigureAwait(false);
-                }
-            }
-
-            throw new Exception("Unable to confirm Pulsar has initialized");
-        }
-        public async Task DisposeAsync()
-        {
-            //TakeDownPulsar();
-            Client.Shutdown();
-            await Task.CompletedTask;
-        }
-
-        private static void TakeDownPulsar()
-            => RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml down");
-
-        private static void RunProcess(string name, string arguments)
-        {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = name,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-            };
-
-            processStartInfo.Environment["TAG"] = "test";
-            processStartInfo.Environment["CONFIGURATION"] = "Debug";
-            processStartInfo.Environment["COMPUTERNAME"] = Environment.MachineName;
-
-            var process = Process.Start(processStartInfo);
-            if (process is null)
-                throw new Exception("Process.Start returned null");
-
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-                throw new Exception($"Exit code {process.ExitCode} when running process {name} with arguments {arguments}");
+            Client?.Shutdown();
+            await base.DisposeAsync();
         }
         private async ValueTask SetupSystem()
         {
@@ -155,7 +98,7 @@ namespace SharpPulsar.Test.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            var system = await PulsarSystem.GetInstanceAsync(client);
+            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;
