@@ -99,7 +99,7 @@ partial class Build : NukeBuild
         .Executes(() =>
         {
             RootDirectory
-            .GlobDirectories("**/bin", "**/obj", Output, OutputTests, OutputPerfTests, OutputNuget, DocSiteDirectory)
+            .GlobDirectories("sharppulsar/bin", "sharppulsar/obj", Output, OutputTests, OutputPerfTests, OutputNuget, DocSiteDirectory)
             .ForEach(DeleteDirectory);
             EnsureCleanDirectory(Output);
         });
