@@ -7,6 +7,8 @@ services:
       context: .
     cpu_count: 1
     mem_limit: 1g
+    volumes:
+      - /host/documents/testresult:/var/TestResults
     environment:
       run_count: 2
       # to filter tests, uncomment
