@@ -7,20 +7,20 @@ using Nuke.Common.Utilities;
 [CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPushBranches = new[] { "main", "dev" },
     OnPullRequestBranches = new[] { "release" },
     InvokedTargets = new[] { nameof(Compile) })]
 
 [CustomGitHubActions("pr_validation",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) })]
 
 [CustomGitHubActions("release",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPushBranches = new[] { "release" },
     InvokedTargets = new[] { nameof(PublishNuget) })]
 
