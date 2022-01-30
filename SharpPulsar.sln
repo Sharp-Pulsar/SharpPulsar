@@ -103,7 +103,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ssl", "ssl", "{59623902-830
 		docker\latest-version-image\ssl\user1.key-pk8.pem = docker\latest-version-image\ssl\user1.key-pk8.pem
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.TestContainer", "Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj", "{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.TestContainer", "Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj", "{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Tls", "Tests\SharpPulsar.Test.Tls\SharpPulsar.Test.Tls.csproj", "{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Performance", "Tests\SharpPulsar.Test.Performance\SharpPulsar.Test.Performance.csproj", "{429929A7-9BB6-4A9E-8C55-DCA9EBE180C7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Integration", "Tests\SharpPulsar.Test.Integration\SharpPulsar.Test.Integration.csproj", "{F6625902-64C4-410C-A4E3-65F2A5A12E7A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -144,6 +150,18 @@ Global
 		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{429929A7-9BB6-4A9E-8C55-DCA9EBE180C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{429929A7-9BB6-4A9E-8C55-DCA9EBE180C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{429929A7-9BB6-4A9E-8C55-DCA9EBE180C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{429929A7-9BB6-4A9E-8C55-DCA9EBE180C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -164,6 +182,9 @@ Global
 		{6F7B7EDC-2647-4CB9-8768-AD580B65FDED} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
 		{59623902-830D-4D6F-B1D0-DA74CD18B0DA} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
 		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{429929A7-9BB6-4A9E-8C55-DCA9EBE180C7} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A9D4BE7B-E00C-47EC-87B3-4064A8F6F75E}

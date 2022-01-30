@@ -9,9 +9,13 @@ namespace SharpPulsar.TestContainer
 
         public PulsarFixture()
         {
-            Container = BuildContainer();
+            Container = BuildContainer()
+                .WithPulsar(Configuration)
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(8080))
+                .WithCleanUp(true)
+                .Build();
         }
-        public abstract PulsarTestcontainer BuildContainer();
+        public abstract TestcontainersBuilder<PulsarTestcontainer> BuildContainer();
         public PulsarTestcontainer Container { get; }
         public virtual Task InitializeAsync()
         {            
