@@ -18,7 +18,7 @@ namespace SharpPulsar.Test.Schema
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public SchemaUpgradeTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public SchemaUpgradeTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

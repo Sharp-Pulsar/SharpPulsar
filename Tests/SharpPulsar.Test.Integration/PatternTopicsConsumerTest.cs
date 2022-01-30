@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

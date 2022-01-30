@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public ReaderTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public ReaderTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

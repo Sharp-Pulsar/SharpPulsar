@@ -7,20 +7,58 @@ using Nuke.Common.Utilities;
 [CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
-    OnPushBranches = new[] { "main", "dev" },
-    OnPullRequestBranches = new[] { "release" },
+    AutoGenerate = true,
+    OnPushBranches = new[] { "main", "dev", "release" },
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Compile) })]
 
-[CustomGitHubActions("pr_validation",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+[CustomGitHubActions("run_api_test",
+    GitHubActionsImage.UbuntuLatest, 
+    GitHubActionsImage.WindowsLatest,
+    AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Test) })]
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(ApiTest)})]
+
+[CustomGitHubActions("run_txn_tests",
+    GitHubActionsImage.UbuntuLatest, 
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(TxnTest)})]
+
+
+[CustomGitHubActions("run_integration_tests",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(IntegrationTest) })]
+
+[CustomGitHubActions("run_sql_tests",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(SqlTest) })]
+
+[CustomGitHubActions("run_tls_tests",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(TlsTest) })]
+
+[CustomGitHubActions("run_event_sourcing_tests",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(EventTest) })]
 
 [CustomGitHubActions("release",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    AutoGenerate = true,
     OnPushBranches = new[] { "release" },
     InvokedTargets = new[] { nameof(PublishNuget) })]
 

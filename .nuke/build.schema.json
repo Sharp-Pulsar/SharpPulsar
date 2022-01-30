@@ -93,6 +93,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "ApiTest",
               "Benchmark",
               "CheckBranch",
               "CheckDockerVersion",
@@ -125,6 +126,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "ApiTest",
               "Benchmark",
               "CheckBranch",
               "CheckDockerVersion",

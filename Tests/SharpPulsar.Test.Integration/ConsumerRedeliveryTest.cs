@@ -35,7 +35,7 @@ namespace SharpPulsar.Test.Api
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Integration
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public ByteKeysTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public ByteKeysTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

@@ -18,5 +18,5 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
 
 
     [CollectionDefinition(nameof(PulsarEventsTests))]
-    public class PulsarEventsTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
+    public class PulsarEventsTests : ICollectionFixture<EventSourceFixture> { }
 }

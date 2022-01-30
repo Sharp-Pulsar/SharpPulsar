@@ -13,10 +13,8 @@ namespace SharpPulsar.TestContainer
               .WithImage(configuration.Image)
               .WithCommand(configuration.Command)
               .WithPortBinding(configuration.Port, configuration.DefaultPort)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
               .WithWaitStrategy(configuration.WaitStrategy)
-              //.WithStartupCallback(configuration.StartupCallback)
+              .WithStartupCallback(configuration.StartupCallback)
               .ConfigureContainer(container =>
               {
                   container.ContainerPort = configuration.DefaultPort;

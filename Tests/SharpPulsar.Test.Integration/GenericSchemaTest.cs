@@ -24,7 +24,7 @@ namespace SharpPulsar.Test.Integration
         private readonly PulsarClient _client;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
 
-        public GenericSchemaTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public GenericSchemaTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

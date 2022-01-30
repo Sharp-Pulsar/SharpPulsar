@@ -17,7 +17,7 @@ namespace SharpPulsar.Test.Api
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public DelayedMessage(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public DelayedMessage(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

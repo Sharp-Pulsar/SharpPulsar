@@ -12,11 +12,10 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.Test.Memory.Fixtures
+namespace SharpPulsar.Test.NBench.Fixtures
 {
     using Xunit;
 
-
-    [CollectionDefinition(nameof(MemoryAllocation))]
-    public class MemoryAllocation : ICollectionFixture<PulsarStandaloneClusterFixture> { }
+    [CollectionDefinition(nameof(PulsarTests), DisableParallelization = true)]
+    public class PulsarTests : ICollectionFixture<NBenchFixture> { }
 }

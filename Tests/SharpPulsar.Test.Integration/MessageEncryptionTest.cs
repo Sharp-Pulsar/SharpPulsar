@@ -16,7 +16,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public MessageEncryptionTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public MessageEncryptionTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

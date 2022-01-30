@@ -36,7 +36,7 @@ namespace SharpPulsar.Test.Integration
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public MessageChunkingTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public MessageChunkingTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

@@ -5,13 +5,11 @@ namespace SharpPulsar.TestContainer
 {
     public abstract class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        public readonly PulsarTestcontainerConfiguration Configuration = new PulsarTestcontainerConfiguration();
+        public PulsarTestcontainerConfiguration Configuration = new PulsarTestcontainerConfiguration();
 
         public PulsarFixture()
         {
             Container = BuildContainer()
-                .WithPulsar(Configuration)
-                .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(8080))
                 .WithCleanUp(true)
                 .Build();
         }

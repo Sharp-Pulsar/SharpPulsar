@@ -12,10 +12,10 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.Test.Memory.Fixtures
+namespace SharpPulsar.Test.EventSourcing.Fixtures
 {
     using Xunit;
 
-    [CollectionDefinition(nameof(PulsarStandaloneClusterTest))]
-    public class PulsarStandaloneClusterTest : ICollectionFixture<PulsarStandaloneClusterFixture> { }
+    [CollectionDefinition(nameof(PulsarEventSourceTests))]
+    public class PulsarEventSourceTests : ICollectionFixture<EventSourceFixture> { }
 }

@@ -12,10 +12,10 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.Test.Integration.Fixtures
+namespace SharpPulsar.Test.NBench.Fixtures
 {
     using Xunit;
 
-    [CollectionDefinition(nameof(PulsarStandaloneClusterTest))]
-    public class PulsarStandaloneClusterTest : ICollectionFixture<PulsarStandaloneClusterFixture> { }
+    [CollectionDefinition(nameof(NBenchTest))]
+    public class NBenchTest : ICollectionFixture<NBenchFixture> { }
 }

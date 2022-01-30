@@ -35,7 +35,7 @@ namespace SharpPulsar.Test.Integration
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly ActorSystem _system;
-        public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

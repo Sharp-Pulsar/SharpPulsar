@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Integration
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly ActorSystem _system;
-        public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

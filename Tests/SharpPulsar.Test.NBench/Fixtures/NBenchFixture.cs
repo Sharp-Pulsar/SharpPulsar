@@ -14,7 +14,7 @@
 
 using Akka.Actor;
 
-namespace SharpPulsar.Test.Integration.Fixtures
+namespace SharpPulsar.Test.NBench.Fixtures
 {
     using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
@@ -30,18 +30,7 @@ namespace SharpPulsar.Test.Integration.Fixtures
     using System.Threading.Tasks;
     using Xunit;
     //https://blog.dangl.me/archive/running-sql-server-integration-tests-in-net-core-projects-via-docker/
-
-    //txn = docker run --name pulsar_local -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 --env PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false --env PULSAR_PREFIX_enableExposingBrokerEntryMetadataToClient=true --env PULSAR_PREFIX_transactionCoordinatorEnabled=true -p 6650:6650 -p 8080:8080 -p 8081:8081 --mount source=pulsarconf,target=/pulsar/conf  apachepulsar/pulsar-all:2.9.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 8 && bin/pulsar-admin namespaces set-retention public/default --time 365000 --size -1 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/testReadFromPartition --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithBatchingWithMessageInclusive --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithoutBatchingWithMessageInclusive --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithBatching --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/ReadMessageWithoutBatching --partitions 3"
-
-    //docker run --name pulsar_local -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 --env PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false -p 6650:6650 -p 8080:8080 -p 8081:8081 --mount source=pulsarconf,target=/pulsar/conf  apachepulsar/pulsar-all:2.9.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss && bin/pulsar-admin namespaces set-retention public/default --time 365000 --size -1 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/testReadFromPartition --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithBatchingWithMessageInclusive --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithoutBatchingWithMessageInclusive --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithBatching --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/ReadMessageWithoutBatching --partitions 3"
-    //docker exec -it pulsar_local bash -c ""
-    //docker exec -it pulsar_local bin/pulsar-admin topics create-partitioned-topic persistent://public/ReadMessageWithBatchingWithMessageInclusive-56 --partitions 3 
-
-    //with log leve: docker run -it --env PULSAR_PREFIX_enableExposingBrokerEntryMetadataToClient=true --env PULSAR_LOG_LEVEL=debug --env PULSAR_LOG_ROOT_LEVEL=debug -p 6650:6650 -p 8080:8080 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf apachepulsar/pulsar-all:2.9.0 bin/pulsar standalone
-
-    //docker run -it --env PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true --env PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650 -p 8080:8080 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf apachepulsar/pulsar-all:2.9.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
-    //docker run -it --env PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650 -p 8080:8080 --mount source=pulsarconf,target=/pulsar/conf apachepulsar/pulsar-all:2.9.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone"
-    public class PulsarStandaloneClusterFixture : PulsarFixture
+    public class NBenchFixture : PulsarFixture
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;

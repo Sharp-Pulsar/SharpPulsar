@@ -47,7 +47,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.ApiTest);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -169,34 +169,107 @@ partial class Build : NukeBuild
             var output = process.Output;
         });
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
-    Target Test => _ => _
-        .DependsOn(Compile)
-        .DependsOn(SetupPulsar)
+    Target SqlTest => _ => _
         .Executes(() =>
         {
-            var testProject = "SharpPulsar.Test";
-            var projects = Solution.GetProjects("*.Test")
-            .Where(x=> !x.Name.EndsWith("EventSourcing") 
-                    && !x.Name.EndsWith("Memory"));
-            var project = Solution.GetProject(testProject);
+            var project = Solution.GetProject("SharpPulsar.Test.SQL");
             Information($"Running tests from {project.Name}");
-
-            try
+            DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework("net6.0")
+                    .SetResultsDirectory(OutputTests / "sql")
+                    .SetLoggers("trx")
+                    //.SetDiagnosticsFile(TestsDirectory)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .EnableNoBuild());
+        });
+    Target TlsTest => _ => _
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Test.Tls");
+            Information($"Running tests from {project.Name}");
+            foreach (var fw in project.GetTargetFrameworks())
             {
                 DotNetTest(c => c
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net6.0")
-                    .SetLoggers("GitHubActions")
-                    //.SetDiagnosticsFile(TestsDirectory)
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetFramework(fw)
+                    .SetResultsDirectory(OutputTests / "tls")
+                    .SetLoggers("trx")
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
-            catch (Exception ex)
+        });
+    Target TxnTest => _ => _
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Test.Transaction");
+            Information($"Running tests from {project.Name}");
+            foreach (var fw in project.GetTargetFrameworks())
             {
-                Information(ex.Message);
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
+                    .SetResultsDirectory(OutputTests / "txn")
+                    .SetLoggers("trx")
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .EnableNoBuild());
             }
         });
+
+    Target EventTest => _ => _
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Test.EventSourcing");
+            Information($"Running tests from {project.Name}");
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
+                    .SetResultsDirectory(OutputTests / "event")
+                    .SetLoggers("trx")
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .EnableNoBuild());
+            }
+        });
+
+    Target IntegrationTest => _ => _
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Test.Integration");
+            Information($"Running tests from {project.Name}");
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
+                    .SetResultsDirectory(OutputTests / "integration")
+                    .SetLoggers("trx")
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .EnableNoBuild());
+            }
+        });
+    Target ApiTest => _ => _
+       .Executes(() =>
+       {
+           var project = Solution.GetProjects("*.Test")
+           .Where(x => x.Name.EndsWith("Test.csproj")).FirstOrDefault().NotNull();
+           Information($"Running tests from {project.Name}");
+           DotNetTest(c => c
+                  .SetProjectFile(project)
+                  .SetConfiguration(Configuration.ToString())
+                  .SetFramework("net6.0")
+                  .SetLoggers("trx")
+                  .SetResultsDirectory(OutputTests / "api")
+                  .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                  .EnableNoBuild());
+
+       });
     //--------------------------------------------------------------------------------
     // Documentation 
     //--------------------------------------------------------------------------------
@@ -228,129 +301,8 @@ partial class Build : NukeBuild
         .DependsOn(DocBuild)
         .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir)));
 
-    Target TxnTest => _ => _
-        .Partition(4)
-        .DependsOn(Test)
-        .Triggers(StopPulsar)
-        .Executes(() =>
-        {
-            var testProject = "SharpPulsar.Test.Transaction";
-            var project = Solution.GetProject(testProject);
-            Information($"Running tests from {project.Name}");
-            foreach(var fw in project.GetTargetFrameworks())
-            {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetResultsDirectory(OutputTests)
-                    .SetProcessWorkingDirectory(Directory.GetParent(project).FullName)
-                    .SetLoggers("trx")
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
-            }            
-        });
-
-    Target StartPulsar => _ => _
-      .Before(SetupPulsar)
-      .DependsOn(CheckDockerVersion)
-      .Executes(async () =>
-       {
-           DockerTasks.DockerRun(b =>
-            b
-            .SetDetach(true)
-            .SetInteractive(true)
-            .SetName("pulsar_test")
-            .SetPublish("6650:6650", "8080:8080","8081:8081", "2181:2181")
-            .SetMount("source=pulsardata,target=/pulsar/data")
-            .SetMount("source=pulsarconf,target=/pulsar/conf")
-            .SetImage("apachepulsar/pulsar-all:2.9.1")
-            .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", @"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", @"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", @"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
-            .SetCommand("bash")
-            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-           //.SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2")) ;
-           var waitTries = 20;
-
-           using var handler = new HttpClientHandler
-           {
-               AllowAutoRedirect = true
-           };
-
-           using var client = new HttpClient(handler);
-
-           while (waitTries > 0)
-           {
-               try
-               {
-                   await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-                   Information("Apache Pulsar Server live at: http://127.0.0.1");
-                   return;
-               }
-               catch (Exception ex)
-               {
-                   Information(ex.Message);
-                   waitTries--;
-                   await Task.Delay(5000).ConfigureAwait(false);
-               }
-           }
-
-           throw new Exception("Unable to confirm Pulsar has initialized");
-       });
-    Target SetupPulsar => _ => _
-      .Before(Test)
-      .DependsOn(StartPulsar)
-      .Executes(() =>
-       {
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-retention", "public/default","--time","3600")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-            );
-           DockerTasks.DockerExec(x => x
-                .SetDetach(true)
-                .SetInteractive(true)   
-                .SetContainer("pulsar_test")
-                .SetCommand("bin/pulsar")
-                //.SetArgs("sql-worker", "run")
-                .SetArgs("sql-worker", "start")//as daemon process
-            );
-       });
-    Target CheckDockerVersion => _ => _
-      .DependsOn(CheckBranch)
-        .Executes(() =>
-        {
-            DockerTasks.DockerVersion();
-        });
-
-    Target CheckBranch => _ => _
-       .Executes(() =>
-       {
-           Information(GitRepository.Branch);
-       });
-    Target StopPulsar => _ => _
-    .AssuredAfterFailure()
-    .Executes(() =>
-    {
-
-        try
-        {
-           DockerTasks.DockerRm(b => b
-          .SetContainers("pulsar_test")
-          .SetForce(true));
-        }
-        catch(Exception ex)
-        {
-            Information(ex.ToString());
-        }
-
-    });
     Target CreateNuget => _ => _
-      .DependsOn(Compile)
+      .DependsOn(ApiTest, IntegrationTest)
       .Executes(() =>
       {
           var version = LatestVersion;

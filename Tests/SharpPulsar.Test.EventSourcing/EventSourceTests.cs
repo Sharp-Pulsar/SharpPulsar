@@ -25,7 +25,7 @@ namespace SharpPulsar.Test.EventSourcing
 		public readonly PulsarSystem _pulsarSystem;
 		public ClientConfigurationData _clientConfigurationData;
 
-		public EventSourceTests(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public EventSourceTests(ITestOutputHelper output, EventSourceFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
