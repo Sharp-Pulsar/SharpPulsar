@@ -19,6 +19,7 @@ namespace SharpPulsar.Test.NBench.Fixtures
     using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
+    using SharpPulsar.Test.EventSourcing;
     using SharpPulsar.TestContainer;
     using SharpPulsar.User;
     using System;
@@ -35,6 +36,13 @@ namespace SharpPulsar.Test.NBench.Fixtures
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
+
+        private readonly NBenchContainerConfiguration _configuration;
+
+        public NBenchFixture()
+        {
+            _configuration = new NBenchContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+        }
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -45,7 +53,8 @@ namespace SharpPulsar.Test.NBench.Fixtures
         public override TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-               .WithName($"test-core")
+               .WithName($"test-nbench")
+               .WithPulsar(_configuration)
                .WithPortBinding(6650)
                .WithPortBinding(8080)
                .WithPortBinding(8081)
@@ -71,35 +80,12 @@ namespace SharpPulsar.Test.NBench.Fixtures
             var clienConfigSetting = config.GetSection("client");
             var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
-            var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
-            var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
-            var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
-            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
-            var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
-            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
-            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
-            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
-
-
-            client.EnableTransaction(enableTxn);
-            if (operationTime > 0)
-                client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
-
-            if (!string.IsNullOrWhiteSpace(authCertPath))
-                client.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authCertPath)));
-
-            if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
-                client.Authentication(authPluginClassName, authParamsString);
-
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
-            client.StatsInterval(statsInterval);
-            client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
-            client.EnableTls(enableTls);
-            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
+            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName:"pulsar-nbench");
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;
