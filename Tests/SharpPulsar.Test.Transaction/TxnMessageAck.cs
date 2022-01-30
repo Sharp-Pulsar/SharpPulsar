@@ -8,7 +8,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Transaction.Transaction
+namespace SharpPulsar.Test.Transaction
 {
     [Collection(nameof(PulsarTransactionTests))]
 	public class TxnMessageAck

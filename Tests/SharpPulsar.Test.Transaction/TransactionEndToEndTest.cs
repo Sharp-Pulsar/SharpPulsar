@@ -28,7 +28,7 @@ using Xunit.Abstractions;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Transaction.Transaction
+namespace SharpPulsar.Test.Transaction
 {
     /// <summary>
     /// End to end transaction test.

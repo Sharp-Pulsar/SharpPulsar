@@ -9,7 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
-namespace SharpPulsar.Test.Transaction.Transaction
+namespace SharpPulsar.Test.Transaction
 {
     [Collection(nameof(PulsarTransactionTests))]
     public class CumulativeAck

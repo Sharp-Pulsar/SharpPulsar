@@ -18,10 +18,4 @@ namespace SharpPulsar.Test.Integration.Fixtures
 
     [CollectionDefinition(nameof(PulsarTests), DisableParallelization = true)]
     public class PulsarTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
-
-    [CollectionDefinition(nameof(PulsarTransactionTests), DisableParallelization = true)]
-    public class PulsarTransactionTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
-
-    [CollectionDefinition(nameof(MemoryAllocation))]
-    public class MemoryAllocation : ICollectionFixture<PulsarStandaloneClusterFixture> { }
 }
