@@ -34,10 +34,10 @@ namespace SharpPulsar.Test.EventSourcing
         }
 		//[Fact(Skip = "Issue with sql-worker on github action")]
 		[Fact]
-		public virtual void SqlSourceTest()
+		public virtual async Task SqlSourceTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
-			var ids = PublishMessages(topic, 50);
+			var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
 			var cols = new HashSet<string> { "text", "EventTime" };
@@ -70,16 +70,16 @@ namespace SharpPulsar.Test.EventSourcing
 
 				}
 				if (receivedCount == 0)
-					Thread.Sleep(TimeSpan.FromSeconds(10));
+					await Task.Delay(TimeSpan.FromSeconds(10));
 			}
 			Assert.True(receivedCount > 0);
 		}
 		//[Fact(Skip = "Issue with sql-worker on github action")]
 		[Fact]
-		public virtual void SqlSourceTaggedTest()
+		public virtual async Task SqlSourceTaggedTest()
 		{
 			var topic = $"presto-topics-{Guid.NewGuid()}";
-            var ids = PublishMessages(topic, 50);
+            var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
             var cols = new HashSet<string> { "text", "EventTime" };
@@ -112,7 +112,7 @@ namespace SharpPulsar.Test.EventSourcing
 
 				}
 				if (receivedCount == 0)
-					Thread.Sleep(TimeSpan.FromSeconds(10));
+					await Task.Delay(TimeSpan.FromSeconds(10));
 			}
 			Assert.True(receivedCount > 0);
 		}
@@ -120,7 +120,7 @@ namespace SharpPulsar.Test.EventSourcing
 		public virtual async Task ReaderSourceTest()
 		{
 			var topic = $"reader-topics-{Guid.NewGuid()}";
-            var ids = PublishMessages(topic, 50);
+            var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
 
@@ -149,7 +149,7 @@ namespace SharpPulsar.Test.EventSourcing
 		public virtual async Task ReaderSourceTaggedTest()
 		{
 			var topic = $"reader-topics-{Guid.NewGuid()}";
-            var ids = PublishMessages(topic, 50);
+            var ids = await PublishMessages(topic, 50);
             var start = MessageIdUtils.GetOffset(ids.First());
             var end = MessageIdUtils.GetOffset(ids.Last());
 
@@ -175,20 +175,20 @@ namespace SharpPulsar.Test.EventSourcing
             
 			Assert.True(receivedCount > 0);
 		}
-		private ISet<MessageId> PublishMessages(string topic, int count)
+		private async Task<ISet<MessageId>> PublishMessages(string topic, int count)
 		{
 			var ids = new HashSet<MessageId>();
 			var builder = new ProducerConfigBuilder<DataOp>()
 				.Topic(topic);
-			var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
+			var producer = await _client.NewProducerAsync(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
 			for (var i = 0; i < count; i++)
 			{
 				var key = "key" + i;
                 MessageId id = null;
 				if(i % 2 == 0)
-					id = producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
+					id = await producer.NewMessage().Key(key).Property("twitter", "mestical").Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).SendAsync();
 				else
-					id = producer.NewMessage().Key(key).Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).Send();
+					id = await producer.NewMessage().Key(key).Value(new DataOp { Text = "my-event-message-" + i, EventTime = DateTimeHelper.CurrentUnixTimeMillis() }).SendAsync();
 				ids.Add(id);
 			}
 			return ids;
