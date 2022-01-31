@@ -176,7 +176,7 @@ Avro Logical Types are supported. Message object MUST implement `ISpecificRecord
 
 Because I have become lazy and a lover of "peace of mind":
 - For schema type of **KEYVALUESCHEMA**:
-  - `csharp producer.NewMessage().Value<TK, TV>(data).Send();` or `csharp producer.Send<TK, TV>(data)`
+  - ```csharp producer.NewMessage().Value<TK, TV>(data).Send();` or `csharp producer.Send<TK, TV>(data)```
 
 `TK, TV` represents the key and value types of the `KEYVALUESCHEMA` respectively. 
 
