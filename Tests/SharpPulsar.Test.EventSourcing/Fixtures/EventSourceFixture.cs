@@ -21,6 +21,7 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
     using SharpPulsar.User;
     using System;
     using System.IO;
+    using System.Net.Http;
     using System.Reflection;
     using System.Threading.Tasks;
 
@@ -55,6 +56,34 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
         {
             await base.InitializeAsync();
             await SetupSystem();
+            await AwaitPulsarReadiness();
+        }
+        public async ValueTask AwaitPulsarReadiness()
+        {
+            var waitTries = 20;
+
+            using var handler = new HttpClientHandler
+            {
+                AllowAutoRedirect = true
+            };
+
+            using var client = new HttpClient(handler);
+
+            while (waitTries > 0)
+            {
+                try
+                {
+                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                    return;
+                }
+                catch
+                {
+                    waitTries--;
+                    await Task.Delay(5000).ConfigureAwait(false);
+                }
+            }
+
+            throw new Exception("Unable to confirm Pulsar has initialized");
         }
         public override async Task DisposeAsync()
         {
