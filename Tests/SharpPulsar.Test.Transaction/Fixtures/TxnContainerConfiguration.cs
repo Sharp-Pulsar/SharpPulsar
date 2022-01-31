@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using DotNet.Testcontainers.Containers;
 using SharpPulsar.TestContainer;
 
-namespace SharpPulsar.Test.Integration.Fixtures
+namespace SharpPulsar.Test.Transaction.Fixtures
 {
-    public sealed class IntegrationContainerConfiguration : PulsarTestcontainerConfiguration
+    public sealed class TxnContainerConfiguration : PulsarTestcontainerConfiguration
     {
-        public IntegrationContainerConfiguration(string image, int port) : base(image, port)
+        public TxnContainerConfiguration(string image, int port) : base(image, port)
         {
         }
 

@@ -5,7 +5,7 @@ namespace SharpPulsar.TestContainer
 {
     public abstract class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        public PulsarTestcontainerConfiguration Configuration = new PulsarTestcontainerConfiguration();
+        public abstract PulsarTestcontainerConfiguration Configuration { get; }
 
         public PulsarFixture()
         {

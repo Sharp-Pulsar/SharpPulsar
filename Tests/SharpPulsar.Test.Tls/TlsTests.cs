@@ -20,7 +20,7 @@ namespace SharpPulsar.Test.Tls
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public TlsTests(ITestOutputHelper output, PulsarTlsStandaloneClusterFixture fixture)
+        public TlsTests(ITestOutputHelper output, PulsarTlsFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

@@ -17,5 +17,5 @@ namespace SharpPulsar.Test.Tls.Fixtures
     using Xunit;
 
     [CollectionDefinition(nameof(PulsarTlsTests), DisableParallelization = true)]
-    public class PulsarTlsTests : ICollectionFixture<PulsarTlsStandaloneClusterFixture> { }
+    public class PulsarTlsTests : ICollectionFixture<PulsarTlsFixture> { }
 }

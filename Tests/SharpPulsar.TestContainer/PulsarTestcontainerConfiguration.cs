@@ -23,6 +23,14 @@ namespace SharpPulsar.TestContainer
             Environments.Add("PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled","true");
             Environments.Add("PULSAR_PREFIX_brokerEntryMetadataInterceptors","org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor");           
         }
+
+        public virtual void Env(params (string key, string value)[] envs)
+        {
+            foreach(var env in envs)
+            {
+                Environments.Add(env.key, env.value);
+            }
+        }
         /// <summary>
         /// Gets the startup callback.
         /// </summary>
@@ -31,14 +39,6 @@ namespace SharpPulsar.TestContainer
           {
               var startupScript = new StringBuilder();
               startupScript.AppendLine("#!/bin/sh");
-              //startupScript.AppendLine($"echo 'clientPort={ZookeeperPort}' > zookeeper.properties");
-              startupScript.AppendLine("echo 'dataDir=/var/lib/zookeeper/data' >> zookeeper.properties");
-              startupScript.AppendLine("echo 'dataLogDir=/var/lib/zookeeper/log' >> zookeeper.properties");
-              startupScript.AppendLine("zookeeper-server-start zookeeper.properties &");
-              //startupScript.AppendLine($"export KAFKA_ADVERTISED_LISTENERS='PLAINTEXT://{container.Hostname}:{container.GetMappedPublicPort(DefaultPort)},BROKER://localhost:{AdminPort}'");
-              startupScript.AppendLine(". /etc/confluent/docker/bash-config");
-              startupScript.AppendLine("/etc/confluent/docker/configure");
-              startupScript.AppendLine("/etc/confluent/docker/launch");
               return container.CopyFileAsync(StartupScriptPath, Encoding.UTF8.GetBytes(startupScript.ToString()), 0x1ff, ct: ct);
           };
 

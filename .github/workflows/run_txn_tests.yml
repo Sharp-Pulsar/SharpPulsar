@@ -9,14 +9,19 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_pr_validation --host GitHubActions
+#         nuke --generate-configuration GitHubActions_run_txn_tests --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: pr_validation
+name: run_txn_tests
 
 on:
+  push:
+    branches:
+      - main
+      - dev
+      - release
   pull_request:
     branches:
       - main
@@ -42,5 +47,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd Test'
-        run: ./build.cmd Test
+      - name: Run './build.cmd TxnTest'
+        run: ./build.cmd TxnTest

@@ -21,7 +21,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-		public CumulativeAck(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public CumulativeAck(ITestOutputHelper output, PulsarTxnFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

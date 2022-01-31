@@ -19,6 +19,7 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
     using SharpPulsar.Configuration;
     using SharpPulsar.TestContainer;
     using SharpPulsar.User;
+    using System;
     using System.IO;
     using System.Reflection;
     using System.Threading.Tasks;
@@ -28,12 +29,9 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
-        private readonly EventContainerConfiguration _configuration;
 
-        public EventSourceFixture()
-        {
-            _configuration = new EventContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
-        }
+        public override PulsarTestcontainerConfiguration Configuration => new EventContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -45,7 +43,7 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
                .WithName($"test-event")
-               .WithPulsar(_configuration)
+               .WithPulsar(Configuration)
                .WithPortBinding(6650)
                .WithPortBinding(8080)
                .WithPortBinding(8081)
@@ -74,6 +72,9 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
+
+            if (operationTime > 0)
+                client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
 
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);

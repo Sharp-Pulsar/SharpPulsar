@@ -24,7 +24,7 @@ namespace SharpPulsar.Test.SQL
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public SqlTests(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public SqlTests(ITestOutputHelper output, PulsarSqlFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

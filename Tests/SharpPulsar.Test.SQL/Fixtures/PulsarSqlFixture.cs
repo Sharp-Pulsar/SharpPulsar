@@ -12,14 +12,11 @@
  * limitations under the License.
  */
 
-using Akka.Actor;
-
-namespace SharpPulsar.Test.NBench.Fixtures
+namespace SharpPulsar.Test.SQL.Fixtures
 {
     using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
-    using SharpPulsar.Test.EventSourcing;
     using SharpPulsar.TestContainer;
     using SharpPulsar.User;
     using System;
@@ -27,17 +24,16 @@ namespace SharpPulsar.Test.NBench.Fixtures
     using System.IO;
     using System.Net.Http;
     using System.Reflection;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Xunit;
-    //https://blog.dangl.me/archive/running-sql-server-integration-tests-in-net-core-projects-via-docker/
-    public class NBenchFixture : PulsarFixture
+
+    public class PulsarSqlFixture : PulsarFixture
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
 
-        public override PulsarTestcontainerConfiguration Configuration => new NBenchContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+        public override PulsarTestcontainerConfiguration Configuration => new SqlContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
 
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
@@ -49,7 +45,7 @@ namespace SharpPulsar.Test.NBench.Fixtures
         public override TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-               .WithName($"test-nbench")
+               .WithName($"test-sql")
                .WithPulsar(Configuration)
                .WithPortBinding(6650)
                .WithPortBinding(8080)
@@ -68,6 +64,7 @@ namespace SharpPulsar.Test.NBench.Fixtures
             Client?.Shutdown();
             await base.DisposeAsync();
         }
+
         private async ValueTask SetupSystem()
         {
             var client = new PulsarClientConfigBuilder();
@@ -78,12 +75,14 @@ namespace SharpPulsar.Test.NBench.Fixtures
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
+
             if (operationTime > 0)
                 client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
+
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
-            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName:"pulsar-nbench");
+            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName:"pulsar-sql-test");
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;

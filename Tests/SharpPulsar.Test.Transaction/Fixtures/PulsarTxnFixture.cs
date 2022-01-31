@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.Test.Tls.Fixtures
+namespace SharpPulsar.Test.Transaction.Fixtures
 {
     using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
@@ -31,11 +31,15 @@ namespace SharpPulsar.Test.Tls.Fixtures
     //docker run --name pulsar_local -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 --env PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false --env PULSAR_PREFIX_transactionCoordinatorEnabled=true -p 6650:6650 -p 8080:8080 -p 8081:8081 --mount source=pulsardata,target=/pulsar/data --mount source=pulsarconf,target=/pulsar/conf  apachepulsar/pulsar-all:2.8.0 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 16 && bin/pulsar-admin namespaces set-retention public/default --time -1 --size -1 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/testReadFromPartition --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithBatchingWithMessageInclusive --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithoutBatchingWithMessageInclusive --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/TestReadMessageWithBatching --partitions 3 && bin/pulsar-admin topics create-partitioned-topic persistent://public/default/ReadMessageWithoutBatching --partitions 3"
     //docker exec -it pulsar_local bash -c ""
     //docker exec -it pulsar_local bin/pulsar-admin topics create-partitioned-topic persistent://public/ReadMessageWithBatchingWithMessageInclusive-56 --partitions 3 
-    public class PulsarTlsStandaloneClusterFixture : PulsarFixture
+    public class PulsarTxnFixture : PulsarFixture
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
+
+
+        public override PulsarTestcontainerConfiguration Configuration => new TxnContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -46,19 +50,17 @@ namespace SharpPulsar.Test.Tls.Fixtures
         public override TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-               .WithName($"test-core-tls")
-               .WithPortBinding(6651)
-               .WithExposedPort(6651)
-               .WithCleanUp(true);
+               .WithName($"test-txn")
+               .WithPulsar(Configuration)
+               .WithPortBinding(6650)
+               .WithPortBinding(8080)
+               .WithPortBinding(8081)
+               .WithExposedPort(6650)
+               .WithExposedPort(8080)
+               .WithExposedPort(8081);
         }
         public override async Task InitializeAsync()
         {
-            //need to build custom pulsar image for tls testing
-            var imge = await new ImageFromDockerfileBuilder()
-                .WithName("sharp-pulsar:2.9.1")
-                .WithDockerfileDirectory(".")
-                .WithDeleteIfExists(false)
-                .Build();
             await base.InitializeAsync();
             await SetupSystem();
         }
@@ -73,16 +75,16 @@ namespace SharpPulsar.Test.Tls.Fixtures
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var config = GetIConfigurationRoot(path);
             var clienConfigSetting = config.GetSection("client");
-            var serviceUrl = "pulsar+ssl://127.0.0.1:6651";
-            var webUrl = "https://127.0.0.1:8443";
-            var authPluginClassName = "SharpPulsar.Auth.AuthenticationTls, SharpPulsar";
-            var authParamsString = @"{""tlsCertFile"":""Certs/admin.pfx""}";
-            var authCertPath = "Certs/ca.cert.pem";
+            var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
+            var webUrl = clienConfigSetting.GetSection("web-url").Value;
+            var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
+            var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
+            var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
             var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
             var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
-            var enableTls = true;
+            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
             var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
             var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
 
@@ -103,10 +105,11 @@ namespace SharpPulsar.Test.Tls.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
+            var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;
         }
+
     }
 }

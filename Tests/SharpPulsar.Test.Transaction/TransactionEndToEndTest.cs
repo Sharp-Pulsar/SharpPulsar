@@ -48,7 +48,7 @@ namespace SharpPulsar.Test.Transaction
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
         private readonly Admin.Public.Admin _admin;
-        public TransactionEndToEndTest(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+        public TransactionEndToEndTest(ITestOutputHelper output, PulsarTxnFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

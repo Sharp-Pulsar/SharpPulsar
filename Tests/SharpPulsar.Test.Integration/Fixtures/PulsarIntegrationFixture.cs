@@ -19,9 +19,9 @@ namespace SharpPulsar.Test.Integration.Fixtures
     using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
-    using SharpPulsar.Test.EventSourcing;
     using SharpPulsar.TestContainer;
     using SharpPulsar.User;
+    using System;
     using System.IO;
     using System.Reflection;
     using System.Threading.Tasks;
@@ -43,12 +43,9 @@ namespace SharpPulsar.Test.Integration.Fixtures
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
-        private readonly IntegrationContainerConfiguration _configuration;
 
-        public PulsarIntegrationFixture()
-        {
-            _configuration = new IntegrationContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
-        }
+        public override PulsarTestcontainerConfiguration Configuration => new IntegrationContainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -59,8 +56,8 @@ namespace SharpPulsar.Test.Integration.Fixtures
         public override TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-               .WithName($"test-core")
-               .WithPulsar(_configuration)
+               .WithName($"test-integration")
+               .WithPulsar(Configuration)
                .WithPortBinding(6650)
                .WithPortBinding(8080)
                .WithPortBinding(8081)
@@ -88,6 +85,9 @@ namespace SharpPulsar.Test.Integration.Fixtures
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
             var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
             var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
+
+            if (operationTime > 0)
+                client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
 
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
