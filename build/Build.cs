@@ -155,27 +155,6 @@ partial class Build : NukeBuild
 
             Git($"tag -f {GitVersion.SemVer}");
         });
-    Target RunMemoryAllocation => _ => _
-        .DependsOn(Compile)
-        .OnlyWhenStatic(() => IsLocalBuild)
-        .Executes(() =>
-        {
-            
-            var testAssembly = RootDirectory + "\\Tests\\SharpPulsar.Test.Memory\\bin\\Release\net5.0\\SharpPulsar.Test.Memory.dll";
-            DotMemoryUnit($"{XunitTasks.XunitPath.DoubleQuoteIfNeeded()} --propagate-exit-code -- {testAssembly}", timeout: 120_000);
-            //Nuke.Common.Tools.DotMemoryUnit.DotMemoryUnitTasks.DotMemoryUnit($"{XunitTasks.XunitPath.DoubleQuoteIfNeeded()} --propagate-exit-code -- {testAssembly}", timeout: 120_000);
-        });
-    Target Benchmark => _ => _
-        .DependsOn(Compile)
-        .OnlyWhenStatic(() => IsLocalBuild)
-        .Executes(() =>
-        {
-            var benchmarkAssembly = RootDirectory+"\\SharpPulsar.Benchmarks\\bin\\Release\\net5.0\\SharpPulsar.Benchmarks.exe";
-            var process = ProcessTasks.StartProcess(benchmarkAssembly);
-            process.AssertZeroExitCode();
-            var output = process.Output;
-        });
-    //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target SqlTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
@@ -188,12 +167,13 @@ partial class Build : NukeBuild
                     .SetFramework("net6.0")
                     //.SetResultsDirectory(OutputTests / "sql")
                     //.SetLoggers("trx")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetVerbosity(verbosity: DotNetVerbosity.Diagnostic)
                     .EnableNoBuild());
         });
     Target TlsTest => _ => _
+        .DependsOn(Compile)
         .Executes(() =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.Tls");
@@ -206,13 +186,14 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetResultsDirectory(OutputTests / "tls")
                     .SetLoggers("trx")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
         });
     Target TxnTest => _ => _
+        .DependsOn(Compile)
         .Executes(() =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.Transaction");
@@ -225,14 +206,15 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetResultsDirectory(OutputTests / "txn")
                     .SetLoggers("trx")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
         });
 
     Target EventTest => _ => _
+        .DependsOn(Compile)
         .Executes(() =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.EventSourcing");
@@ -245,8 +227,8 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetResultsDirectory(OutputTests / "event")
                     .SetLoggers("trx")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
@@ -264,10 +246,10 @@ partial class Build : NukeBuild
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
-                    .SetResultsDirectory(OutputTests / "integration")
-                    .SetLoggers("trx")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    //.SetResultsDirectory(OutputTests / "integration")
+                    //.SetLoggers("trx")
+                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
@@ -275,6 +257,7 @@ partial class Build : NukeBuild
                 await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
         });
     Target ApiTest => _ => _
+       .DependsOn(Compile)
        .Executes(() =>
        {
            var project = Solution.GetProject("SharpPulsar.Test");
@@ -284,8 +267,8 @@ partial class Build : NukeBuild
                   .SetConfiguration(Configuration.ToString())
                   .SetFramework("net6.0")
                   .SetLoggers("trx")
-                  //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                  //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                  .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                  .SetBlameMode(true)//captures the order of tests that were run before the crash.
                   .SetResultsDirectory(OutputTests / "api")
                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                   .EnableNoBuild());
