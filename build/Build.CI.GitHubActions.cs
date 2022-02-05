@@ -6,7 +6,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
-    GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.UbuntuLatest,    
     AutoGenerate = true,
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
