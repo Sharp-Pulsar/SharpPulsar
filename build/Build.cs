@@ -211,7 +211,7 @@ partial class Build : NukeBuild
                     //.SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     //.SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
         });
@@ -233,7 +233,7 @@ partial class Build : NukeBuild
                     //.SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     //.SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    //.SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
         });
@@ -255,7 +255,7 @@ partial class Build : NukeBuild
                     //.SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     //.SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
             //if(Container)
