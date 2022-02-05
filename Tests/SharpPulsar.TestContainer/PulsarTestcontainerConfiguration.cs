@@ -41,7 +41,6 @@ namespace SharpPulsar.TestContainer
               startupScript.AppendLine("#!/bin/sh");
               return container.CopyFileAsync(StartupScriptPath, Encoding.UTF8.GetBytes(startupScript.ToString()), 0x1ff, ct: ct);
           };
-
         /// <summary>
         /// Gets the command.
         /// </summary>

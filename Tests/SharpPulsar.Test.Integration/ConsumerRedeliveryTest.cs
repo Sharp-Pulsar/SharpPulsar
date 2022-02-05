@@ -27,7 +27,7 @@ using Xunit.Abstractions;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Api
+namespace SharpPulsar.Test.Integration
 {
     [Collection(nameof(PulsarTests))]
     public class ConsumerRedeliveryTest
@@ -79,8 +79,8 @@ namespace SharpPulsar.Test.Api
                 Assert.NotNull(receivedMessage);
                 messageReceived++;
             }
-			
-			Assert.Equal(10, messageReceived);
+
+            Assert.Equal(10, messageReceived);
             await Task.Delay(TimeSpan.FromSeconds(10));
             for (var i = 0; i < messageCount; i++)
             {
@@ -95,6 +95,6 @@ namespace SharpPulsar.Test.Api
             await consumer.CloseAsync();
         }
 
-	}
+    }
 
 }

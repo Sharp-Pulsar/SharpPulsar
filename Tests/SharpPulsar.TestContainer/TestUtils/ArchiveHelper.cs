@@ -70,5 +70,37 @@ namespace SharpPulsar.TestContainer.TestUtils
 
             return tarStream;
         }
+
+        public static void Extract(Stream inStream, string folderPath, string? pathToRemove = null)
+        {
+            if (inStream == null)
+                throw new ArgumentNullException(nameof(inStream));
+            if (folderPath == null)
+                throw new ArgumentNullException(nameof(folderPath));
+
+            pathToRemove ??= string.Empty;
+
+            var reader = ReaderFactory.Open(inStream);
+
+            while (reader.MoveToNextEntry())
+            {
+                if (reader.Entry.IsDirectory)
+                    continue;
+
+                var outputDirectory = Path.Combine(
+                    folderPath,
+                    pathToRemove,
+                    reader.Entry.Key);
+
+                if (!Directory.Exists(outputDirectory))
+                    Directory.CreateDirectory(outputDirectory);
+
+                reader.WriteEntryToDirectory(outputDirectory, new ExtractionOptions
+                {
+                    ExtractFullPath = false,
+                    Overwrite = true
+                });
+            }
+        }
     }
 }

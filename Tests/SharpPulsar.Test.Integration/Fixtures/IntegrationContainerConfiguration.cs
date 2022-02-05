@@ -20,5 +20,6 @@ namespace SharpPulsar.Test.Integration.Fixtures
             startupScript.AppendLine("echo up and running");
             return container.CopyFileAsync(StartupScriptPath, Encoding.UTF8.GetBytes(startupScript.ToString()), 0x1ff, ct: ct);
         };
+
     }
 }

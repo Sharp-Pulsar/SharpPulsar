@@ -1,4 +1,5 @@
 ﻿using DotNet.Testcontainers.Builders;
+using SharpPulsar.TestContainer.TestUtils;
 using Xunit;
 
 namespace SharpPulsar.TestContainer

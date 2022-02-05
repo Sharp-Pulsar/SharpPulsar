@@ -20,11 +20,13 @@ namespace SharpPulsar.Test.Integration.Fixtures
     using Microsoft.Extensions.Configuration;
     using SharpPulsar.Configuration;
     using SharpPulsar.TestContainer;
+    using SharpPulsar.TestContainer.TestUtils;
     using SharpPulsar.User;
     using System;
     using System.IO;
     using System.Net.Http;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Threading.Tasks;
     using Xunit;
     //https://blog.dangl.me/archive/running-sql-server-integration-tests-in-net-core-projects-via-docker/
@@ -101,6 +103,9 @@ namespace SharpPulsar.Test.Integration.Fixtures
         }
         public override async Task DisposeAsync()
         {
+            //we can create a REST API to push the file to here
+            var response = await Container.CopyFilesFromContainer("/sharppulsar/TestResults/");
+            ArchiveHelper.Extract(response.Stream, @"/home/Users/Ebere/Documents/temp");
             Client?.Shutdown();
             await base.DisposeAsync();
         }

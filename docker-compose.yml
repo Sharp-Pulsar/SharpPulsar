@@ -2,15 +2,13 @@ version: "2.4"
 
 services:
   akka-test:
-    image: sharp-pulsar-test
+    image: sharp-pulsar
     build: 
       context: .
     cpu_count: 1
     mem_limit: 1g
-    volumes:
-      - /host/documents/testresult:/var/TestResults
     environment:
-      run_count: 2
+      run_count: 1
       # to filter tests, uncomment
       # test_filter: "--filter FullyQualifiedName=SharpPulsar.Test.MessageChunkingTest"
-      test_file: Tests/SharpPulsar.Test/SharpPulsar.Test.csproj
+      test_file: Tests/SharpPulsar.Test.Integration/SharpPulsar.Test.Integration.csproj

@@ -30,6 +30,8 @@ using static Nuke.Common.Tools.BenchmarkDotNet.BenchmarkDotNetTasks;
 using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
+using SharpPulsar.TestContainer.TestUtils;
+using Docker.DotNet;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
@@ -60,6 +62,10 @@ partial class Build : NukeBuild
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
     [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
 
+    [Parameter] bool Container = false;
+
+    readonly static DIContainer DIContainer = DIContainer.Default;
+
     //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
     [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
     readonly string NugetApiKey;
@@ -76,6 +82,7 @@ partial class Build : NukeBuild
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
 
     AbsolutePath Output => RootDirectory / "bin";
+    AbsolutePath OutputContainer => RootDirectory / "container";
     AbsolutePath OutputNuget => Output / "nuget";
     AbsolutePath OutputTests => RootDirectory / "TestResults";
     AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
@@ -245,7 +252,7 @@ partial class Build : NukeBuild
         });
 
     Target IntegrationTest => _ => _
-        .Executes(() =>
+        .Executes(async () =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.Integration");
             Information($"Running tests from {project.Name}");
@@ -262,6 +269,8 @@ partial class Build : NukeBuild
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
+            if(Container)
+                await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
         });
     Target ApiTest => _ => _
        .Executes(() =>
@@ -360,6 +369,19 @@ partial class Build : NukeBuild
                       .SetSymbolSource(GithubSource));
               });
       });
+    protected override void OnBuildCreated()
+    {
+        if (Container)
+            DIContainer.RegisterDockerClient();
+
+        base.OnBuildCreated();
+    }
+    static async Task SaveFile(string containerName, string sourcePath, string outputPath)
+    {
+        var client = DIContainer.Get<DockerClient>();
+        var file = await client.Containers.GetArchiveFromContainerByNameAsync(sourcePath, containerName);
+        ArchiveHelper.Extract(file.Stream, outputPath);
+    }
     static void Information(string info)
     {
         Serilog.Log.Information(info);

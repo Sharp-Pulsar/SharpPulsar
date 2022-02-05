@@ -93,6 +93,7 @@ namespace SharpPulsar.Test.NBench.Fixtures
         }
         public override async Task DisposeAsync()
         {
+            var response = await Container.CopyFilesFromContainer("/var/log/pulsar/broker.log");
             Client?.Shutdown();
             await base.DisposeAsync();
         }

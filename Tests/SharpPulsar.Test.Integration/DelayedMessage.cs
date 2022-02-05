@@ -8,7 +8,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Api
+namespace SharpPulsar.Test.Integration
 {
     [Collection(nameof(PulsarTests))]
     public class DelayedMessage
@@ -35,7 +35,7 @@ namespace SharpPulsar.Test.Api
                 //deliverat works with shared subscription
                 .SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared)
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
-            
+
             var producer = await _client.NewProducerAsync(ISchema<string>.String, new ProducerConfigBuilder<string>()
                 .Topic(_topic));
 
@@ -70,7 +70,7 @@ namespace SharpPulsar.Test.Api
         public async Task TestDeliverAt()
         {
 
-             var numMessages = 15;
+            var numMessages = 15;
             var consumer = await _client.NewConsumerAsync(ISchema<string>.String, new ConsumerConfigBuilder<string>()
                 .Topic(_topic)
                 .SubscriptionName($"at-sub-{Guid.NewGuid()}")
@@ -125,7 +125,7 @@ namespace SharpPulsar.Test.Api
             // delay 5 seconds using DeliverAfter
             for (var i = 0; i < numMessages; i++)
             {
-                await producer.NewMessage().Value("Message " + i+" with event time").EventTime(DateTime.Now).SendAsync();
+                await producer.NewMessage().Value("Message " + i + " with event time").EventTime(DateTime.Now).SendAsync();
             }
             producer.Flush();
 

@@ -35,4 +35,8 @@
     <None Remove="..\.github\workflows\TxnTests.yml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
+  </ItemGroup>
+
 </Project>

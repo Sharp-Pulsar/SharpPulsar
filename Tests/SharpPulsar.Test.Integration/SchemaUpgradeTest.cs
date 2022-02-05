@@ -9,7 +9,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Schema
+namespace SharpPulsar.Test.Integration
 {
     [Collection(nameof(PulsarTests))]
     public class SchemaUpgradeTest
@@ -39,8 +39,8 @@ namespace SharpPulsar.Test.Schema
                 .ProducerName("avroUpgradeSchema1");
             var producer = await _client.NewProducerAsync(record1, producerBuilder);
 
-            await producer.NewMessage()               
-               .Value(new SimpleRecord { Name = "Ebere Abanonu", Age = int.MaxValue})
+            await producer.NewMessage()
+               .Value(new SimpleRecord { Name = "Ebere Abanonu", Age = int.MaxValue })
                .SendAsync();
 
             await Task.Delay(TimeSpan.FromSeconds(10));
