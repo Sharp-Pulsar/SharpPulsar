@@ -185,8 +185,8 @@ partial class Build : NukeBuild
                     .SetProjectFile(project)
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework("net6.0")
-                    .SetResultsDirectory(OutputTests / "sql")
-                    .SetLoggers("trx")
+                    //.SetResultsDirectory(OutputTests / "sql")
+                    //.SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     //.SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
