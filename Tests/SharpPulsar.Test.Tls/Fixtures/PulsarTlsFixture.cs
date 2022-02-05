@@ -69,12 +69,12 @@ namespace SharpPulsar.Test.Tls.Fixtures
         public override async Task InitializeAsync()
         {
             //need to build custom pulsar image for tls testing
-            var imge = await new ImageFromDockerfileBuilder()
+            /*var imge = await new ImageFromDockerfileBuilder()
                 .WithName("sharp-pulsar:2.9.1")
                 .WithDockerfileDirectory(".")
                 .WithDeleteIfExists(false)
-                .Build();
-            await base.InitializeAsync();
+                .Build();*/
+            //await base.InitializeAsync();
             await SetupSystem();
             await AwaitPulsarReadiness();
         }
