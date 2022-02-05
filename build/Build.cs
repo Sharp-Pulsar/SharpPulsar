@@ -177,6 +177,7 @@ partial class Build : NukeBuild
         });
     //IEnumerable<Project> TestProjects => Solution.GetProjects("*.Test");
     Target SqlTest => _ => _
+        .DependsOn(Compile)
         .Executes(() =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.SQL");
@@ -189,7 +190,7 @@ partial class Build : NukeBuild
                     //.SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     //.SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Detailed)
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
         });
     Target TlsTest => _ => _
@@ -252,6 +253,7 @@ partial class Build : NukeBuild
         });
 
     Target IntegrationTest => _ => _
+        .DependsOn(Compile)
         .Executes(async () =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.Integration");
