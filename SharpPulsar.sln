@@ -1,22 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29609.76
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test", "Tests\SharpPulsar.Test\SharpPulsar.Test.csproj", "{82E83F82-B004-40B9-9391-1ED2B8E12AB1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B9FEDDC4-BE7A-46A8-899E-B5001704ABF1}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		CHANGELOG.md = CHANGELOG.md
+		docker-compose.yml = docker-compose.yml
+		Dockerfile = Dockerfile
+		gitversion.yml = gitversion.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar", "SharpPulsar\SharpPulsar.csproj", "{43E2BD05-1E73-4887-80E4-17FB49711AF1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.csproj", "{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Benchmarks", "SharpPulsar.Benchmarks\SharpPulsar.Benchmarks.csproj", "{A8644135-E363-406B-A063-D56E47404947}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Memory", "Tests\SharpPulsar.Test.Memory\SharpPulsar.Test.Memory.csproj", "{B61FC414-F6CE-4205-A896-CEF9BA0BA837}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{99773F88-3FCC-484A-AEBF-E863FE0E4866}"
 EndProject
@@ -99,6 +99,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ssl", "ssl", "{59623902-830
 		docker\latest-version-image\ssl\user1.key-pk8.pem = docker\latest-version-image\ssl\user1.key-pk8.pem
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.TestContainer", "Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj", "{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Tls", "Tests\SharpPulsar.Test.Tls\SharpPulsar.Test.Tls.csproj", "{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Integration", "Tests\SharpPulsar.Test.Integration\SharpPulsar.Test.Integration.csproj", "{F6625902-64C4-410C-A4E3-65F2A5A12E7A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.NBench", "Tests\SharpPulsar.Test.NBench\SharpPulsar.Test.NBench.csproj", "{F8360A61-5159-4B5B-B4BF-C9D33874BF85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -114,14 +122,6 @@ Global
 		{43E2BD05-1E73-4887-80E4-17FB49711AF1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9C7CB92B-C18F-41B1-BF1D-D55506BB8C07}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8644135-E363-406B-A063-D56E47404947}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A8644135-E363-406B-A063-D56E47404947}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A8644135-E363-406B-A063-D56E47404947}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8644135-E363-406B-A063-D56E47404947}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B61FC414-F6CE-4205-A896-CEF9BA0BA837}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B61FC414-F6CE-4205-A896-CEF9BA0BA837}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B61FC414-F6CE-4205-A896-CEF9BA0BA837}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B61FC414-F6CE-4205-A896-CEF9BA0BA837}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3202A7DE-93B1-4359-A905-103D5E59DEDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3202A7DE-93B1-4359-A905-103D5E59DEDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3202A7DE-93B1-4359-A905-103D5E59DEDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -134,13 +134,28 @@ Global
 		{32E252E5-BF84-441A-8F1B-83A605D8007C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32E252E5-BF84-441A-8F1B-83A605D8007C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32E252E5-BF84-441A-8F1B-83A605D8007C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8360A61-5159-4B5B-B4BF-C9D33874BF85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8360A61-5159-4B5B-B4BF-C9D33874BF85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8360A61-5159-4B5B-B4BF-C9D33874BF85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8360A61-5159-4B5B-B4BF-C9D33874BF85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{82E83F82-B004-40B9-9391-1ED2B8E12AB1} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
-		{B61FC414-F6CE-4205-A896-CEF9BA0BA837} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{3202A7DE-93B1-4359-A905-103D5E59DEDC} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{55754BAF-1577-45B1-BE28-C37F9154109E} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{32E252E5-BF84-441A-8F1B-83A605D8007C} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
@@ -153,6 +168,10 @@ Global
 		{1ED8187D-303F-4768-8341-FD8B15A54972} = {BE51FF3B-EA56-4609-8CB7-A3BB1C3C081A}
 		{6F7B7EDC-2647-4CB9-8768-AD580B65FDED} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
 		{59623902-830D-4D6F-B1D0-DA74CD18B0DA} = {D32D8B49-E963-4CAE-9FA2-F7FFCAE8752A}
+		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{F6625902-64C4-410C-A4E3-65F2A5A12E7A} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{F8360A61-5159-4B5B-B4BF-C9D33874BF85} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A9D4BE7B-E00C-47EC-87B3-4064A8F6F75E}

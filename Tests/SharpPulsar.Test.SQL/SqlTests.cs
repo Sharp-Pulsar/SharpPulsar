@@ -14,6 +14,7 @@ using System.Threading;
 using SharpPulsar.Interfaces;
 using Xunit;
 using Xunit.Abstractions;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.Test.SQL
 {
@@ -23,25 +24,25 @@ namespace SharpPulsar.Test.SQL
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public SqlTests(ITestOutputHelper output, PulsarStandaloneClusterFixture fixture)
+		public SqlTests(ITestOutputHelper output, PulsarSqlFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
 		}
 		//[Fact(Skip ="Issue with sql-worker on github action")]
 		[Fact]
-		public virtual void TestQuerySql()
+		public virtual async Task TestQuerySql()
 		{
 			var topic = $"query_topics_avro_{Guid.NewGuid()}";
-			PublishMessages(topic, 5);
+			await PublishMessages(topic, 5);
             var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 
             var sql = PulsarSystem.Sql(option);
 
 			var receivedCount = 0;
 
-            Thread.Sleep(TimeSpan.FromSeconds(10));
-            var response = sql.Execute(TimeSpan.FromSeconds(30));
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            var response = await sql.ExecuteAsync(TimeSpan.FromSeconds(30));
             if (response != null)
             {
                 var data = response.Response;
@@ -70,32 +71,32 @@ namespace SharpPulsar.Test.SQL
             Assert.True(receivedCount > 1);
         }
 
-        [Fact(Skip = "Issue with sql-worker on github action")]
-        //[Fact]
-        public void TestAvro()
+        //[Fact(Skip = "Issue with sql-worker on github action")]
+        [Fact]
+        public async Task TestAvro()
         {
-            PlainAvroProducer($"journal-{Guid.NewGuid()}");
+            await PlainAvroProducer($"journal-{Guid.NewGuid()}");
         }
-        [Fact(Skip = "Issue with sql-worker on github action")]
-        public void TestKeyValue()
+        [Fact]
+        public async Task  TestKeyValue()
         {
-            PlainKeyValueProducer($"keyvalue");
+            await PlainKeyValueProducer($"keyvalue");
         }
-		private ISet<string> PublishMessages(string topic, int count)
+		private async Task<ISet<string>> PublishMessages(string topic, int count)
 		{
             ISet<string> keys = new HashSet<string>();
             var builder = new ProducerConfigBuilder<DataOp>()
                 .Topic(topic);
-            var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
+            var producer = await  _client.NewProducerAsync(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
             for (var i = 0; i < count; i++)
             {
                 var key = "key" + i;
-                producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).Send();
+                await producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).SendAsync();
                 keys.Add(key);
             }
             return keys;
         }
-        private void PlainAvroProducer(string topic)
+        private async Task PlainAvroProducer(string topic)
         {
             var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
             var builder = new ConsumerConfigBuilder<JournalEntry>()
@@ -105,14 +106,14 @@ namespace SharpPulsar.Test.SQL
                 .ForceTopicCreation(true)
                 
                 .AcknowledgmentGroupTime(TimeSpan.Zero);
-            var consumer = _client.NewConsumer(jsonSchem, builder);
+            var consumer = await _client.NewConsumerAsync(jsonSchem, builder);
             var producerConfig = new ProducerConfigBuilder<JournalEntry>()
                 .ProducerName(topic.Split("/").Last())
                 .Topic(topic)
                 .Schema(jsonSchem)
                 .SendTimeout(TimeSpan.FromMilliseconds(10000));
 
-            var producer = _client.NewProducer(jsonSchem, producerConfig);
+            var producer = await _client.NewProducerAsync(jsonSchem, producerConfig);
 
             for (var i = 0; i < 10; i++)
             {
@@ -137,12 +138,12 @@ namespace SharpPulsar.Test.SQL
                     ["Key"] = "Single",
                     ["Properties"] = JsonSerializer.Serialize(new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }, new JsonSerializerOptions{WriteIndented = true})
                 };
-                var id = producer.NewMessage().Properties(metadata).Value(journal).Send();
+                var id = await producer.NewMessage().Properties(metadata).Value(journal).SendAsync();
             }
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < 10; i++)
             {
-                var msg = consumer.Receive();
+                var msg = await consumer.ReceiveAsync();
                 if (msg != null)
                 {
                     var receivedMessage = msg.Value;
@@ -152,7 +153,7 @@ namespace SharpPulsar.Test.SQL
             }
         }
 
-        private void PlainKeyValueProducer(string topic)
+        private async Task PlainKeyValueProducer(string topic)
         {
             //var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
             var jsonSchem = KeyValueSchema<string,string>.Of(ISchema<string>.String, ISchema<string>.String);
@@ -162,14 +163,14 @@ namespace SharpPulsar.Test.SQL
                 .AckTimeout(TimeSpan.FromMilliseconds(20000))
                 .ForceTopicCreation(true)
                 .AcknowledgmentGroupTime(TimeSpan.Zero);
-            var consumer = _client.NewConsumer(jsonSchem, builder);
+            var consumer = await _client.NewConsumerAsync(jsonSchem, builder);
             var producerConfig = new ProducerConfigBuilder<KeyValue<string, string>>()
                 .ProducerName(topic.Split("/").Last())
                 .Topic(topic)
                 .Schema(jsonSchem)
                 .SendTimeout(TimeSpan.FromMilliseconds(10000));
 
-            var producer = _client.NewProducer(jsonSchem, producerConfig);
+            var producer = await _client.NewProducerAsync(jsonSchem, producerConfig);
 
             for (var i = 0; i < 10; i++)
             {
@@ -178,13 +179,13 @@ namespace SharpPulsar.Test.SQL
                     ["Key"] = "Single",
                     ["Properties"] = JsonSerializer.Serialize(new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }, new JsonSerializerOptions { WriteIndented = true })
                 };
-                var id = producer.NewMessage().Properties(metadata).Value<string, string>(new KeyValue<string, string>("Ebere", $"[{i}]Ebere")).Send();
+                var id = await producer.NewMessage().Properties(metadata).Value<string, string>(new KeyValue<string, string>("Ebere", $"[{i}]Ebere")).SendAsync();
                 _output.WriteLine(id.ToString());
             }
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < 10; i++)
             {
-                var msg = consumer.Receive();
+                var msg = await consumer.ReceiveAsync();
                 if (msg != null)
                 {
                     var kv = msg.Value;

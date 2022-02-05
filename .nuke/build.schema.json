@@ -22,6 +22,9 @@
             "Release"
           ]
         },
+        "Container": {
+          "type": "boolean"
+        },
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
@@ -93,22 +96,23 @@
           "items": {
             "type": "string",
             "enum": [
-              "AdminPulsar",
+              "ApiTest",
               "Benchmark",
-              "CheckBranch",
-              "CheckDockerVersion",
               "Clean",
               "Compile",
-              "Pack",
-              "PackBeta",
-              "Push",
-              "PushBeta",
+              "CreateNuget",
+              "DocBuild",
+              "DocsInit",
+              "DocsMetadata",
+              "EventTest",
+              "IntegrationTest",
+              "PublishNuget",
               "Restore",
+              "RunChangelog",
               "RunMemoryAllocation",
-              "StartPulsar",
-              "StopPulsar",
-              "Test",
-              "TestPaths",
+              "ServeDocs",
+              "SqlTest",
+              "TlsTest",
               "TxnTest"
             ]
           }
@@ -123,22 +127,23 @@
           "items": {
             "type": "string",
             "enum": [
-              "AdminPulsar",
+              "ApiTest",
               "Benchmark",
-              "CheckBranch",
-              "CheckDockerVersion",
               "Clean",
               "Compile",
-              "Pack",
-              "PackBeta",
-              "Push",
-              "PushBeta",
+              "CreateNuget",
+              "DocBuild",
+              "DocsInit",
+              "DocsMetadata",
+              "EventTest",
+              "IntegrationTest",
+              "PublishNuget",
               "Restore",
+              "RunChangelog",
               "RunMemoryAllocation",
-              "StartPulsar",
-              "StopPulsar",
-              "Test",
-              "TestPaths",
+              "ServeDocs",
+              "SqlTest",
+              "TlsTest",
               "TxnTest"
             ]
           }

@@ -154,7 +154,7 @@ namespace SharpPulsar
 			var completed = 0;
 			for(var partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
 			{
-                var tcs = new TaskCompletionSource<IActorRef>();
+                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
 				_context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration));
@@ -355,7 +355,7 @@ namespace SharpPulsar
 				var newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
 				foreach (var partitionName in newPartitions)
 				{
-                    var tcs = new TaskCompletionSource<IActorRef>();
+                    var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                     var producerId = await _generator.Ask<long>(NewProducerId.Instance);
 					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
 					_context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration));

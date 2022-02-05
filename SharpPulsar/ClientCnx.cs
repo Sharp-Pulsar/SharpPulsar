@@ -564,9 +564,9 @@ namespace SharpPulsar
 			var requestId = (long)lookupResult.RequestId;
 			if (RemovePendingLookupRequest(requestId, out var requester))
 			{
-				if (CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult.Response))
+				if (CommandPartitionedTopicMetadataResponse.LookupType.Failed.Equals(lookupResult?.Response))
 				{
-					if (lookupResult.Error != ServerError.UnknownError)
+					if (lookupResult != null && lookupResult.Error != ServerError.UnknownError)
 					{
 						CheckServerError(lookupResult.Error, lookupResult.Message);
 						var ex = GetPulsarClientException(lookupResult.Error, lookupResult.Message);

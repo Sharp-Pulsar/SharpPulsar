@@ -340,9 +340,9 @@ namespace SharpPulsar
 
             var data = askResponse.ConvertTo<LookupDataResult>();
 
-            if (data?.Error != ServerError.UnknownError)
+            if (data != null && data?.Error != ServerError.UnknownError)
             {
-                _log.Warning($"[{topicName}] failed to get Partitioned metadata : {data.Error}:{data.ErrorMessage}");
+                _log.Warning($"[{topicName}] failed to get Partitioned metadata : {data?.Error}:{data?.ErrorMessage}");
                 _replyTo.Tell(new AskResponse(new PartitionedTopicMetadata(0)));
             }
             else

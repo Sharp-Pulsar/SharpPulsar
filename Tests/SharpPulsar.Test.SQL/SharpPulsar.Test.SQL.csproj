@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
+    <PackageReference Include="docker.dotnet" Version="3.125.5" />
     <PackageReference Include="microsoft.extensions.configuration.fileextensions" Version="6.0.0" />
     <PackageReference Include="microsoft.extensions.configuration.json" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\SharpPulsar\SharpPulsar.csproj" />
+    <ProjectReference Include="..\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

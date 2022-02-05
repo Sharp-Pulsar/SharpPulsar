@@ -17,5 +17,5 @@ namespace SharpPulsar.Test.Transaction.Fixtures
     using Xunit;
 
     [CollectionDefinition(nameof(PulsarTransactionTests))]
-    public class PulsarTransactionTests : ICollectionFixture<PulsarStandaloneClusterFixture> { }
+    public class PulsarTransactionTests : ICollectionFixture<PulsarTxnFixture> { }
 }

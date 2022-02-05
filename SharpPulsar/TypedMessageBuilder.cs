@@ -91,7 +91,7 @@ namespace SharpPulsar
             try
             {
                 var message = await Message().ConfigureAwait(false);
-                var tcs = new TaskCompletionSource<Message<T>>();
+                var tcs = new TaskCompletionSource<Message<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (_txn != null)
                 {
                     _producer.Tell(new InternalSendWithTxn<T>(message, _txn.Txn, tcs));

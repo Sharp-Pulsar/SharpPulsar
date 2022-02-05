@@ -143,7 +143,7 @@ namespace SharpPulsar
 
                 if (!logicalAddress.Equals(physicalAddress))
                     targetBroker = $"{logicalAddress.Host}:{logicalAddress.Port}";
-                var tcs = new TaskCompletionSource<ConnectionOpened>();
+                var tcs = new TaskCompletionSource<ConnectionOpened>(TaskCreationOptions.RunContinuationsAsynchronously);
                 cnx = _context.ActorOf(ClientCnx.Prop(_clientConfig, physicalAddress, tcs, targetBroker), $"{targetBroker}{connectionKey}".ToAkkaNaming());
                 var connection = await tcs.Task;
                 

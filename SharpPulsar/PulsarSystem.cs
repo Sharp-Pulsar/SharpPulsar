@@ -39,11 +39,11 @@ namespace SharpPulsar
             nlog.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
             LogManager.Configuration = nlog;
         };
-        public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
+        public static PulsarSystem GetInstance(ActorSystem actorSystem, PulsarClientConfigBuilder conf, string actorSystemName = "apache-pulsar")
         {
-            return GetInstanceAsync(actorSystem, conf).GetAwaiter().GetResult();
+            return GetInstanceAsync(actorSystem, conf, actorSystemName).GetAwaiter().GetResult();
         }
-        public static async Task<PulsarSystem> GetInstanceAsync(ActorSystem actorSystem, PulsarClientConfigBuilder conf)
+        public static async Task<PulsarSystem> GetInstanceAsync(ActorSystem actorSystem, PulsarClientConfigBuilder conf, string actorSystemName = "apache-pulsar")
         {
             if (_instance == null)
             {
@@ -51,17 +51,17 @@ namespace SharpPulsar
                 {
                     if (_instance == null)
                     {
-                        _instance = await CreateActorSystem(conf, null, null, false, actorSystem).ConfigureAwait(false);
+                        _instance = await CreateActorSystem(conf, null, null, false, actorSystemName, actorSystem).ConfigureAwait(false);
                     }
                 }
             }
             return _instance;
         }
-        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null)
+        public static PulsarSystem GetInstance(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null, string actorSystemName = "apache-pulsar")
         {
-            return GetInstanceAsync(conf, logSetup, config).GetAwaiter().GetResult();
+            return GetInstanceAsync(conf, logSetup, config, actorSystemName).GetAwaiter().GetResult();
         }
-        public static async Task<PulsarSystem> GetInstanceAsync(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null)
+        public static async Task<PulsarSystem> GetInstanceAsync(PulsarClientConfigBuilder conf, Action logSetup = null, Config config = null, string actorSystemName = "apache-pulsar")
         {
             if (_instance == null)
             {
@@ -69,14 +69,14 @@ namespace SharpPulsar
                 {
                     if (_instance == null)
                     {
-                        _instance = await CreateActorSystem(conf, logSetup, config, true).ConfigureAwait(false);
+                        _instance = await CreateActorSystem(conf, logSetup, config, true, actorSystemName).ConfigureAwait(false);
                         
                     }
                 }
             }
             return _instance;
         }
-        private static async Task<PulsarSystem> CreateActorSystem(PulsarClientConfigBuilder conf, Action logSetup, Config config, bool runLogSetup, ActorSystem actorsystem = null)
+        private static async Task<PulsarSystem> CreateActorSystem(PulsarClientConfigBuilder conf, Action logSetup, Config config, bool runLogSetup, string actorSystemName, ActorSystem actorsystem = null)
         {
             var confg = config ?? ConfigurationFactory.ParseString(@"
             akka
@@ -101,7 +101,7 @@ namespace SharpPulsar
                 }
             }");
             var clientConf = conf.ClientConfigurationData;
-            var actorSystem = actorsystem ?? ActorSystem.Create("Pulsar", confg);
+            var actorSystem = actorsystem ?? ActorSystem.Create(actorSystemName, confg);
 
             var cnxPool = actorSystem.ActorOf(ConnectionPool.Prop(clientConf), "ConnectionPool");
             var generator = actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
@@ -111,7 +111,7 @@ namespace SharpPulsar
             {
                 try
                 {
-                    var tcs = new TaskCompletionSource<object>();
+                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
                     tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs));
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
