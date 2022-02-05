@@ -72,6 +72,7 @@ namespace SharpPulsar.Test.EventSourcing
 				if (receivedCount == 0)
 					await Task.Delay(TimeSpan.FromSeconds(10));
 			}
+            await Task.Delay(TimeSpan.FromSeconds(5));
 			Assert.True(receivedCount > 0);
 		}
 		//[Fact(Skip = "Issue with sql-worker on github action")]
@@ -114,7 +115,8 @@ namespace SharpPulsar.Test.EventSourcing
 				if (receivedCount == 0)
 					await Task.Delay(TimeSpan.FromSeconds(10));
 			}
-			Assert.True(receivedCount > 0);
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            Assert.True(receivedCount > 0);
 		}
 		[Fact]
 		public virtual async Task ReaderSourceTest()
@@ -132,16 +134,12 @@ namespace SharpPulsar.Test.EventSourcing
 				.CurrentEvents();
 
             //let leave some time to wire everything up
-            await Task.Delay(TimeSpan.FromSeconds(20));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             var receivedCount = 0;
-            while(receivedCount == 0)
+            await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
-                await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
-                {
-                    receivedCount++;
-                    _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
-                }
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                receivedCount++;
+                _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
             }
             Assert.True(receivedCount > 0);
 		}
@@ -163,17 +161,13 @@ namespace SharpPulsar.Test.EventSourcing
             //let leave some time to wire everything up
             await Task.Delay(TimeSpan.FromSeconds(20));
             var receivedCount = 0;
-            while (receivedCount == 0)
+            await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(40)))
             {
-                await foreach (var response in reader.CurrentEvents(TimeSpan.FromSeconds(5)))
-                {
-                    receivedCount++;
-                    _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));                    
-                }
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                receivedCount++;
+                _output.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions { WriteIndented = true }));
             }
-            
-			Assert.True(receivedCount > 0);
+
+            Assert.True(receivedCount > 0);
 		}
 		private async Task<ISet<MessageId>> PublishMessages(string topic, int count)
 		{

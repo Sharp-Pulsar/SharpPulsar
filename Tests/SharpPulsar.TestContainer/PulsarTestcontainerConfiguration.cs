@@ -37,9 +37,10 @@ namespace SharpPulsar.TestContainer
         public virtual Func<IRunningDockerContainer, CancellationToken, Task> StartupCallback
           => (container, ct) =>
           {
-              var startupScript = new StringBuilder();
-              startupScript.AppendLine("#!/bin/sh");
-              return container.CopyFileAsync(StartupScriptPath, Encoding.UTF8.GetBytes(startupScript.ToString()), 0x1ff, ct: ct);
+              return Task.CompletedTask;
+              // startupScript = new StringBuilder();
+              //startupScript.AppendLine("#!/bin/sh");
+              //return container.CopyFileAsync(StartupScriptPath, Encoding.UTF8.GetBytes(startupScript.ToString()), 0x1ff, ct: ct);
           };
         /// <summary>
         /// Gets the command.

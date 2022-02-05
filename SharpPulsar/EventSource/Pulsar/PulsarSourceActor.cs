@@ -78,7 +78,6 @@ namespace SharpPulsar.EventSource.Pulsar
                 LiveConsume();
             else Consume();
         }
-        
         private void Consume()
         {
             Receive<ReceivedMessage<T>>(m =>
@@ -94,7 +93,10 @@ namespace SharpPulsar.EventSource.Pulsar
                 }
                 else Self.GracefulStop(TimeSpan.FromSeconds(5));
             });
-            Receive<ReceiveTimeout>(t => { Self.GracefulStop(TimeSpan.FromSeconds(5)); });
+            Receive<ReceiveTimeout>(t => 
+            { 
+                Self.GracefulStop(TimeSpan.FromSeconds(5)); 
+            });
             //to track last sequence id for lagging player
             Context.SetReceiveTimeout(TimeSpan.FromSeconds(30));
         }

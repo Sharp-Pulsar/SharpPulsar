@@ -106,7 +106,10 @@ namespace SharpPulsar.Test.Integration.Fixtures
             //we can create a REST API to push the file to here
             var response = await Container.CopyFilesFromContainer("/sharppulsar/TestResults/");
             ArchiveHelper.Extract(response.Stream, @"/home/Users/Ebere/Documents/temp");
-            Client?.Shutdown();
+
+            if(Client != null)
+                await Client.ShutdownAsync();
+
             await base.DisposeAsync();
         }
         private async ValueTask SetupSystem()

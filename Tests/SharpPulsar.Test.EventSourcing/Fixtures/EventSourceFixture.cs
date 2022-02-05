@@ -20,6 +20,7 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
     using SharpPulsar.TestContainer;
     using SharpPulsar.User;
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
     using System.Reflection;
@@ -56,9 +57,12 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
         {
             await base.InitializeAsync();
             await SetupSystem();
-            await AwaitPulsarReadiness();
+            await AwaitPortReadiness("http://127.0.0.1:8080/metrics/");
+            var result = await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+
+            await AwaitPortReadiness("http://127.0.0.1:8081/");
         }
-        public async ValueTask AwaitPulsarReadiness()
+        public async ValueTask AwaitPortReadiness(string address)
         {
             var waitTries = 20;
 
@@ -73,7 +77,7 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
             {
                 try
                 {
-                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                    await client.GetAsync(address).ConfigureAwait(false);
                     return;
                 }
                 catch
@@ -87,7 +91,8 @@ namespace SharpPulsar.Test.EventSourcing.Fixtures
         }
         public override async Task DisposeAsync()
         {
-            Client?.Shutdown();
+            if (Client != null)
+                await Client.ShutdownAsync();
             await base.DisposeAsync();
         }
 

@@ -60,6 +60,8 @@ namespace SharpPulsar.User.Events
         {
             while (!token.IsCancellationRequested)
             {
+                if (_eventSource.IsNobody())
+                    throw new Exception("Source Reader Terminated");
                 AskResponse response = null;
                 try
                 {
