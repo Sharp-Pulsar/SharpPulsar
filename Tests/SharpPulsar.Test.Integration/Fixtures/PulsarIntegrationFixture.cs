@@ -66,8 +66,7 @@ namespace SharpPulsar.Test.Integration.Fixtures
                .WithPortBinding(8081)
                .WithExposedPort(6650)
                .WithExposedPort(8080)
-               .WithExposedPort(8081)
-               .WithVolumeMount("/var/run/docker.sock", "/var/run/docker.sock");
+               .WithExposedPort(8081);
         }
         public override async Task InitializeAsync()
         {
