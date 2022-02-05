@@ -14,7 +14,7 @@ namespace SharpPulsar.Sql.Tests
     {
         private ActorSystem _actorSystem;
         private readonly ITestOutputHelper _output;
-        public SqlTests(ITestOutputHelper output)
+        public SqlTests(ITestOutputHelper output) 
         {
             _output = output;
             _actorSystem = ActorSystem.Create("Sql"); 
