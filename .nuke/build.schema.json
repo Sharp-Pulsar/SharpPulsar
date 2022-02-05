@@ -22,6 +22,9 @@
             "Release"
           ]
         },
+        "Container": {
+          "type": "boolean"
+        },
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
