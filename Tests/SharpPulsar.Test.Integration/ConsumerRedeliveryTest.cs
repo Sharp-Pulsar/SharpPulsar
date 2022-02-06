@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Text;
-using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Configuration;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -35,7 +33,7 @@ namespace SharpPulsar.Test.Integration
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

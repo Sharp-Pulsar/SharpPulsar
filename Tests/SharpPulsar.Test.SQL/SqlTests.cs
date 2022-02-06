@@ -2,7 +2,6 @@
 using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
-using SharpPulsar.Test.SQL.Fixtures;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
@@ -15,16 +14,17 @@ using SharpPulsar.Interfaces;
 using Xunit;
 using Xunit.Abstractions;
 using System.Threading.Tasks;
+using SharpPulsar.TestContainer;
 
 namespace SharpPulsar.Test.SQL
 {
-	[Collection(nameof(PulsarSqlTests))]
+	[Collection(nameof(PulsarTests))]
 	public class SqlTests
 	{
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public SqlTests(ITestOutputHelper output, PulsarSqlFixture fixture)
+		public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

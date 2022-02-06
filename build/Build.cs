@@ -305,6 +305,17 @@ partial class Build : NukeBuild
       .Executes(() =>
       {
           var version = GitVersion.SemVer;
+          var branchName = GitVersion.BranchName;
+
+          if (branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
+          && !GitVersion.MajorMinorPatch.Equals(LatestVersion.Version.ToString()))
+          {
+              // Force CHANGELOG.md in case it skipped the mind
+              Assert.Fail($"CHANGELOG.md needs to be update for final release. Current version: '{LatestVersion.Version}'. Next version: {GitVersion.MajorMinorPatch}");
+          }
+          var releaseNotes = branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
+                             ? GetNuGetReleaseNotes(ChangelogFile, GitRepository)
+                             : ParseReleaseNote();
           var project = Solution.GetProject("SharpPulsar");
           DotNetPack(s => s
               .SetProject(project)
@@ -315,7 +326,7 @@ partial class Build : NukeBuild
               .SetAssemblyVersion(version)
               .SetFileVersion(version)
               .SetVersion(version)
-              .SetPackageReleaseNotes(GetNuGetReleaseNotes(ChangelogFile, GitRepository))
+              .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven","Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
@@ -361,6 +372,10 @@ partial class Build : NukeBuild
         var client = DIContainer.Get<DockerClient>();
         var file = await client.Containers.GetArchiveFromContainerByNameAsync(sourcePath, containerName);
         ArchiveHelper.Extract(file.Stream, outputPath);
+    }
+    string ParseReleaseNote()
+    {
+        return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();
     }
     static void Information(string info)
     {

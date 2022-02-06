@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Util;
 using System.Threading;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -39,7 +39,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public ReaderTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+		public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

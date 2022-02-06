@@ -1,5 +1,5 @@
 ﻿using SharpPulsar.Configuration;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using System;
 using System.Text;
@@ -16,7 +16,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public MessageEncryptionTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+		public MessageEncryptionTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

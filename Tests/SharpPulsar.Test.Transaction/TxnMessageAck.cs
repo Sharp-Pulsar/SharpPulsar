@@ -3,14 +3,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Configuration;
-using SharpPulsar.Test.Transaction.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarTransactionTests))]
+    [Collection(nameof(PulsarTests))]
 	public class TxnMessageAck
     {
 		private const string TENANT = "public";
@@ -20,7 +20,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-        public TxnMessageAck(ITestOutputHelper output, PulsarTxnFixture fixture)
+        public TxnMessageAck(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

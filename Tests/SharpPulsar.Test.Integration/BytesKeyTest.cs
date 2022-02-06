@@ -1,7 +1,7 @@
 ﻿using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Integration
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public ByteKeysTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+        public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

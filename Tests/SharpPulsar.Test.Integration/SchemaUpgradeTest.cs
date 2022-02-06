@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using AvroSchemaGenerator.Attributes;
 using SharpPulsar.Configuration;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,7 +18,7 @@ namespace SharpPulsar.Test.Integration
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public SchemaUpgradeTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+        public SchemaUpgradeTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

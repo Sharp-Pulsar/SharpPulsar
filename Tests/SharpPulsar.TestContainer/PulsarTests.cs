@@ -12,10 +12,10 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.Test.Transaction.Fixtures
+namespace SharpPulsar.TestContainer
 {
     using Xunit;
 
-    [CollectionDefinition(nameof(PulsarTransactionTests))]
-    public class PulsarTransactionTests : ICollectionFixture<PulsarTxnFixture> { }
+    [CollectionDefinition(nameof(PulsarTests))]
+    public class PulsarTests : ICollectionFixture<PulsarFixture> { }
 }

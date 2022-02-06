@@ -7,7 +7,7 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Threading;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public MultiTopicsReaderTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+		public MultiTopicsReaderTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

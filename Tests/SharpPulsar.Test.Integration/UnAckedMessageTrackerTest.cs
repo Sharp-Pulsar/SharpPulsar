@@ -6,7 +6,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Akka.Actor;
 using System;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -35,7 +35,7 @@ namespace SharpPulsar.Test.Integration
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly ActorSystem _system;
-        public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+        public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

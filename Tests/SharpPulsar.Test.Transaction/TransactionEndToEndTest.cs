@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
-using SharpPulsar.Test.Transaction.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -34,7 +34,7 @@ namespace SharpPulsar.Test.Transaction
     /// End to end transaction test.
     /// </summary>
     //https://dev.to/damikun/the-cross-platform-build-automation-with-nuke-1kmc
-    [Collection(nameof(PulsarTransactionTests))]
+    [Collection(nameof(PulsarTests))]
 	public class TransactionEndToEndTest
 	{
 
@@ -48,7 +48,7 @@ namespace SharpPulsar.Test.Transaction
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
         private readonly Admin.Public.Admin _admin;
-        public TransactionEndToEndTest(ITestOutputHelper output, PulsarTxnFixture fixture)
+        public TransactionEndToEndTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

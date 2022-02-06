@@ -9,7 +9,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
-using SharpPulsar.Test.Integration.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,7 +24,7 @@ namespace SharpPulsar.Test.Integration
         private readonly PulsarClient _client;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
 
-        public GenericSchemaTest(ITestOutputHelper output, PulsarIntegrationFixture fixture)
+        public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

@@ -3,7 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Test.Transaction.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,7 +11,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarTransactionTests))]
+    [Collection(nameof(PulsarTests))]
     public class CumulativeAck
     {
 		private const string TENANT = "public";
@@ -21,7 +21,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-		public CumulativeAck(ITestOutputHelper output, PulsarTxnFixture fixture)
+		public CumulativeAck(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
