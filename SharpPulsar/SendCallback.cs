@@ -8,12 +8,12 @@ namespace SharpPulsar
     {
         private readonly ProducerActor<T> _outerInstance;
 
-        private TaskCompletionSource<Message<T>> _future;
+        private readonly TaskCompletionSource<Message<T>> _future;
 
-        private Message<T> _interceptorMessage;
+        private readonly Message<T> _interceptorMessage;
         private ISendCallback<T> _nextCallback;
         private Message<T> _nextMsg;
-        private long _createdAt;
+        private readonly long _createdAt;
         public SendCallback(ProducerActor<T> outerInstance, TaskCompletionSource<Message<T>> future, Message<T> interceptorMessage)
         {
             _outerInstance = outerInstance;

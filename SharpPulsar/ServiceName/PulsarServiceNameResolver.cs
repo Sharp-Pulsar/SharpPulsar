@@ -33,7 +33,7 @@ namespace SharpPulsar.ServiceName
         private int _currentIndex;
         private IList<Uri> _addressList;
         private ServiceUri _serviceUri;
-        private ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log;
 
         public PulsarServiceNameResolver(ILoggingAdapter log)
         {
@@ -99,7 +99,7 @@ namespace SharpPulsar.ServiceName
                     var hostUri = new Uri(hostUrl);
                     addresses.Add(hostUri);
                 }
-                catch (UriFormatException e)
+                catch (UriFormatException)
                 {
                     _log.Error($"Invalid host provided {hostUrl}");
                     throw;

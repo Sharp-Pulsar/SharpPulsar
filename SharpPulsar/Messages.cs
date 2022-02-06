@@ -27,7 +27,7 @@ namespace SharpPulsar
     public class Messages<T> : IMessages<T>
 	{
 
-		private IList<IMessage<T>> _messageList;
+		private readonly IList<IMessage<T>> _messageList;
 
 		private readonly int _maxNumberOfMessages;
 		private readonly long _maxSizeOfMessages;

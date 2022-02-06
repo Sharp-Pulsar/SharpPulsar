@@ -39,10 +39,10 @@ namespace SharpPulsar.Tracker
 		private Dictionary<IMessageId, long> _nackedMessages;
 		private readonly TimeSpan _nackDelayMs;
 		private readonly TimeSpan _timerIntervalMs;
-        private IActorRef _consumer;
-        private IActorRef _unack;
-        private IActorRef _self;
-        private ILoggingAdapter _log;
+        private readonly IActorRef _consumer;
+        private readonly IActorRef _unack;
+        private readonly IActorRef _self;
+        private readonly ILoggingAdapter _log;
 
 
         private ICancelable _timeout;

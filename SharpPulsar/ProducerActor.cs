@@ -68,21 +68,21 @@ namespace SharpPulsar
 		// Variable is used through the atomic updater
 		private long _msgIdGenerator;
 		private ICancelable _sendTimeout;
-		private long _createProducerTimeout;
+		private readonly long _createProducerTimeout;
 		private readonly IBatchMessageContainerBase<T> _batchMessageContainer;
 		private Queue<OpSendMsg<T>> _pendingMessages;
-		private IActorRef _generator;
+		private readonly IActorRef _generator;
         private readonly Dictionary<string, IActorRef> _watchedActors = new Dictionary<string, IActorRef>();
 
 		private readonly ICancelable _regenerateDataKeyCipherCancelable;
 
 		// Globally unique producer name
 		private string _producerName;
-		private bool _userProvidedProducerName = false;
+		private readonly bool _userProvidedProducerName = false;
         private TaskCompletionSource<Message<T>> _lastSendFuture;
 
 
-        private ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log;
 
 		private string _connectionId;
 		private string _connectedSince;
@@ -100,7 +100,7 @@ namespace SharpPulsar
 
 		private readonly IMessageCrypto _msgCrypto;
 
-		private ICancelable _keyGeneratorTask = null;
+		private readonly ICancelable _keyGeneratorTask = null;
 
 		private readonly IDictionary<string, string> _metadata;
 
@@ -120,7 +120,7 @@ namespace SharpPulsar
         private readonly bool _isTxnEnabled;
 		private long _maxMessageSize;
 		private IActorRef _cnx;
-        private TimeSpan _lookupDeadline;
+        private readonly TimeSpan _lookupDeadline;
         private TimeSpan _producerDeadline = TimeSpan.Zero;
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
         private readonly MemoryLimitController _memoryLimitController;
@@ -1045,11 +1045,6 @@ namespace SharpPulsar
 			return Commands.NewSend(producerId, sequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
 		}
 
-		private ReadOnlySequence<byte> SendMessage(long producerId, long lowestSequenceId, long highestSequenceId, int numMessages, MessageMetadata msgMetadata, byte[] compressedPayload)
-		{
-			return Commands.NewSend(producerId, lowestSequenceId, highestSequenceId, numMessages, msgMetadata, new ReadOnlySequence<byte>(compressedPayload));
-		}
-
         public IStash Stash { get; set; }
 
         private bool CanAddToBatch(Message<T> msg)
@@ -1461,16 +1456,11 @@ namespace SharpPulsar
 			_log.Info($"[{Topic}] [{_producerName}] Re-Sending {messagesToResend} messages to server");
 			await RecoverProcessOpSendMsgFrom(null);
 		}
-		
-		private int BrokerChecksumSupportedVersion()
-		{
-			return (int)ProtocolVersion.V6;
-		}
 
-		/// <summary>
-		/// Process sendTimeout events
-		/// </summary>
-		private void FailTimedoutMessages()
+        /// <summary>
+        /// Process sendTimeout events
+        /// </summary>
+        private void FailTimedoutMessages()
 		{
 			if(_sendTimeout.IsCancellationRequested)
 			{
@@ -1681,17 +1671,12 @@ namespace SharpPulsar
 				return true;
 			return false;
 		}
-		private bool HasEventTime(ulong seq)
-		{
-			if (seq > 0)
-				return true;
-			return false;
-		}
-		public virtual string ConnectedSince
+
+        public virtual string ConnectedSince
 		{
 			get
 			{
-				return Cnx() != null ? _connectedSince : null;
+				return _connectedSince;
 			}
 		}
 

@@ -19,7 +19,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandProducer _producer;
+            private readonly CommandProducer _producer;
 
             public Builder()
             {

@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private IntRange _int;
+            private readonly IntRange _int;
 
             public Builder()
             {

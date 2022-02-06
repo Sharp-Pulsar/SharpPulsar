@@ -6,7 +6,7 @@ namespace SharpPulsar.Protocol.Builder
 {
     public class SchemaDataBuilder
     {
-        private SchemaData _data;
+        private readonly SchemaData _data;
         public SchemaDataBuilder()
         {
             _data = new SchemaData();

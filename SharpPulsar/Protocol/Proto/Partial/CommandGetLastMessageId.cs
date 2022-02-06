@@ -10,7 +10,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandGetLastMessageId _last;
+            private readonly CommandGetLastMessageId _last;
 
             public Builder()
             {

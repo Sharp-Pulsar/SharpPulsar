@@ -29,7 +29,7 @@ namespace SharpPulsar.Schemas.Generic
     {
 
         private readonly GenericDatumWriter<GenericRecord> _writer;
-        private BinaryEncoder _encoder;
+        private readonly BinaryEncoder _encoder;
         private readonly MemoryStream _byteArrayOutputStream;
 
         public GenericAvroWriter(Avro.RecordSchema schema)

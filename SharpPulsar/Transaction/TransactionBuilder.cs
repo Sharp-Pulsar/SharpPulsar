@@ -37,7 +37,7 @@ namespace SharpPulsar.Transaction
 		private readonly IActorRef _transactionCoordinatorClient;
 		private readonly IActorRef _client;
         private TimeSpan _txnTimeoutMs = TimeSpan.FromSeconds(60); // 1 minute
-		private ILoggingAdapter _log;
+		private readonly ILoggingAdapter _log;
 
 		public TransactionBuilder(ActorSystem actorSystem, IActorRef client, IActorRef tcClient, ILoggingAdapter log)
 		{

@@ -54,12 +54,12 @@ namespace SharpPulsar
 
 		private readonly ILoggingAdapter _log;
 
-		private string _proxyToTargetBrokerAddress;
+		private readonly string _proxyToTargetBrokerAddress;
 		private readonly ReadOnlySequence<byte> _pong = Commands.NewPong();
-		private List<byte> _pendingReceive;
+		private readonly List<byte> _pendingReceive;
 
-		private string _remoteHostName;
-		private bool _isTlsHostnameVerificationEnable;
+		private readonly string _remoteHostName;
+		private readonly bool _isTlsHostnameVerificationEnable;
 		private readonly ClientConfigurationData _clientConfigurationData;
         private readonly TaskCompletionSource<ConnectionOpened> _connectionFuture;
 
@@ -67,7 +67,7 @@ namespace SharpPulsar
 
 		private ICancelable _timeoutTask;
 
-		private ICancelable _sendPing;
+		private readonly ICancelable _sendPing;
 		private readonly IActorRef _parent;
 
 		// Added for mutual authentication.
@@ -243,25 +243,7 @@ namespace SharpPulsar
 
 			_timeoutTask?.Cancel(true);
 		}
-		private void ExceptionCaught(Exception cause)
-		{
-			if (_state != State.Failed)
-			{
-				// No need to report stack trace for known exceptions that happen in disconnections
-				_log.Warning($"[{_remoteHostName}] Got exception {cause.StackTrace}");
-				_state = State.Failed;
-			}
-			else
-			{
-				// At default info level, suppress all subsequent exceptions that are thrown when the connection has already
-				// failed
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{_remoteHostName}] Got exception: {cause}");
-				}
-			}
 
-		}
         private async Task NewAckForReceipt(ReadOnlySequence<byte> request, long requestId)
         {
             await SendRequestAndHandleTimeout(request, requestId, RequestType.AckResponse);
@@ -545,14 +527,14 @@ namespace SharpPulsar
                 requester.Tell(new AskResponse(ex));
             }
 		}
-		private async Task HandlePing(CommandPing ping)
+		private void HandlePing(CommandPing ping)
 		{
 			// Immediately reply success to ping requests
 			if (_log.IsEnabled(LogLevel.DebugLevel))
 			{
 				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
 			}
-			await _socketClient.SendMessage(_pong);
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await _socketClient.SendMessage(_pong))	;
 		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
@@ -899,28 +881,17 @@ namespace SharpPulsar
 			}*/
 		}
 
-		private IActorRef CheckAndGetTransactionMetaStoreHandler(long tcId)
-		{
-			if (!_transactionMetaStoreHandlers.TryGetValue(tcId, out var handler))
-			{
-
-				_socketClient.Dispose();
-				_log.Warning("Close the channel since can't get the transaction meta store handler, will reconnect later.");
-			}
-			return handler;
-		}
-
-		/// <summary>
-		/// check serverError and take appropriate action
-		/// <ul>
-		/// <li>InternalServerError: close connection immediately</li>
-		/// <li>TooManyRequest: received error count is more than maxNumberOfRejectedRequestPerConnection in
-		/// #rejectedRequestResetTimeSec</li>
-		/// </ul>
-		/// </summary>
-		/// <param name="error"> </param>
-		/// <param name="errMsg"> </param>
-		private void CheckServerError(ServerError error, string errMsg)
+        /// <summary>
+        /// check serverError and take appropriate action
+        /// <ul>
+        /// <li>InternalServerError: close connection immediately</li>
+        /// <li>TooManyRequest: received error count is more than maxNumberOfRejectedRequestPerConnection in
+        /// #rejectedRequestResetTimeSec</li>
+        /// </ul>
+        /// </summary>
+        /// <param name="error"> </param>
+        /// <param name="errMsg"> </param>
+        private void CheckServerError(ServerError error, string errMsg)
 		{
 			if (ServerError.ServiceNotReady.Equals(error))
 			{

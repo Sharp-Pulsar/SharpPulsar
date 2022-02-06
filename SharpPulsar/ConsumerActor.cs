@@ -80,7 +80,7 @@ namespace SharpPulsar
 		private IMessageId _lastMessageIdInBroker = IMessageId.Earliest;
 
 		private readonly ClientConfigurationData _clientConfigurationData;
-		private long _subscribeTimeout;
+		private readonly long _subscribeTimeout;
 		private readonly int _partitionIndex;
 		private readonly bool _hasParentConsumer;
 
@@ -93,17 +93,14 @@ namespace SharpPulsar
 		private readonly int _priorityLevel;
 		private readonly SubscriptionMode _subscriptionMode;
 		private BatchMessageId _startMessageId;
-		private IActorContext _context; 
+		private readonly IActorContext _context; 
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
 
 
 
-        private IActorRef _lookup;
-		private IActorRef _cnxPool;
-
-		private long _requestId;
-
-		private BatchMessageId _seekMessageId;
+        private readonly IActorRef _lookup;
+		private readonly IActorRef _cnxPool;
+        private BatchMessageId _seekMessageId;
 		private bool _duringSeek;
 
 		private readonly BatchMessageId _initialStartMessageId;
@@ -124,7 +121,7 @@ namespace SharpPulsar
         private readonly bool _poolMessages = false;
 
 
-        private ActorSystem _actorSystem;
+        private readonly ActorSystem _actorSystem;
 
 		private readonly SubscriptionInitialPosition _subscriptionInitialPosition;
 		private readonly IActorRef _connectionHandler;
@@ -155,10 +152,10 @@ namespace SharpPulsar
 		private int _pendingChunckedMessageCount = 0;
 		protected internal TimeSpan ExpireTimeOfIncompleteChunkedMessage = TimeSpan.Zero;
 		private bool _expireChunkMessageTaskScheduled = false;
-		private int _maxPendingChuckedMessage;
+		private readonly int _maxPendingChuckedMessage;
 		// if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
 		// the topic) then it guards against broken chuncked message which was not fully published
-		private bool _autoAckOldestChunkedMessageOnQueueFull;
+		private readonly bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
 		private Queue<string> _pendingChunckedMessageUuidQueue;
 
@@ -1592,7 +1589,7 @@ namespace SharpPulsar
             }
             catch (Exception e) when (e is IOException || e is InvalidOperationException)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -1651,7 +1648,7 @@ namespace SharpPulsar
             }
             catch (Exception e) when (e is IOException || e is InvalidOperationException)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -1695,7 +1692,7 @@ namespace SharpPulsar
                     }
                 });
             }
-            catch (Exception throwable)
+            catch 
             {
                 _log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch");
                 DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.BatchDeSerializeError);
@@ -1726,12 +1723,8 @@ namespace SharpPulsar
 			var should = m.ShouldSerializeNumMessagesInBatch();
 			return should;
 		}
-		private bool IsTxnMessage(MessageMetadata messageMetadata)
-		{
-			return messageMetadata.TxnidMostBits > 0 && messageMetadata.TxnidLeastBits > 0;
-		}
 
-		private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId, IActorRef cnx)
+        private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId, IActorRef cnx)
 		{
 			
 			// Lazy task scheduling to expire incomplete chunk message

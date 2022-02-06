@@ -10,7 +10,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandCloseProducer _producer;
+            private readonly CommandCloseProducer _producer;
 
             public Builder()
             {

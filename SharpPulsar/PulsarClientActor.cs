@@ -33,10 +33,9 @@ namespace SharpPulsar
 	{
 
 		private readonly ClientConfigurationData _conf;
-		private IActorRef _lookup;
+		private readonly IActorRef _lookup;
 		private readonly IActorRef _cnxPool;
-		private readonly ICancelable _timer;
-		private readonly ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log;
 
 		public enum State
 		{
@@ -45,12 +44,12 @@ namespace SharpPulsar
 			Closed = 2
 		}
 
-		private State _state;
+		private readonly State _state;
 		private readonly ISet<IActorRef> _producers;
 		private readonly ISet<IActorRef> _consumers;
 		private readonly DateTime _clientClock;
 
-		private IActorRef _tcClient;
+		private readonly IActorRef _tcClient;
 		public PulsarClientActor(ClientConfigurationData conf, IActorRef cnxPool, IActorRef txnCoordinator, IActorRef lookup, IActorRef idGenerator)
 		{
 			if (conf == null || string.IsNullOrWhiteSpace(conf.ServiceUrl))

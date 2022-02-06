@@ -40,7 +40,7 @@ namespace SharpPulsar.Crypto
     public class MessageCrypto:IMessageCrypto
 	{
 
-		private readonly AesManaged _keyGenerator;
+		private readonly Aes _keyGenerator;
 		private const int TagLen = 32 * 8;
 		public const int IvLen = 256;
 		private byte[] _iv;
@@ -61,7 +61,7 @@ namespace SharpPulsar.Crypto
 
 			_iv = new byte[16];
 			_hash = SHA256.Create();
-			_keyGenerator = new AesManaged();
+			_keyGenerator = Aes.Create();
 			_secureRandom = new SecureRandom();
 			_logCtx = logCtx;
             _log = log;

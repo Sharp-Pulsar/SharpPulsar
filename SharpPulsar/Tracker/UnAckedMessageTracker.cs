@@ -39,7 +39,7 @@ namespace SharpPulsar.Tracker
         private readonly TimeSpan _tickDuration;
         private readonly TimeSpan _ackTimeout;
         private readonly IScheduler _scheduler;
-        private IActorRef _unack;
+        private readonly IActorRef _unack;
 
         public UnAckedMessageTracker(TimeSpan ackTimeoutMillis, TimeSpan tickDurationInMs, IActorRef consumer, IActorRef unack)
         {

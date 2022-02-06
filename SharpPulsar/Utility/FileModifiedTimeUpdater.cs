@@ -42,15 +42,8 @@ namespace SharpPulsar.Utility
 			if (!string.IsNullOrWhiteSpace(FileName))
 			{
 				var p = new FileInfo(FileName);
-				try
-				{
-					return p.LastWriteTimeUtc;
-				}
-				catch (IOException e)
-				{
-					//Log.LogError("Unable to fetch lastModified time for file {}: ", FileName, e);
-				}
-			}
+                return p.LastWriteTimeUtc;
+            }
 			throw new Exception("Invalid file name");
 		}
 

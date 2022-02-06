@@ -64,11 +64,5 @@ namespace SharpPulsar.Extension
             }
             return bitArray;
         }
-        private static long Set(BitArray bitSet)
-        {
-            if (bitSet.Length % 64 == 0)
-                return 0;
-            return 1;
-        }
     }
 }

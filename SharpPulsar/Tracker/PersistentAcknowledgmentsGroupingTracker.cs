@@ -72,7 +72,7 @@ namespace SharpPulsar.Tracker
         private readonly IActorRef _handler;
         private readonly SortedSet<MessageId> _pendingIndividualBatchIndexAcks;
 
-        private  ICancelable _scheduledTask;
+        private readonly ICancelable _scheduledTask;
 
         private readonly bool _batchIndexAckEnabled;
         private readonly bool _ackReceiptEnabled;

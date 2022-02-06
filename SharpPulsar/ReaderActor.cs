@@ -139,7 +139,7 @@ namespace SharpPulsar
 		{
 			private readonly IActorRef _outerInstance;
 
-			private IReaderListener<T> _readerListener;
+			private readonly IReaderListener<T> _readerListener;
 
 			public MessageListenerAnonymousInnerClass(IActorRef outerInstance, IReaderListener<T> readerListener)
 			{

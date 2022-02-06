@@ -34,7 +34,7 @@ namespace SharpPulsar.Schemas
 		/// <summary>
 		/// the schema definition class
 		/// </summary>
-		private Type _pojo = typeof(T);
+		private readonly Type _pojo = typeof(T);
 		/// <summary>
 		/// The flag of schema type always allow null
 		/// 

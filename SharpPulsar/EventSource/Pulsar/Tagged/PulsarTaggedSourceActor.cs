@@ -18,14 +18,13 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
     public class PulsarTaggedSourceActor<T> : ReceiveActor
     {
-        private readonly IActorRef _pulsarManager;
         private readonly IActorRef _child;
         private ICancelable _flowSenderCancelable;
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
         private readonly long _toOffset;
         private long _currentOffset;
-        private long _totalOffset;
+        private readonly long _totalOffset;
         private long _lastEventMessageOffset;
         public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, Tag tag, ISchema<T> schema)
         {

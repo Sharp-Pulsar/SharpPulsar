@@ -86,7 +86,7 @@ namespace SharpPulsar
 		private readonly IActorRef _unAckedMessageTracker;
 		private readonly ConsumerConfigurationData<T> _internalConfig;
 
-		private volatile BatchMessageId _startMessageId = null;
+		private readonly BatchMessageId _startMessageId = null;
 		private readonly long _startMessageRollbackDurationInSec;
 		private readonly ClientConfigurationData _clientConfiguration;
 		private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
@@ -549,7 +549,7 @@ namespace SharpPulsar
 				catch (Exception e)
 				{
 					_log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
-					throw e;
+					throw;
 				}
 				schema = schema.Clone();
 				if (schema.RequireFetchingSchemaInfo())

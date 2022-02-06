@@ -575,18 +575,7 @@ namespace SharpPulsar.Protocol
 				return SchemaType.ValueOf(type.Value);
 			}
 		}
-		private static Proto.Schema GetSchem(ISchemaInfo schemaInfo)
-		{
-            var schema = new Proto.Schema
-            {
-                Name = schemaInfo.Name,
-                SchemaData = schemaInfo.Schema,
-                type = GetSchemaType(schemaInfo.Type)
-            };
-            schema.Properties.AddRange(schemaInfo.Properties.ToList().Select(entry => new KeyValue{Key = entry.Key, Value = entry.Value}).ToList());
-			
-			return schema;
-		}
+
         private static Proto.Schema ConvertSchema(ISchemaInfo SchemaInfo)
         {
             var schema = new Proto.Schema

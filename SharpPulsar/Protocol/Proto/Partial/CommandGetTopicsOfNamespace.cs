@@ -13,7 +13,7 @@ namespace SharpPulsar.Protocol.Proto
 		public sealed class Builder
         {
 
-            private CommandGetTopicsOfNamespace _command;
+            private readonly CommandGetTopicsOfNamespace _command;
 
             public Builder()
             {
@@ -54,11 +54,6 @@ namespace SharpPulsar.Protocol.Proto
 			
             public Builder SetMode(Mode value)
 			{
-				if (value == null)
-				{
-					throw new NullReferenceException();
-				}
-
                 _command.mode = value;
 				return this;
 			}

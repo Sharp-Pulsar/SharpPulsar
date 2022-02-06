@@ -13,7 +13,7 @@ namespace SharpPulsar.Schemas.Reader
     {
 		protected internal readonly ISchemaReader<T> providerSchemaReader;
 		protected internal ISchemaInfoProvider schemaInfoProvider;
-		Cache<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new Cache<BytesSchemaVersion, ISchemaReader<T>>(TimeSpan.FromMinutes(30));
+        readonly Cache<BytesSchemaVersion, ISchemaReader<T>> _readerCache = new Cache<BytesSchemaVersion, ISchemaReader<T>>(TimeSpan.FromMinutes(30));
 		
 		public AbstractMultiVersionReader(ISchemaReader<T> providerSchemaReader)
 		{
@@ -46,7 +46,7 @@ namespace SharpPulsar.Schemas.Reader
                 var key = BytesSchemaVersion.Of(schemaVersion);
                 return schemaVersion == null ? Read(inputStream) : _readerCache.Get(key, new Func<BytesSchemaVersion, ISchemaReader<T>>(LoadReader)).Read(inputStream);
 			}
-			catch (Exception e)
+			catch
 			{
 				//LOG.error("Can't get generic schema for topic {} schema version {}", schemaInfoProvider.Topic, Hex.encodeHexString(schemaVersion), e);
 				throw new Exception("Can't get generic schema for topic " + schemaInfoProvider.TopicName);

@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandAuthChallenge _auth;
+            private readonly CommandAuthChallenge _auth;
 
             public Builder()
             {

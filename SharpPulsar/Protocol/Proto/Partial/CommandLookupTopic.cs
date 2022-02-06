@@ -13,7 +13,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandLookupTopic _command;
+            private readonly CommandLookupTopic _command;
 
             public Builder()
             {

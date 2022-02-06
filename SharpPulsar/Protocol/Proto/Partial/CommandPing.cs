@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandPing _ping;
+            private readonly CommandPing _ping;
 
             public Builder()
             {

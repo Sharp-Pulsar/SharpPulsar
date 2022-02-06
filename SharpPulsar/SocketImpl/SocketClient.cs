@@ -31,11 +31,11 @@ namespace SharpPulsar.SocketImpl
     public sealed class SocketClient: ISocketClient
     {
         private readonly X509Certificate2Collection _clientCertificates;
-        private readonly X509Certificate2? _trustedCertificateAuthority;
+        private readonly X509Certificate2 _trustedCertificateAuthority;
         private readonly ClientConfigurationData _clientConfiguration;
         private readonly bool _encrypt;
         private readonly string _serviceUrl;
-        private string _targetServerName;
+        private readonly string _targetServerName;
 
         private const int ChunkSize = 75000;
 
@@ -254,7 +254,7 @@ namespace SharpPulsar.SocketImpl
                 await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.Tls12, true);
                 return sslStream;
             }
-            catch(Exception ex)
+            catch(Exception)
             {
                 if (sslStream is null)
                     stream.Dispose();

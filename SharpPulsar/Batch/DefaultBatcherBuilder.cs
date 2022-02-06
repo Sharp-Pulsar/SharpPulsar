@@ -26,7 +26,7 @@ namespace SharpPulsar.Batch
 {
     public class DefaultBatcherBuilder : IBatcherBuilder
     {
-        private ActorSystem _system;
+        private readonly ActorSystem _system;
 
         public DefaultBatcherBuilder(ActorSystem system)
         {

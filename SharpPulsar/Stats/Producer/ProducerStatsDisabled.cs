@@ -22,9 +22,7 @@ namespace SharpPulsar.Stats.Producer
 {
     public sealed class ProducerStatsDisabled : IProducerStatsRecorder
 	{
-		private const long SerialVersionUid = 1L;
-
-		public static readonly ProducerStatsDisabled Instance = new ProducerStatsDisabled();
+        public static readonly ProducerStatsDisabled Instance = new ProducerStatsDisabled();
 
 		public void IncrementSendFailed()
 		{

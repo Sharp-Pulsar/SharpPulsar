@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder 
 		{
-            private CommandConnect connect = new CommandConnect();
+            private readonly CommandConnect connect = new CommandConnect();
 			public Builder SetClientVersion(string version)
             {
                 connect.ClientVersion = version;

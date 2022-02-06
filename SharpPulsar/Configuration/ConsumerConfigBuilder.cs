@@ -36,9 +36,9 @@ namespace SharpPulsar.Configuration
 	{
 		private ConsumerConfigurationData<T> _conf = new ConsumerConfigurationData<T>();
 
-		private  long _minAckTimeoutMillis = 1000;
-		private  long _minTickTimeMillis = 100;
-		private  TimeSpan _defaultAckTimeoutMillisForDeadLetter = TimeSpan.FromMilliseconds(30000);
+		private readonly long _minAckTimeoutMillis = 1000;
+		private readonly long _minTickTimeMillis = 100;
+		private readonly TimeSpan _defaultAckTimeoutMillisForDeadLetter = TimeSpan.FromMilliseconds(30000);
 
         public ConsumerConfigurationData<T> ConsumerConfigurationData 
         {
@@ -72,17 +72,8 @@ namespace SharpPulsar.Configuration
             _conf.AutoAckOldestChunkedMessageOnQueueFull = autoAck;
             return this;
         }
-        private ConsumerConfigBuilder<T> BatchConsume(bool batchConsume)
-        {
-            _conf.BatchConsume = batchConsume;
-            return this;
-        }
-        private ConsumerConfigBuilder<T> BatchConsumeTimeout(TimeSpan batchConsumeTimeoutMs)
-        {
-            _conf.BatchConsumeTimeout = batchConsumeTimeoutMs;
-            return this;
-        }
-		public ConsumerConfigBuilder<T> SetConsumptionType(ConsumptionType type)
+
+        public ConsumerConfigBuilder<T> SetConsumptionType(ConsumptionType type)
         {
             _conf.ConsumptionType = type;
             return this;

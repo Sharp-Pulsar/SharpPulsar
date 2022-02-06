@@ -117,10 +117,10 @@ namespace SharpPulsar
                     if ((int)count <= 0)
                         throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
                 }
-                catch (Exception ex)
+                catch
                 {
                     tcClient.Tell(PoisonPill.Instance);
-                    throw ex;
+                    throw;
                 }
             }
             return  new PulsarSystem(actorSystem, clientConf, logSetup, cnxPool, generator, lookup, tcClient, runLogSetup);

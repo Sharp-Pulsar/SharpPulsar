@@ -25,7 +25,7 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class GetAllVersionsSchemaResponse
 	{
-		private IList<GetSchemaResponse> _getSchemaResponses;
+		private readonly IList<GetSchemaResponse> _getSchemaResponses;
 
         public GetAllVersionsSchemaResponse(IList<GetSchemaResponse> getSchemaResponses)
         {

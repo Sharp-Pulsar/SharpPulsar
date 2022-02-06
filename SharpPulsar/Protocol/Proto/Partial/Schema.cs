@@ -41,7 +41,7 @@ namespace SharpPulsar.Protocol.Proto
         
         public sealed class Builder
         {
-            private Schema _schema;
+            private readonly Schema _schema;
 
             public Builder()
             {

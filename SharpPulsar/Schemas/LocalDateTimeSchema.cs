@@ -33,7 +33,7 @@ namespace SharpPulsar.Schemas
 	   private static readonly LocalDateTimeSchema _instance;
 	   private static readonly ISchemaInfo _schemaInfo;
 	   public const string DELIMITER = ":";
-		private static DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+		private static readonly DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
 		static LocalDateTimeSchema()
 	   {

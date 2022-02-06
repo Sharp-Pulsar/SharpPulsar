@@ -10,7 +10,7 @@ namespace SharpPulsar.Protocol.Proto
 		}
 		public sealed class Builder
         {
-            private CommandSeek _seek;
+            private readonly CommandSeek _seek;
 
             public Builder()
             {

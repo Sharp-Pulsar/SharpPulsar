@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandReachedEndOfTopic _command;
+            private readonly CommandReachedEndOfTopic _command;
 
             public Builder()
             {

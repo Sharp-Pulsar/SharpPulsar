@@ -34,7 +34,7 @@ namespace SharpPulsar
 		private readonly string _topicPartitionName;
 
 		private readonly IMessage<T> _msg;
-		private  TopicMessageId _messageId;
+		private readonly TopicMessageId _messageId;
 
 		public TopicMessage(string topicPartitionName, string topicName, IMessage<T> msg)
 		{

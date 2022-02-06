@@ -15,7 +15,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandAck _ack;
+            private readonly CommandAck _ack;
 
             public Builder()
             {

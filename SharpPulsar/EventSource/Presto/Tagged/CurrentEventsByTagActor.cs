@@ -14,7 +14,7 @@ namespace SharpPulsar.EventSource.Presto.Tagged
     {
         private readonly CurrentEventsByTag _message;
         private readonly Admin.Public.Admin _admin;
-        BufferBlock<IEventEnvelope> _buffer;
+        readonly BufferBlock<IEventEnvelope> _buffer;
         public CurrentEventsByTagActor(CurrentEventsByTag message, BufferBlock<IEventEnvelope> buffer)
         {
             _admin = new Admin.Public.Admin(message.AdminUrl, new HttpClient());

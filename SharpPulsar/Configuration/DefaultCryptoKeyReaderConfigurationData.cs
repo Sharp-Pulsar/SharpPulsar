@@ -26,10 +26,7 @@ namespace SharpPulsar.Configuration
 	[Serializable]
 	public class DefaultCryptoKeyReaderConfigurationData
 	{
-
-		private const long SerialVersionUID = 1L;
-
-		private const string ToStringFormat = "%s(defaultPublicKey=%s, defaultPrivateKey=%s, publicKeys=%s, privateKeys=%s)";
+        private const string ToStringFormat = "%s(defaultPublicKey=%s, defaultPrivateKey=%s, publicKeys=%s, privateKeys=%s)";
 		
 		public string DefaultPublicKey { get; set; }
 		public string DefaultPrivateKey { get; set; }

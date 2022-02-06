@@ -8,8 +8,8 @@ namespace SharpPulsar
 {
     public class MemoryLimitController
     {
-        private bool InstanceFieldsInitialized = false;
-        private static string _mutex = "lock";
+        private readonly bool InstanceFieldsInitialized = false;
+        private static readonly string _mutex = "lock";
         private void InitializeInstanceFields()
         {
             //condition = mutex.newCondition();

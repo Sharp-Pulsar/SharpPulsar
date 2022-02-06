@@ -15,7 +15,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private EncryptionKeys _keys;
+            private readonly EncryptionKeys _keys;
 
             public Builder()
             {

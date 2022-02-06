@@ -61,7 +61,10 @@ namespace SharpPulsar.TestContainer.TestUtils
                 LeaveStreamOpen = true
             });
 
-            var basePath = Directory.GetParent(directoryPath).FullName; //use parent so the dir name will be included in the tar
+            var basePath = Directory.GetParent(directoryPath)?.FullName; //use parent so the dir name will be included in the tar
+            if (basePath == null)
+                throw new ArgumentNullException(nameof(basePath));
+
             foreach (var filePath in Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories))
             {
                 var filePathInTar = Path.GetRelativePath(basePath, filePath);

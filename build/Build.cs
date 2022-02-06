@@ -166,10 +166,10 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework("net6.0")
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    //.SetResultsDirectory(OutputTests / "sql")
-                    //.SetLoggers("trx")
+                    .SetResultsDirectory(OutputTests / "sql")
+                    .SetLoggers("trx", "console")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
         });
@@ -186,10 +186,10 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    //.SetResultsDirectory(OutputTests / "tls")
-                    //.SetLoggers("trx")
+                    .SetResultsDirectory(OutputTests / "tls")
+                    .SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
@@ -207,10 +207,10 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    //.SetResultsDirectory(OutputTests / "txn")
-                    //.SetLoggers("trx")
+                    .SetResultsDirectory(OutputTests / "txn")
+                    .SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
@@ -229,10 +229,10 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    //.SetResultsDirectory(OutputTests / "event")
-                    //.SetLoggers("trx")
+                    .SetResultsDirectory(OutputTests / "event")
+                    .SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
@@ -240,7 +240,7 @@ partial class Build : NukeBuild
 
     Target IntegrationTest => _ => _
         .DependsOn(Compile)
-        .Executes(async () =>
+        .Executes(() =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.Integration");
             Information($"Running tests from {project.Name}");
@@ -251,10 +251,10 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                    //.SetResultsDirectory(OutputTests / "integration")
-                    //.SetLoggers("trx")
+                    .SetResultsDirectory(OutputTests / "integration")
+                    .SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    //.SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
@@ -271,10 +271,10 @@ partial class Build : NukeBuild
                   .SetProjectFile(project)
                   .SetConfiguration(Configuration.ToString())
                   .SetFramework("net6.0")
-                  //.SetLoggers("trx")
+                  .SetLoggers("trx")
                   //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                  //.SetBlameMode(true)//captures the order of tests that were run before the crash.
-                  //.SetResultsDirectory(OutputTests / "api")
+                  .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                  .SetResultsDirectory(OutputTests / "api")
                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                   .EnableNoBuild());
 

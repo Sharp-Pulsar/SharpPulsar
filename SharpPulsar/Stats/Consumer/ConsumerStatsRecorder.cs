@@ -32,8 +32,6 @@ namespace SharpPulsar.Stats.Consumer
 {
     public class ConsumerStatsRecorder<T> : IConsumerStatsRecorder
 	{
-
-		private const long SerialVersionUid = 1L;
         private ICancelable _statTimeout;
 		private long _oldTime;
         private readonly string _topic;

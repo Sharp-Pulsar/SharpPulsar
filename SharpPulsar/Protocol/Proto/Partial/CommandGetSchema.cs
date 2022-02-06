@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandGetSchema _schema;
+            private readonly CommandGetSchema _schema;
 
             public Builder()
             {

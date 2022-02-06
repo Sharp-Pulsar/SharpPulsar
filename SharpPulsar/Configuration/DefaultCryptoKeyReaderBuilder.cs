@@ -25,7 +25,7 @@ namespace SharpPulsar.Configuration
     public class DefaultCryptoKeyReaderBuilder
 	{
 
-		private DefaultCryptoKeyReaderConfigurationData _conf;
+		private readonly DefaultCryptoKeyReaderConfigurationData _conf;
 
 		internal DefaultCryptoKeyReaderBuilder() : this(new DefaultCryptoKeyReaderConfigurationData())
 		{
