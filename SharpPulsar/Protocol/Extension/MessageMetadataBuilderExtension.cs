@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Extension
         public static void SetEventTime(this MessageMetadata metadata, DateTimeOffset timestamp)
             => metadata.EventTime = (ulong)timestamp.ToUnixTimeMilliseconds();
         
-        public static void SetKey(this MessageMetadata metadata, string? key)
+        public static void SetKey(this MessageMetadata metadata, string key)
         {
             metadata.PartitionKey = key;
             metadata.PartitionKeyB64Encoded = false;

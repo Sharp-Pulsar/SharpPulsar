@@ -6,9 +6,7 @@ namespace SharpPulsar.Schemas
     {
 		public long Version { get; set; }
 
-		private ISchemaInfo SchemaInfo { get; set; }
-
-		public override string ToString()
+        public override string ToString()
 		{
 			return DefaultImplementation.JsonifySchemaInfoWithVersion(this);
 		}

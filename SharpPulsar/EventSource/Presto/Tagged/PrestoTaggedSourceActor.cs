@@ -25,9 +25,9 @@ namespace SharpPulsar.EventSource.Presto.Tagged
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _self;
         private long _currentOffset;
-        private int _partitionIndex;
-        private long _queryRange;
-        private Tag _tag;
+        private readonly int _partitionIndex;
+        private readonly long _queryRange;
+        private readonly Tag _tag;
         private readonly BufferBlock<IEventEnvelope> _buffer;
         public PrestoTaggedSourceActor(BufferBlock<IEventEnvelope> buffer, bool isLive, IPrestoEventSourceMessage message, Tag tag)
         {

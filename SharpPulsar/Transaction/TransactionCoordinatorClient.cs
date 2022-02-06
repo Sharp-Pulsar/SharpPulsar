@@ -40,16 +40,14 @@ namespace SharpPulsar.Transaction
     public class TransactionCoordinatorClient : ReceiveActor, IWithUnboundedStash
 	{
 		private List<IActorRef> _handlers;
-		private Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();
-		private ILoggingAdapter _log;
+		private readonly Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();
+		private readonly ILoggingAdapter _log;
 		private long _epoch = 0L;
-		private ClientConfigurationData _clientConfigurationData;
-		private IActorRef _generator;
-		private IActorRef _lookup;
-		private IActorRef _cnxPool;
+		private readonly ClientConfigurationData _clientConfigurationData;
+		private readonly IActorRef _generator;
+		private readonly IActorRef _lookup;
+		private readonly IActorRef _cnxPool;
 		private IActorRef _replyTo;
-        private readonly TaskCompletionSource<object> _tcs;
-
         private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
 		public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)

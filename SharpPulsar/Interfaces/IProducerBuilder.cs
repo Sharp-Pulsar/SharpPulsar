@@ -101,7 +101,7 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the producer builder instance </returns>
-		IProducerBuilder<T> Clone();
+		new IProducerBuilder<T> Clone();
 
 		/// <summary>
 		/// Specify the topic this producer will be publishing on.

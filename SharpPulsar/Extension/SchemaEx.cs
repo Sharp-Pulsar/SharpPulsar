@@ -5,7 +5,7 @@ namespace SharpPulsar.Extension
 {
     public static class SchemaEx
     {
-        private static DateTime UTCEPOCH = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime UTCEPOCH = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         public static long ConvertToMsTimestamp(this DateTime dateTime)
         {
             var elapsed = dateTime - UTCEPOCH;

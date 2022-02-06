@@ -13,7 +13,7 @@ namespace SharpPulsar.Protocol.Proto
 		}
 		public sealed class Builder
 		{
-			SingleMessageMetadata _single;
+            readonly SingleMessageMetadata _single;
 
             public Builder()
             {

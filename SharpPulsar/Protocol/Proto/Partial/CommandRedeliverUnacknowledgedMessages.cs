@@ -15,7 +15,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
 		{
-			CommandRedeliverUnacknowledgedMessages _messages;
+            readonly CommandRedeliverUnacknowledgedMessages _messages;
 
             public Builder()
             {

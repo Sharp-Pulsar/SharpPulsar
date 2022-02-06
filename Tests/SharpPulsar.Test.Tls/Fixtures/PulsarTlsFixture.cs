@@ -69,12 +69,12 @@ namespace SharpPulsar.Test.Tls.Fixtures
         public override async Task InitializeAsync()
         {
             //need to build custom pulsar image for tls testing
-            var imge = await new ImageFromDockerfileBuilder()
+            /*var imge = await new ImageFromDockerfileBuilder()
                 .WithName("sharp-pulsar:2.9.1")
                 .WithDockerfileDirectory(".")
                 .WithDeleteIfExists(false)
-                .Build();
-            await base.InitializeAsync();
+                .Build();*/
+            //await base.InitializeAsync();
             await SetupSystem();
             await AwaitPulsarReadiness();
         }
@@ -93,7 +93,7 @@ namespace SharpPulsar.Test.Tls.Fixtures
             {
                 try
                 {
-                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                    await client.GetAsync("https://127.0.0.1:8443/metrics/").ConfigureAwait(false);
                     return;
                 }
                 catch

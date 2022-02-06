@@ -11,9 +11,9 @@ namespace SharpPulsar.User.Events
         private readonly string _namespace;
         private readonly string _topic;
 
-        private long _fromMessageId;
-        private long _toMessageId;
-        private string _brokerWebServiceUrl;
+        private readonly long _fromMessageId;
+        private readonly long _toMessageId;
+        private readonly string _brokerWebServiceUrl;
         private readonly ReaderConfigBuilder<T> _conf;
         private readonly ActorSystem _actorSystem;
         private readonly IActorRef _cnxPool;

@@ -51,7 +51,7 @@ namespace SharpPulsar.Batch
         private SendCallback<T> _previousCallback = null;
         // keep track of callbacks for individual messages being published in a batch
         private SendCallback<T> _firstCallback;
-        private ILoggingAdapter _log;
+        private readonly ILoggingAdapter _log;
 
         public BatchMessageContainer(ActorSystem system)
         {
@@ -120,17 +120,10 @@ namespace SharpPulsar.Batch
 
                 for (int i = 0, n = _messages.Count; i < n; i++)
                 {
-                    try
-                    {
-                        var msg = _messages[i];
-                        var msgMetadata = msg.Metadata.OriginalMetadata;
-                        Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-                        messageWriter.Write(msg.Data.ToArray());
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ex;
-                    }
+                    var msg = _messages[i];
+                    var msgMetadata = msg.Metadata.OriginalMetadata;
+                    Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+                    messageWriter.Write(msg.Data.ToArray());
                 }
                 var batchedMessageMetadataAndPayload = stream.ToArray();
 

@@ -6,7 +6,7 @@ namespace SharpPulsar.Protocol.Builder
 {
     public class SchemaInfoBuilder
     {
-        private SchemaInfo _info;
+        private readonly SchemaInfo _info;
         public SchemaInfoBuilder()
         {
             _info = new SchemaInfo();

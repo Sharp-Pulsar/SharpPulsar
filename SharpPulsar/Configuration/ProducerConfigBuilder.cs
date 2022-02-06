@@ -255,12 +255,6 @@ namespace SharpPulsar.Configuration
             return this;
         }
 
-        private ProducerConfigBuilder<T> SetMessageRoutingMode()
-        {
-            MessageRoutingMode(_conf.MessageRoutingMode);
-            return this;
-        }
-
         public override string ToString()
         {
             return _conf?.ToString();

@@ -1,5 +1,6 @@
 ﻿
 using SharpPulsar.Batch;
+using SharpPulsar.Interfaces;
 
 namespace SharpPulsar
 {
@@ -24,7 +25,7 @@ namespace SharpPulsar
             IsExcluded = isExcluded;
         }
 
-        public ResetCursorData(MessageId messageId)
+        public ResetCursorData(IMessageId messageId)
         {
             if (messageId is BatchMessageId batchMessageId)
             {

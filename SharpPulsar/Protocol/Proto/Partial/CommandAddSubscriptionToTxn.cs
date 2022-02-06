@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandAddSubscriptionToTxn _txn;
+            private readonly CommandAddSubscriptionToTxn _txn;
 
             public Builder()
             {

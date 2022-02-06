@@ -30,7 +30,7 @@ namespace SharpPulsar.Schemas
 	/// </summary>
 	public class AvroSchema<T> : AvroBaseStructSchema<T>
 	{
-		private object _classInstance = typeof(T).IsClass;
+		private readonly object _classInstance = typeof(T).IsClass;
 		private AvroSchema(ISchemaInfo schemaInfo) : base(schemaInfo)
 		{
 			SchemaInfo = schemaInfo;

@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandNewTxn _txn;
+            private readonly CommandNewTxn _txn;
 
             public Builder()
             {

@@ -17,6 +17,9 @@ namespace SharpPulsar.TestContainer.TestUtils
         }
         public void Register<T>(T service, string name)
         {
+            if(service == null)
+                throw new ArgumentNullException(nameof(service));
+
             if (!_services.ContainsKey(typeof(T)))
             {
                 _services[typeof(T)] = new Dictionary<string, object>();

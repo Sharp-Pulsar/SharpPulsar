@@ -44,16 +44,15 @@ namespace SharpPulsar
     public class TransactionMetaStoreHandler : ReceiveActor, IWithUnboundedStash
 	{
 		private readonly long _transactionCoordinatorId;
-		private IActorRef _connectionHandler;
-		private HandlerState _state;
-		private IActorRef _generator;
-		private Action<object[]> _nextBecome;
-		private object[] _invokeArg;
+		private readonly IActorRef _connectionHandler;
+		private readonly HandlerState _state;
+		private readonly IActorRef _generator;
+        private object[] _invokeArg;
 		private IActorRef _replyTo;
-		private IActorRef _self;
+		private readonly IActorRef _self;
 		//private long _requestId = -1;
 		private IActorRef _clientCnx;
-        private IActorContext _context;
+        private readonly IActorContext _context;
         private readonly ConcurrentDictionary<long, OpBase<object>> pendingRequests = new ConcurrentDictionary<long, OpBase<object>>();
 
         private readonly Dictionary<long, (ReadOnlySequence<byte> Command, IActorRef ReplyTo)> _pendingRequests = new Dictionary<long, (ReadOnlySequence<byte> Command, IActorRef ReplyTo)>();
@@ -72,11 +71,9 @@ namespace SharpPulsar
 		}
 
 		private readonly ILoggingAdapter _log;
-        private IActorRef _sender;
-
-		private ICancelable _requestTimeout;
+        private ICancelable _requestTimeout;
 		private readonly ClientConfigurationData _conf;
-		private IScheduler _scheduler;
+		private readonly IScheduler _scheduler;
         private readonly TaskCompletionSource<object> _connectFuture;
 
         public IStash Stash { get; set; }

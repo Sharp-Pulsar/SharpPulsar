@@ -118,6 +118,7 @@ namespace SharpPulsar.Test.Transaction.Fixtures
 
 
             client.EnableTransaction(enableTxn);
+
             if (operationTime > 0)
                 client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
 
@@ -133,7 +134,7 @@ namespace SharpPulsar.Test.Transaction.Fixtures
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            var system = await PulsarSystem.GetInstanceAsync(client);
+            var system = await PulsarSystem.GetInstanceAsync(client, actorSystemName: "txn-system");
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;

@@ -152,9 +152,8 @@ namespace SharpPulsar.Common
 		private readonly string[] _serviceHosts;
 		private readonly string _servicePath;
 		private readonly Uri _uri;
-        private readonly string _serviceScheme;
 
-		public virtual string ServiceUser => _serviceUser;
+        public virtual string ServiceUser => _serviceUser;
         public virtual string ServicePath => _servicePath;
         public virtual Uri Uri => _uri;
 		public virtual string[] ServiceInfos => _serviceInfos;

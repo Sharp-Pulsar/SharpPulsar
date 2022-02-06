@@ -115,23 +115,6 @@ namespace SharpPulsar.Configuration
 			};
             return serializerOptions;
         }
-        private static JsonSerializerOptions ProducerConfigurationDataOptions(IDictionary<string, object> data, ObjectMapper mapper)
-        {
-            //var customMessageRouter = data["CustomMessageRouter"].GetType();
-            var batcherBuilder = data["BatcherBuilder"].GetType();
-            //var cryptoKeyReader = data["CryptoKeyReader"].GetType();
-            var serializerOptions = new JsonSerializerOptions
-            {
-                Converters = {
-                    //new InterfaceConverterFactory(customMessageRouter, typeof(IMessageRouter)),
-                    new InterfaceConverterFactory(batcherBuilder, typeof(IBatcherBuilder)),
-                    //new InterfaceConverterFactory(cryptoKeyReader, typeof(ICryptoKeyReader))
-                },
-                ReadCommentHandling = JsonCommentHandling.Skip,
-                PropertyNameCaseInsensitive = true
-            };
-            return serializerOptions;
-        }
     }
-	
+
 }

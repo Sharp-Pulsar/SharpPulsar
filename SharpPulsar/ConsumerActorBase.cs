@@ -280,7 +280,7 @@ namespace SharpPulsar
 		/// the connected consumers. This is a non blocking call and doesn't throw an exception. In case the connection
 		/// breaks, the messages are redelivered after reconnect.
 		/// </summary>
-		protected internal abstract void RedeliverUnacknowledged(ISet<IMessageId> messageIds);
+		protected internal abstract Task RedeliverUnacknowledged(ISet<IMessageId> messageIds);
 
 		protected internal virtual void OnAcknowledge(IMessageId messageId, Exception exception)
 		{

@@ -41,7 +41,7 @@ namespace SharpPulsar
 {
     internal class PartitionedProducer<T> : ProducerActorBase<T>
 	{
-		private IList<IActorRef> _producers;
+		private readonly IList<IActorRef> _producers;
 		private readonly IActorRef _router;
 		private readonly IActorRef _generator;
 		private readonly IActorRef _self;
@@ -51,7 +51,7 @@ namespace SharpPulsar
 		private TopicMetadata _topicMetadata;
 
 		// timeout related to auto check and subscribe partition increasement
-		private volatile ICancelable _partitionsAutoUpdateTimeout = null;
+		private readonly ICancelable _partitionsAutoUpdateTimeout = null;
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 
@@ -282,19 +282,6 @@ namespace SharpPulsar
 			return true;
 		}
 
-		private LastConnectionClosedTimestampResponse DisconnectedTimestamp()
-		{
-			LastConnectionClosedTimestampResponse lastDisconnectedTimestamp = null;
-			foreach(var pr in _producers)
-            {
-				var x = pr.Ask<LastConnectionClosedTimestampResponse>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
-				if (lastDisconnectedTimestamp == null)
-					lastDisconnectedTimestamp = x;
-				if (x?.TimeStamp > lastDisconnectedTimestamp.TimeStamp)
-					lastDisconnectedTimestamp = x;
-			}
-			return lastDisconnectedTimestamp;
-		}
         protected override void PostStop()
         {
 			_partitionsAutoUpdateTimeout?.Cancel();

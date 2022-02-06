@@ -41,8 +41,8 @@ namespace SharpPulsar
 		private readonly IActorRef _lookup;
 		protected internal NamespaceName NamespaceName;
 		private ICancelable _recheckPatternTimeout = null;
-		private IActorContext _context;
-		private IActorRef _self;
+		private readonly IActorContext _context;
+		private readonly IActorRef _self;
 
 		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
 		{

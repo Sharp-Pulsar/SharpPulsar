@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 
 		public  class Builder
 		{
-            private BaseCommand _base;
+            private readonly BaseCommand _base;
 
             public Builder()
             {

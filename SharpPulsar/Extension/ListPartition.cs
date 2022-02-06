@@ -27,7 +27,7 @@ namespace SharpPulsar.Extension
         {
             return source
                 .Select((x, i) => new { Index = i, Value = (MessageId)x })
-                .GroupBy(x => x.Index / chunkSize)
+                .GroupBy(x => chunkSize)
                 .Select(x => x.Select(v => v.Value).ToList())
                 .ToList();
         }

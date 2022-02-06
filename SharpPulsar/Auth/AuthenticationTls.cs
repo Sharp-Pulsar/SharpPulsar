@@ -35,11 +35,8 @@ namespace SharpPulsar.Auth
     /// </summary>
     public class AuthenticationTls : IAuthentication, IEncodedAuthenticationParameterSupport
 	{
-
-		private const long SerialVersionUid = 1L;
-
-		private string _certFilePath;
-		private string _password;
+        private string _certFilePath;
+		private readonly string _password;
 
         public AuthenticationTls()
         {

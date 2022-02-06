@@ -11,7 +11,7 @@ namespace SharpPulsar.Schemas.Reader
     {
 
         private readonly Avro.Schema _schema;
-        private DatumReader<T> _reader;
+        private readonly DatumReader<T> _reader;
 
         public AvroReader(Avro.Schema avroSchema)
         {

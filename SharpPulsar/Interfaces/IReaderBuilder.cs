@@ -81,26 +81,26 @@ namespace Org.Apache.Pulsar.Client.Api
 		///            configuration to load </param>
 		/// <returns> the reader builder instance </returns>
 		IReaderBuilder<T> LoadConf(IDictionary<string, object> config);
-
-		/// <summary>
-		/// Create a copy of the current <seealso cref="ReaderBuilder"/>.
-		/// 
-		/// <para>Cloning the builder can be used to share an incomplete configuration and specialize it multiple times. For
-		/// example:
-		/// 
-		/// <pre>{@code
-		/// ReaderBuilder<String> builder = client.newReader(Schema.STRING)
-		///             .readerName("my-reader")
-		///             .receiverQueueSize(10);
-		/// 
-		/// Reader<String> reader1 = builder.clone().topic("topic-1").create();
-		/// Reader<String> reader2 = builder.clone().topic("topic-2").create();
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a clone of the reader builder instance </returns>
-		IReaderBuilder<T> Clone();
+        
+        /// <summary>
+        /// Create a copy of the current <seealso cref="ReaderBuilder"/>.
+        /// 
+        /// <para>Cloning the builder can be used to share an incomplete configuration and specialize it multiple times. For
+        /// example:
+        /// 
+        /// <pre>{@code
+        /// ReaderBuilder<String> builder = client.newReader(Schema.STRING)
+        ///             .readerName("my-reader")
+        ///             .receiverQueueSize(10);
+        /// 
+        /// Reader<String> reader1 = builder.clone().topic("topic-1").create();
+        /// Reader<String> reader2 = builder.clone().topic("topic-2").create();
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> a clone of the reader builder instance </returns>
+        new IReaderBuilder<T> Clone();
 
 		/// <summary>
 		/// Specify the topic this reader will read from.

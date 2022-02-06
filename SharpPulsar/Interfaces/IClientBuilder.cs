@@ -82,7 +82,7 @@ namespace SharpPulsar.Interfaces
 		/// </para>
 		/// </summary>
 		/// <returns> a clone of the client builder instance </returns>
-		IClientBuilder Clone();
+		new IClientBuilder Clone();
 
 		/// <summary>
 		/// Configure the service URL for the Pulsar service.

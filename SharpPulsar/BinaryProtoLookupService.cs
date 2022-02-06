@@ -53,7 +53,7 @@ namespace SharpPulsar
 		private readonly IActorRef _generator;
 		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
-		private IActorContext _context;
+		private readonly IActorContext _context;
 		private IActorRef _replyTo;
 		private long _requestId = -1;
 		private Backoff _getTopicsUnderNamespaceBackOff;

@@ -19,7 +19,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private KeySharedMeta _meta;
+            private readonly KeySharedMeta _meta;
 
             public Builder()
             {

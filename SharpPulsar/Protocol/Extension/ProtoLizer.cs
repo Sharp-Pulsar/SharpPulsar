@@ -29,7 +29,5 @@ namespace SharpPulsar.Protocol.Extension
         public static int Int32ToBigEndian(int num) => IPAddress.HostToNetworkOrder(num);
 
         public static int Int32FromBigEndian(int num) => IPAddress.NetworkToHostOrder(num);
-
-        private static int Int16FromBigEndian(short num) => IPAddress.NetworkToHostOrder(num);
     }
 }

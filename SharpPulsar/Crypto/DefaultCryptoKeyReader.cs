@@ -27,11 +27,11 @@ namespace SharpPulsar.Crypto
 {
     public class DefaultCryptoKeyReader : ICryptoKeyReader
 	{
-		private string _defaultPublicKey;
-		private string _defaultPrivateKey;
+		private readonly string _defaultPublicKey;
+		private readonly string _defaultPrivateKey;
 
-		private IDictionary<string, string> _publicKeys;
-		private IDictionary<string, string> _privateKeys;
+		private readonly IDictionary<string, string> _publicKeys;
+		private readonly IDictionary<string, string> _privateKeys;
 
 		public static DefaultCryptoKeyReaderBuilder Builder()
 		{

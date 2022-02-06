@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandError _error;
+            private readonly CommandError _error;
 
             public Builder()
             {

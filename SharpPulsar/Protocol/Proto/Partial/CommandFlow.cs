@@ -9,7 +9,7 @@ namespace SharpPulsar.Protocol.Proto
 		}
 		public sealed class Builder
         {
-            private CommandFlow _flow;
+            private readonly CommandFlow _flow;
 
             public Builder()
             {

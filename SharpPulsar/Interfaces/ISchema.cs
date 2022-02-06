@@ -142,7 +142,7 @@ namespace SharpPulsar.Interfaces
         /// Duplicates the schema.
         /// </summary>
         /// <returns> The duplicated schema. </returns>
-        ISchema<T> Clone();
+        new ISchema<T> Clone();
 
 		/// <summary>
 		/// Schema that doesn't perform any encoding on the message payloads. Accepts a byte array and it passes it through.

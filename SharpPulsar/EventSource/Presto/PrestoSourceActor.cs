@@ -25,8 +25,8 @@ namespace SharpPulsar.EventSource.Presto
         private readonly ILoggingAdapter _log;
         private readonly IActorRef _self;
         private long _currentOffset;
-        private int _partitionIndex;
-        private long _queryRange;
+        private readonly int _partitionIndex;
+        private readonly long _queryRange;
         public PrestoSourceActor(BufferBlock<IEventEnvelope> buffer, bool isLive, IPrestoEventSourceMessage message)
         {
             _buffer = buffer;

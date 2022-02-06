@@ -37,10 +37,10 @@ namespace SharpPulsar.User
         private readonly ClientConfigurationData _clientConfigurationData;
         private readonly ActorSystem _actorSystem;
         private readonly Cache<string, ISchemaInfoProvider> _schemaProviderLoadingCache = new Cache<string, ISchemaInfoProvider>(TimeSpan.FromMinutes(30), 100000);
-        private ILoggingAdapter _log;
-        private IActorRef _cnxPool;
+        private readonly ILoggingAdapter _log;
+        private readonly IActorRef _cnxPool;
         private IActorRef _lookup;
-        private IActorRef _generator;
+        private readonly IActorRef _generator;
 
         public PulsarClient(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData clientConfiguration, ActorSystem actorSystem, IActorRef transactionCoordinatorClient)
         {
@@ -86,7 +86,7 @@ namespace SharpPulsar.User
                 catch (Exception e)
                 {
                     _log.Error($"Failed to load schema info provider for topic {topicName}: {e}");
-                    throw e;
+                    throw;
                 }
                 schema = schema.Clone();
                 if (schema.RequireFetchingSchemaInfo())
@@ -521,16 +521,13 @@ namespace SharpPulsar.User
             await _actorSystem.Terminate().ConfigureAwait(false);
         }
         public ActorSystem ActorSystem => _actorSystem;
-        private IActorRef ClientCnx => _client;
+
         public void UpdateServiceUrl(string serviceUrl)
         {
             _client.Tell(new UpdateServiceUrl(serviceUrl));
         }
+
         #region private matters
-        private async ValueTask<Producer<byte[]>> CreateProducer(ProducerConfigurationData conf)
-        {
-            return await CreateProducer(conf, ISchema<object>.Bytes, null).ConfigureAwait(false);
-        }
         private async ValueTask<Producer<T>> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema)
         {
             return await CreateProducer(conf, schema, null).ConfigureAwait(false);
@@ -606,10 +603,10 @@ namespace SharpPulsar.User
                     _client.Tell(new AddProducer(producer));
                     return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
-                catch(Exception ex)
+                catch
                 {
                     await partitionActor.GracefulStop(TimeSpan.FromSeconds(5));
-                    throw ex;
+                    throw;
                 }
             }
             else

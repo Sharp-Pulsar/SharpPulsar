@@ -49,17 +49,15 @@ namespace SharpPulsar.Batch.Api
 	public class BatchReceivePolicy
 	{
 
-		private const long SerialVersionUid = 1L;
-
-		/// <summary>
-		/// Default batch receive policy.
-		/// 
-		/// <para>Max number of messages: no limit
-		/// Max number of bytes: 10MB
-		/// Timeout: 100ms<p/>
-		/// </para>
-		/// </summary>
-		public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100);
+        /// <summary>
+        /// Default batch receive policy.
+        /// 
+        /// <para>Max number of messages: no limit
+        /// Max number of bytes: 10MB
+        /// Timeout: 100ms<p/>
+        /// </para>
+        /// </summary>
+        public static readonly BatchReceivePolicy DefaultPolicy = new BatchReceivePolicy(-1, 10 * 1024 * 1024, 100);
 
 		private BatchReceivePolicy(int maxNumMessages, int maxNumBytes, int timeoutMs)
 		{

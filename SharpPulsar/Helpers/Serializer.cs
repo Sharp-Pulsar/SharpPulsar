@@ -102,11 +102,5 @@ namespace SharpPulsar.Helpers
             ProtoBuf.Serializer.Serialize(ms, item);
             return ms.ToArray();
         }
-        private static byte[] Serialize<T>(T item)
-        {
-            using var ms = new MemoryStream();
-            ProtoBuf.Serializer.Serialize(ms, item);
-            return ms.ToArray();
-        }
     }
 }

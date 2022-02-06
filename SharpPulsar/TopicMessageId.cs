@@ -29,7 +29,7 @@ namespace SharpPulsar
 		/// This topicPartitionName is get from ConsumerImpl, it contains partition part. </summary>
 		
 		private readonly string _topicPartitionName;
-		private string _topicName;
+		private readonly string _topicName;
 		public readonly IMessageId InnerMessageId;
 
 		public TopicMessageId(string topicPartitionName, string topicName, IMessageId messageId)

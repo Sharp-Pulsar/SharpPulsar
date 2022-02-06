@@ -29,10 +29,8 @@ namespace SharpPulsar.Auth
 	{
 
 		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();
-		/// 
-		private const long serialVersionUID = 1L;
 
-		public AuthenticationDisabled()
+        public AuthenticationDisabled()
 		{
 		}
 

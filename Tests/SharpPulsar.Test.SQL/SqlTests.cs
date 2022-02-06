@@ -41,7 +41,6 @@ namespace SharpPulsar.Test.SQL
 
 			var receivedCount = 0;
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
             var response = await sql.ExecuteAsync(TimeSpan.FromSeconds(30));
             if (response != null)
             {

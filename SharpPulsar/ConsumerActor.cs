@@ -80,7 +80,7 @@ namespace SharpPulsar
 		private IMessageId _lastMessageIdInBroker = IMessageId.Earliest;
 
 		private readonly ClientConfigurationData _clientConfigurationData;
-		private long _subscribeTimeout;
+		private readonly long _subscribeTimeout;
 		private readonly int _partitionIndex;
 		private readonly bool _hasParentConsumer;
 
@@ -93,17 +93,14 @@ namespace SharpPulsar
 		private readonly int _priorityLevel;
 		private readonly SubscriptionMode _subscriptionMode;
 		private BatchMessageId _startMessageId;
-		private IActorContext _context; 
+		private readonly IActorContext _context; 
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
 
 
 
-        private IActorRef _lookup;
-		private IActorRef _cnxPool;
-
-		private long _requestId;
-
-		private BatchMessageId _seekMessageId;
+        private readonly IActorRef _lookup;
+		private readonly IActorRef _cnxPool;
+        private BatchMessageId _seekMessageId;
 		private bool _duringSeek;
 
 		private readonly BatchMessageId _initialStartMessageId;
@@ -124,7 +121,7 @@ namespace SharpPulsar
         private readonly bool _poolMessages = false;
 
 
-        private ActorSystem _actorSystem;
+        private readonly ActorSystem _actorSystem;
 
 		private readonly SubscriptionInitialPosition _subscriptionInitialPosition;
 		private readonly IActorRef _connectionHandler;
@@ -155,10 +152,10 @@ namespace SharpPulsar
 		private int _pendingChunckedMessageCount = 0;
 		protected internal TimeSpan ExpireTimeOfIncompleteChunkedMessage = TimeSpan.Zero;
 		private bool _expireChunkMessageTaskScheduled = false;
-		private int _maxPendingChuckedMessage;
+		private readonly int _maxPendingChuckedMessage;
 		// if queue size is reasonable (most of the time equal to number of producers try to publish messages concurrently on
 		// the topic) then it guards against broken chuncked message which was not fully published
-		private bool _autoAckOldestChunkedMessageOnQueueFull;
+		private readonly bool _autoAckOldestChunkedMessageOnQueueFull;
 		// it will be used to manage N outstanding chunked mesage buffers
 		private Queue<string> _pendingChunckedMessageUuidQueue;
 
@@ -767,11 +764,11 @@ namespace SharpPulsar
                 RedeliverUnacknowledged();
                 Sender.Tell(new AskResponse());
             });
-			Receive<RedeliverUnacknowledgedMessageIds>(m => 
+			ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m => 
 			{
                 try
 				{
-                    RedeliverUnacknowledged(m.MessageIds);
+                    await RedeliverUnacknowledged(m.MessageIds);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -1210,7 +1207,7 @@ namespace SharpPulsar
                         messageId
                     };
                     _unAckedMessageTracker.Tell(new Remove(messageId));
-					RedeliverUnacknowledged(messageIds);
+					Akka.Dispatch.ActorTaskScheduler.RunTask(async ()=> await RedeliverUnacknowledged(messageIds));
 				}
 			}
             else
@@ -1222,7 +1219,7 @@ namespace SharpPulsar
                         finalMessageId
                     };
                 _unAckedMessageTracker.Tell(new Remove(finalMessageId));
-                RedeliverUnacknowledged(messageIds);
+                Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await RedeliverUnacknowledged(messageIds));
             }
             return result;
         }
@@ -1592,7 +1589,7 @@ namespace SharpPulsar
             }
             catch (Exception e) when (e is IOException || e is InvalidOperationException)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -1651,7 +1648,7 @@ namespace SharpPulsar
             }
             catch (Exception e) when (e is IOException || e is InvalidOperationException)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -1695,7 +1692,7 @@ namespace SharpPulsar
                     }
                 });
             }
-            catch (Exception throwable)
+            catch 
             {
                 _log.Warning($"[{Subscription}] [{ConsumerName}] unable to obtain message in batch");
                 DiscardCorruptedMessage(messageId, _clientCnx, ValidationError.BatchDeSerializeError);
@@ -1726,12 +1723,8 @@ namespace SharpPulsar
 			var should = m.ShouldSerializeNumMessagesInBatch();
 			return should;
 		}
-		private bool IsTxnMessage(MessageMetadata messageMetadata)
-		{
-			return messageMetadata.TxnidMostBits > 0 && messageMetadata.TxnidLeastBits > 0;
-		}
 
-		private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId, IActorRef cnx)
+        private byte[] ProcessMessageChunk(byte[] compressedPayload, MessageMetadata msgMetadata, MessageId msgId, MessageIdData messageId, IActorRef cnx)
 		{
 			
 			// Lazy task scheduling to expire incomplete chunk message
@@ -2210,7 +2203,7 @@ namespace SharpPulsar
 			return messagesNumber;
 		}
 
-		protected internal override void RedeliverUnacknowledged(ISet<IMessageId> messageIds)
+		protected internal override async Task RedeliverUnacknowledged(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -2234,22 +2227,14 @@ namespace SharpPulsar
 				var batches = messageIds.PartitionMessageId(MaxRedeliverUnacknowledged);
 				foreach(var ids in batches)
                 {
-                    GetRedeliveryMessageIdData(ids)
-                        .AsTask()
-                        .ContinueWith(task =>
-                        {
-                            if(task.Exception == null)
-                            {
-                                var messageIdData = task.Result;
-                                if (messageIdData.Count > 0)
-                                {
-                                    var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
-                                    var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
-                                    cnx.Tell(payload);
-                                }
-                            }
-                        });
-				}
+                    var messageIdData = await GetRedeliveryMessageIdData(ids);
+                    if (messageIdData.Count > 0)
+                    {
+                        var cmd = Commands.NewRedeliverUnacknowledgedMessages(_consumerId, messageIdData);
+                        var payload = new Payload(cmd, -1, "NewRedeliverUnacknowledgedMessages");
+                        cnx.Tell(payload);
+                    }
+                }
 				if(messagesFromQueue > 0)
 				{
 					IncreaseAvailablePermits(cnx, messagesFromQueue);
@@ -2272,46 +2257,21 @@ namespace SharpPulsar
 		}
         private async ValueTask<IList<MessageIdData>> GetRedeliveryMessageIdData(IList<MessageId> messageIds)
         {
-            var tcs = new TaskCompletionSource<IList<MessageIdData>>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (messageIds == null || messageIds.Count == 0)
+            IList<MessageIdData> data = new List<MessageIdData>(messageIds.Count);
+            foreach (var messageId in messageIds)
             {
-                 tcs.SetResult(new List<MessageIdData>());
-            }
-            else
-            {
-                IList<MessageIdData> data = new List<MessageIdData>(messageIds.Count);
-                var futures = new List<TaskCompletionSource<bool>>(messageIds.Count);
-                messageIds.ForEach(messageId =>
+                await ProcessPossibleToDLQ(messageId).AsTask();
+                var msgIdData = new MessageIdData
                 {
-                    var future = ProcessPossibleToDLQ(messageId);
-                    futures.Add(future);
-                    future.Task.ContinueWith(task =>
-                    {
-                        var sendToDLQ = false;
-                        if (task.Exception == null)
-                            sendToDLQ = task.Result;
-
-                        if (!sendToDLQ)
-                        {
-                            var msgIdData = new MessageIdData
-                            {
-                                Partition = messageId.PartitionIndex,
-                                ledgerId = (ulong)messageId.LedgerId,
-                                entryId = (ulong)messageId.EntryId
-                            };
-                            data.Add(msgIdData);
-                        }
-                    });
-                });
-                var t = await Task.WhenAll(futures.Select(x => x.Task).ToArray()).ContinueWith(t => {
-
-                    tcs.TrySetResult(data);
-                    return tcs;
-                });
+                    Partition = messageId.PartitionIndex,
+                    ledgerId = (ulong)messageId.LedgerId,
+                    entryId = (ulong)messageId.EntryId
+                };
+                data.Add(msgIdData);
             }
-            return await tcs.Task;
+            return data;
         }
-        private TaskCompletionSource<bool> ProcessPossibleToDLQ(IMessageId messageId)
+        private async ValueTask ProcessPossibleToDLQ(IMessageId messageId)
 		{
 			IList<IMessage<T>> deadLetterMessages = null;
 
@@ -2326,63 +2286,41 @@ namespace SharpPulsar
 					deadLetterMessages = _possibleSendToDeadLetterTopicMessages.GetValueOrNull(messageId);
 				}
 			}
-            var result = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             if(deadLetterMessages != null)
             {
                 try
                 {
-                    try
-                    {
-                        InitDeadLetterProducerIfNeeded();
-                    }
-                    catch (Exception ex)
-                    {
-                        result.TrySetException(ex);
-                        _deadLetterProducer = null;
-                        return result;
-                    }
+                    InitDeadLetterProducerIfNeeded();
                     var finalDeadLetterMessages = deadLetterMessages;
                     var finalMessageId = messageId;
                     foreach (var message in finalDeadLetterMessages)
                     {
-                        var originMessageIdStr = GetOriginMessageIdStr(message);
-                        var originTopicNameStr = GetOriginTopicNameStr(message);
-                        _deadLetterProducer.NewMessage(ISchema<object>.AutoProduceBytes(message.ReaderSchema.Value))
-                            .Value(message.Data.ToArray())
-                            .Properties(GetPropertiesMap(message, originMessageIdStr, originTopicNameStr))
-                            .SendAsync().AsTask().ContinueWith(task =>
-                            {
-                                if (task.IsFaulted)
-                                {
-                                    _log.Warning($"[{Topic}] [{Subscription}] [{ConsumerName}] Failed to send DLQ message to {finalMessageId} for message id {task.Exception}");
-                                    result.TrySetResult(false);
-                                    return;
-                                }
-                                var messageIdInDLQ = task.Result;
-                                _possibleSendToDeadLetterTopicMessages.Remove(finalMessageId);
-                                DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null)
-                                .Task
-                                .ContinueWith(tsk => 
-                                {
-                                    if (tsk.Exception != null)
-                                    {
-                                        _log.Warning($"[{_topicName}] [{Subscription}] [{ConsumerName}] Failed to acknowledge the message {finalMessageId} of the original topic but send to the DLQ successfully:{tsk.Exception}");
-                                    }
-                                    else
-                                    {
-                                        result.TrySetResult(true);
-                                    }
+                        try
+                        {
+                            var originMessageIdStr = GetOriginMessageIdStr(message);
+                            var originTopicNameStr = GetOriginTopicNameStr(message);
+                            var messageIdInDLQ = await _deadLetterProducer
+                                .NewMessage(ISchema<object>
+                                .AutoProduceBytes(message.ReaderSchema.Value))
+                                .Value(message.Data.ToArray())
+                                .Properties(GetPropertiesMap(message, originMessageIdStr, originTopicNameStr))
+                                .SendAsync();
 
-                                });
-                            });
-                    }
+                            _possibleSendToDeadLetterTopicMessages.Remove(finalMessageId);
+                            var r =  await DoAcknowledgeWithTxn(messageId, AckType.Individual, new Dictionary<string, long>(), null).Task;                            
+                        }
+                        catch(Exception ex)
+                        {
+                            _log.Warning($"[{Topic}] [{Subscription}] [{ConsumerName}] Failed to send DLQ message to {finalMessageId} for message id {ex}");                           
+                        }
+                    }  
                 }
                 catch (Exception e)
                 {
                     _log.Error($"Send to dead letter topic exception with topic: {_deadLetterPolicy.DeadLetterTopic}, messageId: {messageId} => {e}");
+                    _deadLetterProducer = null; 
                 }
             }
-            return result;
 		}
         private SortedDictionary<string, string> GetPropertiesMap(IMessage<T> message, string originMessageIdStr, string originTopicNameStr)
         {

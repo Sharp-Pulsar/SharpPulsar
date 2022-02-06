@@ -59,13 +59,10 @@ namespace SharpPulsar.Batch
 		[NonSerialized]
 		private bool _sizeIsSticky = false;
 
-		/* use serialVersionUID from JDK 1.0.2 for interoperability */
-		private const long SerialVersionUid = 7997698588986878753L;
-
-		/// <summary>
-		/// Given a bit index, return word index containing it.
-		/// </summary>
-		private static int WordIndex(int bitIndex)
+        /// <summary>
+        /// Given a bit index, return word index containing it.
+        /// </summary>
+        private static int WordIndex(int bitIndex)
 		{
 			return bitIndex >> AddressBitsPerWord;
 		}
@@ -722,22 +719,14 @@ namespace SharpPulsar.Batch
 			x += x >> 16;
 			return (int)(numIntBits - (x & 0x0000003f)); //subtract # of 1s from 32
 		}
-		private int PopCount(int x)
-		{
-			x -= ((x >> 1) & 0x55555555);
-			x = (((x >> 2) & 0x33333333) + (x & 0x33333333));
-			x = (((x >> 4) + x) & 0x0f0f0f0f);
-			x += (x >> 8);
-			x += (x >> 16);
-			return (x & 0x0000003f);
-		}
-		/// <summary>
-		/// Returns true if this {@code BitSet} contains no bits that are set
-		/// to {@code true}.
-		/// </summary>
-		/// <returns> boolean indicating whether this {@code BitSet} is empty
-		/// @since  1.4 </returns>
-		public virtual bool Empty
+
+        /// <summary>
+        /// Returns true if this {@code BitSet} contains no bits that are set
+        /// to {@code true}.
+        /// </summary>
+        /// <returns> boolean indicating whether this {@code BitSet} is empty
+        /// @since  1.4 </returns>
+        public virtual bool Empty
 		{
 			get
 			{

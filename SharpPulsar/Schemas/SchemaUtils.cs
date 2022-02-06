@@ -172,17 +172,12 @@ namespace SharpPulsar.Schemas
 			return JsonSerializer.Serialize(keyValue);
 		}
 
-		private static byte[] GetKeyOrValueSchemaBytes(JsonElement jsonElement)
-		{
-			return KeyValueSchemaNullString.Equals(jsonElement.ToString()) ? KeyValueSchemaIsPrimitive : Encoding.UTF8.GetBytes(jsonElement.ToString());
-		}
-		
-		/// <summary>
-		/// Serialize schema properties
-		/// </summary>
-		/// <param name="properties"> schema properties </param>
-		/// <returns> the serialized schema properties </returns>
-		public static string SerializeSchemaProperties(IDictionary<string, string> properties)
+        /// <summary>
+        /// Serialize schema properties
+        /// </summary>
+        /// <param name="properties"> schema properties </param>
+        /// <returns> the serialized schema properties </returns>
+        public static string SerializeSchemaProperties(IDictionary<string, string> properties)
 		{
             return JsonSerializer.Serialize(properties);
 		}

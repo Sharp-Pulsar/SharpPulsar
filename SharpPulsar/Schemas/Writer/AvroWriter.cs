@@ -10,7 +10,7 @@ namespace SharpPulsar.Schemas.Writer
     public class AvroWriter<T> : ISchemaWriter<T>
     {
         private readonly Avro.Schema _schema;
-        private DatumWriter<T> _writer;
+        private readonly DatumWriter<T> _writer;
 
         public AvroWriter(Avro.Schema avroSchema)
         {
