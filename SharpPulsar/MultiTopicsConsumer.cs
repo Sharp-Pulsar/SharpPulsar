@@ -438,11 +438,11 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
 				}
 			});
-			Receive<RedeliverUnacknowledgedMessageIds>(m =>
+			ReceiveAsync<RedeliverUnacknowledgedMessageIds>(async m =>
 			{
 				try
 				{
-					RedeliverUnacknowledged(m.MessageIds);
+					await RedeliverUnacknowledged(m.MessageIds);
                     Sender.Tell(new AskResponse());
 				}
 				catch (Exception ex)
@@ -855,7 +855,7 @@ namespace SharpPulsar
 			ResumeReceivingFromPausedConsumersIfNeeded();
 		}
 
-		protected internal override void RedeliverUnacknowledged(ISet<IMessageId> messageIds)
+		protected internal override async Task RedeliverUnacknowledged(ISet<IMessageId> messageIds)
 		{
 			if(messageIds.Count == 0)
 			{
@@ -875,6 +875,7 @@ namespace SharpPulsar
 				.ForEach(t => _consumers.GetValueOrNull(t.First().TopicPartitionName)
 				.Tell(new RedeliverUnacknowledgedMessageIds(t.Select(mid => mid.InnerMessageId).ToHashSet())));
 			ResumeReceivingFromPausedConsumersIfNeeded();
+            await Task.CompletedTask;
 		}
 
 		internal override TaskCompletionSource<object> Seek(IMessageId messageId)

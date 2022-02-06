@@ -534,7 +534,7 @@ namespace SharpPulsar
 			{
 				_log.Debug($"[{_self.Path}] [{_remoteHostName}] Replying back to ping message");
 			}
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await _socketClient.SendMessage(_pong))	;
+            Task.Run(async () => await _socketClient.SendMessage(_pong));
 		}
 		private void HandlePartitionResponse(CommandPartitionedTopicMetadataResponse lookupResult)
 		{
