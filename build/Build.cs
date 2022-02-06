@@ -123,8 +123,7 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var version = LatestVersion;
-            var vers = $"{version.Version.Major}.{version.Version.Minor}.{version.Version.Patch}";
+            var vers = GitVersion.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
@@ -135,18 +134,9 @@ partial class Build : NukeBuild
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
     Target RunChangelog => _ => _
+        .OnlyWhenDynamic(()=> GitVersion.BranchName.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
-            var branch = GitVersion.BranchName;
-            switch (branch)
-            {
-                case "main":
-                case "master":
-                    break;
-                default:
-                    Assert.Fail($"Current branch:'{branch}'. You can only execute this in main branch");
-                    break;
-            }
             FinalizeChangelog(ChangelogFile, GitVersion.SemVer, GitRepository);
 
             Git($"add {ChangelogFile}");
@@ -308,13 +298,13 @@ partial class Build : NukeBuild
 
     Target ServeDocs => _ => _
         .DependsOn(DocBuild)
-        .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir)));
+        .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(8090)));
 
     Target CreateNuget => _ => _
       .DependsOn(ApiTest, IntegrationTest)
       .Executes(() =>
       {
-          var version = LatestVersion;
+          var version = GitVersion.SemVer;
           var project = Solution.GetProject("SharpPulsar");
           DotNetPack(s => s
               .SetProject(project)
@@ -322,9 +312,9 @@ partial class Build : NukeBuild
               .EnableNoBuild()
               .EnableNoRestore()
               .SetIncludeSymbols(true)
-              .SetAssemblyVersion(version.Version.ToString())
-              .SetFileVersion(version.Version.ToString())
-              .SetVersion(version.Version.ToString())
+              .SetAssemblyVersion(version)
+              .SetFileVersion(version)
+              .SetVersion(version)
               .SetPackageReleaseNotes(GetNuGetReleaseNotes(ChangelogFile, GitRepository))
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven","Event Sourcing", "Distributed System", "Microservice")
