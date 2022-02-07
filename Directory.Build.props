@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <PackageReleaseNotes>pre release</PackageReleaseNotes>
     <NetCoreFramework>net6.0</NetCoreFramework>
     <NBenchVersion>1.2.2</NBenchVersion>
     <XunitVersion>2.4.1</XunitVersion>

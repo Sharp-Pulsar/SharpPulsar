@@ -49,7 +49,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.ApiTest);
+    public static int Main () => Execute<Build>(x => x.IntegrationTest);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -145,24 +145,6 @@ partial class Build : NukeBuild
 
             Git($"tag -f {GitVersion.SemVer}");
         });
-    Target SqlTest => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            var project = Solution.GetProject("SharpPulsar.Test.SQL");
-            Information($"Running tests from {project.Name}");
-            DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework("net6.0")
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "sql")
-                    .SetLoggers("trx", "console")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
-        });
     Target TlsTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
@@ -184,55 +166,11 @@ partial class Build : NukeBuild
                     .EnableNoBuild());
             }
         });
-    Target TxnTest => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            var project = Solution.GetProject("SharpPulsar.Test.Transaction");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "txn")
-                    .SetLoggers("trx", "console")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
-            }
-        });
-
-    Target EventTest => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            var project = Solution.GetProject("SharpPulsar.Test.EventSourcing");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "event")
-                    .SetLoggers("trx", "console")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
-            }
-        });
-
     Target IntegrationTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
-            var project = Solution.GetProject("SharpPulsar.Test.Integration");
+            var project = Solution.GetProject("SharpPulsar.Test");
             Information($"Running tests from {project.Name}");
             foreach (var fw in project.GetTargetFrameworks())
             {
@@ -241,7 +179,7 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "integration")
+                    .SetResultsDirectory(OutputTests / "tests")
                     .SetLoggers("trx", "console")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -251,24 +189,6 @@ partial class Build : NukeBuild
             //if(Container)
                // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
         });
-    Target ApiTest => _ => _
-       .DependsOn(Compile)
-       .Executes(() =>
-       {
-           var project = Solution.GetProject("SharpPulsar.Test");
-           Information($"Running tests from {project.Name}");
-           DotNetTest(c => c
-                  .SetProjectFile(project)
-                  .SetConfiguration(Configuration.ToString())
-                  .SetFramework("net6.0")
-                  .SetLoggers("trx", "console")
-                  //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                  .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                  .SetResultsDirectory(OutputTests / "api")
-                  .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                  .EnableNoBuild());
-
-       });
     //--------------------------------------------------------------------------------
     // Documentation 
     //--------------------------------------------------------------------------------
@@ -301,10 +221,21 @@ partial class Build : NukeBuild
         .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(8090)));
 
     Target CreateNuget => _ => _
-      .DependsOn(ApiTest, IntegrationTest)
+      .DependsOn(IntegrationTest)
       .Executes(() =>
       {
           var version = GitVersion.SemVer;
+          var branchName = GitVersion.BranchName;
+
+          if (branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
+          && !GitVersion.MajorMinorPatch.Equals(LatestVersion.Version.ToString()))
+          {
+              // Force CHANGELOG.md in case it skipped the mind
+              Assert.Fail($"CHANGELOG.md needs to be update for final release. Current version: '{LatestVersion.Version}'. Next version: {GitVersion.MajorMinorPatch}");
+          }
+          var releaseNotes = branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
+                             ? GetNuGetReleaseNotes(ChangelogFile, GitRepository)
+                             : ParseReleaseNote();
           var project = Solution.GetProject("SharpPulsar");
           DotNetPack(s => s
               .SetProject(project)
@@ -315,7 +246,7 @@ partial class Build : NukeBuild
               .SetAssemblyVersion(version)
               .SetFileVersion(version)
               .SetVersion(version)
-              .SetPackageReleaseNotes(GetNuGetReleaseNotes(ChangelogFile, GitRepository))
+              .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven","Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
@@ -361,6 +292,10 @@ partial class Build : NukeBuild
         var client = DIContainer.Get<DockerClient>();
         var file = await client.Containers.GetArchiveFromContainerByNameAsync(sourcePath, containerName);
         ArchiveHelper.Extract(file.Stream, outputPath);
+    }
+    string ParseReleaseNote()
+    {
+        return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();
     }
     static void Information(string info)
     {

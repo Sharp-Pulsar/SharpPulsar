@@ -7,12 +7,14 @@ using NBench;
 using Pro.NBench.xUnit.XunitExtensions;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.NBench.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.NBench
 {
+    [Collection(nameof(NBenchCollection))]
     public class NBench
     {
         private readonly ITestOutputHelper _output;
@@ -20,7 +22,7 @@ namespace SharpPulsar.Test.NBench
         private Producer<byte[]> _producer;
         private Consumer<byte[]> _consumer; 
         private readonly string _topic;
-        public NBench(ITestOutputHelper output, NBenchFixture fixture)
+        public NBench(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

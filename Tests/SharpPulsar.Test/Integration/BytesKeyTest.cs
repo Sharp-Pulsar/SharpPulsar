@@ -1,34 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using SharpPulsar.Configuration;
+﻿using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Tls.Fixtures;
+using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Tls
+/// <summary>
+/// Licensed to the Apache Software Foundation (ASF) under one
+/// or more contributor license agreements.  See the NOTICE file
+/// distributed with this work for additional information
+/// regarding copyright ownership.  The ASF licenses this file
+/// to you under the Apache License, Version 2.0 (the
+/// "License"); you may not use this file except in compliance
+/// with the License.  You may obtain a copy of the License at
+/// 
+///   http://www.apache.org/licenses/LICENSE-2.0
+/// 
+/// Unless required by applicable law or agreed to in writing,
+/// software distributed under the License is distributed on an
+/// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+/// KIND, either express or implied.  See the License for the
+/// specific language governing permissions and limitations
+/// under the License.
+/// </summary>
+namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTlsCollection))]
-    public class TlsTests
+    [Collection(nameof(IntegrationCollection))]
+    public class ByteKeysTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public TlsTests(ITestOutputHelper output, PulsarFixture fixture)
+        public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
-            _topic = $"persistent://public/default/tls-{Guid.NewGuid()}";
+            _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            //_topic = "my-topic-batch-bf719df3";
         }
 
-        [Fact(Skip = "not ready")]
-        public virtual async Task ProducerInstantiation()
+        [Fact]
+        public async Task ProducerInstantiation()
         {
             var producer = new ProducerConfigBuilder<string>();
             producer.Topic(_topic);
@@ -36,18 +56,18 @@ namespace SharpPulsar.Test.Tls
             Assert.NotNull(stringProducerBuilder);
             await stringProducerBuilder.CloseAsync();
         }
-        [Fact(Skip = "not ready")]
-        public virtual async Task ConsumerInstantiation()
+        [Fact]
+        public async Task ConsumerInstantiation()
         {
             var consumer = new ConsumerConfigBuilder<string>();
             consumer.Topic(_topic);
-            consumer.SubscriptionName($"tls-test-sub-{Guid.NewGuid()}");
+            consumer.SubscriptionName($"test-sub-{Guid.NewGuid()}");
             var stringConsumerBuilder = await _client.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
             await stringConsumerBuilder.CloseAsync();
         }
-        [Fact(Skip = "not ready")]
-        public virtual async void ReaderInstantiation()
+        [Fact]
+        public async Task ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
             reader.Topic(_topic);
@@ -56,11 +76,10 @@ namespace SharpPulsar.Test.Tls
             Assert.NotNull(stringReaderBuilder);
             await stringReaderBuilder.CloseAsync();
         }
-
-        [Fact(Skip = "not ready")]
+        [Fact]
         public async Task ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/tls-{Guid.NewGuid}";
+            var topic = _topic;
 
             var r = new Random(0);
             var byteKey = new byte[1000];
@@ -97,9 +116,9 @@ namespace SharpPulsar.Test.Tls
             //producer.Close();
             await consumer.CloseAsync();
         }
-        [Fact(Skip = "not ready")]
+        [Fact]
         public async Task ProduceAndConsumeBatch()
-        {
+		{
 
             var r = new Random(0);
             var byteKey = new byte[1000];
@@ -123,11 +142,11 @@ namespace SharpPulsar.Test.Tls
 
             for (var i = 0; i < 5; i++)
             {
-                var id = await producer.NewMessage().KeyBytes(byteKey)
-                   .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                   .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}"))
-                   .SendAsync();
-                if (id == null)
+                 var id = await producer.NewMessage().KeyBytes(byteKey)
+                    .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                    .Value(Encoding.UTF8.GetBytes($"TestMessage-{i}"))
+                    .SendAsync();
+                if(id == null)
                     _output.WriteLine($"Id is null");
                 else
                     _output.WriteLine($"Id: {id}");
@@ -136,12 +155,12 @@ namespace SharpPulsar.Test.Tls
             await Task.Delay(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {
-                var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                var message = (Message<byte[]>) await consumer.ReceiveAsync();
                 if (message != null)
                     _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
-                Assert.Equal(byteKey, message?.KeyBytes);
-                Assert.True(message?.HasBase64EncodedKey());
+                Assert.Equal(byteKey, message.KeyBytes);
+                Assert.True(message.HasBase64EncodedKey());
                 var receivedMessage = Encoding.UTF8.GetString(message.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
                 Assert.Equal($"TestMessage-{i}", receivedMessage);
@@ -150,5 +169,7 @@ namespace SharpPulsar.Test.Tls
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
+        
     }
+
 }
