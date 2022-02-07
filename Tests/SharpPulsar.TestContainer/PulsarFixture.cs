@@ -3,19 +3,18 @@ using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Configuration;
-using SharpPulsar.TestContainer.TestUtils;
 using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public abstract class PulsarFixture : IAsyncLifetime, IDisposable
+    public class PulsarFixture : IAsyncLifetime, IDisposable
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
 
-        public abstract PulsarTestcontainerConfiguration Configuration { get; }
+        public virtual PulsarTestcontainerConfiguration Configuration => new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
 
         public PulsarFixture()
         {
@@ -37,13 +36,14 @@ namespace SharpPulsar.TestContainer
         }
         public PulsarTestcontainer Container { get; }
         public virtual Task InitializeAsync()
-        {
-            SetupSystem().GetAwaiter().GetResult();
+        {           
+            Container.StartAsync().GetAwaiter().GetResult();
             AwaitPortReadiness("http://127.0.0.1:8080/metrics/").GetAwaiter().GetResult();
             Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" }).GetAwaiter().GetResult();
 
             AwaitPortReadiness("http://127.0.0.1:8081/").GetAwaiter().GetResult();
-            return Container.StartAsync();
+            SetupSystem().GetAwaiter().GetResult();
+            return Task.CompletedTask;  
         }
         public async ValueTask AwaitPortReadiness(string address)
         {
@@ -74,9 +74,16 @@ namespace SharpPulsar.TestContainer
         }
         public virtual async Task DisposeAsync()
         {
-            if (Client != null)
-                await Client.ShutdownAsync();
             await Container.DisposeAsync().AsTask();
+            try
+            {
+                if (Client != null)
+                    await Client.ShutdownAsync();
+            }
+            catch
+            {
+
+            }
         }
 
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)

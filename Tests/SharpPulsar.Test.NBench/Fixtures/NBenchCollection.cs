@@ -11,11 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+using SharpPulsar.TestContainer;
+using Xunit;
 
-namespace SharpPulsar.TestContainer
+namespace SharpPulsar.Test.NBench.Fixtures
 {
-    using Xunit;
-
-    [CollectionDefinition(nameof(PulsarTests))]
-    public class PulsarTests : ICollectionFixture<PulsarFixture> { }
+    //https://blog.dangl.me/archive/running-sql-server-integration-tests-in-net-core-projects-via-docker/
+    [CollectionDefinition(nameof(NBenchCollection), DisableParallelization = true)]
+    public class NBenchCollection : ICollectionFixture<PulsarFixture> { }
 }

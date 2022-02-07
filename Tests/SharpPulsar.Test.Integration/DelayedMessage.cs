@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Test.Integration.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -9,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class DelayedMessage
     {
         private readonly ITestOutputHelper _output;

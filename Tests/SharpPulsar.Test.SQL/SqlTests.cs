@@ -18,7 +18,7 @@ using SharpPulsar.TestContainer;
 
 namespace SharpPulsar.Test.SQL
 {
-	[Collection(nameof(PulsarTests))]
+	[Collection(nameof(SqlCollection))]
 	public class SqlTests
 	{
 		private readonly ITestOutputHelper _output;

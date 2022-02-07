@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
+using SharpPulsar.Test.Transaction.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -11,7 +12,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(TransactionCollection))]
 	public class TxnAckTest
     {
 		private const string TENANT = "public";

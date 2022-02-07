@@ -9,6 +9,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
+using SharpPulsar.Test.Integration.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -17,7 +18,7 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Integration
 {
 
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class GenericSchemaTest
     {
         private readonly ITestOutputHelper _output;

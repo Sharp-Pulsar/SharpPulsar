@@ -1,6 +1,7 @@
 ﻿using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
+using SharpPulsar.Test.Integration.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using System;
@@ -31,7 +32,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class ByteKeysTest
     {
         private readonly ITestOutputHelper _output;
@@ -42,7 +43,7 @@ namespace SharpPulsar.Test.Integration
         {
             _output = output;
             _client = fixture.Client;
-            _topic = $"persistent://public/default/my-topic-Batch-{Guid.NewGuid()}";
+            _topic = $"persistent://public/default/{Guid.NewGuid()}";
             //_topic = "my-topic-batch-bf719df3";
         }
 
@@ -50,7 +51,7 @@ namespace SharpPulsar.Test.Integration
         public async Task ProducerInstantiation()
         {
             var producer = new ProducerConfigBuilder<string>();
-            producer.Topic("ProducerInstantiation");
+            producer.Topic(_topic);
             var stringProducerBuilder = await _client.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
             await stringProducerBuilder.CloseAsync();
@@ -59,17 +60,17 @@ namespace SharpPulsar.Test.Integration
         public async Task ConsumerInstantiation()
         {
             var consumer = new ConsumerConfigBuilder<string>();
-            consumer.Topic("ConsumerInstantiation");
+            consumer.Topic(_topic);
             consumer.SubscriptionName($"test-sub-{Guid.NewGuid()}");
             var stringConsumerBuilder = await _client.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
-            stringConsumerBuilder.Close();
+            await stringConsumerBuilder.CloseAsync();
         }
         [Fact]
         public async Task ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
-            reader.Topic("ReaderInstantiation");
+            reader.Topic(_topic);
             reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
@@ -78,7 +79,7 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public async Task ProduceAndConsume()
         {
-            var topic = $"persistent://public/default/produce-consume-3";
+            var topic = _topic;
 
             var r = new Random(0);
             var byteKey = new byte[1000];

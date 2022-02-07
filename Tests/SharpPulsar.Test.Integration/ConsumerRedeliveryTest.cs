@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Configuration;
+using SharpPulsar.Test.Integration.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -27,7 +28,7 @@ using Xunit.Abstractions;
 /// </summary>
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class ConsumerRedeliveryTest
     {
         private readonly ITestOutputHelper _output;

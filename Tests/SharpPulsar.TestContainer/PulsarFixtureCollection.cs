@@ -12,10 +12,10 @@
  * limitations under the License.
  */
 
-namespace SharpPulsar.Test.Tls.Fixtures
+namespace SharpPulsar.TestContainer
 {
     using Xunit;
 
-    [CollectionDefinition(nameof(PulsarTlsTests), DisableParallelization = true)]
-    public class PulsarTlsTests : ICollectionFixture<PulsarTlsFixture> { }
+    [CollectionDefinition(nameof(PulsarFixtureCollection), DisableParallelization = true)]
+    public class PulsarFixtureCollection : ICollectionFixture<PulsarFixture> { }
 }

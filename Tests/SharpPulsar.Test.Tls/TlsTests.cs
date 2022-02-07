@@ -6,20 +6,21 @@ using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Tls.Fixtures;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Tls
 {
-    //[Collection(nameof(PulsarTlsTests))]
+    [Collection(nameof(PulsarTlsCollection))]
     public class TlsTests
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public TlsTests(ITestOutputHelper output, PulsarTlsFixture fixture)
+        public TlsTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

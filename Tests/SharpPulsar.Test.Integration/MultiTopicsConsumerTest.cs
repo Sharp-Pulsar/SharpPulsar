@@ -8,6 +8,7 @@ using System;
 using System.Threading;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
+using SharpPulsar.Test.Integration.Fixture;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,9 +33,9 @@ namespace SharpPulsar.Test.Integration
 
 
     /// <summary>
-    /// Unit Tests of <seealso cref="MultiTopicsConsumerImpl"/>.
+    /// Unit Tests of <seealso cref="MultiTopicsConsumer{T}"/>.
     /// </summary>
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class MultiTopicsConsumerTest
     {
         private const string Subscription = "reader-multi-topics-sub";

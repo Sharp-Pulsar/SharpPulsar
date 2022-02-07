@@ -8,10 +8,11 @@ using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
+using SharpPulsar.Test.Integration.Fixture;
 
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class SchemaUpgradeTest
     {
         private readonly ITestOutputHelper _output;

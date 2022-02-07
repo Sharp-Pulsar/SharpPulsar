@@ -30,10 +30,11 @@ using Akka.Actor;
 using System;
 using System.Threading.Tasks;
 using SharpPulsar.TestContainer;
+using SharpPulsar.Test.Integration.Fixture;
 
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
     public class AcknowledgementsGroupingTrackerTest
     {
         private readonly ITestOutputHelper _output;

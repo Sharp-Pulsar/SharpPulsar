@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 using System.Threading;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
+using SharpPulsar.Test.Integration.Fixture;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,7 +31,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(IntegrationCollection))]
 	public class NegativeAcksTest
 	{
         private readonly ITestOutputHelper _output;

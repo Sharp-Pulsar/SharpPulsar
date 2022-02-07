@@ -16,7 +16,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.EventSourcing
 {
-    [Collection(nameof(PulsarTests))]
+    [Collection(nameof(EventCollection))]
     public class EventSourceTests
     {
         private readonly ITestOutputHelper _output;
