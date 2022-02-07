@@ -96,22 +96,18 @@
           "items": {
             "type": "string",
             "enum": [
-              "ApiTest",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
-              "EventTest",
               "IntegrationTest",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlTest",
-              "TlsTest",
-              "TxnTest"
+              "TlsTest"
             ]
           }
         },
@@ -125,22 +121,18 @@
           "items": {
             "type": "string",
             "enum": [
-              "ApiTest",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
-              "EventTest",
               "IntegrationTest",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlTest",
-              "TlsTest",
-              "TxnTest"
+              "TlsTest"
             ]
           }
         },
