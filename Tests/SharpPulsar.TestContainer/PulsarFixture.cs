@@ -13,11 +13,22 @@ namespace SharpPulsar.TestContainer
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
-
-        public virtual PulsarTestcontainerConfiguration Configuration => new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+        private readonly IConfiguration _configuration;  
+        private readonly int _pulsarPort; 
+        private readonly int _adminPort; 
+        private readonly int _sqlPort; 
+        public virtual PulsarTestcontainerConfiguration Configuration { get; }
 
         public PulsarFixture()
         {
+            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _configuration = GetIConfigurationRoot(path);
+            var clienConfigSetting = _configuration.GetSection("client");
+            _pulsarPort = int.Parse(clienConfigSetting.GetSection("pulsar-port").Value);
+            _adminPort = int.Parse(clienConfigSetting.GetSection("admin-port").Value);
+            _sqlPort = int.Parse(clienConfigSetting.GetSection("sql-port").Value);
+            var pulsarImage = clienConfigSetting.GetSection("pulsar-image").Value;
+            Configuration = new PulsarTestcontainerConfiguration(pulsarImage, _pulsarPort);
             Container = BuildContainer()
                 .WithCleanUp(true)
                 .Build();
@@ -27,21 +38,21 @@ namespace SharpPulsar.TestContainer
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
               .WithName($"sharp-pulsar-test-container")
               .WithPulsar(Configuration)
-              .WithPortBinding(6650)
-              .WithPortBinding(8080)
-              .WithPortBinding(8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+              .WithPortBinding(_pulsarPort, 6650)
+              .WithPortBinding(_adminPort, 8080)
+              .WithPortBinding(_sqlPort, 8081)
+              .WithExposedPort(_pulsarPort)
+              .WithExposedPort(_adminPort)
+              .WithExposedPort(_sqlPort);
         }
         public PulsarTestcontainer Container { get; }
         public virtual Task InitializeAsync()
         {           
             Container.StartAsync().GetAwaiter().GetResult();
-            AwaitPortReadiness("http://127.0.0.1:8080/metrics/").GetAwaiter().GetResult();
+            AwaitPortReadiness($"http://127.0.0.1:{_adminPort}/metrics/").GetAwaiter().GetResult();
             Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" }).GetAwaiter().GetResult();
 
-            AwaitPortReadiness("http://127.0.0.1:8081/").GetAwaiter().GetResult();
+            AwaitPortReadiness($"http://127.0.0.1:{_sqlPort}/").GetAwaiter().GetResult();
             SetupSystem().GetAwaiter().GetResult();
             return Task.CompletedTask;  
         }
@@ -96,9 +107,7 @@ namespace SharpPulsar.TestContainer
         public virtual async ValueTask SetupSystem()
         {
             var client = new PulsarClientConfigBuilder();
-            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var config = GetIConfigurationRoot(path);
-            var clienConfigSetting = config.GetSection("client");
+            var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
