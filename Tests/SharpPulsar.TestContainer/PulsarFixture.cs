@@ -41,9 +41,9 @@ namespace SharpPulsar.TestContainer
               .WithPortBinding(_pulsarPort, 6650)
               .WithPortBinding(_adminPort, 8080)
               .WithPortBinding(_sqlPort, 8081)
-              .WithExposedPort(_pulsarPort)
-              .WithExposedPort(_adminPort)
-              .WithExposedPort(_sqlPort);
+              .WithExposedPort(6650)
+              .WithExposedPort(8080)
+              .WithExposedPort(8081);
         }
         public PulsarTestcontainer Container { get; }
         public virtual Task InitializeAsync()
