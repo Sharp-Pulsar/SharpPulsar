@@ -29,12 +29,12 @@ branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examp
     pre-release-weight: 0
   release:
     regex: ^releases?[/-]
-    mode: ContinuousDelivery
+    mode:  ContinuousDeployment
     tag: beta
     increment: None
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
-    source-branches: [ 'develop', 'main']
+    source-branches: [ 'dev', 'main']
     tracks-release-branches: false
     is-release-branch: true
     is-mainline: false

@@ -49,7 +49,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.IntegrationTest);
+    public static int Main() => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -57,27 +57,19 @@ partial class Build : NukeBuild
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
+
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
-    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
+    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
+    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json";
 
     [Parameter] bool Container = false;
 
     readonly static DIContainer DIContainer = DIContainer.Default;
 
-    //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
-    [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
-    readonly string NugetApiKey;
-    
-    [Parameter("Admin NuGet API Key", Name = "ADMIN_NUGET_KEY")]
-    readonly string AdminNugetApiKey;
-    
-    [Parameter("GitHub Build Number", Name = "BUILD_NUMBER")]
-    readonly string BuildNumber;
+    [Parameter] [Secret] string NugetApiKey;
 
-    [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
-    readonly string GitHubApiKey;
+    [Parameter] [Secret] string GitHubToken;
 
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
 
@@ -259,7 +251,7 @@ partial class Build : NukeBuild
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+      .Requires(() => !GitHubToken.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {
@@ -274,8 +266,8 @@ partial class Build : NukeBuild
                   );
                   
                   DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubApiKey)
-                      .SetSymbolApiKey(GitHubApiKey)
+                      .SetApiKey(GitHubToken)
+                      .SetSymbolApiKey(GitHubToken)
                       .SetTargetPath(x)
                       .SetSource(GithubSource)
                       .SetSymbolSource(GithubSource));

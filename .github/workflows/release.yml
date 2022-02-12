@@ -19,6 +19,8 @@ name: release
 on:
   push:
     branches:
+      - main
+      - dev
       - release
 
 jobs:
@@ -42,3 +44,6 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd PublishNuget'
         run: ./build.cmd PublishNuget
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

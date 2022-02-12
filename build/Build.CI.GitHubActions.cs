@@ -29,8 +29,9 @@ using Nuke.Common.Utilities;
 [CustomGitHubActions("release",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
-    OnPushBranches = new[] { "release" },
-    InvokedTargets = new[] { nameof(PublishNuget) })]
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(PublishNuget) },
+    ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN" })]
 
 partial class Build
 {
