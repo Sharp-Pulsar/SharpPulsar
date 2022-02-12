@@ -34,6 +34,7 @@ using Nuke.Common.Utilities;
 
 partial class Build
 {
+
 }
 public class CustomGitHubActionsAttribute : GitHubActionsAttribute
 {
