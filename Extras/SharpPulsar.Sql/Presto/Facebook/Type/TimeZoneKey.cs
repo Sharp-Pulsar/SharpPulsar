@@ -108,7 +108,11 @@ namespace SharpPulsar.Sql.Presto.Facebook.Type
             Condition.RequireNonNull(zoneId, "ZoneId", "Zone id is null");
 			CheckArgument(zoneId.Length > 0, "Zone id is an empty string");
 			
-			var zoneKey = ZoneIdToKey[zoneId.ToLower(CultureInfo.GetCultureInfo("en-US"))] ?? ZoneIdToKey[NormalizeZoneId(zoneId)];
+            if(ZoneIdToKey.TryGetValue(zoneId.ToLower(CultureInfo.GetCultureInfo("en-US")), out var zoneKey))
+            {
+                return zoneKey;
+            }
+			zoneKey = ZoneIdToKey[NormalizeZoneId(zoneId)];
             if (zoneKey == null)
 			{
 				throw new KeyNotFoundException(zoneId);
