@@ -93,28 +93,12 @@
           "items": {
             "type": "string",
             "enum": [
-              "AdminPulsar",
-              "Benchmark",
-              "CheckBranch",
-              "CheckDockerVersion",
               "Clean",
               "Compile",
-              "CompileAdmin",
-              "Pack",
-              "PackAdmin",
-              "PackBeta",
-              "Push",
-              "PushBeta",
-              "ReleaseAdmin",
+              "PackSql",
+              "ReleaseSql",
               "Restore",
-              "RestoreAdmin",
-              "RunMemoryAllocation",
-              "StartPulsar",
-              "StopPulsar",
-              "Test",
-              "TestAdmin",
-              "TestPaths",
-              "TxnTest"
+              "Test"
             ]
           }
         },
@@ -122,34 +106,22 @@
           "type": "string",
           "description": "Path to a solution file that is automatically loaded"
         },
+        "SQL_NUGET_KEY": {
+          "type": "string",
+          "description": "Sql NuGet API Key"
+        },
         "Target": {
           "type": "array",
           "description": "List of targets to be invoked. Default is '{default_target}'",
           "items": {
             "type": "string",
             "enum": [
-              "AdminPulsar",
-              "Benchmark",
-              "CheckBranch",
-              "CheckDockerVersion",
               "Clean",
               "Compile",
-              "CompileAdmin",
-              "Pack",
-              "PackAdmin",
-              "PackBeta",
-              "Push",
-              "PushBeta",
-              "ReleaseAdmin",
+              "PackSql",
+              "ReleaseSql",
               "Restore",
-              "RestoreAdmin",
-              "RunMemoryAllocation",
-              "StartPulsar",
-              "StopPulsar",
-              "Test",
-              "TestAdmin",
-              "TestPaths",
-              "TxnTest"
+              "Test"
             ]
           }
         },

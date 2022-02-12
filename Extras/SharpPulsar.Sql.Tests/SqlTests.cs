@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Sql.Tests
 {
+    [Collection(nameof(IntegrationCollection))]
     public class SqlTests
     {
         private ActorSystem _actorSystem;
@@ -19,7 +20,7 @@ namespace SharpPulsar.Sql.Tests
             _output = output;
             _actorSystem = ActorSystem.Create("Sql"); 
         }
-        [Fact(Skip = "")]
+        [Fact]
         public async Task Sql_With_Excute_Set()
         {
             var topic = "keyvalue";
@@ -27,9 +28,22 @@ namespace SharpPulsar.Sql.Tests
             var sql = new SqlInstance(_actorSystem, option);
             var data = await sql.ExecuteAsync();
             Assert.NotNull(data);
-            _output.WriteLine(JsonSerializer.Serialize((DataResponse)data.Response, new JsonSerializerOptions{WriteIndented = true}));
+            IQueryResponse resp = null;
+            switch (data.Response)
+            {
+                case StatsResponse stats:
+                    resp = stats;
+                    break;
+                case DataResponse dt:
+                    resp = dt;
+                    break;
+                case ErrorResponse er:
+                    resp = er;
+                    break;
+            }
+            _output.WriteLine(JsonSerializer.Serialize(resp, new JsonSerializerOptions { WriteIndented = true }));
         }
-        [Fact(Skip = "")]
+        [Fact]
         public async Task Sql_With_Query_Set()
         {
             var topic = "keyvalue";
@@ -37,10 +51,23 @@ namespace SharpPulsar.Sql.Tests
             var sql = new SqlInstance(_actorSystem, option);
             var data = await sql.ExecuteAsync(query:@$"select * from ""{topic}""");
             Assert.NotNull(data);
-            _output.WriteLine(JsonSerializer.Serialize((DataResponse)data.Response, new JsonSerializerOptions { WriteIndented = true }));
+            IQueryResponse resp = null;
+            switch (data.Response)
+            {
+                case StatsResponse stats:
+                    resp = stats;
+                    break;
+                case DataResponse dt:
+                    resp = dt;
+                    break;
+                case ErrorResponse er:
+                    resp = er;
+                    break;
+            }
+            _output.WriteLine(JsonSerializer.Serialize(resp, new JsonSerializerOptions { WriteIndented = true }));
         }
 
-        [Fact(Skip = "")]
+        [Fact]
         public async Task Live_Sql()
         {
             var topic = "sqltopic";
@@ -50,7 +77,20 @@ namespace SharpPulsar.Sql.Tests
             await foreach (var data in sql.ExecuteAsync())
             {
                 Assert.NotNull(data);
-                _output.WriteLine(JsonSerializer.Serialize((DataResponse)data.Response, new JsonSerializerOptions { WriteIndented = true }));
+                IQueryResponse resp = null;
+                switch (data.Response)
+                {
+                    case StatsResponse stats:
+                        resp = stats;
+                        break;
+                    case DataResponse dt:
+                        resp = dt;
+                        break;
+                    case ErrorResponse er:
+                        resp = er;
+                        break;
+                }
+                _output.WriteLine(JsonSerializer.Serialize(resp, new JsonSerializerOptions { WriteIndented = true }));
             }
 
         }
