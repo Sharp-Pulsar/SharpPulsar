@@ -23,28 +23,7 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
 [ShutdownDotNetAfterServerBuild]
-[GitHubActions("Build",
-    GitHubActionsImage.WindowsLatest,
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "Sql" },
-    OnPullRequestBranches = new[] { "Sql" },
-    
-    InvokedTargets = new[] { nameof(Compile) })]
-
-[GitHubActions("Tests",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "Sql" },
-    OnPullRequestBranches = new[] { "Sql" },
-    InvokedTargets = new[] { nameof(Test) })]
-
-[GitHubActions("Release",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "Sql" },
-    InvokedTargets = new[] { nameof(ReleaseSql) })]
-class Build : NukeBuild
+partial class Build : NukeBuild
 {
     /// Support plugins are available for:
     ///   - JetBrains ReSharper        https://nuke.build/resharper
@@ -60,33 +39,16 @@ class Build : NukeBuild
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
     [Solution] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
-    [GitVersion(Framework = "net5.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
     [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
 
-    //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
-    [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
-    readonly string NugetApiKey;
-    
-    [Parameter("Admin NuGet API Key", Name = "ADMIN_NUGET_KEY")]
-    readonly string AdminNugetApiKey;
-    
-    [Parameter("Sql NuGet API Key", Name = "SQL_NUGET_KEY")]
-    readonly string SqlNugetApiKey;
-    
-    [Parameter("GitHub Build Number", Name = "BUILD_NUMBER")]
-    readonly string BuildNumber;
+    [Parameter] [Secret] string SqlNugetKey;
 
-    [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
-    readonly string GitHubApiKey;
-
-    [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
+    //[Parameter] [Secret] string GitHubApiKey;
 
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath OutputDirectory => RootDirectory / "output";
-    AbsolutePath TestSourceDirectory => RootDirectory / "SharpPulsar.Test";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
     Target Clean => _ => _
@@ -156,9 +118,8 @@ class Build : NukeBuild
     Target ReleaseSql => _ => _
         .DependsOn(PackSql)
         .Requires(() => NugetApiUrl)
-        .Requires(() => !SqlNugetApiKey.IsNullOrEmpty())
-        .Requires(() => !GitHubApiKey.IsNullOrEmpty())
-        .Requires(() => !BuildNumber.IsNullOrEmpty())
+        .Requires(() => !SqlNugetKey.IsNullOrEmpty())
+        //.Requires(() => !GitHubApiKey.IsNullOrEmpty())
         .Requires(() => Configuration.Equals(Configuration.Release))
         .Executes(() =>
         {
@@ -170,7 +131,7 @@ class Build : NukeBuild
                     DotNetNuGetPush(s => s
                         .SetTargetPath(x)
                         .SetSource(NugetApiUrl)
-                        .SetApiKey(SqlNugetApiKey)
+                        .SetApiKey(SqlNugetKey)
                     );
                 });
         });
