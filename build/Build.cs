@@ -110,6 +110,7 @@ class Build : NukeBuild
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
+                .SetFileVersion(Version())
                 .SetConfiguration(Configuration));
         });
     Target Test => _ => _
@@ -126,8 +127,8 @@ class Build : NukeBuild
                         .SetProjectFile(project)
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
-                        .SetDiagnosticsFile(TestsDirectory)
-                        .SetLoggers("trx")
+                        //.SetDiagnosticsFile(TestsDirectory)
+                        //.SetLoggers("trx")
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                         .EnableNoBuild()); 
             }
@@ -142,8 +143,8 @@ class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .EnableNoBuild()
                 .EnableNoRestore()
-                .SetAssemblyVersion($"2.1.1")
-                .SetVersion($"2.1.1")
+                .SetAssemblyVersion(Version())
+                .SetVersion(Version())
                 .SetPackageReleaseNotes("Maintenance Release")
                 .SetDescription("Implements Apache Pulsar Trino's REST API. For sample visit https://github.com/eaba/SharpPulsar/tree/Sql/Extras/SharpPulsar.Sql.Tests")
                 .SetPackageTags("Apache Pulsar", "SharpPulsar", "Trino")
@@ -174,6 +175,10 @@ class Build : NukeBuild
                 });
         });
 
+    static string Version()
+    {
+        return "2.1.1";
+    }
     static void Information(string info)
     {
         Serilog.Log.Information(info);
