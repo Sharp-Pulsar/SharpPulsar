@@ -221,7 +221,8 @@ partial class Build : NukeBuild
         .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(8090)));
 
     Target CreateNuget => _ => _
-      .DependsOn(IntegrationTest)
+      .DependsOn(Compile)
+      //.DependsOn(IntegrationTest)
       .Executes(() =>
       {
           var version = GitVersion.SemVer;
