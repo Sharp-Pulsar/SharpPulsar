@@ -257,7 +257,7 @@ partial class Build : NukeBuild
       .Executes(() =>
       {
           OutputNuget.GlobFiles("*.nupkg")
-              .Where(x => !x.ToString().EndsWith("symbols.nupkg"))
+              .Where(x => !x.Name.EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
                   DotNetNuGetPush(s => s
