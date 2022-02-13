@@ -27,7 +27,7 @@ using Nuke.Common.Utilities;
     InvokedTargets = new[] { nameof(TlsTest) })]
 
 [CustomGitHubActions("release",
-    GitHubActionsImage.UbuntuLatest,
+    GitHubActionsImage.WindowsLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },

@@ -26,7 +26,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.ChangeLog.ChangelogTasks;
 using static Nuke.Common.Tools.Git.GitTasks;
 using static Nuke.Common.Tools.DocFX.DocFXTasks;
-using static Nuke.Common.Tools.BenchmarkDotNet.BenchmarkDotNetTasks;
 using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
@@ -122,7 +121,7 @@ partial class Build : NukeBuild
                 .SetConfiguration(Configuration)
                 .SetAssemblyVersion(vers)
                 .SetFileVersion(vers)
-                .SetVersion(vers));
+                .SetVersion(GitVersion.SemVer));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
@@ -141,7 +140,7 @@ partial class Build : NukeBuild
     Target TlsTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
-        {
+        { 
             var project = Solution.GetProject("SharpPulsar.Test.Tls");
             Information($"Running tests from {project.Name}");
             foreach (var fw in project.GetTargetFrameworks())
@@ -173,7 +172,7 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
                     .SetResultsDirectory(OutputTests / "tests")
-                    .SetLoggers("trx", "console")
+                    .SetLoggers("GitHubActions")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
