@@ -26,7 +26,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 using static Nuke.Common.ChangeLog.ChangelogTasks;
 using static Nuke.Common.Tools.Git.GitTasks;
 using static Nuke.Common.Tools.DocFX.DocFXTasks;
-using static Nuke.Common.Tools.BenchmarkDotNet.BenchmarkDotNetTasks;
 using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
@@ -49,7 +48,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main () => Execute<Build>(x => x.IntegrationTest);
+    public static int Main() => Execute<Build>(x => x.Compile);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -57,27 +56,19 @@ partial class Build : NukeBuild
 
     [Solution] readonly Solution Solution;
     [GitRepository] readonly GitRepository GitRepository;
+
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
-    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json"; 
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json"; 
+    [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
+    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json";
 
     [Parameter] bool Container = false;
 
     readonly static DIContainer DIContainer = DIContainer.Default;
 
-    //[Parameter] string NugetApiKey = Environment.GetEnvironmentVariable("SHARP_PULSAR_NUGET_API_KEY");
-    [Parameter("NuGet API Key", Name = "NUGET_API_KEY")]
-    readonly string NugetApiKey;
-    
-    [Parameter("Admin NuGet API Key", Name = "ADMIN_NUGET_KEY")]
-    readonly string AdminNugetApiKey;
-    
-    [Parameter("GitHub Build Number", Name = "BUILD_NUMBER")]
-    readonly string BuildNumber;
+    [Parameter] [Secret] string NugetApiKey;
 
-    [Parameter("GitHub Access Token for Packages", Name = "GH_API_KEY")]
-    readonly string GitHubApiKey;
+    [Parameter] [Secret] string GitHubToken;
 
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
 
@@ -129,7 +120,8 @@ partial class Build : NukeBuild
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
                 .SetAssemblyVersion(vers)
-                .SetFileVersion(vers));
+                .SetFileVersion(vers)
+                .SetVersion(GitVersion.SemVer));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
@@ -148,7 +140,7 @@ partial class Build : NukeBuild
     Target TlsTest => _ => _
         .DependsOn(Compile)
         .Executes(() =>
-        {
+        { 
             var project = Solution.GetProject("SharpPulsar.Test.Tls");
             Information($"Running tests from {project.Name}");
             foreach (var fw in project.GetTargetFrameworks())
@@ -180,7 +172,7 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
                     .SetResultsDirectory(OutputTests / "tests")
-                    .SetLoggers("trx", "console")
+                    .SetLoggers("GitHubActions")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
@@ -221,7 +213,8 @@ partial class Build : NukeBuild
         .Executes(() => DocFXServe(s => s.SetFolder(DocFxDir).SetPort(8090)));
 
     Target CreateNuget => _ => _
-      .DependsOn(IntegrationTest)
+      .DependsOn(Compile)
+      //.DependsOn(IntegrationTest)
       .Executes(() =>
       {
           var version = GitVersion.SemVer;
@@ -242,7 +235,7 @@ partial class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetIncludeSymbols(true)
+              //.SetIncludeSymbols(true)
               .SetAssemblyVersion(version)
               .SetFileVersion(version)
               .SetVersion(version)
@@ -258,12 +251,12 @@ partial class Build : NukeBuild
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubApiKey.IsNullOrEmpty())
+      .Requires(() => !GitHubToken.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
       .Executes(() =>
       {
           OutputNuget.GlobFiles("*.nupkg")
-              .Where(x => !x.ToString().EndsWith("symbols.nupkg"))
+              .Where(x => !x.Name.EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
                   DotNetNuGetPush(s => s
@@ -273,8 +266,8 @@ partial class Build : NukeBuild
                   );
                   
                   DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubApiKey)
-                      .SetSymbolApiKey(GitHubApiKey)
+                      .SetApiKey(GitHubToken)
+                      .SetSymbolApiKey(GitHubToken)
                       .SetTargetPath(x)
                       .SetSource(GithubSource)
                       .SetSymbolSource(GithubSource));

@@ -6,14 +6,6 @@
     "build": {
       "type": "object",
       "properties": {
-        "ADMIN_NUGET_KEY": {
-          "type": "string",
-          "description": "Admin NuGet API Key"
-        },
-        "BUILD_NUMBER": {
-          "type": "string",
-          "description": "GitHub Build Number"
-        },
         "Configuration": {
           "type": "string",
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)",
@@ -29,12 +21,12 @@
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
         },
-        "GH_API_KEY": {
-          "type": "string",
-          "description": "GitHub Access Token for Packages"
-        },
         "GithubSource": {
           "type": "string"
+        },
+        "GitHubToken": {
+          "type": "string",
+          "default": "Secrets must be entered via 'nuke :secret [profile]'"
         },
         "Help": {
           "type": "boolean",
@@ -64,9 +56,9 @@
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
         },
-        "NUGET_API_KEY": {
+        "NugetApiKey": {
           "type": "string",
-          "description": "NuGet API Key"
+          "default": "Secrets must be entered via 'nuke :secret [profile]'"
         },
         "NugetApiUrl": {
           "type": "string"
