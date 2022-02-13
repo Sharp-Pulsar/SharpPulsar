@@ -121,7 +121,8 @@ partial class Build : NukeBuild
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
                 .SetAssemblyVersion(vers)
-                .SetFileVersion(vers));
+                .SetFileVersion(vers)
+                .SetVersion(vers));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 

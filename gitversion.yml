@@ -10,7 +10,6 @@ branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examp
     increment: Patch
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
-    source-branches: [ 'develop', 'release' ]
     tracks-release-branches: false
     is-release-branch: false
     is-mainline: true
@@ -22,19 +21,17 @@ branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examp
     increment: Minor
     prevent-increment-of-merged-branch-version: false
     track-merge-target: true
-    source-branches: []
     tracks-release-branches: true
     is-release-branch: false
     is-mainline: false
     pre-release-weight: 0
   release:
-    regex: ^releases?[/-]
+    regex: releases?$
     mode:  ContinuousDeployment
     tag: beta
     increment: None
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
-    source-branches: [ 'dev', 'main']
     tracks-release-branches: false
     is-release-branch: true
     is-mainline: false
@@ -46,7 +43,6 @@ branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examp
     increment: Inherit
     prevent-increment-of-merged-branch-version: false
     track-merge-target: false
-    source-branches: [ 'develop'] # features should branch off from develop branch
     tracks-release-branches: false
     is-release-branch: false
     is-mainline: false
