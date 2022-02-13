@@ -17,7 +17,7 @@ branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examp
   develop:
     regex: ^dev(elop)?(ment)?$
     mode: ContinuousDeployment
-    tag: alpha
+    tag: rc
     increment: Minor
     prevent-increment-of-merged-branch-version: false
     track-merge-target: true
@@ -27,7 +27,7 @@ branches: # https://gitversion.net/docs/learn/branching-strategies/gitflow/examp
     pre-release-weight: 0
   release:
     regex: release?$
-    mode:  ContinuousDeployment
+    mode:  ContinuousDelivery
     tag: beta
     increment: None
     prevent-increment-of-merged-branch-version: true
