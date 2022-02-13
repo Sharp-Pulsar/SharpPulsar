@@ -1,11 +1,22 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
+using crypto;
+using DotNet.Testcontainers.Builders;
 using SharpPulsar;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
+using SharpPulsar.Schemas;
+using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
 using SharpPulsar.User;
+using Tutorials.PulsarTestContainer;
 
 namespace Tutorials
 {
@@ -13,38 +24,86 @@ namespace Tutorials
     class Program
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
+        private static TestContainer _container;
+        private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.9.1", 6650);
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
-        static void Main(string[] args)
+        private static PulsarClient _client;
+        static async Task Main(string[] args)
         {
+            await StartContainer();
+            var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
-            Console.WriteLine("Please enter cmd");
-            var cmd = Console.ReadLine();
+            Console.WriteLine("Welcome!!");
+            Console.WriteLine("Select 0(none-tls) 1(tls)");
+            var selections = new List<string> {"0","1" };
+            var selection = Console.ReadLine();
+            var selected = selections.Contains(selection);
+            while (!selected)
+            {
+                Console.WriteLine($"Invalid selection: expected 0 or 1. Retry!![{selection}]");
+                selection = Console.ReadLine();
+                selected = selection != "0";
+            }
+            if(selection.Equals("1"))
+                url = "pulsar+ssl://127.0.0.1:6651";
+
+            
             var clientConfig = new PulsarClientConfigBuilder()
-                //.ProxyServiceUrl("pulsar+ssl://pulsar-azure-westus2.streaming.datastax.com:6551", SharpPulsar.Common.ProxyProtocol.SNI)
-                .ServiceUrl("pulsar://localhost:6650");
-                //.ServiceUrl("pulsar+ssl://pulsar-azure-westus2.streaming.datastax.com:6551")
-                //.Authentication(new AuthenticationToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbGllbnQ7NjBlZTBjZGUtOWU3Zi00MzJmLTk3ZmEtYzA1NGFhYjgwODQwO2JXVnpkR2xqWVd3PSJ9.tIi1s_PQ6AZNxBr9rEqCoPk34mG-M6BXL8DwZpgh1Yr_nR4S5UpHG79_aYTvz902GA8PB8R7DJw6qknSdlCdXhPiDsxSPPnx4sylFz9QFCvvY6Q1JE38jVJDMMvHnm-_rggGkCPk_MFZxh1yxtamQ_QYcZQa-aq3rvFZmcJbG_jtcfmOT3TEZradN7FOiztfJDRP0YLVgnh0CJFxC36C0S4UaORllQN11i0KIgasF5dbLSidt70nwNgt6PZHDykEdhV6OC473U_4y7rM0gX7SNR3IiFMsAb7jD4CKIGG876J20aU67jXkHj08-QW2Ut38rJi5u4WxKgNTTfWOBSlQQ"));
-            if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
+                .ServiceUrl(url);
+
+            if (selection.Equals("1"))
+            {
+                var ca = new System.Security.Cryptography.X509Certificates.X509Certificate2(@"certs/ca.cert.pem");
+                clientConfig.EnableTls(true);
+                clientConfig.AddTrustedAuthCert(ca);
+            }
+            Console.WriteLine("Please, time to execute some command, which do you want?");
+            var cmd = Console.ReadLine();
+
+            if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase) || cmd.Equals("txnunack", StringComparison.OrdinalIgnoreCase))
                 clientConfig.EnableTransaction(true);
 
             //pulsar actor system
             var pulsarSystem = PulsarSystem.GetInstance(clientConfig);
 
             var pulsarClient = pulsarSystem.NewClient();
+            _client = pulsarClient;
             if (cmd.Equals("txn", StringComparison.OrdinalIgnoreCase))
                 Transaction(pulsarClient);
-            else if (cmd.Equals("exc", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("exclusive", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceConsumer(pulsarClient);
-            else if (cmd.Equals("exc2", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("exclusive2", StringComparison.OrdinalIgnoreCase))
                 ExclusiveProduceNoneConsumer(pulsarClient);
-            else if (cmd.Equals("bat", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("batch", StringComparison.OrdinalIgnoreCase))
                 BatchProduceConsumer(pulsarClient);
-            else if (cmd.Equals("m", StringComparison.OrdinalIgnoreCase))
+            else if (cmd.Equals("multi", StringComparison.OrdinalIgnoreCase))
                 MultiConsumer(pulsarClient);
+            else if (cmd.Equals("avro", StringComparison.OrdinalIgnoreCase))
+                PlainAvroProducer(pulsarClient, "plain-avro");
+            else if (cmd.Equals("keyvalue", StringComparison.OrdinalIgnoreCase))
+                PlainKeyValueProducer(pulsarClient, "keyvalue");
+            else if (cmd.Equals("txnunack", StringComparison.OrdinalIgnoreCase))
+                TxnRedeliverUnack(pulsarClient);
+            else if (cmd.Equals("sql", StringComparison.OrdinalIgnoreCase))
+                TestQuerySql();
             else
                 ProduceConsumer(pulsarClient);
 
             Console.ReadKey();
+            await _container.StopAsync();
+        }
+        private static async ValueTask StartContainer()
+        {
+            _container = BuildContainer()
+              .WithCleanUp(true)
+              .Build();
+
+            await _container
+                .StartAsync()
+                .PulsarWait("http://127.0.0.1:8080/metrics/");
+
+            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" })
+                .PulsarWait("http://127.0.0.1:8081/"); 
         }
         private static void ProduceConsumer(PulsarClient pulsarClient)
         {
@@ -79,7 +138,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -117,7 +176,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"[Batched] message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"[Batched] message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -144,7 +203,7 @@ namespace Tutorials
                 if(message != null)
                 {
                     consumer.Acknowledge(message);
-                    Console.WriteLine($"message from topic: {message.TopicName}");
+                    Console.WriteLine($"message from topic: {message.Topic}");
                 }
             }
             for (var i = 0; i < messageCount; i++)
@@ -153,7 +212,7 @@ namespace Tutorials
                 if (message != null)
                 {
                     consumer.Acknowledge(message);
-                    Console.WriteLine($"message from topic: {message.TopicName}");
+                    Console.WriteLine($"message from topic: {message.Topic}");
                 }
             }
             for (var i = 0; i < messageCount; i++)
@@ -161,11 +220,10 @@ namespace Tutorials
                 var message = (TopicMessage<byte[]>)consumer.Receive(); if (message != null)
                 {
                     consumer.Acknowledge(message);
-                    Console.WriteLine($"message from topic: {message.TopicName}");
+                    Console.WriteLine($"message from topic: {message.Topic}");
                 }
             }
         }
-
         private static List<MessageId> PublishMessages(string topic, int count, string message, PulsarClient client)
         {
             var keys = new List<MessageId>();
@@ -183,6 +241,13 @@ namespace Tutorials
         }
         private static void ExclusiveProduceNoneConsumer(PulsarClient pulsarClient)
         {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub-Exclusive")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
                 .Topic(myTopic));
@@ -205,11 +270,6 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(myTopic)
-                .ForceTopicCreation(true)
-                .SubscriptionName("myTopic-sub-Exclusive")
-                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             Thread.Sleep(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 1000; i++)
@@ -222,12 +282,20 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
         private static void ExclusiveProduceConsumer(PulsarClient pulsarClient)
         {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName("myTopic-sub-Exclusive")
+                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
+
+
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
                 .AccessMode(SharpPulsar.Common.ProducerAccessMode.Exclusive)
                 .Topic(myTopic));;
@@ -240,11 +308,6 @@ namespace Tutorials
             }
 
             var pool = ArrayPool<byte>.Shared;
-            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
-                .Topic(myTopic)
-                .ForceTopicCreation(true)
-                .SubscriptionName("myTopic-sub-Exclusive")
-                .SubscriptionInitialPosition(SharpPulsar.Common.SubscriptionInitialPosition.Earliest));
 
             for (var i = 0; i < 100; i++)
             {
@@ -256,7 +319,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
                 }
             }
         }
@@ -265,7 +328,7 @@ namespace Tutorials
             var txn = (Transaction)pulsarClient.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
 
             var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
-                .SendTimeout(0)
+                .SendTimeout(TimeSpan.Zero)
                 .Topic(myTopic));
 
             var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
@@ -293,7 +356,7 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"[1] message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"[1] message '{res}' from topic: {message.Topic}");
                 }
             }
 
@@ -309,9 +372,299 @@ namespace Tutorials
 
                     consumer.Acknowledge(message);
                     var res = Encoding.UTF8.GetString(message.Data);
-                    Console.WriteLine($"[2] message '{res}' from topic: {message.TopicName}");
+                    Console.WriteLine($"[2] message '{res}' from topic: {message.Topic}");
                 }
             }
         }
+        private static void TlsProduceConsumer(PulsarClient pulsarClient)
+        {
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(myTopic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"sub-{Guid.NewGuid()}")
+                .IsAckReceiptEnabled(true));
+
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(myTopic));
+
+
+            for (var i = 0; i < 1000; i++)
+            {
+                var data = Encoding.UTF8.GetBytes($"tuts-{i}");
+                var id = producer.NewMessage().Value(data).Send();
+                Console.WriteLine($"Message Id({id.LedgerId}:{id.EntryId})");
+            }
+
+            var pool = ArrayPool<byte>.Shared;
+
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            for (var i = 0; i < 1000; i++)
+            {
+                var message = (Message<byte[]>)consumer.Receive();
+                if (message != null)
+                {
+                    var payload = pool.Rent((int)message.Data.Length);
+                    Array.Copy(sourceArray: message.Data.ToArray(), destinationArray: payload, length: (int)message.Data.Length);
+
+                    consumer.Acknowledge(message);
+                    var res = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"message '{res}' from topic: {message.Topic}");
+                }
+            }
+        }
+
+        private static void PlainAvroProducer(PulsarClient client, string topic)
+        {
+            var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
+            var builder = new ConsumerConfigBuilder<JournalEntry>()
+                .Topic(topic)
+                .SubscriptionName($"my-subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
+                .AckTimeout(TimeSpan.FromMilliseconds(20000))
+                .ForceTopicCreation(true)
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
+            var consumer = client.NewConsumer(jsonSchem, builder);
+            var producerConfig = new ProducerConfigBuilder<JournalEntry>()
+                .ProducerName(topic.Split("/").Last())
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .SendTimeout(TimeSpan.FromMilliseconds(10000));
+
+            var producer = client.NewProducer(jsonSchem, producerConfig);
+
+            for (var i = 0; i < 10; i++)
+            {
+                var student = new Students
+                {
+                    Name = $"[{i}] Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()} - presto-ed {DateTime.Now.ToString(CultureInfo.InvariantCulture)}",
+                    Age = 202 + i,
+                    School = "Akka-Pulsar university"
+                };
+                var journal = new JournalEntry
+                {
+                    Id = $"[{i}]Ebere: {DateTimeOffset.Now.ToUnixTimeMilliseconds()}",
+                    PersistenceId = "sampleActor",
+                    IsDeleted = false,
+                    Ordering = 0,
+                    Payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(student)),
+                    SequenceNr = 0,
+                    Tags = "root"
+                };
+                var metadata = new Dictionary<string, string>
+                {
+                    ["Key"] = "Single",
+                    ["Properties"] = JsonSerializer.Serialize(new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }, new JsonSerializerOptions { WriteIndented = true })
+                };
+                var id = producer.NewMessage().Properties(metadata).Value(journal).Send();
+            }
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < 10; i++)
+            {
+                var msg = consumer.Receive();
+                if (msg != null)
+                {
+                    var receivedMessage = msg.Value;
+                    Console.WriteLine(JsonSerializer.Serialize(receivedMessage, new JsonSerializerOptions { WriteIndented = true }));
+                }
+
+            }
+        }
+
+        private static void TxnRedeliverUnack(PulsarClient client)
+        {
+            var topic = $"TxnRedeliverUnack_{Guid.NewGuid()}";
+            var subName = $"RedeliverUnack-{Guid.NewGuid()}";
+
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .SubscriptionName(subName)
+                .ForceTopicCreation(true)
+                .EnableBatchIndexAcknowledgment(true)
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
+
+            var consumer = client.NewConsumer(consumerBuilder);
+
+            var producerBuilder = new ProducerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .EnableBatching(false)
+                .SendTimeout(TimeSpan.Zero);
+
+            var producer = client.NewProducer(producerBuilder);
+
+            var txn = Txn;
+
+            var messageCnt = 10;
+            for (var i = 0; i < messageCnt; i++)
+            {
+                producer.NewMessage(txn).Value(Encoding.UTF8.GetBytes("Hello Txn - " + i)).Send();
+            }
+            Console.WriteLine("produce transaction messages finished");
+
+            // Can't receive transaction messages before commit.
+            var message = consumer.Receive();
+            if(message == null)
+                Console.WriteLine("transaction messages can't be received before transaction committed");
+
+            txn.Commit();
+            
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < messageCnt; i++)
+            {
+                message = consumer.Receive();
+                if (message == null) continue;
+                var msg = Encoding.UTF8.GetString(message.Data);
+                Console.WriteLine($"[1] {msg}");
+            }
+            
+            consumer.RedeliverUnacknowledgedMessages();
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+            for (var i = 0; i < messageCnt; i++)
+            {
+                message = consumer.Receive();
+                if (message != null)
+                {
+                    consumer.Acknowledge(message);
+                    var msg = Encoding.UTF8.GetString(message.Data);
+                    Console.WriteLine($"[2] {msg}");
+                }
+                
+            }
+            
+        }
+        private static Transaction Txn
+        {
+
+            get
+            {
+                return (Transaction)_client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).Build();
+            }
+        }
+        private static void PlainKeyValueProducer(PulsarClient client, string topic)
+        {
+            //var jsonSchem = AvroSchema<JournalEntry>.Of(typeof(JournalEntry));
+            var jsonSchem = KeyValueSchema<string, string>.Of(ISchema<string>.String, ISchema<string>.String);
+            var builder = new ConsumerConfigBuilder<KeyValue<string, string>>()
+                .Topic(topic)
+                .SubscriptionName($"subscriber-name-{DateTimeHelper.CurrentUnixTimeMillis()}")
+                .AckTimeout(TimeSpan.FromMilliseconds(20000))
+                .ForceTopicCreation(true)
+                .AcknowledgmentGroupTime(TimeSpan.Zero);
+            var consumer = client.NewConsumer(jsonSchem, builder);
+            var producerConfig = new ProducerConfigBuilder<KeyValue<string, string>>()
+                .ProducerName(topic.Split("/").Last())
+                .Topic(topic)
+                .Schema(jsonSchem)
+                .SendTimeout(TimeSpan.FromMilliseconds(10000));
+
+            var producer = client.NewProducer(jsonSchem, producerConfig);
+
+            for (var i = 0; i < 10; i++)
+            {
+                var metadata = new Dictionary<string, string>
+                {
+                    ["Key"] = "Single",
+                    ["Properties"] = JsonSerializer.Serialize(new Dictionary<string, string> { { "Tick", DateTime.Now.Ticks.ToString() } }, new JsonSerializerOptions { WriteIndented = true })
+                };
+                var id = producer.NewMessage().Properties(metadata).Value<string, string>(new KeyValue<string, string>("Ebere", $"[{i}]Ebere")).Send();
+                Console.WriteLine(id.ToString());
+            }
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            for (var i = 0; i < 10; i++)
+            {
+                var msg = consumer.Receive();
+                if (msg != null)
+                {
+                    var kv = msg.Value;
+                    Console.WriteLine($"key:{kv.Key}, value:{kv.Value}");
+                }
+
+            }
+        }
+        private static void TestQuerySql()
+        {
+            var topic = $"query_topics_avro_{Guid.NewGuid()}";
+            PublishMessages(topic, 5);
+            var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
+
+            var sql = PulsarSystem.Sql(option);
+
+            Thread.Sleep(TimeSpan.FromSeconds(10));
+
+            var response = sql.Execute(TimeSpan.FromSeconds(30));
+            if (response != null)
+            {
+                var data = response.Response;
+                switch (data)
+                {
+                    case DataResponse dr:
+                    {
+                        for (var i = 0; i < dr.Data.Count; i++)
+                        {
+                            var ob = dr.Data.ElementAt(i)["text"].ToString();
+                            Console.WriteLine(ob);
+                        }
+                        Console.WriteLine(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
+                    }
+                        break;
+                    case StatsResponse sr:
+                        Console.WriteLine(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case ErrorResponse er:
+                        Console.WriteLine(JsonSerializer.Serialize(er, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                }
+            }
+            
+        }
+        private static ISet<string> PublishMessages(string topic, int count)
+        {
+            ISet<string> keys = new HashSet<string>();
+            var builder = new ProducerConfigBuilder<DataOp>()
+                .Topic(topic);
+            var producer = _client.NewProducer(AvroSchema<DataOp>.Of(typeof(DataOp)), builder);
+            for (var i = 0; i < count; i++)
+            {
+                var key = "key" + i;
+                producer.NewMessage().Key(key).Value(new DataOp { Text = "my-sql-message-" + i }).Send();
+                keys.Add(key);
+            }
+            return keys;
+        }
+        private static TestcontainersBuilder<TestContainer> BuildContainer()
+        {
+            return (TestcontainersBuilder<TestContainer>)new TestcontainersBuilder<TestContainer>()
+              .WithName("pulsar-console")
+              .WithPulsar(_configuration)
+              .WithPortBinding(6650, 6650)
+              .WithPortBinding(8080, 8080)
+              .WithPortBinding(8081, 8081)
+              .WithExposedPort(6650)
+              .WithExposedPort(8080)
+              .WithExposedPort(8081);
+        }
+    }
+    public class Students
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public string School { get; set; }
+    }
+    public class DataOp
+    {
+        public string Text { get; set; }
+    }
+    public class JournalEntry
+    {
+        public string Id { get; set; }
+
+        public string PersistenceId { get; set; }
+
+        public long SequenceNr { get; set; }
+
+        public bool IsDeleted { get; set; }
+
+        public byte[] Payload { get; set; }
+        public long Ordering { get; set; }
+        public string Tags { get; set; }
     }
 }
