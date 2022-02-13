@@ -236,7 +236,7 @@ partial class Build : NukeBuild
               .SetConfiguration(Configuration)
               .EnableNoBuild()
               .EnableNoRestore()
-              .SetIncludeSymbols(true)
+              //.SetIncludeSymbols(true)
               .SetAssemblyVersion(version)
               .SetFileVersion(version)
               .SetVersion(version)
