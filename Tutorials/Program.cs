@@ -6,7 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using crypto;
+using DotNet.Testcontainers.Builders;
 using SharpPulsar;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
@@ -14,6 +16,7 @@ using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.User;
+using Tutorials.PulsarTestContainer;
 
 namespace Tutorials
 {
@@ -21,10 +24,13 @@ namespace Tutorials
     class Program
     {
         //static string myTopic = $"persistent://public/default/mytopic-2";
+        private static TestContainer _container;
+        private static TestcontainerConfiguration _configuration = new("apachepulsar/pulsar-all:2.9.1", 6650);
         static string myTopic = $"persistent://public/default/mytopic-{Guid.NewGuid()}";
         private static PulsarClient _client;
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
+            await StartContainer();
             var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
@@ -84,6 +90,20 @@ namespace Tutorials
                 ProduceConsumer(pulsarClient);
 
             Console.ReadKey();
+            await _container.StopAsync();
+        }
+        private static async ValueTask StartContainer()
+        {
+            _container = BuildContainer()
+              .WithCleanUp(true)
+              .Build();
+
+            await _container
+                .StartAsync()
+                .PulsarWait("http://127.0.0.1:8080/metrics/");
+
+            await _container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" })
+                .PulsarWait("http://127.0.0.1:8081/"); ;
         }
         private static void ProduceConsumer(PulsarClient pulsarClient)
         {
@@ -609,6 +629,18 @@ namespace Tutorials
                 keys.Add(key);
             }
             return keys;
+        }
+        private static TestcontainersBuilder<TestContainer> BuildContainer()
+        {
+            return (TestcontainersBuilder<TestContainer>)new TestcontainersBuilder<TestContainer>()
+              .WithName("pulsar-console")
+              .WithPulsar(_configuration)
+              .WithPortBinding(6650, 6650)
+              .WithPortBinding(8080, 8080)
+              .WithPortBinding(8081, 8081)
+              .WithExposedPort(6650)
+              .WithExposedPort(8080)
+              .WithExposedPort(8081);
         }
     }
     public class Students
