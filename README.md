@@ -5,7 +5,7 @@
 SharpPulsar is an [Apache Pulsar](https://github.com/apache/pulsar) Client built on top [Akka.net](https://github.com/akkadotnet/akka.net), which can handle millions of 
 Apache Pulsar Producers/Consumers (in theory). 
 
-# What Is Akka.Net?
+# What Is Akka.NET?
 **Akka.NET** is a toolkit and runtime for building highly concurrent, distributed, and fault tolerant event-driven applications on .NET & Mono that is able to support up to 50 million msg/sec on a single machine,
 with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/Consumers) per GB of heap.
 
