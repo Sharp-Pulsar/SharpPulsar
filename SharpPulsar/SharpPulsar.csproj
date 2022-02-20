@@ -14,11 +14,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="akka" Version="1.4.32" />
+    <PackageReference Include="akka" Version="1.4.33" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
     <PackageReference Include="Apache.Avro" Version="1.11.0" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
-    <PackageReference Include="AvroSchemaGenerator" Version="2.4.1" />
+    <PackageReference Include="AvroSchemaGenerator" Version="2.6.0" />
     <PackageReference Include="DotNetty.Common" Version="0.7.1" />
     <PackageReference Include="Google.Protobuf" Version="3.19.4" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
@@ -33,7 +33,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.0" />
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.23" />
-    <PackageReference Include="Nager.PublicSuffix" Version="2.2.2" />
+    <PackageReference Include="Nager.PublicSuffix" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
     <PackageReference Include="NodaTime" Version="3.0.9" />
