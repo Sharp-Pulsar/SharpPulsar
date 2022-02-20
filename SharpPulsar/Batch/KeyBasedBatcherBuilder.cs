@@ -25,9 +25,7 @@ namespace SharpPulsar.Batch
     [Serializable]
 	public class KeyBasedBatcherBuilder : IBatcherBuilder
 	{
-
-		private const long SerialVersionUid = 1L;
-        private ActorSystem _system;
+        private readonly ActorSystem _system;
 
 		public KeyBasedBatcherBuilder(ActorSystem system)
         {

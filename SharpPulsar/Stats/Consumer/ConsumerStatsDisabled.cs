@@ -28,9 +28,7 @@ namespace SharpPulsar.Stats.Consumer
     [Serializable]
 	public class ConsumerStatsDisabled : IConsumerStatsRecorder
 	{
-		private const long SerialVersionUid = 1L;
-
-		internal static readonly IConsumerStatsRecorder Instance = new ConsumerStatsDisabled();
+        internal static readonly IConsumerStatsRecorder Instance = new ConsumerStatsDisabled();
 
 		public void UpdateNumMsgsReceived<T>(Message<T> message)
 		{

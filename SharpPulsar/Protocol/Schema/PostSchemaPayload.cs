@@ -25,9 +25,9 @@ namespace SharpPulsar.Protocol.Schema
 	/// </summary>
 	public class PostSchemaPayload
 	{
-		private string _type;
-		private string _schema;
-		private IDictionary<string, string> _properties;
+		private readonly string _type;
+		private readonly string _schema;
+		private readonly IDictionary<string, string> _properties;
 
         public PostSchemaPayload(string schema, IDictionary<string, string> properties, string type)
         {

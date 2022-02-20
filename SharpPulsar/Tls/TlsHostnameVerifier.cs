@@ -79,7 +79,7 @@ namespace SharpPulsar.Tls
 		}
 		private readonly ILoggingAdapter _log;
 
-		private DomainParser _publicSuffixMatcher = new DomainParser(new WebTldRuleProvider());
+		private readonly DomainParser _publicSuffixMatcher = new DomainParser(new WebTldRuleProvider());
 		public TlsHostnameVerifier(ILoggingAdapter log)
 		{
 			_log = log;
@@ -242,17 +242,7 @@ namespace SharpPulsar.Tls
 			return host.Equals(identity, StringComparison.OrdinalIgnoreCase);
 		}
 
-		private bool MatchIdentity(string host, string identity)
-		{
-			return MatchIdentity(host, identity, false);
-		}
-
-		private bool MatchIdentity(in string host, in string identity)
-		{
-			return MatchIdentity(host, identity, false);
-		}
-
-		private bool MatchIdentityStrict(string host, string identity)
+        private bool MatchIdentityStrict(string host, string identity)
 		{
 			return MatchIdentity(host, identity,  true);
 		}

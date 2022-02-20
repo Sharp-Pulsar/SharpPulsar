@@ -26,10 +26,7 @@ namespace SharpPulsar.Transaction
 	/// </summary>
 	public class TransactionConflictException : System.Exception
 	{
-
-		private const long serialVersionUID = 0L;
-
-		public TransactionConflictException(string message) : base(message)
+        public TransactionConflictException(string message) : base(message)
 		{
 		}
 	}

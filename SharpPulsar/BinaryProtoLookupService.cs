@@ -53,7 +53,7 @@ namespace SharpPulsar
 		private readonly IActorRef _generator;
 		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
-		private IActorContext _context;
+		private readonly IActorContext _context;
 		private IActorRef _replyTo;
 		private long _requestId = -1;
 		private Backoff _getTopicsUnderNamespaceBackOff;
@@ -340,9 +340,9 @@ namespace SharpPulsar
 
             var data = askResponse.ConvertTo<LookupDataResult>();
 
-            if (data?.Error != ServerError.UnknownError)
+            if (data != null && data?.Error != ServerError.UnknownError)
             {
-                _log.Warning($"[{topicName}] failed to get Partitioned metadata : {data.Error}:{data.ErrorMessage}");
+                _log.Warning($"[{topicName}] failed to get Partitioned metadata : {data?.Error}:{data?.ErrorMessage}");
                 _replyTo.Tell(new AskResponse(new PartitionedTopicMetadata(0)));
             }
             else
@@ -409,7 +409,9 @@ namespace SharpPulsar
                     _log.Debug($"[namespace: {ns}] Successfully got {response.Response.Topics.Count} topics list in request: {_requestId}");
                 }
                 var result = new List<string>();
-                var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
+                //https://github.com/apache/pulsar/issues/12727
+                //var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
+                var tpics = response.Response.Topics;
                 foreach (var topic in tpics)
                 {
                     var filtered = TopicName.Get(topic).PartitionedTopicName;

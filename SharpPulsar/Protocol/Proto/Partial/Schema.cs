@@ -1,11 +1,5 @@
-﻿
-using DotNetty.Common;
-using Google.Protobuf;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using SharpPulsar.Utility.Protobuf;
-using static SharpPulsar.Utility.Protobuf.ByteBufCodedInputStream;
 
 namespace SharpPulsar.Protocol.Proto
 {
@@ -47,7 +41,7 @@ namespace SharpPulsar.Protocol.Proto
         
         public sealed class Builder
         {
-            private Schema _schema;
+            private readonly Schema _schema;
 
             public Builder()
             {

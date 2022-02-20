@@ -41,10 +41,10 @@ namespace SharpPulsar
 		private readonly IActorRef _lookup;
 		protected internal NamespaceName NamespaceName;
 		private ICancelable _recheckPatternTimeout = null;
-		private IActorContext _context;
-		private IActorRef _self;
+		private readonly IActorContext _context;
+		private readonly IActorRef _self;
 
-		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, Context.System.Scheduler.Advanced, schema, false, clientConfiguration)
+		public PatternMultiTopicsConsumer(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) :base (stateActor, client, lookup, cnxPool, idGenerator, conf, schema, false, clientConfiguration, subscribeFuture)
 		{
 			_self = Self;
 			_lookup = lookup;
@@ -59,9 +59,9 @@ namespace SharpPulsar
             _recheckPatternTimeout = Context.System.Scheduler.Advanced.ScheduleOnceCancelable(TimeSpan.FromSeconds(Math.Max(1, Conf.PatternAutoDiscoveryPeriod)), async () => { await TopicReChecker(); });
             
         }
-        public static Props Prop(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration)
+        public static Props Prop(Regex topicsPattern, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ConsumerConfigurationData<T> conf, ISchema<T> schema, Mode subscriptionMode, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture)
         {
-            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration));
+            return Props.Create(()=> new PatternMultiTopicsConsumer<T>(topicsPattern, stateActor, client, lookup, cnxPool, idGenerator, conf, schema, subscriptionMode, clientConfiguration, subscribeFuture));
         }
         
         private async ValueTask TopicReChecker()
@@ -75,11 +75,11 @@ namespace SharpPulsar
 				if (_log.IsDebugEnabled)
 				{
 					_log.Debug($"Get topics under namespace {NamespaceName}, topics.size: {topics.Count}");
-					TopicsMap.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
+					PartitionedTopics.ForEach(t => _log.Debug($"Get topics under namespace {NamespaceName}, topic: {t.Key}"));
 				}
 				var newTopics = TopicsPatternFilter(topicsFound, _topicsPattern);
 				var oldTopics = Topics;
-				OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
+				await OnTopicsAdded(TopicsListsMinus(newTopics, oldTopics));
 				OnTopicsRemoved(TopicsListsMinus(oldTopics, newTopics));
             }
 			catch(Exception ex)
@@ -117,7 +117,7 @@ namespace SharpPulsar
             }
 		}
 
-		private void  OnTopicsAdded(ICollection<string> addedTopics)
+		private async ValueTask  OnTopicsAdded(ICollection<string> addedTopics)
 		{
 			if (addedTopics.Count == 0)
 			{				
@@ -125,7 +125,7 @@ namespace SharpPulsar
 			}
 			foreach(var t in addedTopics)
             {
-                _self.Tell(new SubscribeAndCreateTopicIfDoesNotExist(t, false));
+                await Subscribe(t, false);
             }
 		}
 		private NamespaceName GetNameSpaceFromPattern(Regex pattern)

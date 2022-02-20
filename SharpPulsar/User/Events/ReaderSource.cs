@@ -12,8 +12,8 @@ namespace SharpPulsar.User.Events
 {
     public class ReaderSource<T>
     {
-        private IActorRef _eventSource;
-        private HttpClient _httpclient;
+        private readonly IActorRef _eventSource;
+        private readonly HttpClient _httpclient;
         private readonly Admin.Public.Admin _admin;
         public ReaderSource(string brokerWebServiceUrl, IActorRef sourceActor)
         {
@@ -60,6 +60,8 @@ namespace SharpPulsar.User.Events
         {
             while (!token.IsCancellationRequested)
             {
+                if (_eventSource.IsNobody())
+                    throw new Exception("Source Reader Terminated");
                 AskResponse response = null;
                 try
                 {

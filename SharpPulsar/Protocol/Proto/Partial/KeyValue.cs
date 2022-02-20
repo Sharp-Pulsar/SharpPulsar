@@ -13,7 +13,7 @@ namespace SharpPulsar.Protocol.Proto
 
 		public sealed class Builder
         {
-            private KeyValue _value;
+            private readonly KeyValue _value;
 
             public Builder()
             {

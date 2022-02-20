@@ -35,27 +35,27 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the identifier for this authentication method </returns>
 		string AuthMethodName {get;}
 
-		/// 
-		/// <returns> The authentication data identifying this client that will be sent to the broker </returns>
-		/// <exception cref="PulsarClientException.GettingAuthenticationDataException">
-		///             if there was error getting the authentication data to use </exception>
-		/// <exception cref="PulsarClientException">
-		///             any other error </exception>
-		virtual IAuthenticationDataProvider AuthData => throw new UnsupportedAuthenticationException("Method not implemented!");
+        /// 
+        /// <returns> The authentication data identifying this client that will be sent to the broker </returns>
+        /// <exception cref="PulsarClientException.GettingAuthenticationDataException">
+        ///             if there was error getting the authentication data to use </exception>
+        /// <exception cref="PulsarClientException">
+        ///             any other error </exception>
+        IAuthenticationDataProvider GetAuthData() => throw new UnsupportedAuthenticationException("Method not implemented!");
 
         /// <summary>
-		/// Get/Create an authentication data provider which provides the data that this client will be sent to the broker.
-		/// Some authentication method need to auth between each client channel. So it need the broker, who it will talk to.
-		/// </summary>
-		/// <param name="brokerHostName">
-		///          target broker host name
-		/// </param>
-		/// <returns> The authentication data provider </returns>
-		virtual IAuthenticationDataProvider GetAuthData(string brokerHostName)
+        /// Get/Create an authentication data provider which provides the data that this client will be sent to the broker.
+        /// Some authentication method need to auth between each client channel. So it need the broker, who it will talk to.
+        /// </summary>
+        /// <param name="brokerHostName">
+        ///          target broker host name
+        /// </param>
+        /// <returns> The authentication data provider </returns>
+        virtual IAuthenticationDataProvider GetAuthData(string brokerHostName)
 		{
 			if (string.IsNullOrWhiteSpace(brokerHostName))
 				throw new PulsarClientException("Broker Host Name Cannot be Empty");
-			return AuthData;
+			return GetAuthData();
 		}
 		
 		/// <summary>

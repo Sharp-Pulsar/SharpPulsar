@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandCloseConsumer _close;
+            private readonly CommandCloseConsumer _close;
 
             public Builder()
             {

@@ -14,13 +14,13 @@ namespace SharpPulsar.Extension
 
         //public static bool IsValid(this ReadOnlySequence<byte> data)
            // => StartsWithMagicNumber(data) && HasValidCheckSum(data);
-
+/*
         public static bool StartsWithMagicNumber(this ReadOnlySequence<byte> input)
             => input.StartsWith(Constants.MagicNumber);
 
         public static bool HasValidCheckSum(this ReadOnlySequence<byte> input)
             => input.ReadUInt32(Constants.MagicNumber.Length, true) == DotCrc32C.Calculate(input.Slice(Constants.MetadataSizeOffset));
-
+        */
         public static bool IsNewCommand(this ReadOnlySequence<byte> buffer)
         {
             var cmd = buffer.ToArray().Take(3).ToArray();
@@ -63,12 +63,6 @@ namespace SharpPulsar.Extension
                 
             }
             return bitArray;
-        }
-        private static long Set(BitArray bitSet)
-        {
-            if (bitSet.Length % 64 == 0)
-                return 0;
-            return 1;
         }
     }
 }

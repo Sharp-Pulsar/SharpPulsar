@@ -26,7 +26,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
 		{
-			CommandSubscribe _subscribe;
+            readonly CommandSubscribe _subscribe;
 
             public Builder()
             {

@@ -45,19 +45,18 @@ namespace SharpPulsar.Configuration
 		public string TlsTrustStoreType { get; set; } = "PKCS12";
 		public bool EnableTransaction { get; set; } = false;
 		public string TlsTrustStorePath { get; set; } = null;
-        private string TlsTrustStorePassword { get; set; } = null;
-        private ISet<string> TlsCiphers { get; set; } = new HashSet<string>();
-        private ISet<string>TlsProtocols { get; set; } = new HashSet<string>();
-		public string SslProvider { get; set; } = null;
+        public string SslProvider { get; set; } = null;
 		public bool UseKeyStoreTls { get; set; } = false;
 		public bool TlsAllowInsecureConnection { get; set; } = false;
 		public string ProxyServiceUrl { get; set; }
         public ProxyProtocol? ProxyProtocol { get; set; }
-		public TimeSpan OperationTimeout { get; set; } = TimeSpan.FromSeconds(3);
+        private long _memoryLimitBytes = 0;
+        public TimeSpan OperationTimeout { get; set; } = TimeSpan.FromSeconds(3);
+		public TimeSpan LookupTimeout { get; set; } = TimeSpan.FromSeconds(10);
         public int WebServicePort { get; set; } = 8080;
 
         public string WebServiceScheme { get; set; } = "http";
-		public long StatsIntervalSeconds { get; set; } = 60;
+		public TimeSpan StatsIntervalSeconds { get; set; } = TimeSpan.FromSeconds(60);
 		public int ConnectionsPerBroker { get; set; } = 1;
 		public X509Certificate2 TrustedCertificateAuthority { get; set; }
 		
@@ -99,7 +98,14 @@ namespace SharpPulsar.Configuration
 			}
             set => _useTls = value;
         }
-
+        public long MemoryLimitBytes 
+        {
+            get { return _memoryLimitBytes; }
+            set 
+            {
+                _memoryLimitBytes = value;
+            }
+        }
         public string ServiceUrl
         {
             get => _serviceUrl;

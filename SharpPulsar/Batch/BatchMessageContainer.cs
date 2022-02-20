@@ -48,16 +48,16 @@ namespace SharpPulsar.Batch
 		private long _highestSequenceId = -1L;
 		private List<byte> _batchedMessageMetadataAndPayload;
 		private IList<Message<T>> _messages = new List<Message<T>>();
-		private Action<object, Exception> _previousCallback = null;
-		// keep track of callbacks for individual messages being published in a batch
-		private Action<object, Exception> _firstCallback;
-        private ILoggingAdapter _log;
+        private SendCallback<T> _previousCallback = null;
+        // keep track of callbacks for individual messages being published in a batch
+        private SendCallback<T> _firstCallback;
+        private readonly ILoggingAdapter _log;
 
         public BatchMessageContainer(ActorSystem system)
         {
             _log = system.Log;
         }
-		public override bool Add(Message<T> msg, Action<object, Exception> callback)
+		public override bool Add(Message<T> msg, SendCallback<T> callback)
 		{
 
 			if (_log.IsDebugEnabled)
@@ -67,22 +67,35 @@ namespace SharpPulsar.Batch
 
 			if (++NumMessagesInBatch == 1)
 			{
-				// some properties are common amongst the different messages in the batch, hence we just pick it up from
-				// the first message
-				_messageMetadata.SequenceId = (ulong)msg.SequenceId;
-				_lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
-				_firstCallback = callback;
-				_batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
-				if(msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
-				{
-					CurrentTxnidMostBits = (long)msg.Metadata.OriginalMetadata.TxnidMostBits;
-				}
-				if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
-				{
-					CurrentTxnidLeastBits = (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
-				}
-			}
+                try
+                {
+                    // some properties are common amongst the different messages in the batch, hence we just pick it up from
+                    // the first message
+                    _messageMetadata.SequenceId = (ulong)msg.SequenceId;
+                    _lowestSequenceId = Commands.InitBatchMessageMetadata(_messageMetadata);
 
+                    _firstCallback = callback;
+                    _batchedMessageMetadataAndPayload = new List<byte>(Math.Min(MaxBatchSize, Container.MaxMessageSize));
+                    if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidMostBits() && CurrentTxnidMostBits == -1)
+                    {
+                        CurrentTxnidMostBits = (long)msg.Metadata.OriginalMetadata.TxnidMostBits;
+                    }
+                    if (msg.Metadata.OriginalMetadata.ShouldSerializeTxnidLeastBits() && CurrentTxnidLeastBits == -1)
+                    {
+                        CurrentTxnidLeastBits = (long)msg.Metadata.OriginalMetadata.TxnidLeastBits;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _log.Error($"construct first message failed, exception is {ex}");
+                    Discard(new PulsarClientException(ex));
+                    return false;
+                }
+			}
+            if (_previousCallback != null)
+            {
+                _previousCallback.AddCallback(msg, callback);
+            }
             _previousCallback = callback;
 			CurrentBatchSize += msg.Data.Length;
 			_messages.Add(msg);
@@ -93,48 +106,41 @@ namespace SharpPulsar.Batch
 				_messageMetadata.SequenceId = (ulong)_lowestSequenceId;
 			}
 			_highestSequenceId = msg.SequenceId;
-            callback(msg.SequenceId, null);
+            //callback(msg.SequenceId, null);
 
 			return BatchFull;
 		}
 
 		private byte[] CompressedBatchMetadataAndPayload
 		{
-			get
-			{
-				var stream = Helpers.Serializer.MemoryManager.GetStream();
-				var messageWriter = new BinaryWriter(stream);
+            get
+            {
+                var stream = Helpers.Serializer.MemoryManager.GetStream();
+                var messageWriter = new BinaryWriter(stream);
 
-				for (int i = 0, n = _messages.Count; i < n; i++)
-				{					
-					try
-					{
-						var msg = _messages[i];
-						var msgMetadata = msg.Metadata.OriginalMetadata;
-						Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
-						messageWriter.Write(msg.Data.ToArray());
-					}
-					catch (Exception ex)
-					{
-						throw ex;
-					}
-				}
-				var batchedMessageMetadataAndPayload = stream.ToArray();
+                for (int i = 0, n = _messages.Count; i < n; i++)
+                {
+                    var msg = _messages[i];
+                    var msgMetadata = msg.Metadata.OriginalMetadata;
+                    Serializer.SerializeWithLengthPrefix(stream, Commands.SingleMessageMetadat(msgMetadata, (int)msg.Data.Length, msg.SequenceId), PrefixStyle.Fixed32BigEndian);
+                    messageWriter.Write(msg.Data.ToArray());
+                }
+                var batchedMessageMetadataAndPayload = stream.ToArray();
 
-				var uncompressedSize = batchedMessageMetadataAndPayload.Length;
-				var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
-				if (CompressionType != CompressionType.None)
-				{
-					_messageMetadata.Compression = CompressionType;
-					_messageMetadata.UncompressedSize = (uint)uncompressedSize;
-				}
-    
-				// Update the current max batch Size using the uncompressed Size, which is what we need in any case to
-				// accumulate the batch content
-				MaxBatchSize = (int)Math.Max(MaxBatchSize, uncompressedSize);
-				return compressedPayload;
-			}
-		}
+                var uncompressedSize = batchedMessageMetadataAndPayload.Length;
+                var compressedPayload = Compressor.Encode(batchedMessageMetadataAndPayload);
+                if (CompressionType != CompressionType.None)
+                {
+                    _messageMetadata.Compression = CompressionType;
+                    _messageMetadata.UncompressedSize = (uint)uncompressedSize;
+                }
+
+                // Update the current max batch Size using the uncompressed Size, which is what we need in any case to
+                // accumulate the batch content
+                MaxBatchSize = Math.Max(MaxBatchSize, uncompressedSize);
+                return compressedPayload;
+            }
+        }
 
 		public override void Clear()
 		{
@@ -158,7 +164,7 @@ namespace SharpPulsar.Batch
 			try
             {
                 // Need to protect ourselves from any exception being thrown in the future handler from the application
-                _firstCallback(null, ex);
+                _firstCallback.SendComplete(ex);
             }
 			catch (Exception t)
 			{
@@ -209,7 +215,7 @@ namespace SharpPulsar.Batch
 			}
 			var cmd = Commands.NewSend(Container.ProducerId, _messages[0].SequenceId, _highestSequenceId, NumMessagesInBatch, _messageMetadata, new ReadOnlySequence<byte>(encryptedPayload));
 
-			var op = ProducerActor<T>.OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId);
+			var op = ProducerActor<T>.OpSendMsg<T>.Create(_messages, cmd, _messages[0].SequenceId, _highestSequenceId, _firstCallback);
 
 			op.NumMessagesInBatch = NumMessagesInBatch;
 			op.BatchSizeByte = CurrentBatchSize;

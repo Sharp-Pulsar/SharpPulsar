@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.ObjectModel;
+using System.Text;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,14 +28,15 @@ namespace SharpPulsar.Exceptions
     /// </summary>
     public class PulsarClientException : Exception
 	{
-		private long _sequenceId = -1;
-		/// <summary>
-		/// Constructs an {@code PulsarClientException} with the specified detail message.
-		/// </summary>
-		/// <param name="msg">
-		///        The detail message (which is saved for later retrieval
-		///        by the <seealso cref="getMessage()"/> method) </param>
-		public PulsarClientException(string msg) : base(msg)
+		private long _sequenceId = -1; 
+        private Collection<Exception> _previous;
+        /// <summary>
+        /// Constructs an {@code PulsarClientException} with the specified detail message.
+        /// </summary>
+        /// <param name="msg">
+        ///        The detail message (which is saved for later retrieval
+        ///        by the <seealso cref="getMessage()"/> method) </param>
+        public PulsarClientException(string msg) : base(msg)
 		{
 		}
 
@@ -48,16 +51,62 @@ namespace SharpPulsar.Exceptions
 		public PulsarClientException(string msg, long sequenceId) : base(msg)
 		{
 			_sequenceId = sequenceId;
-		}
+        }
+        ///<summary>
+        ///Add a list of previous exception which occurred for the same operation and have been retried.
+        ///</summary>
+        /// <param name="previous">A collection of throwables that triggered retries </param>
+        public void SetPreviousExceptions(Collection<Exception> previous)
+        {
+            _previous = previous;
+        }
+        public override string ToString()
+        {
+            if (_previous == null || _previous.Count == 0)
+            {
+                return base.ToString();
+            }
+            else
+            {
+                var sb = new StringBuilder(base.ToString());
+                var i = 0;
+                var first = true;
+                sb.Append("{\"previous\":[");
+                foreach (var t in _previous)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.Append(',');
+                    }
+                    sb.Append("{\"attempt\":").Append(i++)
+                        .Append(",\"error\":\"").Append(t.ToString().Replace("\"", "\\\""))
+                        .Append("\"}");
+                }
+                sb.Append("]}");
+                return sb.ToString();
+            }
+        }
+        ///<summary>
+        ///Get the collection of previous exceptions which have caused retries for this operation.
+        ///</summary>
+        ///<returns>a collection of exception, ordered as they occurred</returns>
+        public Collection<Exception> GetPreviousExceptions()
+        {
+            return _previous;
+        }
 
-		/// <summary>
-		/// Constructs an {@code PulsarClientException} with the specified cause.
-		/// </summary>
-		/// <param name="t">
-		///        The cause (which is saved for later retrieval by the
-		///        <seealso cref="getCause()"/> method).  (A null value is permitted,
-		///        and indicates that the cause is nonexistent or unknown.) </param>
-		public PulsarClientException(Exception t) : base(t.Message, t)
+        /// <summary>
+        /// Constructs an {@code PulsarClientException} with the specified cause.
+        /// </summary>
+        /// <param name="t">
+        ///        The cause (which is saved for later retrieval by the
+        ///        <seealso cref="getCause()"/> method).  (A null value is permitted,
+        ///        and indicates that the cause is nonexistent or unknown.) </param>
+        public PulsarClientException(Exception t) : base(t.Message, t)
 		{
 		}
 
@@ -728,10 +777,27 @@ namespace SharpPulsar.Exceptions
 			{
 			}
 		}
-		/// <summary>
-		/// Consumer assign exception thrown by Pulsar client.
-		/// </summary>
-		public class TransactionConflictException : PulsarClientException
+
+        /// <summary>
+        /// Transaction Coordinator Not Found.
+        /// </summary>
+        public class TransactionCoordinatorNotFoundException : PulsarClientException
+        {
+
+            /// <summary>
+            /// Constructs an {@code ProducerFencedException} with the specified detail message.
+            /// </summary>
+            /// <param name="msg">
+            ///        The detail message (which is saved for later retrieval
+            ///        by the <seealso cref="getMessage()"/> method) </param>
+            public TransactionCoordinatorNotFoundException(string msg) : base(msg)
+            {
+            }
+        }
+        /// <summary>
+        /// Consumer assign exception thrown by Pulsar client.
+        /// </summary>
+        public class TransactionConflictException : PulsarClientException
 		{
 
 			/// <summary>

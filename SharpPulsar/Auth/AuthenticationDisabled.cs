@@ -29,16 +29,17 @@ namespace SharpPulsar.Auth
 	{
 
 		protected internal readonly IAuthenticationDataProvider nullData = new AuthenticationDataNull();
-		/// 
-		private const long serialVersionUID = 1L;
 
-		public AuthenticationDisabled()
+        public AuthenticationDisabled()
 		{
 		}
 
 		public string AuthMethodName => "none";
 
-        public IAuthenticationDataProvider AuthData => nullData;
+        public IAuthenticationDataProvider GetAuthData()
+        {
+            return nullData;
+        }
 
         public void Configure(string encodedAuthParamString)
 		{

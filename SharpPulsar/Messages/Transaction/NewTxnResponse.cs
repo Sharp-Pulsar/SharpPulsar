@@ -5,15 +5,11 @@ namespace SharpPulsar.Messages.Transaction
 {
     public sealed class NewTxnResponse
     {
-        public long RequestId { get; }
-        public long MostSigBits { get; }
-        public long LeastSigBits { get; }
+        public CommandNewTxnResponse Response { get; }
         public TransactionCoordinatorClientException Error { get; }
-        public NewTxnResponse(long requestid, long least, long most, TransactionCoordinatorClientException error)
+        public NewTxnResponse(CommandNewTxnResponse response, TransactionCoordinatorClientException error)
         {
-            RequestId = requestid;
-            MostSigBits = most;
-            LeastSigBits = least;
+            Response = response;
             Error = error;
         }
     }
@@ -27,16 +23,14 @@ namespace SharpPulsar.Messages.Transaction
     }
     public sealed class EndTxnResponse
     {
-        public long LeastBits { get; }
-        public long MostBits { get; }
-        public long RequestId { get; }
-
-        public TransactionCoordinatorClientException Error { get; }
-        public EndTxnResponse(long requestId, long leastBits, long mostBits, TransactionCoordinatorClientException error)
+        public CommandEndTxnResponse Response { get; }
+        public TransactionCoordinatorClientException Error{get;}
+        public EndTxnResponse(CommandEndTxnResponse response)
         {
-            RequestId = requestId;
-            LeastBits = leastBits;
-            MostBits = mostBits;
+            Response = response;
+        }
+        public EndTxnResponse(TransactionCoordinatorClientException error)
+        {
             Error = error;
         }
     }

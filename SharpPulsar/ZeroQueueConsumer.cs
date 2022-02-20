@@ -35,61 +35,11 @@ namespace SharpPulsar
 		private volatile bool _waitingOnReceiveForZeroQueueSize = false;
 		private volatile bool _waitingOnListenerForZeroQueueSize = false;
 
-		internal ZeroQueueConsumer(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, IAdvancedScheduler listenerExecutor, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration) : base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, listenerExecutor, partitionIndex, hasParentConsumer, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfiguration)
+		internal ZeroQueueConsumer(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(consumerId, stateActor, client, lookup, cnxPool, idGenerator, topic, conf, partitionIndex, hasParentConsumer, startMessageId, 0, schema, createTopicIfDoesNotExist, clientConfiguration, subscribeFuture)
 		{
 		}
 
-		private async ValueTask<IMessage<T>> FetchSingleMessageFromBroker()
-		{
-			// Just being cautious
-			if(IncomingMessages.Count > 0)
-			{
-				_log.Error("The incoming message queue should never be greater than 0 when Queue size is 0");
-				IncomingMessages.Empty();
-			}
-
-			IMessage<T> message;
-			try
-			{
-				// if cnx is null or if the connection breaks the connectionOpened function will send the flow again
-				_waitingOnReceiveForZeroQueueSize = true;
-				if (Connected())
-				{
-					IncreaseAvailablePermits(_clientCnx);
-				}
-				do
-				{
-					message = await IncomingMessages.ReceiveAsync();
-					_lastDequeuedMessageId = message.MessageId;
-					var msgCnx = ((Message<T>) message).Cnx();
-					// synchronized need to prevent race between connectionOpened and the check "msgCnx == cnx()"
-					// if message received due to an old flow - discard it and wait for the message from the
-					// latest flow command
-					if (msgCnx == _clientCnx)
-					{
-						_waitingOnReceiveForZeroQueueSize = false;
-						break;
-					}
-				} while(true);
-
-				Stats.UpdateNumMsgsReceived(message);
-				return message;
-			}
-			catch(Exception e)
-			{
-				Stats.IncrementNumReceiveFailed();
-				throw PulsarClientException.Unwrap(e);
-			}
-			finally
-			{
-				// Finally blocked is invoked in case the block on incomingMessages is interrupted
-				_waitingOnReceiveForZeroQueueSize = false;
-				// Clearing the queue in case there was a race with messageReceived
-				IncomingMessages.Empty();
-			}
-		}
-
-		protected internal override void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
+        protected internal override void ConsumerIsReconnectedToBroker(IActorRef cnx, int currentQueueSize)
 		{
 			base.ConsumerIsReconnectedToBroker(cnx, currentQueueSize);
 
@@ -147,13 +97,6 @@ namespace SharpPulsar
 		{
 			// Ignore since it was already triggered in the triggerZeroQueueSizeListener() call
 		}
-
-		private void ReceiveIndividualMessagesFromBatch(MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] uncompressedPayload, MessageIdData messageId, IActorRef cnx)
-		{
-			_log.Warning($"Closing consumer [{Subscription}]-[{ConsumerName}] due to unsupported received batch-message with zero receiver queue size");
-			// close connection
-			cnx.GracefulStop(TimeSpan.FromSeconds(1));
-		}
-	}
+    }
 
 }

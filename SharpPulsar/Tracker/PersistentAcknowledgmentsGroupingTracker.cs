@@ -55,7 +55,7 @@ namespace SharpPulsar.Tracker
         private readonly IActorRef _generator;
         private IActorRef _conx;
 
-		private readonly long _acknowledgementGroupTimeMicros;
+		private readonly TimeSpan _acknowledgementGroupTime;
 
 		/// <summary>
 		/// Latest cumulative ack sent to broker
@@ -72,7 +72,7 @@ namespace SharpPulsar.Tracker
         private readonly IActorRef _handler;
         private readonly SortedSet<MessageId> _pendingIndividualBatchIndexAcks;
 
-        private  ICancelable _scheduledTask;
+        private readonly ICancelable _scheduledTask;
 
         private readonly bool _batchIndexAckEnabled;
         private readonly bool _ackReceiptEnabled;
@@ -85,13 +85,13 @@ namespace SharpPulsar.Tracker
             _generator = generator;
             _consumerId = consumerid;
             _pendingIndividualAcks = new SortedSet<MessageId>();
-            _acknowledgementGroupTimeMicros = conf.AcknowledgementsGroupTimeMicros;
+            _acknowledgementGroupTime = conf.AcknowledgementsGroupTime;
             _pendingIndividualBatchIndexAcks = new SortedSet<MessageId>();
             _ackReceiptEnabled = conf.AckReceiptEnabled;
             _batchIndexAckEnabled = conf.BatchIndexAckEnabled;
             _unAckedChunckedMessageIdSequenceMap = sequenceMap;
             BecomeActive();
-			_scheduledTask = _acknowledgementGroupTimeMicros > 0 ? Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), TimeSpan.FromMilliseconds(_acknowledgementGroupTimeMicros), Self, FlushPending.Instance, ActorRefs.NoSender) : null;
+			_scheduledTask = _acknowledgementGroupTime.TotalMilliseconds > 0 ? Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(_acknowledgementGroupTime, _acknowledgementGroupTime, Self, FlushPending.Instance, ActorRefs.NoSender) : null;
 		}
 
         private void BecomeActive()
@@ -170,7 +170,7 @@ namespace SharpPulsar.Tracker
                     }
                     finally
                     {
-                        if (_acknowledgementGroupTimeMicros == 0 || _pendingIndividualAcks.Count >= MaxAckGroupSize)
+                        if (_acknowledgementGroupTime.TotalMilliseconds == 0 || _pendingIndividualAcks.Count >= MaxAckGroupSize)
                         {
                             await Flush();
                         }
@@ -179,7 +179,7 @@ namespace SharpPulsar.Tracker
                 else
                 {
                     AddListAcknowledgment(messageIds);
-                    if (_acknowledgementGroupTimeMicros == 0 || _pendingIndividualAcks.Count >= MaxAckGroupSize)
+                    if (_acknowledgementGroupTime.TotalMilliseconds == 0 || _pendingIndividualAcks.Count >= MaxAckGroupSize)
                     {
                        await Flush();
                     }
@@ -277,7 +277,7 @@ namespace SharpPulsar.Tracker
         }
         private async ValueTask DoCumulativeBatchIndexAck(BatchMessageId batchMessageId, IDictionary<string, long> properties)
         {
-            if (_acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            if (_acknowledgementGroupTime.TotalMilliseconds == 0 || (properties != null && properties.Count > 0))
             {
                 await DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, AckType.Cumulative, properties);
             }
@@ -290,7 +290,7 @@ namespace SharpPulsar.Tracker
         }
         private async ValueTask DoIndividualBatchAck(BatchMessageId batchMessageId, IDictionary<string, long> properties)
         {
-            if (_acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            if (_acknowledgementGroupTime.TotalMilliseconds == 0 || (properties != null && properties.Count > 0))
             {
                 await DoImmediateBatchIndexAck(batchMessageId, batchMessageId.BatchIndex, batchMessageId.BatchSize, AckType.Individual, properties);
             }
@@ -324,7 +324,7 @@ namespace SharpPulsar.Tracker
         {
             var count = await _consumer.Ask<int>(new RemoveMessagesTill(messageId)).ConfigureAwait(false);
             _consumer.Tell(new IncrementNumAcksSent(count));
-            if (_acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            if (_acknowledgementGroupTime.TotalMilliseconds == 0 || (properties != null && properties.Count > 0))
             {
                 // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
                 // uncommon condition since it's only used for the compaction subscription.
@@ -443,7 +443,7 @@ namespace SharpPulsar.Tracker
         }
         private async ValueTask DoIndividualAck(MessageId messageId, IDictionary<string, long> properties)
         {
-            if (_acknowledgementGroupTimeMicros == 0 || (properties != null && properties.Count > 0))
+            if (_acknowledgementGroupTime.TotalMilliseconds == 0 || (properties != null && properties.Count > 0))
             {
                 // We cannot group acks if the delay is 0 or when there are properties attached to it. Fortunately that's an
                 // uncommon condition since it's only used for the compaction subscription.

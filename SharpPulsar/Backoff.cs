@@ -11,7 +11,7 @@ namespace SharpPulsar
 		private readonly long _max;
 		private readonly DateTimeOffset _clock;
 		private long _next;
-		private long _mandatoryStop;
+		private readonly long _mandatoryStop;
 
 		private long _firstBackoffTimeInMillis;
 		private bool _mandatoryStopMade = false;

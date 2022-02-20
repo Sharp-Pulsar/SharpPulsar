@@ -5,7 +5,7 @@
 SharpPulsar is an [Apache Pulsar](https://github.com/apache/pulsar) Client built on top [Akka.net](https://github.com/akkadotnet/akka.net), which can handle millions of 
 Apache Pulsar Producers/Consumers (in theory). 
 
-# What Is Akka.Net?
+# What Is Akka.NET?
 **Akka.NET** is a toolkit and runtime for building highly concurrent, distributed, and fault tolerant event-driven applications on .NET & Mono that is able to support up to 50 million msg/sec on a single machine,
 with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/Consumers) per GB of heap.
 
@@ -57,6 +57,7 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] Compacted Topics	
 - [x] Multiple Topics	
 - [x] Regex Consumer
+- [x] Broker Entry Metadata
 
 # Reader
 - [x] User-defined properties	
@@ -175,9 +176,46 @@ Avro Logical Types are supported. Message object MUST implement `ISpecificRecord
 
 Because I have become lazy and a lover of "peace of mind":
 - For schema type of **KEYVALUESCHEMA**:
-  - `csharp producer.NewMessage().Value<TK, TV>(data).Send();` or `csharp producer.Send<TK, TV>(data)`
+  - ```csharp producer.NewMessage().Value<TK, TV>(data).Send();` or `csharp producer.Send<TK, TV>(data)```
 
 `TK, TV` represents the key and value types of the `KEYVALUESCHEMA` respectively. 
+
+## Running SharpPulsar Tests in docker container
+
+You can run `SharpPulsar` tests in docker container. A `Dockerfile` and `docker-compose` file is provided at the root folder to help you run these tests in a docker container.
+`docker-compose.yml`:
+```yml
+version: "2.4"
+
+services:
+  akka-test:
+    image: sharp-pulsar-test
+    build: 
+      context: .
+    cpu_count: 1
+    mem_limit: 1g
+    environment:
+      run_count: 2
+      # to filter tests, uncomment
+      # test_filter: "--filter FullyQualifiedName=SharpPulsar.Test.MessageChunkingTest"
+      test_file: Tests/SharpPulsar.Test/SharpPulsar.Test.csproj
+```
+`Dockerfile`:
+```shell
+FROM mcr.microsoft.com/dotnet/sdk:6.0 
+ENV test_file="Tests/SharpPulsar.Test/SharpPulsar.Test.csproj"
+ENV test_filter=""
+ENV run_count=2
+RUN mkdir sharppulsar
+COPY . ./sharppulsar
+RUN ls
+WORKDIR /sharppulsar
+CMD ["/bin/bash", "-c", "x=1; c=0; while [ $x -le 1 ] && [ $c -le ${run_count} ]; do dotnet test ${test_file} ${test_filter} --framework net6.0 --logger trx; c=$(( $c + 1 )); if [ $? -eq 0 ]; then x=1; else x=0; fi;  done"]
+```
+# How to:
+`cd` into the root directory and execute `docker-compose up`
+`run-count` is the number of times you want the test repeated.
+`test_filter` is used when you need to test a specific test instead of running all the tests in the test suite.
 
 ## License
 

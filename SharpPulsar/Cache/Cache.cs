@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace SharpPulsar.Cache
@@ -6,7 +7,7 @@ namespace SharpPulsar.Cache
     //https://stackoverflow.com/questions/47874173/dictionary-cache-with-expiration-time
     public class Cache<TKey, TValue>
     {
-        private readonly Dictionary<TKey, CacheItem<TValue>> _cache = new Dictionary<TKey, CacheItem<TValue>>();
+        private readonly ConcurrentDictionary<TKey, CacheItem<TValue>> _cache = new ConcurrentDictionary<TKey, CacheItem<TValue>>();
         private readonly TimeSpan _expiration;
         private readonly int? _maximumSize;
 
@@ -33,7 +34,7 @@ namespace SharpPulsar.Cache
             {
                 if (DateTimeOffset.Now - cached.AccessedTime >= cached.ExpiresAfter)
                 {
-                    _cache.Remove(key);
+                    _cache.TryRemove(key, out _);
                     return default;
                 }
             }
@@ -62,7 +63,7 @@ namespace SharpPulsar.Cache
             {
                 if (DateTimeOffset.Now - cached.AccessedTime >= cached.ExpiresAfter)
                 {
-                    _cache.Remove(key);
+                    _cache.TryRemove(key, out _);
                     return default;
                 }
             }

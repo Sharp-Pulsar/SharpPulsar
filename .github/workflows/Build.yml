@@ -5,26 +5,28 @@
 #
 #     - To turn off auto-generation set:
 #
-#         [GitHubActions (AutoGenerate = false)]
+#         [CustomGitHubActions (AutoGenerate = false)]
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_Build --host GitHubActions
+#         nuke --generate-configuration GitHubActions_build --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: Build
+name: build
 
 on:
   push:
     branches:
       - main
       - dev
+      - release
   pull_request:
     branches:
       - main
       - dev
+      - release
 
 jobs:
   windows-latest:
@@ -32,11 +34,17 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.*
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Compile'
@@ -45,27 +53,18 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - name: Setup dotnet 2.1
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 2.1.*
-
-      - name: Setup dotnet 3.1
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.*
-
-      - name: Setup dotnet 5.0
-        uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v1
+      - uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 5.0.*
-      
-      - uses: actions/checkout@v1
-      - name: Cache .tmp, ~/.nuget/packages
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.*
+      - name: Cache .nuke/temp, ~/.nuget/packages
         uses: actions/cache@v2
         with:
           path: |
-            .tmp
+            .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Compile'

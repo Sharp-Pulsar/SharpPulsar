@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private KeyLongValue _long;
+            private readonly KeyLongValue _long;
 
             public Builder()
             {

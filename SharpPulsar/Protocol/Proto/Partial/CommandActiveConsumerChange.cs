@@ -10,7 +10,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private CommandActiveConsumerChange _consumer;
+            private readonly CommandActiveConsumerChange _consumer;
 
             public Builder()
             {

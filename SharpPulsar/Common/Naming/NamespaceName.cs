@@ -66,15 +66,8 @@ namespace SharpPulsar.Common.Naming
 			{
 				throw new ArgumentException("Invalid null namespace: " + @namespace);
 			}
-			try
-			{
-				return Cache[@namespace];
-			}
-			catch (Exception e)
-			{
-				throw;
-			}
-		}
+            return Cache[@namespace];
+        }
 
 		private NamespaceName(string @namespace)
 		{

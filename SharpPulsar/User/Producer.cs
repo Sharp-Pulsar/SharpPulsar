@@ -60,7 +60,8 @@ namespace SharpPulsar.User
         }
         public async ValueTask CloseAsync()
         {
-            await _producerActor.GracefulStop(_operationTimeout).ConfigureAwait(false);
+            try { await _producerActor.GracefulStop(_operationTimeout).ConfigureAwait(false); }
+            catch { }
         }
         public void Flush()
         {
@@ -81,7 +82,7 @@ namespace SharpPulsar.User
         public TypedMessageBuilder<T> NewMessage(Transaction txn)
         {
             // check the producer has proper settings to send transactional messages
-            if (_conf.SendTimeoutMs > 0)
+            if (_conf.SendTimeoutMs.TotalMilliseconds > 0)
             {
                 throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
             }

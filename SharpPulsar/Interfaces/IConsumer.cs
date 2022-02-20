@@ -1,8 +1,8 @@
-﻿using SharpPulsar.Stats.Consumer.Api;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SharpPulsar.Exceptions;
+using SharpPulsar.Stats.Consumer.Api;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

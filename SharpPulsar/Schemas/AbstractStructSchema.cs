@@ -121,15 +121,8 @@ namespace SharpPulsar.Schemas
                 {
                     if (_reader is AbstractMultiVersionReader<T> abstractMultiVersionReader)
                     {
-                        try
-                        {
-                            var schemaReader = abstractMultiVersionReader.GetSchemaReader(SchemaVersion);
-                            return schemaReader.NativeSchema;
-                        }
-                        catch (Exception err)
-                        {
-                            throw;
-                        }
+                        var schemaReader = abstractMultiVersionReader.GetSchemaReader(SchemaVersion);
+                        return schemaReader.NativeSchema;
                     }
                     else
                     {

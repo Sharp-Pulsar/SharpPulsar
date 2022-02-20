@@ -34,8 +34,6 @@ namespace SharpPulsar.Stats.Producer
     
     public sealed class ProducerStatsRecorder : IProducerStatsRecorder
     {
-
-        private const long SerialVersionUid = 1L;
         internal ICancelable StatTimeout { get; set; }
         private long _oldTime;
         private readonly string _producerName;

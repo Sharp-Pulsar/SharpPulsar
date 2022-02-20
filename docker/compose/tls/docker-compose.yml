@@ -25,7 +25,7 @@ networks:
 services:
   zk:
     hostname: zk
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     command: bin/run-local-zk.sh
     environment:
       ZOOKEEPER_SERVERS: zk
@@ -33,7 +33,7 @@ services:
       pulsar:
 
   init:
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     command: bin/init-cluster.sh
     environment:
       clusterName: test
@@ -45,7 +45,7 @@ services:
 
   bk1:
     hostname: bk1
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     command: bin/run-bookie.sh
     environment:
       clusterName: test
@@ -55,7 +55,7 @@ services:
 
   bk2:
     hostname: bk2
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     command: bin/run-bookie.sh
     environment:
       clusterName: test
@@ -65,7 +65,7 @@ services:
 
   bk3:
     hostname: bk3
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     command: bin/run-bookie.sh
     environment:
       clusterName: test
@@ -75,7 +75,7 @@ services:
 
   pulsar1:
     hostname: pulsar1
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     ports:
       - "6651:6651"
       - "8443:8443"
@@ -100,10 +100,10 @@ services:
 
   proxy1:
     hostname: proxy1
-    image: apachepulsar/pulsar-secured:2.8.0
+    image: localhost:5000/pulsar-secured:2.9.1
     ports:
-      - "6651:6651"
-      - "8443:8443"
+      - "6652:6652"
+      - "8444:8444"
     command: bin/run-proxy.sh
     environment:
       clusterName: test

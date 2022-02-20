@@ -258,6 +258,14 @@ namespace SharpPulsar.Protocol.Proto
                 type = BaseCommand.Type.Unsubscribe,
                 Unsubscribe = value
             };
+        } 
+        public static BaseCommand ToBaseCommand(this CommandTcClientConnectRequest value)
+        {
+            return new BaseCommand
+            {
+                type = BaseCommand.Type.TcClientConnectRequest,
+                tcClientConnectRequest = value
+            };
         }
     }
 }

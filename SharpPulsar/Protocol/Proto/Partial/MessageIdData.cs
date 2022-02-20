@@ -10,7 +10,7 @@ namespace SharpPulsar.Protocol.Proto
         
         public sealed class Builder
         {
-            private MessageIdData _messageId;
+            private readonly MessageIdData _messageId;
 
             public Builder()
             {

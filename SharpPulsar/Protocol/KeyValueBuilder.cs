@@ -4,7 +4,7 @@ namespace SharpPulsar.Protocol
 {
     public class KeyValueBuilder
     {
-        private KeyValue _value;
+        private readonly KeyValue _value;
         public KeyValueBuilder()
         {
             _value = new KeyValue();

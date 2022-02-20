@@ -13,8 +13,12 @@ namespace SharpPulsar.Helpers
     {
         public static RecyclableMemoryStreamManager MemoryManager = new RecyclableMemoryStreamManager();
         
+        public static T Deserialize<T>(ReadOnlySequence<byte> sequence) => ProtoBuf.Serializer.Deserialize<T>(sequence);
+
         public static ReadOnlySequence<byte> Serialize(BaseCommand command)
         {
+            // / Wire format
+            // [TOTAL_SIZE] [CMD_SIZE][CMD]
             var stream = MemoryManager.GetStream();
             var writer = new BinaryWriter(stream);
             // write fake totalLength
@@ -33,8 +37,11 @@ namespace SharpPulsar.Helpers
             stream.Seek(0L, SeekOrigin.Begin);
             return new ReadOnlySequence<byte>(stream.ToArray());
         }
-        public static byte[] Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload) 
+
+        public static ReadOnlySequence<byte> Serialize(BaseCommand command, MessageMetadata metadata, ReadOnlySequence<byte> payload)
         {
+            // Wire format
+            // [TOTAL_SIZE] [CMD_SIZE][CMD] [MAGIC_NUMBER][CHECKSUM] [METADATA_SIZE][METADATA] [PAYLOAD]
             var stream = MemoryManager.GetStream();
             var writer = new BinaryWriter(stream);
             // write fake totalLength
@@ -79,7 +86,7 @@ namespace SharpPulsar.Helpers
             writer.Write(totalSize.IntToBigEndian());
 
             stream.Seek(0L, SeekOrigin.Begin);
-            return stream.ToArray();
+            return new ReadOnlySequence<byte>(stream.ToArray());
         }
         public static byte[] ToBigEndianBytes(uint integer)
         {

@@ -86,14 +86,6 @@ namespace SharpPulsar
 			var builder = new MessageIdData();
 
             MessageIdData idData = builder;
-			try
-			{
-                //idData.MergeFrom(inputStream);
-			}
-			catch (System.Exception e)
-			{
-				throw e;
-			}
 
 			MessageId messageId;
 			if (idData.BatchIndex >= 0)

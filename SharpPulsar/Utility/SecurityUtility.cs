@@ -107,10 +107,9 @@ namespace SharpPulsar.Utility
             try
             {
                 using var stream = new StreamReader(inStream);
-                var c = new X509Certificate2();
                 var pemReader = new PemReader(stream);
                 var obj = pemReader.ReadPemObject();
-                c.Import(obj.Content);
+                var c = new X509Certificate2(obj.Content);
                 return new[] { c };
             }
             catch (Exception e) when (e is CertificateException || e is IOException)

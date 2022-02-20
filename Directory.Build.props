@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <PackageReleaseNotes>pre release</PackageReleaseNotes>
+    <NetCoreFramework>net6.0</NetCoreFramework>
+    <NBenchVersion>1.2.2</NBenchVersion>
+    <XunitVersion>2.4.1</XunitVersion>
+    <TestSdkVersion>17.0.0</TestSdkVersion>
+    <AkkaVersion>1.4.31</AkkaVersion>
+    <FluentAssertionsVersion>6.3.0</FluentAssertionsVersion>
+    <MicrosoftExtensionsVersion>6.0.0</MicrosoftExtensionsVersion>
+  </PropertyGroup>
+</Project>

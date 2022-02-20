@@ -49,9 +49,12 @@ namespace SharpPulsar.Auth
 
 		public string AuthMethodName => "token";
 
-		public IAuthenticationDataProvider AuthData => new AuthenticationDataOAuth2(_clientId, _clientSecret, _authority);
+        public IAuthenticationDataProvider GetAuthData()
+        {
+            return new AuthenticationDataOAuth2(_clientId, _clientSecret, _authority);
+        }
 
-		public void Configure(string encodedAuthParamString)
+        public void Configure(string encodedAuthParamString)
 		{
 			// Interpret the whole param string as the token. If the string contains the notation `token:xxxxx` then strip
 			// the prefix

@@ -150,38 +150,36 @@ namespace SharpPulsar.Utility
         public static byte[] Encrypt(byte[] key, byte[] data, byte[] iv, int keySize)
         {
             byte[] output;
-            byte[] payload = data;
-            using var aes = new AesCryptoServiceProvider
+            using (var aes = Aes.Create())
             {
                 //BlockSize = 128,
-                KeySize = keySize,
-                Key = key,
-                IV = iv,
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.ISO10126
-        };
+                aes.KeySize = keySize;
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.ISO10126;
 
-            using var encrypt = aes.CreateEncryptor(aes.Key, aes.IV);
-            output = encrypt.TransformFinalBlock(data, 0, data.Length);
-            return output;
+                using var encrypt = aes.CreateEncryptor(aes.Key, aes.IV);
+                output = encrypt.TransformFinalBlock(data, 0, data.Length);
+                return output;
+            };
         }
 
         public static byte[] Decrypt(byte[] key, byte[] data, byte[] iv, int keySize)
         {
             byte[] output;
-            byte[] payload = data;
-            using var aes = new AesCryptoServiceProvider
+            using (var aes = Aes.Create())
             {
                 //BlockSize=128,
-                KeySize = keySize,
-                Key = key,
-                IV = iv,
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.ISO10126
-        };
-            using var decrypt = aes.CreateDecryptor(aes.Key, aes.IV);
-            output = decrypt.TransformFinalBlock(data, 0, data.Length);
-            return output;
+                aes.KeySize = keySize;
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.ISO10126;
+                using var decrypt = aes.CreateDecryptor(aes.Key, aes.IV);
+                output = decrypt.TransformFinalBlock(data, 0, data.Length);
+                return output;
+            };
         }
     }
 }

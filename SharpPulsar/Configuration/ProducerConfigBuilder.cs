@@ -119,7 +119,7 @@ namespace SharpPulsar.Configuration
             return this;
         }
 
-        public ProducerConfigBuilder<T> SendTimeout(long sendTimeoutMs)
+        public ProducerConfigBuilder<T> SendTimeout(TimeSpan sendTimeoutMs)
         {
             _conf.SetSendTimeoutMs(sendTimeoutMs);
             return this;
@@ -252,12 +252,6 @@ namespace SharpPulsar.Configuration
         public ProducerConfigBuilder<T> EnableMultiSchema(bool multiSchema)
         {
             _conf.MultiSchema = multiSchema;
-            return this;
-        }
-
-        private ProducerConfigBuilder<T> SetMessageRoutingMode()
-        {
-            MessageRoutingMode(_conf.MessageRoutingMode);
             return this;
         }
 

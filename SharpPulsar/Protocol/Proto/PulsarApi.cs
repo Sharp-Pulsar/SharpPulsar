@@ -1350,6 +1350,17 @@ namespace SharpPulsar.Protocol.Proto
         public void ResetTopicEpoch() => __pbn__TopicEpoch = null;
         private ulong? __pbn__TopicEpoch;
 
+        [global::ProtoBuf.ProtoMember(12, Name = @"txn_enabled")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool TxnEnabled
+        {
+            get => __pbn__TxnEnabled ?? false;
+            set => __pbn__TxnEnabled = value;
+        }
+        public bool ShouldSerializeTxnEnabled() => __pbn__TxnEnabled != null;
+        public void ResetTxnEnabled() => __pbn__TxnEnabled = null;
+        private bool? __pbn__TxnEnabled;
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -1419,6 +1430,17 @@ namespace SharpPulsar.Protocol.Proto
         public bool ShouldSerializeIsChunk() => __pbn__IsChunk != null;
         public void ResetIsChunk() => __pbn__IsChunk = null;
         private bool? __pbn__IsChunk;
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"marker")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool Marker
+        {
+            get => __pbn__Marker ?? false;
+            set => __pbn__Marker = value;
+        }
+        public bool ShouldSerializeMarker() => __pbn__Marker != null;
+        public void ResetMarker() => __pbn__Marker = null;
+        private bool? __pbn__Marker;
 
     }
 
@@ -2287,6 +2309,55 @@ namespace SharpPulsar.Protocol.Proto
     }
 
     [global::ProtoBuf.ProtoContract()]
+    public partial class CommandTcClientConnectRequest : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"request_id", IsRequired = true)]
+        public ulong RequestId { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"tc_id", IsRequired = true)]
+        public ulong TcId { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
+    public partial class CommandTcClientConnectResponse : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"request_id", IsRequired = true)]
+        public ulong RequestId { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"error")]
+        [global::System.ComponentModel.DefaultValue(ServerError.UnknownError)]
+        public ServerError Error
+        {
+            get => __pbn__Error ?? ServerError.UnknownError;
+            set => __pbn__Error = value;
+        }
+        public bool ShouldSerializeError() => __pbn__Error != null;
+        public void ResetError() => __pbn__Error = null;
+        private ServerError? __pbn__Error;
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"message")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string Message
+        {
+            get => __pbn__Message ?? "";
+            set => __pbn__Message = value;
+        }
+        public bool ShouldSerializeMessage() => __pbn__Message != null;
+        public void ResetMessage() => __pbn__Message = null;
+        private string __pbn__Message;
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
     public partial class CommandNewTxn : global::ProtoBuf.IExtensible
     {
         private global::ProtoBuf.IExtension __pbn__extensionData;
@@ -3077,6 +3148,12 @@ namespace SharpPulsar.Protocol.Proto
         [global::ProtoBuf.ProtoMember(61)]
         public CommandEndTxnOnSubscriptionResponse endTxnOnSubscriptionResponse { get; set; }
 
+        [global::ProtoBuf.ProtoMember(62)]
+        public CommandTcClientConnectRequest tcClientConnectRequest { get; set; }
+
+        [global::ProtoBuf.ProtoMember(63)]
+        public CommandTcClientConnectResponse tcClientConnectResponse { get; set; }
+
         [global::ProtoBuf.ProtoContract()]
         public enum Type
         {
@@ -3182,6 +3259,10 @@ namespace SharpPulsar.Protocol.Proto
             EndTxnOnSubscription = 60,
             [global::ProtoBuf.ProtoEnum(Name = @"END_TXN_ON_SUBSCRIPTION_RESPONSE")]
             EndTxnOnSubscriptionResponse = 61,
+            [global::ProtoBuf.ProtoEnum(Name = @"TC_CLIENT_CONNECT_REQUEST")]
+            TcClientConnectRequest = 62,
+            [global::ProtoBuf.ProtoEnum(Name = @"TC_CLIENT_CONNECT_RESPONSE")]
+            TcClientConnectResponse = 63,
         }
 
     }
@@ -3287,6 +3368,10 @@ namespace SharpPulsar.Protocol.Proto
         V16 = 16,
         [global::ProtoBuf.ProtoEnum(Name = @"v17")]
         V17 = 17,
+        [global::ProtoBuf.ProtoEnum(Name = @"v18")]
+        V18 = 18,
+        [global::ProtoBuf.ProtoEnum(Name = @"v19")]
+        V19 = 19,
     }
 
     [global::ProtoBuf.ProtoContract()]

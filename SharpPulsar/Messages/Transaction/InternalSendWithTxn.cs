@@ -1,4 +1,5 @@
 ﻿
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Interfaces;
 
@@ -8,26 +9,22 @@ namespace SharpPulsar.Messages.Transaction
     {
         public IMessage<T> Message { get; }
         public IActorRef Txn { get; }
-        public InternalSendWithTxn(IMessage<T> message, IActorRef txn)
+        public TaskCompletionSource<Message<T>> Callback { get; }
+        public InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
         {
             Message = message;
             Txn = txn;
+            Callback = callback;
         }
     }
     public class InternalSend<T>
     {
         public IMessage<T> Message { get; }
-        public InternalSend(IMessage<T> message)
+        public TaskCompletionSource<Message<T>> Callback { get; }
+        public InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
         {
             Message = message;
-        }
-    }
-    public class InternalSendResponse
-    {
-        public IMessageId MessageId { get; }
-        public InternalSendResponse(IMessageId messageId)
-        {
-            MessageId = messageId;
+            Callback = callback;
         }
     }
 }

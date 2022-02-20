@@ -7,6 +7,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Precondition;
+using System;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -30,13 +31,13 @@ namespace SharpPulsar.Configuration
 {
     public sealed class ConsumerConfigurationData<T>
 	{
-		private long _autoUpdatePartitionsIntervalSeconds = 5;
-		public void SetAutoUpdatePartitionsIntervalSeconds(int interval)
+		private TimeSpan _autoUpdatePartitionsInterval = TimeSpan.FromSeconds(5);
+		public void SetAutoUpdatePartitionsInterval(TimeSpan interval)
 		{
-			Condition.CheckArgument(interval > 0, "interval needs to be > 0");
-			_autoUpdatePartitionsIntervalSeconds = interval;
+			Condition.CheckArgument(interval.TotalMilliseconds > 0, "interval needs to be > 0");
+			_autoUpdatePartitionsInterval = interval;
 		}
-		public long AutoUpdatePartitionsIntervalSeconds { get => _autoUpdatePartitionsIntervalSeconds; }
+		public TimeSpan AutoUpdatePartitionsInterval { get => _autoUpdatePartitionsInterval; }
 		public IMessageCrypto MessageCrypto { get; set; }
 		public IMessageId StartMessageId { get; set; }
         public ConsumptionType ConsumptionType { get; set; } = ConsumptionType.Listener;
@@ -49,26 +50,30 @@ namespace SharpPulsar.Configuration
         public bool UseTls { get; set; } = false;
 		public int ReceiverQueueSize { get; set; } = 1_000;
 
-		public long AcknowledgementsGroupTimeMicros { get; set; } = 100;
+		public TimeSpan AcknowledgementsGroupTime { get; set; } = TimeSpan.FromMilliseconds(100);
 
-		public long NegativeAckRedeliveryDelayMs { get; set; } = 30000;
+		public TimeSpan NegativeAckRedeliveryDelay { get; set; } = TimeSpan.FromMilliseconds(30000);
 
 		public int MaxTotalReceiverQueueSizeAcrossPartitions { get; set; } = 50000;
 
-		public long AckTimeoutMillis { get; set; } = 0;
+		public TimeSpan AckTimeout { get; set; } = TimeSpan.Zero;
 		public bool AckReceiptEnabled { get; set; } = false;
+		public bool StartPaused { get; set; } = false;
 
-		public long TickDurationMillis { get; set; } = 1000;
+        [NonSerialized]
+        public IMessagePayloadProcessor PayloadProcessor = null;
+
+        public TimeSpan TickDuration { get; set; } = TimeSpan.FromMilliseconds(1000);
 
 		public int PriorityLevel { get; set; } = 0;
 
         public int MaxPendingChuckedMessage { get; set; }
-        public long ExpireTimeOfIncompleteChunkedMessageMillis { get; set; }
+        public TimeSpan ExpireTimeOfIncompleteChunkedMessage { get; set; }
         public bool AutoAckOldestChunkedMessageOnQueueFull { get; set; }
 
         public bool BatchConsume { get; set; } = false;
         public bool BatchIndexAckEnabled { get; set; } = false;
-		public long BatchConsumeTimeout { get; set; } = 30_000; //30 seconds
+		public TimeSpan BatchConsumeTimeout { get; set; } = TimeSpan.FromMilliseconds(30_000); //30 seconds
 
 		public ICryptoKeyReader CryptoKeyReader { get; set; }
 

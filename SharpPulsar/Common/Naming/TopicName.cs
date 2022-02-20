@@ -85,17 +85,10 @@ namespace SharpPulsar.Common.Naming
 
 		public static TopicName Get(string topic)
 		{
-			try
-			{
-				if(!Cache.ContainsKey(topic))
-					Cache[topic] = new TopicName(topic);
-				return Cache[topic];
-			}
-			catch (Exception e)
-			{
-				throw;
-			}
-		}
+            if (!Cache.ContainsKey(topic))
+                Cache[topic] = new TopicName(topic);
+            return Cache[topic];
+        }
 
 		public static bool IsValid(string topic)
 		{

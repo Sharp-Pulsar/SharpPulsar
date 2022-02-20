@@ -46,7 +46,7 @@ namespace SharpPulsar.Schemas
 		/// <summary>
 		/// Decoder to decode key/value bytes.
 		/// </summary>
-		public delegate KeyValue<TK, TV> KeyValueDecoder<TK, TV>(byte[] keyData, byte[] valueData);
+		public delegate KeyValue<TK, TV> KeyValueDecoder(byte[] keyData, byte[] valueData);
 
 		/// <summary>
 		/// Encode a <tt>key</tt> and <tt>value</tt> pair into a bytes array.
@@ -78,7 +78,7 @@ namespace SharpPulsar.Schemas
 		/// <param name="data"> the encoded bytes </param>
 		/// <param name="decoder"> the decoder to decode encoded key/value bytes </param>
 		/// <returns> the decoded key/value pair </returns>
-		public static KeyValue<TK, TV> Decode(byte[] data, KeyValueDecoder<TK, TV> decoder)
+		public static KeyValue<TK, TV> Decode(byte[] data, KeyValueDecoder decoder)
 		{
 			using var stream = new MemoryStream(data);
 			using var binaryReader = new BinaryReader(stream);

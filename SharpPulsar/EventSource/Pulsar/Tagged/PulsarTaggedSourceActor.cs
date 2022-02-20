@@ -12,19 +12,19 @@ using SharpPulsar.Utility;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Utils;
+using System.Threading.Tasks;
 
 namespace SharpPulsar.EventSource.Pulsar.Tagged
 {
     public class PulsarTaggedSourceActor<T> : ReceiveActor
     {
-        private readonly IActorRef _pulsarManager;
         private readonly IActorRef _child;
         private ICancelable _flowSenderCancelable;
         private readonly IAdvancedScheduler _scheduler;
         private readonly Tag _tag;
         private readonly long _toOffset;
         private long _currentOffset;
-        private long _totalOffset;
+        private readonly long _totalOffset;
         private long _lastEventMessageOffset;
         public PulsarTaggedSourceActor(ClientConfigurationData client, ReaderConfigurationData<T> readerConfiguration, IActorRef clientActor, IActorRef lookup, IActorRef cnxPool, IActorRef generator, long fromOffset, long toOffset, bool isLive, Tag tag, ISchema<T> schema)
         {
@@ -73,8 +73,9 @@ namespace SharpPulsar.EventSource.Pulsar.Tagged
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
             var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
-            _child = Context.ActorOf(Props.Create(() => new ConsumerActor<T>(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, Context.System.Scheduler.Advanced, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client)));
-            _child.Tell(Connect.Instance);
+            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
+            _child = tcs.Task.GetAwaiter().GetResult();
             Receive<ICumulative>(m => {
                 _child.Tell(m);
             });

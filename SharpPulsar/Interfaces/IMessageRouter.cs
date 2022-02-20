@@ -50,7 +50,7 @@ namespace SharpPulsar.Interfaces
 		/// @since 1.22.0 </returns>
 		virtual int ChoosePartition<T>(IMessage<T> msg, ITopicMetadata metadata)
 		{
-			return ChoosePartition(msg);
+			return ChoosePartition(msg, metadata);
 		}
 
 	}

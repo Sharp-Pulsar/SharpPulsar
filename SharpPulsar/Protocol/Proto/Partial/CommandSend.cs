@@ -12,7 +12,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
 		{
-			CommandSend _send = new CommandSend();
+            readonly CommandSend _send = new CommandSend();
 			internal static Builder Create()
 			{
 				return new Builder();

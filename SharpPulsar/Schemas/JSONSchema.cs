@@ -58,8 +58,6 @@ namespace SharpPulsar.Schemas
 			get
 			{
 				ISchemaInfo BackwardsCompatibleSchemaInfo;
-				try
-				{
 					var jsonBackwardsCompatibleSchema = _pojo.GetSchema();
                     BackwardsCompatibleSchemaInfo = new SchemaInfo
                     {
@@ -68,11 +66,6 @@ namespace SharpPulsar.Schemas
                         Type = SchemaType.JSON,
                         Schema = _jsonMapper.WriteValueAsBytes(jsonBackwardsCompatibleSchema)
                     };
-                }
-				catch (Exception ex)
-				{
-					throw ex;
-				}
 				return BackwardsCompatibleSchemaInfo;
 			}
 		}
@@ -89,7 +82,7 @@ namespace SharpPulsar.Schemas
 			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(Pojo).Build());
 		}
 
-		public static JSONSchema<T> Of<T>(Type Pojo, IDictionary<string, string> Properties)
+		public static JSONSchema<T> Of(Type Pojo, IDictionary<string, string> Properties)
 		{
 			return JSONSchema<T>.Of(ISchemaDefinition<T>.Builder().WithPojo(Pojo).WithProperties(Properties).Build());
 		}

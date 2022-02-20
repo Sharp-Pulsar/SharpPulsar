@@ -11,7 +11,7 @@ namespace SharpPulsar.Protocol.Proto
 		
 		public sealed class Builder
         {
-            private AuthData _auth;
+            private readonly AuthData _auth;
 
             public Builder()
             {

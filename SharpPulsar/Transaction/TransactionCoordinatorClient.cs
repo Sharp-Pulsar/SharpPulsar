@@ -40,34 +40,26 @@ namespace SharpPulsar.Transaction
     public class TransactionCoordinatorClient : ReceiveActor, IWithUnboundedStash
 	{
 		private List<IActorRef> _handlers;
-		private Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();
-		private ILoggingAdapter _log;
+		private readonly Dictionary<long, IActorRef> _handlerMap = new Dictionary<long, IActorRef>();
+		private readonly ILoggingAdapter _log;
 		private long _epoch = 0L;
-		private ClientConfigurationData _clientConfigurationData;
-		private IActorRef _generator;
-		private IActorRef _lookup;
-		private IActorRef _cnxPool;
+		private readonly ClientConfigurationData _clientConfigurationData;
+		private readonly IActorRef _generator;
+		private readonly IActorRef _lookup;
+		private readonly IActorRef _cnxPool;
 		private IActorRef _replyTo;
-        private IActorRef _sender;
+        private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
 
-		private TransactionCoordinatorClientState _state = TransactionCoordinatorClientState.None;
-
-		public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
+		public TransactionCoordinatorClient(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
 		{
 			_cnxPool = cnxPool;
 			_lookup = lookup;
 			_generator = idGenerator;
 			_clientConfigurationData = conf;
 			_log = Context.GetLogger();
-            ReceiveAsync<string>(async st=> 
-            {
-                _sender = Sender;
-
-                if(st.Equals("Start")) 
-                    await StartCoordinator();
-            });
-			ReceiveAny(_=> Stash.Stash());
-		}
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await StartCoordinator(tcs));
+            Ready();
+        }
 
 		private void Ready()
         {
@@ -82,7 +74,7 @@ namespace SharpPulsar.Transaction
 			Receive<CommitTxnID>(Commit);
 			Stash?.UnstashAll();
 		}
-		private async ValueTask StartCoordinator()
+		private async ValueTask StartCoordinator(TaskCompletionSource<object> tc)
         {
             var retryCount = 0;
 			_state = TransactionCoordinatorClientState.Starting;
@@ -97,7 +89,7 @@ namespace SharpPulsar.Transaction
 
             if (result.Failed)
             {
-                _sender.Tell(result);
+                tc.TrySetException(result.Exception);
                 return;
             }
 
@@ -106,6 +98,7 @@ namespace SharpPulsar.Transaction
             {
                 _log.Debug($"Transaction meta store assign partition is {partitionMeta.Partitions}.");
             }
+            List<Task<object>> connectFutureList = new List<Task<object>>();
             if (partitionMeta.Partitions > 0)
             {
                 _handlers = new List<IActorRef>(partitionMeta.Partitions);
@@ -113,55 +106,48 @@ namespace SharpPulsar.Transaction
                 {
                     try
                     {
-                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData), $"handler_{i}");
-                        var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), _clientConfigurationData.OperationTimeout);
-                        if (ask.Failed)
-                        {
-                            _sender.Tell(ask);
-                            break;
-                        }
-                        if (ask.Data.ToString().Equals("Ready"))
-                        {
-                            _handlers.Add(handler);
-                            _handlerMap.Add(i, handler);
-                        }
+                        var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        connectFutureList.Add(tcs.Task);
+                        var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(i, _lookup, _cnxPool, _generator, GetTCAssignTopicName(i), _clientConfigurationData, tcs), $"handler_{i}");
+                        _handlers.Add(handler);
+                        _handlerMap.Add(i, handler);
                     }
                     catch (Exception ex)
                     {
                         _log.Error(ex.ToString());
+                        tc.TrySetException(ex);
+                        break;
                     }
                 }
-                _sender.Tell(new AskResponse(_handlers.Count));
             }
             else
             {
                 _handlers = new List<IActorRef>(1);
                 try
                 {
-                    var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData), $"handler_{0}");
-                    var ask = await handler.Ask<AskResponse>(new GrabCnx("TransactionCoordinator"), _clientConfigurationData.OperationTimeout);
-                    if (ask.Failed)
-                    {
-                        _sender.Tell(ask);
-                        return;
-                    }
-                    if (ask.Data.ToString().Equals("Ready"))
-                    {
-                        _handlers.Add(handler);
-                        _handlerMap.Add(0, handler);
-                    }
+                    var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    connectFutureList.Add(tcs.Task);
+                    var handler = Context.ActorOf(TransactionMetaStoreHandler.Prop(0, _lookup, _cnxPool, _generator, GetTCAssignTopicName(-1), _clientConfigurationData, tcs), $"handler_{0}");
+                    var ask = tcs.Task;
+                    _handlers.Add(handler);
+                    _handlerMap.Add(0, handler);
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
                 }
-                _sender.Tell(new AskResponse(_handlers.Count));
             }
-            Become(Ready);
+            await Task.WhenAll(connectFutureList.ToArray()).ContinueWith(task => 
+            {
+                if (task.Exception != null)
+                    tc.TrySetException(task.Exception);
+                else
+                    tc.TrySetResult(_handlers.Count);
+            });
         }
-		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf)
+		public static Props Prop(IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, ClientConfigurationData conf, TaskCompletionSource<object> tcs)
         {
-			return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf));
+			return Props.Create(() => new TransactionCoordinatorClient(lookup, cnxPool, idGenerator, conf, tcs));
         }
 		private string GetTCAssignTopicName(int partition)
 		{
@@ -176,9 +162,9 @@ namespace SharpPulsar.Transaction
 		}
 		private void CreateTransaction(NewTxn txn)
         {
-			Receive<NewTxnResponse>(ntx => 
+			Receive<AskResponse>(askR => 
 			{
-				_replyTo.Tell(ntx);
+				_replyTo.Tell(askR);
 				_replyTo = null;
 				Become(Ready);
 			});
@@ -247,7 +233,7 @@ namespace SharpPulsar.Transaction
 			if (!_handlerMap.TryGetValue(commit.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(commit.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
+                Sender.Tell(new EndTxnResponse(new TransactionCoordinatorClientException("")));
             }
 			else
 				handler.Forward(commit);
@@ -258,7 +244,7 @@ namespace SharpPulsar.Transaction
 			if(!_handlerMap.TryGetValue(abort.TxnID.MostSigBits, out var handler))
 			{
 				_log.Error(new TransactionCoordinatorClientException.MetaStoreHandlerNotExistsException(abort.TxnID.MostSigBits).ToString());
-                Sender.Tell(new EndTxnResponse(0, 0, 0, new TransactionCoordinatorClientException("")));
+                Sender.Tell(new EndTxnResponse(new TransactionCoordinatorClientException("")));
             }
 			else
 				handler.Forward(abort);

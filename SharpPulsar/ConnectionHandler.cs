@@ -134,7 +134,7 @@ namespace SharpPulsar
 			}
 			else
 			{
-				_connection.Tell(new Failure { Exception = exception, Timestamp = DateTime.UtcNow });
+				_connection.Tell(new Status.Failure(exception));
 			}
 
 			var state = _state.ConnectionState;

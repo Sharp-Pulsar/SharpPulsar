@@ -11,8 +11,8 @@ namespace SharpPulsar.User.Events
 {
     public class SqlSource<T>
     {
-        private IActorRef _eventSource;
-        private HttpClient _httpclient;
+        private readonly IActorRef _eventSource;
+        private readonly HttpClient _httpclient;
         private readonly Admin.Public.Admin _admin;
         private readonly BufferBlock<IEventEnvelope> _buffer;
 
