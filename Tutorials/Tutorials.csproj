@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Testcontainers" Version="1.6.0-beta.2117" />
+    <PackageReference Include="DotNet.Testcontainers" Version="1.6.0-beta.2118" />
     <PackageReference Include="SharpPulsar" Version="2.9.0-rc.975" />
+    <PackageReference Include="Spectre.Console" Version="0.43.1-preview.0.31" />
   </ItemGroup>
 
   <ItemGroup>
