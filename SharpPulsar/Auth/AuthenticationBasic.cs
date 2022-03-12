@@ -61,7 +61,7 @@ namespace SharpPulsar.Auth
 		
 		public void Start()
 		{
-			throw new NotImplementedException();
+			//throw new NotImplementedException();
 		}
 
 		public ValueTask DisposeAsync()

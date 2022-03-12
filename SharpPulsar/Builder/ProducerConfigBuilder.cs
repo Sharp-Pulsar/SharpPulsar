@@ -9,7 +9,18 @@ using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Proto;
+
+/* Unmerged change from project 'SharpPulsar (net5.0)'
+Before:
 using SharpPulsar.Extension;
+After:
+using SharpPulsar.Extension;
+using SharpPulsar;
+using SharpPulsar.Configuration;
+using SharpPulsar.Builder;
+*/
+using SharpPulsar.Extension;
+using SharpPulsar.Configuration;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +40,7 @@ using SharpPulsar.Extension;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Configuration
+namespace SharpPulsar.Builder
 {
 
     public class ProducerConfigBuilder<T>
@@ -204,7 +215,7 @@ namespace SharpPulsar.Configuration
                 throw new ArgumentException("properties cannot be null");
             if (properties.Count == 0)
                 throw new ArgumentException("properties cannot be empty");
-            HashMapHelper.SetOfKeyValuePairs(properties).ToList().ForEach(entry =>
+            properties.SetOfKeyValuePairs().ToList().ForEach(entry =>
             {
                 var (key, value) = entry;
                 if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))

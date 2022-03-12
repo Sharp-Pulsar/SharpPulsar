@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.Event;
 using Akka.Util;
+using SharpPulsar.Builder;
 using SharpPulsar.Cache;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Naming;
@@ -373,15 +374,40 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException(e.Message);
             } 
         }
+        /// <summary>
+        /// Create a producer builder that can be used to configure
+        /// and construct a producer with default <seealso cref="ISchema{}.BYTES"/>.
+        /// 
+        /// <para>Example:
+        /// 
+        /// <pre>{@code
+        /// Producer<byte[]> producer = client.newProducer()
+        ///                  .topic("my-topic")
+        ///                  .create();
+        /// producer.send("test".getBytes());
+        /// }</pre> 
+        /// </para>
+        /// </summary> 
+        /// <param name="producerConfigBuilder"></param>
+        /// <returns> <seealso cref="Producer{byte[]}"/> instance @since 2.0.0 </returns>
 
         public Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
             return NewProducer(ISchema<object>.Bytes, producerConfigBuilder);
         }
+
+        /// <inheritdoc cref="NewProducer(ProducerConfigBuilder{byte[]})"/>
         public async ValueTask<Producer<byte[]>> NewProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
             return await NewProducerAsync(ISchema<object>.Bytes, producerConfigBuilder).ConfigureAwait(false);
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="schema"></param>
+        /// <param name="configBuilder"></param>
+        /// <returns></returns>
         public Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
             return NewProducerAsync(schema, configBuilder).GetAwaiter().GetResult();
@@ -411,14 +437,18 @@ namespace SharpPulsar.User
         {
             return NewReaderAsync(conf).GetAwaiter().GetResult();
         }
+        public Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
+        {
+            return NewReaderAsync(schema, confBuilder).GetAwaiter().GetResult();
+        }
         public async ValueTask<Reader<byte[]>> NewReaderAsync(ReaderConfigBuilder<byte[]> conf)
         {
             return await NewReaderAsync(ISchema<object>.Bytes, conf).ConfigureAwait(false);
         }
 
-        public Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
+        public virtual TableView<T> NewTableViewBuilder<T>(ISchema<T> Schema, ITableViewBuilder<T> builder)
         {
-            return NewReaderAsync(schema, confBuilder).GetAwaiter().GetResult();
+            return TableView<T>(this, Schema);
         }
 
         public async ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
@@ -526,7 +556,30 @@ namespace SharpPulsar.User
         {
             _client.Tell(new UpdateServiceUrl(serviceUrl));
         }
+        public void UpdateAuthentication(IAuthentication authentication)
+        {
+            _log.Info($"Updating authentication to {authentication}");
+            if (_clientConfigurationData.Authentication != null)
+            {
+                _clientConfigurationData.Authentication.Dispose();
+            }
+            _clientConfigurationData.Authentication = authentication;
+            _clientConfigurationData.Authentication.Start();
+        }
 
+        public void UpdateTlsTrustCertsFilePath(string tlsTrustCertsFilePath)
+        {
+            _log.Info($"Updating tlsTrustCertsFilePath to {tlsTrustCertsFilePath}");
+            _clientConfigurationData.SetTlsTrustCertsFilePath(tlsTrustCertsFilePath);
+        }
+
+        public virtual void UpdateTlsTrustStorePathAndPassword(string tlsTrustStorePath, string tlsTrustStorePassword)
+        {
+            _log.Info($"Updating tlsTrustStorePath to {tlsTrustStorePath}, tlsTrustStorePassword to *****");
+            _clientConfigurationData.TlsTrustStorePath = tlsTrustStorePath;
+            _clientConfigurationData.SetTlsTrustStorePassword = tlsTrustStorePassword;
+        }
+        public ClientConfigurationData Conf => _clientConfigurationData;    
         #region private matters
         private async ValueTask<Producer<T>> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema)
         {

@@ -27,19 +27,19 @@ namespace SharpPulsar.Interfaces
     {
 
         /// <summary>
-        /// Returns the number of key-value mappings in the <seealso cref="TableView"/>.
+        /// Returns the number of key-value mappings in the <seealso cref="ITableView{T}"/>.
         /// </summary>
         /// <returns> the number of key-value mappings in this TableView </returns>
         int Size();
 
         /// <summary>
-        /// Returns {@code true} if this <seealso cref="TableView"/> contains no key-value mappings.
+        /// Returns {@code true} if this <seealso cref="ITableView{T}"/> contains no key-value mappings.
         /// </summary>
         /// <returns> true if this TableView contains no key-value mappings </returns>
         bool Empty { get; }
 
         /// <summary>
-        /// Returns {@code true} if this <seealso cref="TableView"/> contains a mapping for the specified
+        /// Returns {@code true} if this <seealso cref="ITableView{T}"/> contains a mapping for the specified
         /// key.
         /// </summary>
         /// <param name="key"> key whose presence in this map is to be tested </param>

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Public;
 using AskResponse = SharpPulsar.Messages.Consumer.AskResponse;
+using SharpPulsar.Builder;
 
 namespace SharpPulsar
 {
@@ -144,7 +145,12 @@ namespace SharpPulsar
         }
         public PulsarClient NewClient() 
         {
-            return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
+            var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
+            if (_conf.ServiceUrlProvider != null)
+            {
+                _conf.ServiceUrlProvider.Initialize(client);
+            }
+            return client;
         }
         public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl) 
         {

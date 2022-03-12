@@ -24,7 +24,7 @@ namespace SharpPulsar.Interfaces
 {
 
     /// <summary>
-    /// <seealso cref="IAutoClusterFailoverBuilder"/> is used to configure and create instance of <seealso cref="ServiceUrlProvider"/>.
+    /// <seealso cref="IAutoClusterFailoverBuilder"/> is used to configure and create instance of <seealso cref="IServiceUrlProvider"/>.
     /// 
     /// @since 2.10.0
     /// </summary>
@@ -48,7 +48,7 @@ namespace SharpPulsar.Interfaces
         /// Set secondary choose policy. The default secondary choose policy is `ORDER`. </summary>
         /// <param name="policy">
         /// @return </param>
-        IAutoClusterFailoverBuilder FailoverPolicy(AutoClusterFailoverBuilderFailoverPolicy policy);
+        IAutoClusterFailoverBuilder FailoverPolicy(FailoverPolicy policy);
 
         /// <summary>
         /// Set secondary authentication.
@@ -81,36 +81,28 @@ namespace SharpPulsar.Interfaces
         /// Set the switch failoverDelay. When one cluster failed longer than failoverDelay, it will trigger cluster switch.
         /// </summary>
         /// <param name="failoverDelay"> </param>
-        /// <param name="timeUnit">
         /// @return </param>
-        IAutoClusterFailoverBuilder FailoverDelay(long failoverDelay, TimeSpan timeSpan);
+        IAutoClusterFailoverBuilder FailoverDelay(TimeSpan failoverDelay);
 
         /// <summary>
         /// Set the switchBackDelay. When switched to the secondary cluster, and after the primary cluster comes back,
         /// it will wait for switchBackDelay to switch back to the primary cluster.
         /// </summary>
         /// <param name="switchBackDelay"> </param>
-        /// <param name="timeUnit">
         /// @return </param>
-        IAutoClusterFailoverBuilder SwitchBackDelay(long switchBackDelay, TimeSpan timeSpan);
+        IAutoClusterFailoverBuilder SwitchBackDelay(TimeSpan switchBackDelay);
 
         /// <summary>
         /// Set the checkInterval for probe.
         /// </summary>
         /// <param name="interval"> </param>
-        /// <param name="timeUnit">
         /// @return </param>
-        IAutoClusterFailoverBuilder CheckInterval(long interval, TimeSpan timeSpan);
+        IAutoClusterFailoverBuilder CheckInterval(TimeSpan interval);
 
-        /// <summary>
-        /// Build the ServiceUrlProvider instance.
-        /// 
-        /// @return
-        /// </summary>
-        IServiceUrlProvider Build();
+        void Validate();
     }
 
-    public enum AutoClusterFailoverBuilderFailoverPolicy
+    public enum FailoverPolicy
     {
         ORDER
     }
