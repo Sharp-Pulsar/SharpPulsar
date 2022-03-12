@@ -60,7 +60,7 @@ partial class Build : NukeBuild
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json";
+    [Parameter] string GithubSource = "https://nuget.pkg.github.com/eaba/sharppulsar";
 
     [Parameter] bool Container = false;
 
