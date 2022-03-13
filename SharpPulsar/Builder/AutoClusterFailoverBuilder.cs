@@ -94,7 +94,7 @@ namespace SharpPulsar.Builder
             return this;
         }
 
-        public virtual void Validate()
+        public void Validate()
         {
             if (string.IsNullOrWhiteSpace(primary))
                 throw new ArgumentNullException(nameof(primary), "primary service url shouldn't be null");

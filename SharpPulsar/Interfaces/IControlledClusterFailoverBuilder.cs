@@ -23,7 +23,7 @@ using SharpPulsar.Common;
 namespace SharpPulsar.Interfaces
 {
     /// <summary>
-    /// <seealso cref="IControlledClusterFailoverBuilder"/> is used to configure and create instance of <seealso cref="ServiceUrlProvider"/>.
+    /// <seealso cref="IControlledClusterFailoverBuilder"/> is used to configure and create instance of <seealso cref="IServiceUrlProvider"/>.
     /// 
     /// @since 2.10.0
     /// </summary>
@@ -54,14 +54,14 @@ namespace SharpPulsar.Interfaces
         /// <param name="interval"> </param>
         /// <param name="timeSpan">
         /// @return </param>
-        IControlledClusterFailoverBuilder CheckInterval(long interval, TimeSpan timeSpan);
+        IControlledClusterFailoverBuilder CheckInterval(TimeSpan interval);
 
         /// <summary>
         /// Build the ServiceUrlProvider instance.
         /// 
         /// @return </summary>
         /// <exception cref="Exception"> </exception>
-        IServiceUrlProvider Build();
+        void Validate();
     }
 
 }

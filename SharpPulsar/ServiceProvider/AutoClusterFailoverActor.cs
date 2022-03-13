@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Sockets;
 using SharpPulsar.ServiceProvider.Messages;
 using SharpPulsar.Builder;
+using Akka.Annotations;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,7 +33,8 @@ using SharpPulsar.Builder;
 /// </summary>
 namespace SharpPulsar.ServiceProvider
 {
-    public partial class AutoClusterFailoverActor : ReceiveActor
+    [InternalApi]
+    public class AutoClusterFailoverActor : ReceiveActor
     {
         private PulsarClient _pulsarClient;
         private string _currentPulsarServiceUrl;
@@ -91,13 +93,13 @@ namespace SharpPulsar.ServiceProvider
         private void Initialize(PulsarClient client)
         {
             _pulsarClient = client;
-            ClientConfigurationData config = _pulsarClient.Conf;
+            var config = _pulsarClient.Conf;
             if (config != null)
             {
                 _primaryAuthentication = config.Authentication;
-                _primaryTlsTrustCertsFilePath = config.getTlsTrustCertsFilePath();
-                _primaryTlsTrustStorePath = config.getTlsTrustStorePath();
-                _primaryTlsTrustStorePassword = config.getTlsTrustStorePassword();
+                _primaryTlsTrustCertsFilePath = config.TlsTrustCertsFilePath;
+                _primaryTlsTrustStorePath = config.TlsTrustStorePath;
+                _primaryTlsTrustStorePassword = config.TlsTrustStorePassword;
             }
             // start to probe primary cluster active or not
             _executor = Context.System.Scheduler.Advanced.ScheduleRepeatedlyCancelable(_intervalMs, _intervalMs, () =>

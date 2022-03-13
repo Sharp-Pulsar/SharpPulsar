@@ -45,6 +45,8 @@ namespace SharpPulsar.Configuration
 		public string TlsTrustStoreType { get; set; } = "PKCS12";
 		public bool EnableTransaction { get; set; } = false;
 		public string TlsTrustStorePath { get; set; } = null;
+		public string TlsTrustCertsFilePath { get; set; } = null;
+		public string TlsTrustStorePassword { get; set; } = null;
         public string SslProvider { get; set; } = null;
 		public bool UseKeyStoreTls { get; set; } = false;
 		public bool TlsAllowInsecureConnection { get; set; } = false;

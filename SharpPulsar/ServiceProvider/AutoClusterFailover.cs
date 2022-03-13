@@ -31,6 +31,7 @@ namespace SharpPulsar.ServiceProvider
         /// </summary>
         public AutoClusterFailover(AutoClusterFailoverBuilder builder)
         {
+            builder.Validate();
             _builder = builder; 
         }
 
