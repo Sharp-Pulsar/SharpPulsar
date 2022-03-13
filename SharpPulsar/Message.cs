@@ -54,7 +54,8 @@ namespace SharpPulsar
         private bool _poolMessage;
 
         private string _topic;
-        private BrokerEntryMetadata _brokerEntryMetadata;
+        private BrokerEntryMetadata _brokerEntryMetadata; 
+        private long _consumerEpoch;
         public Metadata Metadata => _metadata;
         private Message(){}
 		
@@ -80,53 +81,52 @@ namespace SharpPulsar
         {
         }
 
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false)
+        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, 0, false, Commands.DefaultConsumerEpoch)
         {
         }
-        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage)
+        internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
         {
             //_metadata = new MessageMetadata();
-            Init(this, topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage);
+            Init(this, topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage, consumerEpoch);
         }
 
-        public static Message<T> Create(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage)
+        public static Message<T> Create(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
         {
             if (pooledMessage)
             {
                 var msg = new Message<T>();
-                Init(msg, topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage);
+                Init(msg, topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage, consumerEpoch);
                 return msg;
             }
 
-            return new Message<T>(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage);
+            return new Message<T>(topic, messageId, msgMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage, consumerEpoch);
         }
-        public static Message<T> Create(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata batchMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage)
+        public static Message<T> Create(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata batchMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool pooledMessage, long consumerEpoch)
         {
             if (pooledMessage)
             {
                 var msg = new Message<T>();
-                Init(msg, topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage);
+                Init(msg, topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage, consumerEpoch);
                 return msg;
             }
 
-            return new Message<T>(topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage);
+            return new Message<T>(topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, pooledMessage, consumerEpoch);
         }
-        internal Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, 0, false)
+        internal Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, long consumerEpoch) : this(topic, batchMessageIdImpl, msgMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, 0, false, consumerEpoch)
         {
         }
 
-        internal Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata batchMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool keepMessageInDirectMemory)
+        internal Message(string topic, BatchMessageId batchMessageIdImpl, MessageMetadata batchMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool keepMessageInDirectMemory, long consumerEpoch)
         {
-            Init(this, topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, keepMessageInDirectMemory);
-
+            Init(this, topic, batchMessageIdImpl, batchMetadata, singleMessageMetadata, payload, encryptionCtx, cnx, schema, redeliveryCount, keepMessageInDirectMemory, consumerEpoch);
         }
         
-        internal static void Init(Message<T> msg, string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage)
+        internal static void Init(Message<T> msg, string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage, long consumerEpoch)
         {
-            Init(msg, topic, null, msgMetadata, null, payload, encryptionCtx, cnx, schema, redeliveryCount, poolMessage);
+            Init(msg, topic, null, msgMetadata, null, payload, encryptionCtx, cnx, schema, redeliveryCount, poolMessage, consumerEpoch);
             msg._messageId = messageId;
         }
-        private static void Init(Message<T> msg, string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage)
+        private static void Init(Message<T> msg, string topic, BatchMessageId batchMessageIdImpl, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, ReadOnlySequence<byte> payload, Option<EncryptionContext> encryptionCtx, IActorRef cnx, ISchema<T> schema, int redeliveryCount, bool poolMessage, long consumerEpoch)
         {
             //msg._metadata.Clear();
             msg._metadata = new Metadata();
@@ -136,6 +136,7 @@ namespace SharpPulsar
             msg._redeliveryCount = redeliveryCount;
             msg._encryptionCtx = encryptionCtx;
             msg._schema = schema;
+            msg._consumerEpoch = consumerEpoch;
 
             msg._poolMessage = poolMessage;
             // If it's not pool message then need to make a copy since the passed payload is 
@@ -479,7 +480,7 @@ namespace SharpPulsar
                 _brokerEntryMetadata = value;
             }
         }
-
+        public long ConsumerEpoch => _consumerEpoch;    
         public IMessageId GetMessageId()
 		{
             if (MessageId is null)

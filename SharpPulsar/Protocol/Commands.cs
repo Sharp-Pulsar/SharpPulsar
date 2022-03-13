@@ -47,6 +47,9 @@ namespace SharpPulsar.Protocol
 		public const int DefaultMaxMessageSize = 5 * 1024 * 1024;
         public const int MessageSizeFramePadding = 10 * 1024;
 		public const int InvalidMaxMessageSize = -1;
+        // this present broker version don't have consumerEpoch feature,
+        // so client don't need to think about consumerEpoch feature
+        public const long DefaultConsumerEpoch = -1L;
         public const short MagicBrokerEntryMetadata = 0x0e02;
 
         public static bool PeerSupportJsonSchemaAvroFormat(int peerVersion)
@@ -62,8 +65,8 @@ namespace SharpPulsar.Protocol
 		{
 			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, null, null, null);
 		}
-
-		public static ReadOnlySequence<byte> NewConnect(string authMethodName, string authData, string libVersion, string targetBroker, string originalPrincipal, string clientAuthData, string clientAuthMethod)
+        
+        public static ReadOnlySequence<byte> NewConnect(string authMethodName, string authData, string libVersion, string targetBroker, string originalPrincipal, string clientAuthData, string clientAuthMethod)
 		{
 			return NewConnect(authMethodName, authData, CurrentProtocolVersion, libVersion, targetBroker, originalPrincipal, clientAuthData, clientAuthMethod);
 		}
@@ -71,6 +74,7 @@ namespace SharpPulsar.Protocol
         {
             flags.SupportsAuthRefresh = true;
             flags.SupportsBrokerEntryMetadata = true;
+            flags.SupportsPartialProducer = true;   
         }
         public static ReadOnlySequence<byte> NewConnect(string authMethodName, string authData, int protocolVersion, string libVersion, string targetBroker, string originalPrincipal, string originalAuthData, string originalAuthMethod)
 		{
@@ -343,10 +347,16 @@ namespace SharpPulsar.Protocol
 		
 		public static ReadOnlySequence<byte> NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, bool createTopicIfDoesNotExist)
 		{
-            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null);
+            return NewSubscribe(topic, subscription, consumerId, requestId, subType, priorityLevel, consumerName, isDurable, startMessageId, metadata, readCompacted, isReplicated, subscriptionInitialPosition, startMessageRollbackDurationInSec, schemaInfo, createTopicIfDoesNotExist, null, new Dictionary<string, string>(), DefaultConsumerEpoch);
 		}
 
-		public static ReadOnlySequence<byte> NewSubscribe(string topic, string subscription, long consumerId, long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy)
+		public static ReadOnlySequence<byte> NewSubscribe(string topic, string subscription, long consumerId, 
+            long requestId, CommandSubscribe.SubType subType, int priorityLevel, string consumerName, 
+            bool isDurable, MessageIdData startMessageId, IDictionary<string, string> metadata, bool readCompacted, 
+            bool isReplicated, CommandSubscribe.InitialPosition subscriptionInitialPosition, 
+            long startMessageRollbackDurationInSec, ISchemaInfo schemaInfo, 
+            bool createTopicIfDoesNotExist, KeySharedPolicy keySharedPolicy, 
+            IDictionary<string, string> subscriptionProperties, long consumerEpoch)
 		{
             var subscribe = new CommandSubscribe
             {
@@ -361,10 +371,24 @@ namespace SharpPulsar.Protocol
                 ReadCompacted = readCompacted,
                 initialPosition = subscriptionInitialPosition,
                 ReplicateSubscriptionState = isReplicated,
-                ForceTopicCreation = createTopicIfDoesNotExist
+                ForceTopicCreation = createTopicIfDoesNotExist,
+                ConsumerEpoch = (ulong)consumerEpoch
                 
             };
-
+            if(subscriptionProperties != null && subscriptionProperties.Count > 0)
+            {
+                var kv = new List<KeyValue>();
+                subscriptionProperties.ForEach(k =>
+                {
+                    var keyValue = new KeyValue
+                    {
+                        Key = k.Key,
+                        Value = k.Value
+                    };
+                    kv.Add(keyValue);
+                });
+                subscribe.SubscriptionProperties.AddRange(kv);
+            }
             if (keySharedPolicy != null)
             {
                 var keySharedMeta = new KeySharedMeta
@@ -537,7 +561,7 @@ namespace SharpPulsar.Protocol
 
 		public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, bool isTxnEnabled)
 		{
-			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Common.ProducerAccessMode.Shared, null, isTxnEnabled);
+			return NewProducer(topic, producerId, requestId, producerName, encrypted, metadata, null, 0, false, Common.ProducerAccessMode.Shared, null, isTxnEnabled, null);
 		}
         private static Proto.Schema.Type GetSchemaType(SchemaType type)
 		{
@@ -595,7 +619,7 @@ namespace SharpPulsar.Protocol
             return schema;
         }
 
-        public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled)
+        public static ReadOnlySequence<byte> NewProducer(string topic, long producerId, long requestId, string producerName, bool encrypted, IDictionary<string, string> metadata, ISchemaInfo schemaInfo, long epoch, bool userProvidedProducerName, Common.ProducerAccessMode accessMode, long? topicEpoch, bool isTxnEnabled, string initialSubscriptionName)
 		{
             var producer = new CommandProducer
             {
@@ -622,6 +646,9 @@ namespace SharpPulsar.Protocol
 			}
             if (topicEpoch.HasValue)
                 producer.TopicEpoch = (ulong)topicEpoch.Value;
+
+            if(!string.IsNullOrEmpty(initialSubscriptionName))
+                producer.InitialSubscriptionName = initialSubscriptionName;
 
 			return Serializer.Serialize(producer.ToBaseCommand());			
 		}

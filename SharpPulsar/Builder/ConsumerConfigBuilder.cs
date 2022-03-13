@@ -277,6 +277,15 @@ namespace SharpPulsar.Builder
             _conf.PatternAutoDiscoveryPeriod = periodInSeconds;
             return this;
         }
+        
+        public ConsumerConfigBuilder<T> SubscriptionProperties(IDictionary<string, string> subscriptionProperties)
+        {
+            if (subscriptionProperties == null)
+                throw new ArgumentException("subscriptionProperties cannot be null");
+
+            _conf.SubscriptionProperties = subscriptionProperties;  
+            return this;
+        }
 
         public ConsumerConfigBuilder<T> SubscriptionInitialPosition(SubscriptionInitialPosition subscriptionInitialPosition)
         {

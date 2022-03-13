@@ -5,6 +5,8 @@ using SharpPulsar.Batch.Api;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Protocol;
+using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Stats.Consumer.Api;
 using System;
 using System.Collections.Generic;
@@ -69,6 +71,7 @@ namespace SharpPulsar
 		protected internal HandlerState State;
 		private readonly string _topic;
         protected internal readonly TaskCompletionSource<IActorRef> SubscribeFuture;
+        protected internal long ConsumerEpoch;
 
         public ConsumerActorBase(IActorRef stateActor, IActorRef lookup, IActorRef connectionPool, string topic, ConsumerConfigurationData<T> conf, int receiverQueueSize, ISchema<T> schema, TaskCompletionSource<IActorRef> subscribeFuture)
 		{
@@ -161,6 +164,10 @@ namespace SharpPulsar
                         while (IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
                         {
                             Self.Tell(new MessageProcessed<T>(message));
+
+                            if (!IsValidConsumerEpoch((Message<T>)message))
+                                continue;
+
                             messages.Add(BeforeConsume(message));
                         }
                         Sender.Tell(new AskResponse(messages));
@@ -187,6 +194,11 @@ namespace SharpPulsar
                 if (IncomingMessages.TryReceive(out var message))
                 {
                     Self.Tell(new MessageProcessed<T>(message));
+                    if (!IsValidConsumerEpoch((Message<T>)message))
+                    {
+                        Receive();
+                        return;
+                    }
                     Sender.Tell(new AskResponse(BeforeConsume(message)));
                 }                    
                 else
@@ -305,8 +317,21 @@ namespace SharpPulsar
 				Interceptors.OnNegativeAcksSend(Self, messageIds);
 			}
 		}
-
-		protected internal virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
+        // If message consumer epoch is smaller than consumer epoch present that
+        // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
+        // so we should release this message and receive again
+        protected internal virtual bool IsValidConsumerEpoch(Message<T> message)
+        {
+            if ((SubType == CommandSubscribe.SubType.Failover || SubType == CommandSubscribe.SubType.Exclusive) && message.ConsumerEpoch != Commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
+            {
+                _log.Warning($"Consumer filter old epoch message, topic : [{Topic}], messageId : [{message.MessageId}], consumerEpoch : [{ConsumerEpoch}]");
+                
+                message.Recycle();
+                return false;
+            }
+            return true;
+        }
+        protected internal virtual void OnAckTimeoutSend(ISet<IMessageId> messageIds)
 		{
 			if (Interceptors != null)
 			{

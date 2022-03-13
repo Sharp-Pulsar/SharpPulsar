@@ -4,6 +4,7 @@ using Akka.Util.Internal;
 using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
+using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
@@ -310,7 +311,11 @@ namespace SharpPulsar
 					_deadLetterPolicy.RetryLetterTopic = string.Format("{0}-{1}" + RetryMessageUtil.RetryGroupTopicSuffix, topic, Subscription);
 				}
 
-			}
+                if (!string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.InitialSubscriptionName))
+                {
+                    _deadLetterPolicy.InitialSubscriptionName = conf.DeadLetterPolicy.InitialSubscriptionName;
+                }
+            }
 			else
 			{
 				_deadLetterPolicy = null;
@@ -400,7 +405,7 @@ namespace SharpPulsar
                 }
                 // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
                 var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-                var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+                var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy, Conf.SubscriptionProperties, ConsumerEpoch);
 
                 var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
 
@@ -1451,7 +1456,13 @@ namespace SharpPulsar
 			var messageId = received.MessageId;
             var data = received.Payload.ToArray();
 			var redeliveryCount = received.RedeliveryCount;
-			IList<long> ackSet = messageId.AckSets;
+            var consumerEpoch = Commands.DefaultConsumerEpoch;
+            // if broker send messages to client with consumerEpoch, we should set consumerEpoch to message
+            if (received.HasConsumerEpoch)
+            {
+                consumerEpoch = received.ConsumerEpoch;
+            }
+            IList<long> ackSet = messageId.AckSets;
 			
 			var msgMetadata = received.Metadata;
 			var brokerEntryMetadata = received.BrokerEntryMetadata;
@@ -1482,7 +1493,7 @@ namespace SharpPulsar
             if (Conf.PayloadProcessor != null)
             {
                 // uncompressedPayload is released in this method so we don't need to call release() again
-                ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet);
+                ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet, consumerEpoch);
                 return;
             }
             // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
@@ -1508,7 +1519,7 @@ namespace SharpPulsar
                     }
                     return;
                 }
-                var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages);
+                var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages, consumerEpoch);
                 message.BrokerEntryMetadata = received.BrokerEntryMetadata;
                 try
                 {
@@ -1528,7 +1539,7 @@ namespace SharpPulsar
             else
             {
                 // handle batch message enqueuing; uncompressed payload has all messages in batch
-                ReceiveIndividualMessagesFromBatch(brokerEntryMetadata, msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx);
+                ReceiveIndividualMessagesFromBatch(brokerEntryMetadata, msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx, consumerEpoch);
 
             }
 
@@ -1537,7 +1548,7 @@ namespace SharpPulsar
                 TriggerListener(numMessages);
             }
         }
-        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount)
+        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount, long consumerEpoch)
         {
             if (_log.IsDebugEnabled)
             {
@@ -1583,7 +1594,7 @@ namespace SharpPulsar
 
                 var payloadBuffer = (singleMessagePayload != null) ? singleMessagePayload : payload.ToArray();
                 
-                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(payloadBuffer), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false);
+                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(payloadBuffer), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
                 message.BrokerEntryMetadata = brokerEntryMetadata;
                 return message;
             }
@@ -1599,7 +1610,7 @@ namespace SharpPulsar
                 }
             }
         }
-        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, MemoryStream stream, BinaryReader binaryReader, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount)
+        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, MemoryStream stream, BinaryReader binaryReader, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount, long consumerEpoch)
         {
             if (_log.IsDebugEnabled)
             {
@@ -1642,7 +1653,7 @@ namespace SharpPulsar
 
                 var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
 
-                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false);
+                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
                 message.BrokerEntryMetadata = brokerEntryMetadata;
                 return message;
             }
@@ -1659,9 +1670,9 @@ namespace SharpPulsar
             }
         }
 
-        protected Message<T> NewMessage(MessageId messageId, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema, int redeliveryCount)
+        protected Message<T> NewMessage(MessageId messageId, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema, int redeliveryCount, long consumerEpoch)
         {
-            var Message = Message<T>.Create(_topicName.ToString(), messageId, messageMetadata, payload, CreateEncryptionContext(messageMetadata), _clientCnx, schema, redeliveryCount, false);
+            var Message = Message<T>.Create(_topicName.ToString(), messageId, messageMetadata, payload, CreateEncryptionContext(messageMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
             Message.BrokerEntryMetadata = brokerEntryMetadata;
             return Message;
         }
@@ -1671,11 +1682,11 @@ namespace SharpPulsar
             // and return undecrypted payload
             return !IsMessageUndecryptable(messageMetadata) && (messageMetadata.ShouldSerializeNumMessagesInBatch() || messageMetadata.NumMessagesInBatch != 1);
         }
-        private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet)
+        private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet, long consumerEpoch)
         {
             var msgPayload = MessagePayload.Create(new ReadOnlySequence<byte>(payload));
             
-            var entryContext = MessagePayloadContext<T>.Get(brokerEntryMetadata, messageMetadata, messageId, redeliveryCount, ackSet, IsBatch, NewMessage, NewSingleMessage);
+            var entryContext = MessagePayloadContext<T>.Get(brokerEntryMetadata, messageMetadata, messageId, redeliveryCount, ackSet, consumerEpoch, IsBatch, NewMessage, NewSingleMessage);
             
             var skippedMessages = 0;
             try
@@ -1826,7 +1837,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
+		private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
 		{
 			var batchSize = msgMetadata.NumMessagesInBatch;
 			// create ack tracker for entry aka batch
@@ -1851,7 +1862,7 @@ namespace SharpPulsar
 			{
 				for (var i = 0; i < batchSize; ++i)
 				{
-                    var message = NewSingleMessage(i, batchSize, brokerEntryMetadata, msgMetadata, stream, binaryReader, new MessageId((long)messageId.ledgerId, (long)messageId.entryId, i), Schema, true, ackBitSet, acker, redeliveryCount);
+                    var message = NewSingleMessage(i, batchSize, brokerEntryMetadata, msgMetadata, stream, binaryReader, new MessageId((long)messageId.ledgerId, (long)messageId.entryId, i), Schema, true, ackBitSet, acker, redeliveryCount, consumerEpoch);
 
                     if (message == null)
                     {
@@ -2368,6 +2379,7 @@ namespace SharpPulsar
             {
                 var builder = new ProducerConfigBuilder<byte[]>()
                        .Topic(_deadLetterPolicy.DeadLetterTopic)
+                       .InitialSubscriptionName(_deadLetterPolicy.InitialSubscriptionName)  
                        .EnableBatching(false);
                 var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
 
@@ -2747,8 +2759,11 @@ namespace SharpPulsar
 			}
 			return new Option<EncryptionContext>(encryptionCtx);
 		}
-
-		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
+        private bool IsValidEpoch(IMessage<T> message)
+        {
+            return IsValidConsumerEpoch((Message<T>)message);
+        }
+        private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			var messagesFromQueue = 0;
 			if (IncomingMessages.TryReceive(out var peek))

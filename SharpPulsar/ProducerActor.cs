@@ -401,7 +401,7 @@ namespace SharpPulsar
             var epochResponse = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
             var epoch = epochResponse.Epoch;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled);
+            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
             var payload = new Payload(cmd, _requestId, "NewProducer");
             await _cnx.Ask<AskResponse>(payload).ContinueWith( async response=>
              {

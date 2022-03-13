@@ -384,7 +384,7 @@ namespace SharpPulsar
 				BatchSize = msg.MessageId.BatchSize,
 				BatchIndex = msg.MessageId.BatchIndex
 			};
-			var message = new MessageReceived(metadata, brokerEntryMetadata, payload, id, (int)msg.RedeliveryCount, hasValidCheckSum, hasMagicNumber);
+			var message = new MessageReceived(metadata, brokerEntryMetadata, payload, id, (int)msg.RedeliveryCount, hasValidCheckSum, hasMagicNumber, (long)msg.ConsumerEpoch, msg.ShouldSerializeConsumerEpoch());
 			if (_consumers.TryGetValue((long)msg.ConsumerId, out var consumer))
 			{
 				consumer.Tell(message);
