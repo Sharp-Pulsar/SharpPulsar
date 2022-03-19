@@ -77,7 +77,7 @@ namespace SharpPulsar
 		{
             SubscribeFuture = subscribeFuture;
             if (conf.Interceptors != null && conf.Interceptors.Count > 0)
-                Interceptors = new ConsumerInterceptors<T>(Context.System, conf.Interceptors);
+                Interceptors = new ConsumerInterceptors<T>(Context.GetLogger(), conf.Interceptors);
 
             StateActor = stateActor;
 			_topic = topic;

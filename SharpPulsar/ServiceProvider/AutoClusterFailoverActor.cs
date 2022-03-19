@@ -61,7 +61,7 @@ namespace SharpPulsar.ServiceProvider
 
         private AutoClusterFailoverActor(AutoClusterFailoverBuilder builder)
         {
-            _log = Context.System.Log;
+            _log = Context.GetLogger();
             _primary = builder.primary;
             _secondary = builder.secondary;
             _failoverPolicy = builder.failoverPolicy;
@@ -75,7 +75,7 @@ namespace SharpPulsar.ServiceProvider
             _recoverTimestamp = new TimeSpan(-1);
             _failedTimestamp = new TimeSpan(-1);
             _intervalMs = builder.CheckIntervalMs;
-            _resolver = new PulsarServiceNameResolver(Context.System.Log);
+            _resolver = new PulsarServiceNameResolver(Context.GetLogger());
             Receive<Initialize>(_=>
             {
                 Initialize(_.Client);

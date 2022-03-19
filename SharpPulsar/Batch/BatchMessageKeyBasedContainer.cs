@@ -49,9 +49,9 @@ namespace SharpPulsar.Batch
 		private IDictionary<string, KeyedBatch> _batches = new Dictionary<string, KeyedBatch>();
         private static ILoggingAdapter _log;
 
-        public BatchMessageKeyBasedContainer(ActorSystem system)
+        public BatchMessageKeyBasedContainer(ILoggingAdapter log)
         {
-            _log = system.Log;
+            _log = log;
         }
 		public override bool Add(Message<T> msg, SendCallback<T> callback)
 		{

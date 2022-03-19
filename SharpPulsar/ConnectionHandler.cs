@@ -31,7 +31,7 @@ namespace SharpPulsar
 			_state = state;
 			_connection = connection;
 			_backoff = backoff;
-			_log = Context.System.Log;
+			_log = Context.GetLogger();
 			_actorContext = Context;
 			_conf = conf;
 			Listening();

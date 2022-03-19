@@ -12,6 +12,7 @@ using NodaTime;
 using SharpPulsar.Shared;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas.Generic;
+using Akka.Event;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -252,9 +253,9 @@ namespace SharpPulsar
 			return SchemaUtils.ConvertKeyValueSchemaInfoDataToString(kvSchemaInfo);
 		}
 
-		public static IBatcherBuilder NewDefaultBatcherBuilder(ActorSystem system)
+		public static IBatcherBuilder NewDefaultBatcherBuilder(ILoggingAdapter log)
 		{
-			return new DefaultBatcherBuilder(system);
+			return new DefaultBatcherBuilder(log);
 		}
 		/// <summary>
 		/// Decode the kv encoding type from the schema info.
@@ -305,9 +306,9 @@ namespace SharpPulsar
 			return KeyValueSchemaInfo.DecodeKeyValueSchemaInfo(schemaInfo);
 		}
 
-		public static IBatcherBuilder NewKeyBasedBatcherBuilder(ActorSystem system)
+		public static IBatcherBuilder NewKeyBasedBatcherBuilder(ILoggingAdapter log)
         {
-            return new KeyBasedBatcherBuilder(system);
+            return new KeyBasedBatcherBuilder(log);
         }
 	}
 

@@ -50,7 +50,7 @@ namespace SharpPulsar.ServiceProvider
 
         private ControlledClusterFailoverActor(ControlledClusterFailoverBuilder builder)
         {
-            _log = Context.System.Log;
+            _log = Context.GetLogger();
             _currentPulsarServiceUrl = builder.defaultServiceUrl;
             interval = builder.Interval;
 

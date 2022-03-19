@@ -68,7 +68,7 @@ namespace SharpPulsar.User
         }
         private ISchemaInfoProvider NewSchemaProvider(string topicName)
         {
-            return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _actorSystem.Log, _lookup);
+            return new MultiVersionSchemaInfoProvider(TopicName.Get(topicName), _log, _lookup);
         }
         private async ValueTask<ISchema<T>> PreProcessSchemaBeforeSubscribe<T>(ISchema<T> schema, string topicName)
         {
@@ -247,9 +247,9 @@ namespace SharpPulsar.User
             try
             {
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
-                if (_actorSystem.Log.IsDebugEnabled)
+                if (_log.IsDebugEnabled)
                 {
-                    _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
+                    _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
                 }
                 var state = _actorSystem.ActorOf(Props.Create(()=> new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
                 if (metadata.Partitions > 0)
@@ -293,7 +293,7 @@ namespace SharpPulsar.User
             }
             catch(Exception e)
             {
-                _actorSystem.Log.Error($"[{topic}] Failed to get partitioned topic metadata: {e}");
+                _log.Error($"[{topic}] Failed to get partitioned topic metadata: {e}");
                 throw;
             }
         }
@@ -324,10 +324,10 @@ namespace SharpPulsar.User
 
             var result = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
             var topics = result.Topics;
-            if (_actorSystem.Log.IsDebugEnabled)
+            if (_log.IsDebugEnabled)
             {
-                _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
-                topics.ForEach(topicName => _actorSystem.Log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
+                _log.Debug($"Get topics under namespace {namespaceName}, topics.size: {topics.Count}");
+                topics.ForEach(topicName => _log.Debug($"Get topics under namespace {namespaceName}, topic: {topicName}"));
             }
             var topicsList = TopicsPatternFilter(topics, conf.TopicsPattern);
             topicsList.ToList().ForEach(x => conf.TopicNames.Add(x));
@@ -429,7 +429,7 @@ namespace SharpPulsar.User
             }
             else
             {
-                return await CreateProducer(conf, schema, new ProducerInterceptors<T>(_actorSystem.Log, interceptors)).ConfigureAwait(false);
+                return await CreateProducer(conf, schema, new ProducerInterceptors<T>(_log, interceptors)).ConfigureAwait(false);
             }
         }
 
@@ -493,9 +493,9 @@ namespace SharpPulsar.User
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
-                if (_actorSystem.Log.IsDebugEnabled)
+                if (_log.IsDebugEnabled)
                 {
-                    _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
+                    _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
                 }
                 if (metadata.Partitions > 0 && MultiTopicsConsumer<T>.IsIllegalMultiTopicsMessageId(conf.StartMessageId))
                 {
@@ -521,7 +521,7 @@ namespace SharpPulsar.User
             }
             catch(Exception ex)
             {
-                _actorSystem.Log.Warning($"[{topic}] Failed to get create topic reader: {ex}");
+                _log.Warning($"[{topic}] Failed to get create topic reader: {ex}");
                 throw;
             }
         }
@@ -539,7 +539,7 @@ namespace SharpPulsar.User
             if(!_clientConfigurationData.EnableTransaction)
                 throw new PulsarClientException.InvalidConfigurationException("Transactions are not enabled");
 
-            return new TransactionBuilder(_actorSystem, _client, _transactionCoordinatorClient, _actorSystem.Log);
+            return new TransactionBuilder(_actorSystem, _client, _transactionCoordinatorClient, _log);
         }
 
         public void Shutdown()
@@ -551,6 +551,7 @@ namespace SharpPulsar.User
             await _actorSystem.Terminate().ConfigureAwait(false);
         }
         public ActorSystem ActorSystem => _actorSystem;
+        public ILoggingAdapter Log => _log;
 
         public void UpdateServiceUrl(string serviceUrl)
         {
@@ -641,9 +642,9 @@ namespace SharpPulsar.User
         private async ValueTask<Producer<T>> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {            
             var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
-            if (_actorSystem.Log.IsDebugEnabled)
+            if (_log.IsDebugEnabled)
             {
-                _actorSystem.Log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
+                _log.Debug($"[{topic}] Received topic metadata. partitions: {metadata.Partitions}");
             }
             if (metadata.Partitions > 0)
             {

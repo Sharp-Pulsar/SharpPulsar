@@ -53,9 +53,9 @@ namespace SharpPulsar.Batch
         private SendCallback<T> _firstCallback;
         private readonly ILoggingAdapter _log;
 
-        public BatchMessageContainer(ActorSystem system)
+        public BatchMessageContainer(ILoggingAdapter log)
         {
-            _log = system.Log;
+            _log = log;
         }
 		public override bool Add(Message<T> msg, SendCallback<T> callback)
 		{

@@ -199,8 +199,8 @@ namespace SharpPulsar
 					}
 					catch (CryptoException e)
 					{
-						Context.System.Log.Warning($"[{Topic}] [{ProducerName().GetAwaiter().GetResult()}] [{_producerId}] Failed to add public key cipher.");
-						Context.System.Log.Error(e.ToString());
+						_log.Warning($"[{Topic}] [{ProducerName().GetAwaiter().GetResult()}] [{_producerId}] Failed to add public key cipher.");
+						_log.Error(e.ToString());
 					}
 				});
 			}
@@ -219,7 +219,7 @@ namespace SharpPulsar
 				var containerBuilder = conf.BatcherBuilder;
 				if(containerBuilder == null)
 				{
-					containerBuilder = IBatcherBuilder.Default(Context.System);
+					containerBuilder = IBatcherBuilder.Default(Context.GetLogger());
 				}
 				_batchMessageContainer = (IBatchMessageContainerBase<T>)containerBuilder.Build<T>();
 				_batchMessageContainer.Producer = Self;
