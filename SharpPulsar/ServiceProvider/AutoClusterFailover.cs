@@ -1,7 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
+using SharpPulsar.Interfaces;
 using SharpPulsar.ServiceProvider.Messages;
 using SharpPulsar.User;
 
@@ -45,7 +48,13 @@ namespace SharpPulsar.ServiceProvider
         {
             _clusterFailOverActor.Tell(PoisonPill.Instance);
         }
-
+        public string Primary => _builder.primary;  
+        public IList<string> Secondary => _builder.secondary;
+        public TimeSpan FailoverDelayNs => _builder.FailoverDelayNs;
+        public TimeSpan SwitchBackDelayNs => _builder.SwitchBackDelayNs;
+        public TimeSpan IntervalMs => _builder.CheckIntervalMs;
+        public IDictionary<string, string> SecondaryTlsTrustCertsFilePaths => _builder.SecondaryTlsTrustCertsFilePaths;
+        public IDictionary<string, IAuthentication> SecondaryAuthentications => _builder.SecondaryAuthentications;
         public void Initialize(PulsarClient pulsarClient)
         {
             _clusterFailOverActor = pulsarClient
@@ -53,7 +62,7 @@ namespace SharpPulsar.ServiceProvider
                 .ActorOf(AutoClusterFailoverActor.Prop(_builder), "auto-cluster-failover");
             _clusterFailOverActor.Tell(new Initialize(pulsarClient));
         }
-        public static AutoClusterFailoverBuilder Builder()
+        public static IAutoClusterFailoverBuilder Builder()
         {
             return new AutoClusterFailoverBuilder();
         }

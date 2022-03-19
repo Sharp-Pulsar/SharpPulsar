@@ -101,6 +101,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.NBench", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tutorials", "Tutorials\Tutorials.csproj", "{8841EEEE-7E06-4D51-AF9E-11012274AA10}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.ServiceProvider", "Tests\SharpPulsar.Test.ServiceProvider\SharpPulsar.Test.ServiceProvider.csproj", "{9CC2BD4F-4B9D-4335-A991-FBB6770A4848}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -132,6 +134,10 @@ Global
 		{8841EEEE-7E06-4D51-AF9E-11012274AA10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8841EEEE-7E06-4D51-AF9E-11012274AA10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8841EEEE-7E06-4D51-AF9E-11012274AA10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CC2BD4F-4B9D-4335-A991-FBB6770A4848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CC2BD4F-4B9D-4335-A991-FBB6770A4848}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CC2BD4F-4B9D-4335-A991-FBB6770A4848}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CC2BD4F-4B9D-4335-A991-FBB6770A4848}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -150,6 +156,7 @@ Global
 		{D2718F23-CC0E-43D0-8BF6-D34E54C3F3DB} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{B7C51134-6AD1-4FAB-9A43-A1C3B18367A8} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 		{F8360A61-5159-4B5B-B4BF-C9D33874BF85} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
+		{9CC2BD4F-4B9D-4335-A991-FBB6770A4848} = {99773F88-3FCC-484A-AEBF-E863FE0E4866}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A9D4BE7B-E00C-47EC-87B3-4064A8F6F75E}

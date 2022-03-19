@@ -24,20 +24,20 @@ namespace SharpPulsar.Builder
 {
     public class AutoClusterFailoverBuilder : IAutoClusterFailoverBuilder
     {
-        internal string primary;
-        internal IList<string> secondary;
-        internal IDictionary<string, IAuthentication> SecondaryAuthentications = null;
-        internal IDictionary<string, string> SecondaryTlsTrustCertsFilePaths = null;
-        internal IDictionary<string, string> SecondaryTlsTrustStorePaths = null;
-        internal IDictionary<string, string> SecondaryTlsTrustStorePasswords = null;
-        internal FailoverPolicy failoverPolicy = Interfaces.FailoverPolicy.ORDER;
-        internal TimeSpan FailoverDelayNs;
-        internal TimeSpan SwitchBackDelayNs;
-        internal TimeSpan CheckIntervalMs = TimeSpan.FromMilliseconds(30_000);
+        public string primary;
+        public IList<string> secondary;
+        public IDictionary<string, IAuthentication> SecondaryAuthentications = null;
+        public IDictionary<string, string> SecondaryTlsTrustCertsFilePaths = null;
+        public IDictionary<string, string> SecondaryTlsTrustStorePaths = null;
+        public IDictionary<string, string> SecondaryTlsTrustStorePasswords = null;
+        public FailoverPolicy failoverPolicy = Interfaces.FailoverPolicy.ORDER;
+        public TimeSpan FailoverDelayNs;
+        public TimeSpan SwitchBackDelayNs;
+        public TimeSpan CheckIntervalMs = TimeSpan.FromMilliseconds(30_000);
 
-        public virtual IAutoClusterFailoverBuilder Primary(string Primary)
+        public virtual IAutoClusterFailoverBuilder Primary(string pri)
         {
-            primary = Primary;
+            primary = pri;
             return this;
         }
 
@@ -97,7 +97,7 @@ namespace SharpPulsar.Builder
         public void Validate()
         {
             if (string.IsNullOrWhiteSpace(primary))
-                throw new ArgumentNullException(nameof(primary), "primary service url shouldn't be null");
+                throw new ArgumentNullException(nameof(Primary), "primary service url shouldn't be null");
             CheckArgument(secondary != null && secondary.Count > 0, "secondary cluster service url shouldn't be null and should set at least one");
             CheckArgument(FailoverDelayNs.TotalSeconds > 0, "failoverDelay should > 0");
             CheckArgument(SwitchBackDelayNs.TotalSeconds > 0, "switchBackDelay should > 0");
