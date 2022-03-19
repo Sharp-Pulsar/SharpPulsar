@@ -9,8 +9,11 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
+using SharpPulsar.Admin.Admin.Models;
 using Xunit;
 using Xunit.Abstractions;
+using System.Net.Http;
+using SharpPulsar.Common.Naming;
 
 namespace SharpPulsar.Test.Integration
 {
@@ -21,9 +24,11 @@ namespace SharpPulsar.Test.Integration
         private readonly PulsarClient _client;
         public readonly PulsarSystem _pulsarSystem;
         public ClientConfigurationData _clientConfigurationData;
+        private Admin.Public.Admin _admin;
 
         public TableViewTests(ITestOutputHelper output, PulsarFixture fixture)
         {
+            _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
             _output = output;
             _client = fixture.Client;
             _pulsarSystem = fixture.PulsarSystem;
@@ -52,6 +57,37 @@ namespace SharpPulsar.Test.Integration
             Assert.Equal(tv.Size(), count * 2);
             Assert.Equal(tv.KeySet(), keys2);
         }
+
+        [Fact]
+        public async Task TestTableViewUpdatePartitions()
+        {
+            var topic = "persistent://public/default/tableview-test-update-partitions";
+            var result = await _admin.CreatePartitionedTopicAsync("public", "default", "tableview-test-update-partitions", 3);
+            
+            var count = 20;
+            var keys = await PublishMessages(topic, count, false);
+            
+            var tv = await _client.NewTableViewBuilder(ISchema<string>.Bytes).Topic(topic)
+                .AutoUpdatePartitionsInterval(TimeSpan.FromSeconds(5)).CreateAsync();
+            _output.WriteLine($"start tv size: {tv.Size}");
+            tv.ForEachAndListen((k, v) => _output.WriteLine($"{k} -> {Encoding.UTF8.GetString(v)}"));
+            await Task.Delay(5000);
+            _output.WriteLine($"Current tv size: {tv.Size()}");
+            Assert.Equal(tv.Size(), count);
+            Assert.Equal(tv.KeySet(), keys);
+            tv.ForEachAndListen((k, v) => _output.WriteLine($"checkpoint {k} -> {Encoding.UTF8.GetString(v)}"));
+
+            _admin.UpdatePartitionedTopic("public", "default", "tableview-test-update-partitions", 4);
+            var topicName = TopicName.Get(topic);
+
+            // Send more data to partition 3, which is not in the current TableView, need update partitions
+            var keys2 = await PublishMessages(topicName.GetPartition(3).ToString(), count * 2, false);
+            await Task.Delay(10000);
+            _output.WriteLine($"Current tv size: {tv.Size()}");
+            Assert.Equal(tv.Size(), count * 2);
+            Assert.Equal(tv.KeySet(), keys2);
+        }
+
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)
         {
             var keys = new HashSet<string>();
