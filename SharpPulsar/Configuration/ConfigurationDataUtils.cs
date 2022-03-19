@@ -8,6 +8,7 @@ using System.Text.Json;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Utils;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Table;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -75,6 +76,10 @@ namespace SharpPulsar.Configuration
 					else if (fullName.Contains("ClientConfigurationData"))
                     {
                         return (ClientConfigurationData)mapper.ReadValue(configJson, typeof(ClientConfigurationData), ClientConfigurationDataOptions(JsonSerializer.Serialize(newConfig["Authentication"]), mapper));
+					}
+					else if (fullName.Contains("TableViewConfigurationData"))
+                    {
+                        return (TableViewConfigurationData)mapper.ReadValue(configJson, typeof(TableViewConfigurationData));
 					}
                     else
                     {

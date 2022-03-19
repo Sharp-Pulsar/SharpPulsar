@@ -19,6 +19,7 @@ using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Generic;
+using SharpPulsar.Table;
 using SharpPulsar.Transaction;
 using SharpPulsar.Utils;
 using System;
@@ -446,9 +447,9 @@ namespace SharpPulsar.User
             return await NewReaderAsync(ISchema<object>.Bytes, conf).ConfigureAwait(false);
         }
 
-        public virtual TableView<T> NewTableViewBuilder<T>(ISchema<T> Schema, ITableViewBuilder<T> builder)
+        public ITableViewBuilder<T> NewTableViewBuilder<T>(ISchema<T> Schema)
         {
-            return TableView<T>(this, Schema);
+            return new TableViewBuilder<T>(this, Schema);
         }
 
         public async ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
@@ -571,14 +572,14 @@ namespace SharpPulsar.User
         public void UpdateTlsTrustCertsFilePath(string tlsTrustCertsFilePath)
         {
             _log.Info($"Updating tlsTrustCertsFilePath to {tlsTrustCertsFilePath}");
-            _clientConfigurationData.SetTlsTrustCertsFilePath(tlsTrustCertsFilePath);
+            _clientConfigurationData.TlsTrustCertsFilePath = tlsTrustCertsFilePath;
         }
 
         public virtual void UpdateTlsTrustStorePathAndPassword(string tlsTrustStorePath, string tlsTrustStorePassword)
         {
             _log.Info($"Updating tlsTrustStorePath to {tlsTrustStorePath}, tlsTrustStorePassword to *****");
             _clientConfigurationData.TlsTrustStorePath = tlsTrustStorePath;
-            _clientConfigurationData.SetTlsTrustStorePassword = tlsTrustStorePassword;
+            _clientConfigurationData.TlsTrustStorePassword = tlsTrustStorePassword;
         }
         public ClientConfigurationData Conf => _clientConfigurationData;    
         #region private matters

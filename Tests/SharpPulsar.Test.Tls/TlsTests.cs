@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;

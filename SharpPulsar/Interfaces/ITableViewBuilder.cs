@@ -24,9 +24,8 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Interfaces
 {
     /// <summary>
-    /// <seealso cref="TableViewBuilder"/> is used to configure and create instances of <seealso cref="TableView"/>.
+    /// <seealso cref="ITableViewBuilder{T}"/> is used to configure and create instances of <seealso cref="ITableView{T}"/>.
     /// </summary>
-    /// <seealso cref="PulsarClient.newTableViewBuilder(Schema) ()"
     /// 
     /// @since 2.10.0/>
     public interface ITableViewBuilder<T>
@@ -89,7 +88,7 @@ namespace SharpPulsar.Interfaces
         /// <param name="interval"> the interval of updating partitions </param>
         /// <param name="unit"> the time unit of the interval </param>
         /// <returns> the <seealso cref="ITableViewBuilder{T}"/> builder instance </returns>
-        ITableViewBuilder<T> AutoUpdatePartitionsInterval(int interval, TimeSpan timeSpan);
+        ITableViewBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval);
     }
 
 }

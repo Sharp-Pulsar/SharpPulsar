@@ -267,11 +267,8 @@ namespace SharpPulsar.Interfaces
         /// </para>
         /// </summary>
         /// <param name="schema"> provide a way to convert between serialized data and domain objects </param>
-        /// <returns> a <seealso cref="TableView{T}"/> instance </returns>
-        TableView<T> NewTableView<T>(ISchema<T> schema);
-
-        /// <inheritdoc cref="NewTableView{T}(ISchema{T})"/>
-        TableView<T> NewTableViewAsync<T>(ISchema<T> schema);
+        /// <returns> a <seealso cref="ITableViewBuilder{T}"/> instance </returns>
+        ITableViewBuilder<T> NewTableViewBuilder<T>(ISchema<T> schema);
 
         void UpdateServiceUrl(string serviceUrl);
 

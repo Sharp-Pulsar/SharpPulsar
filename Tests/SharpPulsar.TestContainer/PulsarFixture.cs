@@ -2,6 +2,7 @@
 using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.User;
 using Xunit;
