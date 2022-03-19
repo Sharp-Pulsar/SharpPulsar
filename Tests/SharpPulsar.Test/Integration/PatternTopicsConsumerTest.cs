@@ -10,6 +10,7 @@ using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.Builder;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

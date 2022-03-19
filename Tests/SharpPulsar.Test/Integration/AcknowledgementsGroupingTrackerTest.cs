@@ -30,6 +30,7 @@ using System;
 using System.Threading.Tasks;
 using SharpPulsar.TestContainer;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.Builder;
 
 namespace SharpPulsar.Test.Integration
 {

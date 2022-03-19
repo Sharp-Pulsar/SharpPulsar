@@ -9,6 +9,7 @@ using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.Builder;
 
 namespace SharpPulsar.Test.Integration
 {

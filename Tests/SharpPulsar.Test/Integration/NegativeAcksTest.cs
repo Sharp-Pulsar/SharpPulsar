@@ -10,6 +10,7 @@ using System.Threading;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.Builder;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
