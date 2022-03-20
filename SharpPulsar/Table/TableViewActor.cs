@@ -62,7 +62,10 @@ namespace SharpPulsar.Table
 			_data = data;
 			_readers = new ConcurrentDictionary<string, IActorRef>();
 			_listeners = new List<Action<string, T>>();
-            Receive<HandleMessage<T>>(hm => Handle(hm.Message));
+            Receive<HandleMessage<T>>(hm =>
+            {
+                MessageHandler(hm.Message);
+            });
             Receive<ForEachAction<T>>(a => ForEachAndListen(a.Action));
             ReceiveAsync<StartMessage>(async _ =>
             {
@@ -111,10 +114,10 @@ namespace SharpPulsar.Table
 		{
 			_partitionChecker = _context.System.Scheduler
                 .Advanced
-                .ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(5), _conf.AutoUpdatePartitionsSeconds, () => CheckForPartitionsChanges());
+                .ScheduleOnceCancelable(_conf.AutoUpdatePartitionsSeconds, async () => await CheckForPartitionsChanges());
 		}
 
-		private void CheckForPartitionsChanges()
+		private async ValueTask CheckForPartitionsChanges()
 		{
 			if (_partitionChecker.IsCancellationRequested)
 			{
@@ -122,12 +125,16 @@ namespace SharpPulsar.Table
 			}
             try
             {
-                Start();
+                await Start();
                 
             }
             catch (Exception ex)
             {
                 _log.Warning($"Failed to check for changes in number of partitions:{ex}");
+            }
+            finally
+            {
+                SchedulePartitionsCheck();
             }
 		}
 
@@ -158,9 +165,9 @@ namespace SharpPulsar.Table
             });
             base.PostStop();
         }
-		private void Handle(IMessage<T> msg)
+		private void MessageHandler(IMessage<T> msg)
 		{
-            if (msg.HasKey())
+            if (msg != null && msg.HasKey())
             {
                 if (_log.IsDebugEnabled)
                 {

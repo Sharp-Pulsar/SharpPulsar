@@ -42,8 +42,8 @@ namespace SharpPulsar
 		internal abstract void Resume();
 		internal abstract void Pause();
 		internal abstract bool Connected();
-		internal abstract TaskCompletionSource<object> Seek(long timestamp);
-		internal abstract TaskCompletionSource<object> Seek(IMessageId messageId);
+		internal abstract ValueTask Seek(long timestamp);
+		internal abstract ValueTask Seek(IMessageId messageId);
 		internal abstract IConsumerStatsRecorder Stats { get; }
 
 		internal enum ConsumerType

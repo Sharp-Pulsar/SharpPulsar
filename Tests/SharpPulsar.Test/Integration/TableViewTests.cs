@@ -37,14 +37,14 @@ namespace SharpPulsar.Test.Integration
         [Fact]  
         public async Task TestTableView()
         {
-            var topic = "persistent://public/default/tableview-test";
+            var topic = $"persistent://public/default/tableview-{DateTime.Now.Ticks}";
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
 
             var tv = await _client.NewTableViewBuilder(ISchema<string>.Bytes).Topic(topic).AutoUpdatePartitionsInterval(TimeSpan.FromSeconds(60)).CreateAsync();
             _output.WriteLine($"start tv size: {tv.Size()}");
             tv.ForEachAndListen((k, v) => _output.WriteLine($"{k} -> {Encoding.UTF8.GetString(v)}"));
-            await Task.Delay(5000);
+            await Task.Delay(15000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
             Assert.Equal(tv.Size(), count);
             Assert.Equal(tv.KeySet(), keys);
@@ -61,8 +61,8 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public async Task TestTableViewUpdatePartitions()
         {
-            var topic = "persistent://public/default/tableview-test-update-partitions";
-            var result = await _admin.CreatePartitionedTopicAsync("public", "default", "tableview-test-update-partitions", 3);
+            var topic = $"tableview-partitions-{DateTime.Now.Ticks}";
+            var result = await _admin.CreatePartitionedTopicAsync("public", "default", topic, 3);
             
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
