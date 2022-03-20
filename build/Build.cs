@@ -118,7 +118,7 @@ partial class Build : NukeBuild
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
-                .SetAssemblyVersion(vers)
+                //.SetAssemblyVersion(vers)
                 .SetFileVersion(vers)
                 .SetVersion(GitVersion.SemVer));
         });
@@ -171,7 +171,7 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
                     .SetResultsDirectory(OutputTests / "tests")
-                    .SetLoggers("GitHubActions")
+                    .SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)

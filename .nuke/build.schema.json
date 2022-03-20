@@ -88,12 +88,14 @@
           "items": {
             "type": "string",
             "enum": [
+              "AuthenticatedGitHubClient",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "GitHubRelease",
               "IntegrationTest",
               "PublishNuget",
               "Restore",
@@ -113,12 +115,14 @@
           "items": {
             "type": "string",
             "enum": [
+              "AuthenticatedGitHubClient",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "GitHubRelease",
               "IntegrationTest",
               "PublishNuget",
               "Restore",

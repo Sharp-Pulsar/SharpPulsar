@@ -17,14 +17,16 @@ using Nuke.Common.Utilities;
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(IntegrationTest) })]
+    InvokedTargets = new[] { nameof(IntegrationTest) },
+    PublishArtifacts = true)]
 
 [CustomGitHubActions("run_tls_tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(TlsTest) })]
+    InvokedTargets = new[] { nameof(TlsTest) },
+    PublishArtifacts = true)]
 
 [CustomGitHubActions("release",
     GitHubActionsImage.WindowsLatest,
