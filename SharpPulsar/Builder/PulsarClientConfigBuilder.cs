@@ -235,7 +235,7 @@ namespace SharpPulsar.Builder
             _conf.Clock = clock;
             return this;
         }
-
+        public IServiceUrlProvider GetServiceUrlProvider => _conf.ServiceUrlProvider;  
         public PulsarClientConfigBuilder EnableTransaction(bool enableTransaction)
         {
             _conf.EnableTransaction = enableTransaction;

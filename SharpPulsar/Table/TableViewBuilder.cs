@@ -6,6 +6,8 @@ using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
+using SharpPulsar.Table.Messages;
 using SharpPulsar.User;
 
 /// <summary>
@@ -63,9 +65,13 @@ namespace SharpPulsar.Table
 		public virtual async ValueTask<ITableView<T>> CreateAsync()
 		{
             var data = new ConcurrentDictionary<string, T>();
-            var taskCompletionSource = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _client.ActorSystem.ActorOf(TableViewActor<T>.Prop(_client, _schema, _conf, data, taskCompletionSource));
-            var actor = await taskCompletionSource.Task;
+            var actor = _client.ActorSystem.ActorOf(TableViewActor<T>.Prop(_client, _schema, _conf, data));
+            var response = await actor.Ask<AskResponse>(StartMessage.Instance);
+            if (response.Failed)
+            {
+                await actor.GracefulStop(TimeSpan.FromSeconds(1));
+                throw response.Exception;
+            }
             return new TableView<T>(actor, data);
 		}
 

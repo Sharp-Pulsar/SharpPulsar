@@ -46,6 +46,9 @@ namespace SharpPulsar.Common
         void Initialize(PulsarClient pulsarClient);
 
 
+        void CreateActor(ActorSystem actorSystem);
+
+
         /// <summary>
         /// Get the current service URL the Pulsar client should connect to.
         /// </summary>

@@ -9,6 +9,7 @@ using Akka.Util.Internal;
 using SharpPulsar.Builder;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Table.Messages;
 using SharpPulsar.User;
 
@@ -48,13 +49,11 @@ namespace SharpPulsar.Table
         private IUntypedActorContext _context;
         private ILoggingAdapter _log;
         private ICancelable _partitionChecker;
-        private readonly TaskCompletionSource<IActorRef> _taskCompletionSource;
         private readonly IActorRef _self;
 
-        public TableViewActor(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data, TaskCompletionSource<IActorRef> taskCompletionSource)
+        public TableViewActor(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data)
 		{
             _self = Self;
-            _taskCompletionSource = taskCompletionSource;
             _log = Context.GetLogger();
             _context = Context;
 			_client = client;
@@ -65,46 +64,51 @@ namespace SharpPulsar.Table
 			_listeners = new List<Action<string, T>>();
             Receive<HandleMessage<T>>(hm => Handle(hm.Message));
             Receive<ForEachAction<T>>(a => ForEachAndListen(a.Action));
-            Start();
-		}
-        public static Props Prop(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data, TaskCompletionSource<IActorRef> taskCompletionSource)
-        {
-            return Props.Create(() => new TableViewActor<T>(client, schema, conf, data, taskCompletionSource));
-        }
-		private void Start()
-		{
-			_client.GetPartitionsForTopicAsync(_conf.TopicName)
-                .AsTask()
-                .ContinueWith(task =>
-			    {
-                        if (!task.IsFaulted)
-                        {
-                            var partitions = task.Result;
+            ReceiveAsync<StartMessage>(async _ =>
+            {
+                var sender = Sender;
+                try
+                {                    
+                    await Start();
+                    sender.Tell(new AskResponse());
+                }
+                catch(Exception ex)
+                {
 
-                            var partitionsSet = new HashSet<string>(partitions);
-                            var readertasks = new List<Task<IActorRef>>();
-                            partitions.ForEach(partition =>
-                            {
-                                if (!_readers.ContainsKey(partition))
-                                {
-                                    readertasks.Add(NewReader(partition).AsTask());
-                                }
-                            });
-                            _readers.ForEach(kv =>
-                            {
-                                if (!partitionsSet.Contains(kv.Key))
-                                {
-                                    kv.Value.GracefulStop(TimeSpan.FromSeconds(1)).ContinueWith(_ => _readers.Remove(kv.Key, out var _));
-                                }
-                            });
-                            Task.WhenAll(readertasks.ToArray()).ContinueWith(_ => SchedulePartitionsCheck());
-                        }
-			    });
+                    sender.Tell(new AskResponse(ex));
+                }
+            });
+            
 		}
+        public static Props Prop(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data)
+        {
+            return Props.Create(() => new TableViewActor<T>(client, schema, conf, data));
+        }
+		private async ValueTask Start()
+		{
+            var partitions = await _client.GetPartitionsForTopicAsync(_conf.TopicName);
+            var partitionsSet = new HashSet<string>(partitions);
+            partitions.ForEach(async partition =>
+            {
+                if (!_readers.ContainsKey(partition))
+                {
+                    var r = await NewReader(partition);
+                    _readers.TryAdd(partition, r);
+                }
+            });
+            _readers.ForEach( async kv =>
+            {
+                if (!partitionsSet.Contains(kv.Key))
+                {
+                    await kv.Value.GracefulStop(TimeSpan.FromSeconds(1));
+                    _readers.Remove(kv.Key, out var _);
+                }
+            });
+            SchedulePartitionsCheck();
+        }
 
 		private void SchedulePartitionsCheck()
 		{
-            _taskCompletionSource.SetResult(_self);
 			_partitionChecker = _context.System.Scheduler
                 .Advanced
                 .ScheduleRepeatedlyCancelable(TimeSpan.FromSeconds(5), _conf.AutoUpdatePartitionsSeconds, () => CheckForPartitionsChanges());
@@ -156,42 +160,35 @@ namespace SharpPulsar.Table
         }
 		private void Handle(IMessage<T> msg)
 		{
-			try
-			{
-				if (msg.HasKey())
-				{
-					if (_log.IsDebugEnabled)
-					{
-						_log.Debug($"Applying message from topic {_conf.TopicName}. key={msg.Key} value={msg.Value}");
-					}
+            if (msg.HasKey())
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"Applying message from topic {_conf.TopicName}. key={msg.Key} value={msg.Value}");
+                }
 
-					try
-					{
-						_data.TryAdd(msg.Key, msg.Value);
+                try
+                {
+                    _data.TryAdd(msg.Key, msg.Value);
 
-						foreach (var listener in _listeners)
-						{
-							try
-							{
-								listener(msg.Key, msg.Value);
-							}
-							catch (Exception t)
-							{
-								_log.Error($"Table view listener raised an exception: {t}");
-							}
-						}
-					}
-					finally
-					{
-						
-					}
-				}
-			}
-			finally
-			{
-				msg = null;
-			}
-		}
+                    foreach (var listener in _listeners)
+                    {
+                        try
+                        {
+                            listener(msg.Key, msg.Value);
+                        }
+                        catch (Exception t)
+                        {
+                            _log.Error($"Table view listener raised an exception: {t}");
+                        }
+                    }
+                }
+                finally
+                {
+
+                }
+            }
+        }
 
 		private async ValueTask<IActorRef> NewReader(string partition)
 		{

@@ -4,6 +4,8 @@ using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
+using SharpPulsar.ServiceProvider;
 using SharpPulsar.User;
 using Xunit;
 
@@ -13,7 +15,6 @@ namespace SharpPulsar.TestContainer
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        public ClientConfigurationData ClientConfigurationData;
         private readonly IConfiguration _configuration; 
         public virtual PulsarTestcontainerConfiguration Configuration { get; }
 
@@ -78,9 +79,10 @@ namespace SharpPulsar.TestContainer
         }
         public virtual async Task DisposeAsync()
         {
-            await Container.DisposeAsync().AsTask();
+            
             try
             {
+                await Container.DisposeAsync().AsTask();
                 if (Client != null)
                     await Client.ShutdownAsync();
             }
@@ -98,8 +100,7 @@ namespace SharpPulsar.TestContainer
                 .Build();
         }
         public virtual async ValueTask SetupSystem()
-        {
-            var client = new PulsarClientConfigBuilder();
+        {            
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
@@ -115,6 +116,25 @@ namespace SharpPulsar.TestContainer
             var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
 
 
+            var client = new PulsarClientConfigBuilder();
+            IAutoClusterFailoverBuilder builder = null;
+            try
+            {
+                var secondary = clienConfigSetting.GetRequiredSection("secondary-url").Value;
+                var failoverDelay = int.Parse(clienConfigSetting.GetRequiredSection("failover-delay").Value);
+                var switchBackDelay = int.Parse(clienConfigSetting.GetRequiredSection("switch-back-delay").Value);
+                var checkInterval = int.Parse(clienConfigSetting.GetRequiredSection("check-interval").Value);
+                builder = AutoClusterFailover.Builder().Primary(serviceUrl)
+                .Secondary(new List<string> { secondary })
+                .FailoverDelay(TimeSpan.FromSeconds(failoverDelay))
+                .SwitchBackDelay(TimeSpan.FromSeconds(switchBackDelay))
+                .CheckInterval(TimeSpan.FromSeconds(checkInterval));
+                client.ServiceUrlProvider(new AutoClusterFailover((AutoClusterFailoverBuilder)builder));
+            }
+            catch
+            {
+
+            }
             client.EnableTransaction(enableTxn);
 
             if (operationTime > 0)
@@ -126,7 +146,9 @@ namespace SharpPulsar.TestContainer
             if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
                 client.Authentication(authPluginClassName, authParamsString);
 
-            client.ServiceUrl(serviceUrl);
+            if(builder == null)
+                client.ServiceUrl(serviceUrl);
+
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
             client.StatsInterval(statsInterval);
@@ -135,7 +157,6 @@ namespace SharpPulsar.TestContainer
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
-            ClientConfigurationData = client.ClientConfigurationData;
         }
         public void Dispose()
         {

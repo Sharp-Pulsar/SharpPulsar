@@ -17,15 +17,12 @@ namespace SharpPulsar.Table
         {
             _parent = Context.Parent;
             _reader = reader;   
-            _log = Context.GetLogger();
+            _log = Context.GetLogger(); 
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () => 
             {
-                var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var messagesRead = new AtomicLong();
-
-                var future = new TaskCompletionSource<Reader<T>>();
-                ReadAllExistingMessages(reader, future, startTime, messagesRead);
-                await future.Task;
+                await ReadAllExistingMessages(reader, startTime, messagesRead);
             });
         }
         protected override void PostStop()
@@ -33,63 +30,45 @@ namespace SharpPulsar.Table
             _reader.Close();    
             base.PostStop();
         }
-        private void ReadAllExistingMessages(Reader<T> reader, TaskCompletionSource<Reader<T>> future, long startTime, AtomicLong messagesRead)
+        private async ValueTask ReadAllExistingMessages(Reader<T> reader, long startTime, AtomicLong messagesRead)
         {
-            var hasMessage = reader.HasMessageAvailableAsync()
-                .AsTask()
-                .ContinueWith(task => 
+            try
+            {
+                var hasMessage = await reader.HasMessageAvailableAsync();
+                if (hasMessage)
                 {
-                    if (!task.IsFaulted)
+                    try
                     {
-                        var hasMessage = task.Result;
-
-                        if (hasMessage)
-                        {
-                            reader.ReadNextAsync()
-                            .AsTask()
-                            .ContinueWith(t => 
-                            { 
-                                if(!t.IsFaulted)
-                                {
-                                    var msg = t.Result;
-                                    messagesRead.Increment();
-                                    _parent.Tell(new HandleMessage<T>(msg));
-                                    ReadAllExistingMessages(reader, future, startTime, messagesRead);
-                                }
-                                else
-                                    future.SetException(t.Exception);   
-                            });
-                        }
-                        else
-                        {
-                            var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                            var durationMillis = endTime - startTime;
-                            _log.Info("Started table view for topic {} - Replayed {} messages in {} seconds", reader.Topic, messagesRead, durationMillis / 1000.0);
-                            future.SetResult(reader);
-                            ReadTailMessages(reader);
-                        }
+                        var msg = await reader.ReadNextAsync();
+                        messagesRead.Increment();
+                        _parent.Tell(new HandleMessage<T>(msg));
+                        await ReadAllExistingMessages(reader, startTime, messagesRead);
                     }
-                });
-            
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex.ToString());
+                    }
+                }
+                else
+                {
+                    var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                    var durationMillis = endTime - startTime;
+                    _log.Info("Started table view for topic {} - Replayed {} messages in {} seconds", reader.Topic, messagesRead, durationMillis / 1000.0);
+                    
+                    await ReadTailMessages(reader);
+                }
+            }
+            catch(Exception ex) 
+            {
+                _log.Error(ex.ToString());
+            }
         }
 
-        private void ReadTailMessages(Reader<T> reader)
+        private async ValueTask ReadTailMessages(Reader<T> reader)
         {
-            reader.ReadNextAsync().AsTask()
-                .ContinueWith(task => 
-                {
-                    if (!task.IsFaulted)
-                    {
-                        var msg = task.Result;
-                        _parent.Tell(new HandleMessage<T>(msg));
-                        ReadTailMessages(reader);
-                    }
-                    else
-                    {
-                        _log.Info($"Reader {reader.Topic} was interrupted");
-                    }
-                });
-
+            var msg = await reader.ReadNextAsync();
+            _parent.Tell(new HandleMessage<T>(msg));
+            await ReadTailMessages(reader);
         }
         public static Props Prop(Reader<T> reader)
         {

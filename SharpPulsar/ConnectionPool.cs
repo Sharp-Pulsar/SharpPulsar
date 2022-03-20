@@ -185,6 +185,7 @@ namespace SharpPulsar
 					c.ClientCnx.GracefulStop(TimeSpan.FromSeconds(1));
 				});
 			});
+            _pool.Clear();
 		}
 		private void ReleaseConnection(IActorRef cnx)
 		{

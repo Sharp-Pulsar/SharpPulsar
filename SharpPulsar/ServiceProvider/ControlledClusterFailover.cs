@@ -45,12 +45,12 @@ namespace SharpPulsar.ServiceProvider
         {
             _clusterFailOverActor.Tell(PoisonPill.Instance);
         }
-
-        public void Initialize(PulsarClient pulsarClient)
+        public void CreateActor(ActorSystem actorSystem)
         {
-            _clusterFailOverActor = pulsarClient
-                .ActorSystem
-                .ActorOf(ControlledClusterFailoverActor.Prop(_builder), "controlled-cluster-failover");
+            _clusterFailOverActor = actorSystem.ActorOf(ControlledClusterFailoverActor.Prop(_builder), "controlled-cluster-failover");
+        }
+        public void Initialize(PulsarClient pulsarClient)
+        {           
             _clusterFailOverActor.Tell(new Initialize(pulsarClient));
         }
     }

@@ -34,7 +34,7 @@ using Akka.Annotations;
 namespace SharpPulsar.ServiceProvider
 {
     [InternalApi]
-    public class AutoClusterFailoverActor : ReceiveActor
+    internal class AutoClusterFailoverActor : ReceiveActor
     {
         private PulsarClient _pulsarClient;
         private string _currentPulsarServiceUrl;
@@ -59,7 +59,7 @@ namespace SharpPulsar.ServiceProvider
         private readonly PulsarServiceNameResolver _resolver;
         private ILoggingAdapter _log;
 
-        private AutoClusterFailoverActor(AutoClusterFailoverBuilder builder)
+        public AutoClusterFailoverActor(AutoClusterFailoverBuilder builder)
         {
             _log = Context.GetLogger();
             _primary = builder.primary;
@@ -199,7 +199,7 @@ namespace SharpPulsar.ServiceProvider
                 {
                     if (ProbeAvailable(targetServiceUrl))
                     {
-                        _log.Info($"Current Pulsar service is {_currentPulsarServiceUrl}, it has been down for {NanosToMillis((long)(currentTimestamp - _failedTimestamp).TotalMilliseconds)} ms, switch to the service {targetServiceUrls}. The current service down at {_failedTimestamp}");
+                        _log.Info($"Current Pulsar service is {_currentPulsarServiceUrl}, it has been down for {NanosToMillis((long)(currentTimestamp - _failedTimestamp).TotalMilliseconds)} ms, switch to the service {targetServiceUrl}. The current service down at {_failedTimestamp}");
                         UpdateServiceUrl(targetServiceUrl, authentications != null ? authentications[targetServiceUrl] : null, tlsTrustCertsFilePaths != null ? tlsTrustCertsFilePaths[targetServiceUrl] : null, tlsTrustStorePaths != null ? tlsTrustStorePaths[targetServiceUrl] : null, tlsTrustStorePasswords != null ? tlsTrustStorePasswords[targetServiceUrl] : null);
                         _failedTimestamp = new TimeSpan(-1);
                         break;

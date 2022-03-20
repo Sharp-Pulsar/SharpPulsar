@@ -32,7 +32,7 @@ namespace SharpPulsar.Test.Integration
             _output = output;
             _client = fixture.Client;
             _pulsarSystem = fixture.PulsarSystem;
-            _clientConfigurationData = fixture.ClientConfigurationData;
+            _clientConfigurationData = _pulsarSystem.ClientConfigurationData;
         }
         [Fact]  
         public async Task TestTableView()

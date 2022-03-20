@@ -711,9 +711,23 @@ namespace SharpPulsar.User
                 return false;
             }
         }
-        public ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic)
+        public async ValueTask<IList<string>> GetPartitionsForTopicAsync(string topic)
         {
-            throw new NotImplementedException();
+            var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
+            if (metadata.Partitions > 0)
+            {
+                var topicName = TopicName.Get(topic);
+                var partitions = new List<string>(metadata.Partitions);
+                for (var i = 0; i < metadata.Partitions; i++)
+                {
+                    partitions.Add(topicName.GetPartition(i).ToString());
+                }
+                return partitions;
+            }
+            else
+            {
+                return new List<string> { topic };
+            }
         }
         #endregion
     }

@@ -101,8 +101,13 @@ namespace SharpPulsar
                     exit-clr = on
                 }
             }");
-            var clientConf = conf.ClientConfigurationData;
+
             var actorSystem = actorsystem ?? ActorSystem.Create(actorSystemName, confg);
+            if (conf.GetServiceUrlProvider != null)
+            {
+                conf.GetServiceUrlProvider.CreateActor(actorSystem);
+            }
+            var clientConf = conf.ClientConfigurationData;
 
             var cnxPool = actorSystem.ActorOf(ConnectionPool.Prop(clientConf), "ConnectionPool");
             var generator = actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
@@ -140,7 +145,7 @@ namespace SharpPulsar
                 logging();
             }
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(_conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
-            _lookup.Tell(new SetClient(_client));
+            _lookup.Tell(new SetClient(_client));           
 
         }
         public PulsarClient NewClient() 
@@ -180,6 +185,7 @@ namespace SharpPulsar
         }
 
         public ActorSystem System => _actorSystem;
+        public ClientConfigurationData ClientConfigurationData => _conf;
         public async Task Shutdown()
         {
             await _actorSystem.Terminate();

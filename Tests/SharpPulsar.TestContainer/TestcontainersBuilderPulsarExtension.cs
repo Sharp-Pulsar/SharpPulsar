@@ -1,6 +1,7 @@
 ﻿using Docker.DotNet;
 using Docker.DotNet.Models;
 using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using SharpPulsar.TestContainer.TestUtils;
 
 namespace SharpPulsar.TestContainer
@@ -22,6 +23,18 @@ namespace SharpPulsar.TestContainer
               {
                   container.ContainerPort = configuration.DefaultPort;
               });
+        }
+        public static ITestcontainersBuilder<TestcontainersContainer> WithPulsar(this ITestcontainersBuilder<TestcontainersContainer> builder, PulsarTestcontainerConfiguration configuration)
+        {
+            builder = configuration.Environments.Aggregate(builder, (current, environment)
+              => current.WithEnvironment(environment.Key, environment.Value));
+
+            return builder
+              .WithImage(configuration.Image)
+              .WithCommand(configuration.Command)
+              .WithPortBinding(configuration.Port, configuration.DefaultPort)
+              .WithWaitStrategy(configuration.WaitStrategy)
+              .WithStartupCallback(configuration.StartupCallback);
         }
     }
 }
