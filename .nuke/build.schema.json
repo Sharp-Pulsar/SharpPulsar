@@ -89,6 +89,7 @@
             "type": "string",
             "enum": [
               "AuthenticatedGitHubClient",
+              "AutoFailOverTest",
               "Clean",
               "Compile",
               "CreateNuget",
@@ -116,6 +117,7 @@
             "type": "string",
             "enum": [
               "AuthenticatedGitHubClient",
+              "AutoFailOverTest",
               "Clean",
               "Compile",
               "CreateNuget",

@@ -44,7 +44,7 @@ namespace SharpPulsar.Test.Integration
             var tv = await _client.NewTableViewBuilder(ISchema<string>.Bytes).Topic(topic).AutoUpdatePartitionsInterval(TimeSpan.FromSeconds(60)).CreateAsync();
             _output.WriteLine($"start tv size: {tv.Size()}");
             tv.ForEachAndListen((k, v) => _output.WriteLine($"{k} -> {Encoding.UTF8.GetString(v)}"));
-            await Task.Delay(15000);
+            await Task.Delay(60000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
             Assert.Equal(tv.Size(), count);
             Assert.Equal(tv.KeySet(), keys);

@@ -20,6 +20,14 @@ using Nuke.Common.Utilities;
     InvokedTargets = new[] { nameof(IntegrationTest) },
     PublishArtifacts = true)]
 
+[CustomGitHubActions("run_auto_failover_tests",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(AutoFailOverTest) },
+    PublishArtifacts = true)]
+
 [CustomGitHubActions("run_tls_tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,

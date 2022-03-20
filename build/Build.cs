@@ -180,6 +180,27 @@ partial class Build : NukeBuild
             //if(Container)
                // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
         });
+    Target AutoFailOverTest => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Test.AutoClusterFailover");
+            Information($"Running tests from {project.Name}");
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
+                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                    .SetResultsDirectory(OutputTests / "tests")
+                    .SetLoggers("trx")
+                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .EnableNoBuild());
+            }
+        });
     //--------------------------------------------------------------------------------
     // Documentation 
     //--------------------------------------------------------------------------------

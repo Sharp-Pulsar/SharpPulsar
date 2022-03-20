@@ -167,7 +167,8 @@ namespace SharpPulsar.Table
         }
 		private void MessageHandler(IMessage<T> msg)
 		{
-            if (msg != null && msg.HasKey())
+            var hasKey = msg.HasKey();
+            if (msg != null && hasKey)
             {
                 if (_log.IsDebugEnabled)
                 {

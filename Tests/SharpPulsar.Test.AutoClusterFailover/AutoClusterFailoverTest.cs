@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System;
 using SharpPulsar.Builder;
 using SharpPulsar.User;
-using SharpPulsar.Test.Fixture;
 using Xunit.Abstractions;
 using SharpPulsar.TestContainer;
 using System.Text;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using SharpPulsar.Test.Fixture;
+using SharpPulsar.TestContainer.ServiceProviderFixtures;
 
 namespace SharpPulsar.Test.ServiceProvider
 {
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(AutoCollection))]
     public class AutoClusterFailoverTest
     {
         private readonly ITestOutputHelper _output;
@@ -21,17 +22,15 @@ namespace SharpPulsar.Test.ServiceProvider
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
         private readonly ITestcontainersBuilder<TestcontainersContainer> _builder;
         private readonly PulsarTestcontainer _container;    
-        public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
+        public AutoClusterFailoverTest(ITestOutputHelper output, AutoClusterFailoverFixture fixture)
         {
             _builder = new TestcontainersBuilder<TestcontainersContainer>()
-            .WithName("primary-cluster")
+            .WithName("secondary-cluster")
             .WithPulsar(fixture.Configuration)
             .WithPortBinding(6655, 6650)
             .WithPortBinding(8088, 8080)
-            .WithPortBinding(8082, 8081)
             .WithExposedPort(6650)
-            .WithExposedPort(8080)
-            .WithExposedPort(8081);
+            .WithExposedPort(8080);
             _output = output;
             _client = fixture.Client;
             _container = fixture.Container;

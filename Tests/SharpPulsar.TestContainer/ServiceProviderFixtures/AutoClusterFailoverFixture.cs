@@ -1,24 +1,28 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.ServiceProvider;
 using SharpPulsar.User;
 using Xunit;
 
-namespace SharpPulsar.TestContainer
+namespace SharpPulsar.TestContainer.ServiceProviderFixtures
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public class AutoClusterFailoverFixture : IAsyncLifetime, IDisposable
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        private readonly IConfiguration _configuration; 
+        private readonly IConfiguration _configuration;
         public virtual PulsarTestcontainerConfiguration Configuration { get; }
 
-        public PulsarFixture()
+        public AutoClusterFailoverFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
@@ -30,23 +34,18 @@ namespace SharpPulsar.TestContainer
         public virtual TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-              .WithName("integration-tests")
+              .WithName("auto-failover-primary")
               .WithPulsar(Configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
+              .WithPortBinding(6656, 6650)
+              .WithPortBinding(8082, 8080)
               .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+              .WithExposedPort(8080);
         }
         public PulsarTestcontainer Container { get; }
         public virtual async Task InitializeAsync()
         {
             await Container.StartAsync();//;.GetAwaiter().GetResult();
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
+            await AwaitPortReadiness($"http://127.0.0.1:8082/metrics/");
             await SetupSystem();
         }
         public async ValueTask AwaitPortReadiness(string address)
@@ -78,7 +77,7 @@ namespace SharpPulsar.TestContainer
         }
         public virtual async Task DisposeAsync()
         {
-            
+
             try
             {
                 await Container.DisposeAsync().AsTask();
@@ -99,7 +98,7 @@ namespace SharpPulsar.TestContainer
                 .Build();
         }
         public virtual async ValueTask SetupSystem()
-        {            
+        {
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
@@ -116,6 +115,16 @@ namespace SharpPulsar.TestContainer
 
 
             var client = new PulsarClientConfigBuilder();
+            var secondary = clienConfigSetting.GetRequiredSection("secondary-url").Value;
+            var failoverDelay = int.Parse(clienConfigSetting.GetRequiredSection("failover-delay").Value);
+            var switchBackDelay = int.Parse(clienConfigSetting.GetRequiredSection("switch-back-delay").Value);
+            var checkInterval = int.Parse(clienConfigSetting.GetRequiredSection("check-interval").Value);
+            var builder = AutoClusterFailover.Builder().Primary(serviceUrl)
+            .Secondary(new List<string> { secondary })
+            .FailoverDelay(TimeSpan.FromSeconds(failoverDelay))
+            .SwitchBackDelay(TimeSpan.FromSeconds(switchBackDelay))
+            .CheckInterval(TimeSpan.FromSeconds(checkInterval));
+            client.ServiceUrlProvider(new AutoClusterFailover((AutoClusterFailoverBuilder)builder));
             client.EnableTransaction(enableTxn);
 
             if (operationTime > 0)
@@ -126,9 +135,6 @@ namespace SharpPulsar.TestContainer
 
             if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
                 client.Authentication(authPluginClassName, authParamsString);
-
-            
-            client.ServiceUrl(serviceUrl);
 
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
@@ -145,3 +151,4 @@ namespace SharpPulsar.TestContainer
         }
     }
 }
+
