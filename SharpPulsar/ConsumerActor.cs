@@ -2702,10 +2702,6 @@ namespace SharpPulsar
 			}
 			return new Option<EncryptionContext>(encryptionCtx);
 		}
-        private bool IsValidEpoch(IMessage<T> message)
-        {
-            return IsValidConsumerEpoch((Message<T>)message);
-        }
         private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			var messagesFromQueue = 0;

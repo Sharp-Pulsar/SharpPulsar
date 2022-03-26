@@ -165,7 +165,7 @@ namespace SharpPulsar
                         {
                             Self.Tell(new MessageProcessed<T>(message));
 
-                            if (!IsValidConsumerEpoch((Message<T>)message))
+                            if (!IsValidConsumerEpoch(message))
                                 continue;
 
                             messages.Add(BeforeConsume(message));
@@ -194,7 +194,7 @@ namespace SharpPulsar
                 if (IncomingMessages.TryReceive(out var message))
                 {
                     Self.Tell(new MessageProcessed<T>(message));
-                    if (!IsValidConsumerEpoch((Message<T>)message))
+                    if (!IsValidConsumerEpoch(message))
                     {
                         Receive();
                         return;
@@ -320,8 +320,10 @@ namespace SharpPulsar
         // If message consumer epoch is smaller than consumer epoch present that
         // it has been sent to the client before the user calls redeliverUnacknowledgedMessages, this message is invalid.
         // so we should release this message and receive again
-        protected internal virtual bool IsValidConsumerEpoch(Message<T> message)
+        protected internal virtual bool IsValidConsumerEpoch(IMessage<T> msg)
         {
+            var message = msg is Message<T>? (Message<T>)msg: (Message<T>)((TopicMessage<T>) msg).Message;
+            
             if ((SubType == CommandSubscribe.SubType.Failover || SubType == CommandSubscribe.SubType.Exclusive) && message.ConsumerEpoch != Commands.DefaultConsumerEpoch && message.ConsumerEpoch < ConsumerEpoch)
             {
                 _log.Warning($"Consumer filter old epoch message, topic : [{Topic}], messageId : [{message.MessageId}], consumerEpoch : [{ConsumerEpoch}]");
