@@ -118,7 +118,7 @@ namespace SharpPulsar
                 try
                 {
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs));
+                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs), "transaction_coord-client");
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
                         throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");

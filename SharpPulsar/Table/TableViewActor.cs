@@ -50,6 +50,7 @@ namespace SharpPulsar.Table
         private ILoggingAdapter _log;
         private ICancelable _partitionChecker;
         private readonly IActorRef _self;
+        private IActorRef _replyTo;
 
         public TableViewActor(PulsarClient client, ISchema<T> schema, TableViewConfigurationData conf, ConcurrentDictionary<string, T> data)
 		{
@@ -64,21 +65,48 @@ namespace SharpPulsar.Table
 			_listeners = new List<Action<string, T>>();
             Receive<HandleMessage<T>>(hm =>
             {
-                MessageHandler(hm.Message);
+                try
+                {
+                    var msg = hm.Message;
+                    if (!string.IsNullOrWhiteSpace(msg.Key))
+                    {
+                        if (_log.IsDebugEnabled)
+                        {
+                            _log.Debug($"Applying message from topic {_conf.TopicName}. key={msg.Key} value={msg.Value}");
+                        }
+
+                        _data.TryAdd(msg.Key, msg.Value);
+
+                        foreach (var listener in _listeners)
+                        {
+                            try
+                            {
+                                listener(msg.Key, msg.Value);
+                            }
+                            catch (Exception t)
+                            {
+                                _log.Error($"Table view listener raised an exception: {t}");
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _log.Error(e.ToString());
+                }
             });
             Receive<ForEachAction<T>>(a => ForEachAndListen(a.Action));
             ReceiveAsync<StartMessage>(async _ =>
             {
-                var sender = Sender;
+                _replyTo = Sender;
                 try
                 {                    
                     await Start();
-                    sender.Tell(new AskResponse());
+                    _replyTo.Tell(new AskResponse());
                 }
                 catch(Exception ex)
                 {
-
-                    sender.Tell(new AskResponse(ex));
+                    _replyTo.Tell(new AskResponse(ex));
                 }
             });
             
@@ -91,25 +119,30 @@ namespace SharpPulsar.Table
 		{
             var partitions = await _client.GetPartitionsForTopicAsync(_conf.TopicName);
             var partitionsSet = new HashSet<string>(partitions);
-            partitions.ForEach(async partition =>
+            var partitionTasks = new List<Task>();  
+            foreach(var partition in partitions)
             {
-                if (!_readers.ContainsKey(partition))
-                {
-                    var r = await NewReader(partition);
-                    _readers.TryAdd(partition, r);
-                }
-            });
-            _readers.ForEach( async kv =>
-            {
-                if (!partitionsSet.Contains(kv.Key))
-                {
-                    await kv.Value.GracefulStop(TimeSpan.FromSeconds(1));
-                    _readers.Remove(kv.Key, out var _);
-                }
-            });
+                partitionTasks.Add(CreateReader(partition).AsTask());
+            }
+            await Task.WhenAll(partitionTasks)
+                .ContinueWith(async _ => 
+                { 
+                    foreach(var kv in _readers)
+                    {
+                        if (!partitionsSet.Contains(kv.Key))
+                        {
+                            await kv.Value.GracefulStop(TimeSpan.FromSeconds(1));
+                            _readers.Remove(kv.Key, out var _);
+                        }
+                    }
+                }); 
             SchedulePartitionsCheck();
         }
-
+        private async ValueTask CreateReader(string partition)
+        {
+            var r = await NewReader(partition);
+            _readers.TryAdd(partition, r);
+        }
 		private void SchedulePartitionsCheck()
 		{
 			_partitionChecker = _context.System.Scheduler
@@ -164,38 +197,6 @@ namespace SharpPulsar.Table
                 r.Tell(PoisonPill.Instance);
             });
             base.PostStop();
-        }
-		private void MessageHandler(IMessage<T> msg)
-		{
-            var hasKey = msg.HasKey();
-            if (msg != null && hasKey)
-            {
-                if (_log.IsDebugEnabled)
-                {
-                    _log.Debug($"Applying message from topic {_conf.TopicName}. key={msg.Key} value={msg.Value}");
-                }
-
-                try
-                {
-                    _data.TryAdd(msg.Key, msg.Value);
-
-                    foreach (var listener in _listeners)
-                    {
-                        try
-                        {
-                            listener(msg.Key, msg.Value);
-                        }
-                        catch (Exception t)
-                        {
-                            _log.Error($"Table view listener raised an exception: {t}");
-                        }
-                    }
-                }
-                finally
-                {
-
-                }
-            }
         }
 
 		private async ValueTask<IActorRef> NewReader(string partition)

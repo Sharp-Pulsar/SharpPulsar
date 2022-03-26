@@ -10,20 +10,18 @@ namespace SharpPulsar.Table
 {
     internal class PartitionReader<T>: ReceiveActor
     {
-        private ILoggingAdapter _log;
-        private Reader<T> _reader;
-        private IActorRef _parent;
+        private readonly ILoggingAdapter _log;
+        private readonly Reader<T> _reader;
+        private readonly IActorRef _parent;
+        private readonly AtomicLong _messagesRead;
         public PartitionReader(Reader<T> reader)
         {
             _parent = Context.Parent;
             _reader = reader;   
             _log = Context.GetLogger(); 
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => 
-            {
-                var messagesRead = new AtomicLong();
-                await ReadAllExistingMessages(reader, startTime, messagesRead);
-            });
+            _messagesRead = new AtomicLong();
+            ReadAllExistingMessages(reader, startTime, _messagesRead);
         }
         protected override void PostStop()
         {
@@ -40,8 +38,11 @@ namespace SharpPulsar.Table
                     try
                     {
                         var msg = await reader.ReadNextAsync();
-                        messagesRead.Increment();
-                        _parent.Tell(new HandleMessage<T>(msg));
+                        if(msg != null)
+                        {
+                            messagesRead.Increment();
+                            _parent.Tell(new HandleMessage<T>(msg));
+                        }
                         await ReadAllExistingMessages(reader, startTime, messagesRead);
                     }
                     catch (Exception ex)
@@ -67,7 +68,10 @@ namespace SharpPulsar.Table
         private async ValueTask ReadTailMessages(Reader<T> reader)
         {
             var msg = await reader.ReadNextAsync();
-            _parent.Tell(new HandleMessage<T>(msg));
+            if(msg != null)
+            {
+                _parent.Tell(new HandleMessage<T>(msg));
+            }
             await ReadTailMessages(reader);
         }
         public static Props Prop(Reader<T> reader)
