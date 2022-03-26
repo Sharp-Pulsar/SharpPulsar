@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.EventSource.Pulsar;

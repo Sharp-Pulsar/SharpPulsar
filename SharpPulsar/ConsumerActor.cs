@@ -4,6 +4,7 @@ using Akka.Util.Internal;
 using ProtoBuf;
 using SharpPulsar.Auth;
 using SharpPulsar.Batch;
+using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Common.Compression;
 using SharpPulsar.Common.Naming;
@@ -310,7 +311,11 @@ namespace SharpPulsar
 					_deadLetterPolicy.RetryLetterTopic = string.Format("{0}-{1}" + RetryMessageUtil.RetryGroupTopicSuffix, topic, Subscription);
 				}
 
-			}
+                if (!string.IsNullOrWhiteSpace(conf.DeadLetterPolicy.InitialSubscriptionName))
+                {
+                    _deadLetterPolicy.InitialSubscriptionName = conf.DeadLetterPolicy.InitialSubscriptionName;
+                }
+            }
 			else
 			{
 				_deadLetterPolicy = null;
@@ -400,7 +405,7 @@ namespace SharpPulsar
                 }
                 // startMessageRollbackDurationInSec should be consider only once when consumer connects to first time
                 var startMessageRollbackDuration = (_startMessageRollbackDurationInSec > 0 && _startMessageId != null && _startMessageId.Equals(_initialStartMessageId)) ? _startMessageRollbackDurationInSec : 0;
-                var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy);
+                var request = Commands.NewSubscribe(Topic, Subscription, _consumerId, requestId, SubType, _priorityLevel, ConsumerName, isDurable, startMessageIdData, _metadata, _readCompacted, Conf.ReplicateSubscriptionState, _subscriptionInitialPosition.ValueOf(), startMessageRollbackDuration, si, _createTopicIfDoesNotExist, Conf.KeySharedPolicy, Conf.SubscriptionProperties, ConsumerEpoch);
 
                 var result = await _clientCnx.Ask(new SendRequestWithId(request, requestId), _clientConfigurationData.OperationTimeout).ConfigureAwait(false);
 
@@ -643,13 +648,13 @@ namespace SharpPulsar
                 try
                 {
                     _replyTo = Sender;
-                    var has = await HasMessageAvailable().Task;
+                    var has = await HasMessageAvailableAsync();
                     _replyTo.Tell(new AskResponse(has));
                 }
                 catch(Exception ex)
                 {
-
                     _replyTo.Tell(new AskResponse(ex));
+                    _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command: {ex}");
                 }
 			});
 			Receive<GetNumMessagesInQueue>(_ => {
@@ -791,8 +796,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-					var tcs = Seek(m.MessageId);
-                    await tcs.Task;
+					await Seek(m.MessageId);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -804,8 +808,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-                    var tcs =  Seek(m.Timestamp);
-                    await tcs.Task;
+                    await Seek(m.Timestamp);
                     Sender.Tell(new AskResponse());
                 }
                 catch (Exception ex)
@@ -1451,7 +1454,13 @@ namespace SharpPulsar
 			var messageId = received.MessageId;
             var data = received.Payload.ToArray();
 			var redeliveryCount = received.RedeliveryCount;
-			IList<long> ackSet = messageId.AckSets;
+            var consumerEpoch = Commands.DefaultConsumerEpoch;
+            // if broker send messages to client with consumerEpoch, we should set consumerEpoch to message
+            if (received.HasConsumerEpoch)
+            {
+                consumerEpoch = received.ConsumerEpoch;
+            }
+            IList<long> ackSet = messageId.AckSets;
 			
 			var msgMetadata = received.Metadata;
 			var brokerEntryMetadata = received.BrokerEntryMetadata;
@@ -1482,7 +1491,7 @@ namespace SharpPulsar
             if (Conf.PayloadProcessor != null)
             {
                 // uncompressedPayload is released in this method so we don't need to call release() again
-                ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet);
+                ProcessPayloadByProcessor(brokerEntryMetadata, msgMetadata, uncompressedPayload, msgId, Schema, redeliveryCount, ackSet, consumerEpoch);
                 return;
             }
             // if message is not decryptable then it can't be parsed as a batch-message. so, add EncyrptionCtx to message
@@ -1508,7 +1517,7 @@ namespace SharpPulsar
                     }
                     return;
                 }
-                var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages);
+                var message = Message<T>.Create(_topicName.ToString(), msgId, msgMetadata, new ReadOnlySequence<byte>(uncompressedPayload), CreateEncryptionContext(msgMetadata), _clientCnx, Schema, redeliveryCount, _poolMessages, consumerEpoch);
                 message.BrokerEntryMetadata = received.BrokerEntryMetadata;
                 try
                 {
@@ -1528,7 +1537,7 @@ namespace SharpPulsar
             else
             {
                 // handle batch message enqueuing; uncompressed payload has all messages in batch
-                ReceiveIndividualMessagesFromBatch(brokerEntryMetadata, msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx);
+                ReceiveIndividualMessagesFromBatch(brokerEntryMetadata, msgMetadata, redeliveryCount, ackSet, uncompressedPayload, messageId, _clientCnx, consumerEpoch);
 
             }
 
@@ -1537,7 +1546,7 @@ namespace SharpPulsar
                 TriggerListener(numMessages);
             }
         }
-        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount)
+        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, SingleMessageMetadata singleMessageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount, long consumerEpoch)
         {
             if (_log.IsDebugEnabled)
             {
@@ -1583,7 +1592,7 @@ namespace SharpPulsar
 
                 var payloadBuffer = (singleMessagePayload != null) ? singleMessagePayload : payload.ToArray();
                 
-                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(payloadBuffer), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false);
+                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(payloadBuffer), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
                 message.BrokerEntryMetadata = brokerEntryMetadata;
                 return message;
             }
@@ -1599,7 +1608,7 @@ namespace SharpPulsar
                 }
             }
         }
-        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, MemoryStream stream, BinaryReader binaryReader, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount)
+        protected Message<T> NewSingleMessage(int index, int numMessages, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, MemoryStream stream, BinaryReader binaryReader, MessageId messageId, ISchema<T> schema, bool containMetadata, BitSet ackBitSet, BatchMessageAcker acker, int redeliveryCount, long consumerEpoch)
         {
             if (_log.IsDebugEnabled)
             {
@@ -1642,7 +1651,7 @@ namespace SharpPulsar
 
                 var batchMessageId = new BatchMessageId(messageId.LedgerId, messageId.EntryId, PartitionIndex, index, numMessages, acker);
 
-                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false);
+                var message = Message<T>.Create(_topicName.ToString(), batchMessageId, msgMetadata, singleMessageMetadata, new ReadOnlySequence<byte>(singleMessagePayload), CreateEncryptionContext(msgMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
                 message.BrokerEntryMetadata = brokerEntryMetadata;
                 return message;
             }
@@ -1659,9 +1668,9 @@ namespace SharpPulsar
             }
         }
 
-        protected Message<T> NewMessage(MessageId messageId, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema, int redeliveryCount)
+        protected Message<T> NewMessage(MessageId messageId, BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema, int redeliveryCount, long consumerEpoch)
         {
-            var Message = Message<T>.Create(_topicName.ToString(), messageId, messageMetadata, payload, CreateEncryptionContext(messageMetadata), _clientCnx, schema, redeliveryCount, false);
+            var Message = Message<T>.Create(_topicName.ToString(), messageId, messageMetadata, payload, CreateEncryptionContext(messageMetadata), _clientCnx, schema, redeliveryCount, false, consumerEpoch);
             Message.BrokerEntryMetadata = brokerEntryMetadata;
             return Message;
         }
@@ -1671,11 +1680,11 @@ namespace SharpPulsar
             // and return undecrypted payload
             return !IsMessageUndecryptable(messageMetadata) && (messageMetadata.ShouldSerializeNumMessagesInBatch() || messageMetadata.NumMessagesInBatch != 1);
         }
-        private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet)
+        private void ProcessPayloadByProcessor(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, byte[] payload, MessageId messageId, ISchema<T> schema, int redeliveryCount, in IList<long> ackSet, long consumerEpoch)
         {
             var msgPayload = MessagePayload.Create(new ReadOnlySequence<byte>(payload));
             
-            var entryContext = MessagePayloadContext<T>.Get(brokerEntryMetadata, messageMetadata, messageId, redeliveryCount, ackSet, IsBatch, NewMessage, NewSingleMessage);
+            var entryContext = MessagePayloadContext<T>.Get(brokerEntryMetadata, messageMetadata, messageId, redeliveryCount, ackSet, consumerEpoch, IsBatch, NewMessage, NewSingleMessage);
             
             var skippedMessages = 0;
             try
@@ -1826,7 +1835,7 @@ namespace SharpPulsar
 				}
 			}
 		}
-		private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx)
+		private void ReceiveIndividualMessagesFromBatch(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata msgMetadata, int redeliveryCount, IList<long> ackSet, byte[] payload, MessageIdData messageId, IActorRef cnx, long consumerEpoch)
 		{
 			var batchSize = msgMetadata.NumMessagesInBatch;
 			// create ack tracker for entry aka batch
@@ -1851,7 +1860,7 @@ namespace SharpPulsar
 			{
 				for (var i = 0; i < batchSize; ++i)
 				{
-                    var message = NewSingleMessage(i, batchSize, brokerEntryMetadata, msgMetadata, stream, binaryReader, new MessageId((long)messageId.ledgerId, (long)messageId.entryId, i), Schema, true, ackBitSet, acker, redeliveryCount);
+                    var message = NewSingleMessage(i, batchSize, brokerEntryMetadata, msgMetadata, stream, binaryReader, new MessageId((long)messageId.ledgerId, (long)messageId.entryId, i), Schema, true, ackBitSet, acker, redeliveryCount, consumerEpoch);
 
                     if (message == null)
                     {
@@ -2368,6 +2377,7 @@ namespace SharpPulsar
             {
                 var builder = new ProducerConfigBuilder<byte[]>()
                        .Topic(_deadLetterPolicy.DeadLetterTopic)
+                       .InitialSubscriptionName(_deadLetterPolicy.InitialSubscriptionName)  
                        .EnableBatching(false);
                 var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _clientConfigurationData, Context.System, null);
 
@@ -2375,13 +2385,12 @@ namespace SharpPulsar
 
             }
         }
-        internal override TaskCompletionSource<object> Seek(IMessageId messageId)
+        internal override async ValueTask Seek(IMessageId messageId)
 		{
             var seekBy = $"the message {messageId}";
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (SeekCheckState(seekBy, tcs))
+            if (SeekCheckState(seekBy))
             {
-                var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+                var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 var requestId = result.Id;
                 var seek = ReadOnlySequence<byte>.Empty;
                 if (messageId is BatchMessageId msgId)
@@ -2399,25 +2408,22 @@ namespace SharpPulsar
                     var msgid = (MessageId)messageId;
                     seek = Commands.NewSeek(_consumerId, requestId, msgid.LedgerId, msgid.EntryId, new long[0]);
                 }
-                SeekInternal(requestId, seek, messageId, seekBy, tcs);
-            }            
-            return tcs;
+                await SeekInternal(requestId, seek, messageId, seekBy);
+            } 
         }
 
-		internal override TaskCompletionSource<object> Seek(long timestamp)
+		internal override async ValueTask Seek(long timestamp)
 		{
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var seekBy = $"the timestamp {timestamp:D}";
-            if (SeekCheckState(seekBy, tcs))
+            if (SeekCheckState(seekBy))
             {
-                var result = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+                var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                 var requestId = result.Id;
-                SeekInternal(requestId, Commands.NewSeek(_consumerId, requestId, timestamp), IMessageId.Earliest, seekBy, tcs);
+                await SeekInternal(requestId, Commands.NewSeek(_consumerId, requestId, timestamp), IMessageId.Earliest, seekBy);
             };
-            return tcs;
         }
 
-        private void SeekInternal(long requestId, ReadOnlySequence<byte> seek, IMessageId seekId, string seekBy, TaskCompletionSource<object> seekFuture)
+        private async ValueTask SeekInternal(long requestId, ReadOnlySequence<byte> seek, IMessageId seekId, string seekBy)
         {           
             var cnx = _clientCnx;
 
@@ -2426,154 +2432,111 @@ namespace SharpPulsar
             _duringSeek = true;
             _log.Info($"[{Topic}][{Subscription}] Seeking subscription to {seekBy}");
 
-            cnx.Ask(new SendRequestWithId(seek, requestId)).ContinueWith(task => 
+            try
             {
-                if (task.IsFaulted)
-                {
-                    _seekMessageId = originSeekMessageId;
-                    _duringSeek = false;
-                    _log.Error($"[{Topic}][{Subscription}] Failed to reset subscription: {task.Exception}");
-                    seekFuture.TrySetException(PulsarClientException.Wrap(task.Exception, $"Failed to seek the subscription {Subscription} of the topic {Topic} to {seekBy}"));
-                    return;
-                }
+                var ask = await cnx.Ask(new SendRequestWithId(seek, requestId));
                 _log.Info($"[{Topic}][{Subscription}] Successfully reset subscription to {seekBy}");
                 _acknowledgmentsGroupingTracker.Tell(FlushAndClean.Instance);
                 _lastDequeuedMessageId = IMessageId.Earliest;
                 IncomingMessages.Empty();
-                seekFuture.TrySetResult(null);
-            });
+            }
+            catch(Exception ex)
+            {
+                _seekMessageId = originSeekMessageId;
+                _duringSeek = false;
+                _log.Error($"[{Topic}][{Subscription}] Failed to reset subscription: {ex}");
+                throw PulsarClientException.Wrap(ex, $"Failed to seek the subscription {Subscription} of the topic {Topic} to {seekBy}");
+
+            }
         }
-        private bool SeekCheckState(string seekBy, TaskCompletionSource<object> seekFuture)
+        private bool SeekCheckState(string seekBy)
         {
             if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
             {
-                seekFuture.TrySetException(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}"));
-                return false;
+                throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
+                
             }
 
             if (!Connected())
             {
-                seekFuture.TrySetException(new PulsarClientException($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}"));
-                return false;
+                throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {_topicName} to {seekBy}");
+                
             }
 
             return true;
         }
-        private TaskCompletionSource<bool> HasMessageAvailable()
+        private async ValueTask<bool> HasMessageAvailableAsync()
 		{
-            TaskCompletionSource<bool> booleanFuture = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            try
-			{
-				if (_lastDequeuedMessageId == IMessageId.Earliest)
-				{
-					// if we are starting from latest, we should seek to the actual last message first.
-					// allow the last one to be read when read head inclusively.
-					if (_startMessageId.Equals(IMessageId.Latest))
-					{
-						var future = InternalGetLastMessageId();
-						if(_resetIncludeHead)
-                        {
-							future.Task.ContinueWith(async (lastMessageIdResponse)=> 
-                            {
-                                var tcs = Seek(lastMessageIdResponse.Result.LastMessageId);
-                                await tcs.Task;
-                            });
-						}
-                        future.Task.ContinueWith(response =>
-                        {
-                            if (response.IsFaulted)
-                            {
-                                _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command: {response.Exception}");
-                                booleanFuture.TrySetException(response.Exception);
-                                return;
-                            }
-                            var lastMessageId = MessageId.ConvertToMessageId(response.Result.LastMessageId);
-                            var markDeletePosition = MessageId.ConvertToMessageId(response.Result.MarkDeletePosition);
-                            if (markDeletePosition != null)
-                            {
-                                var result = markDeletePosition.CompareTo(lastMessageId);
-                                if (lastMessageId.EntryId < 0)
-                                {
-                                    CompletehasMessageAvailableWithValue(booleanFuture, false);
-                                }
-                                else
-                                {
-                                    CompletehasMessageAvailableWithValue(booleanFuture, _resetIncludeHead ? result <= 0 : result < 0);
-                                }
-                            }
-                            else if (lastMessageId == null || lastMessageId.EntryId < 0)
-                            {
-                                CompletehasMessageAvailableWithValue(booleanFuture, false);
-                            }
-                            else
-                            {
-                                CompletehasMessageAvailableWithValue(booleanFuture, _resetIncludeHead);
-                            }
-                        });
-                        return booleanFuture;
-					}
-					if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
-					{
-                        CompletehasMessageAvailableWithValue(booleanFuture, true);
-                        return booleanFuture;
-                    }
-                    LastMessageId().ContinueWith(task =>
+            if (_lastDequeuedMessageId == IMessageId.Earliest)
+            {
+                // if we are starting from latest, we should seek to the actual last message first.
+                // allow the last one to be read when read head inclusively.
+                if (_startMessageId.Equals(IMessageId.Latest))
+                {
+                    var lastMessageIdResponse = await InternalGetLastMessageIdAsync();
+                    if (_resetIncludeHead)
                     {
-                        if (task.IsFaulted)
+                        await Seek(lastMessageIdResponse.LastMessageId);
+                    }
+                    var id = lastMessageIdResponse.LastMessageId;
+                    var lastMessageId = MessageId.ConvertToMessageId(id);
+                    var markDeletePosition = MessageId.ConvertToMessageId(id);
+                    if (markDeletePosition != null)
+                    {
+                        var result = markDeletePosition.CompareTo(lastMessageId);
+                        if (lastMessageId.EntryId < 0)
                         {
-                            _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command");
-                            booleanFuture.TrySetException(task.Exception);
-                            return;
-                        }
-                        var messageId = task.Result;
-                        _lastMessageIdInBroker = messageId;
-                        if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
-                        {
-                            CompletehasMessageAvailableWithValue(booleanFuture, true);
+                            return CompletehasMessageAvailableWithValue(false);
                         }
                         else
                         {
-                            CompletehasMessageAvailableWithValue(booleanFuture, false);
+                            return CompletehasMessageAvailableWithValue(_resetIncludeHead ? result <= 0 : result < 0);
                         }
-                    });
-                    return booleanFuture;
-				}
-				else
-				{
-					// read before, use lastDequeueMessage for comparison
-					if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
-					{
-                        CompletehasMessageAvailableWithValue(booleanFuture, true);
-                        return booleanFuture;
                     }
-                    LastMessageId().ContinueWith(task =>
+                    else if (lastMessageId == null || lastMessageId.EntryId < 0)
                     {
-                        if (task.IsFaulted)
-                        {
-                            _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command");
-                            booleanFuture.TrySetException(task.Exception);
-                            return;
-                        }
-                        var messageId = task.Result;
-                        _lastMessageIdInBroker = messageId;
-                        if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
-                        {
-                            CompletehasMessageAvailableWithValue(booleanFuture, true);
-                        }
-                        else
-                        {
-                            CompletehasMessageAvailableWithValue(booleanFuture, false);
-                        }
-                    });
-				}
+                        return CompletehasMessageAvailableWithValue(false);
+                    }
+                    else
+                    {
+                        return CompletehasMessageAvailableWithValue(_resetIncludeHead);
+                    }
+                }
+                if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
+                {
+                    return CompletehasMessageAvailableWithValue(true);
+                }
+                var messageId = await LastMessageId();
 
-			}
-			catch(Exception e)
-			{
-				booleanFuture.TrySetException(PulsarClientException.Unwrap(e));
-			}
-            return booleanFuture;
-		}
+                _lastMessageIdInBroker = messageId;
+                if (HasMoreMessages(_lastMessageIdInBroker, _startMessageId, _resetIncludeHead))
+                {
+                    return CompletehasMessageAvailableWithValue(true);
+                }
+                else
+                {
+                    return CompletehasMessageAvailableWithValue(false);
+                }
+            }
+            else
+            {
+                // read before, use lastDequeueMessage for comparison
+                if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
+                {
+                    return CompletehasMessageAvailableWithValue(true);
+                }
+                var messageId = await LastMessageId();
+                _lastMessageIdInBroker = messageId;
+                if (HasMoreMessages(_lastMessageIdInBroker, _lastDequeuedMessageId, false))
+                {
+                    return CompletehasMessageAvailableWithValue(true);
+                }
+                else
+                {
+                    return CompletehasMessageAvailableWithValue(false);
+                }
+            }
+        }
 
 		private bool HasMoreMessages(IMessageId lastMessageIdInBroker, IMessageId messageId, bool inclusive)
 		{
@@ -2590,99 +2553,91 @@ namespace SharpPulsar
 			return false;
 		}
 
-		private async Task<IMessageId> LastMessageId()
+		private async ValueTask<IMessageId> LastMessageId()
 		{
-			return await InternalGetLastMessageId().Task.ContinueWith(id=> id.Result.LastMessageId);
+			var id = await InternalGetLastMessageIdAsync();
+            return id.LastMessageId;
 		}
-        private void CompletehasMessageAvailableWithValue(TaskCompletionSource<bool> future, bool value)
+        private bool CompletehasMessageAvailableWithValue(bool value)
         {
-            Akka.Dispatch.ActorTaskScheduler.RunTask(()=> 
-            {
-                future.TrySetResult(value);
-            });
+            return value;
         }
-        private TaskCompletionSource<GetLastMessageIdResponse> InternalGetLastMessageId()
+        private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync()
 		{
 
 			if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
 			{
-				Sender.Tell(new AskResponse(new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id")));
+				throw new PulsarClientException.AlreadyClosedException($"The consumer {ConsumerName} was already closed when the subscription {Subscription} of the topic {_topicName} getting the last message id");
 			}
 
 			var opTimeoutMs = _clientConfigurationData.OperationTimeout;
 			var backoff = new BackoffBuilder().SetInitialTime(TimeSpan.FromMilliseconds(100)).SetMax(opTimeoutMs.Multiply(2)).SetMandatoryStop(TimeSpan.FromMilliseconds(0)).Create();
 
-			var getLastMessageId = new TaskCompletionSource<GetLastMessageIdResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-			InternalGetLastMessageId(backoff, (long)opTimeoutMs.TotalMilliseconds, getLastMessageId).AsTask().Wait();
-			return getLastMessageId;
+			return await InternalGetLastMessageIdAsync(backoff, (long)opTimeoutMs.TotalMilliseconds);
 		}
-		private async ValueTask InternalGetLastMessageId(Backoff backoff, long remainingTime, TaskCompletionSource<GetLastMessageIdResponse> source)
+		private async ValueTask<GetLastMessageIdResponse> InternalGetLastMessageIdAsync(Backoff backoff, long remainingTim)
 		{
-			///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 
-			///retrying in times delay
-			///
-			var cnx = _clientCnx;
-			if(Connected() && cnx != null)
-			{
-				var protocolVersion = _protocolVersion;
-				if (!Commands.PeerSupportsGetLastMessageId(protocolVersion))
-				{
-					source.SetException(new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {base.ConsumerName}, topic {_topicName}, subscription {base.Subscription}"));
-				}
-
-				var res = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				var requestId = res.Id;
-				var getLastIdCmd = Commands.NewGetLastMessageId(_consumerId, requestId);
-				_log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
-				var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
-                try
+            ///todo: add response to queue, where there is a retry, add something in the queue so that client knows we are 
+            ///retrying in times delay
+            ///
+            var rmTime = remainingTim;
+            while (true)
+            {
+                var cnx = _clientCnx;
+                if (Connected() && cnx != null)
                 {
-					var result = await cnx.Ask<LastMessageIdResponse>(payload);
-					IMessageId lastMessageId;
-					MessageId markDeletePosition = null;
-					if (result.MarkDeletePosition != null)
-					{
-						markDeletePosition = new MessageId(result.MarkDeletePosition.LedgerId, result.MarkDeletePosition.EntryId, -1);
-					}
-					_log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
-					if (result.BatchIndex < 0)
-					{
-						lastMessageId = new MessageId(result.LedgerId, result.EntryId, result.Partition);
-					}
-					else
-					{
-						lastMessageId = new BatchMessageId(result.LedgerId, result.EntryId, result.Partition, result.BatchIndex);
-						
-					}
+                    var protocolVersion = _protocolVersion;
+                    if (!Commands.PeerSupportsGetLastMessageId(protocolVersion))
+                    {
+                        throw new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {base.ConsumerName}, topic {_topicName}, subscription {base.Subscription}");
+                    }
 
-					source.SetResult(new GetLastMessageIdResponse(lastMessageId, markDeletePosition));
-				}
-				catch(Exception ex)
+                    var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                    var requestId = res.Id;
+                    var getLastIdCmd = Commands.NewGetLastMessageId(_consumerId, requestId);
+                    _log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
+                    var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
+                    try
+                    {
+                        var result = await cnx.Ask<LastMessageIdResponse>(payload);
+                        IMessageId lastMessageId;
+                        MessageId markDeletePosition = null;
+                        if (result.MarkDeletePosition != null)
+                        {
+                            markDeletePosition = new MessageId(result.MarkDeletePosition.LedgerId, result.MarkDeletePosition.EntryId, -1);
+                        }
+                        _log.Info($"[{Topic}][{Subscription}] Successfully getLastMessageId {result.LedgerId}:{result.EntryId}");
+                        if (result.BatchIndex < 0)
+                        {
+                            lastMessageId = new MessageId(result.LedgerId, result.EntryId, result.Partition);
+                        }
+                        else
+                        {
+                            lastMessageId = new BatchMessageId(result.LedgerId, result.EntryId, result.Partition, result.BatchIndex);
+
+                        }
+
+                        return new GetLastMessageIdResponse(lastMessageId, markDeletePosition);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command");
+                        throw PulsarClientException.Wrap(ex, $"The subscription {Subscription} of the topic {_topicName} gets the last message id was failed");
+                    }
+                }
+                else
                 {
-					_log.Error($"[{Topic}][{Subscription}] Failed getLastMessageId command");
-					source.SetException(PulsarClientException.Wrap(ex, $"The subscription {Subscription} of the topic {_topicName} gets the last message id was failed"));
-					return;
-				}
-			}
-			else
-			{
-				var nextDelay = Math.Min(backoff.Next(), remainingTime);
-				if(nextDelay <= 0)
-				{
-					source.SetException(new PulsarClientException.TimeoutException($"The subscription {Subscription} of the topic {_topicName} could not get the last message id " + "withing configured timeout"));
-					return;
-					
-				}
-				_context.System.Scheduler.Advanced.ScheduleOnce(TimeSpan.FromMilliseconds(nextDelay), async () =>
-				{
-					var log = _log;
-					var remaining = remainingTime - nextDelay;
-					log.Warning("[{}] [{}] Could not get connection while getLastMessageId -- Will try again in {} ms", Topic, HandlerName, nextDelay);
-					
-					await InternalGetLastMessageId(backoff, remaining, source);
-				});
-			}
+                    var nextDelay = Math.Min(backoff.Next(), rmTime);
+                    if (nextDelay <= 0)
+                    {
+                        throw new PulsarClientException.TimeoutException($"The subscription {Subscription} of the topic {_topicName} could not get the last message id " + "withing configured timeout");
+
+                    }
+                    _log.Warning("[{}] [{}] Could not get connection while getLastMessageId -- Will try again in {} ms", Topic, HandlerName, nextDelay);
+                    await Task.Delay(TimeSpan.FromMilliseconds(nextDelay));
+                    rmTime = rmTime - nextDelay;
+                }
+            }
 		}
 
 		private IMessageId GetMessageId<T1>(IMessage<T1> msg)
@@ -2747,8 +2702,7 @@ namespace SharpPulsar
 			}
 			return new Option<EncryptionContext>(encryptionCtx);
 		}
-
-		private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
+        private int RemoveExpiredMessagesFromQueue(ISet<IMessageId> messageIds)
 		{
 			var messagesFromQueue = 0;
 			if (IncomingMessages.TryReceive(out var peek))

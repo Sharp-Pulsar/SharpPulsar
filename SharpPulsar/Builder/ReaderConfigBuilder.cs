@@ -4,6 +4,7 @@ using System.Linq;
 using Akka.Util.Internal;
 using SharpPulsar.Batch;
 using SharpPulsar.Common;
+using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Precondition;
 using Range = SharpPulsar.Common.Range;
@@ -26,7 +27,7 @@ using Range = SharpPulsar.Common.Range;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Configuration
+namespace SharpPulsar.Builder
 {
     public sealed class ReaderConfigBuilder<T>
     {
@@ -53,7 +54,7 @@ namespace SharpPulsar.Configuration
         }
         public ReaderConfigBuilder<T> KeyHashRange(params Range[] ranges)
         {
-            Precondition.Condition.CheckArgument(ranges != null && ranges.Length > 0, "Cannot specify a null ofr an empty key hash ranges for a reader");
+            Condition.CheckArgument(ranges != null && ranges.Length > 0, "Cannot specify a null ofr an empty key hash ranges for a reader");
             for (var i = 0; i < ranges.Length; i++)
             {
                 var range1 = ranges[i];
@@ -103,7 +104,7 @@ namespace SharpPulsar.Configuration
         {
             Condition.CheckArgument(topicNames != null && topicNames.Count > 0, "Passed in topicNames should not be null or empty.");
             topicNames.ForEach(topicName => Condition.CheckArgument(!string.IsNullOrWhiteSpace(topicName), "topicNames cannot have blank topic"));
-            _conf.TopicNames.AddRange(topicNames.Select(x=> x.Trim()).ToList());
+            _conf.TopicNames.AddRange(topicNames.Select(x => x.Trim()).ToList());
             return this;
         }
         public ReaderConfigBuilder<T> StartMessageId(long ledgerId, long entryId, int partitionIndex, int batchIndex)

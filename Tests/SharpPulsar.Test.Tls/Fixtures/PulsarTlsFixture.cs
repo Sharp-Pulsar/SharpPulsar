@@ -16,6 +16,7 @@ namespace SharpPulsar.Test.Tls.Fixtures
 {
     using DotNet.Testcontainers.Builders;
     using Microsoft.Extensions.Configuration;
+    using SharpPulsar.Builder;
     using SharpPulsar.Configuration;
     using SharpPulsar.TestContainer;
     using SharpPulsar.User;

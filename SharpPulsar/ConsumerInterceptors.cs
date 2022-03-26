@@ -35,10 +35,10 @@ namespace SharpPulsar
 
 		private readonly IList<IConsumerInterceptor<T>> _interceptors;
 
-		public ConsumerInterceptors(ActorSystem system, IList<IConsumerInterceptor<T>> interceptors)
+		public ConsumerInterceptors(ILoggingAdapter log, IList<IConsumerInterceptor<T>> interceptors)
 		{
 			_interceptors = interceptors;
-            _log = system.Log;
+            _log = log;
         }
 
 		/// <summary>

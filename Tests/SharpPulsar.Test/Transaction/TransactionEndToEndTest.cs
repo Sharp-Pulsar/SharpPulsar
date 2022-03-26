@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;

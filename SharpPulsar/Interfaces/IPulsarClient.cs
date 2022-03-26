@@ -1,4 +1,4 @@
-﻿using SharpPulsar.Configuration;
+﻿using SharpPulsar.Builder;
 using SharpPulsar.Transaction;
 using SharpPulsar.User;
 using System.Collections.Generic;
@@ -28,8 +28,8 @@ namespace SharpPulsar.Interfaces
     /// <summary>
     /// Class that provides a client interface to Pulsar.
     /// 
-    /// <para>Client instances are thread-safe and can be reused for managing multiple <seealso cref="Producer"/>, <seealso cref="Consumer"/> and
-    /// <seealso cref="Reader"/> instances.
+    /// <para>Client instances are thread-safe and can be reused for managing multiple <seealso cref="Producer{T}"/>, <seealso cref="Consumer{T}"/> and
+    /// <seealso cref="Reader{T}"/> instances.
     /// 
     /// </para>
     /// <para>Example of constructing a client:
@@ -44,142 +44,150 @@ namespace SharpPulsar.Interfaces
     public interface IPulsarClient
 	{
 
-		/// <summary>
-		/// Create a producer builder that can be used to configure
-		/// and construct a producer with default <seealso cref="Schema.BYTES"/>.
-		/// 
-		/// <para>Example:
-		/// 
-		/// <pre>{@code
-		/// Producer<byte[]> producer = client.newProducer()
-		///                  .topic("my-topic")
-		///                  .create();
-		/// producer.send("test".getBytes());
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
-		/// 
-		/// @since 2.0.0 </returns>
-		Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder);
+        /// <summary>
+        /// Create a producer builder that can be used to configure
+        /// and construct a producer with default <seealso cref="ISchema{T}.Bytes"/>.
+        /// 
+        /// <para>Example:
+        /// 
+        /// <pre>{@code
+        /// Producer<byte[]> producer = client.newProducer()
+        ///                  .topic("my-topic")
+        ///                  .create();
+        /// producer.send("test".getBytes());
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> a <seealso cref="Producer{T}"/> instance
+        /// 
+        /// @since 2.0.0 </returns>
+        Producer<byte[]> NewProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder);
+
+        /// <inheritdoc cref="NewProducer(ProducerConfigBuilder{byte[]})"/>
 		ValueTask<Producer<byte[]>> NewProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder);
 
-		/// <summary>
-		/// Create a producer builder that can be used to configure
-		/// and construct a producer with the specified schema.
-		/// 
-		/// <para>Example:
-		/// 
-		/// <pre>{@code
-		/// Producer<String> producer = client.newProducer(Schema.STRING)
-		///                  .topic("my-topic")
-		///                  .create();
-		/// producer.send("test");
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="schema">
-		///          provide a way to convert between serialized data and domain objects
-		/// </param>
-		/// <returns> a <seealso cref="ProducerBuilder"/> object to configure and construct the <seealso cref="Producer"/> instance
-		/// 
-		/// @since 2.0.0 </returns>
-		Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
+        /// <summary>
+        /// Create a producer builder that can be used to configure
+        /// and construct a producer with the specified schema.
+        /// 
+        /// <para>Example:
+        /// 
+        /// <pre>{@code
+        /// Producer<String> producer = client.newProducer(Schema.STRING)
+        ///                  .topic("my-topic")
+        ///                  .create();
+        /// producer.send("test");
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="schema">
+        ///          provide a way to convert between serialized data and domain objects
+        /// </param>
+        /// <returns> a <seealso cref="Producer{T}"/> instance
+        /// 
+        /// @since 2.0.0 </returns>
+        Producer<T> NewProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
+
+        /// <inheritdoc cref="NewProducer{T}(ISchema{T}, ProducerConfigBuilder{T})"/>
 		ValueTask<Producer<T>> NewProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> producerConfigBuilder);
 
-		/// <summary>
-		/// Create a consumer builder with no schema (<seealso cref="Schema.BYTES"/>) for subscribing to
-		/// one or more topics.
-		/// 
-		/// <pre>{@code
-		/// Consumer<byte[]> consumer = client.newConsumer()
-		///        .topic("my-topic")
-		///        .subscriptionName("my-subscription-name")
-		///        .subscribe();
-		/// 
-		/// while (true) {
-		///     Message<byte[]> message = consumer.receive();
-		///     System.out.println("Got message: " + message.getValue());
-		///     consumer.acknowledge(message);
-		/// }
-		/// }</pre>
-		/// </summary>
-		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
-		/// 
-		/// @since 2.0.0 </returns>
-		Consumer<byte[]> NewConsumer(ConsumerConfigBuilder<byte[]> conf);
+        /// <summary>
+        /// Create a consumer builder with no schema (<seealso cref="ISchema{T}.Bytes"/>) for subscribing to
+        /// one or more topics.
+        /// 
+        /// <pre>{@code
+        /// Consumer<byte[]> consumer = client.newConsumer()
+        ///        .topic("my-topic")
+        ///        .subscriptionName("my-subscription-name")
+        ///        .subscribe();
+        /// 
+        /// while (true) {
+        ///     Message<byte[]> message = consumer.receive();
+        ///     System.out.println("Got message: " + message.getValue());
+        ///     consumer.acknowledge(message);
+        /// }
+        /// }</pre>
+        /// </summary>
+        /// <returns> a <seealso cref="Consumer{T}"/> instance
+        /// 
+        /// @since 2.0.0 </returns>
+        Consumer<byte[]> NewConsumer(ConsumerConfigBuilder<byte[]> conf);
+
+        /// <inheritdoc cref="NewConsumerAsync(ConsumerConfigBuilder{byte[]})"/>
 		ValueTask<Consumer<byte[]>> NewConsumerAsync(ConsumerConfigBuilder<byte[]> conf);
 
-		/// <summary>
-		/// Create a consumer builder with a specific schema for subscribing on a specific topic
-		/// 
-		/// <para>Since 2.2, if you are creating a consumer with non-bytes schema on a non-existence topic, it will
-		/// automatically create the topic with the provided schema.
-		/// 
-		/// <pre>{@code
-		/// Consumer<String> consumer = client.newConsumer(Schema.STRING)
-		///        .topic("my-topic")
-		///        .subscriptionName("my-subscription-name")
-		///        .subscribe();
-		/// 
-		/// while (true) {
-		///     Message<String> message = consumer.receive();
-		///     System.out.println("Got message: " + message.getValue());
-		///     consumer.acknowledge(message);
-		/// }
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="schema">
-		///          provide a way to convert between serialized data and domain objects </param>
-		/// <returns> a <seealso cref="ConsumerBuilder"/> object to configure and construct the <seealso cref="Consumer"/> instance
-		/// 
-		/// @since 2.0.0 </returns>
-		Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
+        /// <summary>
+        /// Create a consumer builder with a specific schema for subscribing on a specific topic
+        /// 
+        /// <para>Since 2.2, if you are creating a consumer with non-bytes schema on a non-existence topic, it will
+        /// automatically create the topic with the provided schema.
+        /// 
+        /// <pre>{@code
+        /// Consumer<String> consumer = client.newConsumer(Schema.STRING)
+        ///        .topic("my-topic")
+        ///        .subscriptionName("my-subscription-name")
+        ///        .subscribe();
+        /// 
+        /// while (true) {
+        ///     Message<String> message = consumer.receive();
+        ///     System.out.println("Got message: " + message.getValue());
+        ///     consumer.acknowledge(message);
+        /// }
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="schema">
+        ///          provide a way to convert between serialized data and domain objects </param>
+        /// <returns> a <seealso cref="Consumer{T}"/> instance
+        /// 
+        /// @since 2.0.0 </returns>
+        Consumer<T> NewConsumer<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
+
+        /// <inheritdoc cref="NewConsumerAsync{T}(ISchema{T}, ConsumerConfigBuilder{T})"/>
 		ValueTask<Consumer<T>> NewConsumerAsync<T>(ISchema<T> schema, ConsumerConfigBuilder<T> conf);
 
-		/// <summary>
-		/// Create a topic reader builder with no schema (<seealso cref="Schema.BYTES"/>) to read from the specified topic.
-		/// 
-		/// <para>The Reader provides a low-level abstraction that allows for manual positioning in the topic, without using a
-		/// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageId)"/>
-		/// that can either be:
-		/// <ul>
-		/// <li><seealso cref="MessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
-		/// <li><seealso cref="MessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
-		/// published <b>*after*</b> the creation of the builder</li>
-		/// <li><seealso cref="MessageId"/>: Position the reader on a particular message. The first message read will be the one
-		/// immediately <b>*after*</b> the specified message</li>
-		/// </ul>
-		/// 
-		/// </para>
-		/// <para>A Reader can only from non-partitioned topics. In case of partitioned topics, one can create the readers
-		/// directly on the individual partitions. See <seealso cref="getPartitionsForTopic(string)"/> for how to get the
-		/// topic partitions names.
-		/// 
-		/// </para>
-		/// <para>Example of usage of Reader:
-		/// <pre>{@code
-		/// Reader<byte[]> reader = client.newReader()
-		///        .topic("my-topic")
-		///        .startMessageId(MessageId.earliest)
-		///        .create();
-		/// 
-		/// while (true) {
-		///     Message<byte[]> message = reader.readNext();
-		///     System.out.println("Got message: " + message.getValue());
-		///     // Reader doesn't need acknowledgments
-		/// }
-		/// }</pre>
-		/// 
-		/// </para>
-		/// </summary>
-		/// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
-		/// @since 2.0.0 </returns>
-		Reader<byte[]> NewReader(ReaderConfigBuilder<byte[]> conf);
+        /// <summary>
+        /// Create a topic reader builder with no schema (<seealso cref="ISchema{T}.Bytes"/>) to read from the specified topic.
+        /// 
+        /// <para>The Reader provides a low-level abstraction that allows for manual positioning in the topic, without using a
+        /// subscription. A reader needs to be specified a <seealso cref="ReaderBuilder.startMessageId(MessageId)"/>
+        /// that can either be:
+        /// <ul>
+        /// <li><seealso cref="MessageId.earliest"/>: Start reading from the earliest message available in the topic</li>
+        /// <li><seealso cref="MessageId.latest"/>: Start reading from end of the topic. The first message read will be the one
+        /// published <b>*after*</b> the creation of the builder</li>
+        /// <li><seealso cref="MessageId"/>: Position the reader on a particular message. The first message read will be the one
+        /// immediately <b>*after*</b> the specified message</li>
+        /// </ul>
+        /// 
+        /// </para>
+        /// <para>A Reader can only from non-partitioned topics. In case of partitioned topics, one can create the readers
+        /// directly on the individual partitions. See <seealso cref="getPartitionsForTopic(string)"/> for how to get the
+        /// topic partitions names.
+        /// 
+        /// </para>
+        /// <para>Example of usage of Reader:
+        /// <pre>{@code
+        /// Reader<byte[]> reader = client.newReader()
+        ///        .topic("my-topic")
+        ///        .startMessageId(MessageId.earliest)
+        ///        .create();
+        /// 
+        /// while (true) {
+        ///     Message<byte[]> message = reader.readNext();
+        ///     System.out.println("Got message: " + message.getValue());
+        ///     // Reader doesn't need acknowledgments
+        /// }
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <returns> a <seealso cref="ReaderBuilder"/> that can be used to configure and construct a <seealso cref="Reader"/> instance
+        /// @since 2.0.0 </returns>
+        Reader<byte[]> NewReader(ReaderConfigBuilder<byte[]> conf);
 		ValueTask<Reader<byte[]>> NewReaderAsync(ReaderConfigBuilder<byte[]> conf);
 
 		/// <summary>
@@ -225,19 +233,44 @@ namespace SharpPulsar.Interfaces
 		Reader<T> NewReader<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
 		ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> conf);
 
-		/// <summary>
-		/// Update the service URL this client is using.
-		/// 
-		/// <para>This will force the client close all existing connections and to restart service discovery to the new service
-		/// endpoint.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="serviceUrl">
-		///            the new service URL this client should connect to </param>
-		/// <exception cref="PulsarClientException">
-		///             in case the serviceUrl is not valid </exception>
-		void UpdateServiceUrl(string serviceUrl);
+        /// <summary>
+        /// Update the service URL this client is using.
+        /// 
+        /// <para>This will force the client close all existing connections and to restart service discovery to the new service
+        /// endpoint.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="serviceUrl">
+        ///            the new service URL this client should connect to </param>
+        /// <exception cref="PulsarClientException">
+        ///             in case the serviceUrl is not valid </exception>
+        ///             
+
+        /// <summary>
+        /// Create a table view builder with a specific schema for subscribing on a specific topic.
+        /// 
+        /// <para>The TableView provides a key-value map view of a compacted topic. Messages without keys will
+        /// be ignored.
+        /// 
+        /// </para>
+        /// <para>Example:
+        /// <pre>{@code
+        ///  TableView<byte[]> tableView = client.newTableView(Schema.BYTES)
+        ///            .topic("my-topic")
+        ///            .autoUpdatePartitionsInterval(5, TimeUnit.SECONDS)
+        ///            .create();
+        /// 
+        ///  tableView.forEach((k, v) -> System.out.println(k + ":" + v));
+        /// }</pre>
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="schema"> provide a way to convert between serialized data and domain objects </param>
+        /// <returns> a <seealso cref="ITableViewBuilder{T}"/> instance </returns>
+        ITableViewBuilder<T> NewTableViewBuilder<T>(ISchema<T> schema);
+
+        void UpdateServiceUrl(string serviceUrl);
 
 		/// <summary>
 		/// Get the list of partitions for a given topic.

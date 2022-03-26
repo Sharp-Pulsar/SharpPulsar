@@ -1,14 +1,10 @@
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Nuke.Common;
 using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
-using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
 using Nuke.Common.Git;
 using Nuke.Common.IO;
@@ -31,6 +27,7 @@ using System.IO;
 using System.Collections.Generic;
 using SharpPulsar.TestContainer.TestUtils;
 using Docker.DotNet;
+using Octokit;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
@@ -60,7 +57,7 @@ partial class Build : NukeBuild
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/OWNER/index.json";
+    [Parameter] string GithubSource = "https://nuget.pkg.github.com/eaba/sharppulsar";
 
     [Parameter] bool Container = false;
 
@@ -81,6 +78,8 @@ partial class Build : NukeBuild
     public string ChangelogFile => RootDirectory / "CHANGELOG.md";
     public AbsolutePath DocFxDir => RootDirectory / "docs";
     public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
+
+    GitHubClient GitHubClient;
 
     static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
         null
@@ -119,7 +118,7 @@ partial class Build : NukeBuild
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
-                .SetAssemblyVersion(vers)
+                //.SetAssemblyVersion(vers)
                 .SetFileVersion(vers)
                 .SetVersion(GitVersion.SemVer));
         });
@@ -172,7 +171,7 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
                     .SetResultsDirectory(OutputTests / "tests")
-                    .SetLoggers("GitHubActions")
+                    .SetLoggers("trx")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
@@ -180,6 +179,27 @@ partial class Build : NukeBuild
             }
             //if(Container)
                // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
+        });
+    Target AutoFailOverTest => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            var project = Solution.GetProject("SharpPulsar.Test.AutoClusterFailover");
+            Information($"Running tests from {project.Name}");
+            foreach (var fw in project.GetTargetFrameworks())
+            {
+                DotNetTest(c => c
+                    .SetProjectFile(project)
+                    .SetConfiguration(Configuration.ToString())
+                    .SetFramework(fw)
+                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                    .SetResultsDirectory(OutputTests / "tests")
+                    .SetLoggers("trx")
+                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                    .EnableNoBuild());
+            }
         });
     //--------------------------------------------------------------------------------
     // Documentation 
@@ -253,6 +273,7 @@ partial class Build : NukeBuild
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
       .Requires(() => !GitHubToken.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
+      .Triggers(GitHubRelease)
       .Executes(() =>
       {
           OutputNuget.GlobFiles("*.nupkg")
@@ -273,19 +294,58 @@ partial class Build : NukeBuild
                       .SetSymbolSource(GithubSource));
               });
       });
-    protected override void OnBuildCreated()
-    {
-        if (Container)
-            DIContainer.RegisterDockerClient();
+    Target AuthenticatedGitHubClient => _ => _
+        .Unlisted()
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .Executes(() =>
+        {
+            GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
+            {
+                Credentials = new Octokit.Credentials(GitHubToken, AuthenticationType.Bearer)
+            };
+        });
+    Target GitHubRelease => _ => _
+        .Unlisted()
+        .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .DependsOn(AuthenticatedGitHubClient)
+        .Executes(async () =>
+        {
+            var version = GitVersion.SemVer;
+            var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
+            Release release;
+            var identifier = GitRepository.Identifier.Split("/");
+            var (gitHubOwner, repoName) = (identifier[0], identifier[1]);
+            try
+            {
+                release = await GitHubClient.Repository.Release.Get(gitHubOwner, repoName, version);
+            }
+            catch (NotFoundException)
+            {
+                var newRelease = new NewRelease(version)
+                {
+                    Body = releaseNotes,
+                    Name = version,
+                    Draft = false,
+                    Prerelease = GitRepository.IsOnReleaseBranch()
+                };
+                release = await GitHubClient.Repository.Release.Create(gitHubOwner, repoName, newRelease);
+            }
 
-        base.OnBuildCreated();
-    }
-    static async Task SaveFile(string containerName, string sourcePath, string outputPath)
-    {
-        var client = DIContainer.Get<DockerClient>();
-        var file = await client.Containers.GetArchiveFromContainerByNameAsync(sourcePath, containerName);
-        ArchiveHelper.Extract(file.Stream, outputPath);
-    }
+            foreach (var existingAsset in release.Assets)
+            {
+                await GitHubClient.Repository.Release.DeleteAsset(gitHubOwner, repoName, existingAsset.Id);
+            }
+
+            Information($"GitHub Release {version}");
+            var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
+            foreach (var artifact in packages)
+            {
+                var releaseAssetUpload = new ReleaseAssetUpload(artifact.Name, "application/zip", File.OpenRead(artifact), null);
+                var releaseAsset = await GitHubClient.Repository.Release.UploadAsset(release, releaseAssetUpload);
+                Information($"  {releaseAsset.BrowserDownloadUrl}");
+            }
+        });
     string ParseReleaseNote()
     {
         return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;

@@ -20,22 +20,23 @@
 /// </summary>
 
 using Akka.Actor;
+using Akka.Event;
 using SharpPulsar.Batch.Api;
 
 namespace SharpPulsar.Batch
 {
     public class DefaultBatcherBuilder : IBatcherBuilder
     {
-        private readonly ActorSystem _system;
+        private readonly ILoggingAdapter _log;
 
-        public DefaultBatcherBuilder(ActorSystem system)
+        public DefaultBatcherBuilder(ILoggingAdapter log)
         {
-            _system = system;
+            _log = log;
         }
 
         public IBatchMessageContainer Build<T>()
         {
-            return new BatchMessageContainer<T>(_system);
+            return new BatchMessageContainer<T>(_log);
         }
 
     }

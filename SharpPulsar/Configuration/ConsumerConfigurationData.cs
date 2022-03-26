@@ -83,7 +83,9 @@ namespace SharpPulsar.Configuration
 
 	    public SubscriptionMode SubscriptionMode = SubscriptionMode.Durable;
 
-		public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
+        public IDictionary<string, string> SubscriptionProperties;
+
+        public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
 		
         public BatchReceivePolicy BatchReceivePolicy { get; set; }

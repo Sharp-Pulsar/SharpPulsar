@@ -34,16 +34,17 @@ namespace SharpPulsar
         private SingleMessageMetadata _singleMessageMetadata;
         private MessageId _messageId;
         private int _redeliveryCount;
+        private long _consumerEpoch;
         private BatchMessageAcker _acker;
         private BitSet _ackBitSet;
-        private Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, IMessage<T>> _asSingleMessage;
-        private Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, IMessage<T>> _newSingleMessage;
+        private Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, long, IMessage<T>> _asSingleMessage;
+        private Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, long, IMessage<T>> _newSingleMessage;
         private Func<MessageMetadata, bool> _isBatch;
 
-        public static MessagePayloadContext<T> Get(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, MessageId messageId, int redeliveryCount, IList<long> ackSet, 
+        public static MessagePayloadContext<T> Get(BrokerEntryMetadata brokerEntryMetadata, MessageMetadata messageMetadata, MessageId messageId, int redeliveryCount, IList<long> ackSet, long consumerEpoch, 
             Func<MessageMetadata, bool> isbacth, 
-            Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, IMessage<T>> asSingleMessage,
-            Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, IMessage<T>> newSingleMessage)
+            Func<MessageId, BrokerEntryMetadata, MessageMetadata, ReadOnlySequence<byte>, ISchema<T>, int, long, IMessage<T>> asSingleMessage,
+            Func<int, int, BrokerEntryMetadata, MessageMetadata, SingleMessageMetadata, byte[], MessageId, ISchema<T>, bool, BitSet, BatchMessageAcker, int, long, IMessage<T>> newSingleMessage)
         {
             var context = new MessagePayloadContext<T>
             {
@@ -51,6 +52,7 @@ namespace SharpPulsar
                 _messageMetadata = messageMetadata,
                 _singleMessageMetadata = new SingleMessageMetadata(),
                 _messageId = messageId,
+                _consumerEpoch = consumerEpoch, 
                 _redeliveryCount = redeliveryCount,
                 _isBatch = isbacth,
                 _asSingleMessage = asSingleMessage,
@@ -105,7 +107,7 @@ namespace SharpPulsar
             var payloadBuffer = MessagePayloadUtils.ConvertToArray(payload);
             try
             {
-                return _newSingleMessage(index, numMessages, _brokerEntryMetadata, _messageMetadata, _singleMessageMetadata, payloadBuffer, _messageId, schema, containMetadata, _ackBitSet, _acker, _redeliveryCount);
+                return _newSingleMessage(index, numMessages, _brokerEntryMetadata, _messageMetadata, _singleMessageMetadata, payloadBuffer, _messageId, schema, containMetadata, _ackBitSet, _acker, _redeliveryCount, _consumerEpoch);
             }
             finally
             {
@@ -119,7 +121,7 @@ namespace SharpPulsar
             try
             {
                 //return consumer.NewMessage(_messageId, _brokerEntryMetadata, _messageMetadata, payloadBuffer, schema, _redeliveryCount);
-                return (IMessage<T>)_asSingleMessage(_messageId, _brokerEntryMetadata, _messageMetadata, new ReadOnlySequence<byte>(payloadBuffer), schema, _redeliveryCount);
+                return (IMessage<T>)_asSingleMessage(_messageId, _brokerEntryMetadata, _messageMetadata, new ReadOnlySequence<byte>(payloadBuffer), schema, _redeliveryCount, _consumerEpoch);
             }
             finally
             {

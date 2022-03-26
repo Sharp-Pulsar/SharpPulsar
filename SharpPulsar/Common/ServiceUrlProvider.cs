@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+using Akka.Actor;
+using SharpPulsar.User;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -30,25 +33,35 @@ namespace SharpPulsar.Common
 	/// </summary>
 	public interface IServiceUrlProvider
 	{
+        /// <summary>
+        /// Initialize the service url provider with Pulsar client instance.
+        /// 
+        /// <para>This can be used by the provider to force the Pulsar client to reconnect whenever the service url might have
+        /// changed. See <seealso cref="PulsarClient.UpdateServiceUrl(string)"/>.
+        /// 
+        /// </para>
+        /// </summary>
+        /// <param name="client">
+        ///            created pulsar client. </param>
+        void Initialize(PulsarClient pulsarClient);
 
-		/// <summary>
-		/// Initialize the service url provider with Pulsar client instance.
-		/// 
-		/// <para>This can be used by the provider to force the Pulsar client to reconnect whenever the service url might have
-		/// changed. See <seealso cref="UpdateServiceUrl(string)"/>.
-		/// 
-		/// </para>
-		/// </summary>
-		/// <param name="client">
-		///            created pulsar client. </param>
-		//void Initialize(IPulsarClient client);
 
-		/// <summary>
-		/// Get the current service URL the Pulsar client should connect to.
-		/// </summary>
-		/// <returns> the pulsar service url. </returns>
-		string ServiceUrl {get;}
+        void CreateActor(ActorSystem actorSystem);
 
-	}
+
+        /// <summary>
+        /// Get the current service URL the Pulsar client should connect to.
+        /// </summary>
+        /// <returns> the pulsar service url. </returns>
+
+        string ServiceUrl { get; }
+
+        /// <summary>
+        /// Get the current service URL the Pulsar client should connect to.
+        /// </summary>
+        /// <returns> the pulsar service url. </returns>
+        ValueTask<string> ServiceUrlAsync();
+
+    }
 
 }

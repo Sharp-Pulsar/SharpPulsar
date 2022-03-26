@@ -115,10 +115,10 @@ namespace SharpPulsar
 
 		public virtual void UpdateServiceUrl(string serviceUrl)
 		{
-			_log.Info("Updating service URL to {}", serviceUrl);
+			_log.Info($"Updating service URL to {serviceUrl}");
 
 			_conf.ServiceUrl = serviceUrl;
-			_lookup.Tell(new UpdateServiceUrl(serviceUrl));
+			var asked = _lookup.Ask<int>(new UpdateServiceUrl(serviceUrl)).GetAwaiter().GetResult();
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 

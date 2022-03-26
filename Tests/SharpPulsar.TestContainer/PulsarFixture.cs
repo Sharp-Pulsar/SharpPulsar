@@ -2,7 +2,10 @@
 using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
+using SharpPulsar.Interfaces;
+using SharpPulsar.ServiceProvider;
 using SharpPulsar.User;
 using Xunit;
 
@@ -12,7 +15,6 @@ namespace SharpPulsar.TestContainer
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        public ClientConfigurationData ClientConfigurationData;
         private readonly IConfiguration _configuration; 
         public virtual PulsarTestcontainerConfiguration Configuration { get; }
 
@@ -41,12 +43,11 @@ namespace SharpPulsar.TestContainer
         public virtual async Task InitializeAsync()
         {
             await Container.StartAsync();//;.GetAwaiter().GetResult();
-            AwaitPortReadiness($"http://127.0.0.1:8080/metrics/").GetAwaiter().GetResult();
-            Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" }).GetAwaiter().GetResult();
+            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
 
-            AwaitPortReadiness($"http://127.0.0.1:8081/").GetAwaiter().GetResult();
-            SetupSystem().GetAwaiter().GetResult();
-            await Task.CompletedTask;  
+            await AwaitPortReadiness($"http://127.0.0.1:8081/");
+            await SetupSystem();
         }
         public async ValueTask AwaitPortReadiness(string address)
         {
@@ -77,9 +78,10 @@ namespace SharpPulsar.TestContainer
         }
         public virtual async Task DisposeAsync()
         {
-            await Container.DisposeAsync().AsTask();
+            
             try
             {
+                await Container.DisposeAsync().AsTask();
                 if (Client != null)
                     await Client.ShutdownAsync();
             }
@@ -97,8 +99,7 @@ namespace SharpPulsar.TestContainer
                 .Build();
         }
         public virtual async ValueTask SetupSystem()
-        {
-            var client = new PulsarClientConfigBuilder();
+        {            
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
             var webUrl = clienConfigSetting.GetSection("web-url").Value;
@@ -114,6 +115,7 @@ namespace SharpPulsar.TestContainer
             var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
 
 
+            var client = new PulsarClientConfigBuilder();
             client.EnableTransaction(enableTxn);
 
             if (operationTime > 0)
@@ -125,7 +127,9 @@ namespace SharpPulsar.TestContainer
             if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
                 client.Authentication(authPluginClassName, authParamsString);
 
+            
             client.ServiceUrl(serviceUrl);
+
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
             client.StatsInterval(statsInterval);
@@ -134,7 +138,6 @@ namespace SharpPulsar.TestContainer
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
-            ClientConfigurationData = client.ClientConfigurationData;
         }
         public void Dispose()
         {

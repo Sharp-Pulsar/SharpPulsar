@@ -173,9 +173,8 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the client builder instance </returns>
 		/// <exception cref="UnsupportedAuthenticationException">
 		///             failed to instantiate specified Authentication-Plugin </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: ClientBuilder authentication(String authPluginClassName, String authParamsString) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-		IClientBuilder Authentication(string authPluginClassName, string authParamsString);
+
+        IClientBuilder Authentication(string authPluginClassName, string authParamsString);
 
 		/// <summary>
 		/// Configure the authentication provider to use in the Pulsar client instance
@@ -203,9 +202,8 @@ namespace SharpPulsar.Interfaces
 		/// <returns> the client builder instance </returns>
 		/// <exception cref="UnsupportedAuthenticationException">
 		///             failed to instantiate specified Authentication-Plugin </exception>
-//JAVA TO C# CONVERTER WARNING: Method 'throws' clauses are not available in C#:
-//ORIGINAL LINE: ClientBuilder authentication(String authPluginClassName, java.util.Map<String, String> authParams) throws org.apache.pulsar.client.api.PulsarClientException.UnsupportedAuthenticationException;
-		IClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams);
+
+        IClientBuilder Authentication(string authPluginClassName, IDictionary<string, string> authParams);
 
 		/// <summary>
 		/// Set the operation timeout <i>(default: 30 seconds)</i>.
@@ -466,12 +464,12 @@ namespace SharpPulsar.Interfaces
 
 		/// <summary>
 		/// Proxy-service url when client would like to connect to broker via proxy. Client can choose type of proxy-routing
-		/// using <seealso cref="ProxyProtocol"/>.
+		/// using <seealso cref="IProxyProtocol"/>.
 		/// </summary>
 		/// <param name="proxyServiceUrl"> proxy service url </param>
 		/// <param name="proxyProtocol">   protocol to decide type of proxy routing eg: SNI-routing
 		/// @return </param>
-		IClientBuilder ProxyServiceUrl(string proxyServiceUrl, ProxyProtocol proxyProtocol);
+		IClientBuilder ProxyServiceUrl(string proxyServiceUrl, IProxyProtocol proxyProtocol);
 
 		/// <summary>
 		/// If enable transaction, start the transactionCoordinatorClient with pulsar client.

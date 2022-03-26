@@ -1,5 +1,6 @@
 ﻿using System;
 using Akka.Actor;
+using Akka.Event;
 using SharpPulsar.Batch.Api;
 
 /// <summary>
@@ -25,15 +26,15 @@ namespace SharpPulsar.Batch
     [Serializable]
 	public class KeyBasedBatcherBuilder : IBatcherBuilder
 	{
-        private readonly ActorSystem _system;
+        private readonly ILoggingAdapter _log;
 
-		public KeyBasedBatcherBuilder(ActorSystem system)
+		public KeyBasedBatcherBuilder(ILoggingAdapter log)
         {
-            _system = system;
+            _log = log;
         }
 		public virtual IBatchMessageContainer Build<T>()
 		{
-			return new BatchMessageKeyBasedContainer<T>(_system);
+			return new BatchMessageKeyBasedContainer<T>(_log);
 		}
 	}
 

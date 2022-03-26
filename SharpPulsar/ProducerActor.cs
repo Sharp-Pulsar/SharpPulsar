@@ -199,8 +199,8 @@ namespace SharpPulsar
 					}
 					catch (CryptoException e)
 					{
-						Context.System.Log.Warning($"[{Topic}] [{ProducerName().GetAwaiter().GetResult()}] [{_producerId}] Failed to add public key cipher.");
-						Context.System.Log.Error(e.ToString());
+						_log.Warning($"[{Topic}] [{ProducerName().GetAwaiter().GetResult()}] [{_producerId}] Failed to add public key cipher.");
+						_log.Error(e.ToString());
 					}
 				});
 			}
@@ -219,7 +219,7 @@ namespace SharpPulsar
 				var containerBuilder = conf.BatcherBuilder;
 				if(containerBuilder == null)
 				{
-					containerBuilder = IBatcherBuilder.Default(Context.System);
+					containerBuilder = IBatcherBuilder.Default(Context.GetLogger());
 				}
 				_batchMessageContainer = (IBatchMessageContainerBase<T>)containerBuilder.Build<T>();
 				_batchMessageContainer.Producer = Self;
@@ -401,7 +401,7 @@ namespace SharpPulsar
             var epochResponse = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
             var epoch = epochResponse.Epoch;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
-            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled);
+            var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
             var payload = new Payload(cmd, _requestId, "NewProducer");
             await _cnx.Ask<AskResponse>(payload).ContinueWith( async response=>
              {

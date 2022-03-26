@@ -87,7 +87,7 @@ namespace SharpPulsar
 			Receive<UpdateServiceUrl>(u =>
 			{
 				UpdateServiceUrl(u.ServiceUrl);
-
+                Sender.Tell(0);
 			});
 			ReceiveAsync<GetBroker>(async b => 
 			{

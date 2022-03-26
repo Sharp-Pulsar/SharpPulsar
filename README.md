@@ -21,7 +21,8 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] Proxy
 - [x] SNI Routing	
 - [x] Transactions	
-- [x] Subscription(Durable, Non-durable)	
+- [x] Subscription(Durable, Non-durable)
+- [x] Cluster-level Auto Failover
 
 # Producer
 - [x] Exclusive Producer
@@ -67,6 +68,11 @@ with small memory footprint and ~2.5 million actors(or Apache Pulsar Producers/C
 - [x] Multiple Topics		
 - [x] End-to-end Encryption	
 - [x] Interceptors
+
+# TableView
+- [x] Compacted Topics
+- [x] Schema (All supported schema types)
+- [x] Register Listener
 
 # Extras
 - [x] Pulsar SQL

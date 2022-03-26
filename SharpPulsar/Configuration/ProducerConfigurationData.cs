@@ -7,6 +7,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Precondition;
 using SharpPulsar.Protocol.Proto;
+using SharpPulsar.Builder;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -51,6 +52,7 @@ namespace SharpPulsar.Configuration
         public Common.ProducerAccessMode AccessMode = Common.ProducerAccessMode.Shared;
         public int MaxMessageSize { get; set; } = -1;
         public string TopicName { get; set; }
+        public string InitialSubscriptionName { get; set; } = "";
         public int Partitions { get; set; } = 0;
 
 		private long _autoUpdatePartitionsIntervalSeconds = 60;

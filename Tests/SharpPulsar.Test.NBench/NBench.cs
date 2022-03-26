@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NBench;
 using Pro.NBench.xUnit.XunitExtensions;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.NBench.Fixtures;
 using SharpPulsar.TestContainer;

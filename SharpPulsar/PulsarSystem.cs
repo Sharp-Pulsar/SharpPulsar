@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Public;
 using AskResponse = SharpPulsar.Messages.Consumer.AskResponse;
+using SharpPulsar.Builder;
 
 namespace SharpPulsar
 {
@@ -100,8 +101,13 @@ namespace SharpPulsar
                     exit-clr = on
                 }
             }");
-            var clientConf = conf.ClientConfigurationData;
+
             var actorSystem = actorsystem ?? ActorSystem.Create(actorSystemName, confg);
+            if (conf.GetServiceUrlProvider != null)
+            {
+                conf.GetServiceUrlProvider.CreateActor(actorSystem);
+            }
+            var clientConf = conf.ClientConfigurationData;
 
             var cnxPool = actorSystem.ActorOf(ConnectionPool.Prop(clientConf), "ConnectionPool");
             var generator = actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
@@ -112,7 +118,7 @@ namespace SharpPulsar
                 try
                 {
                     var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs));
+                    tcClient = actorSystem.ActorOf(TransactionCoordinatorClient.Prop(lookup, cnxPool, generator, clientConf, tcs), "transaction_coord-client");
                     var count = await tcs.Task.ConfigureAwait(false);
                     if ((int)count <= 0)
                         throw new Exception($"Tranaction Coordinator has '{count}' transaction handler");
@@ -139,12 +145,17 @@ namespace SharpPulsar
                 logging();
             }
             _client = _actorSystem.ActorOf(Props.Create(()=> new PulsarClientActor(_conf,  _cnxPool, _tcClient, _lookup, _generator)), "PulsarClient");
-            _lookup.Tell(new SetClient(_client));
+            _lookup.Tell(new SetClient(_client));           
 
         }
         public PulsarClient NewClient() 
         {
-            return new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
+            var client = new PulsarClient(_client, _lookup, _cnxPool, _generator, _conf, _actorSystem, _tcClient);
+            if (_conf.ServiceUrlProvider != null)
+            {
+                _conf.ServiceUrlProvider.Initialize(client);
+            }
+            return client;
         }
         public EventSourceBuilder EventSource(string tenant, string @namespace, string topic, long fromMessageId, long toMessageId, string brokerWebServiceUrl) 
         {
@@ -174,6 +185,7 @@ namespace SharpPulsar
         }
 
         public ActorSystem System => _actorSystem;
+        public ClientConfigurationData ClientConfigurationData => _conf;
         public async Task Shutdown()
         {
             await _actorSystem.Terminate();

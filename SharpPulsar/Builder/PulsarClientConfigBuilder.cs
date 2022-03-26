@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.Auth;
 using SharpPulsar.Common;
+using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ using System.Security.Cryptography.X509Certificates;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Configuration
+namespace SharpPulsar.Builder
 {
 
     public sealed class PulsarClientConfigBuilder
@@ -179,7 +180,7 @@ namespace SharpPulsar.Configuration
         }
         public PulsarClientConfigBuilder MemoryLimitBytes(long memoryLimitBytes)
         {
-            if(memoryLimitBytes < 1)
+            if (memoryLimitBytes < 1)
                 throw new ArgumentNullException("MemoryLimitBytes must be greater than 0");
 
             _conf.MemoryLimitBytes = memoryLimitBytes;
@@ -234,7 +235,7 @@ namespace SharpPulsar.Configuration
             _conf.Clock = clock;
             return this;
         }
-
+        public IServiceUrlProvider GetServiceUrlProvider => _conf.ServiceUrlProvider;  
         public PulsarClientConfigBuilder EnableTransaction(bool enableTransaction)
         {
             _conf.EnableTransaction = enableTransaction;

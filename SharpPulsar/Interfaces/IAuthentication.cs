@@ -29,7 +29,7 @@ namespace SharpPulsar.Interfaces
 	/// <summary>
 	/// Interface of authentication providers.
 	/// </summary>
-	public interface IAuthentication 
+	public interface IAuthentication : IDisposable
 	{
 
 		/// <returns> the identifier for this authentication method </returns>

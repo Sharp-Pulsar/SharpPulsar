@@ -18,6 +18,7 @@
 /// </summary>
 
 using Akka.Actor;
+using Akka.Event;
 
 namespace SharpPulsar.Batch.Api
 {
@@ -56,8 +57,8 @@ namespace SharpPulsar.Batch.Api
 		/// <returns> new batch message container </returns>
 		IBatchMessageContainer Build<T>();
 
-		public static IBatcherBuilder Default(ActorSystem system) => DefaultImplementation.NewDefaultBatcherBuilder(system);
-		public static IBatcherBuilder KeyBased(ActorSystem system) => DefaultImplementation.NewKeyBasedBatcherBuilder(system);
+		public static IBatcherBuilder Default(ILoggingAdapter log) => DefaultImplementation.NewDefaultBatcherBuilder(log);
+		public static IBatcherBuilder KeyBased(ILoggingAdapter log) => DefaultImplementation.NewKeyBasedBatcherBuilder(log);
 
 	}
 

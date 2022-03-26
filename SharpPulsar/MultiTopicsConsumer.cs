@@ -462,11 +462,11 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex))); 
 				}
 			});
-			Receive<SeekMessageId>(m =>
+			ReceiveAsync<SeekMessageId>(async m =>
 			{
 				try
 				{
-					Seek(m.MessageId);
+					await Seek(m.MessageId);
                     Sender.Tell(new AskResponse());
                 }
 				catch (Exception ex)
@@ -474,11 +474,11 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(PulsarClientException.Unwrap(ex)));
 				}
 			});
-			Receive<SeekTimestamp>(m =>
+			ReceiveAsync<SeekTimestamp>( async m =>
 			{
 				try
 				{
-					Seek(m.Timestamp);
+					await Seek(m.Timestamp);
                     Sender.Tell(new AskResponse());
 				}
 				catch (Exception ex)
@@ -878,32 +878,25 @@ namespace SharpPulsar
             await Task.CompletedTask;
 		}
 
-		internal override TaskCompletionSource<object> Seek(IMessageId messageId)
+		internal override async ValueTask Seek(IMessageId messageId)
 		{
-			try
-			{
-				var targetMessageId = MessageId.ConvertToMessageId(messageId);
-				if (targetMessageId == null || IsIllegalMultiTopicsMessageId(messageId))
-				{
-					Sender.Tell(new AskResponse(new PulsarClientException("Illegal messageId, messageId can only be earliest/latest")));
-				}
-				_consumers.Values.ForEach(c => c.Tell(new SeekMessageId(targetMessageId)));
+            var targetMessageId = MessageId.ConvertToMessageId(messageId);
+            if (targetMessageId == null || IsIllegalMultiTopicsMessageId(messageId))
+            {
+                throw new PulsarClientException("Illegal messageId, messageId can only be earliest/latest");
+            }
+            _consumers.Values.ForEach(c => c.Tell(new SeekMessageId(targetMessageId)));
 
-				_unAckedMessageTracker.Tell(Clear.Instance);
-				IncomingMessages.Empty();
-				IncomingMessagesSize = 0;
-			}
-			catch(Exception e)
-			{
-                Sender.Tell(new AskResponse(PulsarClientException.Unwrap(e)));
-			}
-            return null;
+            _unAckedMessageTracker.Tell(Clear.Instance);
+            IncomingMessages.Empty();
+            IncomingMessagesSize = 0;
+            await Task.CompletedTask;
 		}
 
-		internal override TaskCompletionSource<object> Seek(long timestamp)
+		internal override async ValueTask Seek(long timestamp)
 		{
             _consumers.Values.ForEach(c => c.Tell(new SeekTimestamp(timestamp)));
-            return null;
+            await Task.CompletedTask;
 		}
 
 

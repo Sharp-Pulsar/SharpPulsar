@@ -9,7 +9,18 @@ using SharpPulsar.Interfaces.Interceptor;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Protocol.Proto;
+
+/* Unmerged change from project 'SharpPulsar (net5.0)'
+Before:
 using SharpPulsar.Extension;
+After:
+using SharpPulsar.Extension;
+using SharpPulsar;
+using SharpPulsar.Configuration;
+using SharpPulsar.Builder;
+*/
+using SharpPulsar.Extension;
+using SharpPulsar.Configuration;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +40,7 @@ using SharpPulsar.Extension;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Configuration
+namespace SharpPulsar.Builder
 {
 
     public class ProducerConfigBuilder<T>
@@ -174,6 +185,20 @@ namespace SharpPulsar.Configuration
             _conf.EncryptionKeys.Add(key);
             return this;
         }
+        /// <summary>
+		/// Use this config to automatically create an initial subscription when creating the topic.
+		/// If this field is not set, the initial subscription will not be created.
+		/// If this field is set but the broker's `allowAutoSubscriptionCreation` is disabled, the producer will fail to
+		/// be created.
+		/// This method is limited to internal use. This method will only be used when the consumer creates the dlq producer.
+		/// </summary>
+		/// <param name="initialSubscriptionName"> Name of the initial subscription of the topic. </param>
+		/// <returns> the producer builder implementation instance </returns>
+        public ProducerConfigBuilder<T> InitialSubscriptionName(string initialSubscriptionName)
+        {
+            _conf.InitialSubscriptionName = initialSubscriptionName;
+            return this;
+        }
 
         public ProducerConfigBuilder<T> CryptoFailureAction(ProducerCryptoFailureAction action)
         {
@@ -204,7 +229,7 @@ namespace SharpPulsar.Configuration
                 throw new ArgumentException("properties cannot be null");
             if (properties.Count == 0)
                 throw new ArgumentException("properties cannot be empty");
-            HashMapHelper.SetOfKeyValuePairs(properties).ToList().ForEach(entry =>
+            properties.SetOfKeyValuePairs().ToList().ForEach(entry =>
             {
                 var (key, value) = entry;
                 if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))

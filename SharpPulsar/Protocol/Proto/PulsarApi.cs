@@ -26,7 +26,7 @@ namespace SharpPulsar.Protocol.Proto
         public Type type { get; set; }
 
         [global::ProtoBuf.ProtoMember(5, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyValue> Properties { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoContract()]
         public enum Type
@@ -104,6 +104,9 @@ namespace SharpPulsar.Protocol.Proto
         public void ResetBatchSize() => __pbn__BatchSize = null;
         private int? __pbn__BatchSize;
 
+        [global::ProtoBuf.ProtoMember(7, Name = @"first_chunk_message_id")]
+        public MessageIdData FirstChunkMessageId { get; set; }
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -165,7 +168,7 @@ namespace SharpPulsar.Protocol.Proto
         public byte[] Value { get; set; }
 
         [global::ProtoBuf.ProtoMember(3, Name = @"metadata")]
-        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
     }
 
@@ -186,7 +189,7 @@ namespace SharpPulsar.Protocol.Proto
         public ulong PublishTime { get; set; }
 
         [global::ProtoBuf.ProtoMember(4, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyValue> Properties { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoMember(5, Name = @"replicated_from")]
         [global::System.ComponentModel.DefaultValue("")]
@@ -211,7 +214,7 @@ namespace SharpPulsar.Protocol.Proto
         private string __pbn__PartitionKey;
 
         [global::ProtoBuf.ProtoMember(7, Name = @"replicate_to")]
-        public global::System.Collections.Generic.List<string> ReplicateToes { get; } = new global::System.Collections.Generic.List<string>();
+        public global::System.Collections.Generic.List<string> ReplicateToes { get; set; } = new global::System.Collections.Generic.List<string>();
 
         [global::ProtoBuf.ProtoMember(8, Name = @"compression")]
         [global::System.ComponentModel.DefaultValue(CompressionType.None)]
@@ -258,7 +261,7 @@ namespace SharpPulsar.Protocol.Proto
         private ulong? __pbn__EventTime;
 
         [global::ProtoBuf.ProtoMember(13, Name = @"encryption_keys")]
-        public global::System.Collections.Generic.List<EncryptionKeys> EncryptionKeys { get; } = new global::System.Collections.Generic.List<EncryptionKeys>();
+        public global::System.Collections.Generic.List<EncryptionKeys> EncryptionKeys { get; set; } = new global::System.Collections.Generic.List<EncryptionKeys>();
 
         [global::ProtoBuf.ProtoMember(14, Name = @"encryption_algo")]
         [global::System.ComponentModel.DefaultValue("")]
@@ -436,7 +439,7 @@ namespace SharpPulsar.Protocol.Proto
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyValue> Properties { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoMember(2, Name = @"partition_key")]
         [global::System.ComponentModel.DefaultValue("")]
@@ -689,6 +692,17 @@ namespace SharpPulsar.Protocol.Proto
         public void ResetSupportsBrokerEntryMetadata() => __pbn__SupportsBrokerEntryMetadata = null;
         private bool? __pbn__SupportsBrokerEntryMetadata;
 
+        [global::ProtoBuf.ProtoMember(3, Name = @"supports_partial_producer")]
+        [global::System.ComponentModel.DefaultValue(false)]
+        public bool SupportsPartialProducer
+        {
+            get => __pbn__SupportsPartialProducer ?? false;
+            set => __pbn__SupportsPartialProducer = value;
+        }
+        public bool ShouldSerializeSupportsPartialProducer() => __pbn__SupportsPartialProducer != null;
+        public void ResetSupportsPartialProducer() => __pbn__SupportsPartialProducer = null;
+        private bool? __pbn__SupportsPartialProducer;
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -833,7 +847,7 @@ namespace SharpPulsar.Protocol.Proto
         public KeySharedMode keySharedMode { get; set; }
 
         [global::ProtoBuf.ProtoMember(3)]
-        public global::System.Collections.Generic.List<IntRange> hashRanges { get; } = new global::System.Collections.Generic.List<IntRange>();
+        public global::System.Collections.Generic.List<IntRange> hashRanges { get; set; } = new global::System.Collections.Generic.List<IntRange>();
 
         [global::ProtoBuf.ProtoMember(4)]
         [global::System.ComponentModel.DefaultValue(false)]
@@ -906,7 +920,7 @@ namespace SharpPulsar.Protocol.Proto
         public MessageIdData StartMessageId { get; set; }
 
         [global::ProtoBuf.ProtoMember(10, Name = @"metadata")]
-        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoMember(11, Name = @"read_compacted")]
         public bool ReadCompacted
@@ -966,6 +980,19 @@ namespace SharpPulsar.Protocol.Proto
 
         [global::ProtoBuf.ProtoMember(17)]
         public KeySharedMeta keySharedMeta { get; set; }
+
+        [global::ProtoBuf.ProtoMember(18, Name = @"subscription_properties")]
+        public global::System.Collections.Generic.List<KeyValue> SubscriptionProperties { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
+
+        [global::ProtoBuf.ProtoMember(19, Name = @"consumer_epoch")]
+        public ulong ConsumerEpoch
+        {
+            get => __pbn__ConsumerEpoch.GetValueOrDefault();
+            set => __pbn__ConsumerEpoch = value;
+        }
+        public bool ShouldSerializeConsumerEpoch() => __pbn__ConsumerEpoch != null;
+        public void ResetConsumerEpoch() => __pbn__ConsumerEpoch = null;
+        private ulong? __pbn__ConsumerEpoch;
 
         [global::ProtoBuf.ProtoContract()]
         public enum SubType
@@ -1302,7 +1329,7 @@ namespace SharpPulsar.Protocol.Proto
         private bool? __pbn__Encrypted;
 
         [global::ProtoBuf.ProtoMember(6, Name = @"metadata")]
-        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; } = new global::System.Collections.Generic.List<KeyValue>();
+        public global::System.Collections.Generic.List<KeyValue> Metadatas { get; set; } = new global::System.Collections.Generic.List<KeyValue>();
 
         [global::ProtoBuf.ProtoMember(7, Name = @"schema")]
         public Schema Schema { get; set; }
@@ -1360,6 +1387,17 @@ namespace SharpPulsar.Protocol.Proto
         public bool ShouldSerializeTxnEnabled() => __pbn__TxnEnabled != null;
         public void ResetTxnEnabled() => __pbn__TxnEnabled = null;
         private bool? __pbn__TxnEnabled;
+
+        [global::ProtoBuf.ProtoMember(13, Name = @"initial_subscription_name")]
+        [global::System.ComponentModel.DefaultValue("")]
+        public string InitialSubscriptionName
+        {
+            get => __pbn__InitialSubscriptionName ?? "";
+            set => __pbn__InitialSubscriptionName = value;
+        }
+        public bool ShouldSerializeInitialSubscriptionName() => __pbn__InitialSubscriptionName != null;
+        public void ResetInitialSubscriptionName() => __pbn__InitialSubscriptionName = null;
+        private string __pbn__InitialSubscriptionName;
 
     }
 
@@ -1521,6 +1559,16 @@ namespace SharpPulsar.Protocol.Proto
         [global::ProtoBuf.ProtoMember(4, Name = @"ack_set")]
         public long[] AckSets { get; set; }
 
+        [global::ProtoBuf.ProtoMember(5, Name = @"consumer_epoch")]
+        public ulong ConsumerEpoch
+        {
+            get => __pbn__ConsumerEpoch.GetValueOrDefault();
+            set => __pbn__ConsumerEpoch = value;
+        }
+        public bool ShouldSerializeConsumerEpoch() => __pbn__ConsumerEpoch != null;
+        public void ResetConsumerEpoch() => __pbn__ConsumerEpoch = null;
+        private ulong? __pbn__ConsumerEpoch;
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -1537,7 +1585,7 @@ namespace SharpPulsar.Protocol.Proto
         public AckType ack_type { get; set; }
 
         [global::ProtoBuf.ProtoMember(3, Name = @"message_id")]
-        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; } = new global::System.Collections.Generic.List<MessageIdData>();
+        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; set; } = new global::System.Collections.Generic.List<MessageIdData>();
 
         [global::ProtoBuf.ProtoMember(4)]
         [global::System.ComponentModel.DefaultValue(ValidationError.UncompressedSizeCorruption)]
@@ -1551,7 +1599,7 @@ namespace SharpPulsar.Protocol.Proto
         private ValidationError? __pbn__validation_error;
 
         [global::ProtoBuf.ProtoMember(5, Name = @"properties")]
-        public global::System.Collections.Generic.List<KeyLongValue> Properties { get; } = new global::System.Collections.Generic.List<KeyLongValue>();
+        public global::System.Collections.Generic.List<KeyLongValue> Properties { get; set; } = new global::System.Collections.Generic.List<KeyLongValue>();
 
         [global::ProtoBuf.ProtoMember(6, Name = @"txnid_least_bits")]
         [global::System.ComponentModel.DefaultValue(typeof(ulong), "0")]
@@ -1804,7 +1852,17 @@ namespace SharpPulsar.Protocol.Proto
         public ulong ConsumerId { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"message_ids")]
-        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; } = new global::System.Collections.Generic.List<MessageIdData>();
+        public global::System.Collections.Generic.List<MessageIdData> MessageIds { get; set; } = new global::System.Collections.Generic.List<MessageIdData>();
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"consumer_epoch")]
+        public ulong ConsumerEpoch
+        {
+            get => __pbn__ConsumerEpoch.GetValueOrDefault();
+            set => __pbn__ConsumerEpoch = value;
+        }
+        public bool ShouldSerializeConsumerEpoch() => __pbn__ConsumerEpoch != null;
+        public void ResetConsumerEpoch() => __pbn__ConsumerEpoch = null;
+        private ulong? __pbn__ConsumerEpoch;
 
     }
 
@@ -2170,7 +2228,7 @@ namespace SharpPulsar.Protocol.Proto
         public ulong RequestId { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"topics")]
-        public global::System.Collections.Generic.List<string> Topics { get; } = new global::System.Collections.Generic.List<string>();
+        public global::System.Collections.Generic.List<string> Topics { get; set; } = new global::System.Collections.Generic.List<string>();
 
     }
 
@@ -2480,7 +2538,7 @@ namespace SharpPulsar.Protocol.Proto
         private ulong? __pbn__TxnidMostBits;
 
         [global::ProtoBuf.ProtoMember(4, Name = @"partitions")]
-        public global::System.Collections.Generic.List<string> Partitions { get; } = new global::System.Collections.Generic.List<string>();
+        public global::System.Collections.Generic.List<string> Partitions { get; set; } = new global::System.Collections.Generic.List<string>();
 
     }
 
@@ -2588,7 +2646,7 @@ namespace SharpPulsar.Protocol.Proto
         private ulong? __pbn__TxnidMostBits;
 
         [global::ProtoBuf.ProtoMember(4, Name = @"subscription")]
-        public global::System.Collections.Generic.List<Subscription> Subscriptions { get; } = new global::System.Collections.Generic.List<Subscription>();
+        public global::System.Collections.Generic.List<Subscription> Subscriptions { get; set; } = new global::System.Collections.Generic.List<Subscription>();
 
     }
 
@@ -3396,3 +3454,4 @@ namespace SharpPulsar.Protocol.Proto
 
 #pragma warning restore CS0612, CS0618, CS1591, CS3021, IDE0079, IDE1006, RCS1036, RCS1057, RCS1085, RCS1192
 #endregion
+
