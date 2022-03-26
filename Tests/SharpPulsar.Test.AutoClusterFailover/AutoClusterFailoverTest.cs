@@ -38,54 +38,53 @@ namespace SharpPulsar.Test.ServiceProvider
         [Fact]
         public async Task ProduceAndConsume()
         {
-            await using (var testcontainers = _builder.Build())
+            var testcontainers = _builder.Build();
+            await testcontainers.StartAsync();
+            var topic = _topic;
+
+            var producerBuilder = new ProducerConfigBuilder<byte[]>();
+            producerBuilder.Topic(topic);
+            var producer = await _client.NewProducerAsync(producerBuilder);
+
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
+                .SubscriptionName($"subscriber-{Guid.NewGuid()}");
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+
+            async Task Act(Consumer<byte[]> consumer, Producer<byte[]> producer)
             {
-                await testcontainers.StartAsync();
-                var topic = _topic;         
+                var r = new Random(0);
+                var byteKey = new byte[1000];
+                r.NextBytes(byteKey);
 
-                var producerBuilder = new ProducerConfigBuilder<byte[]>();
-                producerBuilder.Topic(topic);
-                var producer = await _client.NewProducerAsync(producerBuilder);
+                await producer.NewMessage().KeyBytes(byteKey)
+               .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+               .Value(Encoding.UTF8.GetBytes("AutoMessage"))
+               .SendAsync();
 
-                var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                    .Topic(topic)
-                    .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
-                    .SubscriptionName($"subscriber-{Guid.NewGuid()}");
-                var consumer = await _client.NewConsumerAsync(consumerBuilder);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                var message = (Message<byte[]>)await consumer.ReceiveAsync();
 
-                async Task Act(Consumer<byte[]> consumer, Producer<byte[]> producer)
-                {
-                    var r = new Random(0);
-                    var byteKey = new byte[1000];
-                    r.NextBytes(byteKey);
+                if (message != null)
+                    _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
 
-                    await producer.NewMessage().KeyBytes(byteKey)
-                   .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-                   .Value(Encoding.UTF8.GetBytes("AutoMessage"))
-                   .SendAsync();
+                Assert.Equal(byteKey, message.KeyBytes);
 
-                    await Task.Delay(TimeSpan.FromSeconds(10));
-                    var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                Assert.True(message.HasBase64EncodedKey());
+                var receivedMessage = Encoding.UTF8.GetString(message.Data);
+                _output.WriteLine($"Received message: [{receivedMessage}]");
+                Assert.Equal("AutoMessage", receivedMessage);
+            }
+            await Act(consumer, producer);
+            await _container.StopAsync();
 
-                    if (message != null)
-                        _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
+            await Task.Delay(TimeSpan.FromSeconds(30));
+            await Act(consumer, producer);
 
-                    Assert.Equal(byteKey, message.KeyBytes);
-
-                    Assert.True(message.HasBase64EncodedKey());
-                    var receivedMessage = Encoding.UTF8.GetString(message.Data);
-                    _output.WriteLine($"Received message: [{receivedMessage}]");
-                    Assert.Equal("AutoMessage", receivedMessage);
-                }
-                await Act(consumer, producer);
-                await _container.StopAsync();
-
-                await Task.Delay(TimeSpan.FromSeconds(30));
-                await Act(consumer, producer);
-                
-                //producer.Close();
-                await consumer.CloseAsync();
-            }            
+            //producer.Close();
+            await consumer.CloseAsync();
+            await testcontainers.DisposeAsync();
         }
 
     }
