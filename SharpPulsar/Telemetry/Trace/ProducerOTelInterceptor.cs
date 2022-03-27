@@ -11,6 +11,8 @@ using SharpPulsar.Interfaces.Interceptor;
 
 namespace SharpPulsar.Telemetry.Trace
 {
+    //https://www.meziantou.net/monitoring-a-dotnet-application-using-opentelemetry.htm
+    //https://docs.microsoft.com/en-us/dotnet/core/diagnostics/metrics-collection
     public class ProducerOTelInterceptor<T> : IProducerInterceptor<T>
     {
         private readonly Dictionary<string, Activity> _cache;
