@@ -127,6 +127,7 @@ namespace SharpPulsar
 
         public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
 		{
+            Self.Path.WithUid(producerid);
             _memoryLimitController = new MemoryLimitController(clientConfiguration.MemoryLimitBytes);
             _isTxnEnabled = clientConfiguration.EnableTransaction;
 			_self = Self;

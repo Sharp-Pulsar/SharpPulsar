@@ -174,6 +174,7 @@ namespace SharpPulsar
 
 		public ConsumerActor(long consumerId, IActorRef stateActor, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ConsumerConfigurationData<T> conf, int partitionIndex, bool hasParentConsumer, IMessageId startMessageId, long startMessageRollbackDurationInSec, ISchema<T> schema, bool createTopicIfDoesNotExist, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> subscribeFuture) : base(stateActor, lookup, cnxPool, topic, conf, conf.ReceiverQueueSize, schema, subscribeFuture)
 		{
+            Self.Path.WithUid(consumerId);  
             Paused = conf.StartPaused;
 			_context = Context;
 			_clientConfigurationData = clientConfiguration;
