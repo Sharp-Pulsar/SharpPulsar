@@ -111,7 +111,12 @@ namespace SharpPulsar
 			return _msg.HasOrderingKey();
 		}
 
-		public virtual byte[] OrderingKey => _msg.OrderingKey;
+        public void AddProperty(IDictionary<string, string> props)
+        {
+           _msg.AddProperty(props);
+        }
+
+        public virtual byte[] OrderingKey => _msg.OrderingKey;
 
         public virtual T Value => _msg.Value;
 

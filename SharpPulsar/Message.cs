@@ -69,7 +69,7 @@ namespace SharpPulsar
                 _topic = null,
                 _cnx = null,
                 _payload = payload,
-                _properties = null,
+                _properties = new Dictionary<string, string>(),
                 _schema = schema,
                 _uncompressedSize = (int) payload.Length
             };
@@ -229,7 +229,7 @@ namespace SharpPulsar
             _topic = topic;
             _cnx = null;
             _payload = payload;
-            _properties = properties.ToImmutableDictionary();
+            _properties = properties;
             _schema = schema;
             _redeliveryCount = 0;
             _metadata = EnsureMetadata(msgMetadata, _metadata);
@@ -772,7 +772,12 @@ namespace SharpPulsar
 
             return mtadata;
         }
-	}
+
+        public void AddProperty(IDictionary<string, string> props)
+        {
+            _properties = props;   
+        }
+    }
     public sealed class Metadata
     {
         public IList<string> ReplicateTo { get; set; } = null;
