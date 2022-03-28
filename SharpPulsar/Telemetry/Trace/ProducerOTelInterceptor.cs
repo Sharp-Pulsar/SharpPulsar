@@ -93,7 +93,10 @@ namespace SharpPulsar.Telemetry.Trace
                 var contextToInject = activity.Context;
                 _propagator.Inject(new PropagationContext(contextToInject, Baggage.Current), mutableDict, InjectTraceContextIntoProperties);
                 AddToCache(activity);
-                mutableDict.ForEach((kv) => message.Properties.Add(kv.Key,kv.Value));
+                foreach(var kv in mutableDict)
+                {
+                    message.Properties.Add(kv.Key, kv.Value);
+                }
                 return message;
             }
             AddToCache(activity);
