@@ -6,6 +6,7 @@ using Akka.Event;
 using Akka.Util.Internal;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.Interceptor;
 
@@ -49,11 +50,11 @@ namespace SharpPulsar.Telemetry.Trace
             var topic = string.Empty;
             if (message is TopicMessage<T> m)
             {
-                topic = ((TopicMessageId)m.MessageId).TopicName;
+                topic = TopicName.Get(((TopicMessageId)m.MessageId).TopicName).LocalName;
             }
             else if (message is Message<T> msg)
             {
-                topic = msg.Topic;
+                topic = TopicName.Get(msg.Topic).LocalName;
             }
             var mutableDict = new Dictionary<string, string>(message.Properties.Count);
             message.Properties.ForEach((kv)=> mutableDict.Add(kv.Key, kv.Value));

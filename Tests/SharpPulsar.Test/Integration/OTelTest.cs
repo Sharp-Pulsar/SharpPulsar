@@ -34,12 +34,12 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public async Task ProduceAndConsume()
         {
-
-            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+            var t = TestConsoleExporter.Run(_output);
+            /*using var tracerProvider = Sdk.CreateTracerProviderBuilder()
             .SetSampler(new AlwaysOnSampler())
             .AddSource("producer", "consumer")
             .AddConsoleExporter()
-            .Build();
+            .Build();*/
             var topic = _topic;
 
             var r = new Random(0);
@@ -76,6 +76,7 @@ namespace SharpPulsar.Test.Integration
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
+            await consumer.AcknowledgeAsync(message);
             //producer.Close();
             await consumer.CloseAsync();
         }

@@ -1,7 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.OTel
 {
@@ -12,57 +15,33 @@ namespace SharpPulsar.Test.OTel
         // (eg: C:\repos\opentelemetry-dotnet\examples\Console\)
         //
         // dotnet run console
-        public static object Run()
+        public static object Run(ITestOutputHelper output)
         {
-            return RunWithActivitySource();
+            var exportedItems = new List<Activity>();
+            RunWithActivitySource(exportedItems);
+            Task.Run(() => 
+            {
+                // List exportedItems is populated with the Activity objects logged by TracerProvider
+                foreach (var activity in exportedItems)
+                {
+                    output.WriteLine($"ActivitySource: {activity.Source.Name} logged the activity {activity.DisplayName}: {activity.Tags}");
+                }
+            });
+            return null;
         }
 
-        private static object RunWithActivitySource()
+        private static object RunWithActivitySource(ICollection<Activity> exportedItems)
         {
             // Enable OpenTelemetry for the sources "Samples.SampleServer" and "Samples.SampleClient"
             // and use Console exporter.
             using var tracerProvider = Sdk.CreateTracerProviderBuilder()
                     .AddSource("producer", "consumer")
-                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("console-test"))
-                    .AddProcessor(new MyProcessor()) // This must be added before ConsoleExporter
-                    .AddConsoleExporter()
+                     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("inmemory-test"))
+                    .AddInMemoryExporter(exportedItems)
                     .Build();
-
-            // The above line is required only in applications
-            // which decide to use OpenTelemetry.
-            /*using (var sample = new InstrumentationWithActivitySource())
-            {
-                sample.Start();
-
-                System.Console.WriteLine("Traces are being created and exported " +
-                    "to Console in the background. " +
-                    "Press ENTER to stop.");
-                System.Console.ReadLine();
-            }*/
 
             return null;
         }
 
-        /// <summary>
-        /// An example of custom processor which
-        /// can be used to add more tags to an activity.
-        /// </summary>
-        internal class MyProcessor : BaseProcessor<Activity>
-        {
-            public override void OnStart(Activity activity)
-            {
-                if (activity.IsAllDataRequested)
-                {
-                    if (activity.Kind == ActivityKind.Producer)
-                    {
-                        activity.SetTag("customProducerTag", "Custom Tag Value for Producer");
-                    }
-                    else if (activity.Kind == ActivityKind.Consumer)
-                    {
-                        activity.SetTag("customConsumerTag", "Custom Tag Value for Consumer");
-                    }
-                }
-            }
-        }
     }
 }
