@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using OpenTelemetry;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using SharpPulsar.Builder;
 using SharpPulsar.Telemetry.Trace;
@@ -34,12 +36,12 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public async Task ProduceAndConsume()
         {
-            var t = TestConsoleExporter.Run(_output);
-            /*using var tracerProvider = Sdk.CreateTracerProviderBuilder()
-            .SetSampler(new AlwaysOnSampler())
+            var exportedItems = new List<Activity>();
+            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
             .AddSource("producer", "consumer")
-            .AddConsoleExporter()
-            .Build();*/
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("inmemory-test"))
+            .AddInMemoryExporter(exportedItems)
+            .Build();
             var topic = _topic;
 
             var r = new Random(0);
@@ -79,6 +81,14 @@ namespace SharpPulsar.Test.Integration
             await consumer.AcknowledgeAsync(message);
             //producer.Close();
             await consumer.CloseAsync();
+            foreach (var activity in exportedItems)
+            {
+                _output.WriteLine($"ActivitySource: {activity.Source.Name} logged the activity {activity.DisplayName} with tags: {activity.Tags.Count()}");
+                foreach(var tag in activity.Tags)
+                {
+                    _output.WriteLine($"{tag.Key}:{tag.Value}");
+                }
+            }
         }
     }
 }

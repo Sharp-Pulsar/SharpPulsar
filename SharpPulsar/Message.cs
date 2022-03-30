@@ -76,6 +76,22 @@ namespace SharpPulsar
             return msg;
 		}
 
+        public static Message<T> Create(string topic, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, ISchema<T> schema)
+        {
+            var msg = new Message<T>
+            {
+                _metadata = EnsureMetadata(msgMetadata, new Metadata()),
+                _messageId = null,
+                _topic = topic,
+                _cnx = null,
+                _payload = payload,
+                _properties = new Dictionary<string, string>(),
+                _schema = schema,
+                _uncompressedSize = (int)payload.Length
+            };
+            return msg;
+        }
+
         // Constructor for incoming message
         internal Message(string topic, MessageId messageId, MessageMetadata msgMetadata, ReadOnlySequence<byte> payload, IActorRef cnx, ISchema<T> schema) : this(topic, messageId, msgMetadata, payload, null, cnx, schema)
         {

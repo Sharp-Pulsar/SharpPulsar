@@ -116,7 +116,7 @@ namespace SharpPulsar.Telemetry.Trace
                     {
                         activity
                                .SetTag("messaging.acknowledge_type", "Success")
-                               .SetTag("messaging.message_id", message.MessageId)
+                               .SetTag("messaging.message_id", ((Message<T>)message).MessageId.ToString())
                                .Dispose();
                     }
                     else

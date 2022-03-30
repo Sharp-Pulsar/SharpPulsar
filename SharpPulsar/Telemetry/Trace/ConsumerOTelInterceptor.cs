@@ -37,7 +37,7 @@ namespace SharpPulsar.Telemetry.Trace
 
         private void StopActivitySuccessfully(Activity activity, AcknowledgeType ackType)
         {
-            activity.SetTag("messaging.acknowledge_type", ackType).Dispose();
+            activity.SetTag("messaging.acknowledge_type", ackType.ToString()).Dispose();
         }
         public IMessage<T> BeforeConsume(IActorRef consumer, IMessage<T> message)
         {
@@ -59,7 +59,7 @@ namespace SharpPulsar.Telemetry.Trace
                     .SetTag("messaging.destination_kind", "topic")
                     .SetTag("messaging.destination", topic)
                     .SetTag("messaging.consumer_id", $"{consumer.Path.Name} - {consumer.Path.Uid}")
-                    .SetTag("messaging.message_id", message.MessageId)
+                    .SetTag("messaging.message_id", message.MessageId.ToString())
                     .SetTag("messaging.operation", "receive");
 
                 if (activity.IsAllDataRequested)
