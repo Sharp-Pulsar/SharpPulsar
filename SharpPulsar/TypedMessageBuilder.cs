@@ -336,7 +336,7 @@ namespace SharpPulsar
 		public async Task<IMessage<T>> Message()
 		{
 			await BeforeSend().ConfigureAwait(false);
-			return Message<T>.Create(_metadata, _content, _schema);
+			return Message<T>.Create(_conf.TopicName, _metadata, _content, _schema);
 		}
 
 		public long PublishTime => (long)_metadata.PublishTime;

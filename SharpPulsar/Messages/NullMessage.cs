@@ -77,6 +77,11 @@ namespace SharpPulsar.Messages
         {
             throw new NotImplementedException();
         }
+
+        public void AddProperty(IDictionary<string, string> props)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public sealed class NullMessages<T> : IMessages<T>

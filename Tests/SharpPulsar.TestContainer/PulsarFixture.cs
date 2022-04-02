@@ -98,11 +98,11 @@ namespace SharpPulsar.TestContainer
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public virtual async ValueTask SetupSystem()
+        public virtual async ValueTask SetupSystem(string? service = null, string? web = null)
         {            
             var clienConfigSetting = _configuration.GetSection("client");
-            var serviceUrl = clienConfigSetting.GetSection("service-url").Value;
-            var webUrl = clienConfigSetting.GetSection("web-url").Value;
+            var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
+            var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
             var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;

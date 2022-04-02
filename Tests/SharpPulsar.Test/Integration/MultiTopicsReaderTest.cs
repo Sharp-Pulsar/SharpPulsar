@@ -32,7 +32,7 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test.Integration
 {
 
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(MultiTopicIntegrationCollection))]
 	public class MultiTopicsReaderTest
 	{
 
@@ -40,7 +40,7 @@ namespace SharpPulsar.Test.Integration
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public MultiTopicsReaderTest(ITestOutputHelper output, PulsarFixture fixture)
+		public MultiTopicsReaderTest(ITestOutputHelper output, PulsarMultiTopicFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

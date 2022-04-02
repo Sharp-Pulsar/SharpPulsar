@@ -3,6 +3,7 @@
 - Topic map support added with new TableView type using key values in received messages. [PIP#12838]
 - BREAKING CHANGES: the config builders have been moved to builder folder!
 - Fixed potential `HasMessageAvailable` `deadlock`ing 
+- OpenTelemetry 
 
 ## [2.9.0] / 2022-02-21
 - This release contains new feature and fixes found in Apache Pulsar 2.9.0 official java client/drive
