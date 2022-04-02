@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using crypto;
 using DotNet.Testcontainers.Builders;
 using SharpPulsar;
+using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
@@ -32,7 +33,7 @@ namespace Tutorials
         static async Task Main(string[] args)
         {
             await StartContainer();
-            var url = "pulsar://127.0.0.1:6650";
+            var url = "pulsar://localhost:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
             Console.WriteLine("Select 0(none-tls) 1(tls)");
@@ -61,7 +62,7 @@ namespace Tutorials
             Console.WriteLine("Please, time to execute some command, which do you want?");
             var cmd = Console.ReadLine();
 
-            clientConfig.EnableTransaction(true);
+            //clientConfig.EnableTransaction(true);
 
             //pulsar actor system
             var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
