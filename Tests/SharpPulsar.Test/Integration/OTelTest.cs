@@ -10,7 +10,6 @@ using OpenTelemetry.Trace;
 using SharpPulsar.Builder;
 using SharpPulsar.Telemetry.Trace;
 using SharpPulsar.Test.Fixture;
-using SharpPulsar.Test.OTel;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
