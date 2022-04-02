@@ -36,14 +36,14 @@ namespace SharpPulsar.Test.Integration
     /// <summary>
     /// Unit Tests of <seealso cref="MultiTopicsConsumer{T}"/>.
     /// </summary>
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(MultiTopicIntegrationCollection))]
     public class MultiTopicsConsumerTest
     {
         private const string Subscription = "reader-multi-topics-sub";
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
+        public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarMultiTopicFixture fixture)
         {
             _output = output;
             _client = fixture.Client;

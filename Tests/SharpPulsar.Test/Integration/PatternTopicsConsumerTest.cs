@@ -32,13 +32,13 @@ using SharpPulsar.Builder;
 /// </summary>
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(MultiTopicIntegrationCollection))]
 	public class PatternTopicsConsumerTest
 	{
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
+		public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarMultiTopicFixture fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
