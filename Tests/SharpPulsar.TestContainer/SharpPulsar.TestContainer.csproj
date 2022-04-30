@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Testcontainers" Version="1.6.0-beta.2130" />
+    <PackageReference Include="DotNet.Testcontainers" Version="1.6.0-beta.2191" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.json" Version="6.0.0" />
     <PackageReference Include="polly" Version="7.2.3" />
-    <PackageReference Include="SharpCompress" Version="0.30.1" />
+    <PackageReference Include="SharpCompress" Version="0.31.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
   </ItemGroup>
 
