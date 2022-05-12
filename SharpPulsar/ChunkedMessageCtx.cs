@@ -22,21 +22,29 @@ namespace SharpPulsar
 {
 	internal class ChunkedMessageCtx
 	{
+        protected internal MessageId FirstChunkMessageId;
+        protected internal MessageId LastChunkMessageId;
+        protected internal int TotalChunks = -1;
 
-		protected internal int TotalChunks = -1;
-		protected internal List<byte> ChunkedMsgBuffer;
-		protected internal int LastChunkedMessageId = -1;
-		protected internal MessageId[] ChunkedMessageIds;
-		protected internal long ReceivedTime = 0;
+        public virtual ChunkMessageId ChunkMessageId
+        {
+            get
+            {
+                return new ChunkMessageId(FirstChunkMessageId, LastChunkMessageId);
+            }
+        }
+        protected internal void Deallocate()
+        {
+            FirstChunkMessageId = null;
+            LastChunkMessageId = null;
 
-		internal static ChunkedMessageCtx Get(int numChunksFromMsg, List<byte> chunkedMsgBuffer)
+        }
+
+        internal static ChunkedMessageCtx Get(int totalChunks)
 		{
 			ChunkedMessageCtx ctx = new ChunkedMessageCtx
 			{
-				TotalChunks = numChunksFromMsg,
-				ChunkedMsgBuffer = chunkedMsgBuffer,
-				ChunkedMessageIds = new MessageId[numChunksFromMsg],
-				ReceivedTime = DateTimeHelper.CurrentUnixTimeMillis()
+				TotalChunks = totalChunks
 			};
 			return ctx;
 		}
@@ -44,8 +52,6 @@ namespace SharpPulsar
 		internal virtual void Recycle()
 		{
 			TotalChunks = -1;
-			ChunkedMsgBuffer = null;
-			LastChunkedMessageId = -1;
 		}
 	}
 }

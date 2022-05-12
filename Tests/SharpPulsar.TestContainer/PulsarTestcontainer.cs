@@ -25,7 +25,6 @@ namespace SharpPulsar.TestContainer
             DIContainer.DisposeAsync().GetAwaiter().GetResult(); 
             return base.StopAsync(ct);
         }
-
         public async Task<GetArchiveFromContainerResponse> CopyFilesFromContainer(string path)
         {
             return await DIContainer.Get<DockerClient>().Containers.GetArchiveFromContainerAsync(path, Id);
