@@ -38,53 +38,64 @@ namespace SharpPulsar.Test.ServiceProvider
         [Fact]
         public async Task ProduceAndConsume()
         {
-            var testcontainers = _builder.Build();
-            await testcontainers.StartAsync();
-            var topic = _topic;
-
-            var producerBuilder = new ProducerConfigBuilder<byte[]>();
-            producerBuilder.Topic(topic);
-            var producer = await _client.NewProducerAsync(producerBuilder);
-
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
-                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
-                .SubscriptionName($"subscriber-{Guid.NewGuid()}");
-            var consumer = await _client.NewConsumerAsync(consumerBuilder);
-
-            async Task Act(Consumer<byte[]> consumer, Producer<byte[]> producer)
+            try
             {
-                var r = new Random(0);
-                var byteKey = new byte[1000];
-                r.NextBytes(byteKey);
+                var testcontainers = _builder.Build();
+                await testcontainers.StartAsync();
+                var topic = _topic;
 
-                await producer.NewMessage().KeyBytes(byteKey)
-               .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
-               .Value(Encoding.UTF8.GetBytes("AutoMessage"))
-               .SendAsync();
+                var producerBuilder = new ProducerConfigBuilder<byte[]>();
+                producerBuilder.Topic(topic);
+                var producer = await _client.NewProducerAsync(producerBuilder);
 
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                var message = (Message<byte[]>)await consumer.ReceiveAsync();
+                var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                    .Topic(topic)
+                    .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest)
+                    .SubscriptionName($"subscriber-{Guid.NewGuid()}");
+                var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-                if (message != null)
-                    _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
+                async Task Act(Consumer<byte[]> consumer, Producer<byte[]> producer)
+                {
+                    var r = new Random(0);
+                    var byteKey = new byte[1000];
+                    r.NextBytes(byteKey);
 
-                Assert.Equal(byteKey, message.KeyBytes);
+                    await producer.NewMessage().KeyBytes(byteKey)
+                   .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
+                   .Value(Encoding.UTF8.GetBytes("AutoMessage"))
+                   .SendAsync();
 
-                Assert.True(message.HasBase64EncodedKey());
-                var receivedMessage = Encoding.UTF8.GetString(message.Data);
-                _output.WriteLine($"Received message: [{receivedMessage}]");
-                Assert.Equal("AutoMessage", receivedMessage);
+                    await Task.Delay(TimeSpan.FromSeconds(10));
+                    var message = (Message<byte[]>)await consumer.ReceiveAsync();
+
+                    if (message != null)
+                        _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
+
+                    Assert.Equal(byteKey, message.KeyBytes);
+
+                    Assert.True(message.HasBase64EncodedKey());
+                    var receivedMessage = Encoding.UTF8.GetString(message.Data);
+                    _output.WriteLine($"Received message: [{receivedMessage}]");
+                    Assert.Equal("AutoMessage", receivedMessage);
+                }
+                await Act(consumer, producer);
+
+                await _container.StopAsync();
+
+                await Task.Delay(TimeSpan.FromSeconds(30));
+                await Act(consumer, producer);
+
+                await producer.CloseAsync();
+                await consumer.CloseAsync();
+                await testcontainers.CleanUpAsync();
+                await testcontainers.DisposeAsync();
+
             }
-            await Act(consumer, producer);
-            await _container.StopAsync();
-
-            await Task.Delay(TimeSpan.FromSeconds(30));
-            await Act(consumer, producer);
-
-            //producer.Close();
-            await consumer.CloseAsync();
-            await testcontainers.DisposeAsync();
+            catch (Exception ex) 
+            {
+                _output.WriteLine(ex.ToString());
+            }    
+            
         }
 
     }
