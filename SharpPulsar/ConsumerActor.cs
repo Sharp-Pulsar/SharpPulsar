@@ -31,7 +31,6 @@ using SharpPulsar.User;
 using SharpPulsar.Utils;
 using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
