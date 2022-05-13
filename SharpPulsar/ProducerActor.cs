@@ -809,7 +809,7 @@ namespace SharpPulsar
             */
             return true;
         }
-        private async ValueTask SerializeAndSendMessage(Message<T> msg, byte[] payload, MessageMetadata msgMetadata, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, bool compressed, int compressedPayloadSize, int uncompressedSize, SendCallback<T> callback)
+        private async ValueTask SerializeAndSendMessage(Message<T> msg, byte[] payload, MessageMetadata msgMetadata, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, bool compressed, int compressedPayloadSize, int uncompressedSize, SendCallback<T> callback, ChunkedMessageCtx chunkedMessageCtx)
 		{
 			var chunkPayload = compressedPayload;
 			var chunkMsgMetadata = msgMetadata;
@@ -927,6 +927,7 @@ namespace SharpPulsar
 					op.TotalChunks = totalChunks;
 					op.ChunkId = chunkId;
 				}
+                op.ChunkedMessageCtx = chunkedMessageCtx;
                 _lastSendFuture = callback.Future;
                 await ProcessOpSendMsg(op);
 			}
@@ -1426,20 +1427,36 @@ namespace SharpPulsar
             _lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(finalOp));
             
             op.SetMessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
-            
-            try
+
+            if (op.TotalChunks > 1)
             {
-                // if message is chunked then call callback only on last chunk
-                if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
+                if (op.ChunkId == 0)
                 {
-                    op.SendComplete(null);
+                    op.ChunkedMessageCtx.FirstChunkMessageId = new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+                }
+                else if (op.ChunkId == op.TotalChunks - 1)
+                {
+                    op.ChunkedMessageCtx.LastChunkMessageId = new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+                    op.MessageId = op.ChunkedMessageCtx.ChunkMessageId;
                 }
             }
-            catch (Exception t)
+            // if message is chunked then call callback only on last chunk
+            if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
             {
-                var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {ackReceived.SequenceId}";
-                _log.Warning($"{msg}:{t}");
+                
+                try
+                {
+                    // Need to protect ourselves from any exception being thrown in the future handler from the
+                    // application
+                    op.SendComplete(null);
+                }
+                catch (Exception t)
+                {
+                    var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {ackReceived.SequenceId}";
+                    _log.Warning($"{msg}:{t}");
+                }
             }
+            
             op.Recycle();
         }
 
