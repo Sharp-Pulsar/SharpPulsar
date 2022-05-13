@@ -57,7 +57,7 @@ namespace SharpPulsar.Test.Integration
 			var topic = $"ReadMessageWithBatching_{Guid.NewGuid()}";
 			await TestReadMessages(topic, true);
 		}
-		[Fact(Timeout = 1000)]
+		[Fact]
 		public async Task TestMultiTopic()
 		{
 			var topic = "persistent://public/default/topic" + Guid.NewGuid();
