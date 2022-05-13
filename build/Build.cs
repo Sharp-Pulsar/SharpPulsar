@@ -288,10 +288,8 @@ partial class Build : NukeBuild
                   
                   DotNetNuGetPush(s => s
                       .SetApiKey(GitHubToken)
-                      .SetSymbolApiKey(GitHubToken)
                       .SetTargetPath(x)
-                      .SetSource(GithubSource)
-                      .SetSymbolSource(GithubSource));
+                      .SetSource(GithubSource));
               });
       });
     Target AuthenticatedGitHubClient => _ => _
@@ -338,7 +336,7 @@ partial class Build : NukeBuild
             }
 
             Information($"GitHub Release {version}");
-            var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
+            var packages = OutputNuget.GlobFiles("*.nupkg").NotNull();
             foreach (var artifact in packages)
             {
                 var releaseAssetUpload = new ReleaseAssetUpload(artifact.Name, "application/zip", File.OpenRead(artifact), null);
