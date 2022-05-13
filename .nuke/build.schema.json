@@ -26,7 +26,7 @@
         },
         "GitHubToken": {
           "type": "string",
-          "default": "Secrets must be entered via 'nuke :secret [profile]'"
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Help": {
           "type": "boolean",
@@ -58,7 +58,7 @@
         },
         "NugetApiKey": {
           "type": "string",
-          "default": "Secrets must be entered via 'nuke :secret [profile]'"
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "NugetApiUrl": {
           "type": "string"
@@ -133,6 +133,10 @@
               "TlsTest"
             ]
           }
+        },
+        "Toke": {
+          "type": "string",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Verbosity": {
           "type": "string",

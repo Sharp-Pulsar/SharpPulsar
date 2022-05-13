@@ -57,14 +57,15 @@ partial class Build : NukeBuild
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/eaba/sharppulsar";
+    [Parameter] string GithubSource = "github";
 
     [Parameter] bool Container = false;
 
     readonly static DIContainer DIContainer = DIContainer.Default;
 
-    [Parameter] [Secret] string NugetApiKey;
+    [Parameter][Secret] string NugetApiKey;
 
+    [Parameter] [Secret] string Toke;
     [Parameter] [Secret] string GitHubToken;
 
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
@@ -277,7 +278,6 @@ partial class Build : NukeBuild
       .Executes(() =>
       {
           OutputNuget.GlobFiles("*.nupkg")
-              .Where(x => !x.Name.EndsWith("symbols.nupkg"))
               .ForEach(x =>
               {
                   DotNetNuGetPush(s => s
@@ -287,7 +287,7 @@ partial class Build : NukeBuild
                   );
                   
                   DotNetNuGetPush(s => s
-                      .SetApiKey(GitHubToken)
+                      .SetApiKey(Toke)
                       .SetTargetPath(x)
                       .SetSource(GithubSource));
               });
