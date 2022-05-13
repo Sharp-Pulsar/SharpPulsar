@@ -22,7 +22,7 @@ namespace SharpPulsar.TestContainer
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.9.1", 6650);
+            Configuration = new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650);
             Container = BuildContainer()
                 .WithCleanUp(true)
                 .Build();

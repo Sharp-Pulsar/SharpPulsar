@@ -737,18 +737,28 @@ namespace SharpPulsar
                     sequenceId = (long)msgMetadata.SequenceId;
                 }
                 var uuid = totalChunks > 1 ? string.Format("{0}-{1:D}", _producerName, sequenceId) : null;
-
-				for (var chunkId = 0; chunkId < totalChunks; chunkId++)
+                var chunkedMessageCtx = totalChunks > 1 ? ChunkedMessageCtx.Get(totalChunks) : null;
+                var ord = totalChunks > 1 && msg.HasOrderingKey() ? msg.OrderingKey : null;
+                for (var chunkId = 0; chunkId < totalChunks; chunkId++)
 				{
                     // Need to reset the schemaVersion, because the schemaVersion is based on a ByteBuf object in
                     // `MessageMetadata`, if we want to re-serialize the `SEND` command using a same `MessageMetadata`,
                     // we need to reset the ByteBuf of the schemaVersion in `MessageMetadata`, I think we need to
                     // reset `ByteBuf` objects in `MessageMetadata` after call the method `MessageMetadata#writeTo()`.
-                    if (chunkId > 0 && _schemaVersion.HasValue)
+                    if(chunkId > 0)
                     {
-                        msg.Metadata.SchemaVersion =_schemaVersion.Value;
+                        if (_schemaVersion.HasValue)
+                        {
+                            msg.Metadata.SchemaVersion = _schemaVersion.Value;
+
+                        }
+                        if (ord != null)
+                        {
+
+                            msg.Metadata.OrderingKey = ord;
+                        }
                     }
-                    await SerializeAndSendMessage(msg, payload, msgMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressed, compressedPayload.Length, uncompressedSize, callback);
+                    await SerializeAndSendMessage(msg, payload, msgMetadata, sequenceId, uuid, chunkId, totalChunks, readStartIndex, maxMessageSize, compressedPayload, compressed, compressedPayload.Length, uncompressedSize, callback, chunkedMessageCtx);
 					readStartIndex = ((chunkId + 1) * maxMessageSize);
 				}
 			}
@@ -799,7 +809,7 @@ namespace SharpPulsar
             */
             return true;
         }
-        private async ValueTask SerializeAndSendMessage(Message<T> msg, byte[] payload, MessageMetadata msgMetadata, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, bool compressed, int compressedPayloadSize, int uncompressedSize, SendCallback<T> callback)
+        private async ValueTask SerializeAndSendMessage(Message<T> msg, byte[] payload, MessageMetadata msgMetadata, long sequenceId, string uuid, int chunkId, int totalChunks, int readStartIndex, int chunkMaxSizeInBytes, byte[] compressedPayload, bool compressed, int compressedPayloadSize, int uncompressedSize, SendCallback<T> callback, ChunkedMessageCtx chunkedMessageCtx)
 		{
 			var chunkPayload = compressedPayload;
 			var chunkMsgMetadata = msgMetadata;
@@ -821,20 +831,20 @@ namespace SharpPulsar
 			}
 			if(!HasPublishTime(chunkMsgMetadata.PublishTime))
 			{
-				chunkMsgMetadata.PublishTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();				
-			}
-            if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
-            {
-                _log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
-                chunkMsgMetadata.ProducerName = string.Empty;
+				chunkMsgMetadata.PublishTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                if (!string.IsNullOrWhiteSpace(chunkMsgMetadata.ProducerName))
+                {
+                    _log.Warning($"changing producer name from '{chunkMsgMetadata.ProducerName}' to ''. Just helping out ;)");
+                    chunkMsgMetadata.ProducerName = string.Empty;
+                }
+                chunkMsgMetadata.ProducerName = _producerName;
+                if (Conf.CompressionType != CompressionType.None)
+                {
+                    chunkMsgMetadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
+                }
+                chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
             }
-            chunkMsgMetadata.ProducerName = _producerName;
-            if (Conf.CompressionType != CompressionType.None)
-            {
-                chunkMsgMetadata.Compression = CompressionCodecProvider.ConvertToWireProtocol(Conf.CompressionType);
-            }
-            chunkMsgMetadata.UncompressedSize = (uint)uncompressedSize;
-
+            
             if (CanAddToBatch(msg) && totalChunks <= 1)
 			{
                 if (CanAddToCurrentBatch(msg))
@@ -917,6 +927,7 @@ namespace SharpPulsar
 					op.TotalChunks = totalChunks;
 					op.ChunkId = chunkId;
 				}
+                op.ChunkedMessageCtx = chunkedMessageCtx;
                 _lastSendFuture = callback.Future;
                 await ProcessOpSendMsg(op);
 			}
@@ -1416,20 +1427,36 @@ namespace SharpPulsar
             _lastSequenceIdPublished = Math.Max(_lastSequenceIdPublished, GetHighestSequenceId(finalOp));
             
             op.SetMessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
-            
-            try
+
+            if (op.TotalChunks > 1)
             {
-                // if message is chunked then call callback only on last chunk
-                if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
+                if (op.ChunkId == 0)
                 {
-                    op.SendComplete(null);
+                    op.ChunkedMessageCtx.FirstChunkMessageId = new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+                }
+                else if (op.ChunkId == op.TotalChunks - 1)
+                {
+                    op.ChunkedMessageCtx.LastChunkMessageId = new MessageId(ackReceived.LedgerId, ackReceived.EntryId, _partitionIndex);
+                    op.MessageId = op.ChunkedMessageCtx.ChunkMessageId;
                 }
             }
-            catch (Exception t)
+            // if message is chunked then call callback only on last chunk
+            if (op.TotalChunks <= 1 || (op.ChunkId == op.TotalChunks - 1))
             {
-                var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {ackReceived.SequenceId}";
-                _log.Warning($"{msg}:{t}");
+                
+                try
+                {
+                    // Need to protect ourselves from any exception being thrown in the future handler from the
+                    // application
+                    op.SendComplete(null);
+                }
+                catch (Exception t)
+                {
+                    var msg = $"[{Topic}] [{_producerName}] Got exception while completing the callback for msg {ackReceived.SequenceId}";
+                    _log.Warning($"{msg}:{t}");
+                }
             }
+            
             op.Recycle();
         }
 
@@ -1722,7 +1749,42 @@ namespace SharpPulsar
             return _compressor.Encode(payload);
         }
         protected internal override async ValueTask<IProducerStats> Stats() => await Task.FromResult(_stats);
-		protected internal sealed class OpSendMsg<T1>
+
+        internal class ChunkedMessageCtx
+        {
+            protected internal MessageId FirstChunkMessageId;
+            protected internal MessageId LastChunkMessageId;
+            protected internal int TotalChunks = -1;
+
+            public virtual ChunkMessageId ChunkMessageId
+            {
+                get
+                {
+                    return new ChunkMessageId(FirstChunkMessageId, LastChunkMessageId);
+                }
+            }
+            protected internal void Deallocate()
+            {
+                FirstChunkMessageId = null;
+                LastChunkMessageId = null;
+
+            }
+
+            internal static ChunkedMessageCtx Get(int totalChunks)
+            {
+                ChunkedMessageCtx ctx = new ChunkedMessageCtx
+                {
+                    TotalChunks = totalChunks
+                };
+                return ctx;
+            }
+
+            internal virtual void Recycle()
+            {
+                TotalChunks = -1;
+            }
+        }
+        protected internal sealed class OpSendMsg<T1>
 		{
 			internal Message<T1> Msg;
 			internal IList<Message<T1>> Msgs;
@@ -1735,10 +1797,11 @@ namespace SharpPulsar
             internal long UncompressedSize;
             internal long HighestSequenceId; 
             internal SendCallback<T1> Callback;
-
+            internal long BatchSizeByte = 0;
+            internal int NumMessagesInBatch = 1;
             internal int TotalChunks = 0;
 			internal int ChunkId = -1;
-            
+            internal ChunkedMessageCtx ChunkedMessageCtx;
             internal static OpSendMsg<T1> Create(Message<T1> msg, ReadOnlySequence<byte> cmd, long sequenceId, SendCallback<T1> callback)
 			{
 				var op = new OpSendMsg<T1>
@@ -1820,10 +1883,6 @@ namespace SharpPulsar
 			}
 
 
-			internal int NumMessagesInBatch { get; set; } = 1;
-
-			internal long BatchSizeByte { get; set; } = 0;
-
 			internal void SetMessageId(long ledgerId, long entryId, int partitionIndex)
 			{
 				if (Msg != null)
@@ -1838,9 +1897,18 @@ namespace SharpPulsar
 					}
 				}
 			}
+            internal ChunkMessageId MessageId
+            {
+                set
+                {
+                    if (Msg != null)
+                    {
+                        Msg.MessageId = value;
+                    }
+                }
+            }
 
-
-			internal void Recycle()
+            internal void Recycle()
 			{
 				Msg = null;
 				Msgs = null;
@@ -1852,7 +1920,10 @@ namespace SharpPulsar
 				LastSentAt = -1L;
 				TotalChunks = 0;
 				ChunkId = -1;
-			}
+                NumMessagesInBatch = 1;
+                BatchSizeByte = 0 ;
+                ChunkedMessageCtx = null;
+            }
 
 		}
 	}
