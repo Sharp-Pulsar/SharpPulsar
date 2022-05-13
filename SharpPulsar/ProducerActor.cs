@@ -1749,7 +1749,42 @@ namespace SharpPulsar
             return _compressor.Encode(payload);
         }
         protected internal override async ValueTask<IProducerStats> Stats() => await Task.FromResult(_stats);
-		protected internal sealed class OpSendMsg<T1>
+
+        internal class ChunkedMessageCtx
+        {
+            protected internal MessageId FirstChunkMessageId;
+            protected internal MessageId LastChunkMessageId;
+            protected internal int TotalChunks = -1;
+
+            public virtual ChunkMessageId ChunkMessageId
+            {
+                get
+                {
+                    return new ChunkMessageId(FirstChunkMessageId, LastChunkMessageId);
+                }
+            }
+            protected internal void Deallocate()
+            {
+                FirstChunkMessageId = null;
+                LastChunkMessageId = null;
+
+            }
+
+            internal static ChunkedMessageCtx Get(int totalChunks)
+            {
+                ChunkedMessageCtx ctx = new ChunkedMessageCtx
+                {
+                    TotalChunks = totalChunks
+                };
+                return ctx;
+            }
+
+            internal virtual void Recycle()
+            {
+                TotalChunks = -1;
+            }
+        }
+        protected internal sealed class OpSendMsg<T1>
 		{
 			internal Message<T1> Msg;
 			internal IList<Message<T1>> Msgs;
