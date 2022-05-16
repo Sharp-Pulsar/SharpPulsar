@@ -21,9 +21,6 @@
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
         },
-        "GithubSource": {
-          "type": "string"
-        },
         "GitHubToken": {
           "type": "string",
           "default": "Secrets must be entered via 'nuke :secrets [profile]'"
@@ -88,6 +85,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "AuthenticatedGitHubClient",
               "AutoFailOverTest",
               "Clean",
               "Compile",
@@ -115,6 +113,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "AuthenticatedGitHubClient",
               "AutoFailOverTest",
               "Clean",
               "Compile",

@@ -41,7 +41,7 @@ using Nuke.Common.Utilities;
     AutoGenerate = true,
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },
-    ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN", "TOKE" })]
+    ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN" })]
 
 [CustomGitHubActions("github",
     GitHubActionsImage.WindowsLatest,

@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using SharpPulsar.TestContainer.TestUtils;
 using Docker.DotNet;
 using Octokit;
+using Nuke.Common.Tools.Git;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
@@ -57,7 +58,6 @@ partial class Build : NukeBuild
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
-    [Parameter] string GithubSource = "https://nuget.pkg.github.com/eaba/SharpPulsar";
 
     [Parameter] bool Container = false;
 
@@ -272,34 +272,43 @@ partial class Build : NukeBuild
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => Configuration.Equals(Configuration.Release))
+      .Triggers(GitHubRelease)
       .Executes(() =>
       {
-          OutputNuget.GlobFiles("*.nupkg")
-              .ForEach(x =>
-              {
-                  DotNetNuGetPush(s => s
-                      .SetTargetPath(x)
-                      .SetSource(NugetApiUrl)
-                      .SetApiKey(NugetApiKey)
-                  );
-              });
+          var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
+          foreach (var package in packages)
+          {
+              DotNetNuGetPush(s => s
+                  .SetTimeout(TimeSpan.FromMinutes(10).Minutes)
+                  .SetTargetPath(package)
+                  .SetSource(NugetApiUrl)
+                  .SetApiKey(NugetApiKey));
+          }
+          
       });
-    
+
+    Target AuthenticatedGitHubClient => _ => _
+        .Unlisted()
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .Executes(() =>
+        {
+            GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
+            {
+                Credentials = new Octokit.Credentials(GitHubToken, AuthenticationType.Bearer)
+            };
+        });
     Target GitHubRelease => _ => _
+        .Unlisted()
         .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
-        .DependsOn(CreateNuget)        
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .DependsOn(AuthenticatedGitHubClient)
         .Executes(async () =>
         {
             var version = GitVersion.SemVer;
             var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
             Release release;
 
-            GitHubClient = new GitHubClient(new ProductHeaderValue(nameof(NukeBuild)))
-            {
-                Credentials = new Octokit.Credentials(Toke)
-            };
-            
+
             var identifier = GitRepository.Identifier.Split("/");
             var (gitHubOwner, repoName) = (identifier[0], identifier[1]);
             try
@@ -312,7 +321,7 @@ partial class Build : NukeBuild
                 {
                     Body = releaseNotes,
                     Name = version,
-                    Draft = true,
+                    Draft = false,
                     Prerelease = GitRepository.IsOnReleaseBranch()
                 };
                 release = await GitHubClient.Repository.Release.Create(gitHubOwner, repoName, newRelease);
@@ -324,7 +333,7 @@ partial class Build : NukeBuild
             }
 
             Information($"GitHub Release {version}");
-            var packages = OutputNuget.GlobFiles("*.nupkg").NotNull();
+            var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
             foreach (var artifact in packages)
             {
                 var releaseAssetUpload = new ReleaseAssetUpload(artifact.Name, "application/zip", File.OpenRead(artifact), null);
@@ -332,7 +341,7 @@ partial class Build : NukeBuild
                 Information($"  {releaseAsset.BrowserDownloadUrl}");
             }
         });
-    
+
     string ParseReleaseNote()
     {
         return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();
