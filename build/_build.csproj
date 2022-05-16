@@ -44,4 +44,8 @@
     <ProjectReference Include="..\Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="..\.github\workflows\release.yml" />
+  </ItemGroup>
+
 </Project>

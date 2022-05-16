@@ -88,7 +88,6 @@
           "items": {
             "type": "string",
             "enum": [
-              "AuthenticatedGitHubClient",
               "AutoFailOverTest",
               "Clean",
               "Compile",
@@ -116,7 +115,6 @@
           "items": {
             "type": "string",
             "enum": [
-              "AuthenticatedGitHubClient",
               "AutoFailOverTest",
               "Clean",
               "Compile",

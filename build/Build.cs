@@ -272,9 +272,7 @@ partial class Build : NukeBuild
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Requires(() => !GitHubToken.IsNullOrEmpty())
       .Requires(() => Configuration.Equals(Configuration.Release))
-      .Triggers(GitHubRelease)
       .Executes(() =>
       {
           OutputNuget.GlobFiles("*.nupkg")
@@ -285,33 +283,23 @@ partial class Build : NukeBuild
                       .SetSource(NugetApiUrl)
                       .SetApiKey(NugetApiKey)
                   );
-                  
-                  DotNetNuGetPush(s => s
-                      .SetApiKey(Toke)
-                      .SetTargetPath(x)
-                      .SetSource(GithubSource));
               });
       });
-    Target AuthenticatedGitHubClient => _ => _
-        .Unlisted()
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
-        .Executes(() =>
-        {
-            GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
-            {
-                Credentials = new Octokit.Credentials(GitHubToken, AuthenticationType.Bearer)
-            };
-        });
+    
     Target GitHubRelease => _ => _
-        .Unlisted()
         .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
-        .DependsOn(AuthenticatedGitHubClient)
+        .DependsOn(CreateNuget)        
         .Executes(async () =>
         {
             var version = GitVersion.SemVer;
             var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
             Release release;
+
+            GitHubClient = new GitHubClient(new ProductHeaderValue(nameof(NukeBuild)))
+            {
+                Credentials = new Octokit.Credentials(Toke)
+            };
+            
             var identifier = GitRepository.Identifier.Split("/");
             var (gitHubOwner, repoName) = (identifier[0], identifier[1]);
             try
@@ -324,7 +312,7 @@ partial class Build : NukeBuild
                 {
                     Body = releaseNotes,
                     Name = version,
-                    Draft = false,
+                    Draft = true,
                     Prerelease = GitRepository.IsOnReleaseBranch()
                 };
                 release = await GitHubClient.Repository.Release.Create(gitHubOwner, repoName, newRelease);
@@ -344,6 +332,7 @@ partial class Build : NukeBuild
                 Information($"  {releaseAsset.BrowserDownloadUrl}");
             }
         });
+    
     string ParseReleaseNote()
     {
         return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();

@@ -36,13 +36,19 @@ using Nuke.Common.Utilities;
     InvokedTargets = new[] { nameof(TlsTest) },
     PublishArtifacts = true)]
 
-[CustomGitHubActions("release",
+[CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,
     AutoGenerate = true,
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },
     ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN", "TOKE" })]
 
+[CustomGitHubActions("github",
+    GitHubActionsImage.WindowsLatest,
+    AutoGenerate = true,
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(GitHubRelease) },
+    ImportSecrets = new[] {  "GITHUB_TOKEN", "TOKE" })]
 partial class Build
 {
 
