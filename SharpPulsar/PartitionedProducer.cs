@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -41,7 +42,8 @@ namespace SharpPulsar
 {
     internal class PartitionedProducer<T> : ProducerActorBase<T>
 	{
-		private readonly IList<IActorRef> _producers;
+
+        private readonly ConcurrentDictionary<int, IActorRef> _producers;
 		private readonly IActorRef _router;
 		private readonly IActorRef _generator;
 		private readonly IActorRef _self;
@@ -49,28 +51,44 @@ namespace SharpPulsar
 		private readonly IActorRef _cnxPool;
 		private readonly ProducerStatsRecorder _stats;
 		private TopicMetadata _topicMetadata;
-
-		// timeout related to auto check and subscribe partition increasement
-		private readonly ICancelable _partitionsAutoUpdateTimeout = null;
+        
+        // timeout related to auto check and subscribe partition increasement
+        private readonly ICancelable _partitionsAutoUpdateTimeout = null;
 		private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 
-		public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
+        private readonly int _firstPartitionIndex;
+        private string _overrideProducerName;
+        internal TopicsPartitionChangedListener _topicsPartitionChangedListener;
+
+        public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
 		{
 			_cnxPool = cnxPool;
 			_lookup = lookup;
 			_self = Self;
-			_producers = new List<IActorRef>();
+			_producers = new ConcurrentDictionary<int, IActorRef>();
 			_generator = idGenerator;
 			_context = Context;
-			_producers = new List<IActorRef>(numPartitions);
 			_topicMetadata = new TopicMetadata(numPartitions);
 			_stats = clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
 			_log = Context.GetLogger();
 			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
+            
+            IList<int> indexList;
+            if (conf.LazyStartPartitionedProducers && conf.AccessMode == ProducerAccessMode.Shared)
+            {
+                // try to create producer at least one partition
+                indexList = Collections.singletonList(routerPolicy.ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), topicMetadata));
+            }
+            else
+            {
+                // try to create producer for all partitions
+                IndexList = IntStream.range(0, topicMetadata.NumPartitions()).boxed().collect(Collectors.toList());
+            }
 
-			switch (conf.MessageRoutingMode)
+            _firstPartitionIndex = indexList[0];
+            switch (conf.MessageRoutingMode)
 			{
 				case MessageRoutingMode.ConsistentHashingMode:
 					_router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
@@ -145,7 +163,7 @@ namespace SharpPulsar
 			// Return the highest sequence id across all partitions. This will be correct,
 			// since there is a single id generator across all partitions for the same producer
 
-			return await _producers.Max(x => x.Ask<long>(GetLastSequenceId.Instance));
+			return await _producers.Values.Max(x => x.Ask<long>(GetLastSequenceId.Instance));
 		}
 
 		private async ValueTask Start()
@@ -228,6 +246,17 @@ namespace SharpPulsar
 
         private void InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
 		{
+            
+
+            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+			{
+				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
+				_router.Tell(msg, Sender);
+			}
+            else
+			{
+				_router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
+			}
             switch (State.ConnectionState)
             {
                 case HandlerState.State.Ready:
@@ -248,31 +277,21 @@ namespace SharpPulsar
                     callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
-
-            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
-			{
-				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
-				_router.Tell(msg, Sender);
-			}
-            else
-			{
-				_router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
-			}
-		}
+        }
 
 		private void Flush()
 		{
-			 _producers.ForEach(x => x.Tell(Messages.Producer.Flush.Instance));
+            _producers.Values.ForEach(x => x.Tell(Messages.Producer.Flush.Instance));
 		}
 
 		private void TriggerFlush()
 		{
-			_producers.ForEach(x => x.Tell(Messages.Producer.TriggerFlush.Instance));
+			_producers.Values.ForEach(x => x.Tell(Messages.Producer.TriggerFlush.Instance));
 		}
 
 		protected internal override bool Connected()
 		{
-			foreach(var p in _producers)
+			foreach(var p in _producers.Values)
             {
 				var x = p.Ask<bool>(IsConnected.Instance).GetAwaiter().GetResult();
 				if (!x)
@@ -299,11 +318,11 @@ namespace SharpPulsar
 				return null;
 			}
 			_stats.Reset();
-			for (var i = 0; i < _topicMetadata.NumPartitions(); i++)
-			{
-				var stats = await _producers[i].Ask<IProducerStats>(GetStats.Instance);
-				_stats.UpdateCumulativeStats(stats);
-			}
+            foreach (var p in _producers.Values)
+            {
+                var stats = await p.Ask<IProducerStats>(GetStats.Instance);
+                _stats.UpdateCumulativeStats(stats);
+            }
 			return _stats;
 		}
 
@@ -314,7 +333,100 @@ namespace SharpPulsar
 				return "partition-producer";
 			}
 		}
-		private async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
+        private class TopicsPartitionChangedListener : PartitionsChangedListener
+        {
+            private readonly PartitionedProducer<T> _outerInstance;
+
+            public TopicsPartitionChangedListener(PartitionedProducer<T> outerInstance)
+            {
+                _outerInstance = outerInstance;
+            }
+
+            // Check partitions changes of passed in topics, and add new topic partitions.
+            public virtual async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
+            {
+                
+                if (topicsExtended.Count == 0 || !topicsExtended.Contains(_outerInstance.Topic))
+                {
+                    
+                    return;
+                }
+                var topicName = TopicName.Get(_outerInstance.Topic);
+
+                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+
+                if (result.Failed)
+                {
+                    _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed");
+                    
+                    throw result.Exception; 
+                }
+
+                var metadata = result.ConvertTo<PartitionedTopicMetadata>();
+                var list = _outerInstance.GetPartitionsForTopic(topicName, metadata).ToList();
+                var oldPartitionNumber = _outerInstance._topicMetadata.NumPartitions();
+                var currentPartitionNumber = list.Count;
+                if (_outerInstance._log.IsDebugEnabled)
+                {
+                    _outerInstance._log.Debug($"[{_outerInstance.Topic}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                }
+                if (oldPartitionNumber == currentPartitionNumber)
+                {
+                    return;
+                }
+                else if (oldPartitionNumber < currentPartitionNumber)
+                {
+                    if (_outerInstance.Conf.LazyStartPartitionedProducers && _outerInstance.Conf.AccessMode == ProducerAccessMode.Shared)
+                    {
+                        _outerInstance._topicMetadata = new TopicMetadata(currentPartitionNumber);
+                        
+                        _outerInstance.OnPartitionsChange(_outerInstance.Topic, currentPartitionNumber);
+                        return;
+                    }
+                    else
+                    {
+                        var newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
+                        foreach (var partitionName in newPartitions)
+                        {
+                            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            var producerId = await _outerInstance._generator.Ask<long>(NewProducerId.Instance);
+                            var partitionIndex = TopicName.GetPartitionIndex(partitionName);
+                            _outerInstance._context.ActorOf(ProducerActor<T>.Prop(producerId, _outerInstance.Client, _outerInstance._lookup, _outerInstance._cnxPool, _outerInstance._generator, partitionName, _outerInstance.Conf, tcs, partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors, _outerInstance.ClientConfiguration, Option(_outerInstance.OverrideProducerName)));
+                            try
+                            {
+                                var producer = await tcs.Task;
+                                _outerInstance._producers.TryAdd(partitionIndex, producer);
+                                var routee = Routee.FromActorRef(producer);
+                                _outerInstance._router.Tell(new AddRoutee(routee));
+                                if (_outerInstance._log.IsDebugEnabled)
+                                {
+                                    _outerInstance._log.Debug($"[{_outerInstance.Topic}] success create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                                }
+                                _outerInstance._topicMetadata = new TopicMetadata(currentPartitionNumber);
+                            }
+                            catch (Exception ex)
+                            {
+                                _outerInstance._log.Warning($"[{_outerInstance.Topic}] fail create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                                Enumerable.Range(oldPartitionNumber, ((int)_outerInstance._producers.Count) - oldPartitionNumber)
+                                    .ForEach(i => _outerInstance._producers.Remove(i, out ).CloseAsync());
+                                
+                                _outerInstance._log.Error(ex.ToString());
+                            }
+                        }
+                        
+                        _outerInstance.OnPartitionsChange(_outerInstance.Topic, currentPartitionNumber);
+                        
+                    }
+                }
+                else
+                {
+                    log.error("[{}] not support shrink topic partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
+                    Future.completeExceptionally(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
+                }
+                
+            }
+        }
+        private async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
 		{
 			if (topicsExtended.Count == 0 || !topicsExtended.Contains(Topic))
 			{
@@ -323,8 +435,10 @@ namespace SharpPulsar
 			var topicName = TopicName.Get(Topic);
 
             var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+
             if (result.Failed)
                 throw result.Exception;
+
             var metadata = result.ConvertTo<PartitionedTopicMetadata>();
 			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
 			var oldPartitionNumber = _topicMetadata.NumPartitions();
@@ -339,7 +453,13 @@ namespace SharpPulsar
 			}
 			else if (oldPartitionNumber < currentPartitionNumber)
 			{
-				var newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
+                if (Conf.LazyStartPartitionedProducers && Conf.AccessMode == ProducerAccessMode.Shared)
+                {
+                    _topicMetadata = new TopicMetadata(currentPartitionNumber);
+                    OnPartitionsChange(topics, currentPartitionNumber);
+                    return;
+                }
+                var newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
 				foreach (var partitionName in newPartitions)
 				{
                     var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -386,9 +506,19 @@ namespace SharpPulsar
 			}
 		}
 
-        protected internal override void LastDisconnectedTimestamp()
+        protected internal override long LastDisconnectedTimestamp()
         {
-            throw new NotImplementedException();
+            var lastDisconnectedTimestamp = 0L;
+            
+            //var p = _producers.Values.Max(x => x.Ask<long>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetType());
+            foreach (var c in _producers.Values)
+            {
+                var x = c.Ask<long>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
+
+                if (x > lastDisconnectedTimestamp)
+                    lastDisconnectedTimestamp = x;
+            }
+            return lastDisconnectedTimestamp;
         }
 
         internal sealed class ExtendTopics

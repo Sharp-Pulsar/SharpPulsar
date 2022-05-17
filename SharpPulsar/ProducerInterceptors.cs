@@ -116,8 +116,21 @@ namespace SharpPulsar
 				}
 			}
 		}
-
-		public virtual void Dispose()
+        public virtual void OnPartitionsChange(string topicName, int partitions)
+        {
+            foreach (var interceptor in _interceptors)
+            {
+                try
+                {
+                    interceptor.OnPartitionsChange(topicName, partitions);
+                }
+                catch (Exception e)
+                {
+                    _log.Warning($"Error executing interceptor onPartitionsChange callback :{e}");
+                }
+            }
+        }
+        public virtual void Dispose()
 		{
 			foreach(var interceptor in _interceptors)
 			{

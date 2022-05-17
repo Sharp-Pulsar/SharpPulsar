@@ -84,7 +84,7 @@ namespace SharpPulsar.Configuration
 		public bool AutoUpdatePartitions { get; set; } = true;
 
 		public bool MultiSchema { get; set; } = true;
-
+        public bool LazyStartPartitionedProducers { get; set; } = false;
         public SortedDictionary<string, string> Properties { get; set; }
         
 		/// 

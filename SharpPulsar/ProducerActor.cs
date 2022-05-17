@@ -61,9 +61,42 @@ namespace SharpPulsar
 
     internal class ProducerActor<T> : ProducerActorBase<T>, IWithUnboundedStash
 	{
+        private bool InstanceFieldsInitialized = false;
 
-		// Producer id, used to identify a producer within a single connection
-		private readonly long _producerId;
+        private void InitializeInstanceFields()
+        {
+            lastSendFutureWrapper = LastSendFutureWrapper.Create(lastSendFuture);
+        }
+        private sealed class LastSendFutureWrapper
+        {
+            internal readonly MessageId LastSendFuture;
+            internal const int FALSE = 0;
+            internal const int TRUE = 1;
+            internal static readonly LastSendFutureWrapper ThrowOnceUpdater;
+            internal volatile int ThrowOnce = FALSE;
+
+            internal LastSendFutureWrapper(MessageId lastSendFuture)
+            {
+                this.LastSendFuture = lastSendFuture;
+            }
+            internal static LastSendFutureWrapper Create(MessageId lastSendFuture)
+            {
+                return new LastSendFutureWrapper(lastSendFuture);
+            }
+            public void HandleOnce()
+            {
+                return LastSendFuture.handle((ignore, t) =>
+                {
+                    if (t != null && ThrowOnceUpdater.compareAndSet(this, FALSE, TRUE))
+                    {
+                        throw FutureUtil.WrapToCompletionException(t);
+                    }
+                    return null;
+                });
+            }
+        }
+        // Producer id, used to identify a producer within a single connection
+        private readonly long _producerId;
 
 		// Variable is used through the atomic updater
 		private long _msgIdGenerator;
@@ -125,9 +158,14 @@ namespace SharpPulsar
         private readonly Collection<Exception> _previousExceptions = new Collection<Exception>();
         private readonly MemoryLimitController _memoryLimitController;
 
-        public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
+        public ProducerActor(long producerid, IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, TaskCompletionSource<IActorRef> producerCreatedFuture, int partitionIndex, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, Option<string> overrideProducerName) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
 		{
             Self.Path.WithUid(producerid);
+            if (!InstanceFieldsInitialized)
+            {
+                InitializeInstanceFields();
+                InstanceFieldsInitialized = true;
+            }
             _memoryLimitController = new MemoryLimitController(clientConfiguration.MemoryLimitBytes);
             _isTxnEnabled = clientConfiguration.EnableTransaction;
 			_self = Self;
@@ -143,8 +181,8 @@ namespace SharpPulsar
 			}
 			_partitionIndex = partitionIndex;
 			_pendingMessages = new Queue<OpSendMsg<T>>(conf.MaxPendingMessages);
-
-			_compressor = CompressionCodecProvider.GetCompressionCodec((int)conf.CompressionType);
+            overrideProducerName.OnSuccess(key => _producerName = key);
+            _compressor = CompressionCodecProvider.GetCompressionCodec((int)conf.CompressionType);
 
 			if (conf.InitialSequenceId != null)
 			{
