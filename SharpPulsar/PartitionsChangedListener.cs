@@ -26,7 +26,7 @@ namespace SharpPulsar
     /// <summary>
     /// Listener that notified when concerned topic partitions changed.
     /// </summary>
-    public interface PartitionsChangedListener
+    internal interface IPartitionsChangedListener
     {
         /// <summary>
         /// Notified when topic partitions increased.

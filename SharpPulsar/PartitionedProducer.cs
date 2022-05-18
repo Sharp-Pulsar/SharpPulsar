@@ -19,6 +19,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using Akka.Util;
+using SharpPulsar.Precondition;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -53,8 +56,9 @@ namespace SharpPulsar
 		private TopicMetadata _topicMetadata;
         
         // timeout related to auto check and subscribe partition increasement
-        private readonly ICancelable _partitionsAutoUpdateTimeout = null;
-		private readonly ILoggingAdapter _log;
+        private  ICancelable _partitionsAutoUpdateTimeout = null;
+        private ValueTask _partitionsAutoUpdateFuture;
+        private readonly ILoggingAdapter _log;
 		private readonly IActorContext _context;
 
         private readonly int _firstPartitionIndex;
@@ -74,53 +78,55 @@ namespace SharpPulsar
 			_log = Context.GetLogger();
 			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
 			conf.MaxPendingMessages = maxPendingMessages;
+            switch (conf.MessageRoutingMode)
+            {
+                case MessageRoutingMode.ConsistentHashingMode:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+                case MessageRoutingMode.BroadcastMode:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+                case MessageRoutingMode.RandomMode:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new RandomGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+                default:
+                    _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
+                    break;
+            }
             
             IList<int> indexList;
             if (conf.LazyStartPartitionedProducers && conf.AccessMode == ProducerAccessMode.Shared)
             {
                 // try to create producer at least one partition
                 indexList = Collections.singletonList(routerPolicy.ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), topicMetadata));
+                NewMessage();
             }
             else
             {
                 // try to create producer for all partitions
-                IndexList = IntStream.range(0, topicMetadata.NumPartitions()).boxed().collect(Collectors.toList());
+                indexList = Enumerable.Range(0, _topicMetadata.NumPartitions()).Select(x => x * x).ToList();
             }
 
             _firstPartitionIndex = indexList[0];
-            switch (conf.MessageRoutingMode)
-			{
-				case MessageRoutingMode.ConsistentHashingMode:
-					_router = Context.System.ActorOf(Props.Empty.WithRouter(new ConsistentHashingGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
-					break;
-				case MessageRoutingMode.BroadcastMode:
-					_router = Context.System.ActorOf(Props.Empty.WithRouter(new BroadcastGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
-					break;
-				case MessageRoutingMode.RandomMode:
-					_router = Context.System.ActorOf(Props.Empty.WithRouter(new RandomGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
-					break;
-				default:
-					_router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
-					break;
-			}
+                        
+            
 			
 			// start track and auto subscribe partition increasement
 			if(conf.AutoUpdatePartitions)
 			{
-				_partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellRepeatedlyCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
+                _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
+                _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self,  ExtendTopics.Instance, ActorRefs.NoSender);
 			}
-			Receive<Flush>(_ => {
+            Receive<ExtendTopics>(_ =>
+            {
+                Run();
+            });
+            Receive<Flush>(_ => {
 				Flush();
 			});
 			Receive<TriggerFlush>(_ => {
 				TriggerFlush();
 			});
-			ReceiveAsync<ExtendTopics>(async _ => 
-			{
-				var t = topic;
-				await OnTopicsExtended(new List<string> { t });
-			});
-
 			ReceiveAsync<InternalSend<T>>(async m =>
 			{
 				try
@@ -146,7 +152,7 @@ namespace SharpPulsar
 				}
 			});
 			ReceiveAny(any => _router.Forward(any));
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> await Start());
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> await Start(indexList));
 		}
 		public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture)
         {
@@ -166,49 +172,58 @@ namespace SharpPulsar
 			return await _producers.Values.Max(x => x.Ask<long>(GetLastSequenceId.Instance));
 		}
 
-		private async ValueTask Start()
+		private async ValueTask Start(IList<int> indexList)
 		{
 			Exception createFail = null;
 			var completed = 0;
-			for(var partitionIndex = 0; partitionIndex < _topicMetadata.NumPartitions(); partitionIndex++)
-			{
+            string overrideProducerName = null ;
+            foreach (var partitionIndex in indexList)
+            {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance);
-				var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-				_context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration));
+                if (overrideProducerName == null)
+                {
+                    var id = $"{producerId}";
+                    _overrideProducerName = id;
+                    overrideProducerName = id;
+                } 
+                var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
+                _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
                 try
                 {
                     var producer = await tcs.Task;
-                    _producers.Add(producer);
+                    _producers.TryAdd((int)producerId, producer);
                     var routee = Routee.FromActorRef(producer);
                     _router.Tell(new AddRoutee(routee));
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     State.ConnectionState = HandlerState.State.Failed;
                     createFail = ex;
                 }
-            
-				if (++completed == _topicMetadata.NumPartitions())
-				{
-					if (createFail == null)
-					{
-						State.ConnectionState = HandlerState.State.Ready;
-						_log.Info($"[{Topic}] Created partitioned producer");
+
+                if (++completed == _topicMetadata.NumPartitions())
+                {
+                    if (createFail == null)
+                    {
+                        State.ConnectionState = HandlerState.State.Ready;
+                        _log.Info($"[{Topic}] Created partitioned producer");
                         ProducerCreatedFuture.TrySetResult(_self);
-					}
-					else
-					{
-						_log.Error($"[{Topic}] Could not create partitioned producer: {createFail}");
+                    }
+                    else
+                    {
+                        _log.Error($"[{Topic}] Could not create partitioned producer: {createFail}");
                         ProducerCreatedFuture.TrySetException(createFail);
                         Client.Tell(new CleanupProducer(_self));
-					}
-				}
+                    }
+                }
+                
+
 			}
 
 		}
-
-		internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
+        
+        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
 		{
 			switch (State.ConnectionState)
 			{
@@ -247,6 +262,10 @@ namespace SharpPulsar
         private void InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
 		{
             
+            int Partition = routerPolicy.ChoosePartition(message, _topicMetadata);
+            
+            Condition.CheckArgument(Partition >= 0 && Partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + Partition);
+
 
             if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
 			{
@@ -333,7 +352,7 @@ namespace SharpPulsar
 				return "partition-producer";
 			}
 		}
-        private class TopicsPartitionChangedListener : PartitionsChangedListener
+        internal class TopicsPartitionChangedListener : IPartitionsChangedListener
         {
             private readonly PartitionedProducer<T> _outerInstance;
 
@@ -343,12 +362,11 @@ namespace SharpPulsar
             }
 
             // Check partitions changes of passed in topics, and add new topic partitions.
-            public virtual async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
+            public async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
             {
                 
                 if (topicsExtended.Count == 0 || !topicsExtended.Contains(_outerInstance.Topic))
-                {
-                    
+                {                    
                     return;
                 }
                 var topicName = TopicName.Get(_outerInstance.Topic);
@@ -370,125 +388,72 @@ namespace SharpPulsar
                 {
                     _outerInstance._log.Debug($"[{_outerInstance.Topic}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
                 }
-                if (oldPartitionNumber == currentPartitionNumber)
+                try 
                 {
-                    return;
-                }
-                else if (oldPartitionNumber < currentPartitionNumber)
-                {
-                    if (_outerInstance.Conf.LazyStartPartitionedProducers && _outerInstance.Conf.AccessMode == ProducerAccessMode.Shared)
+                    if (oldPartitionNumber == currentPartitionNumber)
                     {
-                        _outerInstance._topicMetadata = new TopicMetadata(currentPartitionNumber);
-                        
-                        _outerInstance.OnPartitionsChange(_outerInstance.Topic, currentPartitionNumber);
                         return;
+                    }
+                    else if (oldPartitionNumber < currentPartitionNumber)
+                    {
+                        if (_outerInstance.Conf.LazyStartPartitionedProducers && _outerInstance.Conf.AccessMode == ProducerAccessMode.Shared)
+                        {
+                            _outerInstance._topicMetadata = new TopicMetadata(currentPartitionNumber);
+
+                            _outerInstance.OnPartitionsChange(_outerInstance.Topic, currentPartitionNumber);
+                            return;
+                        }
+                        else
+                        {
+                            var newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
+                            foreach (var partitionName in newPartitions)
+                            {
+                                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                var producerId = await _outerInstance._generator.Ask<long>(NewProducerId.Instance);
+                                var partitionIndex = TopicName.GetPartitionIndex(partitionName);
+                                _outerInstance._context.ActorOf(ProducerActor<T>.Prop(producerId, _outerInstance.Client, _outerInstance._lookup, _outerInstance._cnxPool, _outerInstance._generator, partitionName, _outerInstance.Conf, tcs, partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors, _outerInstance.ClientConfiguration, _outerInstance._overrideProducerName));
+                                try
+                                {
+                                    var producer = await tcs.Task;
+                                    _outerInstance._producers.TryAdd(partitionIndex, producer);
+                                    var routee = Routee.FromActorRef(producer);
+                                    _outerInstance._router.Tell(new AddRoutee(routee));
+                                    if (_outerInstance._log.IsDebugEnabled)
+                                    {
+                                        _outerInstance._log.Debug($"[{_outerInstance.Topic}] success create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                                    }
+                                    _outerInstance._topicMetadata = new TopicMetadata(currentPartitionNumber);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _outerInstance._log.Warning($"[{_outerInstance.Topic}] fail create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                                    Enumerable.Range(oldPartitionNumber, ((int)_outerInstance._producers.Count) - oldPartitionNumber)
+                                        .ForEach( i =>  _outerInstance._producers.Remove(i, out var a));
+
+                                    _outerInstance._log.Error(ex.ToString());
+                                }
+                            }
+
+                            _outerInstance.OnPartitionsChange(_outerInstance.Topic, currentPartitionNumber);
+
+                        }
                     }
                     else
                     {
-                        var newPartitions = list.GetRange(oldPartitionNumber, currentPartitionNumber);
-                        foreach (var partitionName in newPartitions)
-                        {
-                            var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                            var producerId = await _outerInstance._generator.Ask<long>(NewProducerId.Instance);
-                            var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-                            _outerInstance._context.ActorOf(ProducerActor<T>.Prop(producerId, _outerInstance.Client, _outerInstance._lookup, _outerInstance._cnxPool, _outerInstance._generator, partitionName, _outerInstance.Conf, tcs, partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors, _outerInstance.ClientConfiguration, Option(_outerInstance.OverrideProducerName)));
-                            try
-                            {
-                                var producer = await tcs.Task;
-                                _outerInstance._producers.TryAdd(partitionIndex, producer);
-                                var routee = Routee.FromActorRef(producer);
-                                _outerInstance._router.Tell(new AddRoutee(routee));
-                                if (_outerInstance._log.IsDebugEnabled)
-                                {
-                                    _outerInstance._log.Debug($"[{_outerInstance.Topic}] success create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-                                }
-                                _outerInstance._topicMetadata = new TopicMetadata(currentPartitionNumber);
-                            }
-                            catch (Exception ex)
-                            {
-                                _outerInstance._log.Warning($"[{_outerInstance.Topic}] fail create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-                                Enumerable.Range(oldPartitionNumber, ((int)_outerInstance._producers.Count) - oldPartitionNumber)
-                                    .ForEach(i => _outerInstance._producers.Remove(i, out ).CloseAsync());
-                                
-                                _outerInstance._log.Error(ex.ToString());
-                            }
-                        }
-                        
-                        _outerInstance.OnPartitionsChange(_outerInstance.Topic, currentPartitionNumber);
-                        
+                        _outerInstance._log.Error($"[{_outerInstance.Topic}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
+                        throw new PulsarClientException.NotSupportedException("not support shrink topic partitions");
                     }
                 }
-                else
+                catch(Exception ex) 
                 {
-                    log.error("[{}] not support shrink topic partitions. old: {}, new: {}", outerInstance.Topic, OldPartitionNumber, CurrentPartitionNumber);
-                    Future.completeExceptionally(new PulsarClientException.NotSupportedException("not support shrink topic partitions"));
-                }
+                    _outerInstance._log.Error($"[{_outerInstance.Topic}] Auto getting partitions failed { ex}");
+                    throw ex;
+                }    
+                
                 
             }
         }
-        private async ValueTask OnTopicsExtended(ICollection<string> topicsExtended)
-		{
-			if (topicsExtended.Count == 0 || !topicsExtended.Contains(Topic))
-			{
-				return;
-			}
-			var topicName = TopicName.Get(Topic);
-
-            var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
-
-            if (result.Failed)
-                throw result.Exception;
-
-            var metadata = result.ConvertTo<PartitionedTopicMetadata>();
-			var topics = GetPartitionsForTopic(topicName, metadata).ToList();
-			var oldPartitionNumber = _topicMetadata.NumPartitions();
-			var currentPartitionNumber = topics.Count;
-			if (_log.IsDebugEnabled)
-			{
-				_log.Debug($"[{Topic}] partitions number. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-			}
-			if (oldPartitionNumber == currentPartitionNumber)
-			{
-				return;
-			}
-			else if (oldPartitionNumber < currentPartitionNumber)
-			{
-                if (Conf.LazyStartPartitionedProducers && Conf.AccessMode == ProducerAccessMode.Shared)
-                {
-                    _topicMetadata = new TopicMetadata(currentPartitionNumber);
-                    OnPartitionsChange(topics, currentPartitionNumber);
-                    return;
-                }
-                var newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
-				foreach (var partitionName in newPartitions)
-				{
-                    var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    var producerId = await _generator.Ask<long>(NewProducerId.Instance);
-					var partitionIndex = TopicName.GetPartitionIndex(partitionName);
-					_context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration));
-                    try
-                    {
-                        var producer = await tcs.Task;
-                        _producers.Add(producer);
-                        var routee = Routee.FromActorRef(producer);
-                        _router.Tell(new AddRoutee(routee));
-                    }
-                    catch(Exception ex) {
-                        _log.Error(ex.ToString());
-                    }
-				}
-				if (_log.IsDebugEnabled)
-				{
-					_log.Debug($"[{Topic}] success create producers for extended partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-				}
-				_topicMetadata = new TopicMetadata(currentPartitionNumber);
-			}
-			else
-			{
-				_log.Error($"[{Topic}] not support shrink topic partitions. old: {oldPartitionNumber}, new: {currentPartitionNumber}");
-			}
-		}
-
+        
 		private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
 		{
 			if (metadata.Partitions > 0)
@@ -505,7 +470,31 @@ namespace SharpPulsar
 				return new List<string> { topicName.ToString() };
 			}
 		}
+        internal void Run()
+        {
+            try
+            {
+                if (_log.IsDebugEnabled)
+                {
+                    _log.Debug($"[{Topic}] run partitionsAutoUpdateTimerTask for partitioned producer");
+                }
 
+                // if last auto update not completed yet, do nothing.
+                if (_partitionsAutoUpdateFuture == null || _partitionsAutoUpdateFuture.IsCompleted)
+                {
+                    _partitionsAutoUpdateFuture = _topicsPartitionChangedListener.OnTopicsExtended(new List<string> { Topic });
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Warning($"Encountered error in partition auto update timer task for partition producer. Another task will be scheduled. {ex}");
+            }
+            finally
+            {
+                // schedule the next re-check task
+                _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(Conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
+            }
+        }
         protected internal override long LastDisconnectedTimestamp()
         {
             var lastDisconnectedTimestamp = 0L;
