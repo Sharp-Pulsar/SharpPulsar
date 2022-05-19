@@ -22,6 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Akka.Util;
 using SharpPulsar.Precondition;
+using SharpPulsar.Common.Util;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -259,23 +260,64 @@ namespace SharpPulsar
             await Task.CompletedTask;
         }
 
-        private void InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
+        private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
 		{
             
-            int Partition = routerPolicy.ChoosePartition(message, _topicMetadata);
+            var partition = ChoosePartition(message, _topicMetadata);
             
-            Condition.CheckArgument(Partition >= 0 && Partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + Partition);
+            Condition.CheckArgument(partition >= 0 && partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
+            Exception createFail = null;
 
+            if (Conf.LazyStartPartitionedProducers && !_producers.ContainsKey(partition)) 
+            {
+                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var producerId = await _generator.Ask<long>(NewProducerId.Instance);
+                var partitionName = TopicName.Get(Topic).GetPartition(partition).ToString();
+                _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partition, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
+                try
+                {
+                    var producer = await tcs.Task;
+                    _producers.TryAdd((int)producerId, producer);
+                    var routee = Routee.FromActorRef(producer);
+                    _router.Tell(new AddRoutee(routee));
+                }
+                catch (Exception ex)
+                {
+                    State.ConnectionState = HandlerState.State.Failed;
+                    createFail = ex;
+                }
 
-            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
-			{
-				var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
-				_router.Tell(msg, Sender);
-			}
-            else
-			{
-				_router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
-			}
+                var newProducer = CreateProducer(Partition, Optional.ofNullable(overrideProducerName));
+                // JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
+                // ORIGINAL LINE: final State createState = newProducer.producerCreatedFuture().handle((prod, createException) ->
+                State CreateState = NewProducer.ProducerCreatedFuture().handle((prod, createException) =>
+                {
+                    if (createException != null)
+                    {
+                        log.error("[{}] Could not create internal producer. partitionIndex: {}", Topic, Partition, createException);
+                        try
+                        {
+                            producers.Remove(Partition, NewProducer);
+                            NewProducer.Dispose();
+                        }
+                        catch (PulsarClientException E)
+                        {
+                            log.error("[{}] Could not close internal producer. partitionIndex: {}", Topic, Partition, E);
+                        }
+                        return State.Failed;
+                    }
+                    if (log.isDebugEnabled())
+                    {
+                        log.debug("[{}] Created internal producer. partitionIndex: {}", Topic, Partition);
+                    }
+                    return State.Ready;
+                }).join();
+                if (CreateState == State.Failed)
+                {
+                    return FutureUtil.FailedFuture(new PulsarClientException.NotConnectedException());
+                }
+            }
+                        
             switch (State.ConnectionState)
             {
                 case HandlerState.State.Ready:
@@ -296,9 +338,28 @@ namespace SharpPulsar
                     callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
-        }
 
-		private void Flush()
+            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+            {
+                var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
+                _router.Tell(msg, Sender);
+            }
+            else
+            {
+                _router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
+            }
+        }
+        private int ChoosePartition(IMessage<T> msg, TopicMetadata metadata)
+        {
+            // If the message has a key, it supersedes the single partition routing policy
+            if (msg.HasKey())
+            {
+                return MathUtils.SignSafeMod(msg.Key.GetHashCode(), metadata.NumPartitions());
+            }
+
+            return _firstPartitionIndex; 
+        }
+        private void Flush()
 		{
             _producers.Values.ForEach(x => x.Tell(Messages.Producer.Flush.Instance));
 		}

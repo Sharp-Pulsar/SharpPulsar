@@ -18,17 +18,26 @@
 /// </summary>
 namespace SharpPulsar.Common.Util
 {
-	/// <summary>
-	/// This interface declares a hash function.
-	/// </summary>
-	public interface IHash
-	{
+    /// <summary>
+    /// This interface declares a hash function.
+    /// </summary>
+    public interface IHash
+    {
 
-		/// <summary>
-		/// Generate the hash of a given byte array.
-		/// </summary>
-		/// <returns> The hash of {@code b}, which is non-negative integer. </returns>
-		int MakeHash(byte[] b);
-	}
+        /// <summary>
+        /// Generate the hash of a given byte array.
+        /// </summary>
+        /// <returns> The hash of {@code b}, which is non-negative integer. </returns>
+        int MakeHash(byte[] b);
+
+        /// <summary>
+		/// Generate the hash of a given String.
+		/// </summary> </returns>
+		/// <returns> The hash of {<param name="s">}, which is non-negative integer. </param>
+		public static int MakeHash(string s) 
+        { 
+            return s.GetHashCode();    
+        }
+    }
 
 }
