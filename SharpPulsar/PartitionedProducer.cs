@@ -45,40 +45,40 @@ using SharpPulsar.Common.Util;
 namespace SharpPulsar
 {
     internal class PartitionedProducer<T> : ProducerActorBase<T>
-	{
+    {
 
         private readonly ConcurrentDictionary<int, IActorRef> _producers;
-		private readonly IActorRef _router;
-		private readonly IActorRef _generator;
-		private readonly IActorRef _self;
-		private readonly IActorRef _lookup;
-		private readonly IActorRef _cnxPool;
-		private readonly ProducerStatsRecorder _stats;
-		private TopicMetadata _topicMetadata;
-        
+        private readonly IActorRef _router;
+        private readonly IActorRef _generator;
+        private readonly IActorRef _self;
+        private readonly IActorRef _lookup;
+        private readonly IActorRef _cnxPool;
+        private readonly ProducerStatsRecorder _stats;
+        private TopicMetadata _topicMetadata;
+
         // timeout related to auto check and subscribe partition increasement
-        private  ICancelable _partitionsAutoUpdateTimeout = null;
+        private ICancelable _partitionsAutoUpdateTimeout = null;
         private ValueTask _partitionsAutoUpdateFuture;
         private readonly ILoggingAdapter _log;
-		private readonly IActorContext _context;
+        private readonly IActorContext _context;
 
         private readonly int _firstPartitionIndex;
         private string _overrideProducerName;
         internal TopicsPartitionChangedListener _topicsPartitionChangedListener;
 
         public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
-		{
-			_cnxPool = cnxPool;
-			_lookup = lookup;
-			_self = Self;
-			_producers = new ConcurrentDictionary<int, IActorRef>();
-			_generator = idGenerator;
-			_context = Context;
-			_topicMetadata = new TopicMetadata(numPartitions);
-			_stats = clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
-			_log = Context.GetLogger();
-			var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
-			conf.MaxPendingMessages = maxPendingMessages;
+        {
+            _cnxPool = cnxPool;
+            _lookup = lookup;
+            _self = Self;
+            _producers = new ConcurrentDictionary<int, IActorRef>();
+            _generator = idGenerator;
+            _context = Context;
+            _topicMetadata = new TopicMetadata(numPartitions);
+            _stats = clientConfiguration.StatsIntervalSeconds > TimeSpan.Zero ? new ProducerStatsRecorder(Context.System, "PartitionedProducer", topic, conf.MaxPendingMessages) : null;
+            _log = Context.GetLogger();
+            var maxPendingMessages = Math.Min(conf.MaxPendingMessages, conf.MaxPendingMessagesAcrossPartitions / numPartitions);
+            conf.MaxPendingMessages = maxPendingMessages;
             switch (conf.MessageRoutingMode)
             {
                 case MessageRoutingMode.ConsistentHashingMode:
@@ -94,13 +94,13 @@ namespace SharpPulsar
                     _router = Context.System.ActorOf(Props.Empty.WithRouter(new RoundRobinGroup()), $"Partition{DateTimeHelper.CurrentUnixTimeMillis()}");
                     break;
             }
-            
+
             IList<int> indexList;
             if (conf.LazyStartPartitionedProducers && conf.AccessMode == ProducerAccessMode.Shared)
             {
                 // try to create producer at least one partition
-                indexList = Collections.singletonList(routerPolicy.ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), topicMetadata));
-                NewMessage();
+                indexList = new List<int> { ChoosePartition(new List<string> { "0" }, _topicMetadata) };
+                //indexList = ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), _topicMetadata);
             }
             else
             {
@@ -109,75 +109,71 @@ namespace SharpPulsar
             }
 
             _firstPartitionIndex = indexList[0];
-                        
-            
-			
-			// start track and auto subscribe partition increasement
-			if(conf.AutoUpdatePartitions)
-			{
+            // start track and auto subscribe partition increasement
+            if (conf.AutoUpdatePartitions)
+            {
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
-                _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self,  ExtendTopics.Instance, ActorRefs.NoSender);
-			}
+                _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
+            }
             Receive<ExtendTopics>(_ =>
             {
                 Run();
             });
             Receive<Flush>(_ => {
-				Flush();
-			});
-			Receive<TriggerFlush>(_ => {
-				TriggerFlush();
-			});
-			ReceiveAsync<InternalSend<T>>(async m =>
-			{
-				try
-				{
-					//get excepyion vai out
-					await InternalSend(m.Message, m.Callback);
-				}
-				catch (Exception ex)
+                Flush();
+            });
+            Receive<TriggerFlush>(_ => {
+                TriggerFlush();
+            });
+            ReceiveAsync<InternalSend<T>>(async m =>
+            {
+                try
+                {
+                    //get excepyion vai out
+                    await InternalSend(m.Message, m.Callback);
+                }
+                catch (Exception ex)
                 {
                     _log.Error(ex.ToString());
-				}
-			});
-			Receive<InternalSendWithTxn<T>>(m =>
-			{
-				try
-				{
-					InternalSendWithTxn(m.Message, m.Txn, m.Callback);
-				}
-				catch (Exception ex)
-				{
+                }
+            });
+            ReceiveAsync<InternalSendWithTxn<T>>(async m =>
+            {
+                try
+                {
+                   await InternalSendWithTxn(m.Message, m.Txn, m.Callback);
+                }
+                catch (Exception ex)
+                {
                     Sender.Tell(ex);
-					_log.Error(ex.ToString());
-				}
-			});
-			ReceiveAny(any => _router.Forward(any));
-            Akka.Dispatch.ActorTaskScheduler.RunTask(async()=> await Start(indexList));
-		}
-		public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture)
+                    _log.Error(ex.ToString());
+                }
+            });
+            ReceiveAny(any => _router.Forward(any));
+            Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start(indexList));
+        }
+        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture)
         {
-            return Props.Create(()=> new PartitionedProducer<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture));
+            return Props.Create(() => new PartitionedProducer<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture));
         }
         protected internal override async ValueTask<string> ProducerName()
-		{
-			//return await _producers[0].Ask<string>(GetProducerName.Instance);
-			return await Task.FromResult("PartitionedProducer");
-		}
+        {           
+            return await _producers[_firstPartitionIndex].Ask<string>(GetProducerName.Instance);
+        }
 
-		protected internal override async ValueTask<long> LastSequenceId()
-		{
-			// Return the highest sequence id across all partitions. This will be correct,
-			// since there is a single id generator across all partitions for the same producer
+        protected internal override async ValueTask<long> LastSequenceId()
+        {
+            // Return the highest sequence id across all partitions. This will be correct,
+            // since there is a single id generator across all partitions for the same producer
 
-			return await _producers.Values.Max(x => x.Ask<long>(GetLastSequenceId.Instance));
-		}
+            return await _producers.Values.Max(x => x.Ask<long>(GetLastSequenceId.Instance));
+        }
 
-		private async ValueTask Start(IList<int> indexList)
-		{
-			Exception createFail = null;
-			var completed = 0;
-            string overrideProducerName = null ;
+        private async ValueTask Start(IList<int> indexList)
+        {
+            Exception createFail = null;
+            var completed = 0;
+            string overrideProducerName = null;
             foreach (var partitionIndex in indexList)
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -187,7 +183,7 @@ namespace SharpPulsar
                     var id = $"{producerId}";
                     _overrideProducerName = id;
                     overrideProducerName = id;
-                } 
+                }
                 var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
                 _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
                 try
@@ -218,106 +214,51 @@ namespace SharpPulsar
                         Client.Tell(new CleanupProducer(_self));
                     }
                 }
-                
 
-			}
 
-		}
-        
-        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
-		{
-			switch (State.ConnectionState)
-			{
-                case HandlerState.State.Ready:
-                case HandlerState.State.Connecting:
-                    break; // Ok
-                case HandlerState.State.Closing:
-                case HandlerState.State.Closed:
-                    callback.TrySetException(new PulsarClientException.AlreadyClosedException("Producer already closed"));
-                    return;
-                case HandlerState.State.Terminated:
-                    callback.TrySetException(new PulsarClientException.TopicTerminatedException("Topic was terminated"));
-                    return;
-                case HandlerState.State.ProducerFenced:
-                    callback.TrySetException(new PulsarClientException.ProducerFencedException("Producer was fenced"));
-                    return;
-                case HandlerState.State.Failed:
-                case HandlerState.State.Uninitialized:
-                    callback.TrySetException(new PulsarClientException.NotConnectedException());
-                    return;
             }
 
-			if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
-			{
-				var msg = new ConsistentHashableEnvelope(new InternalSend<T>(message, callback), message.Key);
-				_router.Tell(msg, Sender);
-			}
-			else
-			{
-				_router.Tell(new InternalSend<T>(message, callback), Sender);
-			}
+        }
+
+        internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
+        {
+            await Internal(message);
+
+            ConnectionState(callback);
+
+            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+            {
+                var msg = new ConsistentHashableEnvelope(new InternalSend<T>(message, callback), message.Key);
+                _router.Tell(msg, Sender);
+            }
+            else
+            {
+                _router.Tell(new InternalSend<T>(message, callback), Sender);
+            }
 
             await Task.CompletedTask;
         }
 
         private async ValueTask InternalSendWithTxn(IMessage<T> message, IActorRef txn, TaskCompletionSource<Message<T>> callback)
-		{
-            
-            var partition = ChoosePartition(message, _topicMetadata);
-            
-            Condition.CheckArgument(partition >= 0 && partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
-            Exception createFail = null;
+        {
 
-            if (Conf.LazyStartPartitionedProducers && !_producers.ContainsKey(partition)) 
+            await Internal(message);
+
+            ConnectionState(callback);
+
+            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
             {
-                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var producerId = await _generator.Ask<long>(NewProducerId.Instance);
-                var partitionName = TopicName.Get(Topic).GetPartition(partition).ToString();
-                _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partition, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
-                try
-                {
-                    var producer = await tcs.Task;
-                    _producers.TryAdd((int)producerId, producer);
-                    var routee = Routee.FromActorRef(producer);
-                    _router.Tell(new AddRoutee(routee));
-                }
-                catch (Exception ex)
-                {
-                    State.ConnectionState = HandlerState.State.Failed;
-                    createFail = ex;
-                }
-
-                var newProducer = CreateProducer(Partition, Optional.ofNullable(overrideProducerName));
-                // JAVA TO C# CONVERTER WARNING: The original Java variable was marked 'final':
-                // ORIGINAL LINE: final State createState = newProducer.producerCreatedFuture().handle((prod, createException) ->
-                State CreateState = NewProducer.ProducerCreatedFuture().handle((prod, createException) =>
-                {
-                    if (createException != null)
-                    {
-                        log.error("[{}] Could not create internal producer. partitionIndex: {}", Topic, Partition, createException);
-                        try
-                        {
-                            producers.Remove(Partition, NewProducer);
-                            NewProducer.Dispose();
-                        }
-                        catch (PulsarClientException E)
-                        {
-                            log.error("[{}] Could not close internal producer. partitionIndex: {}", Topic, Partition, E);
-                        }
-                        return State.Failed;
-                    }
-                    if (log.isDebugEnabled())
-                    {
-                        log.debug("[{}] Created internal producer. partitionIndex: {}", Topic, Partition);
-                    }
-                    return State.Ready;
-                }).join();
-                if (CreateState == State.Failed)
-                {
-                    return FutureUtil.FailedFuture(new PulsarClientException.NotConnectedException());
-                }
+                var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
+                _router.Tell(msg, Sender);
             }
-                        
+            else
+            {
+                _router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
+            }
+            return;
+        }
+        private void ConnectionState(TaskCompletionSource<Message<T>> callback) 
+        {
             switch (State.ConnectionState)
             {
                 case HandlerState.State.Ready:
@@ -338,16 +279,51 @@ namespace SharpPulsar
                     callback.TrySetException(new PulsarClientException.NotConnectedException());
                     return;
             }
+        }
+        private async ValueTask Internal(IMessage<T> message) 
+        {
+            var partition = ChoosePartition(message, _topicMetadata);
 
-            if (Conf.MessageRoutingMode == MessageRoutingMode.ConsistentHashingMode)
+            Condition.CheckArgument(partition >= 0 && partition < _topicMetadata.NumPartitions(), "Illegal partition index chosen by the message routing policy: " + partition);
+
+
+            if (Conf.LazyStartPartitionedProducers && !_producers.ContainsKey(partition))
             {
-                var msg = new ConsistentHashableEnvelope(new InternalSendWithTxn<T>(message, txn, callback), message.Key);
-                _router.Tell(msg, Sender);
+                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var producerId = await _generator.Ask<long>(NewProducerId.Instance);
+                var partitionName = TopicName.Get(Topic).GetPartition(partition).ToString();
+                var context = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partition, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
+
+                try
+                {
+                    var producer = await tcs.Task;
+                    _producers.TryAdd((int)producerId, producer);
+                    var routee = Routee.FromActorRef(producer);
+                    _router.Tell(new AddRoutee(routee));
+                    State.ConnectionState = HandlerState.State.Ready;
+                }
+                catch (Exception ex)
+                {
+                    _log.Error($"[{Topic}] Could not create internal producer. partitionIndex: {partition}: {ex}");
+                    try
+                    {
+                        _producers.Remove(partition, out var actorRef);
+                        await actorRef.GracefulStop(TimeSpan.FromSeconds(11));
+                    }
+                    catch (PulsarClientException e)
+                    {
+                        _log.Error($"[{Topic}] Could not close internal producer. partitionIndex: {partition}: {e}");
+                    }
+                    State.ConnectionState = HandlerState.State.Failed;
+
+                }
+
+                if (State.ConnectionState == HandlerState.State.Failed)
+                {
+                    return; //new PulsarClientException.NotConnectedException();
+                }
             }
-            else
-            {
-                _router.Tell(new InternalSendWithTxn<T>(message, txn, callback), Sender);
-            }
+
         }
         private int ChoosePartition(IMessage<T> msg, TopicMetadata metadata)
         {
@@ -358,6 +334,16 @@ namespace SharpPulsar
             }
 
             return _firstPartitionIndex; 
+        }
+        private int ChoosePartition(List<string> msg, TopicMetadata metadata)
+        {
+            // If the message has a key, it supersedes the single partition routing policy
+            if (msg.Count() != 0)
+            {
+                return MathUtils.SignSafeMod(msg.GetHashCode(), metadata.NumPartitions());
+            }
+
+            return _firstPartitionIndex;
         }
         private void Flush()
 		{
@@ -384,9 +370,10 @@ namespace SharpPulsar
         protected override void PostStop()
         {
 			_partitionsAutoUpdateTimeout?.Cancel();
-			_producers.ForEach(x => 
-			{
-				Client.Tell(new CleanupProducer(x));
+            _producers.ForEach(x =>
+            {
+                var d = x.Value;
+				Client.Tell(new CleanupProducer(d));
 			});
 			base.PostStop();
         }
@@ -405,8 +392,14 @@ namespace SharpPulsar
             }
 			return _stats;
 		}
-
-		internal string HandlerName
+        /*public virtual IList<IActorRef> Producers
+        {
+            get
+            {
+                return _producers.Values.OrderBy(new List<int>(e => TopicName.GetPartitionIndex(e.getTopic()))).ToList();
+            }
+        }*/
+        internal string HandlerName
 		{
 			get
 			{
