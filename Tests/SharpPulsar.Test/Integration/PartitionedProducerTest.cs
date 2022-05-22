@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -34,44 +35,35 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar.Test.Integration
 {
     [Collection(nameof(MultiTopicIntegrationCollection))]
-    internal class PartitionedProducerTest
+    public class PartitionedProducerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
+        private readonly Admin.Public.Admin _admin;
         public PartitionedProducerTest(ITestOutputHelper output, PulsarMultiTopicFixture fixture)
         {
+            _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;
             _output = output;
             _client = fixture.Client;
         }
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
         {
-           
-            var key = Guid.NewGuid().ToString();
-            var subscriptionName = "regex-subscription";
-            var topicName1 = "persistent://public/default/reg-topic-1-" + key;
-            var topicName2 = "persistent://public/default/reg-topic-2-" + key;
-            var topicName3 = "persistent://public/default/reg-topic-3-" + key;
-            var topicName4 = "non-persistent://public/default/reg-topic-4-" + key;
-            var pattern = new Regex("public/default/reg-topic*");
+            const string topicName = "persistent://my-property/my-ns/one-partitioned-topic";
+            const string subscriptionName = "my-sub-";
 
+            // create partitioned topic
+            await _admin.CreatePartitionedTopicAsync("persistent", "public/default", topicName, 5) ;
+            var partitions = await _admin.GetPartitionedMetadataAsync("persistent", "public/default", topicName);
+            var s = partitions.Body.Partitions;
+            Assert.Equal(5, s);
 
-            // 2. create producer
+                       // 2. create producer
             var messagePredicate = "my-message-" + key + "-";
 
-            var producer1 = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
-                .Topic(topicName1)
+            var partitioProducer = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
+                .Topic(topicName)
                 .EnableLazyStartPartitionedProducers(true));
-
-            var producer2 = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
-                .Topic(topicName2));
-
-            var producer3 = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
-                .Topic(topicName3));
-
-            var producer4 = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
-                .Topic(topicName4));
 
             // 5. produce data
             for (var i = 0; i < 10; i++)

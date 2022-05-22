@@ -115,6 +115,9 @@ namespace SharpPulsar
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
+            Receive<IList<IActorRef>>(_ => {
+                Sender.Tell(Producers());
+            });
             Receive<ExtendTopics>(_ =>
             {
                 Run();
@@ -292,7 +295,7 @@ namespace SharpPulsar
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance);
                 var partitionName = TopicName.Get(Topic).GetPartition(partition).ToString();
-                var context = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partition, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
+                _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partition, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
 
                 try
                 {
@@ -507,8 +510,11 @@ namespace SharpPulsar
                 
             }
         }
-        
-		private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
+        private IList<IActorRef> Producers()
+        {
+            return _producers.Values.OrderBy(async e => TopicName.GetPartitionIndex(topic: await e.Ask<string>(GetTopic.Instance))).ToList();
+        }
+        private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
 		{
 			if (metadata.Partitions > 0)
 			{
