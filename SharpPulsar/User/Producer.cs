@@ -6,6 +6,7 @@ using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User
@@ -107,6 +108,14 @@ namespace SharpPulsar.User
         public async ValueTask<MessageId> SendAsync<TK, TV>(T message)
         {
             return await NewMessage().Value<TK, TV>(message).SendAsync().ConfigureAwait(false);
+        }
+    }
+    public class PartitionedProducer<T> : Producer<T>
+    { 
+        public IList<IActorRef> Producers { get; }
+        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout, IList<IActorRef> producers) : base(producer, schema, conf, opTimeout)
+        {
+            Producers = producers;
         }
     }
 }

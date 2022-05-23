@@ -1,7 +1,7 @@
 ﻿
 namespace SharpPulsar.Messages
 {
-    public class Partitions
+    public sealed class Partitions
     {
         public Partitions(int partition, long requestId, string topic = "")
         {
@@ -13,4 +13,5 @@ namespace SharpPulsar.Messages
         public int Partition { get; }
         public string Topic { get; }
     }
+
 }

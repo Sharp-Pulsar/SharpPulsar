@@ -396,11 +396,18 @@ namespace SharpPulsar.User
         {
             return NewProducer(ISchema<object>.Bytes, producerConfigBuilder);
         }
-
+        public PartitionedProducer<byte[]> NewPartitionedProducer(ProducerConfigBuilder<byte[]> producerConfigBuilder)
+        {
+            return NewPartitionedProducer(ISchema<object>.Bytes, producerConfigBuilder);
+        }
         /// <inheritdoc cref="NewProducer(ProducerConfigBuilder{byte[]})"/>
         public async ValueTask<Producer<byte[]>> NewProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
             return await NewProducerAsync(ISchema<object>.Bytes, producerConfigBuilder).ConfigureAwait(false);
+        }
+        public async ValueTask<PartitionedProducer<byte[]>> NewPartitionedProducer<T>(ProducerConfigBuilder<byte[]> producerConfigBuilder)
+        {
+            return await NewPartitionedProducerAsync(ISchema<object>.Bytes, producerConfigBuilder).ConfigureAwait(false);
         }
         /// <summary>
         /// 
@@ -413,7 +420,19 @@ namespace SharpPulsar.User
         {
             return NewProducerAsync(schema, configBuilder).GetAwaiter().GetResult();
         }
+        public PartitionedProducer<T> NewPartitionedProducer<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
+        {
+            return NewPartitionedProducerAsync(schema, configBuilder).GetAwaiter().GetResult();
+        }
         public async ValueTask<Producer<T>> NewProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
+        {
+           return await (ValueTask<Producer<T>>)await ProducerAsync(schema, configBuilder);
+        }
+        public async ValueTask<PartitionedProducer<T>> NewPartitionedProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
+        {
+            return await (ValueTask<PartitionedProducer<T>>)await ProducerAsync(schema, configBuilder);
+        }
+        private async ValueTask<object> ProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
             var interceptors = configBuilder.GetInterceptors;
             configBuilder.Schema(schema);
@@ -424,7 +443,7 @@ namespace SharpPulsar.User
             {
                 throw new ArgumentException("Topic name must be set on the producer builder");
             }
-            if(interceptors == null || interceptors.Count == 0)
+            if (interceptors == null || interceptors.Count == 0)
             {
                 return await CreateProducer(conf, schema).ConfigureAwait(false);
             }
@@ -433,7 +452,6 @@ namespace SharpPulsar.User
                 return await CreateProducer(conf, schema, new ProducerInterceptors<T>(_log, interceptors)).ConfigureAwait(false);
             }
         }
-
         public Reader<byte[]> NewReader(ReaderConfigBuilder<byte[]> conf)
         {
             return NewReaderAsync(conf).GetAwaiter().GetResult();
@@ -583,12 +601,12 @@ namespace SharpPulsar.User
         }
         public ClientConfigurationData Conf => _clientConfigurationData;    
         #region private matters
-        private async ValueTask<Producer<T>> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema)
+        private async ValueTask<object> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema)
         {
             return await CreateProducer(conf, schema, null).ConfigureAwait(false);
         }
 
-        private async ValueTask<Producer<T>> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
+        private async ValueTask<object> CreateProducer<T>(ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {
             if (conf == null)
             {
@@ -640,7 +658,7 @@ namespace SharpPulsar.User
             return await CreateProducer(topic, conf, schema, interceptors).ConfigureAwait(false);
         }
 
-        private async ValueTask<Producer<T>> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
+        private async ValueTask<object> CreateProducer<T>(string topic, ProducerConfigurationData conf, ISchema<T> schema, ProducerInterceptors<T> interceptors)
         {            
             var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
             if (_log.IsDebugEnabled)
@@ -650,7 +668,7 @@ namespace SharpPulsar.User
             if (metadata.Partitions > 0)
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var partitionActor = _actorSystem.ActorOf(PartitionedProducer<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, tcs));
+                var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, tcs));
                 
                 try
                 {

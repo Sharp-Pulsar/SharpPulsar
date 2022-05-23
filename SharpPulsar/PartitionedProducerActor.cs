@@ -23,6 +23,7 @@ using System.Collections.Immutable;
 using Akka.Util;
 using SharpPulsar.Precondition;
 using SharpPulsar.Common.Util;
+using SharpPulsar.Messages;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -44,7 +45,7 @@ using SharpPulsar.Common.Util;
 /// </summary>
 namespace SharpPulsar
 {
-    internal class PartitionedProducer<T> : ProducerActorBase<T>
+    internal class PartitionedProducerActor<T> : ProducerActorBase<T>
     {
 
         private readonly ConcurrentDictionary<int, IActorRef> _producers;
@@ -66,7 +67,7 @@ namespace SharpPulsar
         private string _overrideProducerName;
         internal TopicsPartitionChangedListener _topicsPartitionChangedListener;
 
-        public PartitionedProducer(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
+        public PartitionedProducerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
         {
             _cnxPool = cnxPool;
             _lookup = lookup;
@@ -115,8 +116,9 @@ namespace SharpPulsar
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
-            Receive<IList<IActorRef>>(_ => {
-                Sender.Tell(Producers());
+            Receive<SetProducers>(_ => {
+
+                Sender.Tell(new GetProducers(Producers()));
             });
             Receive<ExtendTopics>(_ =>
             {
@@ -157,7 +159,7 @@ namespace SharpPulsar
         }
         public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture)
         {
-            return Props.Create(() => new PartitionedProducer<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture));
+            return Props.Create(() => new PartitionedProducerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture));
         }
         protected internal override async ValueTask<string> ProducerName()
         {           
@@ -411,9 +413,9 @@ namespace SharpPulsar
 		}
         internal class TopicsPartitionChangedListener : IPartitionsChangedListener
         {
-            private readonly PartitionedProducer<T> _outerInstance;
+            private readonly PartitionedProducerActor<T> _outerInstance;
 
-            public TopicsPartitionChangedListener(PartitionedProducer<T> outerInstance)
+            public TopicsPartitionChangedListener(PartitionedProducerActor<T> outerInstance)
             {
                 _outerInstance = outerInstance;
             }
