@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 
 using Akka.Actor;
+using SharpPulsar.User;
 
 namespace SharpPulsar.Messages
 {
-    public sealed class GetProducers
+    public sealed class GetProducers<T>
     {
-        public IList<IActorRef> Producers { get; }
-        public GetProducers(IList<IActorRef> producers) 
+        public IList<Producer<T>> Producers { get; }
+        public GetProducers(IList<Producer<T>> producers) 
         { 
             Producers = producers; 
         }

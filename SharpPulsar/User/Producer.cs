@@ -112,8 +112,8 @@ namespace SharpPulsar.User
     }
     public class PartitionedProducer<T> : Producer<T>
     { 
-        public IList<IActorRef> Producers { get; }
-        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout, IList<IActorRef> producers) : base(producer, schema, conf, opTimeout)
+        public IList<Producer<T>> Producers { get; }
+        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout, IList<Producer<T>> producers) : base(producer, schema, conf, opTimeout)
         {
             Producers = producers;
         }

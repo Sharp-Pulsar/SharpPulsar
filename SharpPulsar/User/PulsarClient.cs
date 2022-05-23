@@ -405,7 +405,7 @@ namespace SharpPulsar.User
         {
             return await NewProducerAsync(ISchema<object>.Bytes, producerConfigBuilder).ConfigureAwait(false);
         }
-        public async ValueTask<PartitionedProducer<byte[]>> NewPartitionedProducer<T>(ProducerConfigBuilder<byte[]> producerConfigBuilder)
+        public async ValueTask<PartitionedProducer<byte[]>> NewPartitionedProducerAsync(ProducerConfigBuilder<byte[]> producerConfigBuilder)
         {
             return await NewPartitionedProducerAsync(ISchema<object>.Bytes, producerConfigBuilder).ConfigureAwait(false);
         }
