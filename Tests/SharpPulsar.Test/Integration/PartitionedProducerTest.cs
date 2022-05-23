@@ -9,6 +9,7 @@ using SharpPulsar.Builder;
 using SharpPulsar.Common;
 using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -34,13 +35,13 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// </summary>
 namespace SharpPulsar.Test.Integration
 {
-    [Collection(nameof(MultiTopicIntegrationCollection))]
+    [Collection(nameof(IntegrationCollection))]
     public class PartitionedProducerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly Admin.Public.Admin _admin;
-        public PartitionedProducerTest(ITestOutputHelper output, PulsarMultiTopicFixture fixture)
+        public PartitionedProducerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;
             _output = output;
@@ -49,16 +50,23 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
         {
-            const string topicName = "persistent://my-property/my-ns/one-partitioned-topic";
-            const string subscriptionName = "my-sub-";
+            const string topicName = "one-partitioned-topic";
 
             // create partitioned topic
-            await _admin.CreatePartitionedTopicAsync("persistent", "public/default", topicName, 5) ;
-            var partitions = await _admin.GetPartitionedMetadataAsync("persistent", "public/default", topicName);
+            try 
+            {
+                var asf = await _admin.CreatePartitionedTopicAsync("public", "default", topicName, 5);                
+            }
+            catch(Exception ex)
+            {
+                var ss = ex.Message ;
+                Assert.Equal("Operation returned an invalid status code 'NoContent'", ss);
+            }
+            var partitions = await _admin.GetPartitionedMetadataAsync("public", "default", topicName);
             var s = partitions.Body.Partitions;
             Assert.Equal(5, s);
 
-                       // 2. create producer
+            // 2. create producer
             var messagePredicate = "partitioned-producer" + Guid.NewGuid() + "-";
             var partitioProducer = await _client.NewPartitionedProducerAsync(new ProducerConfigBuilder<byte[]>().Topic(topicName)
                 .EnableLazyStartPartitionedProducers(true));

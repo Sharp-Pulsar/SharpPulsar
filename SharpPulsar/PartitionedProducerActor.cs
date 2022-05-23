@@ -163,8 +163,16 @@ namespace SharpPulsar
             return Props.Create(() => new PartitionedProducerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture));
         }
         protected internal override async ValueTask<string> ProducerName()
-        {           
-            return await _producers[_firstPartitionIndex].ProducerNameAsync();
+        {
+            try
+            {
+                return await _producers[_firstPartitionIndex].ProducerNameAsync();
+            }
+            catch
+            {
+                return "0";
+            }
+            
         }
 
         protected internal override async ValueTask<long> LastSequenceId()
