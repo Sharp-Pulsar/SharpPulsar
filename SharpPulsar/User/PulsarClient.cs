@@ -426,11 +426,13 @@ namespace SharpPulsar.User
         }
         public async ValueTask<Producer<T>> NewProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
-           return await (ValueTask<Producer<T>>)await ProducerAsync(schema, configBuilder);
+            var producer = (Producer<T>)await ProducerAsync(schema, configBuilder);
+            return producer;
         }
         public async ValueTask<PartitionedProducer<T>> NewPartitionedProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
-            return await (ValueTask<PartitionedProducer<T>>)await ProducerAsync(schema, configBuilder);
+            var partitionedProducer = (PartitionedProducer<T>)await ProducerAsync(schema, configBuilder);
+            return partitionedProducer;
         }
         private async ValueTask<object> ProducerAsync<T>(ISchema<T> schema, ProducerConfigBuilder<T> configBuilder)
         {
@@ -674,7 +676,7 @@ namespace SharpPulsar.User
                 {
                     var producer = await tcs.Task;
                     _client.Tell(new AddProducer(producer));
-                    return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
+                    return new PartitionedProducer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
                 catch
                 {

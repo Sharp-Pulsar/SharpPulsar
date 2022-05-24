@@ -70,6 +70,7 @@ namespace SharpPulsar
 
         public PartitionedProducerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
         {
+            
             _cnxPool = cnxPool;
             _lookup = lookup;
             _self = Self;
@@ -118,8 +119,8 @@ namespace SharpPulsar
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
             Receive<SetProducers>(_ => {
-
-                Sender.Tell(new GetProducers<T>(Producers()));
+                var producer = Producers();
+                Sender.Tell(new GetProducers<T>(producer));
             });
             Receive<ExtendTopics>(_ =>
             {
@@ -185,10 +186,9 @@ namespace SharpPulsar
 
         private async ValueTask Start(IList<int> indexList)
         {
-            Exception createFail = null;
-            var completed = 0;
+            var index = indexList;  
             string overrideProducerName = null;
-            foreach (var partitionIndex in indexList)
+            foreach (var partitionIndex in index)
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var producerId = await _generator.Ask<long>(NewProducerId.Instance);
@@ -207,33 +207,69 @@ namespace SharpPulsar
                     var routee = Routee.FromActorRef(producer);
                     _router.Tell(new AddRoutee(routee));
                 }
-                catch (Exception ex)
+                catch
                 {
-                    State.ConnectionState = HandlerState.State.Failed;
-                    createFail = ex;
+                    
                 }
 
-                if (++completed == _topicMetadata.NumPartitions())
-                {
-                    if (createFail == null)
-                    {
-                        State.ConnectionState = HandlerState.State.Ready;
-                        _log.Info($"[{Topic}] Created partitioned producer");
-                        ProducerCreatedFuture.TrySetResult(_self);
-                    }
-                    else
-                    {
-                        _log.Error($"[{Topic}] Could not create partitioned producer: {createFail}");
-                        ProducerCreatedFuture.TrySetException(createFail);
-                        Client.Tell(new CleanupProducer(_self));
-                    }
-                }
+            }
+           await CloseAsync();
+           ProducerCreatedFuture.SetResult(_self);
+        }
+        private async Task CloseAsync()
+        {
+            if (State.ConnectionState == HandlerState.State.Closing || State.ConnectionState == HandlerState.State.Closed)
+            {
+                return;
+            }
+            State.ConnectionState = HandlerState.State.Closing;
 
+            if (_partitionsAutoUpdateTimeout != null)
+            {
+                //_partitionsAutoUpdateTimeout.Cancel();
+                //_partitionsAutoUpdateTimeout = null;
+            }
+
+            Exception closeFail = new Exception();
+            var completed = _producers.Count;
+            var closeFuture = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously); ;
+            foreach (var producer in _producers.Values)
+            {
+                if (producer != null)
+                {
+                    try
+                    {
+                        await producer.CloseAsync();
+                        if (completed == 0)
+                        {
+                            if (closeFail.InnerException == null)
+                            {
+                                State.ConnectionState = HandlerState.State.Closed;
+                                closeFuture.SetResult(_self);
+                                _log.Info($"[{ Topic}] Closed Partitioned Producer");
+
+                                var s = producer.GetProducer;
+                                _ = new CleanupProducer(s);;
+                            }
+                            else
+                            {
+                                State.ConnectionState = HandlerState.State.Failed;
+                                closeFuture.TrySetResult(closeFail.Message);
+                                _log.Error($"[{Topic}] Could not close Partitioned Producer {closeFail.Message}");
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+
+                        closeFail = e;
+                    }
+                    
+                }
 
             }
 
         }
-
         internal override async ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> callback)
         {
             await Internal(message);
@@ -386,7 +422,7 @@ namespace SharpPulsar
 			_partitionsAutoUpdateTimeout?.Cancel();
             _producers.ForEach(x =>
             {
-                var d = x.Value;
+                x.Value.Close();
 			});
 			base.PostStop();
         }

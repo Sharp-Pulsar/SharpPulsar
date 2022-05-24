@@ -72,8 +72,8 @@ namespace SharpPulsar
 			State = new HandlerState(lookup, cnxPool, topic, Context.System, pName);
 
 		}
-
-		protected internal virtual string Topic
+       
+        protected internal virtual string Topic
 		{
 			get
 			{

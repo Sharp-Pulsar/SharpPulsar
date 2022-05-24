@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
+using SharpPulsar.Messages;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
@@ -13,14 +14,14 @@ namespace SharpPulsar.User
 {
     public class Producer<T> : IProducer<T>
     {
-        private readonly IActorRef _producerActor;
+        public readonly IActorRef ProducerActor;
         private readonly ISchema<T> _schema;
         private readonly ProducerConfigurationData _conf;
         private readonly TimeSpan _operationTimeout;
 
         public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout)
         {
-            _producerActor = producer;
+            ProducerActor = producer;
             _schema = schema;
             _conf = conf;
             _operationTimeout = opTimeout;
@@ -28,32 +29,32 @@ namespace SharpPulsar.User
         public string Topic 
             => TopicAsync().GetAwaiter().GetResult();
         public async ValueTask<string> TopicAsync() 
-            => await _producerActor.Ask<string>(GetTopic.Instance);
+            => await ProducerActor.Ask<string>(GetTopic.Instance);
 
         public string ProducerName 
             => ProducerNameAsync().GetAwaiter().GetResult();
         public async ValueTask<string> ProducerNameAsync()
-            => await _producerActor.Ask<string>(GetProducerName.Instance);
+            => await ProducerActor.Ask<string>(GetProducerName.Instance);
 
         public long LastSequenceId 
             => LastSequenceIdAsync().GetAwaiter().GetResult();
         public async ValueTask<long> LastSequenceIdAsync()
-            => await _producerActor.Ask<long>(GetLastSequenceId.Instance);
+            => await ProducerActor.Ask<long>(GetLastSequenceId.Instance);
         
         public IProducerStats Stats 
             => StatsAsync().GetAwaiter().GetResult();
         public async ValueTask<IProducerStats> StatsAsync()
-            => await _producerActor.Ask<IProducerStats>(GetStats.Instance);
+            => await ProducerActor.Ask<IProducerStats>(GetStats.Instance);
 
         public bool Connected 
             => ConnectedAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> ConnectedAsync() 
-            => await _producerActor.Ask<bool>(IsConnected.Instance);
+            => await ProducerActor.Ask<bool>(IsConnected.Instance);
 
         public long LastDisconnectedTimestamp 
             => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
         public async ValueTask<long> LastDisconnectedTimestampAsync()
-            => await _producerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance);
+            => await ProducerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance);
 
         public void Close()
         {
@@ -61,23 +62,23 @@ namespace SharpPulsar.User
         }
         public async ValueTask CloseAsync()
         {
-            try { await _producerActor.GracefulStop(_operationTimeout).ConfigureAwait(false); }
+            try { await ProducerActor.GracefulStop(_operationTimeout).ConfigureAwait(false); }
             catch { }
         }
         public void Flush()
         {
-            _producerActor.Tell(Messages.Producer.Flush.Instance);
+            ProducerActor.Tell(Messages.Producer.Flush.Instance);
         }
 
         public ITypedMessageBuilder<T> NewMessage()
         {
-            return new TypedMessageBuilder<T>(_producerActor, _schema, _conf);
+            return new TypedMessageBuilder<T>(ProducerActor, _schema, _conf);
         }
 
         public ITypedMessageBuilder<V> NewMessage<V>(ISchema<V> schema)
         {
             Condition.CheckArgument(schema != null);
-            return new TypedMessageBuilder<V>(_producerActor, schema, _conf);
+            return new TypedMessageBuilder<V>(ProducerActor, schema, _conf);
         }
 
         public TypedMessageBuilder<T> NewMessage(Transaction txn)
@@ -88,9 +89,9 @@ namespace SharpPulsar.User
                 throw new ArgumentException("Only producers disabled sendTimeout are allowed to" + " produce transactional messages");
             }
 
-            return new TypedMessageBuilder<T>(_producerActor, _schema, txn, _conf);
+            return new TypedMessageBuilder<T>(ProducerActor, _schema, txn, _conf);
         }
-        internal IActorRef GetProducer => _producerActor;
+        internal IActorRef GetProducer => ProducerActor;
 
         public MessageId Send(T message)
         {
@@ -112,10 +113,15 @@ namespace SharpPulsar.User
     }
     public class PartitionedProducer<T> : Producer<T>
     { 
-        public IList<Producer<T>> Producers { get; }
-        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout, IList<Producer<T>> producers) : base(producer, schema, conf, opTimeout)
+        
+        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout) : base(producer, schema, conf, opTimeout)
         {
-            Producers = producers;
+            
+        }
+        public async ValueTask<IList<Producer<T>>> Producers()
+        {
+            var producer = await ProducerActor.Ask<GetProducers<T>>(SetProducers.Instance);
+            return producer.Producers;
         }
     }
 }
