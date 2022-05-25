@@ -669,13 +669,15 @@ namespace SharpPulsar.User
             }
             if (metadata.Partitions > 0)
             {
-                var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, tcs));
+                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                
+                var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, null, tcs));
                 
                 try
                 {
-                    var producer = await tcs.Task;
-                    _client.Tell(new AddProducer(producer));
+                    var f = await tcs.Task;
+                    var producer = partitionActor;// await tcs.Task;
+                    //_client.Tell(new AddProducer(producer));
                     return new PartitionedProducer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
                 catch

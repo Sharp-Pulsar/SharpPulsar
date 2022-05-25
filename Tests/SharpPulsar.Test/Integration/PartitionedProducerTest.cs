@@ -72,6 +72,7 @@ namespace SharpPulsar.Test.Integration
                 .EnableLazyStartPartitionedProducers(true));
 
             var producers = await partitioProducer.Producers();
+            
             // 5. produce data
             foreach (var producer in producers)
             {

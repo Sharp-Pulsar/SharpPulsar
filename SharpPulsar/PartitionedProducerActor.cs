@@ -67,10 +67,10 @@ namespace SharpPulsar
         private readonly int _firstPartitionIndex;
         private string _overrideProducerName;
         internal TopicsPartitionChangedListener _topicsPartitionChangedListener;
-
-        public PartitionedProducerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
+        private TaskCompletionSource<bool> _partition;
+        public PartitionedProducerActor(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<bool> partition) : base(client, lookup, cnxPool, topic, conf, producerCreatedFuture, schema, interceptors, clientConfiguration)
         {
-            
+            _partition = partition; 
             _cnxPool = cnxPool;
             _lookup = lookup;
             _self = Self;
@@ -102,7 +102,12 @@ namespace SharpPulsar
             if (conf.LazyStartPartitionedProducers && conf.AccessMode == ProducerAccessMode.Shared)
             {
                 // try to create producer at least one partition
-                indexList = new List<int> { ChoosePartition(new List<string> { "0" }, _topicMetadata) };
+                var index = new List<int>();
+                for (var i = 0; i < numPartitions; i++)
+                { 
+                    index.Add(i);
+                }
+                indexList = index;
                 //indexList = ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), _topicMetadata);
             }
             else
@@ -118,7 +123,8 @@ namespace SharpPulsar
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
-            Receive<SetProducers>(_ => {
+            Receive<SetProducers>(_ => 
+            {
                 var producer = Producers();
                 Sender.Tell(new GetProducers<T>(producer));
             });
@@ -159,9 +165,9 @@ namespace SharpPulsar
             ReceiveAny(any => _router.Forward(any));
             Akka.Dispatch.ActorTaskScheduler.RunTask(async () => await Start(indexList));
         }
-        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture)
+        public static Props Prop(IActorRef client, IActorRef lookup, IActorRef cnxPool, IActorRef idGenerator, string topic, ProducerConfigurationData conf, int numPartitions, ISchema<T> schema, ProducerInterceptors<T> interceptors, ClientConfigurationData clientConfiguration, TaskCompletionSource<IActorRef> producerCreatedFuture, TaskCompletionSource<bool> partition)
         {
-            return Props.Create(() => new PartitionedProducerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture));
+            return Props.Create(() => new PartitionedProducerActor<T>(client, lookup, cnxPool, idGenerator, topic, conf, numPartitions, schema, interceptors, clientConfiguration, producerCreatedFuture, partition));
         }
         protected internal override async ValueTask<string> ProducerName()
         {
@@ -203,9 +209,11 @@ namespace SharpPulsar
                 try
                 {
                     var producer = await tcs.Task;
+                    Client.Tell(new AddProducer(producer));
                     _producers.TryAdd((int)producerId, new Producer<T>(producer, Schema, Conf, ClientConfiguration.OperationTimeout));
                     var routee = Routee.FromActorRef(producer);
                     _router.Tell(new AddRoutee(routee));
+                    
                 }
                 catch
                 {
@@ -214,7 +222,7 @@ namespace SharpPulsar
 
             }
            await CloseAsync();
-           ProducerCreatedFuture.SetResult(_self);
+           _partition.SetResult(true);
         }
         private async Task CloseAsync()
         {
@@ -553,7 +561,14 @@ namespace SharpPulsar
         }
         private IList<Producer<T>> Producers()
         {
-            return _producers.Values.OrderBy(e => TopicName.GetPartitionIndex(topic: e.Topic)).ToList();
+            var producer = new List<Producer<T>>();
+            foreach (var v in _producers.Values)
+            {
+                var y = v.Topic;
+                var e = TopicName.GetPartitionIndex(v.Topic);
+                producer.Add(v);
+            }
+            return producer.OrderBy(e => TopicName.GetPartitionIndex(topic: e.Topic)).ToList();
         }
         private IList<string> GetPartitionsForTopic(TopicName topicName, PartitionedTopicMetadata metadata)
 		{
