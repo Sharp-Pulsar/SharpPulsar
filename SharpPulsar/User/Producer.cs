@@ -18,6 +18,7 @@ namespace SharpPulsar.User
         private readonly ISchema<T> _schema;
         private readonly ProducerConfigurationData _conf;
         private readonly TimeSpan _operationTimeout;
+        private readonly string _topic;
 
         public Producer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout)
         {
@@ -25,9 +26,11 @@ namespace SharpPulsar.User
             _schema = schema;
             _conf = conf;
             _operationTimeout = opTimeout;
+            //_topic = producer.Ask<string>(GetTopic.Instance).Result;
+            //var topic = _topic;
         }
         public string Topic 
-            => TopicAsync().GetAwaiter().GetResult();
+            => _topic;
         public async ValueTask<string> TopicAsync()
         {
            var c = await _producerActor.Ask<string>(GetTopic.Instance /*, TimeSpan.FromSeconds(2)*/);

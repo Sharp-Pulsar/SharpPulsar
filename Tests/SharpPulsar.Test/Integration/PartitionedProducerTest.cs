@@ -50,7 +50,7 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
         {
-            const string topicName = "one-partitioned-topic";
+            var topicName = "one-partitioned-topic-" + Guid.NewGuid();
 
             // create partitioned topic
             try 

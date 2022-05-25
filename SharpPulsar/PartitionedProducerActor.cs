@@ -123,9 +123,9 @@ namespace SharpPulsar
                 _topicsPartitionChangedListener = new TopicsPartitionChangedListener(this);
                 _partitionsAutoUpdateTimeout = _context.System.Scheduler.ScheduleTellOnceCancelable(TimeSpan.FromSeconds(conf.AutoUpdatePartitionsIntervalSeconds), Self, ExtendTopics.Instance, ActorRefs.NoSender);
             }
-            Receive<SetProducers>(_ => 
+            ReceiveAsync<SetProducers>(async _ => 
             {
-                var producer = Producers();
+                var producer = await Producers();
                 Sender.Tell(new GetProducers<T>(producer));
             });
             Receive<ExtendTopics>(_ =>
@@ -205,12 +205,12 @@ namespace SharpPulsar
                     overrideProducerName = id;
                 }
                 var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-                _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
+                var pro = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
                 try
                 {
                     var producer = await tcs.Task;
                     Client.Tell(new AddProducer(producer));
-                    _producers.TryAdd((int)producerId, new Producer<T>(producer, Schema, Conf, ClientConfiguration.OperationTimeout));
+                    _producers.TryAdd((int)producerId, new Producer<T>(pro, Schema, Conf, ClientConfiguration.OperationTimeout));
                     var routee = Routee.FromActorRef(producer);
                     _router.Tell(new AddRoutee(routee));
                     
@@ -559,14 +559,21 @@ namespace SharpPulsar
                 
             }
         }
-        private IList<Producer<T>> Producers()
+        private async ValueTask<IList<Producer<T>>> Producers()
         {
             var producer = new List<Producer<T>>();
             foreach (var v in _producers.Values)
             {
-                var y = v.Topic;
-                var e = TopicName.GetPartitionIndex(v.Topic);
-                producer.Add(v);
+                //var y = v.Topic;
+                //var e = TopicName.GetPartitionIndex(v.Topic);
+                
+                try
+                {
+                    var h = await v.GetProducer.Ask(GetTopic.Instance , TimeSpan.FromSeconds(1));
+                    producer.Add(v);
+                }
+                catch { }
+                
             }
             return producer.OrderBy(e => TopicName.GetPartitionIndex(topic: e.Topic)).ToList();
         }
