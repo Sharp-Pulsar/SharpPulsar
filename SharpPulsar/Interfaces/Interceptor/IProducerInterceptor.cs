@@ -98,6 +98,13 @@ namespace SharpPulsar.Interfaces.Interceptor
         /// <param name="msgId"> the message id that assigned by the broker; null if send failed. </param>
         /// <param name="exception"> the exception on sending messages, null indicates send has succeed. </param>
         void OnSendAcknowledgement(IActorRef producer, IMessage<T> message, IMessageId msgId, Exception exception);
+
+        /// <summary>
+        /// This method is called when partitions of the topic (partitioned-topic) changes.
+        /// </summary>
+        /// <param name="topicName"></param>
+        /// <param name="partitions"></param>
+        void OnPartitionsChange(string topicName, int partitions);
     }
 
 }

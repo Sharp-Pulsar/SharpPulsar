@@ -29,7 +29,7 @@ namespace SharpPulsar
     internal abstract class ProducerActorBase<T> : ReceiveActor
 	{
 		internal abstract ValueTask InternalSend(IMessage<T> message, TaskCompletionSource<Message<T>> future);
-		protected internal abstract void LastDisconnectedTimestamp();
+		protected internal abstract long LastDisconnectedTimestamp();
 		protected internal abstract bool Connected();
 		protected internal abstract ValueTask<IProducerStats> Stats();
 		protected internal abstract ValueTask<long> LastSequenceId();
@@ -72,8 +72,8 @@ namespace SharpPulsar
 			State = new HandlerState(lookup, cnxPool, topic, Context.System, pName);
 
 		}
-
-		protected internal virtual string Topic
+       
+        protected internal virtual string Topic
 		{
 			get
 			{
@@ -109,9 +109,15 @@ namespace SharpPulsar
 				Interceptors.OnSendAcknowledgement(Self, message, msgId, exception);
 			}
 		}
+        protected internal virtual void OnPartitionsChange(string topicName, int partitions)
+        {
+            if (Interceptors != null)
+            {
+                Interceptors.OnPartitionsChange(topicName, partitions);
+            }
+        }
 
-
-		protected internal enum MultiSchemaMode
+        protected internal enum MultiSchemaMode
 		{
 			Auto,
 			Enabled,

@@ -1,4 +1,8 @@
-﻿/// <summary>
+﻿
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,28 +20,19 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Common.Util
+namespace SharpPulsar
 {
+
     /// <summary>
-    /// This interface declares a hash function.
+    /// Listener that notified when concerned topic partitions changed.
     /// </summary>
-    public interface IHash
+    internal interface IPartitionsChangedListener
     {
-
         /// <summary>
-        /// Generate the hash of a given byte array.
+        /// Notified when topic partitions increased.
+        /// Passed in topics that have partitions increased.
         /// </summary>
-        /// <returns> The hash of {@code b}, which is non-negative integer. </returns>
-        int MakeHash(byte[] b);
-
-        /// <summary>
-		/// Generate the hash of a given String.
-		/// </summary> </returns>
-		/// <returns> The hash of {<param name="s">}, which is non-negative integer. </param>
-		public static int MakeHash(string s) 
-        { 
-            return s.GetHashCode();    
-        }
+        ValueTask OnTopicsExtended(ICollection<string> topicsExtended);
     }
 
 }

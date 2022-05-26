@@ -136,5 +136,6 @@ namespace SharpPulsar.Telemetry.Trace
             else
                 _log.Warning($"{prefix} activity id is missing for msgId={message.MessageId}");
         }
+        public void OnPartitionsChange(string topicName, int partitions) { }
     }
 }

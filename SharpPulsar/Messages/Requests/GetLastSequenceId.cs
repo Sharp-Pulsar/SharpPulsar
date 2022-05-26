@@ -5,4 +5,5 @@ namespace SharpPulsar.Messages.Requests
     {
         public static GetLastSequenceId Instance = new GetLastSequenceId();
     }
+    
 }
