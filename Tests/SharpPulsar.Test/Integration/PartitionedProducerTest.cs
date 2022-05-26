@@ -50,7 +50,10 @@ namespace SharpPulsar.Test.Integration
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
         {
-            var topicName = "one-partitioned-topic-" + Guid.NewGuid();
+            var topicName = "partitioned-topic-" + Guid.NewGuid();
+            var key = Guid.NewGuid().ToString();
+            var subscriptionName = "partitioned-subscription";
+            var pattern = new Regex("public/default/partitioned-topic-*");
 
             // create partitioned topic
             try 
@@ -68,7 +71,8 @@ namespace SharpPulsar.Test.Integration
 
             // 2. create producer
             var messagePredicate = "partitioned-producer" + Guid.NewGuid() + "-";
-            var partitioProducer = await _client.NewPartitionedProducerAsync(new ProducerConfigBuilder<byte[]>().Topic(topicName)
+            var partitioProducer = await _client.NewPartitionedProducerAsync(new ProducerConfigBuilder<byte[]>()
+                .Topic(topicName)
                 .EnableLazyStartPartitionedProducers(true));
 
             var producers = await partitioProducer.Producers();
@@ -78,6 +82,31 @@ namespace SharpPulsar.Test.Integration
             {
               await producer.SendAsync(Encoding.UTF8.GetBytes(messagePredicate + "producer1-"));
             }
+            var messageSet = 0;
+            var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .TopicsPattern(pattern)
+                .PatternAutoDiscoveryPeriod(2)
+                .ForceTopicCreation(true)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Shared)
+                .AckTimeout(TimeSpan.FromMilliseconds(60000)));
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            var message = await consumer.ReceiveAsync();
+            if (message == null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                message = await consumer.ReceiveAsync();
+            }
+
+            while (message != null)
+            {
+                var m = (TopicMessage<byte[]>)message;
+                messageSet++;
+                await consumer.AcknowledgeAsync(m);
+                _output.WriteLine($"Consumer acknowledged : {Encoding.UTF8.GetString(message.Data)} from topic: {m.Topic}");
+                message = await consumer.ReceiveAsync();
+            }
+            consumer.Unsubscribe();
             foreach (var producer in producers)
             {
                 await producer.CloseAsync();
