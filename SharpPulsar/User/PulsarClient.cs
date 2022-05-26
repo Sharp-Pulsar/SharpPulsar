@@ -23,6 +23,7 @@ using SharpPulsar.Table;
 using SharpPulsar.Transaction;
 using SharpPulsar.Utils;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -669,16 +670,17 @@ namespace SharpPulsar.User
             }
             if (metadata.Partitions > 0)
             {
-                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                
+                var tcs = new TaskCompletionSource<ConcurrentDictionary<int, IActorRef>>(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 var partitionActor = _actorSystem.ActorOf(PartitionedProducerActor<T>.Prop(_client, _lookup, _cnxPool, _generator, topic, conf, metadata.Partitions, schema, interceptors, _clientConfigurationData, null, tcs));
                 
                 try
                 {
-                    var f = await tcs.Task;
-                    var producer = partitionActor;// await tcs.Task;
-                    //_client.Tell(new AddProducer(producer));
-                    return new PartitionedProducer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
+                  
+                   var con = await tcs.Task;
+                    //var producer = partitionActor;// await tcs.Task;
+                    _client.Tell(new AddProducer(partitionActor));
+                    return new PartitionedProducer<T>(partitionActor, schema, conf, _clientConfigurationData.OperationTimeout, con);
                 }
                 catch
                 {

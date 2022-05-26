@@ -1,4 +1,5 @@
 ﻿using Akka.Actor;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Messages;
@@ -7,7 +8,9 @@ using SharpPulsar.Messages.Producer;
 using SharpPulsar.Messages.Requests;
 using SharpPulsar.Precondition;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User
@@ -30,7 +33,7 @@ namespace SharpPulsar.User
             //var topic = _topic;
         }
         public string Topic 
-            => _topic;
+            => TopicAsync().GetAwaiter().GetResult();
         public async ValueTask<string> TopicAsync()
         {
            var c = await _producerActor.Ask<string>(GetTopic.Instance /*, TimeSpan.FromSeconds(2)*/);
@@ -54,7 +57,7 @@ namespace SharpPulsar.User
 
         public bool Connected 
             => ConnectedAsync().GetAwaiter().GetResult();
-        public async ValueTask<bool> ConnectedAsync() 
+        public virtual async ValueTask<bool> ConnectedAsync() 
             => await _producerActor.Ask<bool>(IsConnected.Instance);
 
         public long LastDisconnectedTimestamp 
@@ -119,15 +122,80 @@ namespace SharpPulsar.User
     }
     public class PartitionedProducer<T> : Producer<T>
     {
+        private readonly ConcurrentDictionary<int, Producer<T>> _producers;
         private readonly IActorRef _producerActor;
-        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout) : base(producer, schema, conf, opTimeout)
+        private readonly TimeSpan _opTimeout;  
+        private readonly ISchema<T> _schema;
+        private readonly ProducerConfigurationData _conf;
+        public PartitionedProducer(IActorRef producer, ISchema<T> schema, ProducerConfigurationData conf, TimeSpan opTimeout, ConcurrentDictionary<int, IActorRef> pr) : base(producer, schema, conf, opTimeout)
         {
+            _conf = conf; 
+            _schema = schema;
+            _opTimeout = opTimeout;
+            _producers = new ConcurrentDictionary<int, Producer<T>>();  
             _producerActor = producer;
+            foreach(var s in pr)
+            {
+              _producers.TryAdd(s.Key, new Producer<T>(s.Value, schema, conf, opTimeout));
+            }
+
+        }
+        public async ValueTask ToProducers()
+        {
+            var producer = await _producerActor.Ask<SetProducers>(GetProducers.Instance);
+            foreach (var s in producer.Producers)
+            {
+                _producers.TryAdd(s.Key, new Producer<T>(s.Value, _schema, _conf, _opTimeout));
+            }
         }
         public async ValueTask<IList<Producer<T>>> Producers()
         {
-            var producer = await _producerActor.Ask<GetProducers<T>>(SetProducers.Instance);
-            return producer.Producers;
+            var producer = new List<Producer<T>>();
+            foreach (var v in _producers.Values)
+            {
+                //var y = v.Topic;
+                //var e = TopicName.GetPartitionIndex(v.Topic);
+
+                try
+                {
+                    var e = v.GetProducer;
+                    var h = await e.Ask(GetTopic.Instance, TimeSpan.FromSeconds(1));
+                    producer.Add(v);
+                }
+                catch { }
+
+            }
+            return producer.OrderBy(e => TopicName.GetPartitionIndex(topic: e.Topic)).ToList();
         }
+        public async ValueTask<bool> ConnectedAsync(Producer<bool> producer)
+        {
+            return await producer.ConnectedAsync();
+        }
+        public async ValueTask<string> TopicAsync(Producer<bool> producer)
+        {
+           var c = await producer.TopicAsync();
+           return c.ToString();    
+        }
+        public async ValueTask<string> ProducerNameAsync(Producer<bool> producer)
+            => await producer.ProducerNameAsync();
+
+        public async ValueTask<long> LastSequenceIdAsync(Producer<bool> producer)
+            => await producer.LastSequenceIdAsync();
+
+        public async ValueTask<IProducerStats> StatsAsync(Producer<bool> producer)
+            => await producer.StatsAsync();
+
+        public async ValueTask<long> LastDisconnectedTimestampAsync(Producer<bool> producer)
+            => await producer.LastDisconnectedTimestampAsync();
+
+        public async ValueTask CloseAsync(Producer<bool> producer)
+        {
+            await producer.CloseAsync();
+        }
+        public void Flush(Producer<bool> producer)
+        {
+            producer.Flush();
+        }
+
     }
 }
