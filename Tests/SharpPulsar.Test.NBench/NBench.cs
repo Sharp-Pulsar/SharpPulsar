@@ -23,7 +23,7 @@ namespace SharpPulsar.Test.NBench
         private Producer<byte[]> _producer;
         private Consumer<byte[]> _consumer; 
         private readonly string _topic;
-        public NBench(ITestOutputHelper output, PulsarFixture fixture)
+        public NBench(ITestOutputHelper output, NBenchCollection fixture)
         {
             _output = output;
             _client = fixture.Client;

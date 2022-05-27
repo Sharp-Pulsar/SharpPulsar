@@ -13,7 +13,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(TransactionCollection))]
 	public class TxnAckTest
     {
 		private const string TENANT = "public";
@@ -23,7 +23,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-        public TxnAckTest(ITestOutputHelper output, PulsarFixture fixture)
+        public TxnAckTest(ITestOutputHelper output, TransactionCollection fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

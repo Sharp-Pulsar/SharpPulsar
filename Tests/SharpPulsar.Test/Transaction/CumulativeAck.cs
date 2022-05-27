@@ -13,7 +13,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(TransactionCollection))]
     public class CumulativeAck
     {
 		private const string TENANT = "public";
@@ -23,7 +23,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-		public CumulativeAck(ITestOutputHelper output, PulsarFixture fixture)
+		public CumulativeAck(ITestOutputHelper output, TransactionCollection fixture)
 		{
 			_output = output;
 			_client = fixture.Client;

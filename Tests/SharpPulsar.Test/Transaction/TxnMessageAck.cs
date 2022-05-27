@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(IntegrationCollection))]
+    [Collection(nameof(TransactionCollection))]
 	public class TxnMessageAck
     {
 		private const string TENANT = "public";
@@ -21,7 +21,7 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-        public TxnMessageAck(ITestOutputHelper output, PulsarFixture fixture)
+        public TxnMessageAck(ITestOutputHelper output, TransactionCollection fixture)
 		{
 			_output = output;
 			_client = fixture.Client;
