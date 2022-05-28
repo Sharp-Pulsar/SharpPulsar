@@ -93,12 +93,12 @@
               "DocsInit",
               "DocsMetadata",
               "GitHubRelease",
-              "IntegrationTest",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SharpPulsarTestAPI"
+              "Test",
+              "TestAPI"
             ]
           }
         },
@@ -120,12 +120,12 @@
               "DocsInit",
               "DocsMetadata",
               "GitHubRelease",
-              "IntegrationTest",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SharpPulsarTestAPI"
+              "Test",
+              "TestAPI"
             ]
           }
         },

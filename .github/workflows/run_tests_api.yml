@@ -47,5 +47,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd SharpPulsarTestAPI'
-        run: ./build.cmd SharpPulsarTestAPI
+      - name: Run './build.cmd TestAPI'
+        run: ./build.cmd TestAPI
