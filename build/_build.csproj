@@ -48,4 +48,8 @@
     <None Remove="..\.github\workflows\release.yml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="..\.github\workflows\github.yml" />
+  </ItemGroup>
+
 </Project>

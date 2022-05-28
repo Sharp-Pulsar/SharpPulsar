@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.Tracker;
+﻿using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
 using SharpPulsar.User;
 using Xunit;
@@ -37,11 +36,11 @@ namespace SharpPulsar.Test.Acks
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly ActorSystem _system;
-        public UnAckedMessageTrackerTest(ITestOutputHelper output, AcksCollection fixture)
+        public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
-            _system = fixture.PulsarSystem.System;
+            _client = fixture.AckClient;
+            _system = fixture.AckPulsarSystem.System;
         }
 
         [Fact]

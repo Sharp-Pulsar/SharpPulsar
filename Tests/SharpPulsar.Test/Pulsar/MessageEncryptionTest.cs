@@ -1,5 +1,6 @@
 ﻿using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using System;
 using System.Text;
@@ -32,10 +33,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public MessageEncryptionTest(ITestOutputHelper output, PulsarCollection fixture)
+        public MessageEncryptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
         [Fact]
         public async Task TestEncrptedProduceConsume()

@@ -1,9 +1,7 @@
 ﻿using Org.BouncyCastle.Security;
 using SharpPulsar.Utility;
-using System;
 using System.Security.Cryptography;
 using System.Text;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.API

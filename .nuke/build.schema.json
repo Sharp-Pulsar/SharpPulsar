@@ -86,7 +86,6 @@
             "type": "string",
             "enum": [
               "AuthenticatedGitHubClient",
-              "AutoFailOverTest",
               "Clean",
               "Compile",
               "CreateNuget",
@@ -99,7 +98,7 @@
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "TlsTest"
+              "SharpPulsarTestAPI"
             ]
           }
         },
@@ -114,7 +113,6 @@
             "type": "string",
             "enum": [
               "AuthenticatedGitHubClient",
-              "AutoFailOverTest",
               "Clean",
               "Compile",
               "CreateNuget",
@@ -127,7 +125,7 @@
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "TlsTest"
+              "SharpPulsarTestAPI"
             ]
           }
         },

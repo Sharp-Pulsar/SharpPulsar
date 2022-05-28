@@ -7,8 +7,9 @@ using Xunit.Abstractions;
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
+using SharpPulsar.TestContainer;
 
-namespace SharpPulsar.Test.ServiceProvider
+namespace SharpPulsar.Test
 {
     [Collection(nameof(AutoCollection))]
     public class AutoClusterFailoverTest
@@ -16,10 +17,10 @@ namespace SharpPulsar.Test.ServiceProvider
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
-        public AutoClusterFailoverTest(ITestOutputHelper output, AutoCollection fixture)
+        public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.TableViewClient;
         }
         [Fact]
         public async Task ProduceAndConsume()

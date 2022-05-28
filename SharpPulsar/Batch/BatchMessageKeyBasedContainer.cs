@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Akka.Actor;
 using Akka.Event;
 using DotNetty.Common.Utilities;
 using ProtoBuf;

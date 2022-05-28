@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Util.Internal;

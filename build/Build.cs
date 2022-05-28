@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Nuke.Common;
 using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;
@@ -26,9 +25,7 @@ using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
 using SharpPulsar.TestContainer.TestUtils;
-using Docker.DotNet;
 using Octokit;
-using Nuke.Common.Tools.Git;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 [CheckBuildProjectConfigurations]
@@ -137,7 +134,7 @@ partial class Build : NukeBuild
 
             Git($"tag -f {GitVersion.SemVer}");
         });
-    Target TlsTest => _ => _
+    Target SharpPulsarTestAPI => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         { 
@@ -181,27 +178,7 @@ partial class Build : NukeBuild
             //if(Container)
                // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
         });
-    Target AutoFailOverTest => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            var project = Solution.GetProject("SharpPulsar.Test.AutoClusterFailover");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
-            {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "tests")
-                    .SetLoggers("trx")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
-            }
-        });
+    
     //--------------------------------------------------------------------------------
     // Documentation 
     //--------------------------------------------------------------------------------

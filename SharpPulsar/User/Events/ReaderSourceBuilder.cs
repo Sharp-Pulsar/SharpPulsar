@@ -2,7 +2,6 @@
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Utils;
 
 namespace SharpPulsar.User.Events
 {

@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using Akka.Actor;
 using Akka.Event;
 using ProtoBuf;
 using SharpPulsar.Common;

@@ -1,11 +1,9 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.User;
+﻿using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
-using System.Threading;
 using SharpPulsar.Interfaces;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
@@ -40,10 +38,10 @@ namespace SharpPulsar.Test.MultiTopics
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
 
-		public MultiTopicsReaderTest(ITestOutputHelper output, MultiTopicCollection fixture)
+		public MultiTopicsReaderTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-			_client = fixture.Client;
+			_client = fixture.MultiTopicClient;
 		}
 		[Fact]
 		public virtual async Task TestReadMessageWithoutBatching()

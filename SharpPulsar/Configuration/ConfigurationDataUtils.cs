@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-
-using SharpPulsar.Batch.Api;
 using SharpPulsar.Utils;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Table;
@@ -30,10 +28,10 @@ using SharpPulsar.Table;
 /// </summary>
 namespace SharpPulsar.Configuration
 {
-	/// <summary>
-	/// Utils for loading configuration data.
-	/// </summary>
-	public sealed class ConfigurationDataUtils
+    /// <summary>
+    /// Utils for loading configuration data.
+    /// </summary>
+    public sealed class ConfigurationDataUtils
 	{
 
 		public static ObjectMapper Create()

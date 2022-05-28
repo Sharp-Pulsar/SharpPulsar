@@ -1,7 +1,6 @@
 ﻿using System.Net.Http;
 using Akka.Actor;
 using SharpPulsar.EventSource.Messages.Presto;
-using SharpPulsar.Common.Naming;
 using System.Threading.Tasks.Dataflow;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.EventSource.Messages;

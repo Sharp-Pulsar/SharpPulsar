@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using SharpPulsar.Configuration;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Interfaces;
-using System.Threading;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
@@ -38,10 +36,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public MessageChunkingTest(ITestOutputHelper output, PulsarCollection fixture)
+        public MessageChunkingTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
 
         [Fact]

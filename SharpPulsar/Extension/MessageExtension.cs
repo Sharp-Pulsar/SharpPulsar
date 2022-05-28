@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
-using SharpPulsar.Helpers;
 using SharpPulsar.Interfaces;
 
 namespace SharpPulsar.Extension

@@ -18,7 +18,6 @@
 /// </summary>
 
 using System.Collections.Generic;
-using SharpPulsar.Configuration;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Tracker;
 using SharpPulsar.Tracker.Messages;
@@ -40,10 +39,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly ActorSystem _system;
-        public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarCollection fixture)
+        public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
             _system = fixture.PulsarSystem.System;
         }
 

@@ -17,13 +17,12 @@
 /// under the License.
 /// </summary>
 
-using System;
 using System.Text.Json;
 using SharpPulsar.Batch;
 
 namespace SharpPulsar.Test.API
 {
-    
+
     public class BatchMessageIdTest
     {
 

@@ -8,7 +8,6 @@ using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using System.Collections.Generic;
 using static SharpPulsar.Exceptions.TransactionCoordinatorClientException;
-using Receive = Akka.Actor.Receive;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.User;
+﻿using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,7 +6,6 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common.Util;
-using System.Threading;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
@@ -41,10 +39,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public ReaderTest(ITestOutputHelper output, PulsarCollection fixture)
+        public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)
         {

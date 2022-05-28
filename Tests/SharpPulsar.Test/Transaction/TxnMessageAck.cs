@@ -2,7 +2,6 @@
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
@@ -21,10 +20,10 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-        public TxnMessageAck(ITestOutputHelper output, TransactionCollection fixture)
+        public TxnMessageAck(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-			_client = fixture.Client;
+			_client = fixture.TransactionClient;
 		}
 		[Fact]
 		public async Task TxnMessageAckTest()

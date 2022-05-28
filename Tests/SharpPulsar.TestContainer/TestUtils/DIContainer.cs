@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SharpPulsar.TestContainer.TestUtils
+﻿namespace SharpPulsar.TestContainer.TestUtils
 {
     public sealed class DIContainer : IAsyncDisposable
     {

@@ -1,7 +1,5 @@
 ﻿using SharpPulsar.Schemas;
-using System.Collections.Generic;
 using System.Text;
-using Xunit;
 using SharpPulsar.Shared;
 
 /// <summary>
@@ -24,7 +22,7 @@ using SharpPulsar.Shared;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     /// <summary>
     /// Unit test <seealso cref="StringSchema"/>.
     /// </summary>

@@ -1,18 +1,58 @@
 ﻿using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
+using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
+using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
     public class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        
+        #region AckClient
+        public PulsarClient AckClient;
+        public PulsarSystem AckPulsarSystem;
+        #endregion
+        #region AutoClient
+        public PulsarClient AutoClient;
+        public PulsarSystem AutoPulsarSystem;
+        #endregion
+        #region EventSourceClient
+        public PulsarClient EventSourceClient;
+        public PulsarSystem EventSourcePulsarSystem;
+        #endregion
+        #region MultiTopicClient
+        public PulsarClient MultiTopicClient;
+        public PulsarSystem MultiTopicPulsarSystem;
+        #endregion
+        #region PartitionedClient
+        public PulsarClient PartitionedClient;
+        public PulsarSystem PartitionedPulsarSystem;
+        #endregion
+        #region PulsarClient
+        public PulsarClient PulsarClient;
+        public PulsarSystem PulsarSystem;
+        #endregion
+        #region TlsClient
+        public PulsarClient TlsClient;
+        public PulsarSystem TlsPulsarSystem;
+        #endregion
+        #region TableViewClient
+        public PulsarClient TableViewClient;
+        public PulsarSystem TableViewPulsarSystem;
+        #endregion
+        #region TransactionClient
+        public PulsarClient TransactionClient;
+        public PulsarSystem TransactionPulsarSystem;
+        #endregion
+        private readonly IConfiguration _configuration;
         public virtual PulsarTestcontainerConfiguration Configuration { get; }
 
         public PulsarFixture()
         {
+            var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _configuration = GetIConfigurationRoot(path);
             Configuration = new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650);
             Container = BuildContainer()
                 .WithCleanUp(true)
@@ -21,12 +61,14 @@ namespace SharpPulsar.TestContainer
         public virtual TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
         {
             return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-              .WithName("integration-tests")
+              .WithName("Tests")
               .WithPulsar(Configuration)
               .WithPortBinding(6650, 6650)
+              .WithPortBinding(6651, 6651)
               .WithPortBinding(8080, 8080)
               .WithPortBinding(8081, 8081)
               .WithExposedPort(6650)
+              .WithExposedPort(6651)
               .WithExposedPort(8080)
               .WithExposedPort(8081);
         }
@@ -38,7 +80,51 @@ namespace SharpPulsar.TestContainer
             await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
 
             await AwaitPortReadiness($"http://127.0.0.1:8081/");
-            
+            var client = SetupSystem();
+
+            var ackSystem = await PulsarSystem.GetInstanceAsync(client);
+            AckClient = ackSystem.NewClient();
+            AckPulsarSystem = ackSystem;
+
+            var autoSystem = await PulsarSystem.GetInstanceAsync(client);
+            AutoClient = autoSystem.NewClient();
+            AutoPulsarSystem = autoSystem;
+
+            var evenSystem = await PulsarSystem.GetInstanceAsync(client);
+            EventSourceClient = evenSystem.NewClient();
+            EventSourcePulsarSystem = evenSystem;
+
+            var multiSystem = await PulsarSystem.GetInstanceAsync(client);
+            MultiTopicClient = multiSystem.NewClient();
+            MultiTopicPulsarSystem = multiSystem;
+
+            var partitioned = await PulsarSystem.GetInstanceAsync(client);
+            PartitionedClient = partitioned.NewClient();
+            PartitionedPulsarSystem = partitioned;
+
+            var pulsar = await PulsarSystem.GetInstanceAsync(client);
+            PulsarClient = pulsar.NewClient();
+            PulsarSystem = pulsar;
+
+            var transact = await PulsarSystem.GetInstanceAsync(client);
+            TransactionClient = transact.NewClient();
+            TransactionPulsarSystem = transact;
+
+            var auto = await PulsarSystem.GetInstanceAsync(client);
+            AutoClient = auto.NewClient();
+            AutoPulsarSystem = auto;
+
+            var even = await PulsarSystem.GetInstanceAsync(client);
+            EventSourceClient = even.NewClient();
+            EventSourcePulsarSystem = even;
+
+            var table = await PulsarSystem.GetInstanceAsync(client);
+            TableViewClient = table.NewClient();
+            TableViewPulsarSystem = table;
+
+            var tls = await PulsarSystem.GetInstanceAsync(client);
+            TlsClient = tls.NewClient();
+            TlsPulsarSystem = tls;
         }
         public async ValueTask AwaitPortReadiness(string address)
         {
@@ -79,7 +165,52 @@ namespace SharpPulsar.TestContainer
 
             }
         }
+        private PulsarClientConfigBuilder SetupSystem(string? service = null, string? web = null)
+        {
+            var clienConfigSetting = _configuration.GetSection("client");
+            var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
+            var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;
+            var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
+            var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
+            var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
+            var connectionsPerBroker = int.Parse(clienConfigSetting.GetSection("connections-per-broker").Value);
+            var statsInterval = TimeSpan.Parse(clienConfigSetting.GetSection("stats-interval").Value);
+            var operationTime = int.Parse(clienConfigSetting.GetSection("operationTime").Value);
+            var allowTlsInsecureConnection = bool.Parse(clienConfigSetting.GetSection("allowTlsInsecureConnection").Value);
+            var enableTls = bool.Parse(clienConfigSetting.GetSection("enableTls").Value);
+            var enableTxn = bool.Parse(clienConfigSetting.GetSection("enableTransaction").Value);
+            var dedicatedConnection = bool.Parse(clienConfigSetting.GetSection("userDedicatedConnection").Value);
 
+
+            var client = new PulsarClientConfigBuilder();
+            client.EnableTransaction(enableTxn);
+
+            if (operationTime > 0)
+                client.OperationTimeout(TimeSpan.FromMilliseconds(operationTime));
+
+            if (!string.IsNullOrWhiteSpace(authCertPath))
+                client.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authCertPath)));
+
+            if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
+                client.Authentication(authPluginClassName, authParamsString);
+
+
+            client.ServiceUrl(serviceUrl);
+
+            client.WebUrl(webUrl);
+            client.ConnectionsPerBroker(connectionsPerBroker);
+            client.StatsInterval(statsInterval);
+            client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
+            client.EnableTls(enableTls);
+            return client;
+        }
+        public IConfigurationRoot GetIConfigurationRoot(string outputPath)
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(outputPath)
+                .AddJsonFile("appsettings.json", optional: true)
+                .Build();
+        }
         public void Dispose()
         {
             Configuration.Dispose();

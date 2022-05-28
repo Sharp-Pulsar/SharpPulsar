@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
@@ -21,10 +20,10 @@ namespace SharpPulsar.Test
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public TlsTests(ITestOutputHelper output, PulsarTlsCollection fixture)
+        public TlsTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.TlsClient;
             _topic = $"persistent://public/default/tls-{Guid.NewGuid()}";
         }
 

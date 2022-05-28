@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Http;
 using Akka.Actor;
 using Akka.Event;
 using SharpPulsar.EventSource.Messages;

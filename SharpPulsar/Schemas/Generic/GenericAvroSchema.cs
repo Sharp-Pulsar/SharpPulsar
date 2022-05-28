@@ -1,11 +1,9 @@
 ﻿using Avro;
-using Avro.Generic;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Shared;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace SharpPulsar.Schemas.Generic
 {

@@ -2,7 +2,6 @@
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
@@ -23,10 +22,12 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
-		public CumulativeAck(ITestOutputHelper output, TransactionCollection fixture)
+
+		public CumulativeAck(ITestOutputHelper output, PulsarFixture fixture)
 		{
+            
 			_output = output;
-			_client = fixture.Client;
+			_client = fixture.TransactionClient;
 		}
 
 		[Fact]

@@ -1,10 +1,8 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.TestContainer;
+﻿using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -38,10 +36,10 @@ namespace SharpPulsar.Test.Partitioned
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public PatternTopicsConsumerTest(ITestOutputHelper output, PartitionedCollection fixture)
+        public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PartitionedClient;
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()

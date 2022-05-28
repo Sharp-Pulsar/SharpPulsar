@@ -1,7 +1,6 @@
 ﻿using SharpPulsar.Auth;
 using System;
 using System.Collections.Generic;
-using Akka.Actor;
 using SharpPulsar.Batch;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Schemas;

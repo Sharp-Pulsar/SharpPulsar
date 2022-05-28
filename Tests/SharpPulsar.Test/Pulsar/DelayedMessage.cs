@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
@@ -18,10 +17,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public DelayedMessage(ITestOutputHelper output, PulsarCollection fixture)
+        public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
             _topic = $"persistent://public/default/delayed-{Guid.NewGuid()}";
         }
         [Fact]

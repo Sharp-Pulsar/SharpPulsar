@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
-using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
@@ -50,10 +48,10 @@ namespace SharpPulsar.Test.Transaction
 		private readonly ITestOutputHelper _output;
 		private readonly PulsarClient _client;
         private readonly Admin.Public.Admin _admin;
-        public TransactionEndToEndTest(ITestOutputHelper output, TransactionCollection fixture)
+        public TransactionEndToEndTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-			_client = fixture.Client;
+			_client = fixture.TransactionClient;
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
 
             try

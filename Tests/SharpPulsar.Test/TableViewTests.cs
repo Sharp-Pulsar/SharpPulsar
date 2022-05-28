@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
@@ -9,7 +8,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
-using SharpPulsar.Admin.Admin.Models;
 using Xunit;
 using Xunit.Abstractions;
 using System.Net.Http;
@@ -27,12 +25,12 @@ namespace SharpPulsar.Test
         public ClientConfigurationData _clientConfigurationData;
         private Admin.Public.Admin _admin;
 
-        public TableViewTests(ITestOutputHelper output, TableViewCollection fixture)
+        public TableViewTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
             _output = output;
-            _client = fixture.Client;
-            _pulsarSystem = fixture.PulsarSystem;
+            _client = fixture.TableViewClient;
+            _pulsarSystem = fixture.TableViewPulsarSystem;
             _clientConfigurationData = _pulsarSystem.ClientConfigurationData;
         }
         [Fact]

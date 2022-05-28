@@ -1,5 +1,4 @@
 ﻿using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
@@ -8,7 +7,6 @@ using SharpPulsar.User;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -40,10 +38,11 @@ namespace SharpPulsar.Test.Pulsar
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public ByteKeysTest(ITestOutputHelper output, PulsarCollection fixture)
+        public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
+            _client = fixture.PulsarClient;
             //_topic = "my-topic-batch-bf719df3";
         }
 

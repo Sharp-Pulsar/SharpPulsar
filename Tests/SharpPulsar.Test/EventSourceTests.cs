@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.EventSourcing
+namespace SharpPulsar.Test
 {
     [Collection(nameof(EventSourceCollection))]
     public class EventSourceTests
@@ -25,11 +25,11 @@ namespace SharpPulsar.Test.EventSourcing
 		public readonly PulsarSystem _pulsarSystem;
 		public ClientConfigurationData _clientConfigurationData;
 
-		public EventSourceTests(ITestOutputHelper output, EventSourceCollection fixture)
+		public EventSourceTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
-			_pulsarSystem = fixture.PulsarSystem;
+            _client = fixture.EventSourceClient;
+			_pulsarSystem = fixture.EventSourcePulsarSystem;
 			_clientConfigurationData = _pulsarSystem.ClientConfigurationData;
         }
 		//[Fact(Skip = "Issue with sql-worker on github action")]

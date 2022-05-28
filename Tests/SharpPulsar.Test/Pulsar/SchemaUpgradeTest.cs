@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using AvroSchemaGenerator.Attributes;
-using SharpPulsar.Configuration;
 using SharpPulsar.Schemas;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
@@ -20,10 +18,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public SchemaUpgradeTest(ITestOutputHelper output, PulsarCollection fixture)
+        public SchemaUpgradeTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
             _topic = $"persistent://public/default/upgradeable-{Guid.NewGuid()}";
         }
         [Fact]

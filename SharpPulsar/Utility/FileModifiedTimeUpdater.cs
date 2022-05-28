@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,10 +22,10 @@ using Microsoft.Extensions.Logging;
 namespace SharpPulsar.Utility
 {
 
-	/// <summary>
-	/// Class working with file's modified time.
-	/// </summary>
-	public class FileModifiedTimeUpdater
+    /// <summary>
+    /// Class working with file's modified time.
+    /// </summary>
+    public class FileModifiedTimeUpdater
 	{
 		public readonly string FileName;
 		public  DateTime LastModifiedTime;

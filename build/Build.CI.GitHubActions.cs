@@ -20,20 +20,12 @@ using Nuke.Common.Utilities;
     InvokedTargets = new[] { nameof(IntegrationTest) },
     PublishArtifacts = true)]
 
-[CustomGitHubActions("run_auto_failover_tests",
+[CustomGitHubActions("run_tests_api",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(AutoFailOverTest) },
-    PublishArtifacts = true)]
-
-[CustomGitHubActions("run_tls_tests",
-    GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(TlsTest) },
+    InvokedTargets = new[] { nameof(SharpPulsarTestAPI) },
     PublishArtifacts = true)]
 
 [CustomGitHubActions("nuget",
@@ -43,12 +35,7 @@ using Nuke.Common.Utilities;
     InvokedTargets = new[] { nameof(PublishNuget) },
     ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN" })]
 
-[CustomGitHubActions("github",
-    GitHubActionsImage.WindowsLatest,
-    AutoGenerate = true,
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(GitHubRelease) },
-    ImportSecrets = new[] {  "GITHUB_TOKEN", "TOKE" })]
+
 partial class Build
 {
 

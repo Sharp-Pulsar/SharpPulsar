@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Avro.Generic;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Schemas;
@@ -26,10 +24,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly PulsarClient _client;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
 
-        public GenericSchemaTest(ITestOutputHelper output, PulsarCollection fixture)
+        public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
         [Fact]
         public async Task TestGenericTopic()

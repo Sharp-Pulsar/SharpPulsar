@@ -1,5 +1,4 @@
-﻿using SharpPulsar.Configuration;
-using SharpPulsar.Schemas;
+﻿using SharpPulsar.Schemas;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.User;
@@ -25,10 +24,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public SqlTests(ITestOutputHelper output, PulsarCollection fixture)
+        public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
         //[Fact(Skip ="Issue with sql-worker on github action")]
         [Fact]

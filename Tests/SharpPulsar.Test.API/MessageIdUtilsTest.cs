@@ -1,10 +1,9 @@
 ﻿
 using SharpPulsar.Utils;
-using Xunit;
 
 namespace SharpPulsar.Test.API
 {
-   
+
     public class MessageIdUtilsTest
     {
         [Theory]

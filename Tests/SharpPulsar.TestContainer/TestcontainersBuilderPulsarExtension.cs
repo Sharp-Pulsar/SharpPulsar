@@ -1,8 +1,5 @@
-﻿using Docker.DotNet;
-using Docker.DotNet.Models;
-using DotNet.Testcontainers.Builders;
+﻿using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using SharpPulsar.TestContainer.TestUtils;
 
 namespace SharpPulsar.TestContainer
 {

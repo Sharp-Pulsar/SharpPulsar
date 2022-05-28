@@ -7,7 +7,6 @@ using SharpPulsar.Schemas;
 using SharpPulsar.Schemas.Reader;
 using SharpPulsar.Schemas.Writer;
 using System.Text;
-using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +28,7 @@ using Xunit;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     public class AvroSchemaTest
     {
         private class DefaultStruct

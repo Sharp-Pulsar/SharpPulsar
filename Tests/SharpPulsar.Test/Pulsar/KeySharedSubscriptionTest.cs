@@ -4,14 +4,12 @@ using System.Text;
 using Akka.Util.Internal;
 using SharpPulsar.Batch.Api;
 using SharpPulsar.Common;
-using SharpPulsar.Configuration;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schemas;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
-using System.Threading;
 using SharpPulsar.TestContainer;
 using System.Threading.Tasks;
 using SharpPulsar.Test.Fixture;
@@ -43,10 +41,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarCollection fixture)
+        public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
 
         private static readonly IList<string> Keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };

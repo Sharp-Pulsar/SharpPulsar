@@ -2,7 +2,6 @@
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
@@ -35,10 +34,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
 
-        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarCollection fixture)
+        public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
         }
 
         [Fact]

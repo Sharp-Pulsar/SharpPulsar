@@ -2,8 +2,6 @@
 using SharpPulsar.Interfaces.ISchema;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.Schemas;
-using Xunit;
-using System;
 using System.Buffers;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

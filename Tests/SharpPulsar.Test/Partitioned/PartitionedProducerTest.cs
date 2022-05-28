@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Common;
-using SharpPulsar.Configuration;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
@@ -45,6 +41,7 @@ namespace SharpPulsar.Test.Partitioned
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;
             _output = output;
+            _client = fixture.PartitionedClient;
         }
         [Fact]
         public virtual async Task TestGetNumOfPartitions()

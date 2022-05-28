@@ -9,12 +9,12 @@
 #
 #     - To trigger manual generation invoke:
 #
-#         nuke --generate-configuration GitHubActions_run_tls_tests --host GitHubActions
+#         nuke --generate-configuration GitHubActions_run_tests_api --host GitHubActions
 #
 # </auto-generated>
 # ------------------------------------------------------------------------------
 
-name: run_tls_tests
+name: run_tests_api
 
 on:
   push:
@@ -47,5 +47,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd TlsTest'
-        run: ./build.cmd TlsTest
+      - name: Run './build.cmd SharpPulsarTestAPI'
+        run: ./build.cmd SharpPulsarTestAPI

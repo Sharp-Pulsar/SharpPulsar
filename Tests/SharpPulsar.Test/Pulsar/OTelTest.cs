@@ -24,10 +24,10 @@ namespace SharpPulsar.Test.Pulsar
         private readonly PulsarClient _client;
         private readonly string _topic;
 
-        public OTelTest(ITestOutputHelper output, PulsarCollection fixture)
+        public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarClient;
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
             //var t = TestConsoleExporter.Run();
             //_topic = "my-topic-batch-bf719df3";
