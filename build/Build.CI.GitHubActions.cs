@@ -17,7 +17,7 @@ using Nuke.Common.Utilities;
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(IntegrationTest) },
+    InvokedTargets = new[] { nameof(Test) },
     PublishArtifacts = true)]
 
 [CustomGitHubActions("run_tests_api",
@@ -25,7 +25,7 @@ using Nuke.Common.Utilities;
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(SharpPulsarTestAPI) },
+    InvokedTargets = new[] { nameof(TestAPI) },
     PublishArtifacts = true)]
 
 [CustomGitHubActions("nuget",

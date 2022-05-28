@@ -134,7 +134,7 @@ partial class Build : NukeBuild
 
             Git($"tag -f {GitVersion.SemVer}");
         });
-    Target SharpPulsarTestAPI => _ => _
+    Target TestAPI => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         { 
@@ -147,7 +147,7 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "tls")
+                    .SetResultsDirectory(OutputTests / "api")
                     .SetLoggers("trx", "console")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -155,7 +155,7 @@ partial class Build : NukeBuild
                     .EnableNoBuild());
             }
         });
-    Target IntegrationTest => _ => _
+    Target Test => _ => _
         .DependsOn(Compile)
         .Executes(() =>
         {
