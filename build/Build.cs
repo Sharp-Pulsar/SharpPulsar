@@ -138,7 +138,7 @@ partial class Build : NukeBuild
         .DependsOn(Compile)
         .Executes(() =>
         { 
-            var project = Solution.GetProject("SharpPulsar.Test.Tls");
+            var project = Solution.GetProject("SharpPulsar.Test.API");
             Information($"Running tests from {project.Name}");
             foreach (var fw in project.GetTargetFrameworks())
             {
