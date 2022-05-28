@@ -54,7 +54,7 @@ namespace SharpPulsar.Test.Partitioned
             // create partitioned topic
             try
             {
-                var asf = await _admin.CreatePartitionedTopicAsync("public", "default", topicName, 5);
+                var asf = await _admin.CreatePartitionedTopicAsync("public", "default", topicName, 1);
             }
             catch (Exception ex)
             {
@@ -63,7 +63,7 @@ namespace SharpPulsar.Test.Partitioned
             }
             var partitions = await _admin.GetPartitionedMetadataAsync("public", "default", topicName);
             var s = partitions.Body.Partitions;
-            Assert.Equal(5, s);
+            Assert.Equal(1, s);
 
             // 2. create producer
             var messagePredicate = "partitioned-producer" + Guid.NewGuid() + "-";
