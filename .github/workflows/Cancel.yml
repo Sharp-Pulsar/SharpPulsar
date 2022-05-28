@@ -1,3 +1,5 @@
+# https://api.github.com/repos/eaba/SharpPulsar/actions/workflows
+
 name: Cancel
 on: [push]
 jobs:
@@ -8,5 +10,5 @@ jobs:
     steps:
       - uses: styfle/cancel-workflow-action@0.9.1
         with:
-          workflow_id: 19777845,26218861,19327380,19327055,11908337,11762375,5725340,22229939,26218862
+          workflow_id: 5725340,19424828,26218862,27017239
           access_token: ${{ github.token }}
