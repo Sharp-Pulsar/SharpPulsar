@@ -85,20 +85,33 @@
           "items": {
             "type": "string",
             "enum": [
+              "Acks",
+              "AdminPulsar",
               "AuthenticatedGitHubClient",
+              "AutoClusterFailover",
+              "CheckBranch",
+              "CheckDockerVersion",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "EventSource",
               "GitHubRelease",
+              "MultiTopic",
+              "Partitioned",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
+              "StartPulsar",
+              "StopPulsar",
+              "TableView",
               "Test",
-              "TestAPI"
+              "TestAPI",
+              "TlsStartPulsar",
+              "Transaction"
             ]
           }
         },
@@ -112,20 +125,33 @@
           "items": {
             "type": "string",
             "enum": [
+              "Acks",
+              "AdminPulsar",
               "AuthenticatedGitHubClient",
+              "AutoClusterFailover",
+              "CheckBranch",
+              "CheckDockerVersion",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "EventSource",
               "GitHubRelease",
+              "MultiTopic",
+              "Partitioned",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
+              "StartPulsar",
+              "StopPulsar",
+              "TableView",
               "Test",
-              "TestAPI"
+              "TestAPI",
+              "TlsStartPulsar",
+              "Transaction"
             ]
           }
         },

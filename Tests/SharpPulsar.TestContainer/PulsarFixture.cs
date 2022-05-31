@@ -3,131 +3,41 @@ using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
+using SharpPulsar.Configuration;
 using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public class PulsarFixture : IAsyncLifetime
     {
-        #region AckClient
-        public PulsarClient AckClient;
-        public PulsarSystem AckPulsarSystem;
-        #endregion
-        #region AutoClient
-        public PulsarClient AutoClient;
-        public PulsarSystem AutoPulsarSystem;
-        #endregion
-        #region EventSourceClient
-        public PulsarClient EventSourceClient;
-        public PulsarSystem EventSourcePulsarSystem;
-        #endregion
-        #region MultiTopicClient
-        public PulsarClient MultiTopicClient;
-        public PulsarSystem MultiTopicPulsarSystem;
-        #endregion
-        #region PartitionedClient
-        public PulsarClient PartitionedClient;
-        public PulsarSystem PartitionedPulsarSystem;
-        #endregion
-        #region PulsarClient
-        public PulsarClient PulsarClient;
+        public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        #endregion
-        #region TlsClient
-        public PulsarClient TlsClient;
-        public PulsarSystem TlsPulsarSystem;
-        #endregion
-        #region TableViewClient
-        public PulsarClient TableViewClient;
-        public PulsarSystem TableViewPulsarSystem;
-        #endregion
-        #region TransactionClient
-        public PulsarClient TransactionClient;
-        public PulsarSystem TransactionPulsarSystem;
-        #endregion
+        public ClientConfigurationData ClientConfigurationData;
         private readonly IConfiguration _configuration;
-        public virtual PulsarTestcontainerConfiguration Configuration { get; }
-
         public PulsarFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650);
-            Container = BuildContainer()
-                .WithCleanUp(true)
+        }
+        public IConfigurationRoot GetIConfigurationRoot(string outputPath)
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(outputPath)
+                .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public virtual TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
+        public async Task InitializeAsync()
         {
-            return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-              .WithName("Tests")
-              .WithPulsar(Configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(6651, 6651)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(6651)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+            await SetupSystem();
+            await DeployPulsar();
         }
-        public PulsarTestcontainer Container { get; }
-        public virtual async Task InitializeAsync()
+        public async Task DeployPulsar()
         {
-            await Container.StartAsync();//;.GetAwaiter().GetResult();
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+            //TakeDownPulsar(); // clean-up if anything was left running from previous run
 
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
-            var client = SetupSystem();
+            //RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
 
-            var ackSystem = await PulsarSystem.GetInstanceAsync(client);
-            AckClient = ackSystem.NewClient();
-            AckPulsarSystem = ackSystem;
-
-            var autoSystem = await PulsarSystem.GetInstanceAsync(client);
-            AutoClient = autoSystem.NewClient();
-            AutoPulsarSystem = autoSystem;
-
-            var evenSystem = await PulsarSystem.GetInstanceAsync(client);
-            EventSourceClient = evenSystem.NewClient();
-            EventSourcePulsarSystem = evenSystem;
-
-            var multiSystem = await PulsarSystem.GetInstanceAsync(client);
-            MultiTopicClient = multiSystem.NewClient();
-            MultiTopicPulsarSystem = multiSystem;
-
-            var partitioned = await PulsarSystem.GetInstanceAsync(client);
-            PartitionedClient = partitioned.NewClient();
-            PartitionedPulsarSystem = partitioned;
-
-            var pulsar = await PulsarSystem.GetInstanceAsync(client);
-            PulsarClient = pulsar.NewClient();
-            PulsarSystem = pulsar;
-
-            var transact = await PulsarSystem.GetInstanceAsync(client);
-            TransactionClient = transact.NewClient();
-            TransactionPulsarSystem = transact;
-
-            var auto = await PulsarSystem.GetInstanceAsync(client);
-            AutoClient = auto.NewClient();
-            AutoPulsarSystem = auto;
-
-            var even = await PulsarSystem.GetInstanceAsync(client);
-            EventSourceClient = even.NewClient();
-            EventSourcePulsarSystem = even;
-
-            var table = await PulsarSystem.GetInstanceAsync(client);
-            TableViewClient = table.NewClient();
-            TableViewPulsarSystem = table;
-
-            var tls = await PulsarSystem.GetInstanceAsync(client);
-            TlsClient = tls.NewClient();
-            TlsPulsarSystem = tls;
-        }
-        public async ValueTask AwaitPortReadiness(string address)
-        {
             var waitTries = 20;
 
             using var handler = new HttpClientHandler
@@ -141,7 +51,7 @@ namespace SharpPulsar.TestContainer
             {
                 try
                 {
-                    await client.GetAsync(address).ConfigureAwait(false);
+                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
                     return;
                 }
                 catch
@@ -153,19 +63,7 @@ namespace SharpPulsar.TestContainer
 
             throw new Exception("Unable to confirm Pulsar has initialized");
         }
-        public virtual async Task DisposeAsync()
-        {
-            
-            try
-            {
-                await Container.DisposeAsync().AsTask();
-            }
-            catch
-            {
-
-            }
-        }
-        private PulsarClientConfigBuilder SetupSystem(string? service = null, string? web = null)
+         private async ValueTask SetupSystem(string? service = null, string? web = null)
         {
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
@@ -202,18 +100,24 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            return client;
+            var system = await PulsarSystem.GetInstanceAsync(client);
+            Client = system.NewClient();
+            PulsarSystem = system;
+            ClientConfigurationData = client.ClientConfigurationData;
         }
-        public IConfigurationRoot GetIConfigurationRoot(string outputPath)
+        public virtual async Task DisposeAsync()
         {
-            return new ConfigurationBuilder()
-                .SetBasePath(outputPath)
-                .AddJsonFile("appsettings.json", optional: true)
-                .Build();
+
+            try
+            {
+                if (Client != null)
+                    await Client.ShutdownAsync();
+            }
+            catch
+            {
+
+            }
         }
-        public void Dispose()
-        {
-            Configuration.Dispose();
-        }
+        
     }
 }
