@@ -63,7 +63,7 @@ namespace SharpPulsar.TestContainer
 
             throw new Exception("Unable to confirm Pulsar has initialized");
         }
-         private async ValueTask SetupSystem(string? service = null, string? web = null)
+        private async ValueTask SetupSystem(string? service = null, string? web = null)
         {
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
