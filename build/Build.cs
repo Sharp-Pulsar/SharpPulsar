@@ -45,7 +45,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.Compile);
+    public static int Main() => Execute<Build>(x => x.MultiTopic);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -179,7 +179,7 @@ partial class Build : NukeBuild
           throw new Exception("Unable to confirm Pulsar has initialized");
       });
     Target StartPulsar => _ => _
-      .DependsOn(CheckDockerVersion)
+      .DependsOn(CheckDockerVersion)      
       .Executes(async()=>
       {
           DockerTasks.DockerRun(b =>
@@ -188,12 +188,12 @@ partial class Build : NukeBuild
            .SetInteractive(true)
            .SetName("pulsar")
            .SetPublish("6650:6650", "8080:8080", "8081:8081", "2181:2181")
-           .SetMount("source=pulsardata,target=/pulsar/data")
-           .SetMount("source=pulsarconf,target=/pulsar/conf")
+           //.SetMount("source=pulsardata,target=/pulsar/data")
+           //.SetMount("source=pulsarconf,target=/pulsar/conf")
            .SetImage("apachepulsar/pulsar-all:2.10.0")
            .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", "PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", "PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", "PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
            .SetCommand("bash")
-           .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2"));
+           .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2 && bin/pulsar sql-worker start"));
 
           var waitTries = 20;
 
@@ -208,8 +208,17 @@ partial class Build : NukeBuild
           {
               try
               {
-                  await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                  var get = await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                  var j = await get.Content.ReadAsStringAsync();
+                  Information(j);
                   Information("Apache Pulsar Server live at: http://127.0.0.1");
+
+
+                  DockerTasks.DockerContainerExec(b => 
+                  b
+                  .SetContainer("pulsar")
+                  .SetCommand("bash")
+                  .SetArgs("-c", "bin/pulsar sql-worker start"));
                   return;
               }
               catch (Exception ex)
@@ -221,6 +230,16 @@ partial class Build : NukeBuild
           }
 
           throw new Exception("Unable to confirm Pulsar has initialized");
+      });
+    Target SqlPulsar => _ => _
+      .DependsOn(StartPulsar)
+      .Executes(() =>
+      {
+          DockerTasks.DockerContainerExec(b =>
+          b
+          .SetContainer("pulsar")
+          .SetCommand("bash")
+          .SetArgs("-c", "bin/pulsar sql-worker start"));
       });
     Target CheckDockerVersion => _ => _
     .Unlisted()
@@ -237,13 +256,14 @@ partial class Build : NukeBuild
        });
     Target StopPulsar => _ => _
     .Unlisted()
+    .DependsOn(MultiTopic)
     .AssuredAfterFailure()
     .Executes(() =>
     {
 
         try
         {
-            DockerTasks.DockerRm(b => b
+           DockerTasks.DockerRm(b => b
            .SetContainers("pulsar")
            .SetForce(true));
         }
@@ -254,7 +274,7 @@ partial class Build : NukeBuild
 
     });
     Target TestAPI => _ => _
-        .DependsOn(Compile)
+        .DependsOn(Compile, AdminPulsar)
         .Executes(() =>
         { 
             var project = Solution.GetProject("SharpPulsar.Test.API");
@@ -275,7 +295,7 @@ partial class Build : NukeBuild
             }
         });
     Target AdminPulsar => _ => _
-      .DependsOn(StartPulsar)
+      .DependsOn(SqlPulsar)
       .Executes(() =>
       {
           DockerTasks.DockerExec(x => x
@@ -310,33 +330,77 @@ partial class Build : NukeBuild
            );*/
       });
     Target Test => _ => _
-        .DependsOn(Compile)
-        .DependsOn(AdminPulsar)
-        .Triggers(AutoClusterFailover)
+        .DependsOn(TestAPI)
         .Executes(() =>
         {
-            var project = Solution.GetProject("SharpPulsar.Test");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
+            try 
             {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "tests")
-                    //.SetLoggers("trx")
-                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
+                var project = Solution.GetProject("SharpPulsar.Test");
+                Information($"Running tests from {project.Name}");
+                foreach (var fw in project.GetTargetFrameworks())
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                        .SetResultsDirectory(OutputTests / "tests")
+                        .SetLoggers("trx", "console")
+                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                        .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild());
+                }
             }
-            //if(Container)
-               // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
+            catch(Exception ex) 
+            {
+                Information(ex.Message);
+            }
         });
+    Target Transaction => _ => _
+       .DependsOn(Test)
+       .Executes(() =>
+       {
+           var project = Solution.GetProject("SharpPulsar.Test.Transaction");
+           Information($"Running tests from {project.Name}");
+           foreach (var fw in project.GetTargetFrameworks())
+           {
+               DotNetTest(c => c
+                   .SetProjectFile(project)
+                   .SetConfiguration(Configuration.ToString())
+                   .SetFramework(fw)
+                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                   .SetResultsDirectory(OutputTests / "even")
+                   .SetLoggers("trx")
+                   //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                   .EnableNoBuild());
+           }
+       });
+    Target Partitioned => _ => _
+       .DependsOn(Transaction)
+       .Executes(() =>
+       {
+           var project = Solution.GetProject("SharpPulsar.Test.Partitioned");
+           Information($"Running tests from {project.Name}");
+           foreach (var fw in project.GetTargetFrameworks())
+           {
+               DotNetTest(c => c
+                   .SetProjectFile(project)
+                   .SetConfiguration(Configuration.ToString())
+                   .SetFramework(fw)
+                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                   .SetResultsDirectory(OutputTests / "even")
+                   //.SetLoggers("trx")
+                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                   .EnableNoBuild());
+           }
+       });
     Target AutoClusterFailover => _ => _
-        .DependsOn(Compile)
-        .Triggers(TableView)
+        .DependsOn(Partitioned)
         .Executes(() =>
         {
             var project = Solution.GetProject("SharpPulsar.Test.AutoClusterFailover");
@@ -355,13 +419,9 @@ partial class Build : NukeBuild
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
             }
-            //if(Container)
-            // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
         });
-
     Target TableView => _ => _
-       .DependsOn(Compile)
-       .Triggers(Acks)
+       .DependsOn(AutoClusterFailover)
        .Executes(() =>
        {
            var project = Solution.GetProject("SharpPulsar.Test.TableView");
@@ -380,38 +440,9 @@ partial class Build : NukeBuild
                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                    .EnableNoBuild());
            }
-            //if(Container)
-            // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
        });
-
-    Target Acks => _ => _
-       .DependsOn(Compile)
-       .Triggers(EventSource)
-       .Executes(() =>
-       {
-           var project = Solution.GetProject("SharpPulsar.Test.Acks");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
-           {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "acks")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
-           }
-            //if(Container)
-            // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
-       });
-
     Target EventSource => _ => _
-       .DependsOn(Compile)
-       .Triggers(MultiTopic)
+       .DependsOn(TableView)
        .Executes(() =>
        {
            var project = Solution.GetProject("SharpPulsar.Test.EventSource");
@@ -430,13 +461,30 @@ partial class Build : NukeBuild
                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                    .EnableNoBuild());
            }
-           //if(Container)
-           // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
        });
-
+    Target Acks => _ => _
+       .DependsOn(EventSource)
+       .Executes(() =>
+       {
+           var project = Solution.GetProject("SharpPulsar.Test.Acks");
+           Information($"Running tests from {project.Name}");
+           foreach (var fw in project.GetTargetFrameworks())
+           {
+               DotNetTest(c => c
+                   .SetProjectFile(project)
+                   .SetConfiguration(Configuration.ToString())
+                   .SetFramework(fw)
+                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                   .SetResultsDirectory(OutputTests / "acks")
+                   //.SetLoggers("trx")
+                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                   .EnableNoBuild());
+           }
+       });
     Target MultiTopic => _ => _
-       .DependsOn(Compile)
-       .Triggers(Partitioned)
+       .DependsOn(Acks)
        .Executes(() =>
        {
            var project = Solution.GetProject("SharpPulsar.Test.MultiTopic");
@@ -458,52 +506,7 @@ partial class Build : NukeBuild
            //if(Container)
            // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
        });
-
-    Target Partitioned => _ => _
-       .DependsOn(Compile)
-       .Triggers(Transaction)
-       .Executes(() =>
-       {
-           var project = Solution.GetProject("SharpPulsar.Test.Partitioned");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
-           {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "even")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
-           }
-       });
-
-    Target Transaction => _ => _
-       .DependsOn(Compile)
-       //.Triggers(AutoClusterFailover)
-       .Executes(() =>
-       {
-           var project = Solution.GetProject("SharpPulsar.Test.Transaction");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
-           {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "even")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
-           }
-       });
+    
     //---------------------
     //-----------------------------------------------------------
     // Documentation 
