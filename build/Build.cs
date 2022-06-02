@@ -287,8 +287,8 @@ partial class Build : NukeBuild
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
                     .SetResultsDirectory(OutputTests / "api")
-                    .SetLoggers("trx", "console")
-                    //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                    .SetLoggers("trx")
+                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     .SetBlameMode(true)//captures the order of tests that were run before the crash.
                     .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                     .EnableNoBuild());
@@ -345,8 +345,8 @@ partial class Build : NukeBuild
                         .SetFramework(fw)
                         .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
                         .SetResultsDirectory(OutputTests / "tests")
-                        .SetLoggers("trx", "console")
-                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                        .SetLoggers("trx")
+                        .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                         .SetBlameMode(true)//captures the order of tests that were run before the crash.
                         .SetVerbosity(verbosity: DotNetVerbosity.Normal)
                         .EnableNoBuild());
@@ -361,150 +361,197 @@ partial class Build : NukeBuild
        .DependsOn(Test)
        .Executes(() =>
        {
-           var project = Solution.GetProject("SharpPulsar.Test.Transaction");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
+           try 
            {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "even")
-                   .SetLoggers("trx")
-                   //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
+               var project = Solution.GetProject("SharpPulsar.Test.Transaction");
+               Information($"Running tests from {project.Name}");
+               foreach (var fw in project.GetTargetFrameworks())
+               {
+                   DotNetTest(c => c
+                       .SetProjectFile(project)
+                       .SetConfiguration(Configuration.ToString())
+                       .SetFramework(fw)
+                       .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                       .SetResultsDirectory(OutputTests / "transact")
+                       .SetLoggers("trx")
+                       .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                       .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                       .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                       .EnableNoBuild());
+               }
+           }
+           catch(Exception ex)
+           {
+               Information(ex.Message);
            }
        });
     Target Partitioned => _ => _
        .DependsOn(Transaction)
        .Executes(() =>
        {
-           var project = Solution.GetProject("SharpPulsar.Test.Partitioned");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
+           try
            {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "even")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
+               var project = Solution.GetProject("SharpPulsar.Test.Partitioned");
+               Information($"Running tests from {project.Name}");
+               foreach (var fw in project.GetTargetFrameworks())
+               {
+                   DotNetTest(c => c
+                       .SetProjectFile(project)
+                       .SetConfiguration(Configuration.ToString())
+                       .SetFramework(fw)
+                       .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                       .SetResultsDirectory(OutputTests / "partitioned")
+                       .SetLoggers("trx")
+                       .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                       .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                       .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                       .EnableNoBuild());
+               }
+           }
+           catch(Exception ex)
+           {
+               Information(ex.Message);
            }
        });
     Target AutoClusterFailover => _ => _
         .DependsOn(Partitioned)
         .Executes(() =>
         {
-            var project = Solution.GetProject("SharpPulsar.Test.AutoClusterFailover");
-            Information($"Running tests from {project.Name}");
-            foreach (var fw in project.GetTargetFrameworks())
+            try
             {
-                DotNetTest(c => c
-                    .SetProjectFile(project)
-                    .SetConfiguration(Configuration.ToString())
-                    .SetFramework(fw)
-                    .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "auto")
-                    //.SetLoggers("trx")
-                    .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                    .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                    .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                    .EnableNoBuild());
+                var project = Solution.GetProject("SharpPulsar.Test.AutoClusterFailover");
+                Information($"Running tests from {project.Name}");
+                foreach (var fw in project.GetTargetFrameworks())
+                {
+                    DotNetTest(c => c
+                        .SetProjectFile(project)
+                        .SetConfiguration(Configuration.ToString())
+                        .SetFramework(fw)
+                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                        .SetResultsDirectory(OutputTests / "auto")
+                        .SetLoggers("trx")
+                        .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                        .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                        .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                        .EnableNoBuild());
+                }
+            }
+            catch(Exception ex)
+            {
+                Information(ex.Message);
             }
         });
     Target TableView => _ => _
        .DependsOn(AutoClusterFailover)
        .Executes(() =>
        {
-           var project = Solution.GetProject("SharpPulsar.Test.TableView");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
+           try
            {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "table")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
+               var project = Solution.GetProject("SharpPulsar.Test.TableView");
+               Information($"Running tests from {project.Name}");
+               foreach (var fw in project.GetTargetFrameworks())
+               {
+                   DotNetTest(c => c
+                       .SetProjectFile(project)
+                       .SetConfiguration(Configuration.ToString())
+                       .SetFramework(fw)
+                       .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                       .SetResultsDirectory(OutputTests / "table")
+                       .SetLoggers("trx")
+                       .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                       .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                       .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                       .EnableNoBuild());
+               }
+           }
+           catch (Exception ex)
+           { 
+               Information(ex.Message); 
            }
        });
     Target EventSource => _ => _
        .DependsOn(TableView)
        .Executes(() =>
        {
-           var project = Solution.GetProject("SharpPulsar.Test.EventSource");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
+           try
            {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "even")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
+               var project = Solution.GetProject("SharpPulsar.Test.EventSource");
+               Information($"Running tests from {project.Name}");
+               foreach (var fw in project.GetTargetFrameworks())
+               {
+                   DotNetTest(c => c
+                       .SetProjectFile(project)
+                       .SetConfiguration(Configuration.ToString())
+                       .SetFramework(fw)
+                       .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                       .SetResultsDirectory(OutputTests / "even")
+                       .SetLoggers("trx")
+                       .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                       .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                       .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                       .EnableNoBuild());
+               }
+           }
+           catch  (Exception ex)
+           {
+               Information(ex.Message);
            }
        });
     Target Acks => _ => _
        .DependsOn(EventSource)
        .Executes(() =>
        {
-           var project = Solution.GetProject("SharpPulsar.Test.Acks");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
+           try
            {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "acks")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
+               var project = Solution.GetProject("SharpPulsar.Test.Acks");
+               Information($"Running tests from {project.Name}");
+               foreach (var fw in project.GetTargetFrameworks())
+               {
+                   DotNetTest(c => c
+                       .SetProjectFile(project)
+                       .SetConfiguration(Configuration.ToString())
+                       .SetFramework(fw)
+                       .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                       .SetResultsDirectory(OutputTests / "acks")
+                       .SetLoggers("trx")
+                       .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                       .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                       .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                       .EnableNoBuild());
+               }
+           }
+           catch(Exception ex)
+           {
+               Information(ex.Message);
            }
        });
     Target MultiTopic => _ => _
        .DependsOn(Acks)
        .Executes(() =>
        {
-           var project = Solution.GetProject("SharpPulsar.Test.MultiTopic");
-           Information($"Running tests from {project.Name}");
-           foreach (var fw in project.GetTargetFrameworks())
+           try
            {
-               DotNetTest(c => c
-                   .SetProjectFile(project)
-                   .SetConfiguration(Configuration.ToString())
-                   .SetFramework(fw)
-                   .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                   .SetResultsDirectory(OutputTests / "even")
-                   //.SetLoggers("trx")
-                   .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
-                   .SetBlameMode(true)//captures the order of tests that were run before the crash.
-                   .SetVerbosity(verbosity: DotNetVerbosity.Normal)
-                   .EnableNoBuild());
+               var project = Solution.GetProject("SharpPulsar.Test.MultiTopic");
+               Information($"Running tests from {project.Name}");
+               foreach (var fw in project.GetTargetFrameworks())
+               {
+                   DotNetTest(c => c
+                       .SetProjectFile(project)
+                       .SetConfiguration(Configuration.ToString())
+                       .SetFramework(fw)
+                       .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
+                       .SetResultsDirectory(OutputTests / "multi")
+                       .SetLoggers("trx")
+                       .SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
+                       .SetBlameMode(true)//captures the order of tests that were run before the crash.
+                       .SetVerbosity(verbosity: DotNetVerbosity.Normal)
+                       .EnableNoBuild());
+               }
            }
-           //if(Container)
-           // await SaveFile("test-integration", OutputTests / "integration", "/host/documents/testresult");
+           catch(Exception ex)
+           {
+               Information(ex.Message);
+           }
        });
     
     //---------------------
