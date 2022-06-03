@@ -109,7 +109,7 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
         var newSteps = new List<GitHubActionsStep>(job.Steps);
         foreach (var version in new[] { "6.0.*", "5.0.*" })
         {
-            newSteps.Insert(1, new GitHubActionsDownloadArtifact
+            newSteps.Insert(1, new GitHubActionsUploadArtifact
             {
                 Version = version
             });
@@ -143,17 +143,23 @@ public class GitHubActionsSetupDotNetStep : GitHubActionsStep
     }
 }
 
-public class GitHubActionsDownloadArtifact : GitHubActionsStep
+public class GitHubActionsUploadArtifact : GitHubActionsStep
 {
     public string Version { get; init; }
 
     public override void Write(CustomFileWriter writer)
     {
-        writer.WriteLine("- name: Download a Build Artifact");
+        writer.WriteLine("- name: Upload a Build Artifact");
 
         using (writer.Indent())
         {
-            writer.WriteLine("uses: actions/download-artifact@v3.0.0");
+            writer.WriteLine("uses: actions/upload-artifact@v3.1.0");
+            writer.WriteLine("with:");
+            using (writer.Indent())
+            {
+                writer.WriteLine("name: assets-for-download");
+                writer.WriteLine("path: ${{ github.workspace }}");
+            }
         }
     }
 }
