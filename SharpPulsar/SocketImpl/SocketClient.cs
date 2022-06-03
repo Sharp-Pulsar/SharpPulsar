@@ -217,9 +217,10 @@ namespace SharpPulsar.SocketImpl
         }
         private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {
-            var tcpClient = new TcpClient();
             try
             {
+                var tcpClient = new TcpClient();
+
                 if (SniProxy)
                 {
                     var url = new Uri(_clientConfiguration.ProxyServiceUrl);
@@ -228,8 +229,12 @@ namespace SharpPulsar.SocketImpl
 
                 if (!_encrypt)
                 {
-                    await tcpClient.ConnectAsync(endPoint.Host, endPoint.Port).ConfigureAwait(false);
-                    
+                    if (!tcpClient.ConnectAsync(endPoint.Host, endPoint.Port).Wait(1000))
+                    {
+                        // connection failure
+                        tcpClient.Dispose();
+                        throw new Exception("Failed to connect.");
+                    }
                     return tcpClient.GetStream();
                 }
 
@@ -239,9 +244,8 @@ namespace SharpPulsar.SocketImpl
             }
             catch (Exception ex)
             {
-                tcpClient.Dispose();
                 _logger.Error(ex.ToString());
-                throw;
+                throw new Exception("Failed to connect.");
             }
         }
         private async ValueTask<Stream> EncryptStream(Stream stream, string host)
@@ -270,7 +274,7 @@ namespace SharpPulsar.SocketImpl
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                await socket.ConnectAsync(serverAddresses, port);
+                socket.ConnectAsync(serverAddresses, port).Wait(1000);
                 return socket;
             }
 
