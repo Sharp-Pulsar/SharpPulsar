@@ -34,6 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: assets-for-download
+          path: /home/runner/work/SharpPulsar/SharpPulsar/TestResults
       - uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 5.0.*
@@ -47,5 +52,5 @@ jobs:
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      - name: Run './build.cmd IntegrationTest'
-        run: ./build.cmd IntegrationTest
+      - name: Run './build.cmd Test'
+        run: ./build.cmd Test

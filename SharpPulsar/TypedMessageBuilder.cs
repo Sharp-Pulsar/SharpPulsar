@@ -28,9 +28,7 @@ namespace SharpPulsar
 {
     using global::Akka.Actor;
     using SharpPulsar.Configuration;
-    using SharpPulsar.Exceptions;
     using SharpPulsar.Interfaces;
-    using SharpPulsar.Messages.Producer;
     using SharpPulsar.Messages.Transaction;
     using SharpPulsar.Precondition;
     using SharpPulsar.Schemas;

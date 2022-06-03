@@ -16,9 +16,7 @@ using System.Threading.Tasks;
 using SharpPulsar.Messages.Consumer;
 using System.Linq;
 using System.Buffers;
-using Akka.Event;
 using SharpPulsar.Messages.Client;
-using Receive = Akka.Actor.Receive;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

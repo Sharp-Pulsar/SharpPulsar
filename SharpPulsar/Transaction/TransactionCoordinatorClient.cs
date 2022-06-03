@@ -7,7 +7,6 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Utility;
 using System;

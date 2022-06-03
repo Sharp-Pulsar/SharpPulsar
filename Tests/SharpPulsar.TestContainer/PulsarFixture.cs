@@ -4,53 +4,40 @@ using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
 using SharpPulsar.Configuration;
-using SharpPulsar.Interfaces;
-using SharpPulsar.ServiceProvider;
 using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public class PulsarFixture : IAsyncLifetime
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        private readonly IConfiguration _configuration; 
-        public virtual PulsarTestcontainerConfiguration Configuration { get; }
-
+        public ClientConfigurationData ClientConfigurationData;
+        private readonly IConfiguration _configuration;
         public PulsarFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650);
-            Container = BuildContainer()
-                .WithCleanUp(true)
+        }
+        public IConfigurationRoot GetIConfigurationRoot(string outputPath)
+        {
+            return new ConfigurationBuilder()
+                .SetBasePath(outputPath)
+                .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public virtual TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
+        public async Task InitializeAsync()
         {
-            return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-              .WithName("integration-tests")
-              .WithPulsar(Configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
-        }
-        public PulsarTestcontainer Container { get; }
-        public virtual async Task InitializeAsync()
-        {
-            await Container.StartAsync();//;.GetAwaiter().GetResult();
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
             await SetupSystem();
+            await DeployPulsar();
         }
-        public async ValueTask AwaitPortReadiness(string address)
+        public async Task DeployPulsar()
         {
+            //TakeDownPulsar(); // clean-up if anything was left running from previous run
+
+            //RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
+
             var waitTries = 20;
 
             using var handler = new HttpClientHandler
@@ -64,7 +51,7 @@ namespace SharpPulsar.TestContainer
             {
                 try
                 {
-                    await client.GetAsync(address).ConfigureAwait(false);
+                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
                     return;
                 }
                 catch
@@ -76,30 +63,8 @@ namespace SharpPulsar.TestContainer
 
             throw new Exception("Unable to confirm Pulsar has initialized");
         }
-        public virtual async Task DisposeAsync()
+        private async ValueTask SetupSystem(string? service = null, string? web = null)
         {
-            
-            try
-            {
-                await Container.DisposeAsync().AsTask();
-                if (Client != null)
-                    await Client.ShutdownAsync();
-            }
-            catch
-            {
-
-            }
-        }
-
-        public IConfigurationRoot GetIConfigurationRoot(string outputPath)
-        {
-            return new ConfigurationBuilder()
-                .SetBasePath(outputPath)
-                .AddJsonFile("appsettings.json", optional: true)
-                .Build();
-        }
-        public virtual async ValueTask SetupSystem(string? service = null, string? web = null)
-        {            
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
             var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;
@@ -127,7 +92,7 @@ namespace SharpPulsar.TestContainer
             if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
                 client.Authentication(authPluginClassName, authParamsString);
 
-            
+
             client.ServiceUrl(serviceUrl);
 
             client.WebUrl(webUrl);
@@ -138,10 +103,21 @@ namespace SharpPulsar.TestContainer
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
+            ClientConfigurationData = client.ClientConfigurationData;
         }
-        public void Dispose()
+        public virtual async Task DisposeAsync()
         {
-            Configuration.Dispose();
+
+            try
+            {
+                if (Client != null)
+                    await Client.ShutdownAsync();
+            }
+            catch
+            {
+
+            }
         }
+        
     }
 }

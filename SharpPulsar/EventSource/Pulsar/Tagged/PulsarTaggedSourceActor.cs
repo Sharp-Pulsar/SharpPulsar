@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Http;
 using Akka.Actor;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Configuration;
-using SharpPulsar.EventSource.Messages.Pulsar;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Common;
 using SharpPulsar.Utility;

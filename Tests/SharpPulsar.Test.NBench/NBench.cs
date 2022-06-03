@@ -1,14 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using NBench;
 using Pro.NBench.xUnit.XunitExtensions;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Test.NBench.Fixtures;
-using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
@@ -23,7 +20,7 @@ namespace SharpPulsar.Test.NBench
         private Producer<byte[]> _producer;
         private Consumer<byte[]> _consumer; 
         private readonly string _topic;
-        public NBench(ITestOutputHelper output, PulsarFixture fixture)
+        public NBench(ITestOutputHelper output, NBenchCollection fixture)
         {
             _output = output;
             _client = fixture.Client;

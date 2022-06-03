@@ -20,7 +20,6 @@ using SharpPulsar.Exceptions;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.ServiceName;
 using static SharpPulsar.Protocol.Proto.CommandGetTopicsOfNamespace;
-using System.Buffers;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

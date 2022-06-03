@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
-using SharpPulsar.Test.Tls.Fixtures;
+using SharpPulsar.Test.Tls.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -14,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Tls
 {
-    [Collection(nameof(PulsarTlsCollection))]
+    [Collection(nameof(TlsCollection))]
     public class TlsTests
     {
         private readonly ITestOutputHelper _output;

@@ -11,7 +11,6 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Client;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Producer;
-using SharpPulsar.Messages.Requests;
 using SharpPulsar.Messages.Transaction;
 using SharpPulsar.Stats.Producer;
 using System;
@@ -20,11 +19,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using Akka.Util;
 using SharpPulsar.Precondition;
 using SharpPulsar.Common.Util;
 using SharpPulsar.Messages;
-using SharpPulsar.User;
+
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -99,16 +97,12 @@ namespace SharpPulsar
                     break;
             }
 
-            IList<int> indexList;
+            IList<int> indexList = new List<int>();
             if (conf.LazyStartPartitionedProducers && conf.AccessMode == ProducerAccessMode.Shared)
             {
                 // try to create producer at least one partition
-                var index = new List<int>();
-                for (var i = 0; i < numPartitions; i++)
-                { 
-                    index.Add(i);
-                }
-                indexList = index;
+                
+                indexList.Add(ChoosePartition(new List<string> { numPartitions.ToString() }, _topicMetadata));
                 //indexList = ChoosePartition(((TypedMessageBuilder<T>)NewMessage()).getMessage(), _topicMetadata);
             }
             else
@@ -191,13 +185,10 @@ namespace SharpPulsar
                     overrideProducerName = id;
                 }
                 var partitionName = TopicName.Get(Topic).GetPartition(partitionIndex).ToString();
-                _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
+                var actor = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partitionIndex, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
                 try
-                {
-                    //tcs.SetResult(producer);
-                    var p = await tcs.Task;
-                    var producer = p;
-                    tcs = null;
+                {                                      
+                    var producer = await tcs.Task;
                     Client.Tell(new AddProducer(producer));
                     _producer.TryAdd((int)producerId, producer);
                     var routee = Routee.FromActorRef(producer);
@@ -205,7 +196,7 @@ namespace SharpPulsar
                 }
                 catch
                 {
-                    
+                    await actor.GracefulStop(TimeSpan.FromSeconds(5));
                 }
 
             }

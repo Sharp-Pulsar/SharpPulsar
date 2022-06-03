@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using Akka.Actor;
 using Akka.Event;
-using SharpPulsar.Common;
-using SharpPulsar.Configuration;
 using SharpPulsar.Interfaces;
 using SharpPulsar.ServiceName;
 using SharpPulsar.User;
-using System.Net;
 using System.Net.Sockets;
 using SharpPulsar.ServiceProvider.Messages;
 using SharpPulsar.Builder;

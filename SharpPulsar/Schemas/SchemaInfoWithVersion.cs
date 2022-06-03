@@ -1,6 +1,4 @@
-﻿using SharpPulsar.Interfaces.ISchema;
-
-namespace SharpPulsar.Schemas
+﻿namespace SharpPulsar.Schemas
 {
     public class SchemaInfoWithVersion
     {

@@ -10,7 +10,6 @@ using System;
 using System.Threading.Tasks;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Public;
-using AskResponse = SharpPulsar.Messages.Consumer.AskResponse;
 using SharpPulsar.Builder;
 
 namespace SharpPulsar

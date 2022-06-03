@@ -1,18 +1,11 @@
-using Xunit;
-using System.Collections.Generic;
-using System;
 using SharpPulsar.Builder;
 using SharpPulsar.User;
 using Xunit.Abstractions;
-using SharpPulsar.TestContainer;
 using System.Text;
-using System.Threading.Tasks;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Containers;
-using SharpPulsar.Test.Fixture;
-using SharpPulsar.TestContainer.ServiceProviderFixtures;
+using SharpPulsar.TestContainer;
+using SharpPulsar.Test.AutoClusterFailover.Fixture;
 
-namespace SharpPulsar.Test.ServiceProvider
+namespace SharpPulsar.Test.AutoClusterFailover
 {
     [Collection(nameof(AutoCollection))]
     public class AutoClusterFailoverTest
@@ -20,28 +13,16 @@ namespace SharpPulsar.Test.ServiceProvider
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
-        private readonly ITestcontainersBuilder<TestcontainersContainer> _builder;
-        private readonly PulsarTestcontainer _container;    
-        public AutoClusterFailoverTest(ITestOutputHelper output, AutoClusterFailoverFixture fixture)
+        public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
-            _builder = new TestcontainersBuilder<TestcontainersContainer>()
-            .WithName("secondary-cluster")
-            .WithPulsar(fixture.Configuration)
-            .WithPortBinding(6655, 6650)
-            .WithPortBinding(8088, 8080)
-            .WithExposedPort(6650)
-            .WithExposedPort(8080);
             _output = output;
             _client = fixture.Client;
-            _container = fixture.Container;
         }
         [Fact]
         public async Task ProduceAndConsume()
         {
             try
             {
-                var testcontainers = _builder.Build();
-                await testcontainers.StartAsync();
                 var topic = _topic;
 
                 var producerBuilder = new ProducerConfigBuilder<byte[]>();
@@ -80,15 +61,11 @@ namespace SharpPulsar.Test.ServiceProvider
                 }
                 await Act(consumer, producer);
 
-                await _container.StopAsync();
-
                 await Task.Delay(TimeSpan.FromSeconds(30));
                 await Act(consumer, producer);
 
                 await producer.CloseAsync();
                 await consumer.CloseAsync();
-                await testcontainers.CleanUpAsync();
-                await testcontainers.DisposeAsync();
 
             }
             catch (Exception ex) 

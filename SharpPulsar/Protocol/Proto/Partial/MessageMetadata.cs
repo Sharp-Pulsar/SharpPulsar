@@ -1,11 +1,10 @@
-﻿using Google.Protobuf;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpPulsar.Protocol.Proto
 {
-	public partial class MessageMetadata 
+    public partial class MessageMetadata 
     { 
 		public static Builder NewBuilder()
 		{
