@@ -286,7 +286,7 @@ partial class Build : NukeBuild
                     .SetConfiguration(Configuration.ToString())
                     .SetFramework(fw)
                     .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(30).TotalMilliseconds)
-                    .SetResultsDirectory(OutputTests / "api")
+                    .SetResultsDirectory(OutputTests)
                     .SetLoggers("trx", "GitHubActions")
                     //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                     //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -344,7 +344,7 @@ partial class Build : NukeBuild
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
                         .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                        .SetResultsDirectory(OutputTests / "tests")
+                        .SetResultsDirectory(OutputTests)
                         .SetLoggers("trx", "GitHubActions")
                         //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                         //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -372,7 +372,7 @@ partial class Build : NukeBuild
                        .SetConfiguration(Configuration.ToString())
                        .SetFramework(fw)
                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                       .SetResultsDirectory(OutputTests / "transact")
+                       .SetResultsDirectory(OutputTests)
                        .SetLoggers("trx", "GitHubActions")
                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                        //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -400,7 +400,7 @@ partial class Build : NukeBuild
                        .SetConfiguration(Configuration.ToString())
                        .SetFramework(fw)
                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                       .SetResultsDirectory(OutputTests / "partitioned")
+                       .SetResultsDirectory(OutputTests)
                        .SetLoggers("trx", "GitHubActions")
                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                        //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -428,7 +428,7 @@ partial class Build : NukeBuild
                         .SetConfiguration(Configuration.ToString())
                         .SetFramework(fw)
                         .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                        .SetResultsDirectory(OutputTests / "auto")
+                        .SetResultsDirectory(OutputTests)
                         .SetLoggers("trx", "GitHubActions")
                         //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                         //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -456,7 +456,7 @@ partial class Build : NukeBuild
                        .SetConfiguration(Configuration.ToString())
                        .SetFramework(fw)
                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                       .SetResultsDirectory(OutputTests / "table")
+                       .SetResultsDirectory(OutputTests)
                        .SetLoggers("trx", "GitHubActions")
                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                        //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -484,7 +484,7 @@ partial class Build : NukeBuild
                        .SetConfiguration(Configuration.ToString())
                        .SetFramework(fw)
                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                       .SetResultsDirectory(OutputTests / "even")
+                       .SetResultsDirectory(OutputTests)
                        .SetLoggers("trx", "GitHubActions")
                        ///.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                        ///.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -512,7 +512,7 @@ partial class Build : NukeBuild
                        .SetConfiguration(Configuration.ToString())
                        .SetFramework(fw)
                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                       .SetResultsDirectory(OutputTests / "acks")
+                       .SetResultsDirectory(OutputTests)
                        .SetLoggers("trx", "GitHubActions")
                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                        //.SetBlameMode(true)//captures the order of tests that were run before the crash.
@@ -540,7 +540,7 @@ partial class Build : NukeBuild
                        .SetConfiguration(Configuration.ToString())
                        .SetFramework(fw)
                        .SetProcessExecutionTimeout((int)TimeSpan.FromMinutes(60).TotalMilliseconds)
-                       .SetResultsDirectory(OutputTests / "multi")
+                       .SetResultsDirectory(OutputTests)
                        .SetLoggers("trx", "GitHubActions")
                        //.SetBlameCrash(true)//Runs the tests in blame mode and collects a crash dump when the test host exits unexpectedly
                        ///.SetBlameMode(true)//captures the order of tests that were run before the crash.

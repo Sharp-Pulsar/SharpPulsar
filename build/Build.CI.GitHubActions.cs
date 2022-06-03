@@ -107,12 +107,9 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
     {
         var job = base.GetJobs(image, relevantTargets);
         var newSteps = new List<GitHubActionsStep>(job.Steps);
+        newSteps.Insert(1, new GitHubActionsUploadArtifact{ });
         foreach (var version in new[] { "6.0.*", "5.0.*" })
-        {
-            newSteps.Insert(1, new GitHubActionsUploadArtifact
-            {
-                Version = version
-            });
+        {            
             newSteps.Insert(2, new GitHubActionsSetupDotNetStep
             {
                 Version = version
@@ -145,8 +142,6 @@ public class GitHubActionsSetupDotNetStep : GitHubActionsStep
 
 public class GitHubActionsUploadArtifact : GitHubActionsStep
 {
-    public string Version { get; init; }
-
     public override void Write(CustomFileWriter writer)
     {
         writer.WriteLine("- name: Upload a Build Artifact");
@@ -158,7 +153,7 @@ public class GitHubActionsUploadArtifact : GitHubActionsStep
             using (writer.Indent())
             {
                 writer.WriteLine("name: assets-for-download");
-                writer.WriteLine("path: ${{ github.workspace }}");
+                writer.WriteLine("path: /home/runner/work/SharpPulsar/SharpPulsar/TestResults");
             }
         }
     }
