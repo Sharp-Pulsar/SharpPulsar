@@ -109,7 +109,11 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
         var newSteps = new List<GitHubActionsStep>(job.Steps);
         foreach (var version in new[] { "6.0.*", "5.0.*" })
         {
-            newSteps.Insert(1, new GitHubActionsSetupDotNetStep
+            newSteps.Insert(1, new GitHubActionsDownloadArtifact
+            {
+                Version = version
+            });
+            newSteps.Insert(2, new GitHubActionsSetupDotNetStep
             {
                 Version = version
             });
@@ -135,6 +139,21 @@ public class GitHubActionsSetupDotNetStep : GitHubActionsStep
             {
                 writer.WriteLine($"dotnet-version: {Version}");
             }
+        }
+    }
+}
+
+public class GitHubActionsDownloadArtifact : GitHubActionsStep
+{
+    public string Version { get; init; }
+
+    public override void Write(CustomFileWriter writer)
+    {
+        writer.WriteLine("- name: Download a Build Artifact");
+
+        using (writer.Indent())
+        {
+            writer.WriteLine("uses: actions/download-artifact@v3.0.0");
         }
     }
 }
