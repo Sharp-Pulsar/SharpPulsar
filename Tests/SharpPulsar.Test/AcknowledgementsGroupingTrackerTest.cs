@@ -37,8 +37,8 @@ namespace SharpPulsar.Test
     public class AcknowledgementsGroupingTrackerTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
-        private readonly ActorSystem _system;
+        private  PulsarClient _client;
+        private  ActorSystem _system;
         public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -125,7 +125,7 @@ namespace SharpPulsar.Test
             isDuplicate = await tracker.Ask<bool>(new IsDuplicate(msg6));
             Assert.False(isDuplicate);
 
-            tracker.GracefulStop(TimeSpan.FromSeconds(1));
+            await tracker.GracefulStop(TimeSpan.FromSeconds(1));
         }
 
         [Fact]
@@ -247,7 +247,7 @@ namespace SharpPulsar.Test
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
         }
-
+        
     }
 
 }

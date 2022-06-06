@@ -45,7 +45,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.StopPulsar);
+    public static int Main() => Execute<Build>(x => x.MultiTopic);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -62,8 +62,8 @@ partial class Build : NukeBuild
 
     [Parameter][Secret] string NugetApiKey;
 
-    [Parameter] [Secret] string Toke;
-    [Parameter] [Secret] string GitHubToken;
+    [Parameter][Secret] string Toke;
+    [Parameter][Secret] string GitHubToken;
 
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
 
@@ -123,7 +123,7 @@ partial class Build : NukeBuild
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
     Target RunChangelog => _ => _
-        .OnlyWhenDynamic(()=> GitVersion.BranchName.Equals("main", StringComparison.OrdinalIgnoreCase))
+        .OnlyWhenDynamic(() => GitVersion.BranchName.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
             FinalizeChangelog(ChangelogFile, GitVersion.SemVer, GitRepository);
@@ -137,7 +137,7 @@ partial class Build : NukeBuild
 
     Target TlsStartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
-      .Executes(async() =>
+      .Executes(async () =>
       {
           DockerTasks.DockerRun(b =>
            b
@@ -179,8 +179,8 @@ partial class Build : NukeBuild
           throw new Exception("Unable to confirm Pulsar has initialized");
       });
     Target StartPulsar => _ => _
-      .DependsOn(CheckDockerVersion)      
-      .Executes(async()=>
+      .DependsOn(CheckDockerVersion)
+      .Executes(async () =>
       {
           DockerTasks.DockerRun(b =>
            b
@@ -214,7 +214,7 @@ partial class Build : NukeBuild
                   Information("Apache Pulsar Server live at: http://127.0.0.1");
 
 
-                  DockerTasks.DockerContainerExec(b => 
+                  DockerTasks.DockerContainerExec(b =>
                   b
                   .SetContainer("pulsar")
                   .SetCommand("bash")
@@ -241,44 +241,8 @@ partial class Build : NukeBuild
           .SetCommand("bash")
           .SetArgs("-c", "bin/pulsar sql-worker start"));
       });
-    Target AdminPulsar => _ => _
-     .DependsOn(SqlPulsar)
-     .DependsOn(StopPulsar)
-     .Executes(() =>
-     {
-         DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
-           );
-         DockerTasks.DockerExec(x => x
-              .SetContainer("pulsar")
-              .SetCommand("bin/pulsar-admin")
-              .SetArgs("namespaces", "create", "public/deduplication")
-          );
-         DockerTasks.DockerExec(x => x
-              .SetContainer("pulsar")
-              .SetCommand("bin/pulsar-admin")
-              .SetArgs("namespaces", "set-retention", "public/default", "--time", "3600", "--size", "-1")
-          );
-         DockerTasks.DockerExec(x => x
-              .SetContainer("pulsar")
-              .SetCommand("bin/pulsar-admin")
-              .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
-          );
-         DockerTasks.DockerExec(x => x
-              .SetContainer("pulsar")
-              .SetCommand("bin/pulsar-admin")
-              .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-          );
-          /*DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar")
-               .SetArgs("sql-worker", "run")
-           );*/
-     });
     Target CheckDockerVersion => _ => _
-      .Unlisted()
+    .Unlisted()
       .DependsOn(CheckBranch)
         .Executes(() =>
         {
@@ -292,24 +256,15 @@ partial class Build : NukeBuild
        });
     Target StopPulsar => _ => _
     .Unlisted()
-    .DependsOn(TestAPI)
-    .DependsOn(Test)
-    .DependsOn(Transaction)
-    .DependsOn(Partitioned)
-    .DependsOn(AutoClusterFailover)
-    .DependsOn(TableView)
-    .DependsOn(EventSource)
-    .DependsOn(Acks)
-    .DependsOn(MultiTopic)
     .AssuredAfterFailure()
     .Executes(() =>
     {
 
         try
         {
-           DockerTasks.DockerRm(b => b
-           .SetContainers("pulsar")
-           .SetForce(true));
+            DockerTasks.DockerRm(b => b
+            .SetContainers("pulsar")
+            .SetForce(true));
         }
         catch (Exception ex)
         {
@@ -320,7 +275,7 @@ partial class Build : NukeBuild
     Target TestAPI => _ => _
         .DependsOn(Compile, AdminPulsar)
         .Executes(() =>
-        { 
+        {
             var project = Solution.GetProject("SharpPulsar.Test.API");
             Information($"Running tests from {project.Name}");
             foreach (var fw in project.GetTargetFrameworks())
@@ -338,11 +293,46 @@ partial class Build : NukeBuild
                     .EnableNoBuild());
             }
         });
+    Target AdminPulsar => _ => _
+      .DependsOn(SqlPulsar)
+      .Executes(() =>
+      {
+          DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
+            );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "create", "public/deduplication")
+           );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "set-retention", "public/default", "--time", "3600", "--size", "-1")
+           );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
+           );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
+           );
+          /*DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar")
+               .SetArgs("sql-worker", "run")
+           );*/
+      });
     Target Test => _ => _
-        .DependsOn(Compile, AdminPulsar)
+        .DependsOn(TestAPI)
         .Executes(() =>
         {
-            try 
+            try
             {
                 var project = Solution.GetProject("SharpPulsar.Test");
                 Information($"Running tests from {project.Name}");
@@ -361,16 +351,16 @@ partial class Build : NukeBuild
                         .EnableNoBuild());
                 }
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
                 Information(ex.Message);
             }
         });
     Target Transaction => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(Test)
        .Executes(() =>
        {
-           try 
+           try
            {
                var project = Solution.GetProject("SharpPulsar.Test.Transaction");
                Information($"Running tests from {project.Name}");
@@ -389,13 +379,13 @@ partial class Build : NukeBuild
                        .EnableNoBuild());
                }
            }
-           catch(Exception ex)
+           catch (Exception ex)
            {
                Information(ex.Message);
            }
        });
     Target Partitioned => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(Transaction)
        .Executes(() =>
        {
            try
@@ -417,13 +407,13 @@ partial class Build : NukeBuild
                        .EnableNoBuild());
                }
            }
-           catch(Exception ex)
+           catch (Exception ex)
            {
                Information(ex.Message);
            }
        });
     Target AutoClusterFailover => _ => _
-        .DependsOn(Compile, AdminPulsar)
+        .DependsOn(Partitioned)
         .Executes(() =>
         {
             try
@@ -445,13 +435,13 @@ partial class Build : NukeBuild
                         .EnableNoBuild());
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Information(ex.Message);
             }
         });
     Target TableView => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(AutoClusterFailover)
        .Executes(() =>
        {
            try
@@ -474,12 +464,12 @@ partial class Build : NukeBuild
                }
            }
            catch (Exception ex)
-           { 
-               Information(ex.Message); 
+           {
+               Information(ex.Message);
            }
        });
     Target EventSource => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(TableView)
        .Executes(() =>
        {
            try
@@ -501,13 +491,13 @@ partial class Build : NukeBuild
                        .EnableNoBuild());
                }
            }
-           catch  (Exception ex)
+           catch (Exception ex)
            {
                Information(ex.Message);
            }
        });
     Target Acks => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(EventSource)
        .Executes(() =>
        {
            try
@@ -529,13 +519,14 @@ partial class Build : NukeBuild
                        .EnableNoBuild());
                }
            }
-           catch(Exception ex)
+           catch (Exception ex)
            {
                Information(ex.Message);
            }
        });
     Target MultiTopic => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(Acks)
+       .Triggers(StopPulsar)
        .Executes(() =>
        {
            try
@@ -557,12 +548,12 @@ partial class Build : NukeBuild
                        .EnableNoBuild());
                }
            }
-           catch(Exception ex)
+           catch (Exception ex)
            {
                Information(ex.Message);
            }
        });
-    
+
     //---------------------
     //-----------------------------------------------------------
     // Documentation 
@@ -624,10 +615,10 @@ partial class Build : NukeBuild
               .SetVersion(version)
               .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
-              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven","Event Sourcing", "Distributed System", "Microservice")
+              .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven", "Event Sourcing", "Distributed System", "Microservice")
               .AddAuthors("Ebere Abanonu (@mestical)")
               .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
-              .SetOutputDirectory(OutputNuget)); 
+              .SetOutputDirectory(OutputNuget));
 
       });
     Target PublishNuget => _ => _
@@ -646,7 +637,7 @@ partial class Build : NukeBuild
                   .SetSource(NugetApiUrl)
                   .SetApiKey(NugetApiKey));
           }
-          
+
       });
 
     Target AuthenticatedGitHubClient => _ => _

@@ -9,11 +9,12 @@ using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime
+    public class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        public PulsarClient Client;
-        public PulsarSystem PulsarSystem;
-        public ClientConfigurationData ClientConfigurationData;
+        public PulsarClient Client { get; private set; }
+        public PulsarSystem PulsarSystem { get; private set; }
+        public ClientConfigurationData ClientConfigurationData { get; private set; }
+
         private readonly IConfiguration _configuration;
         public PulsarFixture()
         {
@@ -30,39 +31,8 @@ namespace SharpPulsar.TestContainer
         public async Task InitializeAsync()
         {
             await SetupSystem();
-            await DeployPulsar();
         }
-        public async Task DeployPulsar()
-        {
-            //TakeDownPulsar(); // clean-up if anything was left running from previous run
-
-            //RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
-
-            var waitTries = 20;
-
-            using var handler = new HttpClientHandler
-            {
-                AllowAutoRedirect = true
-            };
-
-            using var client = new HttpClient(handler);
-
-            while (waitTries > 0)
-            {
-                try
-                {
-                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-                    return;
-                }
-                catch
-                {
-                    waitTries--;
-                    await Task.Delay(5000).ConfigureAwait(false);
-                }
-            }
-
-            throw new Exception("Unable to confirm Pulsar has initialized");
-        }
+        
         private async ValueTask SetupSystem(string? service = null, string? web = null)
         {
             var clienConfigSetting = _configuration.GetSection("client");
@@ -112,12 +82,19 @@ namespace SharpPulsar.TestContainer
             {
                 if (Client != null)
                     await Client.ShutdownAsync();
+                
+                if(PulsarSystem != null)
+                    await PulsarSystem.Shutdown(); 
             }
             catch
             {
 
             }
         }
-        
+
+        public void Dispose()
+        {
+            DisposeAsync().GetAwaiter();
+        }
     }
 }
