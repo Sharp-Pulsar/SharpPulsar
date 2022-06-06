@@ -116,15 +116,16 @@ namespace SharpPulsar.SocketImpl
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
-                try
+                while (true)
                 {
-                    while (!cancellationToken.IsCancellationRequested)
+                    cancellationToken.ThrowIfCancellationRequested();                    
+                    try
                     {
                         var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var buffer = result.Buffer;
                         var length = (int)buffer.Length;
-                        if (length >= 8) 
+                        if (length >= 8)
                         {
                             using var stream = new MemoryStream(buffer.ToArray());
                             using var reader = new BinaryReader(stream);
@@ -136,7 +137,7 @@ namespace SharpPulsar.SocketImpl
                             var totalSize = frameSize + 4;
                             if (length >= totalSize)
                             {
-                                var consumed = buffer.GetPosition(totalSize);                                
+                                var consumed = buffer.GetPosition(totalSize);
                                 var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
                                 if (command.type == BaseCommand.Type.Message)
                                 {
@@ -145,7 +146,7 @@ namespace SharpPulsar.SocketImpl
                                     var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
                                     if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
                                     {
-                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);                                        
+                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);
                                     }
                                     else
                                         //we need to rewind to the brokerEntryMetadataPosition
@@ -179,16 +180,17 @@ namespace SharpPulsar.SocketImpl
 
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex.ToString());
+                    }
+                    finally
+                    {
+                        await _pipeReader.CompleteAsync().ConfigureAwait(false);
+                        observer.OnCompleted();
+                    }
                 }
-                catch(Exception ex) 
-                {
-                    _logger.Error(ex.ToString());
-                }
-                finally
-                {
-                    await _pipeReader.CompleteAsync().ConfigureAwait(false);
-                    observer.OnCompleted();
-                }
+                
                 
             });
         }

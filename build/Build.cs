@@ -45,7 +45,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.MultiTopic);
+    public static int Main() => Execute<Build>(x => x.StopPulsar);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -241,8 +241,44 @@ partial class Build : NukeBuild
           .SetCommand("bash")
           .SetArgs("-c", "bin/pulsar sql-worker start"));
       });
+    Target AdminPulsar => _ => _
+     .DependsOn(SqlPulsar)
+     .DependsOn(StopPulsar)
+     .Executes(() =>
+     {
+         DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
+           );
+         DockerTasks.DockerExec(x => x
+              .SetContainer("pulsar")
+              .SetCommand("bin/pulsar-admin")
+              .SetArgs("namespaces", "create", "public/deduplication")
+          );
+         DockerTasks.DockerExec(x => x
+              .SetContainer("pulsar")
+              .SetCommand("bin/pulsar-admin")
+              .SetArgs("namespaces", "set-retention", "public/default", "--time", "3600", "--size", "-1")
+          );
+         DockerTasks.DockerExec(x => x
+              .SetContainer("pulsar")
+              .SetCommand("bin/pulsar-admin")
+              .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
+          );
+         DockerTasks.DockerExec(x => x
+              .SetContainer("pulsar")
+              .SetCommand("bin/pulsar-admin")
+              .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
+          );
+          /*DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar")
+               .SetArgs("sql-worker", "run")
+           );*/
+     });
     Target CheckDockerVersion => _ => _
-    .Unlisted()
+      .Unlisted()
       .DependsOn(CheckBranch)
         .Executes(() =>
         {
@@ -256,6 +292,14 @@ partial class Build : NukeBuild
        });
     Target StopPulsar => _ => _
     .Unlisted()
+    .DependsOn(TestAPI)
+    .DependsOn(Test)
+    .DependsOn(Transaction)
+    .DependsOn(Partitioned)
+    .DependsOn(AutoClusterFailover)
+    .DependsOn(TableView)
+    .DependsOn(EventSource)
+    .DependsOn(Acks)
     .DependsOn(MultiTopic)
     .AssuredAfterFailure()
     .Executes(() =>
@@ -294,43 +338,8 @@ partial class Build : NukeBuild
                     .EnableNoBuild());
             }
         });
-    Target AdminPulsar => _ => _
-      .DependsOn(SqlPulsar)
-      .Executes(() =>
-      {
-          DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
-            );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "create", "public/deduplication")
-           );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "set-retention", "public/default", "--time", "3600", "--size", "-1")
-           );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
-           );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-           );
-          /*DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar")
-               .SetArgs("sql-worker", "run")
-           );*/
-      });
     Target Test => _ => _
-        .DependsOn(TestAPI)
+        .DependsOn(Compile, AdminPulsar)
         .Executes(() =>
         {
             try 
@@ -358,7 +367,7 @@ partial class Build : NukeBuild
             }
         });
     Target Transaction => _ => _
-       .DependsOn(Test)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            try 
@@ -386,7 +395,7 @@ partial class Build : NukeBuild
            }
        });
     Target Partitioned => _ => _
-       .DependsOn(Transaction)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            try
@@ -414,7 +423,7 @@ partial class Build : NukeBuild
            }
        });
     Target AutoClusterFailover => _ => _
-        .DependsOn(Partitioned)
+        .DependsOn(Compile, AdminPulsar)
         .Executes(() =>
         {
             try
@@ -442,7 +451,7 @@ partial class Build : NukeBuild
             }
         });
     Target TableView => _ => _
-       .DependsOn(AutoClusterFailover)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            try
@@ -470,7 +479,7 @@ partial class Build : NukeBuild
            }
        });
     Target EventSource => _ => _
-       .DependsOn(TableView)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            try
@@ -498,7 +507,7 @@ partial class Build : NukeBuild
            }
        });
     Target Acks => _ => _
-       .DependsOn(EventSource)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            try
@@ -526,7 +535,7 @@ partial class Build : NukeBuild
            }
        });
     Target MultiTopic => _ => _
-       .DependsOn(Acks)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            try
