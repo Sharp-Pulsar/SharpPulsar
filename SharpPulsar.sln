@@ -102,21 +102,21 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tutorials", "Tutorials\Tuto
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.API", "Tests\SharpPulsar.Test.API\SharpPulsar.Test.API.csproj", "{7514F79E-9E4A-4014-9284-43E1CC765239}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.AutoClusterFailover", "Tests\SharpPulsar.Test.AutoClusterFailover\SharpPulsar.Test.AutoClusterFailover.csproj", "{5B299D4C-2038-4E26-BAD6-3609B637A2E5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.AutoClusterFailover", "Tests\SharpPulsar.Test.AutoClusterFailover\SharpPulsar.Test.AutoClusterFailover.csproj", "{5B299D4C-2038-4E26-BAD6-3609B637A2E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.TableView", "Tests\SharpPulsar.Test.TableView\SharpPulsar.Test.TableView.csproj", "{EFAD73C4-A57B-4268-9770-8134D29E7555}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.TableView", "Tests\SharpPulsar.Test.TableView\SharpPulsar.Test.TableView.csproj", "{EFAD73C4-A57B-4268-9770-8134D29E7555}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Acks", "SharpPulsar.Test.Acks\SharpPulsar.Test.Acks.csproj", "{E92FE838-A32B-47E7-AD76-F046DDCFD56E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Acks", "SharpPulsar.Test.Acks\SharpPulsar.Test.Acks.csproj", "{E92FE838-A32B-47E7-AD76-F046DDCFD56E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.MultiTopic", "Tests\SharpPulsar.Test.MultiTopic\SharpPulsar.Test.MultiTopic.csproj", "{0DBD8A76-6F30-4BC8-ADAA-576A013A0DAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.MultiTopic", "Tests\SharpPulsar.Test.MultiTopic\SharpPulsar.Test.MultiTopic.csproj", "{0DBD8A76-6F30-4BC8-ADAA-576A013A0DAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Partitioned", "Tests\SharpPulsar.Test.Partitioned\SharpPulsar.Test.Partitioned.csproj", "{D191DBFA-6135-4927-A113-2B18DAF77EF4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Partitioned", "Tests\SharpPulsar.Test.Partitioned\SharpPulsar.Test.Partitioned.csproj", "{D191DBFA-6135-4927-A113-2B18DAF77EF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Transaction", "Tests\SharpPulsar.Test.Transaction\SharpPulsar.Test.Transaction.csproj", "{1688FA1C-1A59-47B4-8CE6-88C537D9B288}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Transaction", "Tests\SharpPulsar.Test.Transaction\SharpPulsar.Test.Transaction.csproj", "{1688FA1C-1A59-47B4-8CE6-88C537D9B288}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.EventSource", "Tests\SharpPulsar.Test.EventSource\SharpPulsar.Test.EventSource.csproj", "{9DD1107B-2068-470C-BD36-E7F5085C39C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.EventSource", "Tests\SharpPulsar.Test.EventSource\SharpPulsar.Test.EventSource.csproj", "{9DD1107B-2068-470C-BD36-E7F5085C39C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Tls", "Tests\SharpPulsar.Test.Tls\SharpPulsar.Test.Tls.csproj", "{9368E094-28E2-4296-A9A8-5B2D16859E3F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Tls", "Tests\SharpPulsar.Test.Tls\SharpPulsar.Test.Tls.csproj", "{9368E094-28E2-4296-A9A8-5B2D16859E3F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

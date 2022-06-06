@@ -116,11 +116,11 @@ namespace SharpPulsar.SocketImpl
         {
             return NewThreadScheduler.Default.Schedule(async() =>
             {
-                while (true)
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();                    
-                    try
+                    while (true)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var buffer = result.Buffer;
@@ -179,18 +179,18 @@ namespace SharpPulsar.SocketImpl
                             }
 
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex.ToString());
-                    }
-                    finally
-                    {
-                        await _pipeReader.CompleteAsync().ConfigureAwait(false);
-                        observer.OnCompleted();
+
                     }
                 }
-                
+                catch (Exception ex)
+                {
+                    _logger.Error(ex.ToString());
+                }
+                finally
+                {
+                    await _pipeReader.CompleteAsync().ConfigureAwait(false);
+                    observer.OnCompleted();
+                }                           
                 
             });
         }
