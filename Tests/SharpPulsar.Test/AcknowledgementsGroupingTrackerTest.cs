@@ -34,7 +34,7 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class AcknowledgementsGroupingTrackerTest
+    public class AcknowledgementsGroupingTrackerTest: IDisposable
     {
         private readonly ITestOutputHelper _output;
         private  PulsarClient _client;
@@ -42,7 +42,7 @@ namespace SharpPulsar.Test
         public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarSystem.NewClient();
             _system = fixture.PulsarSystem.System;
         }
 
@@ -247,7 +247,16 @@ namespace SharpPulsar.Test
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
         }
-        
+
+        public void Dispose()
+        {
+            try
+            {
+                _client.Shutdown();
+            }
+            catch { }
+        }
+
     }
 
 }

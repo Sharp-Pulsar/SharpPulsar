@@ -13,7 +13,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar.Test.Transaction
 {
     [Collection(nameof(TransactionCollection))]
-    public class CumulativeAck
+    public class CumulativeAck:IDisposable
     {
 		private const string TENANT = "public";
 		private static readonly string _nAMESPACE1 = TENANT + "/default";
@@ -27,8 +27,8 @@ namespace SharpPulsar.Test.Transaction
 		{
             
 			_output = output;
-			_client = fixture.Client;
-		}
+            _client = fixture.PulsarSystem.NewClient();
+        }
 
 		[Fact]
 		public async Task TxnCumulativeAckTest()
@@ -183,7 +183,14 @@ namespace SharpPulsar.Test.Transaction
                 Assert.True(receivedMessageCount > 75);
 			}
 		}
-
+        public void Dispose()
+        {
+            try
+            {
+                _client.Shutdown();
+            }
+            catch { }
+        }
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 

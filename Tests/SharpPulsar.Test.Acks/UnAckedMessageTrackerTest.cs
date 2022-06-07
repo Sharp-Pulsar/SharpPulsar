@@ -30,7 +30,7 @@ using SharpPulsar.Test.Acks.Fixture;
 namespace SharpPulsar.Test.Acks
 {
     [Collection(nameof(AcksCollection))]
-    public class UnAckedMessageTrackerTest
+    public class UnAckedMessageTrackerTest:IDisposable
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -38,7 +38,7 @@ namespace SharpPulsar.Test.Acks
         public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarSystem.NewClient();
             _system = fixture.PulsarSystem.System;
         }
 
@@ -84,7 +84,14 @@ namespace SharpPulsar.Test.Acks
             size = await tracker.Ask<long>(Size.Instance);
             Assert.Equal(0, size);
         }
-
+        public void Dispose()
+        {
+            try
+            {
+                _client.Shutdown();
+            }
+            catch { }
+        }
     }
 
 }

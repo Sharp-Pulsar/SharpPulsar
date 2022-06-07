@@ -29,7 +29,7 @@ using SharpPulsar.Test.Partitioned.Fixture;
 namespace SharpPulsar.Test.Partitioned
 {
     [Collection(nameof(PartitionedCollection))]
-    public class PatternTopicsConsumerTest
+    public class PatternTopicsConsumerTest:IDisposable
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -37,7 +37,7 @@ namespace SharpPulsar.Test.Partitioned
         public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarSystem.NewClient();
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
@@ -110,6 +110,14 @@ namespace SharpPulsar.Test.Partitioned
             Assert.True(messageSet > 0);
         }
 
+        public void Dispose()
+        {
+            try
+            {
+                _client.Shutdown();
+            }
+            catch { }
+        }
     }
 
 }

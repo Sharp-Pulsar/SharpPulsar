@@ -18,7 +18,7 @@ namespace SharpPulsar.Test
 {
 
     [Collection(nameof(PulsarCollection))]
-    public class GenericSchemaTest
+    public class GenericSchemaTest:IDisposable
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -27,7 +27,7 @@ namespace SharpPulsar.Test
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarSystem.NewClient();
         }
         [Fact]
         public async Task TestGenericTopic()
@@ -76,6 +76,14 @@ namespace SharpPulsar.Test
             Assert.Equal(10, messageReceived);
             await producer.CloseAsync();
             await consumer.CloseAsync();
+        }
+        public void Dispose()
+        {
+            try
+            {
+                _client.Shutdown();
+            }
+            catch { }
         }
         private byte[] ToBytes<T>(T obj)
         {

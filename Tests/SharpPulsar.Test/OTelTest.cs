@@ -18,7 +18,7 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class OTelTest
+    public class OTelTest:IDisposable
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -27,7 +27,7 @@ namespace SharpPulsar.Test
         public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _client = fixture.PulsarSystem.NewClient();
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
             //var t = TestConsoleExporter.Run();
             //_topic = "my-topic-batch-bf719df3";
@@ -88,6 +88,14 @@ namespace SharpPulsar.Test
                     _output.WriteLine($"{tag.Key}:{tag.Value}");
                 }
             }
+        }
+        public void Dispose()
+        {
+            try
+            {
+                _client.Shutdown();
+            }
+            catch { }
         }
     }
 }

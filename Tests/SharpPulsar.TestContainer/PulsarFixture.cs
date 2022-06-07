@@ -11,7 +11,6 @@ namespace SharpPulsar.TestContainer
 {
     public class PulsarFixture : IAsyncLifetime, IDisposable
     {
-        public PulsarClient Client { get; private set; }
         public PulsarSystem PulsarSystem { get; private set; }
         public ClientConfigurationData ClientConfigurationData { get; private set; }
 
@@ -70,9 +69,7 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            var system = await PulsarSystem.GetInstanceAsync(client);
-            Client = system.NewClient();
-            PulsarSystem = system;
+            PulsarSystem = await PulsarSystem.GetInstanceAsync(client);
             ClientConfigurationData = client.ClientConfigurationData;
         }
         public virtual async Task DisposeAsync()
@@ -80,9 +77,6 @@ namespace SharpPulsar.TestContainer
 
             try
             {
-                if (Client != null)
-                    await Client.ShutdownAsync();
-                
                 if(PulsarSystem != null)
                     await PulsarSystem.Shutdown(); 
             }
