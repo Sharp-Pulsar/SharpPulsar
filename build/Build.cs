@@ -350,7 +350,7 @@ partial class Build : NukeBuild
             }
             catch(Exception ex)
             {
-                Information(ex.Message);    
+               // Information(ex.Message);    
             }
 
         }
