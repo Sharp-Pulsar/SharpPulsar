@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Test.Partitioned.Fixture;
+using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -29,10 +29,10 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Partitioned
+namespace SharpPulsar.Test
 {
-    [Collection(nameof(PartitionedCollection))]
-    public class PartitionedProducerTest:IDisposable
+    [Collection(nameof(PulsarCollection))]
+    public class PartitionedProducerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -41,7 +41,7 @@ namespace SharpPulsar.Test.Partitioned
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;
             _output = output;
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
         }
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
@@ -110,13 +110,6 @@ namespace SharpPulsar.Test.Partitioned
 
             Assert.True(producers.Count > 0);
         }
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
+       
     }
 }

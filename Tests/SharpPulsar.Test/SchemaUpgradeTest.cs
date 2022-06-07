@@ -12,7 +12,7 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class SchemaUpgradeTest:IDisposable
+    public class SchemaUpgradeTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -21,7 +21,7 @@ namespace SharpPulsar.Test
         public SchemaUpgradeTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
             _topic = $"persistent://public/default/upgradeable-{Guid.NewGuid()}";
         }
         [Fact]
@@ -78,14 +78,7 @@ namespace SharpPulsar.Test
             await consumer.CloseAsync();
             await consumer1.CloseAsync();
         }
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
+        
     }
 
     public class SimpleRecord

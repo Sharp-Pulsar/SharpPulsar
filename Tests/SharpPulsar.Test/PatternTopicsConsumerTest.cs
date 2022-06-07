@@ -6,7 +6,9 @@ using System.Text.RegularExpressions;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Builder;
-using SharpPulsar.Test.Partitioned.Fixture;
+using Xunit;
+using SharpPulsar.Test.Fixture;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,10 +28,10 @@ using SharpPulsar.Test.Partitioned.Fixture;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Partitioned
+namespace SharpPulsar.Test
 {
-    [Collection(nameof(PartitionedCollection))]
-    public class PatternTopicsConsumerTest:IDisposable
+    [Collection(nameof(PulsarCollection))]
+    public class PatternTopicsConsumerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -37,7 +39,7 @@ namespace SharpPulsar.Test.Partitioned
         public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
@@ -110,14 +112,6 @@ namespace SharpPulsar.Test.Partitioned
             Assert.True(messageSet > 0);
         }
 
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
     }
 
 }

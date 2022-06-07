@@ -2,7 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Test.Transaction.Fixture;
+using SharpPulsar.Test.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -10,8 +10,8 @@ using Xunit.Abstractions;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(TransactionCollection))]
-	public class TxnMessageAck:IDisposable
+    [Collection(nameof(PulsarCollection))]
+	public class TxnMessageAck
     {
 		private const string TENANT = "public";
 		private static readonly string _nAMESPACE1 = TENANT + "/default";
@@ -23,7 +23,7 @@ namespace SharpPulsar.Test.Transaction
         public TxnMessageAck(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 		[Fact]
 		public async Task TxnMessageAckTest()
@@ -99,14 +99,7 @@ namespace SharpPulsar.Test.Transaction
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
+        
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 

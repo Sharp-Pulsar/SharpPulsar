@@ -32,7 +32,7 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class ByteKeysTest : IDisposable
+    public class ByteKeysTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -42,7 +42,7 @@ namespace SharpPulsar.Test
         {
             _output = output;
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
             //_topic = "my-topic-batch-bf719df3";
         }
 
@@ -168,14 +168,7 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
+        
     }
 
 }

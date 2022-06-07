@@ -6,7 +6,10 @@ using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.TestContainer;
 using SharpPulsar.Builder;
-using SharpPulsar.Test.Acks.Fixture;
+using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
+using SharpPulsar.Test.Fixture;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -26,10 +29,10 @@ using SharpPulsar.Test.Acks.Fixture;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Acks
+namespace SharpPulsar.Test
 {
-    [Collection(nameof(AcksCollection))]
-    public class NegativeAcksTest:IDisposable
+    [Collection(nameof(PulsarCollection))]
+    public class NegativeAcksTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -37,7 +40,7 @@ namespace SharpPulsar.Test.Acks
         public NegativeAcksTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 
         [Fact]
@@ -121,14 +124,7 @@ namespace SharpPulsar.Test.Acks
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
+        
     }
 
 }

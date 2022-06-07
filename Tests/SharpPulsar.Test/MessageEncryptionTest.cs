@@ -28,7 +28,7 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class MessageEncryptionTest:IDisposable
+    public class MessageEncryptionTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -36,7 +36,7 @@ namespace SharpPulsar.Test
         public MessageEncryptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.PulsarSystem.NewClient();
+            _client = fixture.Client;
         }
         [Fact]
         public async Task TestEncrptedProduceConsume()
@@ -80,13 +80,6 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-        public void Dispose()
-        {
-            try
-            {
-                _client.Shutdown();
-            }
-            catch { }
-        }
+        
     }
 }

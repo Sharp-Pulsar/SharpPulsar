@@ -319,12 +319,9 @@ partial class Build : NukeBuild
         {
             CoreTest("SharpPulsar.Test.API");
             CoreTest("SharpPulsar.Test");
-            CoreTest("SharpPulsar.Test.Transaction");
-            CoreTest("SharpPulsar.Test.Partitioned");
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
             CoreTest("SharpPulsar.Test.TableView");
             CoreTest("SharpPulsar.Test.EventSource");
-            CoreTest("SharpPulsar.Test.Acks");
             CoreTest("SharpPulsar.Test.MultiTopic");
         });
     
