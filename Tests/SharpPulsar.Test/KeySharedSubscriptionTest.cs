@@ -36,11 +36,10 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class KeySharedSubscriptionTest
+    public class KeySharedSubscriptionTest    
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
         public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -236,7 +235,6 @@ namespace SharpPulsar.Test
                 });
             });
         }
-
     }
 
 }

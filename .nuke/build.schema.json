@@ -86,7 +86,6 @@
             "type": "string",
             "enum": [
               "Acks",
-              "AdminPulsar",
               "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
@@ -105,12 +104,10 @@
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlPulsar",
-              "StartPulsar",
-              "StopPulsar",
               "TableView",
               "Test",
               "TestAPI",
+              "TestContainer",
               "TlsStartPulsar",
               "Transaction"
             ]
@@ -127,7 +124,6 @@
             "type": "string",
             "enum": [
               "Acks",
-              "AdminPulsar",
               "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
@@ -146,12 +142,10 @@
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlPulsar",
-              "StartPulsar",
-              "StopPulsar",
               "TableView",
               "Test",
               "TestAPI",
+              "TestContainer",
               "TlsStartPulsar",
               "Transaction"
             ]

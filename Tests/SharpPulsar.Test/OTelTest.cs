@@ -21,9 +21,10 @@ namespace SharpPulsar.Test
     public class OTelTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        
         private readonly string _topic;
 
+        private readonly PulsarClient _client;
         public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;

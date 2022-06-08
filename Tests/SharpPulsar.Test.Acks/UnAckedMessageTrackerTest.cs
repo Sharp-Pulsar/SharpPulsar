@@ -34,12 +34,10 @@ namespace SharpPulsar.Test.Acks
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private readonly ActorSystem _system;
         public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
-            _system = fixture.PulsarSystem.System;
         }
 
         [Fact]
@@ -49,7 +47,7 @@ namespace SharpPulsar.Test.Acks
             builder.Topic("TestAckTracker");
             builder.SubscriptionName("TestAckTracker-sub");
             var consumer = await _client.NewConsumerAsync(builder);
-            var unack = _system.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop(TimeSpan.FromSeconds(1000000), TimeSpan.FromSeconds(1000000), consumer.ConsumerActor, unack));
 
             var empty = await tracker.Ask<bool>(Empty.Instance);

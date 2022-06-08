@@ -3,7 +3,6 @@ using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.User;
 using Xunit;
 
@@ -11,15 +10,21 @@ namespace SharpPulsar.TestContainer
 {
     public class PulsarFixture : IAsyncLifetime
     {
-        public PulsarClient Client;
-        public PulsarSystem PulsarSystem;
-        public ClientConfigurationData ClientConfigurationData;
-        private readonly IConfiguration _configuration;
+        private IConfiguration _configuration;
+        public PulsarClientConfigBuilder PulsarClientConfig;
+        public PulsarSystem PulsarSystem { get; }
+        public PulsarClient Client ;
         public PulsarFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
+            var client = SetupSystem();
+
+            PulsarClientConfig = client;
+            PulsarSystem = PulsarSystem.GetInstance(client);
+            Client = PulsarSystem.NewClient();
         }
+        
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -28,42 +33,15 @@ namespace SharpPulsar.TestContainer
                 .Build();
         }
         public async Task InitializeAsync()
-        {
-            await SetupSystem();
-            await DeployPulsar();
+        {  
+            await Task.CompletedTask;
         }
-        public async Task DeployPulsar()
-        {
-            //TakeDownPulsar(); // clean-up if anything was left running from previous run
-
-            //RunProcess("docker-compose", "-f docker-compose-standalone-tests.yml up -d");
-
-            var waitTries = 20;
-
-            using var handler = new HttpClientHandler
-            {
-                AllowAutoRedirect = true
-            };
-
-            using var client = new HttpClient(handler);
-
-            while (waitTries > 0)
-            {
-                try
-                {
-                    await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-                    return;
-                }
-                catch
-                {
-                    waitTries--;
-                    await Task.Delay(5000).ConfigureAwait(false);
-                }
-            }
-
-            throw new Exception("Unable to confirm Pulsar has initialized");
+       
+        public virtual async Task DisposeAsync()
+        { 
+            await Task.CompletedTask;
         }
-        private async ValueTask SetupSystem(string? service = null, string? web = null)
+        private PulsarClientConfigBuilder SetupSystem(string? service = null, string? web = null)
         {
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
@@ -100,24 +78,7 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            var system = await PulsarSystem.GetInstanceAsync(client);
-            Client = system.NewClient();
-            PulsarSystem = system;
-            ClientConfigurationData = client.ClientConfigurationData;
+            return client;
         }
-        public virtual async Task DisposeAsync()
-        {
-
-            try
-            {
-                if (Client != null)
-                    await Client.ShutdownAsync();
-            }
-            catch
-            {
-
-            }
-        }
-        
     }
 }

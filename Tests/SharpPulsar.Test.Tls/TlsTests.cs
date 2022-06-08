@@ -14,12 +14,11 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Tls
 {
     [Collection(nameof(TlsCollection))]
-    public class TlsTests
+    public class TlsTests 
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic;
-
+        private readonly PulsarClient _client;
         public TlsTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -150,5 +149,6 @@ namespace SharpPulsar.Test.Tls
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
+        
     }
 }

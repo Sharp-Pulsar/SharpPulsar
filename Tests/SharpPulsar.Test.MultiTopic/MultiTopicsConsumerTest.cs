@@ -39,10 +39,9 @@ namespace SharpPulsar.Test.MultiTopics
         private const string Subscription = "reader-multi-topics-sub";
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
         public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
-            _output = output;
+            _output = output; 
             _client = fixture.Client;
         }
         [Fact]
@@ -114,6 +113,7 @@ namespace SharpPulsar.Test.MultiTopics
             await producer.CloseAsync();
             return keys;
         }
+        
     }
 
 }

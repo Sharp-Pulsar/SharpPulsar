@@ -15,12 +15,12 @@ namespace SharpPulsar.Test
     public class SchemaUpgradeTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic;
-
+        private readonly PulsarClient _client;
         public SchemaUpgradeTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
+
             _client = fixture.Client;
             _topic = $"persistent://public/default/upgradeable-{Guid.NewGuid()}";
         }

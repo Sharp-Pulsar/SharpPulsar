@@ -14,9 +14,8 @@ namespace SharpPulsar.Test
     public class DelayedMessage
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic;
-
+        private readonly PulsarClient _client;
         public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -148,4 +147,5 @@ namespace SharpPulsar.Test
             await consumer.CloseAsync();
         }
     }
+
 }

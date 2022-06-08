@@ -30,6 +30,7 @@ namespace SharpPulsar.SocketImpl
     //https://github.com/fzf003/TinyService/blob/242c38c06ef7cb685934ba653041d07c64a6f806/Src/TinyServer.ReactiveSocket/SocketAcceptClient.cs
     public sealed class SocketClient: ISocketClient
     {
+        private readonly Socket _socket;
         private readonly X509Certificate2Collection _clientCertificates;
         private readonly X509Certificate2 _trustedCertificateAuthority;
         private readonly ClientConfigurationData _clientConfiguration;
@@ -45,8 +46,6 @@ namespace SharpPulsar.SocketImpl
         public event Action OnConnect;
         public event Action OnDisconnect;
 
-        private Stream _networkstream;
-
         private PipeReader _pipeReader;
 
         private PipeWriter _pipeWriter;
@@ -59,12 +58,17 @@ namespace SharpPulsar.SocketImpl
 
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         public static ISocketClient CreateClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
-        {            
-            return new SocketClient(conf, server, hostName, logger);
-        }
-        internal SocketClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
         {
-            _server = server;
+            var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            
+            //clientSocket.Connect(server.Host, server.Port);
+
+            return new SocketClient(conf, clientSocket, hostName, logger, server);
+        }
+        internal SocketClient(ClientConfigurationData conf, Socket server, string hostName, ILoggingAdapter logger, DnsEndPoint dnsEndPoint)
+        {
+            _socket = server;
+            _server = dnsEndPoint;
             if (conf.ClientCertificates != null)
                 _clientCertificates = conf.ClientCertificates;
 
@@ -93,12 +97,10 @@ namespace SharpPulsar.SocketImpl
             if (_encrypt)
                 networkStream = await EncryptStream(networkStream, host);
 
-            _networkstream = networkStream;
-
             _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
-            _pipeReader = PipeReader.Create(_networkstream);
+            _pipeReader = PipeReader.Create(networkStream);
 
-            _pipeWriter = PipeWriter.Create(_networkstream);
+            _pipeWriter = PipeWriter.Create(networkStream);
         }
         public string RemoteConnectionId
         {
@@ -118,13 +120,14 @@ namespace SharpPulsar.SocketImpl
             {
                 try
                 {
-                    while (!cancellationToken.IsCancellationRequested)
+                    while (true)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         var result = await _pipeReader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                         var buffer = result.Buffer;
                         var length = (int)buffer.Length;
-                        if (length >= 8) 
+                        if (length >= 8)
                         {
                             using var stream = new MemoryStream(buffer.ToArray());
                             using var reader = new BinaryReader(stream);
@@ -136,7 +139,7 @@ namespace SharpPulsar.SocketImpl
                             var totalSize = frameSize + 4;
                             if (length >= totalSize)
                             {
-                                var consumed = buffer.GetPosition(totalSize);                                
+                                var consumed = buffer.GetPosition(totalSize);
                                 var command = Serializer.DeserializeWithLengthPrefix<BaseCommand>(stream, PrefixStyle.Fixed32BigEndian);
                                 if (command.type == BaseCommand.Type.Message)
                                 {
@@ -145,7 +148,7 @@ namespace SharpPulsar.SocketImpl
                                     var brokerEntryMetadataMagicNumber = reader.ReadInt16().Int16FromBigEndian();
                                     if (brokerEntryMetadataMagicNumber == Commands.MagicBrokerEntryMetadata)
                                     {
-                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);                                        
+                                        brokerEntryMetadata = Serializer.DeserializeWithLengthPrefix<BrokerEntryMetadata>(stream, PrefixStyle.Fixed32BigEndian);
                                     }
                                     else
                                         //we need to rewind to the brokerEntryMetadataPosition
@@ -178,9 +181,10 @@ namespace SharpPulsar.SocketImpl
                             }
 
                         }
+
                     }
                 }
-                catch(Exception ex) 
+                catch (Exception ex)
                 {
                     _logger.Error(ex.ToString());
                 }
@@ -188,7 +192,7 @@ namespace SharpPulsar.SocketImpl
                 {
                     await _pipeReader.CompleteAsync().ConfigureAwait(false);
                     observer.OnCompleted();
-                }
+                }                           
                 
             });
         }
@@ -205,8 +209,7 @@ namespace SharpPulsar.SocketImpl
                 cancellation?.Cancel();
                 _pipeReader?.Complete();
                 _pipeWriter?.Complete();
-                _networkstream?.Close();
-                _networkstream?.Dispose();
+                ShutDownSocket(_socket);
             }
             catch
             {
@@ -215,32 +218,36 @@ namespace SharpPulsar.SocketImpl
 
             if (OnDisconnect != null) OnDisconnect();
         }
+        void ShutDownSocket(Socket socket)
+        {
+            try
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                socket?.Close(1000);
+            }
+            catch { }
+            _logger.Info("connection close complete....");
+        }
+
         private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {
             try
             {
-                var tcpClient = new TcpClient();
-
+                
                 if (SniProxy)
                 {
                     var url = new Uri(_clientConfiguration.ProxyServiceUrl);
                     endPoint = new DnsEndPoint(url.Host, url.Port);
-                }                        
-
+                }
                 if (!_encrypt)
-                {
-                    if (!tcpClient.ConnectAsync(endPoint.Host, endPoint.Port).Wait(1000))
-                    {
-                        // connection failure
-                        tcpClient.Dispose();
-                        throw new Exception("Failed to connect.");
-                    }
-                    return tcpClient.GetStream();
+                {           
+                    await _socket.ConnectAsync(endPoint);
+                    return new NetworkStream(_socket);
                 }
 
                 var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false); 
-                var socket = await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
-                return new NetworkStream(socket, true);
+                await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
+                return new NetworkStream(_socket, true);
             }
             catch (Exception ex)
             {
@@ -269,13 +276,11 @@ namespace SharpPulsar.SocketImpl
             }
         }
         //https://github.com/LukeInkster/CSharpCorpus/blob/919b7525a61eb6b475fbcba0d87fd3cb44ef3b38/corefx/src/System.Data.SqlClient/src/System/Data/SqlClient/SNI/SNITcpHandle.cs
-        private async Task<Socket> ConnectAsync(IPAddress[] serverAddresses, int port)
+        private async Task ConnectAsync(IPAddress[] serverAddresses, int port)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                socket.ConnectAsync(serverAddresses, port).Wait(1000);
-                return socket;
+                _socket.ConnectAsync(serverAddresses, port).Wait(1000);
             }
 
             // On unix we can't use the instance Socket methods that take multiple endpoints
@@ -293,15 +298,13 @@ namespace SharpPulsar.SocketImpl
             ExceptionDispatchInfo lastException = null;
             foreach (IPAddress address in serverAddresses)
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 try
                 {
-                    await socket.ConnectAsync(address, port).ConfigureAwait(false);
-                    return socket;
+                    await _socket.ConnectAsync(address, port).ConfigureAwait(false);
                 }
                 catch (Exception exc)
                 {
-                    socket.Dispose();
+                    _socket.Dispose();
                     lastException = ExceptionDispatchInfo.Capture(exc);
                 }
             }

@@ -911,91 +911,91 @@ namespace SharpPulsar
 		}
 		private void OnCommandReceived((BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidCheckSum, bool hasMagicNumber) args)
 		{
-			var cmd = args.command;
-			switch (cmd.type)
-			{
-				case BaseCommand.Type.AuthChallenge:
-					var auth = cmd.authChallenge;
-					HandleAuthChallenge(auth);
-					break;
-				case BaseCommand.Type.Message:
-					var msg = cmd.Message;
-					HandleMessage(msg, args.metadata, args.brokerEntryMetadata, args.payload, args.hasValidCheckSum, args.hasMagicNumber);
-					break;
-				case BaseCommand.Type.GetLastMessageIdResponse:
-					HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);
-					break;
-				case BaseCommand.Type.Connected:
-					HandleConnected(cmd.Connected);
-					break;
-				case BaseCommand.Type.GetTopicsOfNamespaceResponse:
-					HandleGetTopicsOfNamespaceSuccess(cmd.getTopicsOfNamespaceResponse);
-					break;
-				case BaseCommand.Type.Success:
-					HandleSuccess(cmd.Success);
-					break;
-				case BaseCommand.Type.TcClientConnectResponse:
+            var cmd = args.command;
+            switch (cmd.type)
+            {
+                case BaseCommand.Type.AuthChallenge:
+                    var auth = cmd.authChallenge;
+                    HandleAuthChallenge(auth);
+                    break;
+                case BaseCommand.Type.Message:
+                    var msg = cmd.Message;
+                    HandleMessage(msg, args.metadata, args.brokerEntryMetadata, args.payload, args.hasValidCheckSum, args.hasMagicNumber);
+                    break;
+                case BaseCommand.Type.GetLastMessageIdResponse:
+                    HandleGetLastMessageIdSuccess(cmd.getLastMessageIdResponse);
+                    break;
+                case BaseCommand.Type.Connected:
+                    HandleConnected(cmd.Connected);
+                    break;
+                case BaseCommand.Type.GetTopicsOfNamespaceResponse:
+                    HandleGetTopicsOfNamespaceSuccess(cmd.getTopicsOfNamespaceResponse);
+                    break;
+                case BaseCommand.Type.Success:
+                    HandleSuccess(cmd.Success);
+                    break;
+                case BaseCommand.Type.TcClientConnectResponse:
                     HandleNewTcClientConnectResponse(cmd.tcClientConnectResponse);
-					break;
-				case BaseCommand.Type.SendReceipt:
-					HandleSendReceipt(cmd.SendReceipt);
-					break;
-				case BaseCommand.Type.GetOrCreateSchemaResponse:
-					HandleGetOrCreateSchemaResponse(cmd.getOrCreateSchemaResponse);
-					break;
-				case BaseCommand.Type.ProducerSuccess:
-					HandleProducerSuccess(cmd.ProducerSuccess);
-					break;
-				case BaseCommand.Type.Error:
-					HandleError(cmd.Error);
-					break;
-				case BaseCommand.Type.GetSchemaResponse:
-					HandleGetSchemaResponse(cmd.getSchemaResponse);
-					break;
-				case BaseCommand.Type.LookupResponse:
-					HandleLookupResponse(cmd.lookupTopicResponse);
-					break;
-				case BaseCommand.Type.PartitionedMetadataResponse:
-					HandlePartitionResponse(cmd.partitionMetadataResponse);
-					break;
-				case BaseCommand.Type.ActiveConsumerChange:
-					HandleActiveConsumerChange(cmd.ActiveConsumerChange);
-					break;
-				case BaseCommand.Type.NewTxnResponse:
-					HandleNewTxnResponse(cmd.newTxnResponse);
-					break;
-				case BaseCommand.Type.AddPartitionToTxnResponse:
-					HandleAddPartitionToTxnResponse(cmd.addPartitionToTxnResponse);
-					break;
-				case BaseCommand.Type.AddSubscriptionToTxnResponse:
-					HandleAddSubscriptionToTxnResponse(cmd.addSubscriptionToTxnResponse);
-					break;
-				case BaseCommand.Type.EndTxnResponse:
-					HandleEndTxnResponse(cmd.endTxnResponse);
-					break;
-				case BaseCommand.Type.SendError:
-					HandleSendError(cmd.SendError);
-					break;
-				case BaseCommand.Type.Ping:
-					HandlePing(cmd.Ping);
-					break;
-				case BaseCommand.Type.CloseProducer:
-					HandleCloseProducer(cmd.CloseProducer);
-					break;
-				case BaseCommand.Type.CloseConsumer:
-					HandleCloseConsumer(cmd.CloseConsumer);
-					break;
-				case BaseCommand.Type.ReachedEndOfTopic:
-					HandleReachedEndOfTopic(cmd.reachedEndOfTopic);
-					break;
-				case BaseCommand.Type.AckResponse:
-					HandleAckResponse(cmd.ackResponse);
-					break;
-				default:
-					_log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
-					break;
-			}
-		}
+                    break;
+                case BaseCommand.Type.SendReceipt:
+                    HandleSendReceipt(cmd.SendReceipt);
+                    break;
+                case BaseCommand.Type.GetOrCreateSchemaResponse:
+                    HandleGetOrCreateSchemaResponse(cmd.getOrCreateSchemaResponse);
+                    break;
+                case BaseCommand.Type.ProducerSuccess:
+                    HandleProducerSuccess(cmd.ProducerSuccess);
+                    break;
+                case BaseCommand.Type.Error:
+                    HandleError(cmd.Error);
+                    break;
+                case BaseCommand.Type.GetSchemaResponse:
+                    HandleGetSchemaResponse(cmd.getSchemaResponse);
+                    break;
+                case BaseCommand.Type.LookupResponse:
+                    HandleLookupResponse(cmd.lookupTopicResponse);
+                    break;
+                case BaseCommand.Type.PartitionedMetadataResponse:
+                    HandlePartitionResponse(cmd.partitionMetadataResponse);
+                    break;
+                case BaseCommand.Type.ActiveConsumerChange:
+                    HandleActiveConsumerChange(cmd.ActiveConsumerChange);
+                    break;
+                case BaseCommand.Type.NewTxnResponse:
+                    HandleNewTxnResponse(cmd.newTxnResponse);
+                    break;
+                case BaseCommand.Type.AddPartitionToTxnResponse:
+                    HandleAddPartitionToTxnResponse(cmd.addPartitionToTxnResponse);
+                    break;
+                case BaseCommand.Type.AddSubscriptionToTxnResponse:
+                    HandleAddSubscriptionToTxnResponse(cmd.addSubscriptionToTxnResponse);
+                    break;
+                case BaseCommand.Type.EndTxnResponse:
+                    HandleEndTxnResponse(cmd.endTxnResponse);
+                    break;
+                case BaseCommand.Type.SendError:
+                    HandleSendError(cmd.SendError);
+                    break;
+                case BaseCommand.Type.Ping:
+                    HandlePing(cmd.Ping);
+                    break;
+                case BaseCommand.Type.CloseProducer:
+                    HandleCloseProducer(cmd.CloseProducer);
+                    break;
+                case BaseCommand.Type.CloseConsumer:
+                    HandleCloseConsumer(cmd.CloseConsumer);
+                    break;
+                case BaseCommand.Type.ReachedEndOfTopic:
+                    HandleReachedEndOfTopic(cmd.reachedEndOfTopic);
+                    break;
+                case BaseCommand.Type.AckResponse:
+                    HandleAckResponse(cmd.ackResponse);
+                    break;
+                default:
+                    _log.Info($"Received '{cmd.type}' Message in '{_self.Path}'");
+                    break;
+            }
+        }
 		private void HandleAckResponse(CommandAckResponse ackResponse)
 		{
 			Condition.CheckArgument(_state == State.Ready);

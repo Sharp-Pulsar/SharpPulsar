@@ -35,14 +35,14 @@ namespace SharpPulsar.Test
     public class ByteKeysTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic;
 
+        private readonly PulsarClient _client;
         public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
-            _client = fixture.Client;
+            _client = fixture.Client; 
             //_topic = "my-topic-batch-bf719df3";
         }
 
@@ -168,7 +168,6 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-
     }
 
 }

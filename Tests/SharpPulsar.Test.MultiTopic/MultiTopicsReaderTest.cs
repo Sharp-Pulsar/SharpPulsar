@@ -30,18 +30,17 @@ namespace SharpPulsar.Test.MultiTopics
 {
 
     [Collection(nameof(MultiTopicCollection))]
-	public class MultiTopicsReaderTest
-	{
+	public class MultiTopicsReaderTest 
+    {
 
 		private const string Subscription = "reader-multi-topics-sub";
 		private readonly ITestOutputHelper _output;
-		private readonly PulsarClient _client;
-
-		public MultiTopicsReaderTest(ITestOutputHelper output, PulsarFixture fixture)
+        private readonly PulsarClient _client;
+        public MultiTopicsReaderTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-			_client = fixture.Client;
-		}
+            _client = fixture.Client;
+        }
 		[Fact]
 		public virtual async Task TestReadMessageWithoutBatching()
 		{
@@ -159,6 +158,7 @@ namespace SharpPulsar.Test.MultiTopics
 			producer.Flush();
 			return keys;
 		}
-	}
+        
+    }
 
 }

@@ -21,7 +21,6 @@ namespace SharpPulsar.Test.TableView
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        public readonly PulsarSystem _pulsarSystem;
         public ClientConfigurationData _clientConfigurationData;
         private Admin.Public.Admin _admin;
 
@@ -30,8 +29,7 @@ namespace SharpPulsar.Test.TableView
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
             _output = output;
             _client = fixture.Client;
-            _pulsarSystem = fixture.PulsarSystem;
-            _clientConfigurationData = _pulsarSystem.ClientConfigurationData;
+            _clientConfigurationData = fixture.PulsarClientConfig .ClientConfigurationData;
         }
         [Fact]
         public async Task TestTableView()
@@ -130,5 +128,6 @@ namespace SharpPulsar.Test.TableView
             producer.Flush();
             return keys;
         }
+       
     }
 }

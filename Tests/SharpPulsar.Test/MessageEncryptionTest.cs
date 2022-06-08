@@ -32,7 +32,6 @@ namespace SharpPulsar.Test
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
         public MessageEncryptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;

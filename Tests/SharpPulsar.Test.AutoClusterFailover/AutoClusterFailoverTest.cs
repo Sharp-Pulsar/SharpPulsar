@@ -8,11 +8,14 @@ using SharpPulsar.Test.AutoClusterFailover.Fixture;
 namespace SharpPulsar.Test.AutoClusterFailover
 {
     [Collection(nameof(AutoCollection))]
-    public class AutoClusterFailoverTest
+    public class AutoClusterFailoverTest 
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
+
+        private readonly PulsarClient _client;
+
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -68,12 +71,12 @@ namespace SharpPulsar.Test.AutoClusterFailover
                 await consumer.CloseAsync();
 
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 _output.WriteLine(ex.ToString());
-            }    
-            
-        }
+            }
 
+        }
+        
     }
 }

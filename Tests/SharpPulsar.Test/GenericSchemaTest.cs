@@ -21,9 +21,9 @@ namespace SharpPulsar.Test
     public class GenericSchemaTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
 
+        private readonly PulsarClient _client;
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -77,6 +77,7 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
+        
         private byte[] ToBytes<T>(T obj)
         {
             if (obj == null)

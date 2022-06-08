@@ -35,7 +35,6 @@ namespace SharpPulsar.Test
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
         public MessageChunkingTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -106,7 +105,6 @@ namespace SharpPulsar.Test
             }
             return str.ToString();
         }
-
     }
 
 }

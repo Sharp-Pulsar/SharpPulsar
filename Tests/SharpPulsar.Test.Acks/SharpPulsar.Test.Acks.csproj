@@ -26,13 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
   </ItemGroup>
 
 </Project>
