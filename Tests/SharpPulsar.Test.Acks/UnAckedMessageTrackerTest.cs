@@ -7,8 +7,7 @@ using Akka.Actor;
 using System;
 using SharpPulsar.TestContainer;
 using SharpPulsar.Builder;
-using System.Threading.Tasks;
-using SharpPulsar.Test.Fixture;
+using SharpPulsar.Test.Acks.Fixture;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,19 +27,16 @@ using SharpPulsar.Test.Fixture;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Acks
 {
-    [Collection(nameof(PulsarCollection))]
+    [Collection(nameof(AcksCollection))]
     public class UnAckedMessageTrackerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-
-        
         public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-
             _client = fixture.Client;
         }
 
@@ -86,6 +82,7 @@ namespace SharpPulsar.Test
             size = await tracker.Ask<long>(Size.Instance);
             Assert.Equal(0, size);
         }
+
     }
 
 }

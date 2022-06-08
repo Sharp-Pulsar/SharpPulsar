@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
-using SharpPulsar.Test.Fixture;
+using SharpPulsar.Test.Transaction.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -28,15 +28,15 @@ using Xunit.Abstractions;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Transaction
 {
     /// <summary>
     /// End to end transaction test.
     /// </summary>
     //https://dev.to/damikun/the-cross-platform-build-automation-with-nuke-1kmc
-    [Collection(nameof(PulsarCollection))]
+    [Collection(nameof(TransactionCollection))]
 	public class TransactionEndToEndTest
-    {
+	{
 
 		private const int TopicPartition = 3;
 
@@ -46,16 +46,12 @@ namespace SharpPulsar.Test
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
 		private readonly ITestOutputHelper _output;
+		private readonly PulsarClient _client;
         private readonly Admin.Public.Admin _admin;
-
-        private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
-
         public TransactionEndToEndTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-
-            _client = fixture.Client;
+			_client = fixture.Client;
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
 
             try
@@ -220,6 +216,7 @@ namespace SharpPulsar.Test
             message = await consumer.ReceiveAsync();
 			Assert.Null(message);
         }
+
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 

@@ -257,31 +257,49 @@ partial class Build : NukeBuild
            CoreTest("SharpPulsar.Test.API");
        });
     Target Test => _ => _
-        .DependsOn(TestAPI)
+        .DependsOn(Compile, TestAPI)
         .Executes(() =>
         {            
             CoreTest("SharpPulsar.Test");
         });
+    Target Transaction => _ => _
+       .DependsOn(Compile, Test)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.Transaction");
+       });
+    Target Partitioned => _ => _
+       .DependsOn(Compile, Transaction)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.Partitioned");
+       });
+    Target Acks => _ => _
+       .DependsOn(Compile, Partitioned)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.Acks");
+       });
     Target MultiTopic => _ => _
-       .DependsOn(Test)
+       .DependsOn(Compile, Acks)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.MultiTopic");
        });
     Target AutoClusterFailover => _ => _
-        .DependsOn(MultiTopic)
+        .DependsOn(Compile, MultiTopic)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
         });
     Target TableView => _ => _
-       .DependsOn(AutoClusterFailover)
+       .DependsOn(Compile, AutoClusterFailover)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.TableView");
        });
     Target EventSource => _ => _
-       .DependsOn(TableView)
+       .DependsOn(Compile, TableView)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");

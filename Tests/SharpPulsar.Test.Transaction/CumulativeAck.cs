@@ -3,16 +3,16 @@ using System.Text;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
-using SharpPulsar.Test.Fixture;
+using SharpPulsar.Test.Transaction.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarCollection))]
+    [Collection(nameof(TransactionCollection))]
     public class CumulativeAck
     {
 		private const string TENANT = "public";
@@ -21,13 +21,14 @@ namespace SharpPulsar.Test
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
 		private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
-        public CumulativeAck(ITestOutputHelper output, PulsarFixture fixture)
+		private readonly PulsarClient _client;
+
+		public CumulativeAck(ITestOutputHelper output, PulsarFixture fixture)
 		{
             
 			_output = output;
-            _client = fixture.Client;
-        }
+			_client = fixture.Client;
+		}
 
 		[Fact]
 		public async Task TxnCumulativeAckTest()
@@ -182,7 +183,7 @@ namespace SharpPulsar.Test
                 Assert.True(receivedMessageCount > 75);
 			}
 		}
-        
+
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
-using SharpPulsar.Test.Fixture;
+using SharpPulsar.Test.Transaction.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -11,7 +11,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace SharpPulsar.Test.Transaction
 {
-    [Collection(nameof(PulsarCollection))]
+    [Collection(nameof(TransactionCollection))]
 	public class TxnAckTest
     {
 		private const string TENANT = "public";
@@ -19,14 +19,13 @@ namespace SharpPulsar.Test.Transaction
 		private static readonly string _topicOutput = _nAMESPACE1 + $"/output-{Guid.NewGuid()}";
 		private static readonly string _topicMessageAckTest = _nAMESPACE1 + "/message-ack-test";
 
-		private readonly ITestOutputHelper _output; 
-        private readonly PulsarClient _client;
-
+		private readonly ITestOutputHelper _output;
+		private readonly PulsarClient _client;
         public TxnAckTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-            _client = fixture.Client;
-        }
+			_client = fixture.Client;
+		}
 
 		[Fact]
 		public async Task TxnAckTestBatchedFailoverSub()
@@ -258,6 +257,7 @@ namespace SharpPulsar.Test.Transaction
 			}
             Assert.True(receivedMessageCount > 75);
 		}
+
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
     }

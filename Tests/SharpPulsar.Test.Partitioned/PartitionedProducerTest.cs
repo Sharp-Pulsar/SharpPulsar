@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
-using SharpPulsar.Test.Fixture;
+using SharpPulsar.Test.Partitioned.Fixture;
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
 using Xunit;
@@ -29,15 +29,14 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Partitioned
 {
-    [Collection(nameof(PulsarCollection))]
+    [Collection(nameof(PartitionedCollection))]
     public class PartitionedProducerTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly Admin.Public.Admin _admin;
         private readonly PulsarClient _client;
-
+        private readonly Admin.Public.Admin _admin;
         public PartitionedProducerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;

@@ -11,6 +11,7 @@ using Nuke.Common.Utilities;
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Compile) })]
+
 [CustomGitHubActions("run_tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
@@ -18,6 +19,33 @@ using Nuke.Common.Utilities;
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) },
     PublishArtifacts = true)]
+
+
+[CustomGitHubActions("run_tests_acks",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(Acks) },
+    PublishArtifacts = true)]
+
+
+[CustomGitHubActions("run_tests_partitioned",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(Partitioned) },
+    PublishArtifacts = true)]
+
+[CustomGitHubActions("run_tests_transaction",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(Transaction) },
+    PublishArtifacts = true)]
+
 
 [CustomGitHubActions("run_tests_api",
     GitHubActionsImage.UbuntuLatest,

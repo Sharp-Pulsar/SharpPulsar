@@ -6,9 +6,7 @@ using System.Text.RegularExpressions;
 using Xunit.Abstractions;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using SharpPulsar.Builder;
-using Xunit;
-using SharpPulsar.Test.Fixture;
-using System.Threading.Tasks;
+using SharpPulsar.Test.Partitioned.Fixture;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,13 +26,14 @@ using System.Threading.Tasks;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test
+namespace SharpPulsar.Test.Partitioned
 {
-    [Collection(nameof(PulsarCollection))]
+    [Collection(nameof(PartitionedCollection))]
     public class PatternTopicsConsumerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
+
         public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
@@ -110,7 +109,7 @@ namespace SharpPulsar.Test
             await producer4.CloseAsync();
             Assert.True(messageSet > 0);
         }
-       
+
     }
 
 }
