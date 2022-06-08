@@ -27,23 +27,24 @@ using Xunit.Abstractions;
 using Akka.Actor;
 using System;
 using System.Threading.Tasks;
-using SharpPulsar.TestContainer;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
+using SharpPulsar.TestContainer;
 
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class AcknowledgementsGroupingTrackerTest
+    public class AcknowledgementsGroupingTrackerTest:IDisposable
     {
         private readonly ITestOutputHelper _output;
         private  PulsarClient _client;
-        private  ActorSystem _system;
+        private PulsarSystem _pulsarSystem;
         public AcknowledgementsGroupingTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
-            _system = fixture.PulsarSystem.System;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
 
         [Fact]
@@ -55,7 +56,7 @@ namespace SharpPulsar.Test
             builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
             var conf = builder.ConsumerConfigurationData;
             var consumer = await _client.NewConsumerAsync(builder);
-            var unack = _system.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var unack = _pulsarSystem.System.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(unack, consumer.ConsumerActor, consumer.ConsumerActor/*dummy*/, 1, consumer.ConsumerActor, conf));
 
             var msg1 = new MessageId(5, 1, 0);
@@ -137,7 +138,7 @@ namespace SharpPulsar.Test
             builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
             var conf = builder.ConsumerConfigurationData;
             var consumer = await _client.NewConsumerAsync(builder);
-            var unack = _system.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var unack = _pulsarSystem.System.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(unack, consumer.ConsumerActor, consumer.ConsumerActor/*dummy*/, 1, consumer.ConsumerActor, conf));
 
             var msg1 = new MessageId(5, 1, 0);
@@ -171,7 +172,7 @@ namespace SharpPulsar.Test
             builder.SubscriptionName($"TestAckTracker-sub-{Guid.NewGuid()}");
             var conf = builder.ConsumerConfigurationData;
             var consumer = await _client.NewConsumerAsync(builder);
-            var unack = _system.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var unack = _pulsarSystem.System.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(PersistentAcknowledgmentsGroupingTracker<byte[]>.Prop(unack, consumer.ConsumerActor, consumer.ConsumerActor/*dummy*/, 1, consumer.ConsumerActor, conf));
 
             var msg1 = new MessageId(5, 1, 0);
@@ -247,7 +248,13 @@ namespace SharpPulsar.Test
 
             await tracker.GracefulStop(TimeSpan.FromSeconds(1));
         }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 
 }

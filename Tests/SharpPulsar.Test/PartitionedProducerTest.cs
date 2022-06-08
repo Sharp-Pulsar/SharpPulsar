@@ -32,16 +32,20 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class PartitionedProducerTest
+    public class PartitionedProducerTest : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly Admin.Public.Admin _admin;
+        private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
+
         public PartitionedProducerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient()); ;
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
         [Fact]
         public virtual async Task TestGetNumOfPartitions()
@@ -110,6 +114,12 @@ namespace SharpPulsar.Test
 
             Assert.True(producers.Count > 0);
         }
-       
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 }

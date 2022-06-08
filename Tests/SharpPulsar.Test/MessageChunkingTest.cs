@@ -31,15 +31,18 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class MessageChunkingTest
+    public class MessageChunkingTest : IDisposable
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
 
         public MessageChunkingTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
 
         [Fact]
@@ -106,7 +109,13 @@ namespace SharpPulsar.Test
             }
             return str.ToString();
         }
-        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 
 }

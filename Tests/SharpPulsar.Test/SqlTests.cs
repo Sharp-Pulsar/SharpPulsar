@@ -19,15 +19,19 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class SqlTests
+    public class SqlTests : IDisposable
     {
-        private readonly ITestOutputHelper _output;
+        private readonly ITestOutputHelper _output; 
         private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
 
+        
         public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
         //[Fact(Skip ="Issue with sql-worker on github action")]
         [Fact]
@@ -192,8 +196,15 @@ namespace SharpPulsar.Test
                 }
 
             }
+
         }
-       
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
     public class Students
     {

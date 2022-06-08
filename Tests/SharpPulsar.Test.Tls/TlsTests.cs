@@ -14,16 +14,19 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.Tls
 {
     [Collection(nameof(TlsCollection))]
-    public class TlsTests
+    public class TlsTests : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic;
-
+        private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
         public TlsTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
             _topic = $"persistent://public/default/tls-{Guid.NewGuid()}";
         }
 
@@ -150,6 +153,13 @@ namespace SharpPulsar.Test.Tls
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-       
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
+
     }
 }

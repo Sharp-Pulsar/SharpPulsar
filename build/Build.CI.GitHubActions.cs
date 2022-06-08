@@ -11,13 +11,52 @@ using Nuke.Common.Utilities;
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Compile) })]
-
 [CustomGitHubActions("run_tests",
     GitHubActionsImage.UbuntuLatest,
     AutoGenerate = true,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) },
+    PublishArtifacts = true)]
+
+[CustomGitHubActions("run_tests_api",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(TestAPI) },
+    PublishArtifacts = true)]
+
+[CustomGitHubActions("run_tests_autocluster",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(AutoClusterFailover) },
+    PublishArtifacts = true)]
+
+[CustomGitHubActions("run_tests_tableview",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(TableView) },
+    PublishArtifacts = true)]
+
+[CustomGitHubActions("run_tests_eventsource",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(EventSource) },
+    PublishArtifacts = true)]
+
+[CustomGitHubActions("run_tests_multitopic",
+    GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = true,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(MultiTopic) },
     PublishArtifacts = true)]
 
 [CustomGitHubActions("nuget",

@@ -18,16 +18,22 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class OTelTest
+    public class OTelTest : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        
         private readonly string _topic;
+
+        private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
+
 
         public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
             _topic = $"persistent://public/default/{Guid.NewGuid()}";
             //var t = TestConsoleExporter.Run();
             //_topic = "my-topic-batch-bf719df3";
@@ -89,6 +95,12 @@ namespace SharpPulsar.Test
                 }
             }
         }
-        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 }

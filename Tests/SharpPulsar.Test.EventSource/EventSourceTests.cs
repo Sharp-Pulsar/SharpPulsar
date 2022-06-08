@@ -18,19 +18,22 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test.EventSource
 {
     [Collection(nameof(EventSourceCollection))]
-    public class EventSourceTests
+    public class EventSourceTests : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
-		public readonly PulsarSystem _pulsarSystem;
+        
 		public ClientConfigurationData _clientConfigurationData;
 
-		public EventSourceTests(ITestOutputHelper output, PulsarFixture fixture)
+        private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
+
+        public EventSourceTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
-            _pulsarSystem = fixture.PulsarSystem;
-			_clientConfigurationData = _pulsarSystem.ClientConfigurationData;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
+            _clientConfigurationData = _pulsarSystem.ClientConfigurationData;
         }
 		//[Fact(Skip = "Issue with sql-worker on github action")]
 		[Fact]
@@ -187,9 +190,16 @@ namespace SharpPulsar.Test.EventSource
 			}
 			return ids;
 		}
-       
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
+
     }
-	public class DataOp
+    public class DataOp
 	{
 		public string Text { get; set; }
 		public long EventTime { get; set; }

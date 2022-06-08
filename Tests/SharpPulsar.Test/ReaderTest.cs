@@ -32,17 +32,21 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class ReaderTest
+    public class ReaderTest : IDisposable
     {
 
         private const string Subscription = "reader-sub";
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
+
 
         public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
         private async Task<ISet<string>> PublishMessages(string topic, int count, bool enableBatch)
         {
@@ -218,7 +222,13 @@ namespace SharpPulsar.Test
             }
 
         }
-        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 
 }

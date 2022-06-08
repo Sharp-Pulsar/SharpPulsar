@@ -87,6 +87,7 @@
             "enum": [
               "AdminPulsar",
               "AuthenticatedGitHubClient",
+              "AutoClusterFailover",
               "CheckBranch",
               "CheckDockerVersion",
               "Clean",
@@ -95,7 +96,9 @@
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "EventSource",
               "GitHubRelease",
+              "MultiTopic",
               "PublishNuget",
               "Restore",
               "RunChangelog",
@@ -103,7 +106,9 @@
               "SqlPulsar",
               "StartPulsar",
               "StopPulsar",
+              "TableView",
               "Test",
+              "TestAPI",
               "TlsStartPulsar"
             ]
           }
@@ -120,6 +125,7 @@
             "enum": [
               "AdminPulsar",
               "AuthenticatedGitHubClient",
+              "AutoClusterFailover",
               "CheckBranch",
               "CheckDockerVersion",
               "Clean",
@@ -128,7 +134,9 @@
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "EventSource",
               "GitHubRelease",
+              "MultiTopic",
               "PublishNuget",
               "Restore",
               "RunChangelog",
@@ -136,7 +144,9 @@
               "SqlPulsar",
               "StartPulsar",
               "StopPulsar",
+              "TableView",
               "Test",
+              "TestAPI",
               "TlsStartPulsar"
             ]
           }

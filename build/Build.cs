@@ -49,7 +49,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.Test);
+    public static int Main() => Execute<Build>(x => x.EventSource);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -311,20 +311,43 @@ partial class Build : NukeBuild
                .SetArgs("sql-worker", "run")
            );*/
       });
-    
+    Target TestAPI => _ => _
+       .DependsOn(Compile)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.API");
+       });
     Target Test => _ => _
-        .DependsOn(Compile, AdminPulsar)
-        .Triggers(StopPulsar)
+        .DependsOn(TestAPI)
+        .Executes(() =>
+        {            
+            CoreTest("SharpPulsar.Test");
+        });
+    Target MultiTopic => _ => _
+       .DependsOn(Test)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.MultiTopic");
+       });
+    Target AutoClusterFailover => _ => _
+        .DependsOn(MultiTopic)
         .Executes(() =>
         {
-            CoreTest("SharpPulsar.Test.API");
-            CoreTest("SharpPulsar.Test");
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
-            CoreTest("SharpPulsar.Test.TableView");
-            CoreTest("SharpPulsar.Test.EventSource");
-            CoreTest("SharpPulsar.Test.MultiTopic");
         });
-    
+    Target TableView => _ => _
+       .DependsOn(AutoClusterFailover)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.TableView");
+       });
+    Target EventSource => _ => _
+       .DependsOn(TableView)
+       .Executes(() =>
+       {
+           CoreTest("SharpPulsar.Test.EventSource");
+       });
+
     void CoreTest(string projectName)
     {
 

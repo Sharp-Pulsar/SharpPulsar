@@ -29,15 +29,19 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class ConsumerRedeliveryTest
+    public class ConsumerRedeliveryTest : IDisposable
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
+
 
         public ConsumerRedeliveryTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
 
         [Fact]
@@ -95,7 +99,14 @@ namespace SharpPulsar.Test
             await consumer.CloseAsync();
             Assert.True(messageReceived > 10);
         }
-        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
+
     }
 
 }

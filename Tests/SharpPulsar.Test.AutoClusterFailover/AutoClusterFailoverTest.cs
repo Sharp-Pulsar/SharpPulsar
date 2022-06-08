@@ -8,15 +8,21 @@ using SharpPulsar.Test.AutoClusterFailover.Fixture;
 namespace SharpPulsar.Test.AutoClusterFailover
 {
     [Collection(nameof(AutoCollection))]
-    public class AutoClusterFailoverTest 
+    public class AutoClusterFailoverTest : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
+        
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
+
+        private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
+
         public AutoClusterFailoverTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
         [Fact]
         public async Task ProduceAndConsume()
@@ -74,6 +80,13 @@ namespace SharpPulsar.Test.AutoClusterFailover
             }
 
         }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
 
     }
 }

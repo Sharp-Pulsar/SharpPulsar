@@ -34,16 +34,19 @@ namespace SharpPulsar.Test.MultiTopics
     /// Unit Tests of <seealso cref="MultiTopicsConsumer{T}"/>.
     /// </summary>
     [Collection(nameof(MultiTopicCollection))]
-    public class MultiTopicsConsumerTest
+    public class MultiTopicsConsumerTest : IDisposable
     {
         private const string Subscription = "reader-multi-topics-sub";
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
 
         public MultiTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
-            _output = output;
-            _client = fixture.Client;
+            _output = output; 
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
         }
         [Fact]
         public async Task TestMultiTopicConsumer()
@@ -114,7 +117,14 @@ namespace SharpPulsar.Test.MultiTopics
             await producer.CloseAsync();
             return keys;
         }
-        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
+
     }
 
 }

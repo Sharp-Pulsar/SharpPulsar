@@ -11,16 +11,19 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class DelayedMessage
+    public class DelayedMessage : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private readonly PulsarClient _client;
         private readonly string _topic;
+        private readonly PulsarClient _client;
+        private PulsarSystem _pulsarSystem;
 
         public DelayedMessage(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _client = fixture.Client;
+            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+
+            _client = _pulsarSystem.NewClient();
             _topic = $"persistent://public/default/delayed-{Guid.NewGuid()}";
         }
         [Fact]
@@ -147,7 +150,13 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-        
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 
 }
