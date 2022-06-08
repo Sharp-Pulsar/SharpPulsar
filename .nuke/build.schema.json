@@ -85,6 +85,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "Acks",
               "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
@@ -98,6 +99,7 @@
               "EventSource",
               "GitHubRelease",
               "MultiTopic",
+              "Partitioned",
               "PublishNuget",
               "Restore",
               "RunChangelog",
@@ -106,7 +108,8 @@
               "Test",
               "TestAPI",
               "TestContainer",
-              "TlsStartPulsar"
+              "TlsStartPulsar",
+              "Transaction"
             ]
           }
         },
@@ -120,6 +123,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "Acks",
               "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
@@ -133,6 +137,7 @@
               "EventSource",
               "GitHubRelease",
               "MultiTopic",
+              "Partitioned",
               "PublishNuget",
               "Restore",
               "RunChangelog",
@@ -141,7 +146,8 @@
               "Test",
               "TestAPI",
               "TestContainer",
-              "TlsStartPulsar"
+              "TlsStartPulsar",
+              "Transaction"
             ]
           }
         },
