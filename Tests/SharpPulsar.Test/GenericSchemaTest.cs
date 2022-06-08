@@ -18,21 +18,16 @@ namespace SharpPulsar.Test
 {
 
     [Collection(nameof(PulsarCollection))]
-    public class GenericSchemaTest : IDisposable
+    public class GenericSchemaTest
     {
         private readonly ITestOutputHelper _output;
         private readonly string _topic = $"generic-topic-{Guid.NewGuid()}";
 
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
-
-
         public GenericSchemaTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
-
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
         [Fact]
         public async Task TestGenericTopic()
@@ -97,13 +92,6 @@ namespace SharpPulsar.Test
         {
             return JsonSerializer.Deserialize<T>(new ReadOnlySpan<byte>(array));
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
     public class ComplexGenericData
     {

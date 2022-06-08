@@ -36,18 +36,14 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class KeySharedSubscriptionTest : IDisposable    
+    public class KeySharedSubscriptionTest    
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
-
         public KeySharedSubscriptionTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
-
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 
         private static readonly IList<string> Keys = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -239,13 +235,6 @@ namespace SharpPulsar.Test
                 });
             });
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 
 }

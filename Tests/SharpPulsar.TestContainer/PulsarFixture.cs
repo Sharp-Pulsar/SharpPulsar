@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using DotNet.Testcontainers.Builders;
 using Microsoft.Extensions.Configuration;
 using SharpPulsar.Builder;
+using SharpPulsar.User;
 using Xunit;
 
 namespace SharpPulsar.TestContainer
@@ -10,32 +11,20 @@ namespace SharpPulsar.TestContainer
     public class PulsarFixture : IAsyncLifetime
     {
         private IConfiguration _configuration;
-        public virtual PulsarTestcontainerConfiguration Configuration { get; }
-        public PulsarTestcontainer Container { get; }
         public PulsarClientConfigBuilder PulsarClientConfig;
+        public PulsarSystem PulsarSystem { get; }
+        public PulsarClient Client ;
         public PulsarFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650);
-            Container = BuildContainer()
-                .WithCleanUp(true)
-                .Build();
+            var client = SetupSystem();
+
+            PulsarClientConfig = client;
+            PulsarSystem = PulsarSystem.GetInstance(client);
+            Client = PulsarSystem.NewClient();
         }
-        public virtual TestcontainersBuilder<PulsarTestcontainer> BuildContainer()
-        {
-            return (TestcontainersBuilder<PulsarTestcontainer>)new TestcontainersBuilder<PulsarTestcontainer>()
-              .WithName("Tests")
-              .WithPulsar(Configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(6651, 6651)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(6651)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
-        }
+        
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
             return new ConfigurationBuilder()
@@ -44,54 +33,15 @@ namespace SharpPulsar.TestContainer
                 .Build();
         }
         public async Task InitializeAsync()
-        {
-            await Container.StartAsync();//;.GetAwaiter().GetResult();
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
-            SetupSystem();
+        {  
+            await Task.CompletedTask;
         }
-        public async ValueTask AwaitPortReadiness(string address)
-        {
-            var waitTries = 20;
-
-            using var handler = new HttpClientHandler
-            {
-                AllowAutoRedirect = true
-            };
-
-            using var client = new HttpClient(handler);
-
-            while (waitTries > 0)
-            {
-                try
-                {
-                    await client.GetAsync(address).ConfigureAwait(false);
-                    return;
-                }
-                catch
-                {
-                    waitTries--;
-                    await Task.Delay(5000).ConfigureAwait(false);
-                }
-            }
-
-            throw new Exception("Unable to confirm Pulsar has initialized");
-        }
+       
         public virtual async Task DisposeAsync()
-        {
-
-            try
-            {
-                await Container.DisposeAsync().AsTask();
-            }
-            catch
-            {
-
-            }
+        { 
+            await Task.CompletedTask;
         }
-        private void SetupSystem(string? service = null, string? web = null)
+        private PulsarClientConfigBuilder SetupSystem(string? service = null, string? web = null)
         {
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
@@ -128,7 +78,7 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-            PulsarClientConfig = client;
+            return client;
         }
     }
 }

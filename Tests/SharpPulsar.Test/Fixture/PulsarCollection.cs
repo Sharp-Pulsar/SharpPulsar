@@ -12,6 +12,5 @@ namespace SharpPulsar.Test.Fixture
     public class PulsarCollection : ICollectionFixture<PulsarFixture>
     {
         
-        
     }
 }

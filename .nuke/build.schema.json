@@ -85,7 +85,6 @@
           "items": {
             "type": "string",
             "enum": [
-              "AdminPulsar",
               "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
@@ -103,12 +102,10 @@
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlPulsar",
-              "StartPulsar",
-              "StopPulsar",
               "TableView",
               "Test",
               "TestAPI",
+              "TestContainer",
               "TlsStartPulsar"
             ]
           }
@@ -123,7 +120,6 @@
           "items": {
             "type": "string",
             "enum": [
-              "AdminPulsar",
               "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
@@ -141,12 +137,10 @@
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlPulsar",
-              "StartPulsar",
-              "StopPulsar",
               "TableView",
               "Test",
               "TestAPI",
+              "TestContainer",
               "TlsStartPulsar"
             ]
           }

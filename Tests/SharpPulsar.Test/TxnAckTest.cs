@@ -12,7 +12,7 @@ using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 namespace SharpPulsar.Test.Transaction
 {
     [Collection(nameof(PulsarCollection))]
-	public class TxnAckTest : IDisposable
+	public class TxnAckTest
     {
 		private const string TENANT = "public";
 		private static readonly string _nAMESPACE1 = TENANT + "/default";
@@ -21,14 +21,11 @@ namespace SharpPulsar.Test.Transaction
 
 		private readonly ITestOutputHelper _output; 
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
 
         public TxnAckTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
-
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 
 		[Fact]
@@ -261,13 +258,6 @@ namespace SharpPulsar.Test.Transaction
 			}
             Assert.True(receivedMessageCount > 75);
 		}
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
     }

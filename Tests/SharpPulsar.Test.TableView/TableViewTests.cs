@@ -17,11 +17,10 @@ using SharpPulsar.Test.TableView.Fixture;
 namespace SharpPulsar.Test.TableView
 {
     [Collection(nameof(TableViewCollection))]
-    public class TableViewTests : IDisposable
+    public class TableViewTests
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        public readonly PulsarSystem _pulsarSystem;
         public ClientConfigurationData _clientConfigurationData;
         private Admin.Public.Admin _admin;
 
@@ -29,10 +28,8 @@ namespace SharpPulsar.Test.TableView
         {
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
             _output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
-
-            _client = _pulsarSystem.NewClient();
-            _clientConfigurationData = _pulsarSystem.ClientConfigurationData;
+            _client = fixture.Client;
+            _clientConfigurationData = fixture.PulsarClientConfig .ClientConfigurationData;
         }
         [Fact]
         public async Task TestTableView()
@@ -131,13 +128,6 @@ namespace SharpPulsar.Test.TableView
             producer.Flush();
             return keys;
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
-
+       
     }
 }

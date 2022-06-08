@@ -35,7 +35,7 @@ namespace SharpPulsar.Test
     /// </summary>
     //https://dev.to/damikun/the-cross-platform-build-automation-with-nuke-1kmc
     [Collection(nameof(PulsarCollection))]
-	public class TransactionEndToEndTest : IDisposable
+	public class TransactionEndToEndTest
     {
 
 		private const int TopicPartition = 3;
@@ -54,9 +54,8 @@ namespace SharpPulsar.Test
         public TransactionEndToEndTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
 
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
 
             try
@@ -221,13 +220,6 @@ namespace SharpPulsar.Test
             message = await consumer.ReceiveAsync();
 			Assert.Null(message);
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
         private async Task<User.Transaction> Txn() => (User.Transaction)await _client.NewTransaction().WithTransactionTimeout(TimeSpan.FromMinutes(5)).BuildAsync();
 
 

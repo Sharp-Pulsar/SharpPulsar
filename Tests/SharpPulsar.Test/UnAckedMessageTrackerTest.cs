@@ -31,19 +31,17 @@ using SharpPulsar.Test.Fixture;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class UnAckedMessageTrackerTest: IDisposable
+    public class UnAckedMessageTrackerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
 
         
         public UnAckedMessageTrackerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
-            _output = output; 
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
+            _output = output;
 
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 
         [Fact]
@@ -53,7 +51,7 @@ namespace SharpPulsar.Test
             builder.Topic("TestAckTracker");
             builder.SubscriptionName("TestAckTracker-sub");
             var consumer = await _client.NewConsumerAsync(builder);
-            var unack = _pulsarSystem.System.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
             var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop(TimeSpan.FromSeconds(1000000), TimeSpan.FromSeconds(1000000), consumer.ConsumerActor, unack));
 
             var empty = await tracker.Ask<bool>(Empty.Instance);
@@ -88,14 +86,6 @@ namespace SharpPulsar.Test
             size = await tracker.Ask<long>(Size.Instance);
             Assert.Equal(0, size);
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
-
     }
 
 }

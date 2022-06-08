@@ -30,20 +30,16 @@ namespace SharpPulsar.Test.MultiTopics
 {
 
     [Collection(nameof(MultiTopicCollection))]
-	public class MultiTopicsReaderTest : IDisposable
+	public class MultiTopicsReaderTest 
     {
 
 		private const string Subscription = "reader-multi-topics-sub";
 		private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
-
         public MultiTopicsReaderTest(ITestOutputHelper output, PulsarFixture fixture)
 		{
 			_output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
-
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 		[Fact]
 		public virtual async Task TestReadMessageWithoutBatching()
@@ -162,14 +158,7 @@ namespace SharpPulsar.Test.MultiTopics
 			producer.Flush();
 			return keys;
 		}
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
-
+        
     }
 
 }

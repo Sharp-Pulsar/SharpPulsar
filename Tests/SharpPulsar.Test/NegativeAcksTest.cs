@@ -32,19 +32,15 @@ using SharpPulsar.Test.Fixture;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class NegativeAcksTest : IDisposable
+    public class NegativeAcksTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
-
-
         public NegativeAcksTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
 
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
 
         [Fact]
@@ -128,13 +124,6 @@ namespace SharpPulsar.Test
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
     }
 
 }

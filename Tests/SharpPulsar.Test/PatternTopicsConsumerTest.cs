@@ -31,19 +31,14 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class PatternTopicsConsumerTest : IDisposable
+    public class PatternTopicsConsumerTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        private PulsarSystem _pulsarSystem;
-
-
         public PatternTopicsConsumerTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _pulsarSystem = PulsarSystem.GetInstance(fixture.PulsarClientConfig);
-
-            _client = _pulsarSystem.NewClient();
+            _client = fixture.Client;
         }
         [Fact]
         public virtual async Task TestBinaryProtoToGetTopicsOfNamespacePersistent()
@@ -115,14 +110,7 @@ namespace SharpPulsar.Test
             await producer4.CloseAsync();
             Assert.True(messageSet > 0);
         }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing) => _pulsarSystem.Shutdown().GetAwaiter();
-
+       
     }
 
 }
