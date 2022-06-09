@@ -304,7 +304,6 @@ partial class Build : NukeBuild
       });
     Target StopPulsar => _ => _
     .Unlisted()
-    .DependsOn(EventSource)
     .AssuredAfterFailure()
     .Executes(() =>
     {
@@ -323,6 +322,7 @@ partial class Build : NukeBuild
     });
     Target AdminPulsar => _ => _
       .DependsOn(SqlPulsar)
+      .Triggers(StopPulsar)
       .Executes(() =>
       {
           DockerTasks.DockerExec(x => x
@@ -436,7 +436,7 @@ partial class Build : NukeBuild
             Information($"Running for {projectName} ({fw}) .....");
             try
             {
-                var tests = DotNetTest(c => c
+                 DotNetTest(c => c
                  .SetProjectFile(project)
                  .SetConfiguration(Configuration)
                  .SetFramework(fw)
@@ -444,14 +444,12 @@ partial class Build : NukeBuild
                  .EnableNoRestore()
                  .When(true, _ => _
                       .SetLoggers("console;verbosity=detailed")
-                     .SetResultsDirectory(OutputTests))
-                     );
+                     .SetResultsDirectory(OutputTests)));
             }
             catch (Exception ex)
             {
                 Information(ex.Message);
             }
-
         }
     }
     //---------------------
