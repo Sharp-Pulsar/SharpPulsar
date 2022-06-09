@@ -372,7 +372,7 @@ partial class Build : NukeBuild
     });
     
     Target TestAPI => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
