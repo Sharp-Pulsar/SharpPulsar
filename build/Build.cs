@@ -370,9 +370,9 @@ partial class Build : NukeBuild
         await AwaitPortReadiness($"http://127.0.0.1:8081/");
         Information("AwaitPortReadiness Test Container");
     });
-    
+
     Target TestAPI => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
@@ -380,7 +380,7 @@ partial class Build : NukeBuild
     Target Test => _ => _
         .DependsOn(TestAPI)
         .Executes(() =>
-        {            
+        {
             CoreTest("SharpPulsar.Test");
         });
     Target Transaction => _ => _
@@ -436,34 +436,34 @@ partial class Build : NukeBuild
             Information($"Running for {projectName} ({fw}) .....");
             try
             {
-               var tests = DotNetTest(c => c
-                .SetProjectFile(project)
-                .SetConfiguration(Configuration)
-                .SetFramework(fw)
-                .EnableNoBuild()
-                .EnableNoRestore()
-                .When(true, _ => _
-                     .SetLoggers("console;verbosity=detailed")
-                    .SetResultsDirectory(OutputTests))
-                    );
+                var tests = DotNetTest(c => c
+                 .SetProjectFile(project)
+                 .SetConfiguration(Configuration)
+                 .SetFramework(fw)
+                 .EnableNoBuild()
+                 .EnableNoRestore()
+                 .When(true, _ => _
+                      .SetLoggers("console;verbosity=detailed")
+                     .SetResultsDirectory(OutputTests))
+                     );
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-               Information(ex.Message);    
+                Information(ex.Message);
             }
 
         }
     }
-        //---------------------
-        //-----------------------------------------------------------
-        // Documentation 
-        //--------------------------------------------------------------------------------
-        Target DocsInit => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            DocFXInit(s => s.SetOutputFolder(DocFxDir).SetQuiet(true));
-        });
+    //---------------------
+    //-----------------------------------------------------------
+    // Documentation 
+    //--------------------------------------------------------------------------------
+    Target DocsInit => _ => _
+    .DependsOn(Compile)
+    .Executes(() =>
+    {
+        DocFXInit(s => s.SetOutputFolder(DocFxDir).SetQuiet(true));
+    });
     Target DocsMetadata => _ => _
         .DependsOn(Compile)
         .Executes(() =>

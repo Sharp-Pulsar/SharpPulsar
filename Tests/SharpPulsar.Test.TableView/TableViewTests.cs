@@ -52,9 +52,11 @@ namespace SharpPulsar.Test.TableView
 
             // Send more data
             var keys2 = await PublishMessages(topic, count * 2, false);
-            await Task.Delay(5000);
+            await Task.Delay(3000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
-            Assert.True(count >= tv.Size());
+            await Task.Delay(5000);
+            Assert.Equal(tv.Size(), count * 2);
+            //Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
         }
 
@@ -95,10 +97,11 @@ namespace SharpPulsar.Test.TableView
 
             // Send more data to partition 3, which is not in the current TableView, need update partitions
             var keys2 = await PublishMessages(topicName.GetPartition(3).ToString(), count * 2, false);
-            await Task.Delay(60000);
+            await Task.Delay(3000);
             _output.WriteLine($"Current tv size: {tv.Size()}");
-            //Assert.Equal(tv.Size(), count * 2);
-            Assert.True(count >= tv.Size());
+            await Task.Delay(6000);
+            Assert.Equal(tv.Size(), count * 2);
+            //Assert.True(count >= tv.Size());
             tv.KeySet().Should().BeEquivalentTo(keys2);
         }
 
