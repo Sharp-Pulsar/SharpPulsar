@@ -242,12 +242,16 @@ partial class Build : NukeBuild
     Target TestContainer => _ => _
     .Executes(async () =>
     {
+        Information("Test Container");
         var container = BuildContainer();
-        await container.StartAsync();//;.GetAwaiter().GetResult();
+        await container.StartAsync();//;.GetAwaiter().GetResult();]
+        Information("Start Test Container");
         await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+        Information("ExecAsync Test Container");
         await container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
 
         await AwaitPortReadiness($"http://127.0.0.1:8081/");
+        Information("AwaitPortReadiness Test Container");
     });
     
     Target TestAPI => _ => _
@@ -315,19 +319,20 @@ partial class Build : NukeBuild
             Information($"Running for {projectName} ({fw}) .....");
             try
             {
-                DotNetTest(c => c
+               var tests = DotNetTest(c => c
                 .SetProjectFile(project)
                 .SetConfiguration(Configuration)
                 .SetFramework(fw)
                 .EnableNoBuild()
                 .EnableNoRestore()
                 .When(true, _ => _
-                     .SetLoggers("trx", "GitHubActions")
-                    .SetResultsDirectory(OutputTests)));
+                     .SetLoggers("console;verbosity=detailed")
+                    .SetResultsDirectory(OutputTests))
+                    );
             }
             catch(Exception ex)
             {
-               // Information(ex.Message);    
+               Information(ex.Message);    
             }
 
         }
