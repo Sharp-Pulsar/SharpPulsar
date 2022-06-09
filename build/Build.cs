@@ -239,6 +239,123 @@ partial class Build : NukeBuild
 
         throw new Exception("Unable to confirm Pulsar has initialized");
     }
+    Target StartPulsar => _ => _
+      .DependsOn(CheckDockerVersion)
+      .Executes(async () =>
+      {
+          DockerTasks.DockerRun(b =>
+           b
+           .SetDetach(true)
+           .SetInteractive(true)
+           .SetName("pulsar")
+           .SetPublish("6650:6650", "8080:8080", "8081:8081", "2181:2181")
+           //.SetMount("source=pulsardata,target=/pulsar/data")
+           //.SetMount("source=pulsarconf,target=/pulsar/conf")
+           .SetImage("apachepulsar/pulsar-all:2.10.0")
+           .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", "PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", "PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", "PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
+           .SetCommand("bash")
+           .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2 && bin/pulsar sql-worker start"));
+
+          var waitTries = 20;
+
+          using var handler = new HttpClientHandler
+          {
+              AllowAutoRedirect = true
+          };
+
+          using var client = new HttpClient(handler);
+
+          while (waitTries > 0)
+          {
+              try
+              {
+                  var get = await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
+                  var j = await get.Content.ReadAsStringAsync();
+                  Information(j);
+                  Information("Apache Pulsar Server live at: http://127.0.0.1");
+
+
+                  DockerTasks.DockerContainerExec(b =>
+                  b
+                  .SetContainer("pulsar")
+                  .SetCommand("bash")
+                  .SetArgs("-c", "bin/pulsar sql-worker start"));
+                  return;
+              }
+              catch (Exception ex)
+              {
+                  Information(ex.Message);
+                  waitTries--;
+                  await Task.Delay(5000).ConfigureAwait(false);
+              }
+          }
+
+          throw new Exception("Unable to confirm Pulsar has initialized");
+      });
+    Target SqlPulsar => _ => _
+      .DependsOn(StartPulsar)
+      .Executes(() =>
+      {
+          DockerTasks.DockerContainerExec(b =>
+          b
+          .SetContainer("pulsar")
+          .SetCommand("bash")
+          .SetArgs("-c", "bin/pulsar sql-worker start"));
+      });
+    Target StopPulsar => _ => _
+    .Unlisted()
+    .DependsOn(EventSource)
+    .AssuredAfterFailure()
+    .Executes(() =>
+    {
+
+        try
+        {
+            DockerTasks.DockerRm(b => b
+            .SetContainers("pulsar")
+            .SetForce(true));
+        }
+        catch (Exception ex)
+        {
+            Information(ex.ToString());
+        }
+
+    });
+    Target AdminPulsar => _ => _
+      .DependsOn(SqlPulsar)
+      .Executes(() =>
+      {
+          DockerTasks.DockerExec(x => x
+                .SetContainer("pulsar")
+                .SetCommand("bin/pulsar-admin")
+                .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
+            );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "create", "public/deduplication")
+           );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "set-retention", "public/default", "--time", "3600", "--size", "-1")
+           );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
+           );
+          DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar-admin")
+               .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
+           );
+          /*DockerTasks.DockerExec(x => x
+               .SetContainer("pulsar")
+               .SetCommand("bin/pulsar")
+               .SetArgs("sql-worker", "run")
+           );*/
+      });
     Target TestContainer => _ => _
     .Executes(async () =>
     {
@@ -255,55 +372,55 @@ partial class Build : NukeBuild
     });
     
     Target TestAPI => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
        });
     Target Test => _ => _
-        .DependsOn(Compile, TestAPI)
+        .DependsOn(TestAPI)
         .Executes(() =>
         {            
             CoreTest("SharpPulsar.Test");
         });
     Target Transaction => _ => _
-       .DependsOn(Compile, Test)
+       .DependsOn(Test)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Transaction");
        });
     Target Partitioned => _ => _
-       .DependsOn(Compile, Transaction)
+       .DependsOn(Transaction)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Partitioned");
        });
     Target Acks => _ => _
-       .DependsOn(Compile, Partitioned)
+       .DependsOn(Partitioned)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Acks");
        });
     Target MultiTopic => _ => _
-       .DependsOn(Compile, Acks)
+       .DependsOn(Acks)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.MultiTopic");
        });
     Target AutoClusterFailover => _ => _
-        .DependsOn(Compile, MultiTopic)
+        .DependsOn(MultiTopic)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
         });
     Target TableView => _ => _
-       .DependsOn(Compile, AutoClusterFailover)
+       .DependsOn(AutoClusterFailover)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.TableView");
        });
     Target EventSource => _ => _
-       .DependsOn(Compile, TableView)
+       .DependsOn(TableView)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");
