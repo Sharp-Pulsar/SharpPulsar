@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Exceptions;
 using SharpPulsar.Interfaces.Transaction;
@@ -24,7 +25,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask AbortAsync()
         {            
-            var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Abort.Instance).ConfigureAwait(false);
+            var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Abort.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (!(error is NoException))
             {
                 _txn.Tell(PoisonPill.Instance);
@@ -39,7 +40,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask CommitAsync()
         {
-            var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Commit.Instance).ConfigureAwait(false);
+            var error = await _txn.Ask<TransactionCoordinatorClientException>(Messages.Transaction.Commit.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (!(error is NoException))
             {
                 _txn.Tell(PoisonPill.Instance);

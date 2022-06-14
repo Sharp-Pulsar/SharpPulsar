@@ -183,7 +183,7 @@ namespace SharpPulsar.User
         
         private async ValueTask<Consumer<T>> Subscribe<T>(ConsumerConfigurationData<T> conf, ISchema<T> schema)
         {
-            var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
+            var state = await _client.Ask<int>(GetClientState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (state != 0)
             {
                 throw new PulsarClientException.AlreadyClosedException("Client already closed");
@@ -277,7 +277,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
+                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
                     var consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, null, schema, true, _clientConfigurationData, tcs));
                     try
@@ -320,7 +320,7 @@ namespace SharpPulsar.User
             var namespaceName = destination.NamespaceObject;
             IActorRef consumer = null;
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value)).ConfigureAwait(false);
+            var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(namespaceName, subscriptionMode.Value), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
 
@@ -365,7 +365,7 @@ namespace SharpPulsar.User
             try
             {
                 var topicName = TopicName.Get(topic);
-                var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+                var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName), TimeSpan.FromSeconds(5));
                 if (result.Failed)
                     throw result.Exception;
 
@@ -475,7 +475,7 @@ namespace SharpPulsar.User
 
         public async ValueTask<Reader<T>> NewReaderAsync<T>(ISchema<T> schema, ReaderConfigBuilder<T> confBuilder)
         {
-            var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
+            var state = await _client.Ask<int>(GetClientState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (state != 0)
             {
                 throw new PulsarClientException.AlreadyClosedException("Client already closed");
@@ -533,7 +533,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
+                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                     _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
                     
                     var cnsr = await tcs.Task.ConfigureAwait(false);
@@ -621,7 +621,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException.InvalidConfigurationException("AutoConsumeSchema is only used by consumers to detect schemas automatically");
             }
             
-            var state = await _client.Ask<int>(GetClientState.Instance).ConfigureAwait(false);
+            var state = await _client.Ask<int>(GetClientState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (state != 0)
             {
                 throw new PulsarClientException.AlreadyClosedException($"Client already closed : state = {state}");
@@ -642,7 +642,7 @@ namespace SharpPulsar.User
                 }
                 else
                 {
-                    var schem = await _lookup.Ask<AskResponse>(new GetSchema(TopicName.Get(conf.TopicName))).ConfigureAwait(false);
+                    var schem = await _lookup.Ask<AskResponse>(new GetSchema(TopicName.Get(conf.TopicName)), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                     if (schem.Failed) 
                         throw schem.Exception;
 
@@ -691,7 +691,7 @@ namespace SharpPulsar.User
             else
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var producerId = await _generator.Ask<long>(NewProducerId.Instance).ConfigureAwait(false);
+                var producerId = await _generator.Ask<long>(NewProducerId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                 _actorSystem.ActorOf(ProducerActor<T>.Prop(producerId, _client, _lookup, _cnxPool, _generator, topic, conf, tcs, -1, schema, interceptors, _clientConfigurationData, null));
                 try
                 {

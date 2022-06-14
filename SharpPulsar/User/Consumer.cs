@@ -33,36 +33,36 @@ namespace SharpPulsar.User
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
         public async ValueTask<string> TopicAsync() 
-            => await _consumerActor.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public string Subscription => SubscriptionAsync().GetAwaiter().GetResult();
         public async ValueTask<string> SubscriptionAsync() 
-            => await _consumerActor.Ask<string>(GetSubscription.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<string>(GetSubscription.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public IConsumerStats Stats => StatsAsync().GetAwaiter().GetResult();
         public async ValueTask<IConsumerStats> StatsAsync() 
-            => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<IConsumerStats>(GetStats.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public IMessageId LastMessageId => LastMessageIdAsync().GetAwaiter().GetResult();
         public async ValueTask<IMessageId> LastMessageIdAsync() 
-            => await _consumerActor.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<IMessageId>(GetLastMessageId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> ConnectedAsync() 
-            => await _consumerActor.Ask<bool>(IsConnected.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<bool>(IsConnected.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public string ConsumerName => ConsumerNameAsync().GetAwaiter().GetResult();
         public async ValueTask<string> ConsumerNameAsync() 
-            => await _consumerActor.Ask<string>(GetConsumerName.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<string>(GetConsumerName.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public long LastDisconnectedTimestamp => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
         public async ValueTask<long> LastDisconnectedTimestampAsync() 
-            => await _consumerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance).ConfigureAwait(false);
+            => await _consumerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public void Acknowledge(IMessage<T> message) => AcknowledgeAsync(message).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessage<T> message)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessage<T>(message)).ConfigureAwait(false);
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessage<T>(message), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
         }
@@ -72,14 +72,14 @@ namespace SharpPulsar.User
         }
         public async ValueTask<int> NumMessagesInQueueAsync()
         {
-            var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance).ConfigureAwait(false);
+            var askFormesageCount = await _consumerActor.Ask<AskResponse>(GetIncomingMessageCount.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             var mesageCount = askFormesageCount.ConvertTo<long>();
             return (int)mesageCount;
         }
         public void Acknowledge(IMessageId messageId) => AcknowledgeAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessageId(messageId)).ConfigureAwait(false);
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessageId(messageId), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
         }
@@ -87,7 +87,7 @@ namespace SharpPulsar.User
         public void Acknowledge(IMessages<T> messages) => AcknowledgeAsync(messages).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessages<T> messages)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessages<T>(messages))
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessages<T>(messages), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -95,7 +95,7 @@ namespace SharpPulsar.User
         public void Acknowledge(IList<IMessageId> messageIds) => AcknowledgeAsync(messageIds).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IList<IMessageId> messageIds)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessageIds(messageIds))
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeMessageIds(messageIds), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -104,7 +104,7 @@ namespace SharpPulsar.User
             => AcknowledgeAsync(messageId, txn).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeAsync(IMessageId messageId, Transaction txn)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeWithTxn(messageId, txn.Txn))
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeWithTxn(messageId, txn.Txn), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -113,7 +113,7 @@ namespace SharpPulsar.User
             => AcknowledgeCumulativeAsync(message).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeCumulativeAsync(IMessage<T> message)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeCumulativeMessage<T>(message))
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeCumulativeMessage<T>(message), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -122,7 +122,7 @@ namespace SharpPulsar.User
             => AcknowledgeCumulativeAsync(messageid).GetAwaiter().GetResult();
         public async ValueTask AcknowledgeCumulativeAsync(IMessageId messageId)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeCumulativeMessageId(messageId))
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeCumulativeMessageId(messageId), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -135,7 +135,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Cannot use cumulative acks on a non-exclusive/non-failover subscription");
             }
-            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeCumulativeTxn(messageId, txn.Txn))
+            var ask = await _consumerActor.Ask<AskResponse>(new AcknowledgeCumulativeTxn(messageId, txn.Txn), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -154,7 +154,7 @@ namespace SharpPulsar.User
             => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> HasReachedEndOfTopicAsync()
         {
-            var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.HasReachedEndOfTopic.Instance)
+            var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.HasReachedEndOfTopic.Instance, TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
 
             return ask.ConvertTo<bool>();
@@ -168,7 +168,7 @@ namespace SharpPulsar.User
             => NegativeAcknowledgeAsync(message).GetAwaiter().GetResult();
         public async ValueTask NegativeAcknowledgeAsync(IMessage<T> message)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new NegativeAcknowledgeMessage<T>(message))
+            var ask = await _consumerActor.Ask<AskResponse>(new NegativeAcknowledgeMessage<T>(message), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -179,7 +179,7 @@ namespace SharpPulsar.User
 
         public async ValueTask NegativeAcknowledgeAsync(IMessages<T> messages)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new NegativeAcknowledgeMessages<T>(messages))
+            var ask = await _consumerActor.Ask<AskResponse>(new NegativeAcknowledgeMessages<T>(messages), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -196,7 +196,7 @@ namespace SharpPulsar.User
 
         public async ValueTask<IMessage<T>> ReceiveAsync()
         {
-            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (response.Failed)
                 throw response.Exception;
 
@@ -228,7 +228,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask<IMessages<T>> BatchReceiveAsync()
         {
-            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (response.Failed)
                 throw response.Exception;
 
@@ -244,7 +244,7 @@ namespace SharpPulsar.User
             => ReconsumeLaterAsync(message, delayTimeInMs).GetAwaiter().GetResult();
         public async ValueTask ReconsumeLaterAsync(IMessage<T> message, TimeSpan delayTimeInMs)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterMessage<T>(message, delayTimeInMs))
+            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterMessage<T>(message, delayTimeInMs), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -254,7 +254,7 @@ namespace SharpPulsar.User
             => ReconsumeLaterAsync(messages, delayTimeInMs).GetAwaiter().GetResult();
         public async ValueTask ReconsumeLaterAsync(IMessages<T> messages, TimeSpan delayTimeInMs)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterMessages<T>(messages, delayTimeInMs))
+            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterMessages<T>(messages, delayTimeInMs), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -264,7 +264,7 @@ namespace SharpPulsar.User
             => ReconsumeLaterCumulativeAsync(message, delayTimeInMs).GetAwaiter().GetResult();
         public async ValueTask ReconsumeLaterCumulativeAsync(IMessage<T> message, TimeSpan delayTimeInMs)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterCumulative<T>(message, delayTimeInMs))
+            var ask = await _consumerActor.Ask<AskResponse>(new ReconsumeLaterCumulative<T>(message, delayTimeInMs), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -274,7 +274,7 @@ namespace SharpPulsar.User
             => RedeliverUnacknowledgedMessagesAsync().ConfigureAwait(false);
         public async ValueTask RedeliverUnacknowledgedMessagesAsync()
         {
-            var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance)
+            var ask = await _consumerActor.Ask<AskResponse>(Messages.Consumer.RedeliverUnacknowledgedMessages.Instance, TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -290,7 +290,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask SeekAsync(IMessageId messageId)
         {
-            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             var state = askForState.ConvertTo<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -304,7 +304,7 @@ namespace SharpPulsar.User
 
             }
 
-            var ask = await _consumerActor.Ask<AskResponse>(new SeekMessageId(messageId))
+            var ask = await _consumerActor.Ask<AskResponse>(new SeekMessageId(messageId), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -315,7 +315,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask SeekAsync(long timestamp)
         {
-            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             var state = askForState.ConvertTo<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -328,7 +328,7 @@ namespace SharpPulsar.User
                 throw new Exception($"The client is not connected to the broker when seeking the subscription {Subscription} of the topic {Topic} to the timestamp {timestamp:D}");
             }
 
-            var ask = await _consumerActor.Ask<AskResponse>(new SeekTimestamp(timestamp))
+            var ask = await _consumerActor.Ask<AskResponse>(new SeekTimestamp(timestamp), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
@@ -439,7 +439,7 @@ namespace SharpPulsar.User
 
         public async ValueTask NegativeAcknowledgeAsync(IMessageId messageId)
         {
-            var ask = await _consumerActor.Ask<AskResponse>(new NegativeAcknowledgeMessageId(messageId))
+            var ask = await _consumerActor.Ask<AskResponse>(new NegativeAcknowledgeMessageId(messageId), TimeSpan.FromSeconds(5))
                 .ConfigureAwait(false);
             if (ask.Failed)
                 throw ask.Exception;
