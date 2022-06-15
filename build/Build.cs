@@ -51,7 +51,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.Source);
+    public static int Main() => Execute<Build>(x => x.EventSource);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -63,8 +63,6 @@ partial class Build : NukeBuild
     [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
-
-    [Parameter] bool Container = false;
 
     [Parameter][Secret] string NugetApiKey;
 
@@ -322,7 +320,6 @@ partial class Build : NukeBuild
     });
     Target AdminPulsar => _ => _
       .DependsOn(SqlPulsar)
-      .Triggers(StopPulsar)
       .Executes(() =>
       {
           DockerTasks.DockerExec(x => x
@@ -357,8 +354,6 @@ partial class Build : NukeBuild
            );*/
       });
     Target TestContainer => _ => _
-    .DependsOn(Compile)
-    .Triggers(TestAPI, Test, Transaction, Partitioned, Acks, MultiTopic, AutoClusterFailover, TableView, EventSource)
     .Executes(async () =>
     {
         Information("Test Container");
@@ -373,58 +368,62 @@ partial class Build : NukeBuild
         Information("AwaitPortReadiness Test Container");
     });
 
-    Target Source => _ => _
-     .DependsOn(TestAPI, Test, Transaction, Partitioned, Acks, MultiTopic, AutoClusterFailover, TableView, EventSource)
-     .Executes(() =>
-     {
-         CoreTest("SharpPulsar.Test.EventSource");
-     });
     Target TestAPI => _ => _
+       .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
        });
     Target Test => _ => _
+        .DependsOn(TestAPI)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test");
         });
     Target Transaction => _ => _
+       .DependsOn(Test)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Transaction");
        });
     Target Partitioned => _ => _
+       .DependsOn(Transaction)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Partitioned");
        });
     Target Acks => _ => _
+       .DependsOn(Partitioned)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Acks");
-       });   
+       });
     Target MultiTopic => _ => _
+       .DependsOn(Acks)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.MultiTopic");
        });
     Target AutoClusterFailover => _ => _
+        .DependsOn(MultiTopic)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
         });
     Target TableView => _ => _
+       .DependsOn(AutoClusterFailover)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.TableView");
        });
     Target EventSource => _ => _
+       .DependsOn(TableView)
+       .Triggers(StopPulsar)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");
        });
-       
+
     void CoreTest(string projectName)
     {
 
@@ -435,15 +434,15 @@ partial class Build : NukeBuild
             Information($"Running for {projectName} ({fw}) .....");
             try
             {
-                 DotNetTest(c => c
-                 .SetProjectFile(project)
-                 .SetConfiguration(Configuration)
-                 .SetFramework(fw)
-                 .EnableNoBuild()
-                 .EnableNoRestore()
-                 .When(true, _ => _
-                      .SetLoggers("console;verbosity=detailed")
-                     .SetResultsDirectory(OutputTests)));
+                DotNetTest(c => c
+                .SetProjectFile(project)
+                .SetConfiguration(Configuration)
+                .SetFramework(fw)
+                .EnableNoBuild()
+                .EnableNoRestore()
+                .When(true, _ => _
+                     .SetLoggers("console;verbosity=detailed")
+                    .SetResultsDirectory(OutputTests)));
             }
             catch (Exception ex)
             {
