@@ -51,7 +51,7 @@ partial class Build : NukeBuild
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
     //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.EventSource);
+    public static int Main() => Execute<Build>(x => x.Source);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -371,61 +371,67 @@ partial class Build : NukeBuild
         Information("AwaitPortReadiness Test Container");
     });
 
+    Target Source => _ => _
+     .DependsOn(TestAPI, Test, Transaction, Partitioned, Acks, MultiTopic, AutoClusterFailover, TableView, EventSource)
+     .Executes(() =>
+     {
+         CoreTest("SharpPulsar.Test.EventSource");
+     });
     Target TestAPI => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(Compile)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
        });
     Target Test => _ => _
-        .DependsOn(TestAPI)
+        .DependsOn(Compile, TestContainer)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test");
         });
     Target Transaction => _ => _
-       .DependsOn(Test)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Transaction");
        });
     Target Partitioned => _ => _
-       .DependsOn(Transaction)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Partitioned");
        });
     Target Acks => _ => _
-       .DependsOn(Partitioned)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Acks");
-       });
+       });   
     Target MultiTopic => _ => _
-       .DependsOn(Acks)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.MultiTopic");
        });
     Target AutoClusterFailover => _ => _
-        .DependsOn(MultiTopic)
+        .DependsOn(Compile, TestContainer)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
         });
     Target TableView => _ => _
-       .DependsOn(AutoClusterFailover)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.TableView");
        });
     Target EventSource => _ => _
-       .DependsOn(TableView)
+       .DependsOn(Compile, TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");
        });
-
+       
     void CoreTest(string projectName)
     {
 
