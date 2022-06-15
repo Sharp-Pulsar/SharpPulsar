@@ -357,6 +357,7 @@ partial class Build : NukeBuild
            );*/
       });
     Target TestContainer => _ => _
+    .DependsOn(Compile)
     .Executes(async () =>
     {
         Information("Test Container");
@@ -384,49 +385,49 @@ partial class Build : NukeBuild
            CoreTest("SharpPulsar.Test.API");
        });
     Target Test => _ => _
-        .DependsOn(Compile, TestContainer)
+        .DependsOn(TestContainer)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test");
         });
     Target Transaction => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Transaction");
        });
     Target Partitioned => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Partitioned");
        });
     Target Acks => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.Acks");
        });   
     Target MultiTopic => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.MultiTopic");
        });
     Target AutoClusterFailover => _ => _
-        .DependsOn(Compile, TestContainer)
+        .DependsOn(TestContainer)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test.AutoClusterFailover");
         });
     Target TableView => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.TableView");
        });
     Target EventSource => _ => _
-       .DependsOn(Compile, TestContainer)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");
