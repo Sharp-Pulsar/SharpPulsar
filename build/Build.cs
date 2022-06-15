@@ -379,7 +379,7 @@ partial class Build : NukeBuild
          CoreTest("SharpPulsar.Test.EventSource");
      });
     Target TestAPI => _ => _
-       .DependsOn(Compile)
+       .DependsOn(TestContainer)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
