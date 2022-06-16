@@ -36,8 +36,8 @@ using SharpPulsar.TestContainer;
 using DotNet.Testcontainers.Builders;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
-[CheckBuildProjectConfigurations]
-[ShutdownDotNetAfterServerBuild]
+//[CheckBuildProjectConfigurations]
+//[ShutdownDotNetAfterServerBuild]
 
 partial class Build : NukeBuild
 {
@@ -114,13 +114,13 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            //var vers = GitVersion.MajorMinorPatch;
+            var vers = GitVersion.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
                 //.SetAssemblyVersion(vers)
-                //.SetFileVersion(vers)
+                .SetFileVersion(vers)
                 .SetVersion(GitVersion.SemVer));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
@@ -518,6 +518,7 @@ partial class Build : NukeBuild
 
       });
     Target PublishNuget => _ => _
+      .DependsOn(EventSource)
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
@@ -548,6 +549,7 @@ partial class Build : NukeBuild
         });
     Target GitHubRelease => _ => _
         .Unlisted()
+        .Produces(OutputTests / "*.trx")
         .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
         .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
         .DependsOn(AuthenticatedGitHubClient)
