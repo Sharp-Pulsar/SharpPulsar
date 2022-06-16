@@ -67,14 +67,8 @@ partial class Build : NukeBuild
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
 
     [Parameter][Secret] string NugetApiKey;
-
-    [Parameter][Secret] string Toke;
     [Parameter][Secret] string GitHubToken;
-
-    [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
-
     AbsolutePath Output => RootDirectory / "bin";
-    AbsolutePath OutputContainer => RootDirectory / "container";
     AbsolutePath OutputNuget => Output / "nuget";
     AbsolutePath OutputTests => RootDirectory / "TestResults";
     AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
@@ -116,7 +110,9 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var vers = GitVersion.MajorMinorPatch;
+            var sar = GitVersion;
+            Information(sar.AssemblySemFileVer);
+            var vers = sar.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
