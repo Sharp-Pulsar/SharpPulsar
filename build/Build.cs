@@ -38,6 +38,8 @@ using DotNet.Testcontainers.Builders;
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 //[CheckBuildProjectConfigurations]
 //[ShutdownDotNetAfterServerBuild]
+[DotNetVerbosityMapping]
+[ShutdownDotNetAfterServerBuild]
 
 partial class Build : NukeBuild
 {
