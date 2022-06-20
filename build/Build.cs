@@ -110,9 +110,7 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var sar = GitVersion;
-            Information(sar.AssemblySemFileVer);
-            var vers = sar.MajorMinorPatch;
+            var vers = GitVersion.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
