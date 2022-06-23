@@ -129,7 +129,7 @@ namespace SharpPulsar
         {
             try
             {
-                var response = await _consumer.Ask<AskResponse>(sub).ConfigureAwait(false);
+                var response = await _consumer.Ask<AskResponse>(sub, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                 _sender.Tell(response);
             }
             catch (Exception ex)

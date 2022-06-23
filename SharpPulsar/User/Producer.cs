@@ -36,34 +36,34 @@ namespace SharpPulsar.User
             => TopicAsync().GetAwaiter().GetResult();
         public async ValueTask<string> TopicAsync()
         {
-           var c = await _producerActor.Ask<string>(GetTopic.Instance /*, TimeSpan.FromSeconds(2)*/);
+           var c = await _producerActor.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
            return c.ToString();    
         }
 
         public string ProducerName 
             => ProducerNameAsync().GetAwaiter().GetResult();
         public async ValueTask<string> ProducerNameAsync()
-            => await _producerActor.Ask<string>(GetProducerName.Instance);
+            => await _producerActor.Ask<string>(GetProducerName.Instance, TimeSpan.FromSeconds(5));
 
         public long LastSequenceId 
             => LastSequenceIdAsync().GetAwaiter().GetResult();
         public async ValueTask<long> LastSequenceIdAsync()
-            => await _producerActor.Ask<long>(GetLastSequenceId.Instance);
+            => await _producerActor.Ask<long>(GetLastSequenceId.Instance, TimeSpan.FromSeconds(5));
         
         public IProducerStats Stats 
             => StatsAsync().GetAwaiter().GetResult();
         public async ValueTask<IProducerStats> StatsAsync()
-            => await _producerActor.Ask<IProducerStats>(GetStats.Instance);
+            => await _producerActor.Ask<IProducerStats>(GetStats.Instance, TimeSpan.FromSeconds(5));
 
         public bool Connected 
             => ConnectedAsync().GetAwaiter().GetResult();
         public virtual async ValueTask<bool> ConnectedAsync() 
-            => await _producerActor.Ask<bool>(IsConnected.Instance);
+            => await _producerActor.Ask<bool>(IsConnected.Instance, TimeSpan.FromSeconds(5));
 
         public long LastDisconnectedTimestamp 
             => LastDisconnectedTimestampAsync().GetAwaiter().GetResult();
         public async ValueTask<long> LastDisconnectedTimestampAsync()
-            => await _producerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance);
+            => await _producerActor.Ask<long>(GetLastDisconnectedTimestamp.Instance, TimeSpan.FromSeconds(5));
 
         public void Close()
         {
@@ -142,7 +142,7 @@ namespace SharpPulsar.User
         }
         public async ValueTask ToProducers()
         {
-            var producer = await _producerActor.Ask<SetProducers>(GetProducers.Instance);
+            var producer = await _producerActor.Ask<SetProducers>(GetProducers.Instance, TimeSpan.FromSeconds(5));
             foreach (var s in producer.Producers)
             {
                 _producers.TryAdd(s.Key, new Producer<T>(s.Value, _schema, _conf, _opTimeout));

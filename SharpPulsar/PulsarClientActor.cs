@@ -118,7 +118,7 @@ namespace SharpPulsar
 			_log.Info($"Updating service URL to {serviceUrl}");
 
 			_conf.ServiceUrl = serviceUrl;
-			var asked = _lookup.Ask<int>(new UpdateServiceUrl(serviceUrl)).GetAwaiter().GetResult();
+			var asked = _lookup.Ask<int>(new UpdateServiceUrl(serviceUrl), TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 			_cnxPool.Tell(CloseAllConnections.Instance);
 		}
 

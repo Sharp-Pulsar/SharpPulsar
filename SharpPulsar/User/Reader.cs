@@ -24,10 +24,10 @@ namespace SharpPulsar.User
             _conf = conf;
         }
         public string Topic => TopicAsync().GetAwaiter().GetResult();
-        public async ValueTask<string> TopicAsync() => await _readerActor.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
+        public async ValueTask<string> TopicAsync() => await _readerActor.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
         public bool Connected => ConnectedAsync().GetAwaiter().GetResult();
-        public async ValueTask<bool> ConnectedAsync() => await _readerActor.Ask<bool>(IsConnected.Instance).ConfigureAwait(false);
+        public async ValueTask<bool> ConnectedAsync() => await _readerActor.Ask<bool>(IsConnected.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
 
         public void Stop()
@@ -38,7 +38,7 @@ namespace SharpPulsar.User
         public bool HasMessageAvailable() => HasMessageAvailableAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> HasMessageAvailableAsync()
         {
-            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.HasMessageAvailable.Instance).ConfigureAwait(false);
+            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.HasMessageAvailable.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (response.Failed)
                 throw response.Exception;
 
@@ -48,7 +48,7 @@ namespace SharpPulsar.User
         public bool HasReachedEndOfTopic() => HasReachedEndOfTopicAsync().GetAwaiter().GetResult();
         public async ValueTask<bool> HasReachedEndOfTopicAsync()
         {
-            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.HasReachedEndOfTopic.Instance).ConfigureAwait(false);
+            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.HasReachedEndOfTopic.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             return response.ConvertTo<bool>();
         }
         public IMessage<T> ReadNext() => ReadNextAsync().GetAwaiter().GetResult();
@@ -69,7 +69,7 @@ namespace SharpPulsar.User
             => SeekAsync(messageId).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(IMessageId messageId)
         {
-            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             var state = askForState.ConvertTo<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -82,7 +82,7 @@ namespace SharpPulsar.User
                 throw new PulsarClientException($"The client is not connected to the broker when seeking the subscription of the topic {Topic} to the message {messageId}");
 
             }
-            var response = await _readerActor.Ask<AskResponse>(new SeekMessageId(messageId)).ConfigureAwait(false);
+            var response = await _readerActor.Ask<AskResponse>(new SeekMessageId(messageId), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (response.Failed)
                   throw response.Exception;
         }
@@ -90,7 +90,7 @@ namespace SharpPulsar.User
             => SeekAsync(timestamp).GetAwaiter().GetResult();
         public async ValueTask SeekAsync(long timestamp)
         {
-            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance).ConfigureAwait(false);
+            var askForState = await _stateActor.Ask<AskResponse>(GetHandlerState.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             var state = askForState.ConvertTo<HandlerState.State>();
             if (state == HandlerState.State.Closing || state == HandlerState.State.Closed)
             {
@@ -102,7 +102,7 @@ namespace SharpPulsar.User
             {
                 throw new Exception($"The client is not connected to the broker when seeking the subscription of the topic {Topic} to the timestamp {timestamp:D}");
             }
-            var response = await _readerActor.Ask<AskResponse>(new SeekTimestamp(timestamp)).ConfigureAwait(false);
+            var response = await _readerActor.Ask<AskResponse>(new SeekTimestamp(timestamp), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (response.Failed)
                 throw response.Exception;
         }
@@ -113,7 +113,7 @@ namespace SharpPulsar.User
         }
         private async ValueTask<IMessage<T>> GetMessage()
         {
-            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (response.Failed)
                 throw response.Exception;
 

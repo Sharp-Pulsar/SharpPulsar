@@ -106,7 +106,7 @@ namespace SharpPulsar
 		private async ValueTask LookupConnection()
         {
 			var topicName = TopicName.Get(_state.Topic);
-			var askResponse = await _state.Lookup.Ask<AskResponse>(new GetBroker(topicName));
+			var askResponse = await _state.Lookup.Ask<AskResponse>(new GetBroker(topicName), TimeSpan.FromSeconds(5));
             if (askResponse.Failed)
             {
                 _sender.Tell(askResponse);
@@ -114,7 +114,7 @@ namespace SharpPulsar
             }
 
             var broker = askResponse.ConvertTo<GetBrokerResponse>();
-            var connect = await _state.ConnectionPool.Ask<AskResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress));
+            var connect = await _state.ConnectionPool.Ask<AskResponse>(new GetConnection(broker.LogicalAddress, broker.PhysicalAddress), TimeSpan.FromSeconds(5));
             if (connect.Failed)
             {
                 _log.Error(connect.Exception.ToString());

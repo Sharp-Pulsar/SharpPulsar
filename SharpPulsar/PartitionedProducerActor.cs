@@ -177,7 +177,7 @@ namespace SharpPulsar
             foreach (var partitionIndex in index)
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var producerId = await _generator.Ask<long>(NewProducerId.Instance);
+                var producerId = await _generator.Ask<long>(NewProducerId.Instance, TimeSpan.FromSeconds(5));
                 if (overrideProducerName == null)
                 {
                     var id = $"{producerId}";
@@ -288,7 +288,7 @@ namespace SharpPulsar
             if (Conf.LazyStartPartitionedProducers && !_producer.ContainsKey(partition))
             {
                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var producerId = await _generator.Ask<long>(NewProducerId.Instance);
+                var producerId = await _generator.Ask<long>(NewProducerId.Instance, TimeSpan.FromSeconds(5));
                 var partitionName = TopicName.Get(Topic).GetPartition(partition).ToString();
                 var actor = _context.ActorOf(ProducerActor<T>.Prop(producerId, Client, _lookup, _cnxPool, _generator, partitionName, Conf, tcs, partition, Schema, Interceptors, ClientConfiguration, _overrideProducerName));
 
@@ -393,7 +393,7 @@ namespace SharpPulsar
                 }
                 var topicName = TopicName.Get(_outerInstance.Topic);
 
-                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName));
+                var result = await _outerInstance._lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName), TimeSpan.FromSeconds(5));
 
                 if (result.Failed)
                 {
@@ -431,7 +431,7 @@ namespace SharpPulsar
                             foreach (var partitionName in newPartitions)
                             {
                                 var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                var producerId = await _outerInstance._generator.Ask<long>(NewProducerId.Instance);
+                                var producerId = await _outerInstance._generator.Ask<long>(NewProducerId.Instance, TimeSpan.FromSeconds(5));
                                 var partitionIndex = TopicName.GetPartitionIndex(partitionName);
                                 _outerInstance._context.ActorOf(ProducerActor<T>.Prop(producerId, _outerInstance.Client, _outerInstance._lookup, _outerInstance._cnxPool, _outerInstance._generator, partitionName, _outerInstance.Conf, tcs, partitionIndex, _outerInstance.Schema, _outerInstance.Interceptors, _outerInstance.ClientConfiguration, _outerInstance._overrideProducerName));
                                 try

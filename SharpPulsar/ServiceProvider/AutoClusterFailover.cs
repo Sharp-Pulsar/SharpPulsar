@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Builder;
 using SharpPulsar.Common;
@@ -39,7 +40,7 @@ namespace SharpPulsar.ServiceProvider
         public string ServiceUrl => ServiceUrlAsync().GetAwaiter().GetResult();
 
         public async ValueTask<string> ServiceUrlAsync() => await _clusterFailOverActor
-            .Ask<string>(GetServiceUrl.Instance)
+            .Ask<string>(GetServiceUrl.Instance, TimeSpan.FromSeconds(5))
             .ConfigureAwait(false);
 
         public void Close()

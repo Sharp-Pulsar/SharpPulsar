@@ -271,12 +271,12 @@ namespace SharpPulsar
 			_clientCnx = null;
 			_requestId = -1;
 			var address = _serviceNameResolver.ResolveHost().ToDnsEndPoint();
-            var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address));
+            var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address), TimeSpan.FromSeconds(5));
             if (ask.Failed)
                 throw ask.Exception;
             var o = ask.ConvertTo<ConnectionOpened>();
             _clientCnx = o.ClientCnx;
-            var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+            var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
             _requestId = id.Id;
         }
 		private async ValueTask GetCnxAndRequestId(DnsEndPoint dnsEndPoint)
@@ -284,12 +284,12 @@ namespace SharpPulsar
 			_clientCnx = null;
 			_requestId = -1;
 			var address = dnsEndPoint;
-			var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address));
+			var ask = await _connectionPool.Ask<AskResponse>(new GetConnection(address), TimeSpan.FromSeconds(5));
             if (ask.Failed)
                 throw ask.Exception;
             var o = ask.ConvertTo<ConnectionOpened>();
             _clientCnx = o.ClientCnx;
-            var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+            var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
             _requestId = id.Id;
         }
 
@@ -303,7 +303,7 @@ namespace SharpPulsar
 		{
             var request = Commands.NewLookup(topicName.ToString(), _listenerName, authoritative, _requestId);
 			var payload = new Payload(request, _requestId, "NewLookup");
-			return await _clientCnx.Ask<AskResponse>(payload);
+			return await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(5));
         }
 
 		/// <summary>
@@ -314,7 +314,7 @@ namespace SharpPulsar
 		{
 			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
-            var askResponse = await _clientCnx.Ask<AskResponse>(payload);
+            var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(5));
             if (askResponse.Failed)
             {
                 var e = askResponse.Exception;
@@ -331,7 +331,7 @@ namespace SharpPulsar
                 {
                     _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Message}");
                     opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
-                    var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                    var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
                     _requestId = id.Id;
                     await GetPartitionedTopicMetadata(topicName, opTimeout);
                 }
@@ -355,7 +355,7 @@ namespace SharpPulsar
 		{
 			var request = Commands.NewGetSchema(_requestId, topicName.ToString(), BytesSchemaVersion.Of(version));
 			var payload = new Payload(request, _requestId, "SendGetRawSchema");
-			var askResponse = await _clientCnx.Ask<AskResponse>(payload);
+			var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(5));
 
             if (askResponse.Failed)
             {
@@ -435,7 +435,7 @@ namespace SharpPulsar
                     opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
                     await Task.Delay(TimeSpan.FromMilliseconds(nextDelay)); 
 
-                    var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                    var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
 
                     _requestId = reqId.Id;
 

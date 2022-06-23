@@ -438,14 +438,14 @@ namespace SharpPulsar
 					}
 				}
 			}
-            var response  = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+            var response  = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
             _requestId = response.Id;
-            var epochResponse = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance);
+            var epochResponse = await _connectionHandler.Ask<GetEpochResponse>(GetEpoch.Instance, TimeSpan.FromSeconds(5));
             var epoch = epochResponse.Epoch;
             _log.Info($"[{Topic}] [{_producerName}] Creating producer on cnx {_cnx.Path.Name}");
             var cmd = Commands.NewProducer(base.Topic, _producerId, _requestId, _producerName, Conf.EncryptionEnabled, _metadata, _schemaInfo, epoch, _userProvidedProducerName, Conf.AccessMode, _topicEpoch, _isTxnEnabled, Conf.InitialSubscriptionName);
             var payload = new Payload(cmd, _requestId, "NewProducer");
-            await _cnx.Ask<AskResponse>(payload).ContinueWith( async response=>
+            await _cnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(5)).ContinueWith( async response=>
              {
                  var isFaulted = response.IsFaulted;
                  var request = isFaulted ? null : response.Result;
@@ -682,7 +682,7 @@ namespace SharpPulsar
             }
             else
             {
-                await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic))
+                await txn.Ask<RegisterProducedTopicResponse>(new RegisterProducedTopic(Topic), TimeSpan.FromSeconds(5))
                     .ContinueWith(async task =>
                     {
                         var cb = callback;
@@ -1017,9 +1017,9 @@ namespace SharpPulsar
             {
                 return;
             }
-            var idResponse = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
+            var idResponse = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             _requestId = idResponse.Id;
-            var protocolVersionResponse = await _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance).ConfigureAwait(false);
+            var protocolVersionResponse = await _cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             _protocolVersion = protocolVersionResponse.Version;
             
             if (msg.SchemaInternal() != null && msg.SchemaInternal().SchemaInfo.Type.Value > 0)
@@ -1038,7 +1038,7 @@ namespace SharpPulsar
             var request = Commands.NewGetOrCreateSchema(_requestId, base.Topic, _schemaInfo);
             var payload = new Payload(request, _requestId, "SendGetOrCreateSchema");
             _log.Info($"[{Topic}] [{_producerName}] GetOrCreateSchema request", Topic, _producerName);
-            var schemaResponse = await _cnx.Ask<GetOrCreateSchemaResponse>(payload).ConfigureAwait(false);
+            var schemaResponse = await _cnx.Ask<GetOrCreateSchemaResponse>(payload, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (schemaResponse.Response.ErrorCode != ServerError.UnknownError)
             {
                 _log.Warning($"[{Topic}] [{_producerName}] GetOrCreateSchema succeed");
@@ -1212,7 +1212,7 @@ namespace SharpPulsar
 				_pendingMessages.Clear();
 			}
 
-			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).Id;
+			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5)).Id;
 			var cmd = Commands.NewCloseProducer(_producerId, requestId);
 			var response = await cnx.Ask(new SendRequestWithId(cmd, requestId));
 			if (!(response is Exception))
@@ -1770,7 +1770,7 @@ namespace SharpPulsar
 		// wrapper for connection methods
 		private async ValueTask<IActorRef> Cnx()
 		{
-			var response = await _connectionHandler.Ask<AskResponse>(GetCnx.Instance);
+			var response = await _connectionHandler.Ask<AskResponse>(GetCnx.Instance, TimeSpan.FromSeconds(5));
             if (response.Data == null)
                 return null;
 

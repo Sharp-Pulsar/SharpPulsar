@@ -357,7 +357,7 @@ namespace SharpPulsar
                 SetCnx(c.ClientCnx);
                 _log.Info($"[{Topic}][{Subscription}] Subscribing to topic on cnx {_clientCnx.Path.Name}, consumerId {_consumerId}");
 
-                var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).ConfigureAwait(false);
+                var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                 var requestId = id.Id;
                 if (_duringSeek)
                 {
@@ -930,7 +930,7 @@ namespace SharpPulsar
 				if (Connected())
 				{
 					State.ConnectionState = HandlerState.State.Closing;
-					var res =  _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
+					var res =  _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 					var requestId =  res.Id;
 					var unsubscribe = Commands.NewUnsubscribe(_consumerId, requestId);
 				    var cnx = _clientCnx;
@@ -975,7 +975,7 @@ namespace SharpPulsar
 
 			CloseConsumerTasks();
 
-			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult().Id;
+			var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult().Id;
             try
             {
 				var cnx = _clientCnx;
@@ -1058,8 +1058,8 @@ namespace SharpPulsar
 
 			if(txn != null)
 			{
-				var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance).GetAwaiter().GetResult();
-				var bits = txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance).GetAwaiter().GetResult();
+				var requestId = _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+				var bits = txn.Ask<GetTxnIdBitsResponse>(GetTxnIdBits.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				DoTransactionAcknowledgeForResponse(messageId, ackType, null, properties, new TxnID(bits.MostBits, bits.LeastBits), requestId.Id);
                 return;
             }
@@ -1430,7 +1430,7 @@ namespace SharpPulsar
 
             try
             {
-                var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId));
+                var isDub = await _acknowledgmentsGroupingTracker.Ask<bool>(new IsDuplicate(msgId), TimeSpan.FromSeconds(5));
                 if (isDub)
                 {
                     if (_log.IsDebugEnabled)
@@ -2024,7 +2024,7 @@ namespace SharpPulsar
 
 		internal override long LastDisconnectedTimestamp()
 		{
-			var response = _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance).GetAwaiter().GetResult();
+			var response = _connectionHandler.Ask<LastConnectionClosedTimestampResponse>(LastConnectionClosedTimestamp.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             return response.TimeStamp;
         }
 
@@ -2390,7 +2390,7 @@ namespace SharpPulsar
             var seekBy = $"the message {messageId}";
             if (SeekCheckState(seekBy))
             {
-                var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
                 var requestId = result.Id;
                 var seek = ReadOnlySequence<byte>.Empty;
                 if (messageId is BatchMessageId msgId)
@@ -2417,7 +2417,7 @@ namespace SharpPulsar
             var seekBy = $"the timestamp {timestamp:D}";
             if (SeekCheckState(seekBy))
             {
-                var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                var result = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
                 var requestId = result.Id;
                 await SeekInternal(requestId, Commands.NewSeek(_consumerId, requestId, timestamp), IMessageId.Earliest, seekBy);
             };
@@ -2592,14 +2592,14 @@ namespace SharpPulsar
                         throw new PulsarClientException.NotSupportedException($"The command `GetLastMessageId` is not supported for the protocol version {protocolVersion:D}. The consumer is {base.ConsumerName}, topic {_topicName}, subscription {base.Subscription}");
                     }
 
-                    var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                    var res = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
                     var requestId = res.Id;
                     var getLastIdCmd = Commands.NewGetLastMessageId(_consumerId, requestId);
                     _log.Info($"[{Topic}][{Subscription}] Get topic last message Id");
                     var payload = new Payload(getLastIdCmd, requestId, "NewGetLastMessageId");
                     try
                     {
-                        var result = await cnx.Ask<LastMessageIdResponse>(payload);
+                        var result = await cnx.Ask<LastMessageIdResponse>(payload, TimeSpan.FromSeconds(5));
                         IMessageId lastMessageId;
                         MessageId markDeletePosition = null;
                         if (result.MarkDeletePosition != null)

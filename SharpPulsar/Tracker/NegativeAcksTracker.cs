@@ -92,7 +92,7 @@ namespace SharpPulsar.Tracker
             {
                 if (unack.Value < now)
                 {
-                    var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { unack.Key}));
+                    var ids = await _unack.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { unack.Key}), TimeSpan.FromSeconds(5));
                     foreach (var i in ids.MessageIds)
                         messagesToRedeliver.Add(i);
 

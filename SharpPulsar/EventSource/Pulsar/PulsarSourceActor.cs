@@ -68,7 +68,7 @@ namespace SharpPulsar.EventSource.Pulsar
             }
 
             var partitionIdx = TopicName.GetPartitionIndex(readerConfiguration.TopicName);
-            var consumerId = generator.Ask<long>(NewConsumerId.Instance).GetAwaiter().GetResult();
+            var consumerId = generator.Ask<long>(NewConsumerId.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
             Context.ActorOf(ConsumerActor<T>.Prop(consumerId, stateA, clientActor, lookup, cnxPool, generator, readerConfiguration.TopicName, consumerConfiguration, partitionIdx, true, readerConfiguration.StartMessageId, readerConfiguration.StartMessageFromRollbackDurationInSec, schema, true, client, tcs));
             _child = tcs.Task.GetAwaiter().GetResult();

@@ -320,7 +320,7 @@ namespace SharpPulsar.Tracker
 
         private async ValueTask DoCumulativeAck(MessageId messageId, IDictionary<string, long> properties, long[] bitset)
         {
-            var count = await _consumer.Ask<int>(new RemoveMessagesTill(messageId)).ConfigureAwait(false);
+            var count = await _consumer.Ask<int>(new RemoveMessagesTill(messageId), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             _consumer.Tell(new IncrementNumAcksSent(count));
             if (_acknowledgementGroupTime.TotalMilliseconds == 0 || (properties != null && properties.Count > 0))
             {
@@ -374,7 +374,7 @@ namespace SharpPulsar.Tracker
         }
         private async ValueTask<bool> IsAckReceiptEnabled(IActorRef cnx)
         {
-            var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+            var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance, TimeSpan.FromSeconds(5));
             var protocolVersion = version.Version;
             return _ackReceiptEnabled && cnx != null && Commands.PeerSupportsAckReceipt(protocolVersion);
         }
@@ -504,7 +504,7 @@ namespace SharpPulsar.Tracker
                 //Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>> transactionEntriesToAck = new Dictionary<IActorRef, IList<(long ledger, long entry, BitSet bitSet)>>();
                 if (_pendingIndividualAcks.Count > 0)
                 {
-                    var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+                    var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance, TimeSpan.FromSeconds(5));
                     var protocolVersion = version.Version;
                     if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                     {
@@ -516,7 +516,7 @@ namespace SharpPulsar.Tracker
 
                             // if messageId is checked then all the chunked related to that msg also processed so, ack all of
                             // them
-                            var result = await _unAckedChunckedMessageIdSequenceMap.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }));
+                            var result = await _unAckedChunckedMessageIdSequenceMap.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.Get, new List<IMessageId> { msgId }), TimeSpan.FromSeconds(5));
                             var chunkMsgIds = result.MessageIds;
                             if (chunkMsgIds != null && chunkMsgIds.Length > 1)
                             {
@@ -575,7 +575,7 @@ namespace SharpPulsar.Tracker
         {
             if (_conx == null)
             {
-                var response = await _handler.Ask<AskResponse>(GetCnx.Instance);
+                var response = await _handler.Ask<AskResponse>(GetCnx.Instance, TimeSpan.FromSeconds(5));
                 if(response.Data != null)
                     _conx = response.ConvertTo<IActorRef>();
             }
@@ -600,12 +600,12 @@ namespace SharpPulsar.Tracker
         
         private async ValueTask NewImmediateAckAndFlush(long consumerId, MessageId msgId, long[] bitSet, AckType ackType, IDictionary<string, long> map, IActorRef cnx)
         {
-            var response = await _unAckedChunckedMessageIdSequenceMap.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.GetRemoved, new List<IMessageId> { msgId})).ConfigureAwait(false);
+            var response = await _unAckedChunckedMessageIdSequenceMap.Ask<UnAckedChunckedMessageIdSequenceMapCmdResponse>(new UnAckedChunckedMessageIdSequenceMapCmd(UnAckedCommand.GetRemoved, new List<IMessageId> { msgId}), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             var chunkMsgIds = response.MessageIds;
             // cumulative ack chunk by the last messageId
             if (chunkMsgIds != null && ackType != AckType.Cumulative)
             {
-                var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance);
+                var version = await cnx.Ask<RemoteEndpointProtocolVersionResponse>(RemoteEndpointProtocolVersion.Instance, TimeSpan.FromSeconds(5));
                 var protocolVersion = version.Version;
                 if (Commands.PeerSupportsMultiMessageAcknowledgment(protocolVersion))
                 {
@@ -638,7 +638,7 @@ namespace SharpPulsar.Tracker
         {
             if (await IsAckReceiptEnabled(cnx))
             {               
-                var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                var response = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance, TimeSpan.FromSeconds(5));
                 long requestId = response.Id;
 
                 ReadOnlySequence<byte> cmd;

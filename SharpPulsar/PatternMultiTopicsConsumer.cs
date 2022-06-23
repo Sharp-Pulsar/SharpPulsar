@@ -68,7 +68,7 @@ namespace SharpPulsar
 		{
             try
             {
-				var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode)).ConfigureAwait(false);
+				var ask = await _lookup.Ask<AskResponse>(new GetTopicsUnderNamespace(NamespaceName, _subscriptionMode), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                 var response = ask.ConvertTo<GetTopicsUnderNamespaceResponse>();
                 var topicsFound = response.Topics;
 				var topics = _context.GetChildren().ToList();

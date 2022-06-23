@@ -70,7 +70,7 @@ namespace SharpPulsar.Schemas.Generic
 
         public async ValueTask<ISchemaInfo> LatestSchema()
         {
-            var schema = await _lookup.Ask<AskResponse>(new GetSchema(_topicName)).ConfigureAwait(false);
+            var schema = await _lookup.Ask<AskResponse>(new GetSchema(_topicName), TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             if (schema.Failed)
                 throw schema.Exception;
 

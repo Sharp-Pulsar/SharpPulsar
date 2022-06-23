@@ -521,7 +521,7 @@ namespace SharpPulsar
                 return;
             }
 
-			var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)));
+			var result = await _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(TopicName.Get(topicName)), TimeSpan.FromSeconds(5));
             if(result.Failed)
             {
                 var error = $"[{fullTopicName}] Failed to get partitioned topic metadata: {result.Exception}";
@@ -598,7 +598,7 @@ namespace SharpPulsar
 		private async ValueTask ReceiveMessageFromConsumer(IActorRef consumer, IMessage<T> message)
 		{
 			var c = _consumers.Where(x => x.Value == consumer).FirstOrDefault();
-			var topic = await consumer.Ask<string>(GetTopic.Instance);
+			var topic = await consumer.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
 			if (_log.IsDebugEnabled)
 			{
 				_log.Debug($"[{Topic}] [{Subscription}] Receive message from sub consumer:{topic}");
@@ -815,7 +815,7 @@ namespace SharpPulsar
 		{
 			foreach (var c in _consumers.Values)
 			{
-				var s = c.Ask<bool>(IsConnected.Instance).GetAwaiter().GetResult();
+				var s = c.Ask<bool>(IsConnected.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				if (!s)
 					return false;
 			}
@@ -905,7 +905,7 @@ namespace SharpPulsar
 			var sum = 0;
 			foreach (var c in _consumers.Values)
 			{
-				var s = c.Ask<int>(GetAvailablePermits.Instance).GetAwaiter().GetResult();
+				var s = c.Ask<int>(GetAvailablePermits.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				sum += s;
 			}
 			return sum;
@@ -915,7 +915,7 @@ namespace SharpPulsar
 		{
 			foreach (var c in _consumers.Values)
 			{
-				var s = await c.Ask<bool>(Messages.Consumer.HasReachedEndOfTopic.Instance);
+				var s = await c.Ask<bool>(Messages.Consumer.HasReachedEndOfTopic.Instance, TimeSpan.FromSeconds(5));
 				if (!s)
 					return false;
 			}
@@ -927,7 +927,7 @@ namespace SharpPulsar
 			{
                 try
                 {
-                    var response = await c.Ask<AskResponse>(Messages.Consumer.HasMessageAvailable.Instance).ConfigureAwait(false);
+                    var response = await c.Ask<AskResponse>(Messages.Consumer.HasMessageAvailable.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                     if (response.Failed)
                         return false;
 
@@ -946,7 +946,7 @@ namespace SharpPulsar
 			var sum = 0;
 			foreach(var c in _consumers.Values)
             {
-				var s = c.Ask<int>(GetNumMessagesInQueue.Instance).GetAwaiter().GetResult();
+				var s = c.Ask<int>(GetNumMessagesInQueue.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				sum += s;
 			}
 			return IncomingMessages.Count + sum;
@@ -962,7 +962,7 @@ namespace SharpPulsar
 				}
 				_stats.Reset();
 
-				_consumers.Values.ForEach(async consumer => _stats.UpdateCumulativeStats(await consumer.Ask<IConsumerStats>(GetStats.Instance)));
+				_consumers.Values.ForEach(async consumer => _stats.UpdateCumulativeStats(await consumer.Ask<IConsumerStats>(GetStats.Instance, TimeSpan.FromSeconds(5))));
 				return _stats;
 			}
 		}
@@ -1069,7 +1069,7 @@ namespace SharpPulsar
                 {
                     try
                     {
-                        var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
+                        var consumerId = await _generator.Ask<long>(NewConsumerId.Instance, TimeSpan.FromSeconds(5));
                         var partitionName = TopicName.Get(topicName).GetPartition(i).ToString();
                         var newConsumer = await CreateConsumer(consumerId, partitionName, configurationData, i, schema, createIfDoesNotExist).Task;
                         if (_paused)
@@ -1097,7 +1097,7 @@ namespace SharpPulsar
                 }
                 try
                 {
-                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
+                    var consumerId = await _generator.Ask<long>(NewConsumerId.Instance, TimeSpan.FromSeconds(5));
                     var newConsumer = await CreateConsumer(consumerId, topicName, _internalConfig, -1, schema, createIfDoesNotExist).Task;
                     _consumers.TryAdd(topicName, newConsumer);
                 }
@@ -1120,7 +1120,7 @@ namespace SharpPulsar
             var recFromTops = new List<IActorRef>();
             foreach (var c in _consumers.Values)
             {
-                var consumerTopicName = await c.Ask<string>(GetTopic.Instance);
+                var consumerTopicName = await c.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
                 if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(TopicName.Get(topicName).PartitionedTopicName))
                     recFromTops.Add(c);
             }
@@ -1149,7 +1149,7 @@ namespace SharpPulsar
 			var recFromTops = new List<IActorRef>();
 			foreach (var c in _consumers.Values)
 			{
-				var consumerTopicName = await c.Ask<string>(GetTopic.Instance);
+				var consumerTopicName = await c.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
 				if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(TopicName.Get(topicName).PartitionedTopicName))
 				{
 					++toCloseNum;
@@ -1160,7 +1160,7 @@ namespace SharpPulsar
 			{
 				await consumer2.GracefulStop(TimeSpan.FromMilliseconds(100));
 				--AllTopicPartitionsNumber;
-				var topic = await consumer2.Ask<string>(GetTopic.Instance);
+				var topic = await consumer2.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
 				_consumers.TryRemove(topic, out _);
 				if (--toCloseNum == 0)
 				{
@@ -1192,7 +1192,7 @@ namespace SharpPulsar
 			var recFromTops = new List<IActorRef>();
 			foreach (var c in _consumers.Values)
 			{
-				var consumerTopicName = c.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
+				var consumerTopicName = c.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
 				{
 					recFromTops.Add(c);
@@ -1202,10 +1202,10 @@ namespace SharpPulsar
 			ClientExceptions except = null;
 			foreach(var co in recFromTops)
             {
-				var response = co.Ask(Messages.Consumer.Unsubscribe.Instance).GetAwaiter().GetResult();
+				var response = co.Ask(Messages.Consumer.Unsubscribe.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				if (response == null)
 				{
-					var t = co.Ask<string>(GetTopic.Instance).GetAwaiter().GetResult();
+					var t = co.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 					_consumers.TryRemove(t, out _);
 					_pausedConsumers = new Queue<IActorRef>(_pausedConsumers.Where(x => x != co));
 					--AllTopicPartitionsNumber;
@@ -1249,7 +1249,7 @@ namespace SharpPulsar
 			var recFromTops = new List<IActorRef>();
 			foreach (var c in _consumers.Values)
 			{
-				var consumerTopicName = await c.Ask<string>(GetTopic.Instance);
+				var consumerTopicName = await c.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
 				if (TopicName.Get(consumerTopicName).PartitionedTopicName.Equals(topicPartName))
 				{
 					recFromTops.Add(c);
@@ -1258,7 +1258,7 @@ namespace SharpPulsar
 			foreach (var co in recFromTops)
 			{
 				var response = await co.GracefulStop(TimeSpan.FromSeconds(1));
-				var t = await co.Ask<string>(GetTopic.Instance);
+				var t = await co.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5));
 				_consumers.TryRemove(t, out _);
 				_pausedConsumers = new Queue<IActorRef>(_pausedConsumers.Where(x => x != co));
 				--AllTopicPartitionsNumber;
@@ -1335,7 +1335,7 @@ namespace SharpPulsar
 			var lastDisconnectedTimestamp = -1L;
 			foreach(var c in _consumers.Values)
             {
-				var x = c.Ask<long>(GetLastDisconnectedTimestamp.Instance).GetAwaiter().GetResult();
+				var x = c.Ask<long>(GetLastDisconnectedTimestamp.Instance, TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
 				
 				if (x > lastDisconnectedTimestamp)
 					lastDisconnectedTimestamp = x;
@@ -1349,7 +1349,7 @@ namespace SharpPulsar
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
             var oldPartitionNumber = PartitionedTopics.GetValueOrNull(topic);
             var topicName = TopicName.Get(topic);
-            _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName))
+            _lookup.Ask<AskResponse>(new GetPartitionedTopicMetadata(topicName), TimeSpan.FromSeconds(5))
                 .ContinueWith( async task => 
                 {
                     var result = task.Result;
@@ -1399,7 +1399,7 @@ namespace SharpPulsar
                         IList<string> newPartitions = topics.GetRange(oldPartitionNumber, currentPartitionNumber);
                         foreach (var partitionName in newPartitions)
                         {
-                            var consumerId = await _generator.Ask<long>(NewConsumerId.Instance);
+                            var consumerId = await _generator.Ask<long>(NewConsumerId.Instance, TimeSpan.FromSeconds(5));
                             var partitionIndex = TopicName.GetPartitionIndex(partitionName);
                             var configurationData = InternalConsumerConfig;
                             var consumerTcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1442,11 +1442,11 @@ namespace SharpPulsar
 			var multiMessageId = new Dictionary<string, IMessageId>();
 			foreach (var v in _consumers.Values)
 			{
-				var t = await v.Ask<string>(GetTopic.Instance).ConfigureAwait(false);
+				var t = await v.Ask<string>(GetTopic.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 				IMessageId messageId;
 				try
 				{
-					messageId = await v.Ask<IMessageId>(GetLastMessageId.Instance).ConfigureAwait(false);
+					messageId = await v.Ask<IMessageId>(GetLastMessageId.Instance, TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 				}
 				catch (Exception e)
 				{
