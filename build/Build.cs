@@ -110,14 +110,14 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var vers = GitVersion.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
-                //.SetAssemblyVersion(vers)
-                .SetFileVersion(vers)
-                .SetVersion(GitVersion.SemVer));
+                //.SetVersion(GitVersion.SemVer)
+                .SetAssemblyVersion(GitVersion.AssemblySemVer)
+                .SetFileVersion(GitVersion.AssemblySemFileVer)
+                .SetInformationalVersion(GitVersion.InformationalVersion));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
