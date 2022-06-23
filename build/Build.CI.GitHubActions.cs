@@ -129,7 +129,7 @@ public class GitHubActionsSetupDotNetStep : GitHubActionsStep
 
     public override void Write(CustomFileWriter writer)
     {
-        writer.WriteLine("- uses: actions/setup-dotnet@v1");
+        writer.WriteLine("- uses: actions/setup-dotnet@v2");
 
         using (writer.Indent())
         {

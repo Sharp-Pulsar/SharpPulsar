@@ -100,7 +100,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            //await Task.Delay(TimeSpan.FromSeconds(10));
             var message = (Message<byte[]>)await consumer.ReceiveAsync();
 
             if (message != null)
@@ -112,7 +112,7 @@ namespace SharpPulsar.Test
             var receivedMessage = Encoding.UTF8.GetString(message.Data);
             _output.WriteLine($"Received message: [{receivedMessage}]");
             Assert.Equal("TestMessage", receivedMessage);
-            //producer.Close();
+            await producer.CloseAsync();
             await consumer.CloseAsync();
         }
         [Fact]
@@ -122,13 +122,6 @@ namespace SharpPulsar.Test
             var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
-
-            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(_topic)
-                .ForceTopicCreation(true)
-                .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
-            var consumer = await _client.NewConsumerAsync(consumerBuilder);
-
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
                 .Topic(_topic)
@@ -151,7 +144,14 @@ namespace SharpPulsar.Test
                     _output.WriteLine($"Id: {id}");
             }
             producer.Flush();
-            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
+                .Topic(_topic)
+                .ForceTopicCreation(true)
+                .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
+            var consumer = await _client.NewConsumerAsync(consumerBuilder);
+
+            //await Task.Delay(TimeSpan.FromSeconds(10));
             for (var i = 0; i < 5; i++)
             {
                 var message = (Message<byte[]>)await consumer.ReceiveAsync();

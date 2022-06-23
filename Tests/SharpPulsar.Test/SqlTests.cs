@@ -139,7 +139,7 @@ namespace SharpPulsar.Test
                 };
                 var id = await producer.NewMessage().Properties(metadata).Value(journal).SendAsync();
             }
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            //await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < 10; i++)
             {
                 var msg = await consumer.ReceiveAsync();
@@ -181,7 +181,7 @@ namespace SharpPulsar.Test
                 var id = await producer.NewMessage().Properties(metadata).Value<string, string>(new KeyValue<string, string>("Ebere", $"[{i}]Ebere")).SendAsync();
                 _output.WriteLine(id.ToString());
             }
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            //await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < 10; i++)
             {
                 var msg = await consumer.ReceiveAsync();

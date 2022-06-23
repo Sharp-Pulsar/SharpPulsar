@@ -61,7 +61,7 @@ namespace SharpPulsar.Test
             }
             var receivedCount = 0;
 
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            //await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCount; i++)
             {
                 var message = await consumer.ReceiveAsync();

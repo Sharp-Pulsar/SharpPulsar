@@ -66,7 +66,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
+            //await Task.Delay(TimeSpan.FromSeconds(10));
             var message = (Message<byte[]>)await consumer.ReceiveAsync();
 
             if (message != null)

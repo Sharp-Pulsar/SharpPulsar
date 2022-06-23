@@ -33,11 +33,11 @@ jobs:
     name: windows-latest
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 5.0.*
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 6.0.*
       - name: Cache .nuke/temp, ~/.nuget/packages
@@ -53,11 +53,11 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/checkout@v2
+      - uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 5.0.*
-      - uses: actions/setup-dotnet@v1
+      - uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 6.0.*
       - name: Cache .nuke/temp, ~/.nuget/packages
