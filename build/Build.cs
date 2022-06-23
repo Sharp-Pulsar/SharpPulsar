@@ -68,25 +68,25 @@ partial class Build : NukeBuild
 
     [Parameter][Secret] string NugetApiKey;
     [Parameter][Secret] string GitHubToken;
-    AbsolutePath Output => RootDirectory / "bin";
-    AbsolutePath OutputNuget => Output / "nuget";
-    AbsolutePath OutputTests => RootDirectory / "TestResults";
-    AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
-    AbsolutePath DocSiteDirectory => RootDirectory / "docs" / "_site";
-    public string ChangelogFile => RootDirectory / "CHANGELOG.md";
-    public AbsolutePath DocFxDir => RootDirectory / "docs";
-    public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
+    static AbsolutePath Output => RootDirectory / "bin";
+    static AbsolutePath OutputNuget => Output / "nuget";
+    static AbsolutePath OutputTests => RootDirectory / "TestResults";
+    static AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
+    static AbsolutePath DocSiteDirectory => RootDirectory / "docs" / "_site";
+    static string ChangelogFile => RootDirectory / "CHANGELOG.md";
+    static AbsolutePath DocFxDir => RootDirectory / "docs";
+    static AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
     GitHubClient GitHubClient;
 
-    static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
+    public static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
         null
         : JsonSerializer.Deserialize<JsonElement>(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT"));
 
-    public ChangeLog Changelog => ReadChangelog(ChangelogFile);
+    static ChangeLog Changelog => ReadChangelog(ChangelogFile);
 
-    public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
-    public string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
+    static ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
+    public static string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
 
     Target Clean => _ => _
         .Before(Restore)
@@ -119,7 +119,7 @@ partial class Build : NukeBuild
                 .SetFileVersion(GitVersion.AssemblySemFileVer)
                 .SetInformationalVersion(GitVersion.InformationalVersion));
         });
-    IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
+    public static IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
     Target RunChangelog => _ => _
         .OnlyWhenDynamic(() => GitVersion.BranchName.Equals("main", StringComparison.OrdinalIgnoreCase))
@@ -190,49 +190,7 @@ partial class Build : NukeBuild
        {
            Information(GitRepository.Branch);
        });
-    private PulsarTestcontainer BuildContainer()
-    {
-        return new TestcontainersBuilder<PulsarTestcontainer>()
-          .WithName("Tests")
-          .WithPulsar(new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650))
-          .WithPortBinding(6650, 6650)
-          .WithPortBinding(6651, 6651)
-          .WithPortBinding(8080, 8080)
-          .WithPortBinding(8081, 8081)
-          .WithExposedPort(6650)
-          .WithExposedPort(6651)
-          .WithExposedPort(8080)
-          .WithExposedPort(8081)
-          .WithCleanUp(true)
-          .Build();
-    }
-    private async ValueTask AwaitPortReadiness(string address)
-    {
-        var waitTries = 20;
-
-        using var handler = new HttpClientHandler
-        {
-            AllowAutoRedirect = true
-        };
-
-        using var client = new HttpClient(handler);
-
-        while (waitTries > 0)
-        {
-            try
-            {
-                await client.GetAsync(address).ConfigureAwait(false);
-                return;
-            }
-            catch
-            {
-                waitTries--;
-                await Task.Delay(5000).ConfigureAwait(false);
-            }
-        }
-
-        throw new Exception("Unable to confirm Pulsar has initialized");
-    }
+ 
     Target StartPulsar => _ => _
       .DependsOn(CheckDockerVersion)
       .Executes(async () =>
@@ -296,7 +254,7 @@ partial class Build : NukeBuild
           .SetCommand("bash")
           .SetArgs("-c", "bin/pulsar sql-worker start"));
       });
-    Target StopPulsar => _ => _
+    static Target StopPulsar => _ => _
     .Unlisted()
     .AssuredAfterFailure()
     .Executes(() =>
@@ -349,21 +307,7 @@ partial class Build : NukeBuild
                .SetArgs("sql-worker", "run")
            );*/
       });
-    Target TestContainer => _ => _
-    .Executes(async () =>
-    {
-        Information("Test Container");
-        var container = BuildContainer();
-        await container.StartAsync();//;.GetAwaiter().GetResult();]
-        Information("Start Test Container");
-        await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-        Information("ExecAsync Test Container");
-        await container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-
-        await AwaitPortReadiness($"http://127.0.0.1:8081/");
-        Information("AwaitPortReadiness Test Container");
-    });
-
+    
     Target TestAPI => _ => _
        .DependsOn(Compile, AdminPulsar)
        .Executes(() =>
@@ -513,7 +457,7 @@ partial class Build : NukeBuild
               .SetOutputDirectory(OutputNuget));
 
       });
-    Target PublishNuget => _ => _
+    public Target PublishNuget => _ => _
       .DependsOn(EventSource)
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
@@ -589,7 +533,7 @@ partial class Build : NukeBuild
             }
         });
 
-    string ParseReleaseNote()
+    static string ParseReleaseNote()
     {
         return XmlTasks.XmlPeek(RootDirectory / "Directory.Build.props", "//Project/PropertyGroup/PackageReleaseNotes").FirstOrDefault();
     }
