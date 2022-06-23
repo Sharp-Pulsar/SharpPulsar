@@ -322,7 +322,6 @@ partial class Build : NukeBuild
     });
     Target AdminPulsar => _ => _
       .DependsOn(SqlPulsar)
-      .Triggers(StopPulsar)
       .Executes(() =>
       {
           DockerTasks.DockerExec(x => x
@@ -421,6 +420,7 @@ partial class Build : NukeBuild
        });
     Target EventSource => _ => _
        .DependsOn(TableView)
+       .Triggers(StopPulsar)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");
