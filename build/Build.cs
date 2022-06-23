@@ -68,14 +68,14 @@ partial class Build : NukeBuild
 
     [Parameter][Secret] string NugetApiKey;
     [Parameter][Secret] string GitHubToken;
-    static AbsolutePath Output => RootDirectory / "bin";
-    static AbsolutePath OutputNuget => Output / "nuget";
-    static AbsolutePath OutputTests => RootDirectory / "TestResults";
-    static AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
-    static AbsolutePath DocSiteDirectory => RootDirectory / "docs" / "_site";
-    static string ChangelogFile => RootDirectory / "CHANGELOG.md";
-    static AbsolutePath DocFxDir => RootDirectory / "docs";
-    static AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
+    public static AbsolutePath Output => RootDirectory / "bin";
+    public static AbsolutePath OutputNuget => Output / "nuget";
+    public static AbsolutePath OutputTests => RootDirectory / "TestResults";
+    public static AbsolutePath OutputPerfTests => RootDirectory / "PerfResults";
+    public static AbsolutePath DocSiteDirectory => RootDirectory / "docs" / "_site";
+    public static string ChangelogFile => RootDirectory / "CHANGELOG.md";
+    public static AbsolutePath DocFxDir => RootDirectory / "docs";
+    public static AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
     GitHubClient GitHubClient;
 
@@ -83,9 +83,9 @@ partial class Build : NukeBuild
         null
         : JsonSerializer.Deserialize<JsonElement>(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT"));
 
-    static ChangeLog Changelog => ReadChangelog(ChangelogFile);
+    public static ChangeLog Changelog => ReadChangelog(ChangelogFile);
 
-    static ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
+    public static ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
     public static string ReleaseVersion => LatestVersion.Version?.ToString() ?? throw new ArgumentException("Bad Changelog File. Define at least one version");
 
     Target Clean => _ => _
@@ -254,7 +254,7 @@ partial class Build : NukeBuild
           .SetCommand("bash")
           .SetArgs("-c", "bin/pulsar sql-worker start"));
       });
-    static Target StopPulsar => _ => _
+    public static Target StopPulsar => _ => _
     .Unlisted()
     .AssuredAfterFailure()
     .Executes(() =>
@@ -457,7 +457,7 @@ partial class Build : NukeBuild
               .SetOutputDirectory(OutputNuget));
 
       });
-    public Target PublishNuget => _ => _
+    Target PublishNuget => _ => _
       .DependsOn(EventSource)
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
