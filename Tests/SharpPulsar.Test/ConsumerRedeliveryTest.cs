@@ -79,7 +79,7 @@ namespace SharpPulsar.Test
 
             Assert.True(messageReceived > 0);
             await Task.Delay(TimeSpan.FromSeconds(10));
-            for (var i = 0; i < messageCount - 2; i++)
+            for (var i = 0; i < messageCount - 5; i++)
             {
                 var m = (Message<byte[]>)await consumer.ReceiveAsync();
 
@@ -89,7 +89,7 @@ namespace SharpPulsar.Test
             }
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            Assert.True(messageReceived > 8);
+            Assert.True(messageReceived > 5);
         }
         
     }
