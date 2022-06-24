@@ -195,7 +195,7 @@ namespace SharpPulsar.Test
                 await Task.Delay(TimeSpan.FromSeconds(redeliveryCount));
                 // messages not acked, test redelivery
                 lastMessageForKey = new Dictionary<string, Message<byte[]>>();
-                for (var i = 0; i < redeliveryCount; i++)
+                for (var i = 0; i < redeliveryCount - 2; i++)
                 {
                     var message = await check.Key.ReceiveAsync();
                     received++;
@@ -224,7 +224,7 @@ namespace SharpPulsar.Test
                 {
                 }
                 Assert.Null(noMessages);//, "redeliver too many messages.");
-                Assert.Equal(check.Value + redeliveryCount, received);
+                Assert.Equal(check.Value + (redeliveryCount - 2), received);
             }
             ISet<string> allKeys = new HashSet<string>();
             consumerKeys.ForEach(x =>
