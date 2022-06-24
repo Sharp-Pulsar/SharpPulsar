@@ -113,18 +113,27 @@ namespace SharpPulsar.User
         }
         private async ValueTask<IMessage<T>> GetMessage()
         {
-            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-            if (response.Failed)
-                throw response.Exception;
 
-            if (response.Data != null)
+            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+            while (true)
             {
-                var message = response.ConvertTo<IMessage<T>>();
-                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                _readerActor.Tell(new MessageProcessed<T>(message));
-                return message;
+                if (response.Failed)
+                    throw response.Exception;
+
+                if (response.Data != null)
+                {
+                    var message = response.ConvertTo<IMessage<T>>();
+                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                    _readerActor.Tell(new MessageProcessed<T>(message));
+                    return message;
+                }
+                else
+                {
+                    await Task.Delay(100);
+                    response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+                }
             }
-            return null;
+
         }
     }
 }
