@@ -191,20 +191,18 @@ namespace SharpPulsar
                     Sender.Tell(new AskResponse(new InvalidConfigurationException("Cannot use receive() when a listener has been set")));
                     return;
                 }
-
-                while (true)
+                if (IncomingMessages.TryReceive(out var message))
                 {
-                    if (IncomingMessages.TryReceive(out var message))
+                    Self.Tell(new MessageProcessed<T>(message));
+                    if (!IsValidConsumerEpoch(message))
                     {
-                        Self.Tell(new MessageProcessed<T>(message));
-                        if (!IsValidConsumerEpoch(message))
-                        {
-                            continue;
-                        }
-                        Sender.Tell(new AskResponse(BeforeConsume(message)));
-                        break;
+                        Receive();
+                        return;
                     }
+                    Sender.Tell(new AskResponse(BeforeConsume(message)));
                 }
+                else
+                    Sender.Tell(new AskResponse());
             }
         }
         private bool VerifyConsumerState()
