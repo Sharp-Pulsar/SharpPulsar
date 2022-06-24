@@ -35,13 +35,11 @@ namespace SharpPulsar.Test
     public class ByteKeysTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly string _topic;
 
         private readonly PulsarClient _client;
         public ByteKeysTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
-            _topic = $"persistent://public/default/{Guid.NewGuid()}";
             _client = fixture.Client; 
             //_topic = "my-topic-batch-bf719df3";
         }
@@ -50,7 +48,7 @@ namespace SharpPulsar.Test
         public async Task ProducerInstantiation()
         {
             var producer = new ProducerConfigBuilder<string>();
-            producer.Topic(_topic);
+            producer.Topic($"persistent://public/default/{Guid.NewGuid()}");
             var stringProducerBuilder = await _client.NewProducerAsync(new StringSchema(), producer);
             Assert.NotNull(stringProducerBuilder);
             await stringProducerBuilder.CloseAsync();
@@ -59,7 +57,7 @@ namespace SharpPulsar.Test
         public async Task ConsumerInstantiation()
         {
             var consumer = new ConsumerConfigBuilder<string>();
-            consumer.Topic(_topic);
+            consumer.Topic($"persistent://public/default/{Guid.NewGuid()}");
             consumer.SubscriptionName($"test-sub-{Guid.NewGuid()}");
             var stringConsumerBuilder = await _client.NewConsumerAsync(new StringSchema(), consumer);
             Assert.NotNull(stringConsumerBuilder);
@@ -69,7 +67,7 @@ namespace SharpPulsar.Test
         public async Task ReaderInstantiation()
         {
             var reader = new ReaderConfigBuilder<string>();
-            reader.Topic(_topic);
+            reader.Topic($"persistent://public/default/{Guid.NewGuid()}");
             reader.StartMessageId(IMessageId.Earliest);
             var stringReaderBuilder = await _client.NewReaderAsync(new StringSchema(), reader);
             Assert.NotNull(stringReaderBuilder);
@@ -78,7 +76,7 @@ namespace SharpPulsar.Test
         [Fact]
         public async Task ProduceAndConsume()
         {
-            var topic = _topic;
+            var topic = $"persistent://public/default/{Guid.NewGuid()}";
 
             var r = new Random(0);
             var byteKey = new byte[1000];
@@ -118,13 +116,13 @@ namespace SharpPulsar.Test
         [Fact]
         public async Task ProduceAndConsumeBatch()
         {
-
+            var topic = $"persistent://public/default/{Guid.NewGuid()}";
             var r = new Random(0);
             var byteKey = new byte[1000];
             r.NextBytes(byteKey);
 
             var producerBuilder = new ProducerConfigBuilder<byte[]>()
-                .Topic(_topic)
+                .Topic(topic)
                 .SendTimeout(TimeSpan.FromMilliseconds(10000))
                 .EnableBatching(true)
                 .BatchingMaxPublishDelay(TimeSpan.FromMilliseconds(120000))
@@ -146,7 +144,7 @@ namespace SharpPulsar.Test
             producer.Flush();
 
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
-                .Topic(_topic)
+                .Topic(topic)
                 .ForceTopicCreation(true)
                 .SubscriptionName($"Batch-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
