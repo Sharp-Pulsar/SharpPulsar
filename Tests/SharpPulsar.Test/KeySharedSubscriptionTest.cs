@@ -107,7 +107,7 @@ namespace SharpPulsar.Test
         {
             await NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", false);
         }
-        [Fact(Skip = "TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch)]
+        [Fact(Skip = "TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch")]
         public async Task TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
 
