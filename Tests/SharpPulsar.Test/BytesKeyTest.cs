@@ -132,7 +132,7 @@ namespace SharpPulsar.Test
 
             var producer = await _client.NewProducerAsync(producerBuilder);
 
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var id = await producer.NewMessage().KeyBytes(byteKey)
                    .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
@@ -152,7 +152,7 @@ namespace SharpPulsar.Test
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
             //await Task.Delay(TimeSpan.FromSeconds(10));
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < 8; i++)
             {
                 var message = (Message<byte[]>)await consumer.ReceiveAsync();
                 if (message != null)
