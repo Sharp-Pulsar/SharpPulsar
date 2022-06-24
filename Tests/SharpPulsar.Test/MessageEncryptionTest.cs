@@ -61,7 +61,7 @@ namespace SharpPulsar.Test
                 .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
                 .SubscriptionName("encrypted-sub")
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
-            //await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCount - 2; i++)
             {
                 var message = await consumer.ReceiveAsync();

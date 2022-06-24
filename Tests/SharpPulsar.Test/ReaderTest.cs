@@ -97,7 +97,7 @@ namespace SharpPulsar.Test
             var reader = await _client.NewReaderAsync(builder);
 
             var keys = await PublishMessages(topic, numKeys, enableBatch);
-            //await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < numKeys-2; i++)
             {
                 var message = (Message<byte[]>)await reader.ReadNextAsync();
@@ -125,7 +125,7 @@ namespace SharpPulsar.Test
             var reader = await _client.NewReaderAsync(builder);
 
             var keys = await PublishMessages(partition0, numKeys, false);
-            //await Task.Delay(TimeSpan.FromSeconds(20));
+            await Task.Delay(TimeSpan.FromSeconds(20));
             for (var i = 0; i < numKeys - 2; i++)
             {
                 var message = await reader.ReadNextAsync();
@@ -199,7 +199,7 @@ namespace SharpPulsar.Test
             IList<string> receivedMessages = new List<string>();
 
             IMessage<string> msg;
-            //await Task.Delay(TimeSpan.FromSeconds(30));
+            await Task.Delay(TimeSpan.FromSeconds(30));
             for (var i = 0; i < 3; i++)
             {
                 msg = await reader.ReadNextAsync(TimeSpan.FromSeconds(1)); 
