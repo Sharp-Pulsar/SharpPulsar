@@ -63,13 +63,13 @@ namespace SharpPulsar.Test
 
             var producer = await CreateProducer(topic, enableBatch);
 
-            for (var i = 0; i < 50; i++)
+            for (var i = 0; i < 5; i++)
             {
                 await producer.NewMessage().Key(i.ToString()).Value(i.ToString().GetBytes())
                     .SendAsync();
             }
-            //producer.Flush();
-            //await Task.Delay(3000);
+            producer.Flush();
+            await Task.Delay(3000);
                
             await Receive(new List<Consumer<byte[]>> { consumer1, consumer2, consumer3 });
             await producer.CloseAsync();
