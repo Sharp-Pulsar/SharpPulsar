@@ -36,7 +36,7 @@ using SharpPulsar.Builder;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class KeySharedSubscriptionTest    
+    public class KeySharedSubscriptionTest
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
@@ -63,11 +63,14 @@ namespace SharpPulsar.Test
 
             var producer = await CreateProducer(topic, enableBatch);
 
-            for (var i = 0; i < 1000; i++)
+            for (var i = 0; i < 5; i++)
             {
-                await producer.NewMessage().Value(i.ToString().GetBytes())
+                await producer.NewMessage().Key(i.ToString()).Value(i.ToString().GetBytes())
                     .SendAsync();
             }
+            producer.Flush();
+            await Task.Delay(3000);
+               
             await Receive(new List<Consumer<byte[]>> { consumer1, consumer2, consumer3 });
             await producer.CloseAsync();
             await consumer1.CloseAsync();
@@ -83,10 +86,9 @@ namespace SharpPulsar.Test
         [Fact]
         public async Task TestNonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelectorBatch()
         {
-
             await NonKeySendAndReceiveWithHashRangeAutoSplitStickyKeyConsumerSelector("persistent", true);
         }
-        private async Task<Producer<byte[]>> CreateProducer(string topic, bool enableBatch, int batchSize = 500)
+        private async Task<Producer<byte[]>> CreateProducer(string topic, bool enableBatch, int batchSize = 25)
         {
             var pBuilder = new ProducerConfigBuilder<byte[]>();
             pBuilder.Topic(topic);
@@ -108,6 +110,7 @@ namespace SharpPulsar.Test
             builder.SubscriptionName(consumerSub);
             builder.AckTimeout(TimeSpan.FromSeconds(10));
             builder.ForceTopicCreation(true);
+            builder.BatchReceivePolicy(new BatchReceivePolicy.Builder().MaxNumMessages(41).Build());
             if (keySharedPolicy != null)
                 builder.KeySharedPolicy(keySharedPolicy);
             builder.SubscriptionType(CommandSubscribe.SubType.KeyShared);
@@ -124,7 +127,7 @@ namespace SharpPulsar.Test
             {
                 while (true)
                 {
-                    var msg = await c.ReceiveAsync();
+                    var msg = await c.ReceiveAsync(TimeSpan.FromSeconds(10));
                     if (msg == null)
                     {
                         // Go to next consumer

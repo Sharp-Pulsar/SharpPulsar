@@ -112,7 +112,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.EventSourc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Tls", "Tests\SharpPulsar.Test.Tls\SharpPulsar.Test.Tls.csproj", "{9368E094-28E2-4296-A9A8-5B2D16859E3F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpPulsar.Test.Acks", "Tests\SharpPulsar.Test.Acks\SharpPulsar.Test.Acks.csproj", "{F7BB1ABC-AB09-466D-8AB9-F03CCFA5E2B7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Acks", "Tests\SharpPulsar.Test.Acks\SharpPulsar.Test.Acks.csproj", "{F7BB1ABC-AB09-466D-8AB9-F03CCFA5E2B7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpPulsar.Test.Partitioned", "Tests\SharpPulsar.Test.Partitioned\SharpPulsar.Test.Partitioned.csproj", "{0DECB4DC-CFFC-4CEB-9555-9C62444C7947}"
 EndProject

@@ -68,7 +68,7 @@ namespace SharpPulsar.Test
             IMessage<byte[]> msg = null;
             ISet<string> messageSet = new HashSet<string>();
             IList<IMessage<byte[]>> msgIds = new List<IMessage<byte[]>>();
-            await Task.Delay(TimeSpan.FromSeconds(60));
+            //await Task.Delay(TimeSpan.FromSeconds(60));
             for (var i = 0; i < totalMessages - 1; i++)
             {
                 msg = await consumer.ReceiveAsync();

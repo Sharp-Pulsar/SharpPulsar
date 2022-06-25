@@ -43,13 +43,7 @@ namespace SharpPulsar.Test
             var messageCount = 10;
             var topic = $"encrypted-messages-{Guid.NewGuid()}";
 
-            var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
-                .Topic(topic)
-                .ForceTopicCreation(true)
-                .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
-                .SubscriptionName("encrypted-sub")
-                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
-
+            
             var producer = await _client.NewProducerAsync(new ProducerConfigBuilder<byte[]>()
                 .Topic(topic)
                 .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
@@ -61,8 +55,14 @@ namespace SharpPulsar.Test
             }
             var receivedCount = 0;
 
+            var consumer = await _client.NewConsumerAsync(new ConsumerConfigBuilder<byte[]>()
+                .Topic(topic)
+                .ForceTopicCreation(true)
+                .CryptoKeyReader(new RawFileKeyReader("Certs/SharpPulsar_pub.pem", "Certs/SharpPulsar_private.pem"))
+                .SubscriptionName("encrypted-sub")
+                .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
             await Task.Delay(TimeSpan.FromSeconds(5));
-            for (var i = 0; i < messageCount; i++)
+            for (var i = 0; i < messageCount - 2; i++)
             {
                 var message = await consumer.ReceiveAsync();
                 if (message != null)
@@ -75,7 +75,7 @@ namespace SharpPulsar.Test
                     receivedCount++;
                 }
             }
-            Assert.True(receivedCount > 6);
+            Assert.True(receivedCount > 4);
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }

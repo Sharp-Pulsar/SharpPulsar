@@ -86,7 +86,7 @@ namespace SharpPulsar.Test.Partitioned
                 .SubscriptionType(SubType.Shared)
                 .AckTimeout(TimeSpan.FromMilliseconds(60000)));
             await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = await consumer.ReceiveAsync();
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(1100));
             if (message == null)
             {
                 await Task.Delay(TimeSpan.FromSeconds(10));

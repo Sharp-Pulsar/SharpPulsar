@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using SharpPulsar.Builder;
 using SharpPulsar.Test.Fixture;
@@ -53,7 +54,7 @@ namespace SharpPulsar.Test
             for (var i = 0; i < messageCount; i++)
             {
                 var receipt = await producer.SendAsync(Encoding.UTF8.GetBytes("my-message-" + i));
-                //_output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
+                _output.WriteLine(JsonSerializer.Serialize(receipt, new JsonSerializerOptions { WriteIndented = true }));
             }
 
             var builder = new ConsumerConfigBuilder<byte[]>();
@@ -65,12 +66,10 @@ namespace SharpPulsar.Test
             builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);
             var consumer = await _client.NewConsumerAsync(builder);
             var messageReceived = 0;
-            await Task.Delay(TimeSpan.FromMilliseconds(5000));
-            for (var i = 0; i < messageCount; ++i)
+            //await Task.Delay(TimeSpan.FromMilliseconds(5000));
+            for (var i = 0; i < messageCount - 2; ++i)
             {
                 var m = (Message<byte[]>)await consumer.ReceiveAsync();
-                if (m == null)
-                    continue;
 
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{m.BrokerEntryMetadata.BrokerTimestamp} index: {m.BrokerEntryMetadata?.Index.ToString()}");
                 var receivedMessage = Encoding.UTF8.GetString(m.Data);
@@ -79,12 +78,10 @@ namespace SharpPulsar.Test
             }
 
             Assert.True(messageReceived > 0);
-            await Task.Delay(TimeSpan.FromSeconds(20));
-            for (var i = 0; i < messageCount; i++)
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            for (var i = 0; i < messageCount - 5; i++)
             {
-                var m = await consumer.ReceiveAsync();
-                if (m == null)
-                    continue;
+                var m = (Message<byte[]>)await consumer.ReceiveAsync();
 
                 var receivedMessage = Encoding.UTF8.GetString(m.Data);
                 _output.WriteLine($"Received message: [{receivedMessage}]");
@@ -92,7 +89,7 @@ namespace SharpPulsar.Test
             }
             await producer.CloseAsync();
             await consumer.CloseAsync();
-            Assert.True(messageReceived > 10);
+            Assert.True(messageReceived > 5);
         }
         
     }

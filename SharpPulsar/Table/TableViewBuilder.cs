@@ -66,6 +66,7 @@ namespace SharpPulsar.Table
 		{
             var data = new ConcurrentDictionary<string, T>();
             var actor = _client.ActorSystem.ActorOf(TableViewActor<T>.Prop(_client, _schema, _conf, data));
+             await Task.Delay(TimeSpan.FromSeconds(5));
             var response = await actor.Ask<AskResponse>(StartMessage.Instance);
             if (response.Failed)
             {
@@ -85,7 +86,7 @@ namespace SharpPulsar.Table
 		   return this;
 		}
 
-		public virtual Interfaces.ITableViewBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval)
+		public virtual ITableViewBuilder<T> AutoUpdatePartitionsInterval(TimeSpan interval)
 		{
 		   if(interval.TotalSeconds < 1)
             {

@@ -156,7 +156,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 				// consumer.AcknowledgeCumulative(message.MessageId, abortTxn);
 				// the messages are pending ack state and can't be received
-				message = await consumer.ReceiveAsync();
+				message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
                 Assert.Null(message);
 
 				await abortTxn.AbortAsync();
@@ -164,7 +164,7 @@ namespace SharpPulsar.Test.Transaction
                 await Task.Delay(TimeSpan.FromSeconds(5));
                 for (var i = 0; i < messageCnt; i++)
 				{
-					message = await consumer.ReceiveAsync();
+					message = await consumer.ReceiveAsync(TimeSpan.FromSeconds(1));
                     if (message != null)
                     {
                         if (i % 3 == 0)
@@ -178,7 +178,7 @@ namespace SharpPulsar.Test.Transaction
 
 				await commitTxn.CommitAsync();
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
                 Assert.Null(message);
                 Assert.True(receivedMessageCount > 75);
 			}

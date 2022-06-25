@@ -667,7 +667,6 @@ namespace SharpPulsar
 			var interceptorMessage = (Message<T>) BeforeSend(message);
 			if(Interceptors != null)
 			{
-
 				_ = interceptorMessage.Properties;
             }
             var callback = new SendCallback<T>(this, future, interceptorMessage);
@@ -1581,14 +1580,14 @@ namespace SharpPulsar
 		}
 
 
-		private async ValueTask Flush()
-		{
+        private async ValueTask Flush()
+        {
             if (BatchMessagingEnabled)
-			{
-				await BatchMessageAndSend();
-			}
-            var lastSendFuture = _lastSendFuture;
-            await lastSendFuture?.Task;
+            {
+                await BatchMessageAndSend();
+            }
+            if (_lastSendFuture != null)
+                await _lastSendFuture.Task;
         }
 
 		private async ValueTask TriggerFlush()

@@ -93,7 +93,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 
 			// Can't receive transaction messages before commit.
-			var message = await consumer.ReceiveAsync();
+			var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
 
 			await txn1.CommitAsync();
@@ -105,7 +105,7 @@ namespace SharpPulsar.Test.Transaction
             await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < txnMessageCnt; i++)
 			{
-				message = await consumer.ReceiveAsync();
+				message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.NotNull(message);
                 _output.WriteLine(Encoding.UTF8.GetString(message.Value));
 				receiveCnt++;
@@ -113,13 +113,13 @@ namespace SharpPulsar.Test.Transaction
 
             for (var i = 0; i < txnMessageCnt; i++)
             {
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
                 if(message != null)
                     receiveCnt++;
             }
             Assert.True(receiveCnt > 8);
 
-			message = await consumer.ReceiveAsync();
+			message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
 
 			_output.WriteLine($"message commit test enableBatch {true}");
@@ -158,7 +158,7 @@ namespace SharpPulsar.Test.Transaction
 
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
             // Can't receive transaction messages before commit.
-            var message = await consumer.ReceiveAsync();
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
 
 			await txn.CommitAsync();
@@ -168,14 +168,14 @@ namespace SharpPulsar.Test.Transaction
             await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < txnMessageCnt; i++)
 			{
-				message = await consumer.ReceiveAsync();
+				message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.NotNull(message);
 				receiveCnt++;
 				_output.WriteLine($"message receive count: {receiveCnt}");
 			}
 			Assert.Equal(txnMessageCnt, receiveCnt);
 
-			message = await consumer.ReceiveAsync();
+			message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
             Assert.Null(message);
 
 			_output.WriteLine($"message commit test enableBatch {true}");
@@ -207,13 +207,13 @@ namespace SharpPulsar.Test.Transaction
 
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
             // Can't receive transaction messages before abort.
-            var message = await consumer.ReceiveAsync();
+            var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
             Assert.Null(message);
 
 			await txn.AbortAsync();
 
             // Cant't receive transaction messages after abort.
-            message = await consumer.ReceiveAsync();
+            message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
         }
 

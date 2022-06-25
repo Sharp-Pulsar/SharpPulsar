@@ -7,14 +7,14 @@ using Nuke.Common.Utilities;
 [CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
     GitHubActionsImage.UbuntuLatest,    
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Compile) })]
 
 [CustomGitHubActions("run_tests",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) },
@@ -23,7 +23,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_acks",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Acks) },
@@ -32,7 +32,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_partitioned",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Partitioned) },
@@ -40,7 +40,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_transaction",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Transaction) },
@@ -49,7 +49,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_api",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(TestAPI) },
@@ -57,7 +57,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_autocluster",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(AutoClusterFailover) },
@@ -65,7 +65,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_tableview",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(TableView) },
@@ -73,7 +73,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_eventsource",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(EventSource) },
@@ -81,7 +81,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_multitopic",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(MultiTopic) },
@@ -89,7 +89,7 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,
-    AutoGenerate = true,
+    AutoGenerate = false,
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },
     ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN" })]
@@ -110,7 +110,7 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
         var job = base.GetJobs(image, relevantTargets);
         var newSteps = new List<GitHubActionsStep>(job.Steps);
         //newSteps.Insert(1, new GitHubActionsUploadArtifact{ });
-        foreach (var version in new[] { "6.0.*", "5.0.*" })
+        foreach (var version in new[] { "6.0.*" })
         {            
             newSteps.Insert(1, new GitHubActionsSetupDotNetStep
             {

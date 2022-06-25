@@ -87,8 +87,8 @@ namespace SharpPulsar.Configuration
 
         public RegexSubscriptionMode RegexSubscriptionMode { get; set; } = RegexSubscriptionMode.PersistentOnly;
 
-		
-        public BatchReceivePolicy BatchReceivePolicy { get; set; }
+
+        public BatchReceivePolicy BatchReceivePolicy { get; set; } 
 
 		public bool AutoUpdatePartitions { get; set; } = true;
 

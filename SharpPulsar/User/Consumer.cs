@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace SharpPulsar.User
 {
@@ -197,18 +198,46 @@ namespace SharpPulsar.User
         public async ValueTask<IMessage<T>> ReceiveAsync()
         {
             var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-            if (response.Failed)
-                throw response.Exception;
-
-            if (response.Data != null)
+            while (true)
             {
-                var message = response.ConvertTo<IMessage<T>>();
-                return message;
-            }                
+                if (response.Failed)
+                    throw response.Exception;
 
-            return null;
+                if (response.Data != null)
+                    return response.ConvertTo<IMessage<T>>();
+                else
+                {
+                    await Task.Delay(100);
+                    response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+                }
+            }
         }
 
+        public IMessage<T> Receive(TimeSpan time)
+        {
+            return ReceiveAsync(time).GetAwaiter().GetResult();
+        }
+
+        public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan time)
+        {
+            IMessage<T> message = null;
+            var s = new Stopwatch();
+            s.Start();
+            while (s.Elapsed < time)
+            {
+                var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+                if (response.Failed)
+                    throw response.Exception;
+
+                if (response.Data != null)
+                {
+                    message = response.ConvertTo<IMessage<T>>();
+                    break;
+                }
+            }
+            s.Stop();
+            return message;
+        }
         /// <summary>
         /// batch receive messages
         /// </summary>crea
@@ -229,17 +258,46 @@ namespace SharpPulsar.User
         public async ValueTask<IMessages<T>> BatchReceiveAsync()
         {
             var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
-            if (response.Failed)
-                throw response.Exception;
+            while (true)
+            {
+                if (response.Failed)
+                    throw response.Exception;
 
-            if (response.Data != null)
-                return response.ConvertTo<IMessages<T>>();
-
-            return null;
+                if (response.Data != null)
+                    return response.ConvertTo<IMessages<T>>();
+                else
+                {
+                    await Task.Delay(100);
+                    response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+                }
+            }
         }
 
-        
-        
+        public IMessages<T> BatchReceive(TimeSpan time)
+        {
+            return BatchReceiveAsync(time).GetAwaiter().GetResult();
+        }
+        public async ValueTask<IMessages<T>> BatchReceiveAsync(TimeSpan time)
+        {
+            IMessages<T> message = null;
+            var s = new Stopwatch();
+            s.Start();
+            while (s.Elapsed < time)
+            {
+                var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+                if (response.Failed)
+                    throw response.Exception;
+
+                if (response.Data != null)
+                {
+                    message = response.ConvertTo<IMessages<T>>();
+                    break;
+                }
+            }
+            s.Stop();
+            return message;
+        }
+
         public void ReconsumeLater(IMessage<T> message, TimeSpan delayTimeInMs) 
             => ReconsumeLaterAsync(message, delayTimeInMs).GetAwaiter().GetResult();
         public async ValueTask ReconsumeLaterAsync(IMessage<T> message, TimeSpan delayTimeInMs)
