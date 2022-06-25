@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace SharpPulsar.User
 {
@@ -211,6 +212,32 @@ namespace SharpPulsar.User
                 }
             }
         }
+
+        public IMessage<T> Receive(TimeSpan time)
+        {
+            return ReceiveAsync(time).GetAwaiter().GetResult();
+        }
+
+        public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan time)
+        {
+            IMessage<T> message = null;
+            var s = new Stopwatch();
+            s.Start();
+            while (s.Elapsed < time)
+            {
+                var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+                if (response.Failed)
+                    throw response.Exception;
+
+                if (response.Data != null)
+                {
+                    message = response.ConvertTo<IMessage<T>>();
+                    break;
+                }
+            }
+            s.Stop();
+            return message;
+        }
         /// <summary>
         /// batch receive messages
         /// </summary>crea
@@ -244,6 +271,31 @@ namespace SharpPulsar.User
                     response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
                 }
             }
+        }
+
+        public IMessages<T> BatchReceive(TimeSpan time)
+        {
+            return BatchReceiveAsync(time).GetAwaiter().GetResult();
+        }
+        public async ValueTask<IMessages<T>> BatchReceiveAsync(TimeSpan time)
+        {
+            IMessages<T> message = null;
+            var s = new Stopwatch();
+            s.Start();
+            while (s.Elapsed < time)
+            {
+                var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.BatchReceive.Instance).ConfigureAwait(false);
+                if (response.Failed)
+                    throw response.Exception;
+
+                if (response.Data != null)
+                {
+                    message = response.ConvertTo<IMessages<T>>();
+                    break;
+                }
+            }
+            s.Stop();
+            return message;
         }
 
         public void ReconsumeLater(IMessage<T> message, TimeSpan delayTimeInMs) 

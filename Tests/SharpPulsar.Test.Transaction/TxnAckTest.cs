@@ -66,16 +66,13 @@ namespace SharpPulsar.Test.Transaction
                 for (var i = 0; i < messageCnt; i++)
 				{
 					var msg = await consumer.ReceiveAsync();
-					if(msg != null)
-                    {
-                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-                        await consumer.AcknowledgeAsync(msg.MessageId, txn);
-                        receivedMessageCount++;
-                    }
-				}
+                    _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                    await consumer.AcknowledgeAsync(msg.MessageId, txn);
+                    receivedMessageCount++;
+                }
 
 				// the messages are pending ack state and can't be received
-				var message = await consumer.ReceiveAsync();
+				var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
                 Assert.Null(message);
 
 				// 1) txn abort
@@ -88,19 +85,16 @@ namespace SharpPulsar.Test.Transaction
                 for (var i = 0; i < messageCnt; i++)
 				{
 					message = await consumer.ReceiveAsync();
-					if(message != null)
-                    {
-                        await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
-                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
-                        receivedMessageCount++;
-                    }
-				}
+                    await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
+                    _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                    receivedMessageCount++;
+                }
 
 				// 2) ack committed by a new txn
 				await commitTxn.CommitAsync();
 
 				// after transaction commit, the messages can't be received
-				message = await consumer.ReceiveAsync();
+				message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.Null(message);
 			}
             Assert.True(receivedMessageCount > 75);
@@ -145,16 +139,13 @@ namespace SharpPulsar.Test.Transaction
                 for (var i = 0; i < messageCnt; i++)
 				{
 					var msg = consumer.Receive();
-					if(msg != null)
-                    {
-                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-                        await consumer.AcknowledgeAsync(msg.MessageId, txn);
-                       receivedMessageCount++;
-                    }
-				}
+                    _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                    await consumer.AcknowledgeAsync(msg.MessageId, txn);
+                    receivedMessageCount++;
+                }
 
 				// the messages are pending ack state and can't be received
-				var message = await consumer.ReceiveAsync();
+				var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -166,19 +157,16 @@ namespace SharpPulsar.Test.Transaction
                 for (var i = 0; i < messageCnt; i++)
 				{
 					message = consumer.Receive();
-                    if(message != null)
-                    {
-                        await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
-                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
-                    }
-				}
+                    await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
+                    _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                }
 
 				// 2) ack committed by a new txn
 				await commitTxn.CommitAsync();
                 await Task.Delay(TimeSpan.FromSeconds(5));
 
                 // after transaction commit, the messages can't be received
-                message = await consumer.ReceiveAsync();
+                message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.Null(message);
             }
             Assert.True(receivedMessageCount > 75);
@@ -218,17 +206,14 @@ namespace SharpPulsar.Test.Transaction
 				// consume and ack messages with txn
 				for (var i = 0; i < messageCnt; i++)
 				{
-					var msg = await consumer.ReceiveAsync();
-					if(msg != null)
-                    {
-                        _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
-                        await consumer.AcknowledgeAsync(msg.MessageId, txn);
-                        receivedMessageCount++;
-                    }
-				}
+					var msg = await consumer.ReceiveAsync(); 
+                    _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
+                    await consumer.AcknowledgeAsync(msg.MessageId, txn);
+                    receivedMessageCount++;
+                }
 
 				// the messages are pending ack state and can't be received
-				var message = await consumer.ReceiveAsync();
+				var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.Null(message);
 
 				// 1) txn abort
@@ -239,20 +224,17 @@ namespace SharpPulsar.Test.Transaction
 				await Task.Delay(TimeSpan.FromSeconds(30));
 				for (var i = 0; i < messageCnt; i++)
 				{
-					message = await consumer.ReceiveAsync();
-					if(message != null)
-                    {
-                        await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
-                        _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
-                        receivedMessageCount++;
-                    }
-				}
+					message = await consumer.ReceiveAsync(); 
+                    await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
+                    _output.WriteLine($"receive msgId: {message.MessageId}, count: {i}");
+                    receivedMessageCount++;
+                }
 
 				// 2) ack committed by a new txn
 				await commitTxn.CommitAsync();
 
 				// after transaction commit, the messages can't be received
-				message = await consumer.ReceiveAsync();
+				message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 				Assert.Null(message);
 			}
             Assert.True(receivedMessageCount > 75);

@@ -57,7 +57,7 @@ namespace SharpPulsar.Test.Transaction
 			_output.WriteLine("produce transaction messages finished");
 
 			// Can't receive transaction messages before commit.
-			var message = await consumer.ReceiveAsync();
+			var message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
 			_output.WriteLine("transaction messages can't be received before transaction committed");
 
@@ -79,7 +79,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.Equal(messageCnt, receiveCnt);
 
-			message = await consumer.ReceiveAsync();
+			message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
 
 			await consumer.RedeliverUnacknowledgedMessagesAsync();
@@ -95,7 +95,7 @@ namespace SharpPulsar.Test.Transaction
 			}
 			Assert.True(receiveCnt > 5);
 
-			message = await consumer.ReceiveAsync();
+			message = await consumer.ReceiveAsync(TimeSpan.FromMilliseconds(100));
 			Assert.Null(message);
 			_output.WriteLine($"receive transaction messages count: {receiveCnt}");
 		}

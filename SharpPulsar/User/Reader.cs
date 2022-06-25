@@ -5,6 +5,7 @@ using SharpPulsar.Interfaces;
 using SharpPulsar.Messages.Consumer;
 using SharpPulsar.Messages.Requests;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace SharpPulsar.User
@@ -63,7 +64,7 @@ namespace SharpPulsar.User
             {
                 throw new PulsarClientException.InvalidConfigurationException("Can't use receive with timeout, if the queue size is 0");
             }
-            return await GetMessage().ConfigureAwait(false);
+            return await GetMessage(timeSpan).ConfigureAwait(false);
         }
         public void Seek(IMessageId messageId) 
             => SeekAsync(messageId).GetAwaiter().GetResult();
@@ -113,7 +114,6 @@ namespace SharpPulsar.User
         }
         private async ValueTask<IMessage<T>> GetMessage()
         {
-
             var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
             while (true)
             {
@@ -134,6 +134,29 @@ namespace SharpPulsar.User
                 }
             }
 
+        }
+
+        private async ValueTask<IMessage<T>> GetMessage(TimeSpan time)
+        {
+            IMessage<T> message = null; 
+            var s = new Stopwatch();
+            s.Start();
+            while (s.Elapsed < time)
+            {
+                var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
+                if (response.Failed)
+                    throw response.Exception;
+
+                if (response.Data != null)
+                {
+                    message = response.ConvertTo<IMessage<T>>();
+                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                    _readerActor.Tell(new MessageProcessed<T>(message));
+                    break;
+                }
+            }
+            s.Stop();
+            return message; 
         }
     }
 }

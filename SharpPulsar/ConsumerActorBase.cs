@@ -159,7 +159,7 @@ namespace SharpPulsar
                 {
                     if (HasEnoughMessagesForBatchReceive())
                     {
-                        var messages = new Messages<T>(Conf.BatchReceivePolicy.MaxNumMessages, Conf.BatchReceivePolicy.MaxNumBytes);
+                        var messages = new Messages<T>(BatchReceivePolicy.MaxNumMessages, BatchReceivePolicy.MaxNumBytes);
 
                         while (IncomingMessages.TryReceive(out var message) && messages.CanAdd(message))
                         {
@@ -231,12 +231,14 @@ namespace SharpPulsar
         {
             var mesageSize = IncomingMessagesSize;
             var mesageCount = IncomingMessages.Count;
-            if (Conf.BatchReceivePolicy.MaxNumMessages <= 0 && Conf.BatchReceivePolicy.MaxNumBytes <= 0)
+            if (BatchReceivePolicy.MaxNumMessages <= 0 && BatchReceivePolicy.MaxNumBytes <= 0)
             {
                 return false;
             }
-            return (Conf.BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= Conf.BatchReceivePolicy.MaxNumMessages) 
-                || (Conf.BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= Conf.BatchReceivePolicy.MaxNumBytes);
+            var batch = (BatchReceivePolicy.MaxNumMessages > 0 && mesageCount >= BatchReceivePolicy.MaxNumMessages) 
+                || (BatchReceivePolicy.MaxNumBytes > 0 && mesageSize >= BatchReceivePolicy.MaxNumBytes);
+
+            return batch;   
         }
         internal void NegativeAcknowledge(IMessage<T> message)
 		{
