@@ -266,7 +266,7 @@ namespace SharpPulsar.User
                     try
                     {
                         var cnsr = await tcs.Task.ConfigureAwait(false);
-                        await Task.Delay(TimeSpan.FromSeconds(5));
+                        await Task.Delay(TimeSpan.FromSeconds(2));
                         _client.Tell(new AddConsumer(cnsr));
                         return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
                     }
@@ -284,7 +284,7 @@ namespace SharpPulsar.User
                     try
                     {
                         var cnsr = await tcs.Task.ConfigureAwait(false);
-                        await Task.Delay(TimeSpan.FromSeconds(5));
+                        await Task.Delay(TimeSpan.FromSeconds(2));
                         _client.Tell(new AddConsumer(cnsr));
                         return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
                     }
@@ -310,7 +310,7 @@ namespace SharpPulsar.User
             var state = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.Prop(state, _client, _lookup, _cnxPool, _generator, conf, schema, conf.ForceTopicCreation, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var cnsr = await tcs.Task.ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(2));
             _client.Tell(new AddConsumer(cnsr));
             return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
@@ -340,7 +340,7 @@ namespace SharpPulsar.User
 
             consumer = _actorSystem.ActorOf(PatternMultiTopicsConsumer<T>.Prop(conf.TopicsPattern, state, _client, _lookup, _cnxPool, _generator, conf, schema, subscriptionMode.Value, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
             var cnsr = await tcs.Task.ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(2));
             _client.Tell(new AddConsumer(cnsr));
             return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
         }
@@ -532,7 +532,7 @@ namespace SharpPulsar.User
                 {
                     _actorSystem.ActorOf(MultiTopicsReader<T>.Prop(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs));
                     var cnsr = await tcs.Task.ConfigureAwait(false);
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                     _client.Tell(new AddConsumer(cnsr));
                     return new Reader<T>(stateA, cnsr, schema, conf);
                 }
@@ -542,7 +542,7 @@ namespace SharpPulsar.User
                     _actorSystem.ActorOf(Props.Create(()=> new ReaderActor<T>(consumerId, stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
                     
                     var cnsr = await tcs.Task.ConfigureAwait(false);
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                     _client.Tell(new AddConsumer(cnsr));
                     return new Reader<T>(stateA, cnsr, schema, conf);
                 }
@@ -559,7 +559,7 @@ namespace SharpPulsar.User
             var stateA = _actorSystem.ActorOf(Props.Create(() => new ConsumerStateActor()), $"StateActor{Guid.NewGuid()}");
             _actorSystem.ActorOf(Props.Create(() => new MultiTopicsReader<T>(stateA, _client, _lookup, _cnxPool, _generator, conf, schema, _clientConfigurationData, tcs)));
             var cnsr = await tcs.Task.ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(2));
             _client.Tell(new AddConsumer(cnsr));
             return new Reader<T>(stateA, cnsr, schema, conf);
         }
@@ -686,7 +686,7 @@ namespace SharpPulsar.User
                   
                    var con = await tcs.Task.ConfigureAwait(false);
                     //var producer = partitionActor;// await tcs.Task;
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                     _client.Tell(new AddProducer(partitionActor));
                     return new PartitionedProducer<T>(partitionActor, schema, conf, _clientConfigurationData.OperationTimeout, con);
                 }
@@ -704,7 +704,7 @@ namespace SharpPulsar.User
                 try
                 {
                     var producer = await tcs.Task.ConfigureAwait(false);
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                     _client.Tell(new AddProducer(producer));
 
                     return new Producer<T>(producer, schema, conf, _clientConfigurationData.OperationTimeout);
