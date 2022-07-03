@@ -66,8 +66,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName($"ByteKeysTest-subscriber-{Guid.NewGuid()}");
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = (Message<byte[]>)await consumer.ReceiveAsync();
+            var message = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromSeconds(10));
 
             if (message != null)
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");
