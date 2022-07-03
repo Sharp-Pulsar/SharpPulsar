@@ -115,48 +115,32 @@ namespace SharpPulsar.User
         private async ValueTask<IMessage<T>> GetMessage()
         {
             var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-            while (true)
+            if (response.Failed)
+                throw response.Exception;
+
+            if (response.Data != null)
             {
-                if (response.Failed)
-                    throw response.Exception;
-
-                if (response.Data != null)
-                {
-                    var message = response.ConvertTo<IMessage<T>>();
-                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                    _readerActor.Tell(new MessageProcessed<T>(message));
-                    return message;
-                }
-                else
-                {
-                    await Task.Delay(100);
-                    response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-                }
+                var message = response.ConvertTo<IMessage<T>>();
+                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                _readerActor.Tell(new MessageProcessed<T>(message));
+                return message;
             }
-
+            return null;
         }
 
         private async ValueTask<IMessage<T>> GetMessage(TimeSpan time)
         {
-            IMessage<T> message = null; 
-            var s = new Stopwatch();
-            s.Start();
-            while (s.Elapsed < time)
+            var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, time).ConfigureAwait(false);
+            if (response.Failed)
+                throw response.Exception;
+            if (response.Data != null)
             {
-                var response = await _readerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-                if (response.Failed)
-                    throw response.Exception;
-
-                if (response.Data != null)
-                {
-                    message = response.ConvertTo<IMessage<T>>();
-                    _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
-                    _readerActor.Tell(new MessageProcessed<T>(message));
-                    break;
-                }
+                var message = response.ConvertTo<IMessage<T>>();
+                _readerActor.Tell(new AcknowledgeCumulativeMessage<T>(message));
+                _readerActor.Tell(new MessageProcessed<T>(message));
+                return message;
             }
-            s.Stop();
-            return message; 
+            return null;
         }
     }
 }

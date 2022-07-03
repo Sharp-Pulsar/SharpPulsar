@@ -198,19 +198,13 @@ namespace SharpPulsar.User
         public async ValueTask<IMessage<T>> ReceiveAsync()
         {
             var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-            while (true)
-            {
-                if (response.Failed)
-                    throw response.Exception;
+            if (response.Failed)
+                throw response.Exception;
 
-                if (response.Data != null)
-                    return response.ConvertTo<IMessage<T>>();
-                else
-                {
-                    await Task.Delay(100);
-                    response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-                }
-            }
+            if (response.Data != null)
+                return response.ConvertTo<IMessage<T>>();
+
+            return null;
         }
 
         public IMessage<T> Receive(TimeSpan time)
@@ -220,23 +214,15 @@ namespace SharpPulsar.User
 
         public async ValueTask<IMessage<T>> ReceiveAsync(TimeSpan time)
         {
-            IMessage<T> message = null;
-            var s = new Stopwatch();
-            s.Start();
-            while (s.Elapsed < time)
-            {
-                var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance).ConfigureAwait(false);
-                if (response.Failed)
-                    throw response.Exception;
+            var response = await _consumerActor.Ask<AskResponse>(Messages.Consumer.Receive.Instance, time).ConfigureAwait(false);
+            
+            if (response.Failed)
+                throw response.Exception;
 
-                if (response.Data != null)
-                {
-                    message = response.ConvertTo<IMessage<T>>();
-                    break;
-                }
-            }
-            s.Stop();
-            return message;
+            if (response.Data != null)
+                return response.ConvertTo<IMessage<T>>();
+
+            return null;
         }
         /// <summary>
         /// batch receive messages

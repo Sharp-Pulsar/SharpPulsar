@@ -42,6 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
     <ProjectReference Include="..\Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
   </ItemGroup>
 

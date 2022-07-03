@@ -57,7 +57,7 @@ namespace SharpPulsar.Test
             .ForceTopicCreation(true)
             .SubscriptionName($"generic_sub");
             var consumer = await _client.NewConsumerAsync(ISchema<object>.AutoConsume(), builder);
-            //await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             for (var i = 0; i < messageCount - 2; ++i)
             {
                 var m = await consumer.ReceiveAsync();
