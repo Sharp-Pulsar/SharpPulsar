@@ -66,7 +66,7 @@ namespace SharpPulsar.Test
             builder.SubscriptionType(Protocol.Proto.CommandSubscribe.SubType.Shared);
             var consumer = await _client.NewConsumerAsync(builder);
             var messageReceived = 0;
-            //await Task.Delay(TimeSpan.FromMilliseconds(5000));
+            await Task.Delay(TimeSpan.FromMilliseconds(5000));
             for (var i = 0; i < messageCount - 2; ++i)
             {
                 var m = (Message<byte[]>)await consumer.ReceiveAsync();

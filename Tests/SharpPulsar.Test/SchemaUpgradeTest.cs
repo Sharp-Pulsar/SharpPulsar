@@ -66,7 +66,7 @@ namespace SharpPulsar.Test
                .Value(new SimpleRecord2 { Name = "Ebere", Age = int.MaxValue, Surname = "Abanonu" })
                .SendAsync();
 
-            //await Task.Delay(TimeSpan.FromSeconds(10));
+            await Task.Delay(TimeSpan.FromSeconds(10));
             var msg = await consumer1.ReceiveAsync();
 
             Assert.NotNull(msg);

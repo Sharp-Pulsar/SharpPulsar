@@ -20,7 +20,7 @@
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
     <PackageReference Include="AvroSchemaGenerator" Version="2.6.0" />
     <PackageReference Include="DotNetty.Common" Version="0.7.2" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.21.2" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
     <PackageReference Include="JsonSubTypes" Version="1.9.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.16" />
@@ -44,7 +44,7 @@
     <PackageReference Include="OpenTelemetry" Version="1.3.0" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
     <PackageReference Include="Pro.NBench.xUnit" Version="2.0.0" />
-    <PackageReference Include="protobuf-net" Version="3.1.4" />
+    <PackageReference Include="protobuf-net" Version="3.1.17" />
     <PackageReference Include="SharpPulsar.Admin" Version="1.2.1" />
     <PackageReference Include="SharpPulsar.Sql" Version="2.1.1" />
     <PackageReference Include="SharpZipLib" Version="1.3.3" />

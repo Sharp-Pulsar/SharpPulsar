@@ -57,7 +57,7 @@ namespace SharpPulsar.Test
                .Properties(new Dictionary<string, string> { { "KeyBytes", Encoding.UTF8.GetString(byteKey) } })
                .Value(Encoding.UTF8.GetBytes("TestMessage"))
                .SendAsync();
-
+            await Task.Delay(TimeSpan.FromSeconds(10));
             var consumerBuilder = new ConsumerConfigBuilder<byte[]>()
                 .Intercept(new ConsumerOTelInterceptor<byte[]>("consumer", _client.Log))
                 .Topic(topic)

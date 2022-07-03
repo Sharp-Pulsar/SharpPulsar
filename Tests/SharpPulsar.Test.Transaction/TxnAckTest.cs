@@ -222,7 +222,7 @@ namespace SharpPulsar.Test.Transaction
 				// after transaction abort, the messages could be received
 				var commitTxn = await Txn();
 				await Task.Delay(TimeSpan.FromSeconds(30));
-				for (var i = 0; i < messageCnt; i++)
+				for (var i = 0; i < messageCnt - 2; i++)
 				{
 					message = await consumer.ReceiveAsync(); 
                     await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
