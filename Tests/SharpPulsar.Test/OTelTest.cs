@@ -33,7 +33,7 @@ namespace SharpPulsar.Test
             //var t = TestConsoleExporter.Run();
             //_topic = "my-topic-batch-bf719df3";
         }
-        [Fact(Skip ="produce")]
+        [Fact]
         public async Task ProduceAndConsume()
         {
             var exportedItems = new List<Activity>();
