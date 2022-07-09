@@ -33,7 +33,14 @@ jobs:
     name: windows-latest
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+      - name: Make build.sh executable
+        run: chmod +x ./build.sh
+      - name: Make build.cmd executable
+        run: chmod +x ./build.cmd
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
       - uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.*
@@ -46,11 +53,20 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Compile'
         run: ./build.cmd Compile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+      - name: Make build.sh executable
+        run: chmod +x ./build.sh
+      - name: Make build.cmd executable
+        run: chmod +x ./build.cmd
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.*
       - uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.*
@@ -63,3 +79,5 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
       - name: Run './build.cmd Compile'
         run: ./build.cmd Compile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

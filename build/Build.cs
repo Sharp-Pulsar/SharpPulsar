@@ -34,11 +34,14 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SharpPulsar.TestContainer;
 using DotNet.Testcontainers.Builders;
+using Nuke.Common.CI.GitHubActions;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
-[CheckBuildProjectConfigurations]
-[ShutdownDotNetAfterServerBuild]
 
+
+[ShutdownDotNetAfterServerBuild]
+[DotNetVerbosityMapping]
+[UnsetVisualStudioEnvironmentVariables]
 partial class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -64,12 +67,7 @@ partial class Build : NukeBuild
 
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
 
-    [Parameter] bool Container = false;
-
     [Parameter][Secret] string NugetApiKey;
-
-    [Parameter][Secret] string Toke;
-    [Parameter][Secret] string GitHubToken;
 
     [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
 
@@ -84,11 +82,7 @@ partial class Build : NukeBuild
     public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
     GitHubClient GitHubClient;
-
-    static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
-        null
-        : JsonSerializer.Deserialize<JsonElement>(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT"));
-
+    GitHubActions GitHubActions => GitHubActions.Instance;
     public ChangeLog Changelog => ReadChangelog(ChangelogFile);
 
     public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
@@ -540,18 +534,18 @@ partial class Build : NukeBuild
 
     Target AuthenticatedGitHubClient => _ => _
         .Unlisted()
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubActions.Token))
         .Executes(() =>
         {
             GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
             {
-                Credentials = new Octokit.Credentials(GitHubToken, AuthenticationType.Bearer)
+                Credentials = new Credentials(GitHubActions.Token, AuthenticationType.Bearer)
             };
         });
     Target GitHubRelease => _ => _
         .Unlisted()
         .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubActions.Token))
         .DependsOn(AuthenticatedGitHubClient)
         .Executes(async () =>
         {
