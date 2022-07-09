@@ -6,8 +6,9 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
-    GitHubActionsImage.UbuntuLatest,    
-    AutoGenerate = false,
+    GitHubActionsImage.UbuntuLatest,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Compile) },
@@ -16,7 +17,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) },
@@ -26,7 +28,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_acks",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Acks) },
@@ -36,7 +39,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_partitioned",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Partitioned) },
@@ -45,7 +49,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_transaction",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Transaction) },
@@ -55,7 +60,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_api",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(TestAPI) },
@@ -64,7 +70,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_autocluster",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(AutoClusterFailover) },
@@ -73,7 +80,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_tableview",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(TableView) },
@@ -82,7 +90,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_eventsource",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(EventSource) },
@@ -91,7 +100,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("run_tests_multitopic",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(MultiTopic) },
@@ -100,7 +110,8 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },
     ImportSecrets = new[] { "NUGET_API_KEY"},

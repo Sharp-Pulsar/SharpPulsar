@@ -33,7 +33,9 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Make build.sh executable
         run: chmod +x ./build.sh
       - name: Make build.cmd executable
