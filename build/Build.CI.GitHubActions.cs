@@ -162,24 +162,6 @@ public class GitHubActionsSetupDotNetStep : GitHubActionsStep
     }
 }
 
-public class GitHubActionsUploadArtifact : GitHubActionsStep
-{
-    public override void Write(CustomFileWriter writer)
-    {
-        writer.WriteLine("- name: Upload a Build Artifact");
-
-        using (writer.Indent())
-        {
-            writer.WriteLine("uses: actions/upload-artifact@v3.1.0");
-            writer.WriteLine("with:");
-            using (writer.Indent())
-            {
-                writer.WriteLine("name: assets-for-download");
-                writer.WriteLine("path: /home/runner/work/SharpPulsar/SharpPulsar/TestResults");
-            }
-        }
-    }
-}
 class GitHubActionsSetupChmod : GitHubActionsStep
 {
     public string File { get; init; }
