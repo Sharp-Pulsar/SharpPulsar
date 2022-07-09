@@ -34,11 +34,14 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SharpPulsar.TestContainer;
 using DotNet.Testcontainers.Builders;
+using Nuke.Common.CI.GitHubActions;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
-[CheckBuildProjectConfigurations]
-[ShutdownDotNetAfterServerBuild]
 
+
+[ShutdownDotNetAfterServerBuild]
+[DotNetVerbosityMapping]
+[UnsetVisualStudioEnvironmentVariables]
 partial class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -57,21 +60,14 @@ partial class Build : NukeBuild
     //readonly Configuration Configuration = Configuration.Release;
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
-    [Solution] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
-
-    [GitVersion(Framework = "net6.0")] readonly GitVersion GitVersion;
-
+    [Required][Solution] public readonly Solution Solution;
+    [Required][GitRepository] public readonly GitRepository GitRepository;
+    [Required][GitVersion(Framework = "net6.0")] public readonly GitVersion GitVersion = default!;
+    [CI] public readonly GitHubActions GitHubActions;
     [Parameter] string NugetApiUrl = "https://api.nuget.org/v3/index.json";
 
-    [Parameter] bool Container = false;
-
     [Parameter][Secret] string NugetApiKey;
-
-    [Parameter][Secret] string Toke;
-    [Parameter][Secret] string GitHubToken;
-
-    [PackageExecutable("JetBrains.dotMemoryUnit", "dotMemoryUnit.exe")] readonly Tool DotMemoryUnit;
+    public string GitHubPackageSource => $"https://nuget.pkg.github.com/{GitHubActions.RepositoryOwner}/index.json";
 
     AbsolutePath Output => RootDirectory / "bin";
     AbsolutePath OutputContainer => RootDirectory / "container";
@@ -84,11 +80,6 @@ partial class Build : NukeBuild
     public AbsolutePath DocFxDirJson => DocFxDir / "docfx.json";
 
     GitHubClient GitHubClient;
-
-    static readonly JsonElement? _githubContext = string.IsNullOrWhiteSpace(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT")) ?
-        null
-        : JsonSerializer.Deserialize<JsonElement>(EnvironmentInfo.GetVariable<string>("GITHUB_CONTEXT"));
-
     public ChangeLog Changelog => ReadChangelog(ChangelogFile);
 
     public ReleaseNotes LatestVersion => Changelog.ReleaseNotes.OrderByDescending(s => s.Version).FirstOrDefault() ?? throw new ArgumentException("Bad Changelog File. Version Should Exist");
@@ -116,28 +107,36 @@ partial class Build : NukeBuild
         .DependsOn(Restore)
         .Executes(() =>
         {
-            var vers = GitVersion.MajorMinorPatch;
+            //var vers = GitVersion.MajorMinorPatch;
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetNoRestore(InvokedTargets.Contains(Restore))
                 .SetConfiguration(Configuration)
                 //.SetAssemblyVersion(vers)
-                .SetFileVersion(vers)
-                .SetVersion(GitVersion.SemVer));
+                //.SetFileVersion(vers)
+                .SetAssemblyVersion(GitVersion.AssemblySemVer)
+                .SetFileVersion(GitVersion.AssemblySemFileVer)
+                .SetInformationalVersion(GitVersion.InformationalVersion)
+                .SetVersion(GitVersion.NuGetVersionV2));
         });
     IEnumerable<string> ChangelogSectionNotes => ExtractChangelogSectionNotes(ChangelogFile);
 
     Target RunChangelog => _ => _
-        .OnlyWhenDynamic(() => GitVersion.BranchName.Equals("main", StringComparison.OrdinalIgnoreCase))
+        .Requires(() => IsLocalBuild)
+        .OnlyWhenDynamic(() => GitRepository.Branch.Equals("main", StringComparison.OrdinalIgnoreCase))
         .Executes(() =>
         {
-            FinalizeChangelog(ChangelogFile, GitVersion.SemVer, GitRepository);
+            FinalizeChangelog(ChangelogFile, GitVersion.MajorMinorPatch, GitRepository);
+            Information($"Please review CHANGELOG.md ({ChangelogFile}) and press 'Y' to validate (any other key will cancel changes)...");
+            ConsoleKeyInfo keyInfo = Console.ReadKey();
+            if (keyInfo.Key == ConsoleKey.Y)
+            {
+                Git($"add {ChangelogFile}");
 
-            Git($"add {ChangelogFile}");
+                Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.MajorMinorPatch}.\"");
 
-            Git($"commit -S -m \"Finalize {Path.GetFileName(ChangelogFile)} for {GitVersion.SemVer}.\"");
-
-            Git($"tag -f {GitVersion.SemVer}");
+                Git($"tag -f {GitVersion.MajorMinorPatch}");
+            }
         });
 
     Target TlsStartPulsar => _ => _
@@ -489,8 +488,7 @@ partial class Build : NukeBuild
       //.DependsOn(IntegrationTest)
       .Executes(() =>
       {
-          var version = GitVersion.SemVer;
-          var branchName = GitVersion.BranchName;
+          var branchName = GitRepository.Branch;
 
           if (branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
           && !GitVersion.MajorMinorPatch.Equals(LatestVersion.Version.ToString()))
@@ -508,9 +506,10 @@ partial class Build : NukeBuild
               .EnableNoBuild()
               .EnableNoRestore()
               //.SetIncludeSymbols(true)
-              .SetAssemblyVersion(version)
-              .SetFileVersion(version)
-              .SetVersion(version)
+              .SetAssemblyVersion(GitVersion.AssemblySemVer)
+              .SetFileVersion(GitVersion.AssemblySemFileVer)
+              .SetInformationalVersion(GitVersion.InformationalVersion)
+              .SetVersion(GitVersion.NuGetVersionV2)
               .SetPackageReleaseNotes(releaseNotes)
               .SetDescription("SharpPulsar is Apache Pulsar Client built using Akka.net")
               .SetPackageTags("Apache Pulsar", "Akka.Net", "Event Driven", "Event Sourcing", "Distributed System", "Microservice")
@@ -540,22 +539,22 @@ partial class Build : NukeBuild
 
     Target AuthenticatedGitHubClient => _ => _
         .Unlisted()
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubActions.Token))
         .Executes(() =>
         {
             GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
             {
-                Credentials = new Octokit.Credentials(GitHubToken, AuthenticationType.Bearer)
+                Credentials = new Credentials(GitHubActions.Token, AuthenticationType.Bearer)
             };
         });
     Target GitHubRelease => _ => _
         .Unlisted()
         .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubToken))
+        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubActions.Token))
         .DependsOn(AuthenticatedGitHubClient)
         .Executes(async () =>
         {
-            var version = GitVersion.SemVer;
+            var version = GitVersion.NuGetVersionV2;
             var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
             Release release;
 
@@ -592,6 +591,7 @@ partial class Build : NukeBuild
                 Information($"  {releaseAsset.BrowserDownloadUrl}");
             }
         });
+    private string MajorMinorPatchVersion => GitVersion.MajorMinorPatch;
 
     string ParseReleaseNote()
     {

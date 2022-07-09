@@ -14,16 +14,9 @@
             "Release"
           ]
         },
-        "Container": {
-          "type": "boolean"
-        },
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
-        },
-        "GitHubToken": {
-          "type": "string",
-          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Help": {
           "type": "boolean",
@@ -159,10 +152,6 @@
               "Transaction"
             ]
           }
-        },
-        "Toke": {
-          "type": "string",
-          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Verbosity": {
           "type": "string",

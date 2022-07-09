@@ -6,93 +6,117 @@ using Nuke.Common.Utilities;
 
 [CustomGitHubActions("build",
     GitHubActionsImage.WindowsLatest,
-    GitHubActionsImage.UbuntuLatest,    
-    AutoGenerate = false,
+    GitHubActionsImage.UbuntuLatest,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPushBranches = new[] { "main", "dev", "release" },
     OnPullRequestBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Compile) })]
+    InvokedTargets = new[] { nameof(Compile) },
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("run_tests",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Test) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 
 [CustomGitHubActions("run_tests_acks",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Acks) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 
 [CustomGitHubActions("run_tests_partitioned",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Partitioned) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("run_tests_transaction",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(Transaction) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 
 [CustomGitHubActions("run_tests_api",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(TestAPI) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("run_tests_autocluster",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(AutoClusterFailover) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("run_tests_tableview",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(TableView) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("run_tests_eventsource",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(EventSource) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("run_tests_multitopic",
     GitHubActionsImage.UbuntuLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(MultiTopic) },
-    PublishArtifacts = true)]
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 [CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,
-    AutoGenerate = false,
+    //AutoGenerate = false,
+    FetchDepth = 0,
     OnPushBranches = new[] { "main", "dev", "release" },
     InvokedTargets = new[] { nameof(PublishNuget) },
-    ImportSecrets = new[] { "NUGET_API_KEY", "GITHUB_TOKEN" })]
+    ImportSecrets = new[] { "NUGET_API_KEY"},
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
 
 
 partial class Build
@@ -110,14 +134,21 @@ public class CustomGitHubActionsAttribute : GitHubActionsAttribute
         var job = base.GetJobs(image, relevantTargets);
         var newSteps = new List<GitHubActionsStep>(job.Steps);
         //newSteps.Insert(1, new GitHubActionsUploadArtifact{ });
-        foreach (var version in new[] { "6.0.*" })
+        foreach (var version in new[] { "6.0.*", "5.0.*" })
         {            
             newSteps.Insert(1, new GitHubActionsSetupDotNetStep
             {
                 Version = version
             });
         }
-
+        newSteps.Insert(1, new GitHubActionsSetupChmod
+        {
+            File = "build.cmd"
+        });
+        newSteps.Insert(1, new GitHubActionsSetupChmod
+        {
+            File = "build.sh"
+        });
         job.Steps = newSteps.ToArray();
         return job;
     }
@@ -142,21 +173,16 @@ public class GitHubActionsSetupDotNetStep : GitHubActionsStep
     }
 }
 
-public class GitHubActionsUploadArtifact : GitHubActionsStep
+class GitHubActionsSetupChmod : GitHubActionsStep
 {
+    public string File { get; init; }
+
     public override void Write(CustomFileWriter writer)
     {
-        writer.WriteLine("- name: Upload a Build Artifact");
-
+        writer.WriteLine($"- name: Make {File} executable");
         using (writer.Indent())
         {
-            writer.WriteLine("uses: actions/upload-artifact@v3.1.0");
-            writer.WriteLine("with:");
-            using (writer.Indent())
-            {
-                writer.WriteLine("name: assets-for-download");
-                writer.WriteLine("path: /home/runner/work/SharpPulsar/SharpPulsar/TestResults");
-            }
+            writer.WriteLine($"run: chmod +x ./{File}");
         }
     }
 }
