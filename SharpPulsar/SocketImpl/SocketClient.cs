@@ -280,45 +280,48 @@ namespace SharpPulsar.SocketImpl
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                _socket.ConnectAsync(serverAddresses, port).Wait(1000);
+                await _socket.ConnectAsync(serverAddresses, port).ConfigureAwait(false);
             }
-
-            // On unix we can't use the instance Socket methods that take multiple endpoints
-
-            if (serverAddresses == null)
+            else
             {
-                throw new ArgumentNullException(nameof(serverAddresses));
-            }
-            if (serverAddresses.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(serverAddresses));
-            }
+                // On unix we can't use the instance Socket methods that take multiple endpoints
 
-            // Try each address in turn, and return the socket opened for the first one that works.
-            ExceptionDispatchInfo lastException = null;
-            foreach (IPAddress address in serverAddresses)
-            {
-                try
+                if (serverAddresses == null)
                 {
-                    await _socket.ConnectAsync(address, port).ConfigureAwait(false);
+                    throw new ArgumentNullException(nameof(serverAddresses));
                 }
-                catch (Exception exc)
+                if (serverAddresses.Length == 0)
                 {
-                    _socket.Dispose();
-                    lastException = ExceptionDispatchInfo.Capture(exc);
+                    throw new ArgumentOutOfRangeException(nameof(serverAddresses));
                 }
-            }
 
-            // Propagate the last failure that occurred
-            if (lastException != null)
-            {
-                lastException.Throw();
-            }
+                // Try each address in turn, and return the socket opened for the first one that works.
+                ExceptionDispatchInfo lastException = null;
+                foreach (IPAddress address in serverAddresses)
+                {
+                    try
+                    {
+                        await _socket.ConnectAsync(address, port).ConfigureAwait(false);
+                    }
+                    catch (Exception exc)
+                    {
+                        _socket.Dispose();
+                        lastException = ExceptionDispatchInfo.Capture(exc);
+                    }
+                }
 
-            // Should never get here.  Either there will have been no addresses and we'll have thrown
-            // at the beginning, or one of the addresses will have worked and we'll have returned, or
-            // at least one of the addresses will failed, in which case we will have propagated that.
-            throw new ArgumentException();
+                // Propagate the last failure that occurred
+                if (lastException != null)
+                {
+                    lastException.Throw();
+                }
+
+                // Should never get here.  Either there will have been no addresses and we'll have thrown
+                // at the beginning, or one of the addresses will have worked and we'll have returned, or
+                // at least one of the addresses will failed, in which case we will have propagated that.
+                throw new ArgumentException();
+            }
+            
         }
 
         private bool SniProxy => _clientConfiguration.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfiguration.ProxyServiceUrl);
