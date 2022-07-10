@@ -17,12 +17,12 @@
 # under the License.
 #
 
-FROM apachepulsar/pulsar-all:2.9.1 as pulsar-all
+FROM apachepulsar/pulsar-all:2.10.0 as pulsar-all
 
 ########################################
 ###### Main image build
 ########################################
-FROM apachepulsar/pulsar-all:2.9.1
+FROM apachepulsar/pulsar-all:2.10.0
 
 RUN rm -rf /var/lib/apt/lists/* && apt update
 
