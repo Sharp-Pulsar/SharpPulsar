@@ -18,18 +18,24 @@
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2.Protocol
 {
-	/// <summary>
-	/// Represents an error returned from an OAuth 2.0 token endpoint.
-	/// </summary>
+    
+    using System.Text.Json.Serialization;
+
+    /// <summary>
+    /// Represents an error returned from an OAuth 2.0 token endpoint.
+    /// </summary>
     /// 
-	public class TokenError
+    public class TokenError
 	{
-        //JsonProperty("error") private String error;
-        public string Error;
-        //JsonProperty("error_description") private String errorDescription;
-        public string ErrorDescription;
-        //JsonProperty("error_uri") private String errorUri;
-        public string ErrorUri;
-	}
+        [JsonPropertyName("error")]
+        public string Error { get; set; }
+
+        [JsonPropertyName("error_description")]
+        public string ErrorDescription { get; set; }
+
+
+        [JsonPropertyName("error_uri")]
+        public string ErrorUri { get; set; }
+    }
 
 }

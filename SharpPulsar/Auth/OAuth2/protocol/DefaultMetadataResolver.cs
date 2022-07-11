@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Security.Policy;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,29 +34,29 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		protected internal const int DefaultConnectTimeoutInSeconds = 10;
 		protected internal const int DefaultReadTimeoutInSeconds = 30;
 
-		private readonly URL metadataUrl;
+		private readonly Uri _metadataUrl;
 		private readonly ObjectReader objectReader;
-		private Duration connectTimeout;
-		private Duration readTimeout;
+		private TimeSpan _connectTimeout;
+		private TimeSpan _readTimeout;
 
-		public DefaultMetadataResolver(URL MetadataUrl)
+		public DefaultMetadataResolver(Uri metadataUrl)
 		{
-			this.metadataUrl = MetadataUrl;
+            _metadataUrl = metadataUrl;
 			this.objectReader = (new ObjectMapper()).readerFor(typeof(Metadata));
-			// set a default timeout to ensure that this doesn't block
-			this.connectTimeout = Duration.ofSeconds(DefaultConnectTimeoutInSeconds);
-			this.readTimeout = Duration.ofSeconds(DefaultReadTimeoutInSeconds);
+            // set a default timeout to ensure that this doesn't block
+            _connectTimeout = TimeSpan.FromSeconds(DefaultConnectTimeoutInSeconds);
+            _readTimeout = TimeSpan.FromSeconds(DefaultReadTimeoutInSeconds);
 		}
 
-		public virtual DefaultMetadataResolver WithConnectTimeout(Duration ConnectTimeout)
+		public virtual DefaultMetadataResolver WithConnectTimeout(TimeSpan connectTimeout)
 		{
-			this.connectTimeout = ConnectTimeout;
+            _connectTimeout = connectTimeout;
 			return this;
 		}
 
-		public virtual DefaultMetadataResolver WithReadTimeout(Duration ReadTimeout)
+		public virtual DefaultMetadataResolver WithReadTimeout(TimeSpan readTimeout)
 		{
-			this.readTimeout = ReadTimeout;
+            _readTimeout = readTimeout;
 			return this;
 		}
 
@@ -67,13 +69,13 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 			try
 			{
 				URLConnection C = this.metadataUrl.openConnection();
-				if (connectTimeout != null)
+				if (_connectTimeout != null)
 				{
-					C.setConnectTimeout((int) connectTimeout.toMillis());
+					C.setConnectTimeout((int) _connectTimeout.toMillis());
 				}
-				if (readTimeout != null)
+				if (_readTimeout != null)
 				{
-					C.setReadTimeout((int) readTimeout.toMillis());
+					C.setReadTimeout((int) _readTimeout.toMillis());
 				}
 				C.setRequestProperty("Accept", "application/json");
 
@@ -87,7 +89,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 			}
 			catch (IOException E)
 			{
-				throw new IOException("Cannot obtain authorization metadata from " + metadataUrl.ToString(), E);
+				throw new IOException("Cannot obtain authorization metadata from " + _metadataUrl.ToString(), E);
 			}
 		}
 

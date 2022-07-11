@@ -1,4 +1,5 @@
 ﻿using System.Security.Policy;
+using System.Text.Json.Serialization;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -25,20 +26,27 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	/// </summary>
 	public class Metadata
 	{
-        //JsonProperty("issuer") private java.net.URL authorizationEndpoint
-        public Url issuer;
-        //JsonProperty("authorization_endpoint") private java.net.URL authorizationEndpoint
-        public Url authorizationEndpoint;
-        //JsonProperty("token_endpoint") private java.net.URL tokenEndpoint
-        public Url tokenEndpoint;
-        //JsonProperty("userinfo_endpoint") private java.net.URL userInfoEndpoint;
-        public Url userInfoEndpoint;
-        //JsonProperty("revocation_endpoint") private java.net.URL revocationEndpoint;
-        public Url revocationEndpoint;
-        //JsonProperty("jwks_uri") private java.net.URL jwksUri
-        public Url jwksUri;
-        //JsonProperty("device_authorization_endpoint") private java.net.URL deviceAuthorizationEndpoint;
-        public Url deviceAuthorizationEndpoint;
-	}
+
+        [JsonPropertyName("issuer")]
+        public Url Issuer { get; set; }
+
+        [JsonPropertyName("authorization_endpoint")]
+        public Url AuthorizationEndpoint { get; set; }
+
+        [JsonPropertyName("token_endpoint")]
+        public Url TokenEndpoint { get; set; }
+
+        [JsonPropertyName("userinfo_endpoint")]
+        public Url UserInfoEndpoint { get; set; }
+
+        [JsonPropertyName("revocation_endpoint")]
+        public Url RevocationEndpoint { get; set; }
+
+        [JsonPropertyName("jwks_uri")]
+        public Url JwksUri { get; set; }
+
+        [JsonPropertyName("device_authorization_endpoint")]
+        public Url DeviceAuthorizationEndpoint { get; set; }
+    }
 
 }

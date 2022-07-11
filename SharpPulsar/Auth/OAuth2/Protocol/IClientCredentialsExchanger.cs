@@ -22,7 +22,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	/// <summary>
 	/// An interface for exchanging client credentials for an access token.
 	/// </summary>
-	public interface ClientCredentialsExchanger : AutoCloseable
+	public interface IClientCredentialsExchanger// : AutoCloseable
 	{
 		/// <summary>
 		/// Requests an exchange of client credentials for an access token. </summary>

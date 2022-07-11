@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,14 +29,18 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	public class TokenResult
 	{
 		private const long SerialVersionUID = 1L;
-        //JsonProperty("access_token") private String accessToken;
-        public string AccessToken;
-        //JsonProperty("id_token") private String idToken;
-        public string IdToken;
-        //JsonProperty("refresh_token") private String refreshToken;
-        public string RefreshToken;
-        //JsonProperty("expires_in") private int expiresIn;
-        public int ExpiresIn;
-	}
+
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; }
+
+        [JsonPropertyName("id_token")]
+        public string IdToken { get; set; }
+
+        [JsonPropertyName("refresh_token")]
+        public string RefreshToken { get; set; }
+
+        [JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; set; }
+    }
 
 }

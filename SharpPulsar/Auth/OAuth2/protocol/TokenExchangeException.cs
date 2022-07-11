@@ -27,7 +27,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	{
 		private TokenError error;
 
-		public TokenExchangeException(TokenError Error) : base(string.Format("{0} ({1})", Error.getErrorDescription(), Error.getError()))
+		public TokenExchangeException(TokenError error) : base(string.Format("{0} ({1})", error.ErrorDescription, error.Error))
 		{
 			this.error = Error;
 		}

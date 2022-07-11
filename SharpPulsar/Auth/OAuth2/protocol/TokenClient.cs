@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -25,22 +26,22 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	/// <summary>
 	/// A client for an OAuth 2.0 token endpoint.
 	/// </summary>
-	public class TokenClient : ClientCredentialsExchanger
+	public class TokenClient : IClientCredentialsExchanger
 	{
 
 		protected internal const int DefaultConnectTimeoutInSeconds = 10;
 		protected internal const int DefaultReadTimeoutInSeconds = 30;
 
-		private readonly URL tokenUrl;
-		private readonly AsyncHttpClient httpClient;
+		private readonly Uri tokenUrl;
+		private readonly HttpClient httpClient;
 
-		public TokenClient(URL TokenUrl) : this(TokenUrl, null)
+		public TokenClient(Uri tokenUrl) : this(tokenUrl, null)
 		{
 		}
 
-		internal TokenClient(URL TokenUrl, AsyncHttpClient HttpClient)
+		internal TokenClient(Uri tokenUrl, HttpClient httpClient)
 		{
-			if (HttpClient == null)
+			if (httpClient == null)
 			{
 				DefaultAsyncHttpClientConfig.Builder ConfBuilder = new DefaultAsyncHttpClientConfig.Builder();
 				ConfBuilder.setFollowRedirect(true);
@@ -52,14 +53,14 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 			}
 			else
 			{
-				this.httpClient = HttpClient;
+				this.httpClient = httpClient;
 			}
-			this.tokenUrl = TokenUrl;
+			this.tokenUrl = tokenUrl;
 		}
 
 		public override void close()
 		{
-			httpClient.close();
+			httpClient.Dispose();
 		}
 
 		/// <summary>

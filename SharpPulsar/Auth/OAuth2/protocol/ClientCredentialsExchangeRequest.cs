@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -24,17 +25,17 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	/// <seealso cref="<a href="https://tools.ietf.org/html/rfc6749.section-4.4">OAuth 2.0 RFC 6749, section 4.4</a>"/>
 	public class ClientCredentialsExchangeRequest
 	{
-//  @JsonProperty("client_id") private String clientId;
-		private string clientId;
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; }
 
-// JsonProperty("client_secret") private String clientSecret;
-		private string clientSecret;
+        [JsonPropertyName("client_secret")]
+        public string ClientSecret { get; set; }
 
-// JsonProperty("audience") private String audience;
-		private string audience;
+        [JsonPropertyName("audience")]
+        public string Audience { get; set; }
 
-// JsonProperty("scope") private String scope;
-		private string scope;
-	}
+        [JsonPropertyName("scope")]
+        public string Scope { get; set; }
+    }
 
 }
