@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -30,7 +31,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// <returns> an access token. </returns>
 		/// <exception cref="TokenExchangeException"> if the OAuth server returned a detailed error. </exception>
 		/// <exception cref="IOException"> if a general IO error occurred. </exception>
-		TokenResult ExchangeClientCredentials(ClientCredentialsExchangeRequest req);
+		Task<TokenResult> ExchangeClientCredentials(ClientCredentialsExchangeRequest req);
 	}
 
 }

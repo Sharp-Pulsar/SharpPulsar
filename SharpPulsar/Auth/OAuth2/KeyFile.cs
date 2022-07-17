@@ -1,6 +1,5 @@
-﻿using System;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -19,26 +18,38 @@ using System.Text.Json.Serialization;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Auth.OAuth2.Protocol
+namespace SharpPulsar.Auth.OAuth2
 {
-	
 	/// <summary>
-	/// The result of a token exchange request.
+	/// A JSON object representing a credentials file.
 	/// </summary>
-	[Serializable]
-	public class TokenResult
+	public class KeyFile
 	{
-        [JsonPropertyName("access_token")]
-        public string AccessToken { get; set; }
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
 
-        [JsonPropertyName("id_token")]
-        public string IdToken { get; set; }
+        [JsonPropertyName("client_id")]
+        public string ClientId { get; set; }
 
-        [JsonPropertyName("refresh_token")]
-        public string RefreshToken { get; set; }
 
-        [JsonPropertyName("expires_in")]
-        public int ExpiresIn { get; set; }
-    }
+        [JsonPropertyName("client_secret")]
+        public string ClientSecret { get; set; }
+
+        [JsonPropertyName("client_email")]
+        public string ClientEmail { get; set; }
+
+        [JsonPropertyName("issuer_url")]
+        public string IssuerUrl { get; set; }
+
+        public virtual string ToJson()
+		{
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            return JsonSerializer.Serialize(this, options);
+		}
+		public static KeyFile FromJson(string value)
+		{
+            return JsonSerializer.Deserialize<KeyFile>(value);
+		}
+	}
 
 }

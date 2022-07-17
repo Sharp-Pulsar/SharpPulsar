@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using SharpPulsar.Auth.OAuth2.Protocol;
+using SharpPulsar.Exceptions;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
@@ -17,15 +18,31 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Auth.OAuth2.Protocol
+namespace SharpPulsar.Auth.OAuth2
 {
 
 	/// <summary>
-	/// Resolves OAuth 2.0 authorization server metadata as described in RFC 8414.
+	/// An OAuth 2.0 authorization flow.
 	/// </summary>
-	public interface MetadataResolver
+	internal interface IFlow //: AutoCloseable
 	{
-		Task<Metadata> Resolve();
+
+		/// <summary>
+		/// Initializes the authorization flow. </summary>
+		/// <exception cref="PulsarClientException"> if the flow could not be initialized. </exception>
+        /// 
+		void Initialize();
+
+        /// <summary>
+        /// Acquires an access token from the OAuth 2.0 authorization server. </summary>
+        /// <returns> a token result including an access token and optionally a refresh token. </returns>
+        /// <exception cref="PulsarClientException"> if authentication failed. </exception>() throws org.apache.pulsar.client.api.PulsarClientException;
+        TokenResult Authenticate();
+
+		/// <summary>
+		/// Closes the authorization flow.
+		/// </summary>
+		void Close();
 	}
 
 }

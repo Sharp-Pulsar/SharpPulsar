@@ -1,6 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Policy;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,8 +26,6 @@ using System.Security.Policy;
 /// </summary>
 namespace SharpPulsar.Auth.OAuth2.Protocol
 {
-	using ObjectMapper = com.fasterxml.jackson.databind.ObjectMapper;
-	using ObjectReader = com.fasterxml.jackson.databind.ObjectReader;
 
 	/// <summary>
 	/// Resolves OAuth 2.0 authorization server metadata as described in RFC 8414.
@@ -35,14 +37,12 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		protected internal const int DefaultReadTimeoutInSeconds = 30;
 
 		private readonly Uri _metadataUrl;
-		private readonly ObjectReader objectReader;
 		private TimeSpan _connectTimeout;
 		private TimeSpan _readTimeout;
 
 		public DefaultMetadataResolver(Uri metadataUrl)
 		{
             _metadataUrl = metadataUrl;
-			this.objectReader = (new ObjectMapper()).readerFor(typeof(Metadata));
             // set a default timeout to ensure that this doesn't block
             _connectTimeout = TimeSpan.FromSeconds(DefaultConnectTimeoutInSeconds);
             _readTimeout = TimeSpan.FromSeconds(DefaultReadTimeoutInSeconds);
@@ -64,27 +64,18 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// Resolves the authorization metadata. </summary>
 		/// <returns> metadata </returns>
 		/// <exception cref="IOException"> if the metadata could not be resolved. </exception>
-		public virtual Metadata Resolve()
+		public async Task<Metadata> Resolve()
 		{
 			try
 			{
-				URLConnection C = this.metadataUrl.openConnection();
-				if (_connectTimeout != null)
-				{
-					C.setConnectTimeout((int) _connectTimeout.toMillis());
-				}
-				if (_readTimeout != null)
-				{
-					C.setReadTimeout((int) _readTimeout.toMillis());
-				}
-				C.setRequestProperty("Accept", "application/json");
-
-				Metadata Metadata;
-				using (Stream InputStream = C.getInputStream())
-				{
-					Metadata = this.objectReader.readValue(InputStream);
-				}
-				return Metadata;
+                var mediaType = new MediaTypeWithQualityHeaderValue("application/json");
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.Accept.Add(mediaType);
+                client.Timeout = TimeSpan.FromSeconds(DefaultConnectTimeoutInSeconds);
+				var c = _metadataUrl;
+                var metadataDataUrl = GetWellKnownMetadataUrl(_metadataUrl);
+                var response = await client.GetStreamAsync(metadataDataUrl);
+                return await JsonSerializer.DeserializeAsync<Metadata>(response);                
 
 			}
 			catch (IOException E)
@@ -97,9 +88,9 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// Gets a well-known metadata URL for the given OAuth issuer URL. </summary>
 		/// <param name="issuerUrl"> The authorization server's issuer identifier </param>
 		/// <returns> a resolver </returns>
-		public static DefaultMetadataResolver FromIssuerUrl(URL IssuerUrl)
+		public static DefaultMetadataResolver FromIssuerUrl(Uri issuerUrl)
 		{
-			return new DefaultMetadataResolver(GetWellKnownMetadataUrl(IssuerUrl));
+			return new DefaultMetadataResolver(GetWellKnownMetadataUrl(issuerUrl));
 		}
 
 		/// <summary>
@@ -108,15 +99,16 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		///     OAuth Discovery: Obtaining Authorization Server Metadata</a>/>
 		/// <param name="issuerUrl"> The authorization server's issuer identifier </param>
 		/// <returns> a URL </returns>
-		public static URL GetWellKnownMetadataUrl(URL IssuerUrl)
+		public static Uri GetWellKnownMetadataUrl(Uri issuerUrl)
 		{
 			try
 			{
-				return URI.create(IssuerUrl.toExternalForm() + "/.well-known/openid-configuration").normalize().toURL();
-			}
-			catch (MalformedURLException E)
+                return new Uri(issuerUrl.AbsoluteUri + ".well-known/openid-configuration");
+
+            }
+			catch (Exception e)
 			{
-				throw new System.ArgumentException(E);
+				throw e;
 			}
 		}
 	}

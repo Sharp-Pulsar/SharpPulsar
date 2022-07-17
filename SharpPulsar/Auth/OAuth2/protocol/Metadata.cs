@@ -1,4 +1,5 @@
-﻿using System.Security.Policy;
+﻿using System;
+using System.Security.Policy;
 using System.Text.Json.Serialization;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -28,25 +29,25 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 	{
 
         [JsonPropertyName("issuer")]
-        public Url Issuer { get; set; }
+        public Uri Issuer { get; set; }
 
         [JsonPropertyName("authorization_endpoint")]
-        public Url AuthorizationEndpoint { get; set; }
+        public Uri AuthorizationEndpoint { get; set; }
 
         [JsonPropertyName("token_endpoint")]
-        public Url TokenEndpoint { get; set; }
+        public Uri TokenEndpoint { get; set; }
 
         [JsonPropertyName("userinfo_endpoint")]
-        public Url UserInfoEndpoint { get; set; }
+        public Uri UserInfoEndpoint { get; set; }
 
         [JsonPropertyName("revocation_endpoint")]
-        public Url RevocationEndpoint { get; set; }
+        public Uri RevocationEndpoint { get; set; }
 
         [JsonPropertyName("jwks_uri")]
-        public Url JwksUri { get; set; }
+        public Uri JwksUri { get; set; }
 
         [JsonPropertyName("device_authorization_endpoint")]
-        public Url DeviceAuthorizationEndpoint { get; set; }
+        public Uri DeviceAuthorizationEndpoint { get; set; }
     }
 
 }

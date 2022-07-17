@@ -1,6 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using SharpPulsar.Extension;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -32,8 +40,8 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		protected internal const int DefaultConnectTimeoutInSeconds = 10;
 		protected internal const int DefaultReadTimeoutInSeconds = 30;
 
-		private readonly Uri tokenUrl;
-		private readonly HttpClient httpClient;
+		private readonly Uri _tokenUrl;
+		private readonly HttpClient _httpClient;
 
 		public TokenClient(Uri tokenUrl) : this(tokenUrl, null)
 		{
@@ -42,92 +50,109 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		internal TokenClient(Uri tokenUrl, HttpClient httpClient)
 		{
 			if (httpClient == null)
-			{
-				DefaultAsyncHttpClientConfig.Builder ConfBuilder = new DefaultAsyncHttpClientConfig.Builder();
-				ConfBuilder.setFollowRedirect(true);
-				ConfBuilder.setConnectTimeout(DefaultConnectTimeoutInSeconds * 1000);
-				ConfBuilder.setReadTimeout(DefaultReadTimeoutInSeconds * 1000);
-				ConfBuilder.setUserAgent(string.Format("Pulsar-Java-v{0}", PulsarVersion.Version));
-				AsyncHttpClientConfig Config = ConfBuilder.build();
-				this.httpClient = new DefaultAsyncHttpClient(Config);
-			}
+			{				
+                _httpClient = new HttpClient()
+                {
+                    Timeout = TimeSpan.FromSeconds(DefaultConnectTimeoutInSeconds * 1000)
+                };
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "SharpPulsar");
+            }
 			else
 			{
-				this.httpClient = httpClient;
+				_httpClient = httpClient;
 			}
-			this.tokenUrl = tokenUrl;
+			_tokenUrl = tokenUrl;
 		}
 
-		public override void close()
+		public void Close()
 		{
-			httpClient.Dispose();
+			_httpClient.Dispose();
 		}
 
 		/// <summary>
 		/// Constructing http request parameters. </summary>
 		/// <param name="req"> object with relevant request parameters </param>
 		/// <returns> Generate the final request body from a map. </returns>
-		internal virtual string BuildClientCredentialsBody(ClientCredentialsExchangeRequest Req)
+		internal virtual string BuildClientCredentialsBody(ClientCredentialsExchangeRequest req)
 		{
-			IDictionary<string, string> BodyMap = new SortedDictionary<string, string>();
-			BodyMap["grant_type"] = "client_credentials";
-			BodyMap["client_id"] = Req.getClientId();
-			BodyMap["client_secret"] = Req.getClientSecret();
+			IDictionary<string, string> bodyMap = new SortedDictionary<string, string>();
+			bodyMap["grant_type"] = "client_credentials";
+			bodyMap["client_id"] = req.ClientId;
+			bodyMap["client_secret"] = req.ClientSecret;
 			// Only set audience and scope if they are non-empty.
-			if (!StringUtils.isBlank(Req.getAudience()))
+			if (!string.IsNullOrWhiteSpace(req.Audience))
 			{
-				BodyMap["audience"] = Req.getAudience();
+				bodyMap["audience"] = req.Audience;
 			}
-			if (!StringUtils.isBlank(Req.getScope()))
+			if (!string.IsNullOrWhiteSpace(req.Scope))
 			{
-				BodyMap["scope"] = Req.getScope();
+				bodyMap["scope"] = req.Scope;
 			}
-			return BodyMap.SetOfKeyValuePairs().Select(e =>
-			{
-			try
-			{
-				return URLEncoder.encode(e.getKey(), "UTF-8") + '=' + URLEncoder.encode(e.getValue(), "UTF-8");
-			}
-			catch (UnsupportedEncodingException E1)
-			{
-				throw new Exception(E1);
-			}
-			}).collect(Collectors.joining("&"));
+            var map = bodyMap.SetOfKeyValuePairs().Select(e =>
+            {
+                try
+                {
+                    return Encoding.UTF8.GetString(Encoding.Default.GetBytes(e.Key)) + '=' + Encoding.UTF8.GetString(Encoding.Default.GetBytes(e.Value));
+                }
+                catch (Exception es)
+                {
+                    throw es;
+                }
+            });//.Collect(Collectors.joining("&"));
+            return string.Join("&", map);
 		}
+
 
 		/// <summary>
 		/// Performs a token exchange using client credentials. </summary>
 		/// <param name="req"> the client credentials request details. </param>
 		/// <returns> a token result </returns>
 		/// <exception cref="TokenExchangeException"> </exception>
-		public virtual TokenResult ExchangeClientCredentials(ClientCredentialsExchangeRequest Req)
+		public virtual async Task<TokenResult> ExchangeClientCredentials(ClientCredentialsExchangeRequest req)
 		{
-			string Body = BuildClientCredentialsBody(Req);
+			var body = BuildClientCredentialsBody(req);
 
 			try
 			{
+                var mediaType = new MediaTypeWithQualityHeaderValue("application/json");
+                var res = new HttpRequestMessage(HttpMethod.Post, _tokenUrl);
+                res.Headers.Accept.Add(mediaType);
+                res.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
+                res.Content = new StringContent(JsonSerializer.Serialize(body));
 
-				Response Res = httpClient.preparePost(tokenUrl.ToString()).setHeader("Accept", "application/json").setHeader("Content-Type", "application/x-www-form-urlencoded").setBody(Body).execute().get();
+                var response = await _httpClient.SendAsync(res);
+                var resultContent = await response.Content.ReadAsStreamAsync();
 
-				switch (Res.getStatusCode())
+                switch (response.StatusCode)
 				{
-				case 200:
-					return ObjectMapperFactory.ThreadLocal.reader().readValue(Res.getResponseBodyAsBytes(), typeof(TokenResult));
+				    case HttpStatusCode.OK:
+                            {
+                                var result = await JsonSerializer.DeserializeAsync<TokenResult>(resultContent,
+                                    new JsonSerializerOptions 
+                                    {
+                                       PropertyNameCaseInsensitive = true,
+                                    });
+                                return result;
+                             }
 
-				case 400: // Bad request
-				case 401: // Unauthorized
-					throw new TokenExchangeException(ObjectMapperFactory.ThreadLocal.reader().readValue(Res.getResponseBodyAsBytes(), typeof(TokenError)));
-
-				default:
-					throw new IOException("Failed to perform HTTP request. res: " + Res.getStatusCode() + " " + Res.getStatusText());
+				    case HttpStatusCode.BadRequest: // Bad request
+				    case HttpStatusCode.Unauthorized: // Unauthorized
+                            {
+                                resultContent = await response.Content.ReadAsStreamAsync();
+                                var result = await JsonSerializer.DeserializeAsync<TokenError>(resultContent);
+                                throw new TokenExchangeException(result);
+                            }
+					
+				    default:
+					    throw new IOException("Failed to perform HTTP request. res: " + response.StatusCode + " " + response.RequestMessage);
 				}
 
 
 
 			}
-			catch (Exception e1) when (e1 is InterruptedException || e1 is ExecutionException)
+			catch (Exception e) 
 			{
-				throw new IOException(e1);
+				throw e;
 			}
 		}
 	}

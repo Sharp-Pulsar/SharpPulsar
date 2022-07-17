@@ -103,4 +103,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="OAuth2\" />
+  </ItemGroup>
+
 </Project>

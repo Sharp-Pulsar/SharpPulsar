@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using SharpPulsar;
+using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
@@ -46,7 +47,6 @@ namespace Tutorials
             if(selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
 
-            
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(url);
 
