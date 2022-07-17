@@ -12,6 +12,7 @@ using SharpPulsar.Shared;
 using SharpPulsar.Schema;
 using SharpPulsar.Schemas.Generic;
 using Akka.Event;
+using SharpPulsar.Auth.OAuth2;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -65,10 +66,6 @@ namespace SharpPulsar
 		public static IAuthentication NewAuthenticationToken(string token)
 		{
 			return new AuthenticationToken(token);
-		}
-		public static IAuthentication NewAuthenticationSts(string client, string secret, string authority)
-		{
-			return new AuthenticationOAuth2(client, secret, authority);
 		}
 		public static IAuthentication NewAuthenticationToken(Func<string> supplier)
 		{

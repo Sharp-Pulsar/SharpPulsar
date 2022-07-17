@@ -302,6 +302,7 @@ namespace SharpPulsar.SocketImpl
                     try
                     {
                         await _socket.ConnectAsync(address, port).ConfigureAwait(false);
+                        return;
                     }
                     catch (Exception exc)
                     {
