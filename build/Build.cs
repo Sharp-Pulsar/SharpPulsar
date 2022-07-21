@@ -522,7 +522,7 @@ partial class Build : NukeBuild
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Triggers(GitHubRelease)
+      .Before(GitHubRelease)
       .Executes(() =>
       {
           var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
