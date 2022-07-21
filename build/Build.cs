@@ -522,8 +522,7 @@ partial class Build : NukeBuild
       .DependsOn(CreateNuget)
       .Requires(() => NugetApiUrl)
       .Requires(() => !NugetApiKey.IsNullOrEmpty())
-      .Triggers(GitHubRelease)
-      .Executes(() =>
+      .Executes(async() =>
       {
           var packages = OutputNuget.GlobFiles("*.nupkg", "*.symbols.nupkg").NotNull();
           foreach (var package in packages)
@@ -534,26 +533,14 @@ partial class Build : NukeBuild
                   .SetSource(NugetApiUrl)
                   .SetApiKey(NugetApiKey));
           }
-
+          await GitHubRelease();
       });
-
-    Target AuthenticatedGitHubClient => _ => _
-        .Unlisted()
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubActions.Token))
-        .Executes(() =>
+   async Task GitHubRelease ()
         {
             GitHubClient = new GitHubClient(new ProductHeaderValue("nuke-build"))
             {
                 Credentials = new Credentials(GitHubActions.Token, AuthenticationType.Bearer)
             };
-        });
-    Target GitHubRelease => _ => _
-        .Unlisted()
-        .Description("Creates a GitHub release (or amends existing) and uploads the artifact")
-        .OnlyWhenDynamic(() => !string.IsNullOrWhiteSpace(GitHubActions.Token))
-        .DependsOn(AuthenticatedGitHubClient)
-        .Executes(async () =>
-        {
             var version = GitVersion.NuGetVersionV2;
             var releaseNotes = GetNuGetReleaseNotes(ChangelogFile);
             Release release;
@@ -590,7 +577,7 @@ partial class Build : NukeBuild
                 var releaseAsset = await GitHubClient.Repository.Release.UploadAsset(release, releaseAssetUpload);
                 Information($"  {releaseAsset.BrowserDownloadUrl}");
             }
-        });
+        }
     private string MajorMinorPatchVersion => GitVersion.MajorMinorPatch;
 
     string ParseReleaseNote()
