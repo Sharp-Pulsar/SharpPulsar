@@ -241,6 +241,11 @@ namespace SharpPulsar.Builder
             _conf.EnableTransaction = enableTransaction;
             return this;
         }
+        public PulsarClientConfigBuilder ClientCnx(TimeSpan cnx)
+        {
+            _conf.ClientCnx = cnx;  
+            return this;
+        }
     }
 
 }

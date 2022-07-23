@@ -53,7 +53,7 @@ namespace SharpPulsar.Test.Transaction
             for (var retryCnt = 0; retryCnt < 1; retryCnt++)
 			{
 				var txn = await Txn();
-				//Thread.Sleep(TimeSpan.FromSeconds(30));
+				//await Task.Delay(TimeSpan.FromSeconds(30));
 				var messageCnt = 100;
 				// produce normal messages
 				for (var i = 0; i < messageCnt; i++)
@@ -80,9 +80,8 @@ namespace SharpPulsar.Test.Transaction
 
 				// after transaction abort, the messages could be received
 				var commitTxn = await Txn();
-                //Thread.Sleep(TimeSpan.FromSeconds(5));
                 await Task.Delay(TimeSpan.FromSeconds(30));
-                for (var i = 0; i < messageCnt; i++)
+                for (var i = 0; i < messageCnt - 1; i++)
 				{
 					message = await consumer.ReceiveAsync();
                     await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -136,7 +135,7 @@ namespace SharpPulsar.Test.Transaction
 
                 // consume and ack messages with txn
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                for (var i = 0; i < messageCnt; i++)
+                for (var i = 0; i < messageCnt - 2; i++)
 				{
 					var msg = consumer.Receive();
                     _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
@@ -154,7 +153,7 @@ namespace SharpPulsar.Test.Transaction
 				// after transaction abort, the messages could be received
 				var commitTxn = await Txn();
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                for (var i = 0; i < messageCnt; i++)
+                for (var i = 0; i < messageCnt - 2; i++)
 				{
 					message = consumer.Receive();
                     await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -204,7 +203,7 @@ namespace SharpPulsar.Test.Transaction
 				}
 
 				// consume and ack messages with txn
-				for (var i = 0; i < messageCnt; i++)
+				for (var i = 0; i < messageCnt - 2; i++)
 				{
 					var msg = await consumer.ReceiveAsync(); 
                     _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");

@@ -60,7 +60,7 @@ namespace SharpPulsar.User
         public void ReloadLookUp()
         {
             _actorSystem.Stop(_lookup);
-            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeout), "BinaryProtoLookupService");
+            _lookup =_actorSystem.ActorOf(BinaryProtoLookupService.Prop(_cnxPool, _generator, _clientConfigurationData.ServiceUrl, _clientConfigurationData.ListenerName, _clientConfigurationData.UseTls, _clientConfigurationData.MaxLookupRequest, _clientConfigurationData.OperationTimeout, _clientConfigurationData.ClientCnx), "BinaryProtoLookupService");
             _lookup.Tell(new SetClient(_client));
         }
 

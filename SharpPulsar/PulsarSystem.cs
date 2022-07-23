@@ -110,7 +110,7 @@ namespace SharpPulsar
 
             var cnxPool = actorSystem.ActorOf(ConnectionPool.Prop(clientConf), "ConnectionPool");
             var generator = actorSystem.ActorOf(IdGeneratorActor.Prop(), "IdGenerator");
-            var lookup = actorSystem.ActorOf(BinaryProtoLookupService.Prop(cnxPool, generator, clientConf.ServiceUrl, clientConf.ListenerName, clientConf.UseTls, clientConf.MaxLookupRequest, clientConf.OperationTimeout), "BinaryProtoLookupService");
+            var lookup = actorSystem.ActorOf(BinaryProtoLookupService.Prop(cnxPool, generator, clientConf.ServiceUrl, clientConf.ListenerName, clientConf.UseTls, clientConf.MaxLookupRequest, clientConf.OperationTimeout, clientConf.ClientCnx), "BinaryProtoLookupService");
             IActorRef tcClient = ActorRefs.Nobody;
             if (clientConf.EnableTransaction)
             {

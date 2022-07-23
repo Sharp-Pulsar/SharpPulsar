@@ -48,7 +48,8 @@ namespace SharpPulsar
 		private readonly string _listenerName;
 		private readonly int _maxLookupRedirects;
 		private readonly TimeSpan _operationTimeout;
-		private readonly IActorRef _connectionPool;
+        private readonly TimeSpan _timeCnx;
+        private readonly IActorRef _connectionPool;
 		private readonly IActorRef _generator;
 		private IActorRef _clientCnx;
 		private readonly ILoggingAdapter _log;
@@ -58,7 +59,7 @@ namespace SharpPulsar
 		private Backoff _getTopicsUnderNamespaceBackOff;
 		private Backoff _getPartitionedTopicMetadataBackOff;
 
-		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout)
+		public BinaryProtoLookupService(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout, TimeSpan timeCnx)
 		{
 			_generator = idGenerator;
 			_context = Context;
@@ -69,6 +70,7 @@ namespace SharpPulsar
 			_listenerName = listenerName;
 			_operationTimeout = operationTimeout;
 			_connectionPool = connectionPool;
+            _timeCnx = timeCnx;
 			UpdateServiceUrl(serviceUrl);
 			Awaiting();
 		}
@@ -315,7 +317,7 @@ namespace SharpPulsar
             var time = timeout;
             var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
-            var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(5));
+            var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             while (true)
             {
                 if (askResponse.Failed)
@@ -408,7 +410,7 @@ namespace SharpPulsar
 		{
             var request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode);
             var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
-            var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(10));
+            var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             while (true)
             {
 
@@ -467,9 +469,9 @@ namespace SharpPulsar
 			_log.Info($"Unhandled {message.GetType().FullName} received");
             base.Unhandled(message);
         }
-		public static Props Prop(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout)
+		public static Props Prop(IActorRef connectionPool, IActorRef idGenerator, string serviceUrl, string listenerName, bool useTls, int maxLookupRedirects, TimeSpan operationTimeout, TimeSpan timeCnx)
         {
-			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeout));
+			return Props.Create(() => new BinaryProtoLookupService(connectionPool, idGenerator, serviceUrl, listenerName, useTls, maxLookupRedirects, operationTimeout, timeCnx));
         }
     }
     internal sealed class RetryGetTopicsUnderNamespace
