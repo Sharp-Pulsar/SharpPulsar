@@ -21,28 +21,22 @@ namespace SharpPulsar.Test
     public class OTelTest
     {
         private readonly ITestOutputHelper _output;
-        
-        private readonly string _topic;
-
         private readonly PulsarClient _client;
         public OTelTest(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
-            _topic = $"persistent://public/default/{Guid.NewGuid()}";
-            //var t = TestConsoleExporter.Run();
-            //_topic = "my-topic-batch-bf719df3";
         }
         [Fact]
         public async Task ProduceAndConsume()
         {
+            var topic = $"persistent://public/default/{Guid.NewGuid()}";
             var exportedItems = new List<Activity>();
-            using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+            Sdk.CreateTracerProviderBuilder()
             .AddSource("producer", "consumer")
             .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("inmemory-test"))
             .AddInMemoryExporter(exportedItems)
             .Build();
-            var topic = _topic;
 
             var r = new Random(0);
             var byteKey = new byte[1000];
@@ -67,7 +61,7 @@ namespace SharpPulsar.Test
             var consumer = await _client.NewConsumerAsync(consumerBuilder);
 
             await Task.Delay(TimeSpan.FromSeconds(10));
-            var message = (Message<byte[]>)await consumer.ReceiveAsync();
+            var message = (Message<byte[]>)await consumer.ReceiveAsync(TimeSpan.FromSeconds(10));
 
             if (message != null)
                 _output.WriteLine($"BrokerEntryMetadata[timestamp:{message.BrokerEntryMetadata?.BrokerTimestamp} index: {message.BrokerEntryMetadata?.Index.ToString()}");

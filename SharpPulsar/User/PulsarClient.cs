@@ -246,6 +246,7 @@ namespace SharpPulsar.User
         {
             var topic = conf.SingleTopic;
             var tcs = new TaskCompletionSource<IActorRef>(TaskCreationOptions.RunContinuationsAsynchronously);
+            IActorRef cnsr = Nobody.Instance;
             try
             {
                 var metadata = await GetPartitionedTopicMetadata(topic).ConfigureAwait(false);
@@ -263,41 +264,26 @@ namespace SharpPulsar.User
                     var topicName = cloneConf.SingleTopic;
                     cloneConf.TopicNames.Remove(topicName);
                     var consumer = _actorSystem.ActorOf(MultiTopicsConsumer<T>.Prop(state, _client, _lookup, _cnxPool, _generator, topicName, conf, schema, true, _clientConfigurationData, tcs), $"MultiTopicsConsumer{DateTimeHelper.CurrentUnixTimeMillis()}");
-                    try
-                    {
-                        var cnsr = await tcs.Task.ConfigureAwait(false);
-                       
-                        _client.Tell(new AddConsumer(cnsr));
-                        return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
-                    }
-                    catch
-                    {
-                        await consumer.GracefulStop(TimeSpan.FromSeconds(1));
-                        throw;
-                    }
+                    cnsr = await tcs.Task.ConfigureAwait(false);
+
+                    _client.Tell(new AddConsumer(cnsr));
+                    return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
                 }
                 else
                 {
                     var consumerId = await _generator.Ask<long>(NewConsumerId.Instance).ConfigureAwait(false);
                     var partitionIndex = TopicName.GetPartitionIndex(topic);
                     var consumer = _actorSystem.ActorOf(ConsumerActor<T>.Prop(consumerId, state, _client, _lookup, _cnxPool, _generator, topic, conf, partitionIndex, false, null, schema, true, _clientConfigurationData, tcs));
-                    try
-                    {
-                        var cnsr = await tcs.Task.ConfigureAwait(false);
-                       
-                        _client.Tell(new AddConsumer(cnsr));
-                        return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);
-                    }
-                    catch
-                    {
-                        await consumer.GracefulStop(TimeSpan.FromSeconds(1));
-                        throw;
-                    }
+                    cnsr = await tcs.Task.ConfigureAwait(false);
+
+                    _client.Tell(new AddConsumer(cnsr));
+                    return new Consumer<T>(state, cnsr, schema, conf, _clientConfigurationData.OperationTimeout);                    
                 }
             }
             catch(Exception e)
             {
                 _log.Error($"[{topic}] Failed to get partitioned topic metadata: {e}");
+                await cnsr.GracefulStop(TimeSpan.FromSeconds(1));
                 throw;
             }
         }

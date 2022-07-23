@@ -37,6 +37,7 @@ namespace SharpPulsar.Test
 
         private const string Subscription = "reader-sub";
         private readonly ITestOutputHelper _output;
+
         private readonly PulsarClient _client;
 
         public ReaderTest(ITestOutputHelper output, PulsarFixture fixture)
@@ -118,20 +119,21 @@ namespace SharpPulsar.Test
             var partition0 = topic + "-partition-0";
             var numKeys = 10;
 
+            var keys = await PublishMessages(partition0, numKeys, false);
+
             var builder = new ReaderConfigBuilder<byte[]>()
                 .Topic(partition0)
                 .StartMessageId(IMessageId.Earliest)
                 .ReaderName(Subscription);
             var reader = await _client.NewReaderAsync(builder);
 
-            var keys = await PublishMessages(partition0, numKeys, false);
             await Task.Delay(TimeSpan.FromSeconds(20));
-            for (var i = 0; i < numKeys - 2; i++)
+            for (var i = 0; i < numKeys; i++)
             {
                 var message = await reader.ReadNextAsync();
                 Assert.True(keys.Remove(message.Key));
             }
-            Assert.True(keys.Count == 2);
+            Assert.True(keys.Count == 0);
         }
 
         [Fact]
@@ -181,6 +183,7 @@ namespace SharpPulsar.Test
             {
                 _output.WriteLine("Create key hash range failed", e);
             }
+
             var reader = await _client.NewReaderAsync(ISchema<object>.String, new ReaderConfigBuilder<string>()
                     .Topic(topic)
                     .StartMessageId(IMessageId.Earliest)
@@ -214,6 +217,7 @@ namespace SharpPulsar.Test
             }
 
         }
+
     }
 
 }

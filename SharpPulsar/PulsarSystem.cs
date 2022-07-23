@@ -14,7 +14,7 @@ using SharpPulsar.Builder;
 
 namespace SharpPulsar
 {
-    public sealed class PulsarSystem
+    public sealed class PulsarSystem : IDisposable
     {
         private static PulsarSystem _instance;
         private static readonly Nito.AsyncEx.AsyncLock _lock = new Nito.AsyncEx.AsyncLock();
@@ -188,6 +188,11 @@ namespace SharpPulsar
         public async Task Shutdown()
         {
             await _actorSystem.Terminate();
+        }
+        public void Dispose()
+        {
+            _actorSystem.Dispose();
+            _actorSystem.WhenTerminated.Wait();
         }
     }
 }

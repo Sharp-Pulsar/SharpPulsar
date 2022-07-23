@@ -81,7 +81,6 @@
             "enum": [
               "Acks",
               "AdminPulsar",
-              "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
               "CheckDockerVersion",
@@ -92,7 +91,6 @@
               "DocsInit",
               "DocsMetadata",
               "EventSource",
-              "GitHubRelease",
               "MultiTopic",
               "Partitioned",
               "PublishNuget",
@@ -123,7 +121,6 @@
             "enum": [
               "Acks",
               "AdminPulsar",
-              "AuthenticatedGitHubClient",
               "AutoClusterFailover",
               "CheckBranch",
               "CheckDockerVersion",
@@ -134,7 +131,6 @@
               "DocsInit",
               "DocsMetadata",
               "EventSource",
-              "GitHubRelease",
               "MultiTopic",
               "Partitioned",
               "PublishNuget",

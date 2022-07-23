@@ -28,16 +28,16 @@ using Xunit.Abstractions;
 namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class MessageEncryptionTest
+    public class TestMessageEncryption
     {
         private readonly ITestOutputHelper _output;
         private readonly PulsarClient _client;
-        public MessageEncryptionTest(ITestOutputHelper output, PulsarFixture fixture)
+        public TestMessageEncryption(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
         }
-        [Fact]
+        [Fact(Skip = "Encrpted Produce Consume")  ]
         public async Task TestEncrptedProduceConsume()
         {
             var messageCount = 10;
@@ -62,7 +62,7 @@ namespace SharpPulsar.Test
                 .SubscriptionName("encrypted-sub")
                 .SubscriptionInitialPosition(Common.SubscriptionInitialPosition.Earliest));
             await Task.Delay(TimeSpan.FromSeconds(5));
-            for (var i = 0; i < messageCount - 2; i++)
+            for (var i = 0; i < messageCount; i++)
             {
                 var message = await consumer.ReceiveAsync();
                 if (message != null)
@@ -75,7 +75,7 @@ namespace SharpPulsar.Test
                     receivedCount++;
                 }
             }
-            Assert.True(receivedCount > 4);
+            Assert.True(receivedCount > 6);
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }

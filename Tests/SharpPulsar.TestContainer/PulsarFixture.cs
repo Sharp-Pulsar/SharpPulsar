@@ -13,7 +13,9 @@ namespace SharpPulsar.TestContainer
         private IConfiguration _configuration;
         public PulsarClientConfigBuilder PulsarClientConfig;
         public PulsarSystem PulsarSystem { get; }
-        public PulsarClient Client ;
+        public PulsarClient Client;
+
+
         public PulsarFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

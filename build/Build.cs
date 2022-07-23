@@ -199,7 +199,7 @@ partial class Build : NukeBuild
     {
         return new TestcontainersBuilder<PulsarTestcontainer>()
           .WithName("Tests")
-          .WithPulsar(new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.0", 6650))
+          .WithPulsar(new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6650))
           .WithPortBinding(6650, 6650)
           .WithPortBinding(6651, 6651)
           .WithPortBinding(8080, 8080)
@@ -250,7 +250,7 @@ partial class Build : NukeBuild
            .SetPublish("6650:6650", "8080:8080", "8081:8081", "2181:2181")
            //.SetMount("source=pulsardata,target=/pulsar/data")
            //.SetMount("source=pulsarconf,target=/pulsar/conf")
-           .SetImage("apachepulsar/pulsar-all:2.10.0")
+           .SetImage("apachepulsar/pulsar-all:2.10.1")
            .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", "PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", "PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", "PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
            .SetCommand("bash")
            .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2 && bin/pulsar sql-worker start"));

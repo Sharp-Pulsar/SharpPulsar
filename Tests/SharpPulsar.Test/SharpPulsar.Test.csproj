@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Compile Remove="Akka\**" />
+    <Compile Remove="OAuth2\**" />
     <EmbeddedResource Remove="Akka\**" />
+    <EmbeddedResource Remove="OAuth2\**" />
     <None Remove="Akka\**" />
+    <None Remove="OAuth2\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -101,10 +104,6 @@
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="OAuth2\" />
   </ItemGroup>
 
 </Project>
