@@ -29,8 +29,8 @@ namespace SharpPulsar.Test
             _output = output;
             _client = fixture.Client;
         }
-        [Fact(Skip ="Issue with sql-worker on github action")]
-        //[Fact]
+        //[Fact(Skip ="Issue with sql-worker on github action")]
+        [Fact]
         public virtual async Task TestQuerySql()
         {
             var topic = $"query_topics_avro_{Guid.NewGuid()}";
@@ -70,13 +70,14 @@ namespace SharpPulsar.Test
             Assert.True(receivedCount > 1);
         }
 
-        [Fact(Skip = "Issue with sql-worker on github action")]
-        //[Fact]
+        //[Fact(Skip = "Issue with sql-worker on github action")]
+        [Fact]
         public async Task TestAvro()
         {
             await PlainAvroProducer($"journal-{Guid.NewGuid()}");
         }
-        [Fact(Skip = "Issue with sql-worker")]
+        //[Fact(Skip = "Issue with sql-worker")]
+        [Fact]
         public async Task TestKeyValue()
         {
             await PlainKeyValueProducer($"keyvalue");

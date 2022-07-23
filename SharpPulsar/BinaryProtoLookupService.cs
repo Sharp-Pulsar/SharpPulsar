@@ -310,32 +310,41 @@ namespace SharpPulsar
 		/// calls broker binaryProto-lookup api to get metadata of partitioned-topic.
 		/// 
 		/// </summary>
-		private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan opTimeout)
+		private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan timeout)
 		{
-			var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
+            var time = timeout;
+            var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
             var askResponse = await _clientCnx.Ask<AskResponse>(payload/*, TimeSpan.FromSeconds(5)*/);
-            if (askResponse.Failed)
+            while (true)
             {
-                var e = askResponse.Exception;
-                var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), opTimeout.TotalMilliseconds);
-                var reply = _replyTo;
-                var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
-                if (nextDelay <= 0 || isLookupThrottling)
+                if (askResponse.Failed)
                 {
-                    reply.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
-                    _log.Error(e.ToString());
-                    _getPartitionedTopicMetadataBackOff = null;
+                    var e = askResponse.Exception;
+                    var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
+                    var reply = _replyTo;
+                    var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
+                    if (nextDelay <= 0 || isLookupThrottling)
+                    {
+                        reply.Tell(new AskResponse(new PulsarClientException.InvalidConfigurationException(e)));
+                        _log.Error(e.ToString());
+                        _getPartitionedTopicMetadataBackOff = null;
+                    }
+                    else
+                    {
+                        _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Message}");
+                        time.Subtract(TimeSpan.FromMilliseconds(nextDelay));
+                        var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                        _requestId = id.Id;
+                        request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
+                        payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
+                        askResponse = await _clientCnx.Ask<AskResponse>(payload/*, TimeSpan.FromSeconds(5)*/);
+                        continue;
+                        //await GetPartitionedTopicMetadata(topicName, opTimeout);
+                    }
                 }
-                else
-                {
-                    _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Message}");
-                    opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
-                    var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
-                    _requestId = id.Id;
-                    await GetPartitionedTopicMetadata(topicName, opTimeout);
-                }
-            }
+                break;
+            }           
 
             var data = askResponse.ConvertTo<LookupDataResult>();
 
@@ -397,51 +406,59 @@ namespace SharpPulsar
 
         private async ValueTask GetTopicsUnderNamespace(NamespaceName ns, Mode mode, TimeSpan opTimeout)
 		{
-            try
+            var request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode);
+            var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
+            var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(10));
+            while (true)
             {
-                var request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode);
-                var payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
-                var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(10));
-                var response = askResponse.ConvertTo<GetTopicsOfNamespaceResponse>();
-                if (_log.IsDebugEnabled)
+
+                try
                 {
-                    _log.Debug($"[namespace: {ns}] Successfully got {response.Response.Topics.Count} topics list in request: {_requestId}");
-                }
-                var result = new List<string>();
-                //https://github.com/apache/pulsar/issues/12727
-                //var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
-                var tpics = response.Response.Topics;
-                foreach (var topic in tpics)
-                {
-                    var filtered = TopicName.Get(topic).PartitionedTopicName;
-                    if (!result.Contains(filtered))
+                    var response = askResponse.ConvertTo<GetTopicsOfNamespaceResponse>();
+                    if (_log.IsDebugEnabled)
                     {
-                        result.Add(filtered);
+                        _log.Debug($"[namespace: {ns}] Successfully got {response.Response.Topics.Count} topics list in request: {_requestId}");
                     }
+                    var result = new List<string>();
+                    //https://github.com/apache/pulsar/issues/12727
+                    //var tpics = response.Response.Topics.Where(x=> !x.Contains("__transaction")).ToArray();
+                    var tpics = response.Response.Topics;
+                    foreach (var topic in tpics)
+                    {
+                        var filtered = TopicName.Get(topic).PartitionedTopicName;
+                        if (!result.Contains(filtered))
+                        {
+                            result.Add(filtered);
+                        }
+                    }
+                    _replyTo.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result)));
+                    return;
                 }
-                _replyTo.Tell(new AskResponse(new GetTopicsUnderNamespaceResponse(result)));
-            }
-            catch 
-            {
-                var nextDelay = Math.Min(_getTopicsUnderNamespaceBackOff.Next(), opTimeout.TotalMilliseconds);
-                var reply = _replyTo;
-                if (nextDelay <= 0)
+                catch
                 {
-                    reply.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout"))));
-                }
-                else
-                {
-                    _log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
-                    opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
-                    await Task.Delay(TimeSpan.FromMilliseconds(nextDelay)); 
+                    var nextDelay = Math.Min(_getTopicsUnderNamespaceBackOff.Next(), opTimeout.TotalMilliseconds);
+                    var reply = _replyTo;
+                    if (nextDelay <= 0)
+                    {
+                        reply.Tell(new AskResponse(PulsarClientException.Unwrap(new Exception($"TimeoutException: Could not get topics of namespace {ns} within configured timeout"))));
+                        return;
+                    }
+                    else
+                    {
+                        _log.Warning($"[namespace: {ns}] Could not get connection while getTopicsUnderNamespace -- Will try again in {nextDelay} ms");
+                        opTimeout.Subtract(TimeSpan.FromMilliseconds(nextDelay));
+                        await Task.Delay(TimeSpan.FromMilliseconds(nextDelay));
 
-                    var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
+                        var reqId = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
 
-                    _requestId = reqId.Id;
+                        _requestId = reqId.Id;
 
-                    _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {nextDelay} ms delay with requestid '{reqId.Id}'");
-
-                    await GetTopicsUnderNamespace(ns, mode, opTimeout);
+                        _log.Warning($"Retrying 'GetTopicsUnderNamespace' after {nextDelay} ms delay with requestid '{reqId.Id}'");
+                        request = Commands.NewGetTopicsOfNamespaceRequest(ns.ToString(), _requestId, mode);
+                        payload = new Payload(request, _requestId, "NewGetTopicsOfNamespaceRequest");
+                        askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(10));
+                        //await GetTopicsUnderNamespace(ns, mode, opTimeout);
+                    }
                 }
             }
         }

@@ -37,7 +37,8 @@ namespace SharpPulsar.Test
             _output = output;
             _client = fixture.Client;
         }
-        [Fact(Skip = "Encrpted Produce Consume")  ]
+        //[Fact(Skip = "Encrpted Produce Consume")  ]
+        [Fact]
         public async Task TestEncrptedProduceConsume()
         {
             var messageCount = 10;

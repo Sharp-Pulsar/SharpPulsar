@@ -22,7 +22,8 @@ namespace SharpPulsar.Test
 
             _client = fixture.Client;
         }
-        [Fact(Skip ="A")]
+        //[Fact(Skip ="A")]
+        [Fact]
         public async Task SchemaProduceAndConsume()
         {
             var topic = $"persistent://public/default/upgradeable-{Guid.NewGuid()}";
