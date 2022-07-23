@@ -315,7 +315,7 @@ namespace SharpPulsar
             var time = timeout;
             var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
-            var askResponse = await _clientCnx.Ask<AskResponse>(payload/*, TimeSpan.FromSeconds(5)*/);
+            var askResponse = await _clientCnx.Ask<AskResponse>(payload, TimeSpan.FromSeconds(5));
             while (true)
             {
                 if (askResponse.Failed)

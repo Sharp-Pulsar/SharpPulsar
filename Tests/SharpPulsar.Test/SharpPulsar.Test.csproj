@@ -20,9 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.4.39" />
+    <PackageReference Include="Akka.TestKit.Xunit2" Version="1.4.40" />
     <PackageReference Include="Castle.Core" Version="5.0.0" />
-    <PackageReference Include="docker.dotnet" Version="3.125.5" />
+    <PackageReference Include="docker.dotnet" Version="3.125.10" />
     <PackageReference Include="FluentAssertions" Version="6.7.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.0.1">
       <PrivateAssets>all</PrivateAssets>
