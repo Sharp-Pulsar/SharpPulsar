@@ -55,7 +55,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                 {
                     Timeout = TimeSpan.FromSeconds(DefaultConnectTimeoutInSeconds * 1000)
                 };
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "SharpPulsar");
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "SharpPulsar");
             }
 			else
 			{
@@ -117,8 +117,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                 var mediaType = new MediaTypeWithQualityHeaderValue("application/json");
                 var res = new HttpRequestMessage(HttpMethod.Post, _tokenUrl);
                 res.Headers.Accept.Add(mediaType);
-                res.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
-                res.Content = new StringContent(JsonSerializer.Serialize(body));
+                res.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/x-www-form-urlencoded");
 
                 var response = await _httpClient.SendAsync(res);
                 var resultContent = await response.Content.ReadAsStreamAsync();

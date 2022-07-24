@@ -15,12 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="OAuth2\Oauth2.cs">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="certs\admin.cert.pem">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -60,10 +54,13 @@
     <None Update="certs\user1.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="OAuth2\Oauth2Files\credentials_file.json">
+    <None Update="Oauth2Files\credentials_file.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="OAuth2\Oauth2Files\standalone.conf">
+    <None Update="Oauth2Files\o-r7y4o-eabanonu.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Oauth2Files\standalone.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

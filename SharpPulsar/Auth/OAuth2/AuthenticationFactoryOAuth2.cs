@@ -21,7 +21,7 @@ using SharpPulsar.Interfaces;
 namespace SharpPulsar.Auth.OAuth2
 {
 	/// <summary>
-	/// Factory class that allows to create <seealso cref="Authentication"/> instances
+	/// Factory class that allows to create <seealso cref="IAuthentication"/> instances
 	/// for OAuth 2.0 authentication methods.
 	/// </summary>
 	public sealed class AuthenticationFactoryOAuth2

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -16,7 +18,9 @@ using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.User;
 using Spectre.Console;
+
 using Tutorials.PulsarTestContainer;
+using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
 namespace Tutorials
 {
@@ -30,12 +34,12 @@ namespace Tutorials
         private static PulsarClient _client;
         static async Task Main(string[] args)
         {
-            await StartContainer();
+            
             var url = "pulsar://localhost:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
-            Console.WriteLine("Select 0(none-tls) 1(tls)");
-            var selections = new List<string> {"0","1" };
+            Console.WriteLine("Select 0(none-tls) 1(tls) 2(OAuth)");
+            var selections = new List<string> { "0", "1", "2" };
             var selection = Console.ReadLine();
             var selected = selections.Contains(selection);
             while (!selected)
@@ -44,7 +48,13 @@ namespace Tutorials
                 selection = Console.ReadLine();
                 selected = selection != "0";
             }
-            if(selection.Equals("1"))
+            if (selection.Equals("2"))
+            {
+                await RunOauth();
+                return;
+            }
+            await StartContainer();
+            if (selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
 
             var clientConfig = new PulsarClientConfigBuilder()
@@ -776,6 +786,52 @@ namespace Tutorials
               .WithExposedPort(6650)
               .WithExposedPort(8080)
               .WithExposedPort(8081);
+        }
+        internal static async Task RunOauth()
+        {
+            var fileUri = new Uri(GetConfigFilePath());
+            var issuerUrl = new Uri("https://auth.streamnative.cloud/");
+            var audience = "urn:sn:pulsar:o-r7y4o:sharp";
+
+            var serviceUrl = "pulsar+ssl://tiny.o-r7y4o.snio.cloud:6651";
+            var subscriptionName = "my-subscription";
+            var topicName = $"my-topic-%{DateTime.Now.Ticks}";
+
+            var clientConfig = new PulsarClientConfigBuilder()
+                .ServiceUrl(serviceUrl)
+                .Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
+
+            //pulsar actor system
+            var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
+            var pulsarClient = pulsarSystem.NewClient();
+
+            var producer = pulsarClient.NewProducer(new ProducerConfigBuilder<byte[]>()
+                .Topic(topicName));
+
+            var consumer = pulsarClient.NewConsumer(new ConsumerConfigBuilder<byte[]>()
+                .Topic(topicName)
+                .SubscriptionName(subscriptionName)
+                .SubscriptionType(SubType.Exclusive));
+
+            var messageId = await producer.SendAsync(Encoding.UTF8.GetBytes($"Sent from C# at '{DateTime.Now}'"));
+            Console.WriteLine($"MessageId is: '{messageId}'");
+
+            var message = await consumer.ReceiveAsync();
+            Console.WriteLine($"Received: {Encoding.UTF8.GetString(message.Data)}");
+
+            await consumer.AcknowledgeAsync(message.MessageId);
+        }
+        static string GetConfigFilePath()
+        {
+            var configFolderName = "Oauth2Files";
+            var privateKeyFileName = "o-r7y4o-eabanonu.json";
+            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var indexOfConfigDir = startup.IndexOf("C:\\Users\\Ebere\\source\\repos\\SharpPulsar\\Tutorials\\bin\\Debug\\net6.0", StringComparison.Ordinal);
+            var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
+            var configFolder = Path.Combine(examplesFolder, configFolderName);
+            var ret = Path.Combine(configFolder, privateKeyFileName);
+            if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
+            return ret;
         }
     }
     public class Students

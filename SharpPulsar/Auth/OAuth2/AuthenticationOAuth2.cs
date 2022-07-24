@@ -35,7 +35,7 @@ namespace SharpPulsar.Auth.OAuth2
 
 		public const string ConfigParamType = "type";
 		public const string TypeClientCredentials = "client_credentials";
-		public const string AuthMethodNameConflict = "token";
+		public const string AUTH_METHOD_NAME = "token";
 		public const double ExpiryAdjustment = 0.9;
 		private const long SerialVersionUID = 1L;
 
@@ -59,7 +59,7 @@ namespace SharpPulsar.Auth.OAuth2
 		{
 			get
 			{
-				return AuthMethodNameConflict;
+				return AUTH_METHOD_NAME;
 			}
 		}
 
@@ -101,21 +101,15 @@ namespace SharpPulsar.Auth.OAuth2
 			Flow.Initialize();
 		}
 
-		public virtual IAuthenticationDataProvider AuthData
+		public virtual IAuthenticationDataProvider GetAuthData()
 		{
-			get
-			{
-				lock (this)
-				{
-					if (this.cachedToken == null || this.cachedToken.Expired)
-					{
-						TokenResult Tr = this.Flow.Authenticate();
-						this.cachedToken = new CachedToken(this, Tr);
-					}
-					return this.cachedToken.AuthData;
-				}
-			}
-		}
+            if (this.cachedToken == null || this.cachedToken.Expired)
+            {
+                TokenResult Tr = this.Flow.Authenticate();
+                this.cachedToken = new CachedToken(this, Tr);
+            }
+            return this.cachedToken.AuthData;
+        }
 
 		public virtual void Dispose()
 		{
