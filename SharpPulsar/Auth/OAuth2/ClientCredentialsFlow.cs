@@ -65,7 +65,7 @@ namespace SharpPulsar.Auth.OAuth2
 			base.Initialize();
 			Debug.Assert(Metadata != null);
 
-			Uri tokenUrl = Metadata.TokenEndpoint;
+			var tokenUrl = Metadata.TokenEndpoint;
 			_exchanger = new TokenClient(tokenUrl);
 			initialized = true;
 		}

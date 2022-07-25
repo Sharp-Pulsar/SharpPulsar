@@ -826,7 +826,7 @@ namespace Tutorials
             var configFolderName = "Oauth2Files";
             var privateKeyFileName = "o-r7y4o-eabanonu.json";
             var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var indexOfConfigDir = startup.IndexOf("C:\\Users\\Ebere\\source\\repos\\SharpPulsar\\Tutorials\\bin\\Debug\\net6.0", StringComparison.Ordinal);
+            var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
             var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
             var configFolder = Path.Combine(examplesFolder, configFolderName);
             var ret = Path.Combine(configFolder, privateKeyFileName);

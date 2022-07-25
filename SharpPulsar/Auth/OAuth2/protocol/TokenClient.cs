@@ -73,7 +73,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
 		/// Constructing http request parameters. </summary>
 		/// <param name="req"> object with relevant request parameters </param>
 		/// <returns> Generate the final request body from a map. </returns>
-		internal virtual string BuildClientCredentialsBody(ClientCredentialsExchangeRequest req)
+		internal virtual IDictionary<string, string> BuildClientCredentialsBody(ClientCredentialsExchangeRequest req)
 		{
 			IDictionary<string, string> bodyMap = new SortedDictionary<string, string>();
 			bodyMap["grant_type"] = "client_credentials";
@@ -99,7 +99,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                     throw es;
                 }
             });//.Collect(Collectors.joining("&"));
-            return string.Join("&", map);
+            return bodyMap;// string.Join("&", map);
 		}
 
 
@@ -117,9 +117,9 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                 var mediaType = new MediaTypeWithQualityHeaderValue("application/json");
                 var res = new HttpRequestMessage(HttpMethod.Post, _tokenUrl);
                 res.Headers.Accept.Add(mediaType);
-                res.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/x-www-form-urlencoded");
+                res.Content = new FormUrlEncodedContent(body);
 
-                var response = await _httpClient.SendAsync(res);
+                var response = await _httpClient.SendAsync(res).ConfigureAwait(false);
                 var resultContent = await response.Content.ReadAsStreamAsync();
 
                 switch (response.StatusCode)

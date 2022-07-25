@@ -1128,7 +1128,7 @@ namespace SharpPulsar
 			_authenticationDataProvider = _authentication.GetAuthData(_remoteHostName);
 			var authData = _authenticationDataProvider.Authenticate(Auth.AuthData.InitAuthData);
 			var auth = new AuthData { auth_data = (authData.Bytes) };
-			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.9.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
+			return Commands.NewConnect(_authentication.AuthMethodName, auth, _protocolVersion, "2.10.1", _proxyToTargetBrokerAddress, string.Empty, null, string.Empty);
 		}
 		#region privates
 		internal enum State
