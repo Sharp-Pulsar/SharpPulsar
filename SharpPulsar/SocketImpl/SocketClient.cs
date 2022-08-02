@@ -41,6 +41,8 @@ namespace SharpPulsar.SocketImpl
         private const int ChunkSize = 75000;
 
 
+        private const long _pauseAtMoreThan10Mb = 10485760;
+        private const long _resumeAt5MbOrLess = 5242881;
         private ChunkingPipeline _pipeline;
 
         public event Action OnConnect;
@@ -49,6 +51,7 @@ namespace SharpPulsar.SocketImpl
         private PipeReader _pipeReader;
 
         private PipeWriter _pipeWriter;
+        private Stream _stream;
 
         private readonly ILoggingAdapter _logger;
 
@@ -91,16 +94,24 @@ namespace SharpPulsar.SocketImpl
         }
         public async ValueTask Connect()
         {
+            var options = new PipeOptions(pauseWriterThreshold: _pauseAtMoreThan10Mb, resumeWriterThreshold: _resumeAt5MbOrLess);
+            var pipe = new Pipe(options);
             var host = _server.Host;
             var networkStream = await GetStream(_server);
 
             if (_encrypt)
-                networkStream = await EncryptStream(networkStream, host);
-
+            {
+                var (stream, read) = await EncryptStream(networkStream, host);
+                networkStream = stream;
+                pipe.Writer.Advance(read);
+                await pipe.Writer.FlushAsync();
+            }
+                
+            _stream = networkStream;
             _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
-            _pipeReader = PipeReader.Create(networkStream);
+            _pipeReader = pipe.Reader;
 
-            _pipeWriter = PipeWriter.Create(networkStream);
+            _pipeWriter = pipe.Writer;
         }
         public string RemoteConnectionId
         {
@@ -255,7 +266,7 @@ namespace SharpPulsar.SocketImpl
                 throw new Exception("Failed to connect.");
             }
         }
-        private async ValueTask<Stream> EncryptStream(Stream stream, string host)
+        private async ValueTask<(Stream stream, int read)> EncryptStream(Stream stream, string host)
         {
             SslStream sslStream = null;
 
@@ -263,7 +274,8 @@ namespace SharpPulsar.SocketImpl
             {
                 sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
                 await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.Tls12, true);
-                return sslStream;
+                var read = await sslStream.ReadAsync(new byte[2048], 0, 2048);
+                return (sslStream, read);
             }
             catch(Exception)
             {

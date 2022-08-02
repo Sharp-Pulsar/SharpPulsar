@@ -115,7 +115,7 @@ namespace SharpPulsar.Configuration
             set => _serviceUrl = value;
         }
 
-        public int ProtocolVersion { get; set; } = 15;
+        public int ProtocolVersion { get; set; } = 19;
 		public X509Certificate2Collection ClientCertificates { get; set; }
 
 		public DateTime Clock { get; set; } = DateTime.Now;

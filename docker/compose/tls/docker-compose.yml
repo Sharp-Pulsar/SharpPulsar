@@ -116,10 +116,12 @@ services:
       tlsTrustCertsFilePath: /pulsar/ssl/ca.cert.pem
       brokerClientTrustCertsFilePath: /pulsar/ssl/ca.cert.pem
       authenticationEnabled: "true"
-      authenticationProviders: org.apache.pulsar.broker.authentication.AuthenticationProviderTls
+      authenticationProviders: org.apache.pulsar.broker.authorization.PulsarAuthorizationProvider
       tlsEnabledWithBroker: "true"
-      brokerClientAuthenticationPlugin: org.apache.pulsar.client.impl.auth.AuthenticationTls
-      brokerClientAuthenticationParameters: tlsCertFile:/pulsar/ssl/superproxy.cert.pem,tlsKeyFile:/pulsar/ssl/superproxy.key-pk8.pem
+      # Authentication settings of the broker itself. Used when the broker connects to other brokers,
+      # either in same or other clusters
+      brokerClientAuthenticationPlugin: org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2
+      brokerClientAuthenticationParameters: {"issuerUrl": "https://pulsar-sample.us.auth0.com","privateKey": "/pulsar/credentials_file.json","audience": "https://pulsar-sample.us.auth0.com/api/v2/"}
     networks:
       pulsar:
 
