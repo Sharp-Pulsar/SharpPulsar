@@ -79,33 +79,17 @@
           "items": {
             "type": "string",
             "enum": [
-              "Acks",
-              "AdminPulsar",
-              "AutoClusterFailover",
-              "CheckBranch",
-              "CheckDockerVersion",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
-              "EventSource",
-              "MultiTopic",
-              "Partitioned",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlPulsar",
-              "StartPulsar",
-              "StopPulsar",
-              "TableView",
-              "Test",
-              "TestAPI",
-              "TestContainer",
-              "TlsStartPulsar",
-              "Transaction"
+              "Test"
             ]
           }
         },
@@ -119,33 +103,17 @@
           "items": {
             "type": "string",
             "enum": [
-              "Acks",
-              "AdminPulsar",
-              "AutoClusterFailover",
-              "CheckBranch",
-              "CheckDockerVersion",
               "Clean",
               "Compile",
               "CreateNuget",
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
-              "EventSource",
-              "MultiTopic",
-              "Partitioned",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "SqlPulsar",
-              "StartPulsar",
-              "StopPulsar",
-              "TableView",
-              "Test",
-              "TestAPI",
-              "TestContainer",
-              "TlsStartPulsar",
-              "Transaction"
+              "Test"
             ]
           }
         },
