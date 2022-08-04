@@ -317,13 +317,15 @@ namespace SharpPulsar
             var time = timeout;
             var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
+
+            var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
             var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             while (true)
             {
                 if (askResponse.Failed)
                 {
                     var e = askResponse.Exception;
-                    var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
+                    nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
                     var reply = _replyTo;
                     var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
                     if (nextDelay <= 0 || isLookupThrottling)

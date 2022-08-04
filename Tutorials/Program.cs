@@ -793,12 +793,13 @@ namespace Tutorials
             var issuerUrl = new Uri("https://auth.streamnative.cloud/");
             var audience = "urn:sn:pulsar:o-r7y4o:sharp";
 
-            var serviceUrl = "pulsar+ssl://tiny.o-r7y4o.snio.cloud:6651";
+            var serviceUrl = "pulsar://localhost:6650";
             var subscriptionName = "my-subscription";
             var topicName = $"my-topic-%{DateTime.Now.Ticks}";
 
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(serviceUrl)
+                //.AddTlsCerts()
                 .Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
 
             //pulsar actor system

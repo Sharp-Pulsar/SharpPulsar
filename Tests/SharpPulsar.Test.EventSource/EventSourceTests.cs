@@ -33,7 +33,7 @@ namespace SharpPulsar.Test.EventSource
             _pulsarSystem = fixture.PulsarSystem;
 
             _client = fixture.Client;
-            _clientConfigurationData = fixture.PulsarClientConfig.ClientConfigurationData;
+            _clientConfigurationData = fixture.ClientConfigurationData;
         }
 		//[Fact(Skip = "Issue with sql-worker on github action")]
 		[Fact]

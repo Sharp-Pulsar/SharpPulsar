@@ -24,6 +24,8 @@ using SharpPulsar.Auth;
 using SharpPulsar.Protocol;
 using ProtoBuf;
 using Serializer = ProtoBuf.Serializer;
+using System.Text;
+using Pipelines.Sockets.Unofficial;
 
 namespace SharpPulsar.SocketImpl
 {
@@ -47,11 +49,9 @@ namespace SharpPulsar.SocketImpl
 
         public event Action OnConnect;
         public event Action OnDisconnect;
-
         private PipeReader _pipeReader;
 
         private PipeWriter _pipeWriter;
-        private Stream _stream;
 
         private readonly ILoggingAdapter _logger;
 
@@ -62,8 +62,19 @@ namespace SharpPulsar.SocketImpl
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         public static ISocketClient CreateClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
         {
-            var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            
+            AddressFamily addressFamily;
+            if (server.AddressFamily == AddressFamily.Unspecified)
+                addressFamily = AddressFamily.InterNetwork;
+            else
+                addressFamily = server.AddressFamily;
+
+            ProtocolType protocolType;
+            if (addressFamily == AddressFamily.Unix)
+                protocolType = ProtocolType.Unspecified;
+            else
+                protocolType = ProtocolType.Tcp;
+
+            var clientSocket = new Socket(addressFamily, SocketType.Stream, protocolType);
             //clientSocket.Connect(server.Host, server.Port);
 
             return new SocketClient(conf, clientSocket, hostName, logger, server);
@@ -90,28 +101,42 @@ namespace SharpPulsar.SocketImpl
             _logger = logger;
 
             _targetServerName = hostName;
-
         }
         public async ValueTask Connect()
         {
-            var options = new PipeOptions(pauseWriterThreshold: _pauseAtMoreThan10Mb, resumeWriterThreshold: _resumeAt5MbOrLess);
-            var pipe = new Pipe(options);
+            var pipeOptions = new PipeOptions(pauseWriterThreshold: _pauseAtMoreThan10Mb, resumeWriterThreshold: _resumeAt5MbOrLess);
+            await GetStream(_server);
+            //var pipeConnection = SocketConnection.Create(_socket, options);
             var host = _server.Host;
-            var networkStream = await GetStream(_server);
 
             if (_encrypt)
             {
-                var (stream, read) = await EncryptStream(networkStream, host);
-                networkStream = stream;
-                pipe.Writer.Advance(read);
-                await pipe.Writer.FlushAsync();
-            }
-                
-            _stream = networkStream;
-            _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
-            _pipeReader = pipe.Reader;
+                var sslStream = await EncryptStream(new NetworkStream(_socket), host);
+                //sslStream.Read(new byte[2048], 0, 2048);
+                var pipeConnection = StreamConnection.GetDuplex(sslStream, pipeOptions);
+                var writerStream = StreamConnection.GetWriter(pipeConnection.Output);
 
-            _pipeWriter = pipe.Writer;
+                _pipeline = new ChunkingPipeline(writerStream, ChunkSize);
+                _pipeReader = pipeConnection.Input;
+
+                _pipeWriter = PipeWriter.Create(writerStream);
+            }
+            else
+            {
+                var pipeConnection = SocketConnection.Create(_socket, pipeOptions);
+                var writerStream = StreamConnection.GetWriter(pipeConnection.Output);
+                _pipeline = new ChunkingPipeline(writerStream, ChunkSize);
+                _pipeReader = pipeConnection.Input;
+
+                _pipeWriter = PipeWriter.Create(writerStream);
+            }
+
+                
+            //_stream = networkStream;
+            
+            //_pipeReader = pipe.Reader;
+
+            //_pipeWriter = pipe.Writer;
         }
         public string RemoteConnectionId
         {
@@ -240,25 +265,34 @@ namespace SharpPulsar.SocketImpl
             _logger.Info("connection close complete....");
         }
 
-        private async Task<Stream> GetStream(DnsEndPoint endPoint)
+        private async Task GetStream(DnsEndPoint endPoint)
         {
             try
             {
-                
                 if (SniProxy)
                 {
                     var url = new Uri(_clientConfiguration.ProxyServiceUrl);
                     endPoint = new DnsEndPoint(url.Host, url.Port);
                 }
-                if (!_encrypt)
-                {           
+                SocketConnection.SetRecommendedClientOptions(_socket);
+                //var args = new SocketAwaitableEventArgs(PipeScheduler.ThreadPool);
+                using (SocketAwaitableEventArgs args = new SocketAwaitableEventArgs(PipeScheduler.ThreadPool))
+                {
+                    args.RemoteEndPoint = endPoint;
                     await _socket.ConnectAsync(endPoint);
-                    return new NetworkStream(_socket);
+                    /*if (!_encrypt)
+                    {
+                        await _socket.ConnectAsync(endPoint);
+                        return;
+                        //return new NetworkStream(_socket);
+                    }*/
+
+                    //var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false);
+                    //await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
+                    //return new NetworkStream(_socket, true);
+                    //await socket.ConnectSocketAsync(args);
                 }
 
-                var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false); 
-                await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
-                return new NetworkStream(_socket, true);
             }
             catch (Exception ex)
             {
@@ -266,16 +300,16 @@ namespace SharpPulsar.SocketImpl
                 throw new Exception("Failed to connect.");
             }
         }
-        private async ValueTask<(Stream stream, int read)> EncryptStream(Stream stream, string host)
+        private async ValueTask<Stream> EncryptStream(Stream stream, string host)
         {
             SslStream sslStream = null;
 
             try
             {
                 sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
-                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.Tls12, true);
-                var read = await sslStream.ReadAsync(new byte[2048], 0, 2048);
-                return (sslStream, read);
+                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.None, true);
+                //var read = await sslStream.ReadAsync(new byte[2048], 0, 2048);
+                return sslStream;
             }
             catch(Exception)
             {

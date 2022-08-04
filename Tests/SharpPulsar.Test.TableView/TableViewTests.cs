@@ -29,7 +29,7 @@ namespace SharpPulsar.Test.TableView
             _admin = new Admin.Public.Admin("http://localhost:8080/", new HttpClient());
             _output = output;
             _client = fixture.Client;
-            _clientConfigurationData = fixture.PulsarClientConfig .ClientConfigurationData;
+            _clientConfigurationData = fixture.ClientConfigurationData;
         }
         [Fact]
         public async Task TestTableView()

@@ -74,7 +74,7 @@ namespace SharpPulsar.Auth.OAuth2.Protocol
                 client.Timeout = TimeSpan.FromSeconds(DefaultConnectTimeoutInSeconds);
 				var metadataDataUrl = _metadataUrl;
                 //var metadataDataUrl = GetWellKnownMetadataUrl(_metadataUrl);
-                var response = await client.GetStreamAsync(metadataDataUrl);
+                var response = await client.GetStreamAsync(metadataDataUrl).ConfigureAwait(false);
                 return await JsonSerializer.DeserializeAsync<Metadata>(response);                
 
 			}

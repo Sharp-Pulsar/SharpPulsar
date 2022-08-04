@@ -24,16 +24,10 @@ using static Nuke.Common.Tools.DocFX.DocFXTasks;
 using Nuke.Common.Tools.DocFX;
 using System.IO;
 using System.Collections.Generic;
-using static Nuke.Common.Tools.Xunit.XunitTasks;
 using Octokit;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Build.Execution;
 using Nuke.Common.Tools.MSBuild;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using SharpPulsar.TestContainer;
-using DotNet.Testcontainers.Builders;
 using Nuke.Common.CI.GitHubActions;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
@@ -195,182 +189,8 @@ partial class Build : NukeBuild
        {
            Information(GitRepository.Branch);
        });
-    private PulsarTestcontainer BuildContainer()
-    {
-        return new TestcontainersBuilder<PulsarTestcontainer>()
-          .WithName("Tests")
-          .WithPulsar(new PulsarTestcontainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6650))
-          .WithPortBinding(6650, 6650)
-          .WithPortBinding(6651, 6651)
-          .WithPortBinding(8080, 8080)
-          .WithPortBinding(8081, 8081)
-          .WithExposedPort(6650)
-          .WithExposedPort(6651)
-          .WithExposedPort(8080)
-          .WithExposedPort(8081)
-          .WithCleanUp(true)
-          .Build();
-    }
-    private async ValueTask AwaitPortReadiness(string address)
-    {
-        var waitTries = 20;
-
-        using var handler = new HttpClientHandler
-        {
-            AllowAutoRedirect = true
-        };
-
-        using var client = new HttpClient(handler);
-
-        while (waitTries > 0)
-        {
-            try
-            {
-                await client.GetAsync(address).ConfigureAwait(false);
-                return;
-            }
-            catch
-            {
-                waitTries--;
-                await Task.Delay(5000).ConfigureAwait(false);
-            }
-        }
-
-        throw new Exception("Unable to confirm Pulsar has initialized");
-    }
-    Target StartPulsar => _ => _
-      .DependsOn(CheckDockerVersion)
-      .Executes(async () =>
-      {
-          DockerTasks.DockerRun(b =>
-           b
-           .SetDetach(true)
-           .SetInteractive(true)
-           .SetName("pulsar")
-           .SetPublish("6650:6650", "8080:8080", "8081:8081", "2181:2181")
-           //.SetMount("source=pulsardata,target=/pulsar/data")
-           //.SetMount("source=pulsarconf,target=/pulsar/conf")
-           .SetImage("apachepulsar/pulsar-all:2.10.1")
-           .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", "PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", "PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", "PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
-           .SetCommand("bash")
-           .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2 && bin/pulsar sql-worker start"));
-
-          var waitTries = 20;
-
-          using var handler = new HttpClientHandler
-          {
-              AllowAutoRedirect = true
-          };
-
-          using var client = new HttpClient(handler);
-
-          while (waitTries > 0)
-          {
-              try
-              {
-                  var get = await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-                  var j = await get.Content.ReadAsStringAsync();
-                  Information(j);
-                  Information("Apache Pulsar Server live at: http://127.0.0.1");
-
-
-                  DockerTasks.DockerContainerExec(b =>
-                  b
-                  .SetContainer("pulsar")
-                  .SetCommand("bash")
-                  .SetArgs("-c", "bin/pulsar sql-worker start"));
-                  return;
-              }
-              catch (Exception ex)
-              {
-                  Information(ex.Message);
-                  waitTries--;
-                  await Task.Delay(5000).ConfigureAwait(false);
-              }
-          }
-
-          throw new Exception("Unable to confirm Pulsar has initialized");
-      });
-    Target SqlPulsar => _ => _
-      .DependsOn(StartPulsar)
-      .Executes(() =>
-      {
-          DockerTasks.DockerContainerExec(b =>
-          b
-          .SetContainer("pulsar")
-          .SetCommand("bash")
-          .SetArgs("-c", "bin/pulsar sql-worker start"));
-      });
-    Target StopPulsar => _ => _
-    .Unlisted()
-    .AssuredAfterFailure()
-    .Executes(() =>
-    {
-
-        try
-        {
-            DockerTasks.DockerRm(b => b
-            .SetContainers("pulsar")
-            .SetForce(true));
-        }
-        catch (Exception ex)
-        {
-            Information(ex.ToString());
-        }
-
-    });
-    Target AdminPulsar => _ => _
-      .DependsOn(SqlPulsar)
-      .Executes(() =>
-      {
-          DockerTasks.DockerExec(x => x
-                .SetContainer("pulsar")
-                .SetCommand("bin/pulsar-admin")
-                .SetArgs("tenants", "create", "tnx", "-r", "appid1", "--allowed-clusters", "standalone")
-            );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "create", "public/deduplication")
-           );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "set-retention", "public/default", "--time", "3600", "--size", "-1")
-           );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "set-deduplication", "public/deduplication", "--enable")
-           );
-          DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar-admin")
-               .SetArgs("namespaces", "set-schema-validation-enforce", "--enable", "public/default")
-           );
-          /*DockerTasks.DockerExec(x => x
-               .SetContainer("pulsar")
-               .SetCommand("bin/pulsar")
-               .SetArgs("sql-worker", "run")
-           );*/
-      });
-    Target TestContainer => _ => _
-    .Executes(async () =>
-    {
-        Information("Test Container");
-        var container = BuildContainer();
-        await container.StartAsync();//;.GetAwaiter().GetResult();]
-        Information("Start Test Container");
-        await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-        Information("ExecAsync Test Container");
-        await container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
-
-        await AwaitPortReadiness($"http://127.0.0.1:8081/");
-        Information("AwaitPortReadiness Test Container");
-    });
-
     Target TestAPI => _ => _
-       .DependsOn(Compile, AdminPulsar)
+       .DependsOn(Compile)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.API");
@@ -419,7 +239,6 @@ partial class Build : NukeBuild
        });
     Target EventSource => _ => _
        .DependsOn(TableView)
-       .Triggers(StopPulsar)
        .Executes(() =>
        {
            CoreTest("SharpPulsar.Test.EventSource");
