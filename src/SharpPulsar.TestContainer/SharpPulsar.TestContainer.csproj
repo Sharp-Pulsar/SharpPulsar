@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNet.Testcontainers" Version="1.7.0-beta.2269" />
     <PackageReference Include="Ductus.FluentDocker" Version="2.10.55" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.json" Version="6.0.0" />
@@ -16,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SharpPulsar\SharpPulsar.csproj" />
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
   </ItemGroup>
 

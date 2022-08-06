@@ -34,7 +34,6 @@ namespace SharpPulsar.Test.EventSource
 
             _client = fixture.Client;
             _clientConfigurationData = fixture.ClientConfigurationData;
-            fixture.CreateSql();
         }
 		//[Fact(Skip = "Issue with sql-worker on github action")]
 		[Fact]

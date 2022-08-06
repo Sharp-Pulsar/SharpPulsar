@@ -85,11 +85,13 @@
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "OAuth",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "Test"
+              "Test",
+              "Token"
             ]
           }
         },
@@ -109,11 +111,13 @@
               "DocBuild",
               "DocsInit",
               "DocsMetadata",
+              "OAuth",
               "PublishNuget",
               "Restore",
               "RunChangelog",
               "ServeDocs",
-              "Test"
+              "Test",
+              "Token"
             ]
           }
         },

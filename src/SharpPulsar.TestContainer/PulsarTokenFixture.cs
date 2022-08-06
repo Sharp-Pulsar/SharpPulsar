@@ -17,45 +17,45 @@ using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public class PulsarTokenFixture : IAsyncLifetime
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        private readonly IConfiguration _configuration;
-
         public ClientConfigurationData ClientConfigurationData;
-        public virtual PulsarTestContainerConfiguration Configuration { get; }
-
-        public PulsarFixture()
+        public string Token;
+        private readonly IConfiguration _configuration;
+        public virtual PulsarTestTokenContainerConfiguration Configuration { get; }
+        public PulsarTokenFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6650);
+            Configuration = new PulsarTestTokenContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6653);
             Container = BuildContainer()
                 .WithCleanUp(true)
                 .Build();
         }
-        public virtual TestcontainersBuilder<PulsarTestContainer> BuildContainer()
+        public virtual TestcontainersBuilder<PulsarTestTokenContainer> BuildContainer()
         {
-            return (TestcontainersBuilder<PulsarTestContainer>)new TestcontainersBuilder<PulsarTestContainer>()
-              .WithName("integration-tests")
+            return (TestcontainersBuilder<PulsarTestTokenContainer>)new TestcontainersBuilder<PulsarTestTokenContainer>()
+              .WithName("token-tests")
               .WithPulsar(Configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+              .WithPortBinding(6653, 6650)
+              .WithPortBinding(8083, 8080)
+              .WithExposedPort(6653)
+              .WithExposedPort(8083);
         }
-        public PulsarTestContainer Container { get; }
+        public PulsarTestTokenContainer Container { get; private set; }
         public virtual async Task InitializeAsync()
         {
-            await Container.StartAsync();//;.GetAwaiter().GetResult();
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+            await Container.StartAsync();//;.GetAwaiter().GetResult()
 
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
-            await SetupSystem();
+            await AwaitPortReadiness($"http://127.0.0.1:8083/metrics/");
+
+            var execResult = await Container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", @"/pulsar/secret.key", "--subject", "test-user", "--expiry-time", $"{TimeSpan.FromSeconds(10).TotalSeconds}"})
+                .ConfigureAwait(false);
+            Token = execResult.Stdout;
+            await SetupSystem("pulsar://localhost:6653", "http://127.0.0.1:8083");
+            await Task.CompletedTask;
         }
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
@@ -90,34 +90,33 @@ namespace SharpPulsar.TestContainer
             if (!string.IsNullOrWhiteSpace(authCertPath))
                 client.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authCertPath)));
 
-            if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
-                client.Authentication(authPluginClassName, authParamsString);
-
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
+            client.Authentication(AuthenticationFactory.Token(Token));
 
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;
         }
-        public virtual async Task DisposeAsync()
+        public Task DisposeAsync()
         {
-            await Container.DisposeAsync().AsTask();
             try
             {
                 if (Client != null)
-                    await Client.ShutdownAsync();
+                    Client.ShutdownAsync().Wait();
             }
             catch
             {
 
             }
+            return Task.CompletedTask;
         }
+       
         private async ValueTask AwaitPortReadiness(string address)
         {
             var waitTries = 20;
@@ -145,9 +144,18 @@ namespace SharpPulsar.TestContainer
 
             throw new Exception("Unable to confirm Pulsar has initialized");
         }
-        public void Dispose()
+        
+        public string GetConfigFilePath()
         {
-            DisposeAsync().Wait();
+            var configFolderName = "Oauth2Files";
+            var privateKeyFileName = "o-r7y4o-eabanonu.json";
+            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
+            var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
+            var configFolder = Path.Combine(examplesFolder, configFolderName);
+            var ret = Path.Combine(configFolder, privateKeyFileName);
+            if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
+            return ret;
         }
     }
 }

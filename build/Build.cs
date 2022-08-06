@@ -134,9 +134,21 @@ partial class Build : NukeBuild
 
     Target Test => _ => _
         .DependsOn(Compile)
+        .Partition(3)
+        .DependentFor(Token, OAuth)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test");
+        });
+    Target Token => _ => _
+        .Executes(() =>
+        {
+            CoreTest("SharpPulsar.Test.Token");
+        });
+    Target OAuth => _ => _
+        .Executes(() =>
+        {
+            CoreTest("SharpPulsar.Test.OAuths");
         });
     void CoreTest(string projectName)
     {

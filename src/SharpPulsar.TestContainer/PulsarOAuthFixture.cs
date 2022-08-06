@@ -17,45 +17,41 @@ using Xunit;
 
 namespace SharpPulsar.TestContainer
 {
-    public class PulsarFixture : IAsyncLifetime, IDisposable
+    public class PulsarOAuthFixture : IAsyncLifetime
     {
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
-        private readonly IConfiguration _configuration;
-
         public ClientConfigurationData ClientConfigurationData;
-        public virtual PulsarTestContainerConfiguration Configuration { get; }
-
-        public PulsarFixture()
+        private readonly IConfiguration _configuration;
+        public virtual PulsarTestOAuthContainerConfiguration Configuration { get; }
+        public PulsarOAuthFixture()
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6650);
+            Configuration = new PulsarTestOAuthContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6652);
             Container = BuildContainer()
                 .WithCleanUp(true)
                 .Build();
         }
-        public virtual TestcontainersBuilder<PulsarTestContainer> BuildContainer()
+        public virtual TestcontainersBuilder<PulsarTestOAuthContainer> BuildContainer()
         {
-            return (TestcontainersBuilder<PulsarTestContainer>)new TestcontainersBuilder<PulsarTestContainer>()
-              .WithName("integration-tests")
+            return (TestcontainersBuilder<PulsarTestOAuthContainer>)new TestcontainersBuilder<PulsarTestOAuthContainer>()
+              .WithName("oauth-tests")
               .WithPulsar(Configuration)
-              .WithPortBinding(6650, 6650)
-              .WithPortBinding(8080, 8080)
-              .WithPortBinding(8081, 8081)
-              .WithExposedPort(6650)
-              .WithExposedPort(8080)
-              .WithExposedPort(8081);
+              .WithPortBinding(6652, 6650)
+              .WithPortBinding(8082, 8080)
+              .WithExposedPort(6652)
+              .WithExposedPort(8082);
         }
-        public PulsarTestContainer Container { get; }
+        public PulsarTestOAuthContainer Container { get; private set; }
         public virtual async Task InitializeAsync()
         {
             await Container.StartAsync();//;.GetAwaiter().GetResult();
-            await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
-            await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
 
-            await AwaitPortReadiness($"http://127.0.0.1:8081/");
-            await SetupSystem();
+            await AwaitPortReadiness($"http://127.0.0.1:8082/metrics/");
+            
+            await SetupSystem("pulsar://localhost:6652", "http://127.0.0.1:8082/");
+            await Task.CompletedTask;
         }
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
         {
@@ -66,9 +62,13 @@ namespace SharpPulsar.TestContainer
         }
         public virtual async ValueTask SetupSystem(string? service = null, string? web = null)
         {
+            var fileUri = new Uri(GetConfigFilePath());
+            var issuerUrl = new Uri("https://auth.streamnative.cloud/");
+            var audience = "urn:sn:pulsar:o-r7y4o:sharp";
             var client = new PulsarClientConfigBuilder();
             var clienConfigSetting = _configuration.GetSection("client");
             var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
+
             var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
@@ -89,35 +89,34 @@ namespace SharpPulsar.TestContainer
 
             if (!string.IsNullOrWhiteSpace(authCertPath))
                 client.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authCertPath)));
-
-            if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
-                client.Authentication(authPluginClassName, authParamsString);
-
+            
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
-
+            client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
+            
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
             ClientConfigurationData = client.ClientConfigurationData;
         }
-        public virtual async Task DisposeAsync()
+        public Task DisposeAsync()
         {
-            await Container.DisposeAsync().AsTask();
             try
             {
                 if (Client != null)
-                    await Client.ShutdownAsync();
+                    Client.ShutdownAsync().Wait();
             }
             catch
             {
 
             }
+            return Task.CompletedTask;
         }
+        
         private async ValueTask AwaitPortReadiness(string address)
         {
             var waitTries = 20;
@@ -145,9 +144,18 @@ namespace SharpPulsar.TestContainer
 
             throw new Exception("Unable to confirm Pulsar has initialized");
         }
-        public void Dispose()
+        
+        public string GetConfigFilePath()
         {
-            DisposeAsync().Wait();
+            var configFolderName = "Oauth2Files";
+            var privateKeyFileName = "o-r7y4o-eabanonu.json";
+            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
+            var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
+            var configFolder = Path.Combine(examplesFolder, configFolderName);
+            var ret = Path.Combine(configFolder, privateKeyFileName);
+            if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
+            return ret;
         }
     }
 }

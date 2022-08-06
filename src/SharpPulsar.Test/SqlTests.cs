@@ -28,6 +28,7 @@ namespace SharpPulsar.Test
         {
             _output = output;
             _client = fixture.Client;
+            //fixture.CreateSql();
         }
         //[Fact(Skip ="Issue with sql-worker on github action")]
         [Fact]

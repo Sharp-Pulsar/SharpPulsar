@@ -25,33 +25,6 @@
     <PackageDownload Include="GitVersion.Tool" Version="[5.8.1]" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Remove="..\.github\workflows\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\ci.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\TxnTests.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\TxnTests.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
-    <ProjectReference Include="..\Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\release.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\github.yml" />
-  </ItemGroup>
+    
 
 </Project>
