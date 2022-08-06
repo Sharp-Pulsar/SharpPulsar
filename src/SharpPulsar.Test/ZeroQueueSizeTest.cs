@@ -52,7 +52,7 @@ namespace SharpPulsar.Test
 			_output = output;
 			_client = fixture.Client;
 		}
-		[Fact]
+		[Fact(Skip ="ZeroQueueSizeNormalConsumer")]
 		public void ZeroQueueSizeNormalConsumer()
 		{
 			string key = "nonZeroQueueSizeNormalConsumer";
@@ -98,7 +98,7 @@ namespace SharpPulsar.Test
 			}
 		}
 
-		[Fact]
+		[Fact(Skip = "TestZeroQueueSizeMessageRedelivery")]
 		public void TestZeroQueueSizeMessageRedelivery()
 		{
 			const string topic = "testZeroQueueSizeMessageRedelivery";
@@ -134,7 +134,8 @@ namespace SharpPulsar.Test
 			consumer.Close();
 			producer.Close();
 		}
-		[Fact]
+		
+        [Fact(Skip = "TestZeroQueueSizeMessageRedeliveryForListener")]
 		public void TestZeroQueueSizeMessageRedeliveryForListener()
 		{
 			string topic = $"testZeroQueueSizeMessageRedeliveryForListener-{DateTime.Now.Ticks}";
@@ -177,7 +178,8 @@ namespace SharpPulsar.Test
 			consumer.Close();
 			producer.Close();
 		}
-		[Fact]
+		
+        [Fact(Skip = "TestPauseAndResume")]
 		public void TestPauseAndResume()
 		{
 			const string topicName = "zero-queue-pause-and-resume";

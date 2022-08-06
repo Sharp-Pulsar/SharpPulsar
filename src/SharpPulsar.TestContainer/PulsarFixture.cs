@@ -99,6 +99,7 @@ namespace SharpPulsar.TestContainer
             client.StatsInterval(statsInterval);
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
+            //client.ClientCnx(TimeSpan.FromSeconds(-1));
 
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();

@@ -24,13 +24,11 @@ using SharpPulsar.Auth;
 using SharpPulsar.Protocol;
 using ProtoBuf;
 using Serializer = ProtoBuf.Serializer;
-using System.Text;
-using Pipelines.Sockets.Unofficial;
 
 namespace SharpPulsar.SocketImpl
 {
     //https://github.com/fzf003/TinyService/blob/242c38c06ef7cb685934ba653041d07c64a6f806/Src/TinyServer.ReactiveSocket/SocketAcceptClient.cs
-    public sealed class SocketClient: ISocketClient
+    public sealed class SocketClient : ISocketClient
     {
         private readonly Socket _socket;
         private readonly X509Certificate2Collection _clientCertificates;
@@ -43,12 +41,11 @@ namespace SharpPulsar.SocketImpl
         private const int ChunkSize = 75000;
 
 
-        private const long _pauseAtMoreThan10Mb = 10485760;
-        private const long _resumeAt5MbOrLess = 5242881;
         private ChunkingPipeline _pipeline;
 
         public event Action OnConnect;
         public event Action OnDisconnect;
+
         private PipeReader _pipeReader;
 
         private PipeWriter _pipeWriter;
@@ -62,19 +59,8 @@ namespace SharpPulsar.SocketImpl
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         public static ISocketClient CreateClient(ClientConfigurationData conf, DnsEndPoint server, string hostName, ILoggingAdapter logger)
         {
-            AddressFamily addressFamily;
-            if (server.AddressFamily == AddressFamily.Unspecified)
-                addressFamily = AddressFamily.InterNetwork;
-            else
-                addressFamily = server.AddressFamily;
+            var clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            ProtocolType protocolType;
-            if (addressFamily == AddressFamily.Unix)
-                protocolType = ProtocolType.Unspecified;
-            else
-                protocolType = ProtocolType.Tcp;
-
-            var clientSocket = new Socket(addressFamily, SocketType.Stream, protocolType);
             //clientSocket.Connect(server.Host, server.Port);
 
             return new SocketClient(conf, clientSocket, hostName, logger, server);
@@ -101,42 +87,20 @@ namespace SharpPulsar.SocketImpl
             _logger = logger;
 
             _targetServerName = hostName;
+
         }
         public async ValueTask Connect()
         {
-            var pipeOptions = new PipeOptions(pauseWriterThreshold: _pauseAtMoreThan10Mb, resumeWriterThreshold: _resumeAt5MbOrLess);
-            await GetStream(_server);
-            //var pipeConnection = SocketConnection.Create(_socket, options);
             var host = _server.Host;
+            var networkStream = await GetStream(_server);
 
             if (_encrypt)
-            {
-                var sslStream = await EncryptStream(new NetworkStream(_socket), host);
-                //sslStream.Read(new byte[2048], 0, 2048);
-                var pipeConnection = StreamConnection.GetDuplex(sslStream, pipeOptions);
-                var writerStream = StreamConnection.GetWriter(pipeConnection.Output);
+                networkStream = await EncryptStream(networkStream, host);
 
-                _pipeline = new ChunkingPipeline(writerStream, ChunkSize);
-                _pipeReader = pipeConnection.Input;
+            _pipeline = new ChunkingPipeline(networkStream, ChunkSize);
+            _pipeReader = PipeReader.Create(networkStream);
 
-                _pipeWriter = PipeWriter.Create(writerStream);
-            }
-            else
-            {
-                var pipeConnection = SocketConnection.Create(_socket, pipeOptions);
-                var writerStream = StreamConnection.GetWriter(pipeConnection.Output);
-                _pipeline = new ChunkingPipeline(writerStream, ChunkSize);
-                _pipeReader = pipeConnection.Input;
-
-                _pipeWriter = PipeWriter.Create(writerStream);
-            }
-
-                
-            //_stream = networkStream;
-            
-            //_pipeReader = pipe.Reader;
-
-            //_pipeWriter = pipe.Writer;
+            _pipeWriter = PipeWriter.Create(networkStream);
         }
         public string RemoteConnectionId
         {
@@ -152,7 +116,7 @@ namespace SharpPulsar.SocketImpl
 
         IDisposable ReaderSchedule(IObserver<(BaseCommand command, MessageMetadata metadata, BrokerEntryMetadata brokerEntryMetadata, ReadOnlySequence<byte> payload, bool hasValidcheckSum, bool hasMagicNumber)> observer, CancellationToken cancellationToken = default)
         {
-            return NewThreadScheduler.Default.Schedule(async() =>
+            return NewThreadScheduler.Default.Schedule(async () =>
             {
                 try
                 {
@@ -228,8 +192,8 @@ namespace SharpPulsar.SocketImpl
                 {
                     await _pipeReader.CompleteAsync().ConfigureAwait(false);
                     observer.OnCompleted();
-                }                           
-                
+                }
+
             });
         }
 
@@ -265,34 +229,25 @@ namespace SharpPulsar.SocketImpl
             _logger.Info("connection close complete....");
         }
 
-        private async Task GetStream(DnsEndPoint endPoint)
+        private async Task<Stream> GetStream(DnsEndPoint endPoint)
         {
             try
             {
+
                 if (SniProxy)
                 {
                     var url = new Uri(_clientConfiguration.ProxyServiceUrl);
                     endPoint = new DnsEndPoint(url.Host, url.Port);
                 }
-                SocketConnection.SetRecommendedClientOptions(_socket);
-                //var args = new SocketAwaitableEventArgs(PipeScheduler.ThreadPool);
-                using (SocketAwaitableEventArgs args = new SocketAwaitableEventArgs(PipeScheduler.ThreadPool))
+                if (!_encrypt)
                 {
-                    args.RemoteEndPoint = endPoint;
                     await _socket.ConnectAsync(endPoint);
-                    /*if (!_encrypt)
-                    {
-                        await _socket.ConnectAsync(endPoint);
-                        return;
-                        //return new NetworkStream(_socket);
-                    }*/
-
-                    //var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false);
-                    //await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
-                    //return new NetworkStream(_socket, true);
-                    //await socket.ConnectSocketAsync(args);
+                    return new NetworkStream(_socket);
                 }
 
+                var addr = await Dns.GetHostAddressesAsync(endPoint.Host).ConfigureAwait(false);
+                await ConnectAsync(addr, endPoint.Port).ConfigureAwait(false);
+                return new NetworkStream(_socket, true);
             }
             catch (Exception ex)
             {
@@ -307,11 +262,10 @@ namespace SharpPulsar.SocketImpl
             try
             {
                 sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
-                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.None, true);
-                //var read = await sslStream.ReadAsync(new byte[2048], 0, 2048);
+                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, SslProtocols.Tls12, true);
                 return sslStream;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 if (sslStream is null)
                     stream.Dispose();
@@ -368,7 +322,7 @@ namespace SharpPulsar.SocketImpl
                 // at least one of the addresses will failed, in which case we will have propagated that.
                 throw new ArgumentException();
             }
-            
+
         }
 
         private bool SniProxy => _clientConfiguration.ProxyProtocol != null && !string.IsNullOrWhiteSpace(_clientConfiguration.ProxyServiceUrl);
@@ -405,7 +359,7 @@ namespace SharpPulsar.SocketImpl
                 return addresses.Count(item => cleanName != null && item.EndsWith(cleanName)) == addresses.Count();
 
             }
-            
+
 
             return false;
         }

@@ -314,18 +314,18 @@ namespace SharpPulsar
 		/// </summary>
 		private async ValueTask GetPartitionedTopicMetadata(TopicName topicName, TimeSpan timeout)
 		{
-            var time = timeout;
+            var time = timeout.TotalMilliseconds;
             var request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
 			var payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
 
-            var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
+            //var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
             var askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
             while (true)
             {
                 if (askResponse.Failed)
                 {
-                    var e = askResponse.Exception;
-                    nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time.TotalMilliseconds);
+                    var e = askResponse?.Exception;
+                    var nextDelay = Math.Min(_getPartitionedTopicMetadataBackOff.Next(), time);
                     var reply = _replyTo;
                     var isLookupThrottling = !PulsarClientException.IsRetriableError(e) || e is PulsarClientException.TooManyRequestsException || e is PulsarClientException.AuthenticationException;
                     if (nextDelay <= 0 || isLookupThrottling)
@@ -336,13 +336,13 @@ namespace SharpPulsar
                     }
                     else
                     {
-                        _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e.Message}");
-                        time.Subtract(TimeSpan.FromMilliseconds(nextDelay));
+                        _log.Warning($"[topic: {topicName}] Could not get connection while getPartitionedTopicMetadata -- Will try again in {nextDelay} ms: {e?.Message}");
+                        time = time - nextDelay;
                         var id = await _generator.Ask<NewRequestIdResponse>(NewRequestId.Instance);
                         _requestId = id.Id;
                         request = Commands.NewPartitionMetadataRequest(topicName.ToString(), _requestId);
                         payload = new Payload(request, _requestId, "NewPartitionMetadataRequest");
-                        askResponse = await _clientCnx.Ask<AskResponse>(payload/*, TimeSpan.FromSeconds(5)*/);
+                        askResponse = await _clientCnx.Ask<AskResponse>(payload, _timeCnx);
                         continue;
                         //await GetPartitionedTopicMetadata(topicName, opTimeout);
                     }
