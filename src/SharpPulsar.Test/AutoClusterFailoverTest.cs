@@ -8,13 +8,13 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace SharpPulsar.Test.AutoClusterFailover
+namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
-    public class AutoClusterFailoverTest 
+    public class AutoClusterFailoverTest
     {
         private readonly ITestOutputHelper _output;
-        
+
         private readonly string _topic = $"auto-failover-topic-{Guid.NewGuid()}";
 
         private readonly PulsarClient _client;
@@ -25,7 +25,7 @@ namespace SharpPulsar.Test.AutoClusterFailover
             _client = fixture.Client;
         }
         [Fact]
-        public async Task ProduceAndConsume()
+        public async Task Auto_ProduceAndConsume()
         {
             try
             {
@@ -80,6 +80,6 @@ namespace SharpPulsar.Test.AutoClusterFailover
             }
 
         }
-        
+
     }
 }

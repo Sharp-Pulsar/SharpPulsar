@@ -2,7 +2,6 @@
 using System.Text;
 using SharpPulsar.Protocol.Proto;
 using SharpPulsar.User;
-using Xunit;
 using Xunit.Abstractions;
 using SharpPulsar.TestContainer;
 using SharpPulsar.Builder;
@@ -10,6 +9,9 @@ using SharpPulsar.Test.Fixture;
 using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using SharpPulsar.Tracker;
+using Akka.Actor;
+using SharpPulsar.Tracker.Messages;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +31,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace SharpPulsar.Test.Acks
+namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
     public class NegativeAcksTest
@@ -53,6 +55,48 @@ namespace SharpPulsar.Test.Acks
         public async Task TestNegativeAcksNoBatch()
         {
             await TestNegativeAcks(false, false, CommandSubscribe.SubType.Exclusive, 5000, 8000);
+        }
+        [Fact]
+        public async Task TestAddAndRemove()
+        {
+            var builder = new ConsumerConfigBuilder<byte[]>();
+            builder.Topic("TestAckTracker");
+            builder.SubscriptionName("TestAckTracker-sub");
+            var consumer = await _client.NewConsumerAsync(builder);
+            var unack = _client.ActorSystem.ActorOf(UnAckedChunckedMessageIdSequenceMap.Prop());
+            var tracker = _client.ActorSystem.ActorOf(UnAckedMessageTracker.Prop(TimeSpan.FromSeconds(1000000), TimeSpan.FromSeconds(1000000), consumer.ConsumerActor, unack));
+
+            var empty = await tracker.Ask<bool>(Empty.Instance);
+            Assert.True(empty);
+
+            var size = await tracker.Ask<long>(Size.Instance);
+            Assert.Equal(0, size);
+
+            var mid = new MessageId(1L, 1L, -1);
+            var added = await tracker.Ask<bool>(new Add(mid));
+            Assert.True(added);
+            added = await tracker.Ask<bool>(new Add(mid));
+            Assert.False(added);
+            size = await tracker.Ask<long>(Size.Instance);
+            Assert.Equal(1, size);
+
+            tracker.Tell(Clear.Instance);
+
+            added = await tracker.Ask<bool>(new Add(mid));
+            Assert.True(added);
+
+            size = await tracker.Ask<long>(Size.Instance);
+            Assert.Equal(1, size);
+
+            var removed = await tracker.Ask<bool>(new Remove(mid));
+
+            Assert.True(removed);
+
+            empty = await tracker.Ask<bool>(Empty.Instance);
+            Assert.True(empty);
+
+            size = await tracker.Ask<long>(Size.Instance);
+            Assert.Equal(0, size);
         }
 
         private async Task TestNegativeAcks(bool batching, bool usePartition, CommandSubscribe.SubType subscriptionType, int negAcksDelayMillis, int ackTimeout)

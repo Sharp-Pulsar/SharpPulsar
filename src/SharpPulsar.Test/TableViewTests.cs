@@ -14,7 +14,7 @@ using SharpPulsar.Common.Naming;
 using FluentAssertions;
 using SharpPulsar.Test.Fixture;
 
-namespace SharpPulsar.Test.TableView
+namespace SharpPulsar.Test
 {
     [Collection(nameof(PulsarCollection))]
     public class TableViewTests
@@ -72,7 +72,7 @@ namespace SharpPulsar.Test.TableView
             {
 
             }
-
+            topic = $"persistent://public/default/{topic}";
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
 
@@ -132,6 +132,6 @@ namespace SharpPulsar.Test.TableView
             producer.Flush();
             return keys;
         }
-       
+
     }
 }
