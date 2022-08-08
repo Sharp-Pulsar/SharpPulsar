@@ -14,47 +14,78 @@ using SharpPulsar.TestContainer.Configuration;
 using SharpPulsar.TestContainer.Container;
 using SharpPulsar.User;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace SharpPulsar.TestContainer
 {
     public class PulsarTokenFixture : IAsyncLifetime
     {
+        private const string AuthenticationPlugin = "org.apache.pulsar.client.impl.auth.AuthenticationToken";
+        private const string SecretKeyPath = "/pulsar/secret.key";
+        private const string UserName = "test-user";
+        private const int Port = 6650;
         public PulsarClient Client;
         public PulsarSystem PulsarSystem;
         public ClientConfigurationData ClientConfigurationData;
         public string Token;
         private readonly IConfiguration _configuration;
-        public virtual PulsarTestTokenContainerConfiguration Configuration { get; }
-        public PulsarTokenFixture()
+        private readonly IMessageSink _messageSink;
+        private readonly IContainerService _cluster;
+        public PulsarTokenFixture(IMessageSink messageSink)
         {
             var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _configuration = GetIConfigurationRoot(path);
-            Configuration = new PulsarTestTokenContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6653);
-            Container = BuildContainer()
-                .WithCleanUp(true)
+            _messageSink = messageSink;
+
+            var environmentVariables = new[]
+            {
+                $"PULSAR_PREFIX_tokenSecretKey=file://{SecretKeyPath}",
+                "PULSAR_PREFIX_authenticationRefreshCheckSeconds=5",
+                $"superUserRoles={UserName}",
+                "authenticationEnabled=true",
+                "authorizationEnabled=true",
+                "authenticationProviders=org.apache.pulsar.broker.authentication.AuthenticationProviderToken",
+                "authenticateOriginalAuthData=false",
+                $"brokerClientAuthenticationPlugin={AuthenticationPlugin}",
+                $"CLIENT_PREFIX_authPlugin={AuthenticationPlugin}",
+                $"PULSAR_PREFIX_transactionCoordinatorEnabled=true",
+                $"PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false",
+                $"PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true",
+                $"PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor"
+            };
+
+            var arguments = "\"" +
+                $"bin/pulsar tokens create-secret-key --output {SecretKeyPath} && " +
+                $"export brokerClientAuthenticationParameters=token:$(bin/pulsar tokens create --secret-key {SecretKeyPath} --subject {UserName}) && " +
+                "export CLIENT_PREFIX_authParams=$brokerClientAuthenticationParameters && " +
+                "bin/apply-config-from-env.py conf/standalone.conf && " +
+                "bin/apply-config-from-env-with-prefix.py CLIENT_PREFIX_ conf/client.conf && " +
+                "bin/pulsar standalone --no-functions-worker && " +
+                "bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2"
+                + "\"";
+
+            _cluster = new Ductus.FluentDocker.Builders.Builder()
+                .UseContainer()
+                .UseImage("apachepulsar/pulsar-all:2.10.1")
+                .WithEnvironment(environmentVariables)
+                .ExposePort(Port)
+                .Command("/bin/bash -c", arguments)
                 .Build();
+
+            ServiceUrl = "pulsar://localhost:6650";
         }
-        public virtual TestcontainersBuilder<PulsarTestTokenContainer> BuildContainer()
-        {
-            return (TestcontainersBuilder<PulsarTestTokenContainer>)new TestcontainersBuilder<PulsarTestTokenContainer>()
-              .WithName("token-tests")
-              .WithPulsar(Configuration)
-              .WithPortBinding(6653, 6650)
-              .WithPortBinding(8083, 8080)
-              .WithExposedPort(6653)
-              .WithExposedPort(8083);
-        }
-        public PulsarTestTokenContainer Container { get; private set; }
+        public string ServiceUrl { get; private set; }
         public virtual async Task InitializeAsync()
         {
-            await Container.StartAsync();//;.GetAwaiter().GetResult()
-
-            await AwaitPortReadiness($"http://127.0.0.1:8083/metrics/");
-
-            var execResult = await Container.ExecAsync(new List<string> { @"./bin/pulsar", "tokens", "create", "--secret-key", @"/pulsar/secret.key", "--subject", "test-user", "--expiry-time", $"{TimeSpan.FromSeconds(10).TotalSeconds}"})
-                .ConfigureAwait(false);
-            Token = execResult.Stdout;
-            await SetupSystem("pulsar://localhost:6653", "http://127.0.0.1:8083");
+            _cluster.StateChange += (sender, args) => _messageSink.OnMessage(new DiagnosticMessage($"The Pulsar cluster changed state to: {args.State}"));
+            _cluster.Start();
+            _cluster.WaitForMessageInLogs("Successfully updated the policies on namespace public/default", int.MaxValue);
+            var endpoint = _cluster.ToHostExposedEndpoint($"{Port}/tcp");
+            _messageSink.OnMessage(new DiagnosticMessage($"Endpoint opened at {endpoint}"));
+            ServiceUrl = $"pulsar://localhost:{endpoint.Port}";
+            Token = CreateToken(Timeout.InfiniteTimeSpan);
+            await SetupSystem();
             await Task.CompletedTask;
         }
         public IConfigurationRoot GetIConfigurationRoot(string outputPath)
@@ -64,12 +95,12 @@ namespace SharpPulsar.TestContainer
                 .AddJsonFile("appsettings.json", optional: true)
                 .Build();
         }
-        public virtual async ValueTask SetupSystem(string? service = null, string? web = null)
+        public virtual async ValueTask SetupSystem()
         {
             var client = new PulsarClientConfigBuilder();
             var clienConfigSetting = _configuration.GetSection("client");
-            var serviceUrl = service ?? clienConfigSetting.GetSection("service-url").Value;
-            var webUrl = web ?? clienConfigSetting.GetSection("web-url").Value;
+            var serviceUrl = ServiceUrl;
+            var webUrl = clienConfigSetting.GetSection("web-url").Value;
             var authPluginClassName = clienConfigSetting.GetSection("authPluginClassName").Value;
             var authParamsString = clienConfigSetting.GetSection("authParamsString").Value;
             var authCertPath = clienConfigSetting.GetSection("authCertPath").Value;
@@ -90,6 +121,9 @@ namespace SharpPulsar.TestContainer
             if (!string.IsNullOrWhiteSpace(authCertPath))
                 client.AddTrustedAuthCert(new X509Certificate2(File.ReadAllBytes(authCertPath)));
 
+            if (!string.IsNullOrWhiteSpace(authPluginClassName) && !string.IsNullOrWhiteSpace(authParamsString))
+                client.Authentication(authPluginClassName, authParamsString);
+
             client.ServiceUrl(serviceUrl);
             client.WebUrl(webUrl);
             client.ConnectionsPerBroker(connectionsPerBroker);
@@ -97,7 +131,7 @@ namespace SharpPulsar.TestContainer
             client.AllowTlsInsecureConnection(allowTlsInsecureConnection);
             client.EnableTls(enableTls);
             client.Authentication(AuthenticationFactory.Token(Token));
-
+            //client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
             var system = await PulsarSystem.GetInstanceAsync(client);
             Client = system.NewClient();
             PulsarSystem = system;
@@ -114,48 +148,44 @@ namespace SharpPulsar.TestContainer
             {
 
             }
+            _cluster.Remove(true);
+            _cluster.Stop();
+            _cluster.Dispose();
+
             return Task.CompletedTask;
         }
-       
-        private async ValueTask AwaitPortReadiness(string address)
+        public string CreateToken(TimeSpan expiryTime)
         {
-            var waitTries = 20;
+            var arguments = $"bin/pulsar tokens create --secret-key {SecretKeyPath} --subject {UserName}";
 
-            using var handler = new HttpClientHandler
-            {
-                AllowAutoRedirect = true
-            };
+            if (expiryTime != Timeout.InfiniteTimeSpan)
+                arguments += $" --expiry-time {expiryTime.TotalSeconds}s";
 
-            using var client = new HttpClient(handler);
+            var result = _cluster.Execute(arguments);
 
-            while (waitTries > 0)
-            {
-                try
-                {
-                    await client.GetAsync(address).ConfigureAwait(false);
-                    return;
-                }
-                catch
-                {
-                    waitTries--;
-                    await Task.Delay(5000).ConfigureAwait(false);
-                }
-            }
+            if (!result.Success)
+                throw new InvalidOperationException($"Could not create the token: {result.Error}");
 
-            throw new Exception("Unable to confirm Pulsar has initialized");
+            return result.Data[0];
         }
-        
-        public string GetConfigFilePath()
+        public void CreateSql()
         {
-            var configFolderName = "Oauth2Files";
-            var privateKeyFileName = "o-r7y4o-eabanonu.json";
-            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
-            var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
-            var configFolder = Path.Combine(examplesFolder, configFolderName);
-            var ret = Path.Combine(configFolder, privateKeyFileName);
-            if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
-            return ret;
+            var arguments = $"bin/pulsar sql-worker start";
+
+            var result = _cluster.Execute(arguments);
+            if (!result.Success)
+                throw new InvalidOperationException($"Could not create the token: {result.Error}");
+
+            //await AwaitPortReadiness($"http://127.0.0.1:8081/");
+        }
+        public void CreatePartitionedTopic(string topic, int numberOfPartitions)
+        {
+            var arguments = $"bin/pulsar-admin topics create-partitioned-topic {topic} -p {numberOfPartitions}";
+
+            var result = _cluster.Execute(arguments);
+
+            if (!result.Success)
+                throw new Exception($"Could not create the partitioned topic: {result.Error}");
         }
     }
 }

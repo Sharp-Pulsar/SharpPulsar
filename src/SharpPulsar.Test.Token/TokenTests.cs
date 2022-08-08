@@ -146,7 +146,7 @@ namespace SharpPulsar.Test.Token
                 Assert.Equal($"TestMessage-{i}", receivedMessage);
             }
 
-            await producer.CloseAsync();
+            //await producer.CloseAsync();
             await consumer.CloseAsync();
         }
         
