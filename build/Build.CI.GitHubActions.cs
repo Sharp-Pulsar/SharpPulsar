@@ -25,88 +25,26 @@ using Nuke.Common.Utilities;
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
-
-[CustomGitHubActions("run_tests_acks",
+[CustomGitHubActions("run_token",
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
     FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Acks) },
+    InvokedTargets = new[] { nameof(Token) },
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
-
-[CustomGitHubActions("run_tests_partitioned",
+[CustomGitHubActions("run_api",
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,
     FetchDepth = 0,
     OnPullRequestBranches = new[] { "main", "dev", "release" },
     OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Partitioned) },
+    InvokedTargets = new[] { nameof(API) },
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
-[CustomGitHubActions("run_tests_transaction",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(Transaction) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-
-[CustomGitHubActions("run_tests_api",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(TestAPI) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-[CustomGitHubActions("run_tests_autocluster",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(AutoClusterFailover) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-[CustomGitHubActions("run_tests_tableview",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(TableView) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-[CustomGitHubActions("run_tests_eventsource",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(EventSource) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
-[CustomGitHubActions("run_tests_multitopic",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(MultiTopic) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
 
 [CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,

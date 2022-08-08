@@ -18,40 +18,13 @@
     <PackageReference Include="Microsoft.Azure.Management.AppService.Fluent" Version="1.38.1" />
     <PackageReference Include="Nuke.Common" Version="6.1.2" />
     <PackageReference Include="docfx.console" Version="2.59.3" ExcludeAssets="build" />
-    <PackageReference Include="xunit.runner.console" Version="2.4.1">
+    <PackageReference Include="xunit.runner.console" Version="2.4.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageDownload Include="GitVersion.Tool" Version="[5.8.1]" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Remove="..\.github\workflows\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\ci.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\TxnTests.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\TxnTests.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
-    <ProjectReference Include="..\Tests\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\release.yml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="..\.github\workflows\github.yml" />
-  </ItemGroup>
+    
 
 </Project>

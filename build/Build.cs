@@ -47,8 +47,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    //public static int Main () => Execute<Build>(x => x.Test);
-    public static int Main() => Execute<Build>(x => x.EventSource);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -133,117 +132,24 @@ partial class Build : NukeBuild
             }
         });
 
-    Target TlsStartPulsar => _ => _
-      .DependsOn(CheckDockerVersion)
-      .Executes(async () =>
-      {
-          DockerTasks.DockerRun(b =>
-           b
-           .SetDetach(true)
-           .SetInteractive(true)
-           .SetName("pulsar")
-           .SetPublish("6651:6651", "8080:8080", "8081:8081", "2181:2181")
-           .SetMount("source=pulsardata,target=/pulsar/data")
-           .SetMount("source=pulsarconf,target=/pulsar/conf")
-           .SetImage("apachepulsar/pulsar-all:2.10.0")
-           .SetEnv("PULSAR_MEM= -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g", @"PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true", "PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120", @"PULSAR_PREFIX_transactionCoordinatorEnabled=true", "PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false", "PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true", "PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor")
-           .SetCommand("bash")
-           .SetArgs("-c", "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nss -nfw && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2"));
-          var waitTries = 20;
-
-          using var handler = new HttpClientHandler
-          {
-              AllowAutoRedirect = true
-          };
-
-          using var client = new HttpClient(handler);
-
-          while (waitTries > 0)
-          {
-              try
-              {
-                  await client.GetAsync("http://127.0.0.1:8080/metrics/").ConfigureAwait(false);
-                  Information("Apache Pulsar Server live at: http://127.0.0.1");
-                  return;
-              }
-              catch (Exception ex)
-              {
-                  Information(ex.Message);
-                  waitTries--;
-                  await Task.Delay(5000).ConfigureAwait(false);
-              }
-          }
-
-          throw new Exception("Unable to confirm Pulsar has initialized");
-      });
-    Target CheckDockerVersion => _ => _
-    .Unlisted()
-      .DependsOn(CheckBranch)
-        .Executes(() =>
-        {
-            DockerTasks.DockerVersion();
-        });
-    Target CheckBranch => _ => _
-       .Unlisted()
-       .Executes(() =>
-       {
-           Information(GitRepository.Branch);
-       });
-    Target TestAPI => _ => _
-       .DependsOn(Compile)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.API");
-       });
     Target Test => _ => _
-        .DependsOn(TestAPI)
+        .DependsOn(Compile)
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test");
         });
-    Target Transaction => _ => _
-       .DependsOn(Test)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.Transaction");
-       });
-    Target Partitioned => _ => _
-       .DependsOn(Transaction)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.Partitioned");
-       });
-    Target Acks => _ => _
-       .DependsOn(Partitioned)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.Acks");
-       });
-    Target MultiTopic => _ => _
-       .DependsOn(Acks)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.MultiTopic");
-       });
-    Target AutoClusterFailover => _ => _
-        .DependsOn(MultiTopic)
+    Target Token => _ => _
+        .DependsOn(Compile)
         .Executes(() =>
         {
-            CoreTest("SharpPulsar.Test.AutoClusterFailover");
+            CoreTest("SharpPulsar.Test.Token");
         });
-    Target TableView => _ => _
-       .DependsOn(AutoClusterFailover)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.TableView");
-       });
-    Target EventSource => _ => _
-       .DependsOn(TableView)
-       .Executes(() =>
-       {
-           CoreTest("SharpPulsar.Test.EventSource");
-       });
-
+    Target API => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            CoreTest("SharpPulsar.Test.API");
+        });
     void CoreTest(string projectName)
     {
 
