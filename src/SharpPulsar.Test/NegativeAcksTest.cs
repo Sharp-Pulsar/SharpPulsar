@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using SharpPulsar.Tracker;
 using Akka.Actor;
 using SharpPulsar.Tracker.Messages;
+using Xunit;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one

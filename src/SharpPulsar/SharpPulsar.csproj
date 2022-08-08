@@ -16,11 +16,11 @@
   <ItemGroup>
     <PackageReference Include="akka" Version="1.4.40" />
     <PackageReference Include="Akka.Logger.NLog" Version="1.4.10" />
-    <PackageReference Include="Apache.Avro" Version="1.11.0" />
+    <PackageReference Include="Apache.Avro" Version="1.11.1" />
     <PackageReference Include="App.Metrics.Concurrency" Version="4.3.0" />
     <PackageReference Include="AvroSchemaGenerator" Version="2.7.0" />
-    <PackageReference Include="DotNetty.Common" Version="0.7.2" />
-    <PackageReference Include="Google.Protobuf" Version="3.21.3" />
+    <PackageReference Include="DotNetty.Common" Version="0.7.4" />
+    <PackageReference Include="Google.Protobuf" Version="3.21.4" />
     <PackageReference Include="IdentityModel" Version="6.0.0" />
     <PackageReference Include="JsonSubTypes" Version="1.9.0" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.2.16" />

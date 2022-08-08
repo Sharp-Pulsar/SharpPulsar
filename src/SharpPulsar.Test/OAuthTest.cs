@@ -1,29 +1,50 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
+using SharpPulsar.Auth.OAuth2;
 using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.Test.Fixture;
-
 using SharpPulsar.TestContainer;
 using SharpPulsar.User;
+using Xunit;
 using Xunit.Abstractions;
 
-namespace SharpPulsar.Test.Token
+namespace SharpPulsar.Test
 {
-    [Collection(nameof(PulsarOAuthCollection))]
-    public class OAuthTests 
+
+    [Collection(nameof(PulsarCollection))]
+    public class OAuthTest
     {
         private readonly ITestOutputHelper _output;
+
         private readonly string _topic;
         private readonly PulsarClient _client;
-        public OAuthTests(ITestOutputHelper output, PulsarTokenFixture fixture)
-        {
-            _output = output;
-            _client = fixture.Client;
-            _topic = $"persistent://public/default/oauth-{Guid.NewGuid()}";
-        }
 
+        public OAuthTest(ITestOutputHelper output, PulsarFixture fixture)
+        {
+            var fileUri = new Uri(GetConfigFilePath());
+            var issuerUrl = new Uri("https://auth.streamnative.cloud/");
+            var audience = "urn:sn:pulsar:o-r7y4o:sharp";
+            _output = output;
+            var client = new PulsarClientConfigBuilder();
+            var serviceUrl = "pulsar://localhost:6650";
+            var webUrl = "http://localhost:8080";
+            
+            client.ServiceUrl(serviceUrl);
+            client.WebUrl(webUrl);
+            client.Authentication(AuthenticationFactoryOAuth2.ClientCredentials(issuerUrl, fileUri, audience));
+
+            var system = PulsarSystem.GetInstance(actorSystemName:"oauth");
+            _client = system.NewClient(client).AsTask().Result;
+            _topic = $"persistent://public/default/oauth-{Guid.NewGuid()}";
+            Task.Delay(TimeSpan.FromSeconds(20));
+        }
         [Fact]
         public virtual async Task OAuth_ProducerInstantiation()
         {
@@ -147,6 +168,18 @@ namespace SharpPulsar.Test.Token
             await producer.CloseAsync();
             await consumer.CloseAsync();
         }
-        
+
+        private string GetConfigFilePath()
+        {
+            var configFolderName = "Oauth2Files";
+            var privateKeyFileName = "o-r7y4o-eabanonu.json";
+            var startup = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var indexOfConfigDir = startup.IndexOf(startup, StringComparison.Ordinal);
+            var examplesFolder = startup.Substring(0, startup.Length - indexOfConfigDir);
+            var configFolder = Path.Combine(examplesFolder, configFolderName);
+            var ret = Path.Combine(configFolder, privateKeyFileName);
+            if (!File.Exists(ret)) throw new FileNotFoundException("can't find credentials file");
+            return ret;
+        }
     }
 }

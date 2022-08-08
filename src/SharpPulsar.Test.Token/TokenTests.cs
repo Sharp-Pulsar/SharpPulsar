@@ -147,7 +147,7 @@ namespace SharpPulsar.Test.Token
             }
 
             //await producer.CloseAsync();
-            await consumer.CloseAsync();
+            //await consumer.CloseAsync();
         }
         
     }

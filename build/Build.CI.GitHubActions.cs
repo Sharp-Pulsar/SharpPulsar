@@ -25,16 +25,6 @@ using Nuke.Common.Utilities;
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
-[CustomGitHubActions("run_oauth",
-    GitHubActionsImage.UbuntuLatest,
-    //AutoGenerate = false,
-    FetchDepth = 0,
-    OnPullRequestBranches = new[] { "main", "dev", "release" },
-    OnPushBranches = new[] { "main", "dev", "release" },
-    InvokedTargets = new[] { nameof(OAuth) },
-    PublishArtifacts = true,
-    EnableGitHubToken = true)]
-
 [CustomGitHubActions("run_token",
     GitHubActionsImage.UbuntuLatest,
     //AutoGenerate = false,

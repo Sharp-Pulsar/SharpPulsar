@@ -47,7 +47,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    public static int Main () => Execute<Build>(x => x.Token);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -143,12 +143,6 @@ partial class Build : NukeBuild
         .Executes(() =>
         {
             CoreTest("SharpPulsar.Test.Token");
-        });
-    Target OAuth => _ => _
-        .DependsOn(Compile)
-        .Executes(() =>
-        {
-            CoreTest("SharpPulsar.Test.OAuths");
         });
     Target API => _ => _
         .DependsOn(Compile)

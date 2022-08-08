@@ -7,6 +7,7 @@ using SharpPulsar.Test.Fixture;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Xunit;
 
 namespace SharpPulsar.Test
 {
