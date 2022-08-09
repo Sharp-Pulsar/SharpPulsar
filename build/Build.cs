@@ -181,6 +181,12 @@ partial class Build : NukeBuild
         {
             CoreTest("SharpPulsar.Test.Token");
         });
+    Target API => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            CoreTest("SharpPulsar.Test.API");
+        });
     void CoreTest(string projectName)
     {
 

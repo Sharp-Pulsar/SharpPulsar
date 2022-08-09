@@ -35,6 +35,17 @@ using Nuke.Common.Utilities;
     PublishArtifacts = true,
     EnableGitHubToken = true)]
 
+[CustomGitHubActions("run_api",
+    GitHubActionsImage.UbuntuLatest,
+    //AutoGenerate = false,
+    FetchDepth = 0,
+    OnPullRequestBranches = new[] { "main", "dev", "release" },
+    OnPushBranches = new[] { "main", "dev", "release" },
+    InvokedTargets = new[] { nameof(API) },
+    PublishArtifacts = true,
+    EnableGitHubToken = true)]
+
+
 [CustomGitHubActions("nuget",
     GitHubActionsImage.WindowsLatest,
     //AutoGenerate = false,
