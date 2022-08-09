@@ -262,8 +262,16 @@ partial class Build : NukeBuild
           var releaseNotes = branchName.Equals("main", StringComparison.OrdinalIgnoreCase)
                              ? GetNuGetReleaseNotes(ChangelogFile, GitRepository)
                              : ParseReleaseNote();
-          var project = Solution.GetProject("SharpPulsar");
-          DotNetPack(s => s
+          var projects = new List<string>
+            {
+                "SharpPulsar",
+                "SharpPulsar.Sql",
+                "SharpPulsar.Admin"
+            };
+          foreach (var projectName in projects)
+          {
+              var project = Solution.GetProject(projectName).NotNull("project != null");
+              DotNetPack(s => s
               .SetProject(project)
               .SetConfiguration(Configuration)
               .EnableNoBuild()
@@ -279,7 +287,7 @@ partial class Build : NukeBuild
               .AddAuthors("Ebere Abanonu (@mestical)")
               .SetPackageProjectUrl("https://github.com/eaba/SharpPulsar")
               .SetOutputDirectory(OutputNuget));
-
+          }
       });
     Target PublishNuget => _ => _
       .DependsOn(CreateNuget)
