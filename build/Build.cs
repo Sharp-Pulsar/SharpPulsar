@@ -29,6 +29,10 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Nuke.Common.Tools.MSBuild;
 using Nuke.Common.CI.GitHubActions;
+using SharpPulsar.TestContainer.Container;
+using SharpPulsar.TestContainer.Configuration;
+using DotNet.Testcontainers.Builders;
+using SharpPulsar.TestContainer;
 //https://github.com/AvaloniaUI/Avalonia/blob/master/nukebuild/Build.cs
 //https://github.com/cfrenzel/Eventfully/blob/master/build/Build.cs
 
@@ -47,7 +51,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    public static int Main () => Execute<Build>(x => x.Test);
+    public static int Main () => Execute<Build>(x => x.API);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -133,10 +137,43 @@ partial class Build : NukeBuild
         });
 
     Target Test => _ => _
+        .DependsOn(TestContainer)
         .DependsOn(Compile)
-        .Executes(() =>
+        .Executes(async() =>
         {
-            CoreTest("SharpPulsar.Test");
+            var projects = new List<string> 
+            {
+                "SharpPulsar.Test",
+                "SharpPulsar.Sql.Tests",
+                "SharpPulsar.Test.Admin"
+            };
+
+            foreach (var projectName in projects)
+            {
+                   var project = Solution.GetProject(projectName).NotNull("project != null");
+                   Information($"Running tests from {project}");
+                    foreach (var fw in project.GetTargetFrameworks())
+                    {
+                        try
+                        {
+                            DotNetTest(c => c
+                            .SetProjectFile(project)
+                            .SetConfiguration(Configuration)
+                            .SetFramework(fw)
+                            .EnableNoBuild()
+                            .EnableNoRestore()
+                            .When(true, _ => _
+                                 .SetLoggers("console;verbosity=detailed")
+                                .SetResultsDirectory(OutputTests)));
+                        }
+                        catch (Exception ex)
+                        {
+                            Information(ex.Message);
+                        }
+                    }
+            }
+            await Container.StopAsync();
+            await Container.DisposeAsync();
         });
     Target Token => _ => _
         .DependsOn(Compile)
@@ -210,7 +247,8 @@ partial class Build : NukeBuild
 
     Target CreateNuget => _ => _
       .DependsOn(Compile)
-      //.DependsOn(IntegrationTest)
+      .DependsOn(Test)
+      .DependsOn(Token)
       .Executes(() =>
       {
           var branchName = GitRepository.Branch;
@@ -303,6 +341,64 @@ partial class Build : NukeBuild
                 Information($"  {releaseAsset.BrowserDownloadUrl}");
             }
         }
+    Target TestContainer => _ => _
+    .Executes(async () =>
+    {
+        Information("Test Container");
+        Container = BuildContainer();
+        await Container.StartAsync();//;.GetAwaiter().GetResult();]
+        Information("Start Test Container");
+        await AwaitPortReadiness($"http://127.0.0.1:8080/metrics/");
+        Information("ExecAsync Test Container");
+        await Container.ExecAsync(new List<string> { @"./bin/pulsar", "sql-worker", "start" });
+
+        await AwaitPortReadiness($"http://127.0.0.1:8081/");
+        Information("AwaitPortReadiness Test Container");
+    });
+    private PulsarTestContainer BuildContainer()
+    {
+        return new TestcontainersBuilder<PulsarTestContainer>()
+          .WithName("pulsar-tests")
+          .WithPulsar(new PulsarTestContainerConfiguration("apachepulsar/pulsar-all:2.10.1", 6650))
+          .WithPortBinding(6650, 6650)
+          .WithPortBinding(6651, 6651)
+          .WithPortBinding(8080, 8080)
+          .WithPortBinding(8081, 8081)
+          .WithExposedPort(6650)
+          .WithExposedPort(6651)
+          .WithExposedPort(8080)
+          .WithExposedPort(8081)
+          .WithCleanUp(true)
+          .Build();
+    }
+    private async ValueTask AwaitPortReadiness(string address)
+    {
+        var waitTries = 20;
+
+        using var handler = new HttpClientHandler
+        {
+            AllowAutoRedirect = true
+        };
+
+        using var client = new HttpClient(handler);
+
+        while (waitTries > 0)
+        {
+            try
+            {
+                await client.GetAsync(address).ConfigureAwait(false);
+                return;
+            }
+            catch
+            {
+                waitTries--;
+                await Task.Delay(5000).ConfigureAwait(false);
+            }
+        }
+
+        throw new Exception("Unable to confirm Pulsar has initialized");
+    }
+    public PulsarTestContainer Container { get; set; }
     private string MajorMinorPatchVersion => GitVersion.MajorMinorPatch;
 
     string ParseReleaseNote()

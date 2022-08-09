@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using SharpPulsar.TestContainer;
 using SharpPulsar.Test.Fixture;
 using SharpPulsar.Builder;
+using Akka.Actor;
+using SharpPulsar.Sql.Public;
 
 namespace SharpPulsar.Test
 {
@@ -23,18 +25,20 @@ namespace SharpPulsar.Test
     {
         private readonly ITestOutputHelper _output; 
         private readonly PulsarClient _client;
-        
+        private ActorSystem _actorSystem;
+
         public SqlTests(ITestOutputHelper output, PulsarFixture fixture)
         {
             _output = output;
             _client = fixture.Client;
+            _actorSystem = ActorSystem.Create("Sql");
             //fixture.CreateSql();
         }
         //[Fact(Skip ="Issue with sql-worker on github action")]
         [Fact]
         public virtual async Task TestQuerySql()
         {
-            var topic = $"query_topics_avro_{Guid.NewGuid()}";
+            var topic = $"query_topics_avro";
             await PublishMessages(topic, 5);
             var option = new ClientOptions { Server = "http://127.0.0.1:8081", Execute = @$"select * from ""{topic}""", Catalog = "pulsar", Schema = "public/default" };
 

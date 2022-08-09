@@ -18,11 +18,16 @@
     <PackageReference Include="Microsoft.Azure.Management.AppService.Fluent" Version="1.38.1" />
     <PackageReference Include="Nuke.Common" Version="6.1.2" />
     <PackageReference Include="docfx.console" Version="2.59.3" ExcludeAssets="build" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
     <PackageReference Include="xunit.runner.console" Version="2.4.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageDownload Include="GitVersion.Tool" Version="[5.8.1]" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
   </ItemGroup>
 
     

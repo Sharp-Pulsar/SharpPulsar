@@ -91,6 +91,7 @@
               "RunChangelog",
               "ServeDocs",
               "Test",
+              "TestContainer",
               "Token"
             ]
           }
@@ -117,6 +118,7 @@
               "RunChangelog",
               "ServeDocs",
               "Test",
+              "TestContainer",
               "Token"
             ]
           }

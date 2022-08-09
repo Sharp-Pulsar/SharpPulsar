@@ -395,7 +395,7 @@ namespace SharpPulsar.Test
                 // after transaction abort, the messages could be received
                 var commitTxn = await Txn();
                 await Task.Delay(TimeSpan.FromSeconds(30));
-                for (var i = 0; i < messageCnt - 1; i++)
+                for (var i = 0; i < messageCnt; i++)
                 {
                     message = await consumer.ReceiveAsync();
                     await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -449,7 +449,7 @@ namespace SharpPulsar.Test
 
                 // consume and ack messages with txn
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                for (var i = 0; i < messageCnt - 2; i++)
+                for (var i = 0; i < messageCnt; i++)
                 {
                     var msg = consumer.Receive();
                     _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
@@ -467,7 +467,7 @@ namespace SharpPulsar.Test
                 // after transaction abort, the messages could be received
                 var commitTxn = await Txn();
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                for (var i = 0; i < messageCnt - 2; i++)
+                for (var i = 0; i < messageCnt; i++)
                 {
                     message = consumer.Receive();
                     await consumer.AcknowledgeAsync(message.MessageId, commitTxn);
@@ -517,7 +517,7 @@ namespace SharpPulsar.Test
                 }
 
                 // consume and ack messages with txn
-                for (var i = 0; i < messageCnt - 2; i++)
+                for (var i = 0; i < messageCnt; i++)
                 {
                     var msg = await consumer.ReceiveAsync();
                     _output.WriteLine($"receive msgId: {msg.MessageId}, count : {i}");
