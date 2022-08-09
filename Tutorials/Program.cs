@@ -34,12 +34,12 @@ namespace Tutorials
         private static PulsarClient _client;
         static async Task Main(string[] args)
         {
-            
-            var url = "pulsar://localhost:6650";
+            await StartContainer();
+            var url = "pulsar://127.0.0.1:6650";
             //pulsar client settings builder
             Console.WriteLine("Welcome!!");
-            Console.WriteLine("Select 0(none-tls) 1(tls) 2(OAuth)");
-            var selections = new List<string> { "0", "1", "2" };
+            Console.WriteLine("Select 0(none-tls) 1(tls)");
+            var selections = new List<string> { "0", "1" };
             var selection = Console.ReadLine();
             var selected = selections.Contains(selection);
             while (!selected)
@@ -48,14 +48,9 @@ namespace Tutorials
                 selection = Console.ReadLine();
                 selected = selection != "0";
             }
-            if (selection.Equals("2"))
-            {
-                await RunOauth();
-                return;
-            }
-            await StartContainer();
             if (selection.Equals("1"))
                 url = "pulsar+ssl://127.0.0.1:6651";
+
 
             var clientConfig = new PulsarClientConfigBuilder()
                 .ServiceUrl(url);
@@ -69,7 +64,7 @@ namespace Tutorials
             Console.WriteLine("Please, time to execute some command, which do you want?");
             var cmd = Console.ReadLine();
 
-            //clientConfig.EnableTransaction(true);
+            clientConfig.EnableTransaction(true);
 
             //pulsar actor system
             var pulsarSystem = await PulsarSystem.GetInstanceAsync(clientConfig);
@@ -80,7 +75,7 @@ namespace Tutorials
             while (cmd.ToLower() != "exit")
             {
                 await HandleCmd(cmd, pulsarClient);
-                Console.WriteLine(".....waiting");    
+                Console.WriteLine(".....waiting");
                 cmd = Console.ReadLine();
             }
             Console.ReadKey();

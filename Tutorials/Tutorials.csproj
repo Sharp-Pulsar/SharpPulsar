@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Testcontainers" Version="1.6.0" />
     <PackageReference Include="Spectre.Console" Version="0.44.1-preview.0.17" />
+    <PackageReference Include="Testcontainers" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
