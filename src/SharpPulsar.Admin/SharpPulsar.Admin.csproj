@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net5.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Admin\PulsarAdmin.cs">
+      <DependentUpon>PulsarAdmin.json</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="Function\PulsarFunction.cs">
+      <DependentUpon>PulsarFunction.json</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update=".ruleset">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Admin\PulsarAdmin.json">
+      <LastGenOutput>PulsarAdmin.cs</LastGenOutput>
+      <Generator>AutoRestCodeGenerator</Generator>
+    </None>
+    <None Update="Function\PulsarFunction.json">
+      <LastGenOutput>PulsarFunction.cs</LastGenOutput>
+      <Generator>NSwagCodeGenerator</Generator>
+    </None>
+  </ItemGroup>
+
+</Project>
