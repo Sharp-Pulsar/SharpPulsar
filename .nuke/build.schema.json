@@ -79,6 +79,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "API",
               "Clean",
               "Compile",
               "CreateNuget",
@@ -105,6 +106,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "API",
               "Clean",
               "Compile",
               "CreateNuget",
