@@ -25,6 +25,10 @@
     <PackageDownload Include="GitVersion.Tool" Version="[5.8.1]" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\src\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
+  </ItemGroup>
+
     
 
 </Project>

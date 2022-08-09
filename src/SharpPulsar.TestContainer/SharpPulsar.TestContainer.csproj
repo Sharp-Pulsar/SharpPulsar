@@ -7,12 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNet.Testcontainers" Version="1.7.0-beta.2269" />
     <PackageReference Include="Ductus.FluentDocker" Version="2.10.55" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.json" Version="6.0.0" />
     <PackageReference Include="polly" Version="7.2.3" />
     <PackageReference Include="SharpCompress" Version="0.32.2" />
+    <PackageReference Include="Testcontainers" Version="2.1.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
   </ItemGroup>
 

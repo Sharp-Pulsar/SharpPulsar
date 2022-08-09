@@ -63,7 +63,7 @@ namespace SharpPulsar.Test
         [Fact]
         public async Task TestTableViewUpdatePartitions()
         {
-            var topic = $"tableview-partitions-{DateTime.Now.Ticks}";
+            var topic = $"tableview-test-update-partitions";
             try
             {
                 var result = await _admin.CreatePartitionedTopicAsync("public", "default", topic, 3);
@@ -72,7 +72,7 @@ namespace SharpPulsar.Test
             {
 
             }
-            topic = $"persistent://public/default/{topic}";
+            topic = "persistent://public/default/tableview-test-update-partitions";
             var count = 20;
             var keys = await PublishMessages(topic, count, false);
 

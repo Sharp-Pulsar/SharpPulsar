@@ -35,7 +35,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpPulsar.Sql\SharpPulsar.Sql.csproj" />
     <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
     <ProjectReference Include="..\SharpPulsar.TestContainer\SharpPulsar.TestContainer.csproj" />
   </ItemGroup>
