@@ -247,8 +247,8 @@ partial class Build : NukeBuild
 
     Target CreateNuget => _ => _
       .DependsOn(Compile)
-      .DependsOn(Test)
-      .DependsOn(Token)
+      //.DependsOn(Test)
+      //.DependsOn(Token)
       .Executes(() =>
       {
           var branchName = GitRepository.Branch;
