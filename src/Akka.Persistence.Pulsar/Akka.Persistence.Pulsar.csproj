@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net6.0</TargetFrameworks>
+        <LangVersion>8</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Akka.Persistence.Query" Version="1.4.40" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SharpPulsar\SharpPulsar.csproj" />
+    </ItemGroup>
+
+</Project>

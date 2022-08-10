@@ -51,7 +51,7 @@ partial class Build : NukeBuild
 
     ///   - https://ithrowexceptions.com/2020/06/05/reusable-build-components-with-interface-default-implementations.html
 
-    public static int Main () => Execute<Build>(x => x.API);
+    public static int Main () => Execute<Build>(x => x.Test);
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     //readonly Configuration Configuration = Configuration.Release;
@@ -143,9 +143,10 @@ partial class Build : NukeBuild
         {
             var projects = new List<string> 
             {
-                "SharpPulsar.Test",
-                "SharpPulsar.Sql.Tests",
-                "SharpPulsar.Test.Admin"
+                //"SharpPulsar.Test",
+                //"SharpPulsar.Sql.Tests",
+                //"SharpPulsar.Test.Admin",
+                "Akka.Persistence.Pulsar.Tests"
             };
 
             foreach (var projectName in projects)
@@ -264,9 +265,10 @@ partial class Build : NukeBuild
                              : ParseReleaseNote();
           var projects = new List<string>
             {
-                "SharpPulsar",
-                "SharpPulsar.Sql",
-                "SharpPulsar.Admin"
+                //"SharpPulsar",
+                //"SharpPulsar.Sql",
+                //"SharpPulsar.Admin",
+                "Akka.Persistence.Pulsar.Tests"
             };
           foreach (var projectName in projects)
           {
