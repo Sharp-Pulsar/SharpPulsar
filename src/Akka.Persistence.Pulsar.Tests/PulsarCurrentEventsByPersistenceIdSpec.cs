@@ -8,6 +8,7 @@
 #endregion
 
 using Akka.Configuration;
+using Akka.Persistence.Pulsar.Query;
 using Akka.Persistence.Query;
 using Akka.Persistence.TCK.Query;
 using Xunit.Abstractions;

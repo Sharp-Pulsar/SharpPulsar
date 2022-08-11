@@ -17,14 +17,16 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Configuration;
 using Akka.Persistence.Journal;
 using SharpPulsar;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
 using SharpPulsar.Schemas;
 using SharpPulsar.User;
+using SharpPulsar.Utils;
 
-namespace Akka.Persistence.Pulsar
+namespace Akka.Persistence.Pulsar.Journal
 {
     public sealed class PulsarJournal : AsyncWriteJournal
     {
@@ -33,16 +35,17 @@ namespace Akka.Persistence.Pulsar
         private Akka.Serialization.Serialization serialization;
 
         public Akka.Serialization.Serialization Serialization => serialization ??= Context.System.Serialization;
-        public PulsarJournal() : this(PulsarPersistence.Get(Context.System).JournalSettings)
+        public PulsarJournal(Config config) : this(new PulsarSettings(config))
         {
+
         }
         public PulsarJournal(PulsarSettings settings)
         {
-           var builder = new PulsarClientConfigBuilder()
-                .ServiceUrl(settings.ServiceUrl)
-                .ConnectionsPerBroker(1)
-                .OperationTimeout(settings.OperationTimeOut)
-                .Authentication(AuthenticationFactory.Create(settings.AuthClass, settings.AuthParam));
+            var builder = new PulsarClientConfigBuilder()
+                 .ServiceUrl(settings.ServiceUrl)
+                 .ConnectionsPerBroker(1)
+                 .OperationTimeout(settings.OperationTimeOut)
+                 .Authentication(AuthenticationFactory.Create(settings.AuthClass, settings.AuthParam));
 
             if (!(settings.TrustedCertificateAuthority is null))
             {
@@ -56,7 +59,7 @@ namespace Akka.Persistence.Pulsar
             var pulsarSystem = PulsarSystem.GetInstance(Context.System);
             this.settings = settings;
             client = pulsarSystem.NewClient(builder).AsTask().Result;
-        }       
+        }
 
         /// <summary>
         /// This method replays existing event stream (identified by <paramref name="persistenceId"/>) asynchronously.
@@ -71,14 +74,16 @@ namespace Akka.Persistence.Pulsar
             long toSequenceNr, long max,
             Action<IPersistentRepresentation> recoveryCallback)
         {
+            var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
+            var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
             var startMessageId = new ReaderConfigBuilder<byte[]>()
-            .StartMessageId(settings.LedgerId, settings.EntryId, settings.Partition, settings.BatchIndex)
+            .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
             .Topic(persistenceId);
             var reader = await client.NewReaderAsync(startMessageId);
             async IAsyncEnumerable<Message<byte[]>> message()
             {
                 var msg = await reader.ReadNextAsync(TimeSpan.FromMilliseconds(1000));
-                while (true)
+                while (MessageIdUtils.GetOffset(from) < MessageIdUtils.GetOffset(to))
                 {
                     yield return (Message<byte[]>)msg;
                     msg = await reader.ReadNextAsync(TimeSpan.FromMilliseconds(1000));
@@ -120,11 +125,11 @@ namespace Akka.Persistence.Pulsar
             {
                 try
                 {
-                    var persistentMessages = (IImmutableList<IPersistentRepresentation>) write.Payload;
+                    var persistentMessages = (IImmutableList<IPersistentRepresentation>)write.Payload;
                     foreach (var message in persistentMessages)
                     {
                         var data = serialization.Serialize(write.Payload);
-                        if(producer == null) 
+                        if (producer == null)
                         {
 
                             var producerConfig = new ProducerConfigBuilder<byte[]>()
@@ -149,7 +154,7 @@ namespace Akka.Persistence.Pulsar
 
             return failures.ToImmutable();
         }
-        
+
         /// <summary>
         /// Deletes all events stored in a single logical event stream (pulsar virtual topic), starting from the
         /// beginning of stream up to <paramref name="toSequenceNr"/> (inclusive?).

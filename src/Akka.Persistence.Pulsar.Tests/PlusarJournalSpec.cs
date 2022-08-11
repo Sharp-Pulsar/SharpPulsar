@@ -8,6 +8,7 @@
 #endregion
 
 using System;
+using Akka.Persistence.Pulsar.Journal;
 using Akka.Persistence.TCK.Journal;
 using Xunit.Abstractions;
 

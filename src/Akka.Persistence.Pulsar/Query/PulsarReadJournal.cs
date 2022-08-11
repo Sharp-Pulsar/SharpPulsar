@@ -20,25 +20,35 @@ using SharpPulsar.Builder;
 using SharpPulsar.Interfaces;
 using SharpPulsar.Schemas;
 using SharpPulsar.User;
+using SharpPulsar.Utils;
 
-namespace Akka.Persistence.Pulsar
+namespace Akka.Persistence.Pulsar.Query
 {
-    public sealed class PulsarReadJournal : IReadJournal, IEventsByPersistenceIdQuery, ICurrentEventsByPersistenceIdQuery, IEventsByTagQuery, ICurrentPersistenceIdsQuery, ICurrentEventsByTagQuery
+    public sealed class PulsarReadJournal :
+        IPersistenceIdsQuery,
+        ICurrentPersistenceIdsQuery,
+        IEventsByPersistenceIdQuery,
+        ICurrentEventsByPersistenceIdQuery,
+        IEventsByTagQuery,
+        ICurrentEventsByTagQuery,
+        IAllEventsQuery,
+        ICurrentAllEventsQuery
     {
         //TODO: it's possible that not all of these interfaces have sense in terms of Apache Pulsar - in that case
         // we should remove what's unnecessary.
-        
+
         private readonly ActorSystem system;
         private readonly PulsarSettings settings;
         private readonly PulsarSystem pulsarSystem;
         private readonly PulsarClientConfigBuilder builder;
-        public PulsarReadJournal(ActorSystem system, PulsarSettings settings)
+        public PulsarReadJournal(ActorSystem system, Config config)
         {
-           builder = new PulsarClientConfigBuilder()
-               .ServiceUrl(settings.ServiceUrl)
-               .ConnectionsPerBroker(1)
-               .OperationTimeout(settings.OperationTimeOut)
-               .Authentication(AuthenticationFactory.Create(settings.AuthClass, settings.AuthParam));
+            settings = new PulsarSettings(config);
+            builder = new PulsarClientConfigBuilder()
+                .ServiceUrl(settings.ServiceUrl)
+                .ConnectionsPerBroker(1)
+                .OperationTimeout(settings.OperationTimeOut)
+                .Authentication(AuthenticationFactory.Create(settings.AuthClass, settings.AuthParam));
 
             if (!(settings.TrustedCertificateAuthority is null))
             {
@@ -51,7 +61,6 @@ namespace Akka.Persistence.Pulsar
             }
             this.system = system;
             pulsarSystem = PulsarSystem.GetInstance(system);
-            this.settings = settings;
         }
 
         public const string Identifier = "akka.persistence.query.journal.pulsar";
@@ -66,16 +75,17 @@ namespace Akka.Persistence.Pulsar
         /// </summary>
         public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
-
+            var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
+            var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
             var client = pulsarSystem.NewClient(builder).AsTask().Result;
             var startMessageId = new ReaderConfigBuilder<byte[]>()
-            .StartMessageId(settings.LedgerId, settings.EntryId, settings.Partition, settings.BatchIndex)
+            .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
             .Topic(persistenceId);
             var reader = client.NewReader(startMessageId);
             async IAsyncEnumerable<Message<byte[]>> message()
             {
                 var msg = await reader.ReadNextAsync();
-                while (true)
+                while (MessageIdUtils.GetOffset(from) < MessageIdUtils.GetOffset(to))
                 {
                     yield return (Message<byte[]>)msg;
                     msg = await reader.ReadNextAsync();
@@ -98,7 +108,7 @@ namespace Akka.Persistence.Pulsar
         /// </summary>
         public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -112,7 +122,7 @@ namespace Akka.Persistence.Pulsar
         /// </summary>
         public Source<EventEnvelope, NotUsed> EventsByTag(string tag, Offset offset)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -126,7 +136,7 @@ namespace Akka.Persistence.Pulsar
         /// </summary>
         public Source<EventEnvelope, NotUsed> CurrentEventsByTag(string tag, Offset offset)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -134,21 +144,23 @@ namespace Akka.Persistence.Pulsar
         /// </summary>
         public Source<string, NotUsed> CurrentPersistenceIds()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
-    }
 
-    public sealed class PulsarReadJournalProvider : IReadJournalProvider
-    {
-        private readonly ExtendedActorSystem system;
-        private readonly PulsarSettings settings;
-
-        public PulsarReadJournalProvider(ExtendedActorSystem system, Config config)
+        public Source<string, NotUsed> PersistenceIds()
         {
-            this.system = system;
-            this.settings = new PulsarSettings(config);
+            throw new NotImplementedException();
         }
 
-        public IReadJournal GetReadJournal() => new PulsarReadJournal(system, settings);
+        public Source<EventEnvelope, NotUsed> CurrentAllEvents(Offset offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Source<EventEnvelope, NotUsed> AllEvents(Offset offset)
+        {
+            throw new NotImplementedException();
+        }
     }
+
 }

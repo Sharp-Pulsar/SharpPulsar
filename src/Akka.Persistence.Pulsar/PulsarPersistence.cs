@@ -7,19 +7,30 @@
 // -----------------------------------------------------------------------
 #endregion
 
+
 using Akka.Actor;
+using Akka.Configuration;
+using Akka.Persistence.Pulsar.Query;
 
 namespace Akka.Persistence.Pulsar
 {
+
     public sealed class PulsarPersistence : IExtension
     {
-        private readonly ExtendedActorSystem system;
-        public PulsarSettings JournalSettings { get; }
-
-        public PulsarPersistence(ExtendedActorSystem system, PulsarSettings journalSettings)
+        private readonly ExtendedActorSystem _system;
+        
+        /// <summary>
+        /// Returns a default query configuration for akka persistence SQLite-based journals and snapshot stores.
+        /// </summary>
+        /// <returns></returns>
+        public static Config DefaultConfiguration()
         {
-            this.system = system;
-            this.JournalSettings = journalSettings;
+            return ConfigurationFactory.FromResource<PulsarReadJournal>("Akka.Persistence.Pulsar.reference.conf");
+        }
+        
+        public PulsarPersistence(ExtendedActorSystem system)
+        {
+            _system = system;
         }
 
         public static PulsarPersistence Get(ActorSystem system) => 
@@ -30,8 +41,7 @@ namespace Akka.Persistence.Pulsar
     {
         public override PulsarPersistence CreateExtension(ExtendedActorSystem system)
         {
-            var journalSettings = new PulsarSettings(system.Settings.Config.GetConfig("akka.persistence.journal.pulsar"));
-            return new PulsarPersistence(system, journalSettings);
+            return new PulsarPersistence(system);
         }
     }
 }

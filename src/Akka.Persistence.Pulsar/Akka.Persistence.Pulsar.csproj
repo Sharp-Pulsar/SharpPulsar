@@ -6,6 +6,15 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="reference.conf" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="reference.conf">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </EmbeddedResource>
+    </ItemGroup>
+    <ItemGroup>
       <PackageReference Include="Akka.Persistence.Query" Version="1.4.40" />
     </ItemGroup>
 
