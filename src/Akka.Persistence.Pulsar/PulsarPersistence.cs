@@ -25,7 +25,8 @@ namespace Akka.Persistence.Pulsar
         /// <returns></returns>
         public static Config DefaultConfiguration()
         {
-            return ConfigurationFactory.FromResource<PulsarReadJournal>("Akka.Persistence.Pulsar.reference.conf");
+            var config = ConfigurationFactory.FromResource<PulsarReadJournal>("Akka.Persistence.Pulsar.reference.conf");
+            return config;
         }
         
         public PulsarPersistence(ExtendedActorSystem system)
