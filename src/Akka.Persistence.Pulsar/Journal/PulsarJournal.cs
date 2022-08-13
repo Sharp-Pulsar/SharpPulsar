@@ -56,34 +56,28 @@ namespace Akka.Persistence.Pulsar.Journal
         private readonly PulsarJournalExecutor _journalExecutor;
         //public Akka.Serialization.Serialization Serialization => _serialization ??= Context.System.Serialization;
 
-        public PulsarJournal(Config config) : this(new PulsarSettings(config))
-        {
-
-        }
-
-        public PulsarJournal(PulsarSettings settings)
-        {
-            _settings = settings;
+        public PulsarJournal(Config config) 
+        {;
+            _settings = new PulsarSettings(config);
             _journalEntrySchema = AvroSchema<JournalEntry>.Of(typeof(JournalEntry), new Dictionary<string, string>());
             _pendingRequestsCancellation = new CancellationTokenSource();
             _serializer = Context.System.Serialization.FindSerializerForType(PersistentRepresentationType);
             var builder = new PulsarClientConfigBuilder()
-                 .ServiceUrl(settings.ServiceUrl)
+                 .ServiceUrl(_settings.ServiceUrl)
                  .ConnectionsPerBroker(1)
-                 .OperationTimeout(settings.OperationTimeOut)
-                 .Authentication(AuthenticationFactory.Create(settings.AuthClass, settings.AuthParam));
+                 .OperationTimeout(_settings.OperationTimeOut)
+                 .Authentication(AuthenticationFactory.Create(_settings.AuthClass, _settings.AuthParam));
 
-            if (!(settings.TrustedCertificateAuthority is null))
+            if (!(_settings.TrustedCertificateAuthority is null))
             {
                 builder = builder.AddTrustedAuthCert(_settings.TrustedCertificateAuthority);
             }
 
-            if (!(settings.ClientCertificate is null))
+            if (!(_settings.ClientCertificate is null))
             {
-                builder = builder.AddTlsCerts(new X509Certificate2Collection { settings.ClientCertificate });
+                builder = builder.AddTlsCerts(new X509Certificate2Collection { _settings.ClientCertificate });
             }
             var pulsarSystem = PulsarStatic.System ?? PulsarSystem.GetInstance(Context.System);
-            _settings = settings;
             if (PulsarStatic.Client == null)
                 PulsarStatic.Client = pulsarSystem.NewClient(builder).AsTask().Result;
             _client = PulsarStatic.Client;
@@ -105,7 +99,7 @@ namespace Akka.Persistence.Pulsar.Journal
         public override async Task ReplayMessagesAsync(IActorContext context, string persistenceId, long fromSequenceNr, long toSequenceNr, long max, Action<IPersistentRepresentation> recoveryCallback)
         {
             await _journalExecutor.ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max,
-                recoveryCallback);
+                recoveryCallback, _journalEntrySchema, _settings.Topic);
         }
 
         /// <summary>
@@ -199,6 +193,9 @@ namespace Akka.Persistence.Pulsar.Journal
                 Ordering = DateTimeHelper.CurrentUnixTimeMillis(), // Auto-populates with timestamp
                 IsDeleted = message.IsDeleted,
                 Payload = binary,
+                Manifest = message.Manifest,
+                WritePlugin = message.WriterGuid,
+                TimeStamp = message.Timestamp,
                 PersistenceId = message.PersistenceId,
                 SequenceNr = message.SequenceNr,
                 Tags = JsonSerializer.Serialize(tagged.Tags == null ? new List<string>() : tagged.Tags.ToList(), new JsonSerializerOptions { WriteIndented = true })
@@ -355,7 +352,7 @@ namespace Akka.Persistence.Pulsar.Journal
 
         private async ValueTask<Producer<JournalEntry>> JournalProducer(string persistenceid)
         {
-            var topic = $"persistent://{_settings.Tenant}/{_settings.Namespace}/journal".ToLower();
+            var topic = _settings.Topic;
             if (!_producers.TryGetValue(persistenceid, out var producer))
             {
                 var producerConfig = new ProducerConfigBuilder<JournalEntry>()

@@ -80,7 +80,7 @@ namespace Akka.Persistence.Pulsar.Snapshot
         }
         private async ValueTask<Producer<SnapshotEntry>> GetProducer(string persistenceid)
         {
-            var topic = $"persistent://{_settings.Tenant}/{_settings.Namespace}/snapshot".ToLower();
+            var topic = _settings.Topic;
             if (_producers.TryGetValue(persistenceid, out var producer))
             {
                 return producer;
@@ -96,7 +96,7 @@ namespace Akka.Persistence.Pulsar.Snapshot
 
             // stop all operations executed in the background
             _pendingRequestsCancellation?.Cancel();
-            _client.Shutdown();
+            _client?.Shutdown();
         }
         
         private object Deserialize(byte[] bytes)

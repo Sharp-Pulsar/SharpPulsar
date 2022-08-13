@@ -4,6 +4,7 @@
 - BREAKING CHANGES: the config builders have been moved to builder folder!
 - Fixed potential `HasMessageAvailable` `deadlock`ing 
 - OpenTelemetry 
+- Akka.Persistence.Pulsar: BrokerEntryMetadata.BrokerTimestamp (docker run --name pulsar_local -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 --env PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false --env PULSAR_PREFIX_transactionCoordinatorEnabled=true --env PULSAR_PREFIX_exposingBrokerEntryMetadataToClientEnabled=true --env PULSAR_PREFIX_brokerEntryMetadataInterceptors=org.apache.pulsar.common.intercept.AppendBrokerTimestampMetadataInterceptor,org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor -p 6650:6650 -p 8080:8080 -p 8081:8081 apachepulsar/pulsar-all:2.10.1 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss && bin/pulsar initialize-transaction-coordinator-metadata -cs localhost:2181 -c standalone --initial-num-transaction-coordinators 2 && bin/pulsar-admin namespaces set-retention public/default --time -1 --size -1")
 
 ## [2.9.0] / 2022-02-21
 - This release contains new feature and fixes found in Apache Pulsar 2.9.0 official java client/drive

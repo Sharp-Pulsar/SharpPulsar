@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
-using Akka.Persistence.Pulsar.Query;
 using Akka.Serialization;
 using SharpPulsar;
 using SharpPulsar.Builder;
-using SharpPulsar.Messages;
-using SharpPulsar.Sql;
-using SharpPulsar.Sql.Client;
-using SharpPulsar.Sql.Message;
+using SharpPulsar.Schemas;
 using SharpPulsar.User;
 using SharpPulsar.Utils;
 
@@ -31,31 +25,36 @@ namespace Akka.Persistence.Pulsar.Journal
             _log = log;
             _serializer = serializer; 
         }
-        public async ValueTask ReplayMessages(string persistenceId, long fromSequenceNr, long toSequenceNr, long max, Action<IPersistentRepresentation> recoveryCallback)
+        public async ValueTask ReplayMessages(string persistenceId, long fromSequenceNr, long toSequenceNr, long max, Action<IPersistentRepresentation> recoveryCallback,
+            AvroSchema<JournalEntry> journalEntrySchema, string topic )
         {
             //RETENTION POLICY MUST BE SENT AT THE NAMESPACE ELSE TOPIC IS DELETED
             var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
-            var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
-            var startMessageId = new ReaderConfigBuilder<byte[]>()
+            var take = Math.Min(toSequenceNr - fromSequenceNr, max);
+            var to = (MessageId)MessageIdUtils.GetMessageId(take);
+            var startMessageId = new ReaderConfigBuilder<JournalEntry>()
             .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
-            .Topic(persistenceId);
-            var reader = await _client.NewReaderAsync(startMessageId);
-            async IAsyncEnumerable<Message<byte[]>> message()
+            .Schema(journalEntrySchema)
+            .Topic(topic);
+            var reader = await _client.NewReaderAsync(journalEntrySchema, startMessageId);
+            await foreach (var msg in Message(reader, fromSequenceNr, take))
             {
-                var msg = await reader.ReadNextAsync(TimeSpan.FromMilliseconds(1000));
-                while (MessageIdUtils.GetOffset(from) < MessageIdUtils.GetOffset(to))
-                {
-                    yield return (Message<byte[]>)msg;
-                    msg = await reader.ReadNextAsync(TimeSpan.FromMilliseconds(1000));
-                }
-            };
-            await foreach (var msg in message())
-            {
-                var persistent = new Persistent(msg.Data, msg.SequenceId, persistenceId/*, manifest, sender*/);
+                var persistent = new Persistent(Deserialize(msg.Value.Payload), (long)msg.BrokerEntryMetadata.BrokerTimestamp, persistenceId, msg.Value.Manifest, msg.Value.IsDeleted, ActorRefs.NoSender, msg.Value.WritePlugin, msg.Value.TimeStamp);
                 recoveryCallback(persistent);
-            } 
+            }
+            await reader.CloseAsync();
         }
+        private async IAsyncEnumerable<Message<JournalEntry>> Message(Reader<JournalEntry> r, long fromSequenceNr, long max)
+        {
+            var msg = await r.ReadNextAsync();
+            while (fromSequenceNr < max)
+            {
+                if (msg != null)
+                    yield return (Message<JournalEntry>)msg;
 
+                msg = await r.ReadNextAsync();
+            }
+        }
         public async ValueTask<long> SelectAllEvents(
             long fromOffset,
             long toOffset,
@@ -77,7 +76,6 @@ namespace Akka.Persistence.Pulsar.Journal
         {
             return (IPersistentRepresentation)_serializer.FromBinary(bytes, PersistentRepresentationType);
         }
-        
         public async ValueTask<IEnumerable<string>> SelectAllPersistenceIds(long offset)
         {
             var ids = new List<string>();

@@ -16,7 +16,7 @@ using Akka.Streams.Stage;
 
 namespace Akka.Persistence.Pulsar
 {
-    public sealed class AsyncEnumerableSourceStage<T> : GraphStage<SourceShape<T>>
+    public sealed class AsyncEnumerableSource<T> : GraphStage<SourceShape<T>>
     {
         #region logic
 
@@ -102,7 +102,7 @@ namespace Akka.Persistence.Pulsar
         private readonly Outlet<T> outlet = new Outlet<T>("asyncEnumerable.out");
         private readonly IAsyncEnumerable<T> asyncEnumerable;
 
-        public AsyncEnumerableSourceStage(IAsyncEnumerable<T> asyncEnumerable)
+        public AsyncEnumerableSource(IAsyncEnumerable<T> asyncEnumerable)
         {
             //TODO: when to dispose async enumerable? Should this be a part of ownership of current stage, or should it
             // be a responsibility of the caller?

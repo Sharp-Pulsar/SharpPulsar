@@ -32,12 +32,7 @@ namespace Akka.Persistence.Pulsar
             AuthParam = config.HasPath("auth-param") ? config.GetString("auth-param") : "";
             TrinoServer = config.GetString("trino-server");
             AdminUrl = config.GetString("admin-url");
-            Tenant = config.GetString("pulsar-tenant");
-            Namespace = config.GetString("pulsar-namespace");
-            LedgerId = config.GetLong("ledger-id");
-            EntryId = config.GetLong("entry-id");
-            Partition = config.GetInt("partition");
-            BatchIndex = config.GetInt("batch-index");
+            Topic = config.GetString("pulsar-topic");
             TrustedCertificateAuthority = config.HasPath("trusted-certificate-authority-file") 
                 ? new X509Certificate2(config.GetString("trusted-certificate-authority-file") )
                 : null;
@@ -48,15 +43,10 @@ namespace Akka.Persistence.Pulsar
         }
         public Config Config { get; set; }
         public string ServiceUrl { get; set; }
-        public string Tenant { get; set; }
-        public string Namespace { get; set; }
+        public string Topic { get; set; }
         public string TrinoServer { get; set; }
         public string AuthClass { get; set; }
         public string AuthParam { get; set; }
-        public long LedgerId { get; set; }
-        public long EntryId { get; set; }
-        public int Partition { get; set; }
-        public int BatchIndex { get; set; }
         public TimeSpan OperationTimeOut { get; set; }
         public string AdminUrl { get; set; }
         public bool VerifyCertificateAuthority { get; set; }

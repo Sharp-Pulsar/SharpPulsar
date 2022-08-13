@@ -45,8 +45,19 @@ namespace Akka.Persistence.Pulsar.Query
         private readonly PulsarSystem pulsarSystem;
         private readonly PulsarClientConfigBuilder builder;
         private readonly AvroSchema<JournalEntry> _journalEntrySchema;
-        public PulsarReadJournal(ActorSystem system, Config config)
+        private readonly Serializer _serializer;
+        private static readonly Type PersistentRepresentationType = typeof(IPersistentRepresentation);
+
+        private readonly TimeSpan _refreshInterval;
+        private readonly string _writeJournalPluginId;
+        private readonly int _maxBufferSize;
+
+        public PulsarReadJournal(ExtendedActorSystem system, Config config)
         {
+            _refreshInterval = config.GetTimeSpan("refresh-interval");
+            _writeJournalPluginId = config.GetString("write-plugin");
+            _maxBufferSize = config.GetInt("max-buffer-size");
+            _serializer = system.Settings.System.Serialization.FindSerializerForType(PersistentRepresentationType);
             _journalEntrySchema = AvroSchema<JournalEntry>.Of(typeof(JournalEntry), new Dictionary<string, string>());
             settings = new PulsarSettings(config);
             builder = new PulsarClientConfigBuilder()
@@ -80,20 +91,31 @@ namespace Akka.Persistence.Pulsar.Query
         /// </summary>
         public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
+            var topic = settings.Topic;
             var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
+
             var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
+
             if (PulsarStatic.Client == null)
                 PulsarStatic.Client = pulsarSystem.NewClient(builder).AsTask().Result;
+
             var client = PulsarStatic.Client;
+
             var startMessageId = new ReaderConfigBuilder<JournalEntry>()
             .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
-            .Topic(persistenceId);
+            .Schema(_journalEntrySchema)
+            .Topic(topic);
+
             var reader = client.NewReader(_journalEntrySchema, startMessageId);
-            return Source.FromGraph(new AsyncEnumerableSourceStage<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
+
+            return Source.FromGraph(new AsyncEnumerableSource<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
                .Select(message =>
                {
-                   return new EventEnvelope(offset: new Sequence(message.SequenceId), persistenceId, message.SequenceId, message.Value.Payload, message.PublishTime);
-               });
+                   var sequenceId = (long)message.BrokerEntryMetadata.BrokerTimestamp;
+                   return new EventEnvelope(offset: new Sequence(sequenceId), persistenceId, sequenceId, message.Value.Payload, message.PublishTime);
+               })
+               .MapMaterializedValue(_ => NotUsed.Instance)
+               .Named("EventsByPersistenceId-" + persistenceId);
         }
 
         /// <summary>
@@ -106,23 +128,32 @@ namespace Akka.Persistence.Pulsar.Query
         /// </summary>
         public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
-            var topic = $"persistent://{settings.Tenant}/{settings.Namespace}/journal".ToLower();
+            var topic = settings.Topic;
+
             var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
+
             var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
+
             if(PulsarStatic.Client== null)
                 PulsarStatic.Client = pulsarSystem.NewClient(builder).AsTask().Result;
 
             var client = PulsarStatic.Client;
+
             var startMessageId = new ReaderConfigBuilder<JournalEntry>()
             .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
             .Schema(_journalEntrySchema)
             .Topic(topic);
+
             var reader = client.NewReader(_journalEntrySchema, startMessageId);
-            return Source.FromGraph(new AsyncEnumerableSourceStage<Message<JournalEntry>>(Message(reader,fromSequenceNr, toSequenceNr)))
+
+            return Source.FromGraph(new AsyncEnumerableSource<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
                 .Select(message =>
                 {
-                    return new EventEnvelope(offset: new Sequence(message.SequenceId), persistenceId, message.SequenceId, message.Value.Payload, message.PublishTime);
-                });
+                    var sequenceId = (long)message.BrokerEntryMetadata.BrokerTimestamp;
+                    return new EventEnvelope(offset: new Sequence(sequenceId), persistenceId, sequenceId, message.Value.Payload, message.PublishTime);
+                })
+               .MapMaterializedValue(_ => NotUsed.Instance)
+               .Named("CurrentEventsByPersistenceId-" + persistenceId);
         }
 
         private async IAsyncEnumerable<Message<JournalEntry>> Message(Reader<JournalEntry> r, long fromSequenceNr, long toSequenceNr)
@@ -185,6 +216,10 @@ namespace Akka.Persistence.Pulsar.Query
         public Source<EventEnvelope, NotUsed> AllEvents(Offset offset)
         {
             throw new NotImplementedException();
+        }
+        internal IPersistentRepresentation Deserialize(byte[] bytes)
+        {
+            return (IPersistentRepresentation)_serializer.FromBinary(bytes, PersistentRepresentationType);
         }
     }
 

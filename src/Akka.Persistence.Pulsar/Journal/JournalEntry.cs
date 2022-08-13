@@ -25,6 +25,9 @@ namespace Akka.Persistence.Pulsar.Journal
         public byte[] Payload { get; set; }
 
         public long Ordering { get; set; }
+        public long TimeStamp { get; set; }
         public string Tags { get; set; }
+        public string WritePlugin { get; set; }
+        public string Manifest { get; set; }
     }
 }
