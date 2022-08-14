@@ -16,6 +16,7 @@ using SharpPulsar.Sql;
 using SharpPulsar.Messages;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
+using Akka.Actor;
 
 namespace Akka.Persistence.Pulsar.Snapshot
 {
@@ -33,16 +34,16 @@ namespace Akka.Persistence.Pulsar.Snapshot
         private readonly PulsarClient _client;
         private readonly ClientOptions _sqlClientOptions;
         public static readonly ConcurrentDictionary<string, Producer<SnapshotEntry>> _producers = new ConcurrentDictionary<string, Producer<SnapshotEntry>>();
-        private static readonly Type SnapshotType = typeof(Serialization.Snapshot);
+        //private static readonly Type SnapshotType = typeof(Serialization.Snapshot);
         private readonly Serializer _serializer;
         private readonly AvroSchema<SnapshotEntry> _snapshotEntrySchema;
 
-
+        private readonly ActorSystem _system;
         //public Akka.Serialization.Serialization Serialization => _serialization ??= Context.System.Serialization;
 
         public PulsarSnapshotStore(Config config) : this(new PulsarSettings(config))
         {
-
+            _system = Context.System;
         }
 
         public PulsarSnapshotStore(PulsarSettings settings)
@@ -98,19 +99,24 @@ namespace Akka.Persistence.Pulsar.Snapshot
             _pendingRequestsCancellation?.Cancel();
             _client?.Shutdown();
         }
-        
-        private object Deserialize(byte[] bytes)
+
+        private byte[] PersistentToBytes(SnapshotMetadata metadata, object snapshot)
         {
-            return ((Serialization.Snapshot)_serializer.FromBinary(bytes, SnapshotType)).Data;
+            var message = new SelectedSnapshot(metadata, snapshot);
+            var serializer = _system.Serialization.FindSerializerForType(typeof(SelectedSnapshot));
+            return Akka.Serialization.Serialization.WithTransport(_system as ExtendedActorSystem,
+                () => serializer.ToBinary(message));
+            //return serializer.ToBinary(message);
         }
 
-        private byte[] Serialize(object snapshotData)
+        private SelectedSnapshot PersistentFromBytes(byte[] bytes)
         {
-            return _serializer.ToBinary(new Serialization.Snapshot(snapshotData));
+            var serializer = _system.Serialization.FindSerializerForType(typeof(SelectedSnapshot));
+            return serializer.FromBinary<SelectedSnapshot>(bytes);
         }
         private SnapshotEntry ToSnapshotEntry(SnapshotMetadata metadata, object snapshot)
         {
-            var binary = Serialize(snapshot);
+            var binary = PersistentToBytes(metadata, snapshot);
 
             return new SnapshotEntry
             {
@@ -124,7 +130,7 @@ namespace Akka.Persistence.Pulsar.Snapshot
 
         private SelectedSnapshot ToSelectedSnapshot(SnapshotEntry entry)
         {
-            var snapshot = Deserialize(Convert.FromBase64String(entry.Snapshot));
+            var snapshot = PersistentFromBytes(Convert.FromBase64String(entry.Snapshot));
             return new SelectedSnapshot(new SnapshotMetadata(entry.PersistenceId, entry.SequenceNr), snapshot);
 
         }

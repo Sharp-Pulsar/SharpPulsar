@@ -1,0 +1,17 @@
+syntax = "proto3";
+package Akka.Persistence.Serialization.Proto.Msg;
+
+import 'timestamp.proto';
+
+message SnapshotMessage {
+    string persistenceId = 1;
+    int64 sequenceNr = 2;
+    google.protobuf.Timestamp timeStamp = 3;
+    PersistentPayload payload = 4;
+}
+
+message PersistentPayload {
+    int32 serializerId = 1;
+    bytes payload = 2;
+    bytes payloadManifest = 3;
+}

@@ -39,7 +39,7 @@ namespace Akka.Persistence.Pulsar.Journal
             var reader = await _client.NewReaderAsync(journalEntrySchema, startMessageId);
             await foreach (var msg in Message(reader, fromSequenceNr, take))
             {
-                var persistent = new Persistent(Deserialize(msg.Value.Payload), (long)msg.BrokerEntryMetadata.BrokerTimestamp, persistenceId, msg.Value.Manifest, msg.Value.IsDeleted, ActorRefs.NoSender, msg.Value.WritePlugin, msg.Value.TimeStamp);
+                var persistent = new Persistent(msg.Value.Payload, (long)msg.BrokerEntryMetadata.BrokerTimestamp, persistenceId, null, msg.Value.IsDeleted, ActorRefs.NoSender);
                 recoveryCallback(persistent);
             }
             await reader.CloseAsync();
