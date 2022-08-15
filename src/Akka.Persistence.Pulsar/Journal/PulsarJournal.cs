@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Threading;
@@ -23,12 +24,15 @@ using Akka.Configuration;
 using Akka.Event;
 using Akka.Persistence.Journal;
 using Akka.Serialization;
+using Microsoft.Rest;
 using SharpPulsar;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
+using SharpPulsar.Common.Naming;
 using SharpPulsar.Schemas;
 using SharpPulsar.User;
 using SharpPulsar.Utils;
+using SharpPulsar.Admin.Public;
 
 namespace Akka.Persistence.Pulsar.Journal
 {
@@ -51,12 +55,15 @@ namespace Akka.Persistence.Pulsar.Journal
         private readonly CancellationTokenSource _pendingRequestsCancellation;
         public static readonly ConcurrentDictionary<string, Producer<JournalEntry>> _producers = new ConcurrentDictionary<string, Producer<JournalEntry>>();
         private readonly JournalHelper _journalHelper;
+
+        private readonly Admin _admin;
         public PulsarJournal(Config config) 
         {
             _journalHelper = new JournalHelper(Context.System);
             _settings = new PulsarSettings(config);
             _journalEntrySchema = AvroSchema<JournalEntry>.Of(typeof(JournalEntry), new Dictionary<string, string>());
             _pendingRequestsCancellation = new CancellationTokenSource();
+            _admin = new Admin(_settings.AdminUrl, new HttpClient());
             var builder = new PulsarClientConfigBuilder()
                  .ServiceUrl(_settings.ServiceUrl)
                  .ConnectionsPerBroker(1)
@@ -118,6 +125,16 @@ namespace Akka.Persistence.Pulsar.Journal
                 msg = await r.ReadNextAsync();
             }
         }
+        private async IAsyncEnumerable<Message<JournalEntry>> Message(Reader<JournalEntry> r, long fromSequenceNr)
+        {
+            var msg = await r.ReadNextAsync();
+            while (msg != null)
+            {
+               yield return (Message<JournalEntry>)msg;
+
+                msg = await r.ReadNextAsync();
+            }
+        }
         /// <summary>
         /// This method is called at the very beginning of the replay procedure to define a possible boundary of replay:
         /// In akka persistence every persistent actor starts from the replay phase, where it replays state from all of
@@ -125,7 +142,21 @@ namespace Akka.Persistence.Pulsar.Journal
         /// </summary>
         public override async Task<long> ReadHighestSequenceNrAsync(string persistenceId, long fromSequenceNr)
         {
-            return 0;// await _journalExecutor.ReadHighestSequenceNr(persistenceId, fromSequenceNr);
+            var topic = TopicName.Get(_settings.Topic);
+            var local = topic.NamespaceObject.LocalName;
+            string metadata = string.Empty;
+            HttpOperationResponse f = null;
+            try
+            {
+                f = await _admin.GetLastMessageIdAsync(topic.Tenant, local, topic.LocalName);
+            }
+            catch(Exception ex)
+            {
+                metadata = ex.Message;
+            }
+            var c = f.Response;
+            var h = metadata;
+            return 1;
         }
         /// <summary>
         /// Writes a batch of messages. Each <see cref="AtomicWrite"/> can have one or many <see cref="IPersistentRepresentation"/>
