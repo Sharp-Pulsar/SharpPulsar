@@ -33,6 +33,7 @@ using SharpPulsar.Schemas;
 using SharpPulsar.User;
 using SharpPulsar.Utils;
 using SharpPulsar.Admin.Public;
+using SharpPulsar.Interfaces;
 
 namespace Akka.Persistence.Pulsar.Journal
 {
@@ -105,24 +106,31 @@ namespace Akka.Persistence.Pulsar.Journal
             var startMessageId = new ReaderConfigBuilder<JournalEntry>()
             .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
             .Schema(_journalEntrySchema)
-            .Topic(_settings.Topic);
+            .Topic($"{_settings.TenantNamespace}{persistenceId}");
             var reader = await _client.NewReaderAsync(_journalEntrySchema, startMessageId);
             await foreach (var msg in Message(reader, fromSequenceNr, take))
             {
-                var persistent = new Persistent(_journalHelper.PersistentFromBytes(msg.Value.Payload), (long)msg.BrokerEntryMetadata.BrokerTimestamp, persistenceId, null, msg.Value.IsDeleted, ActorRefs.NoSender);
+                var persistent = new Persistent(_journalHelper.PersistentFromBytes(msg.Value.Payload), (long)msg.BrokerEntryMetadata.Index, persistenceId, null, msg.Value.IsDeleted, ActorRefs.NoSender);
                 recoveryCallback(persistent);
             }
             await reader.CloseAsync();
         }
         private async IAsyncEnumerable<Message<JournalEntry>> Message(Reader<JournalEntry> r, long fromSequenceNr, long max)
         {
+
+            await Task.Delay(TimeSpan.FromSeconds(10));
             var msg = await r.ReadNextAsync();
             while (fromSequenceNr < max)
             {
                 if (msg != null)
+                {
+
                     yield return (Message<JournalEntry>)msg;
 
-                msg = await r.ReadNextAsync();
+                    msg = await r.ReadNextAsync();
+                }
+                else
+                    break;
             }
         }
         private async IAsyncEnumerable<Message<JournalEntry>> Message(Reader<JournalEntry> r, long fromSequenceNr)
@@ -139,24 +147,17 @@ namespace Akka.Persistence.Pulsar.Journal
         /// This method is called at the very beginning of the replay procedure to define a possible boundary of replay:
         /// In akka persistence every persistent actor starts from the replay phase, where it replays state from all of
         /// the events emitted so far before being marked as ready for command processing.
-        /// </summary>
+        /// </summary>.GetInternalStatsAsync
         public override async Task<long> ReadHighestSequenceNrAsync(string persistenceId, long fromSequenceNr)
         {
-            var topic = TopicName.Get(_settings.Topic);
-            var local = topic.NamespaceObject.LocalName;
-            string metadata = string.Empty;
-            HttpOperationResponse f = null;
-            try
-            {
-                f = await _admin.GetLastMessageIdAsync(topic.Tenant, local, topic.LocalName);
-            }
-            catch(Exception ex)
-            {
-                metadata = ex.Message;
-            }
-            var c = f.Response;
-            var h = metadata;
-            return 1;
+            var topic = TopicName.Get($"{_settings.TenantNamespace}{persistenceId}");
+            var response = await _admin.GetInternalStatsAsync(topic.Tenant, topic.NamespaceObject.LocalName, persistenceId);
+            
+            var str = await response.Response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var dc = JsonSerializer.Deserialize<Dictionary<string, object>>(str);
+            var entries = long.Parse(dc["entriesAddedCounter"].ToString());
+            
+            return entries;
         }
         /// <summary>
         /// Writes a batch of messages. Each <see cref="AtomicWrite"/> can have one or many <see cref="IPersistentRepresentation"/>
@@ -393,7 +394,7 @@ namespace Akka.Persistence.Pulsar.Journal
 
         private async ValueTask<Producer<JournalEntry>> JournalProducer(string persistenceid)
         {
-            var topic = _settings.Topic;
+            var topic = $"{_settings.TenantNamespace}{persistenceid}";
             if (!_producers.TryGetValue(persistenceid, out var producer))
             {
                 var producerConfig = new ProducerConfigBuilder<JournalEntry>()

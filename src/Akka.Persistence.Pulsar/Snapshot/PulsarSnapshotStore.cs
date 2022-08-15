@@ -81,7 +81,7 @@ namespace Akka.Persistence.Pulsar.Snapshot
         }
         private async ValueTask<Producer<SnapshotEntry>> GetProducer(string persistenceid)
         {
-            var topic = _settings.Topic;
+            var topic = $"{_settings.TenantNamespace}{persistenceid}";
             if (_producers.TryGetValue(persistenceid, out var producer))
             {
                 return producer;

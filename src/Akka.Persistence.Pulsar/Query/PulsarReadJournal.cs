@@ -91,7 +91,7 @@ namespace Akka.Persistence.Pulsar.Query
         /// </summary>
         public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
-            var topic = settings.Topic;
+            var topic = $"{settings.TenantNamespace}{persistenceId}";
             var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
 
             var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
@@ -111,7 +111,7 @@ namespace Akka.Persistence.Pulsar.Query
             return Source.FromGraph(new AsyncEnumerableSource<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
                .Select(message =>
                {
-                   var sequenceId = (long)message.BrokerEntryMetadata.BrokerTimestamp;
+                   var sequenceId = (long)message.BrokerEntryMetadata.Index;
                    return new EventEnvelope(offset: new Sequence(sequenceId), persistenceId, sequenceId, message.Value.Payload, message.PublishTime);
                })
                .MapMaterializedValue(_ => NotUsed.Instance)
@@ -128,7 +128,7 @@ namespace Akka.Persistence.Pulsar.Query
         /// </summary>
         public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
-            var topic = settings.Topic;
+            var topic = $"{settings.TenantNamespace}{persistenceId}";
 
             var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
 
@@ -149,7 +149,7 @@ namespace Akka.Persistence.Pulsar.Query
             return Source.FromGraph(new AsyncEnumerableSource<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
                 .Select(message =>
                 {
-                    var sequenceId = (long)message.BrokerEntryMetadata.BrokerTimestamp;
+                    var sequenceId = (long)message.BrokerEntryMetadata.Index;
                     return new EventEnvelope(offset: new Sequence(sequenceId), persistenceId, sequenceId, message.Value.Payload, message.PublishTime);
                 })
                .MapMaterializedValue(_ => NotUsed.Instance)
