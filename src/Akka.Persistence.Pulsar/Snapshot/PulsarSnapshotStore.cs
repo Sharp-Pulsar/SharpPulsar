@@ -16,7 +16,12 @@ using SharpPulsar.Sql;
 using SharpPulsar.Messages;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
+using SharpPulsar.Builder;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Auth;
+using System.Security.Cryptography.X509Certificates;
 using Akka.Actor;
+using SharpPulsar.Sql.Public;
 
 namespace Akka.Persistence.Pulsar.Snapshot
 {
@@ -32,22 +37,57 @@ namespace Akka.Persistence.Pulsar.Snapshot
         private readonly ILoggingAdapter _log = Context.GetLogger();
         private readonly PulsarSystem _pulsarSystem;
         private readonly PulsarClient _client;
+        private readonly SqlInstance _sql;
         private readonly ClientOptions _sqlClientOptions;
         public static readonly ConcurrentDictionary<string, Producer<SnapshotEntry>> _producers = new ConcurrentDictionary<string, Producer<SnapshotEntry>>();
-        //private static readonly Type SnapshotType = typeof(Serialization.Snapshot);
+        private static readonly Type SnapshotType = typeof(Serialization.Snapshot);
         private readonly Serializer _serializer;
         private readonly AvroSchema<SnapshotEntry> _snapshotEntrySchema;
+        private readonly TopicName _topicName;
 
-        private readonly ActorSystem _system;
+
         //public Akka.Serialization.Serialization Serialization => _serialization ??= Context.System.Serialization;
 
         public PulsarSnapshotStore(Config config) : this(new PulsarSettings(config))
         {
-            _system = Context.System;
+
         }
 
         public PulsarSnapshotStore(PulsarSettings settings)
         {
+            _topicName = TopicName.Get($"{settings.Topic}");
+            _pendingRequestsCancellation = new CancellationTokenSource();
+            _snapshotEntrySchema = AvroSchema<SnapshotEntry>.Of(typeof(SnapshotEntry));
+            _serializer = Context.System.Serialization.FindSerializerForType(SnapshotType);
+            _settings = settings;
+            _sqlClientOptions = new ClientOptions 
+            { 
+                Server = settings.TrinoServer,
+                Catalog = "pulsar",
+                Schema = $"{_topicName.Tenant}/{_topicName.NamespaceObject.LocalName}"
+            };
+            var builder = new PulsarClientConfigBuilder()
+                 .ServiceUrl(_settings.ServiceUrl)
+                 .ConnectionsPerBroker(1)
+                 .OperationTimeout(_settings.OperationTimeOut)
+                 .Authentication(AuthenticationFactory.Create(_settings.AuthClass, _settings.AuthParam));
+
+            if (!(_settings.TrustedCertificateAuthority is null))
+            {
+                builder = builder.AddTrustedAuthCert(_settings.TrustedCertificateAuthority);
+            }
+
+            if (!(_settings.ClientCertificate is null))
+            {
+                builder = builder.AddTlsCerts(new X509Certificate2Collection { _settings.ClientCertificate });
+            }
+            var pulsarSystem = PulsarStatic.System ?? PulsarSystem.GetInstance(Context.System);
+
+            if (PulsarStatic.Client == null)
+                PulsarStatic.Client = pulsarSystem.NewClient(builder).AsTask().Result;
+
+            _client = PulsarStatic.Client;
+            _sql = PulsarSystem.Sql(Context.System, _sqlClientOptions);
         }
         
         protected override async Task DeleteAsync(SnapshotMetadata metadata)
@@ -64,7 +104,23 @@ namespace Akka.Persistence.Pulsar.Snapshot
 
         protected override async Task<SelectedSnapshot> LoadAsync(string persistenceId, SnapshotSelectionCriteria criteria)
         {
-            return null;
+            SelectedSnapshot shot = null;
+            _sqlClientOptions.Execute = $"select Id, PersistenceId, SequenceNr, Timestamp, Snapshot from snapshot WHERE PersistenceId = {persistenceId} AND SequenceNr <= {criteria.MaxSequenceNr} AND Timestamp <= {criteria.MaxTimeStamp.ToEpochTime()} ORDER BY SequenceNr DESC, __publish_time__ DESC LIMIT 1";
+            var response = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
+            var data = response.Response;
+            switch (data)
+            {
+                case DataResponse dr:
+                    return ToSelectedSnapshot(JsonSerializer.Deserialize<SnapshotEntry>(JsonSerializer.Serialize(dr.Data)));
+                case StatsResponse sr:
+                    _log.Info(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+                    return shot;
+                case ErrorResponse er:
+                    _log.Error(er.Error.FailureInfo.Message);
+                    return shot;
+                default:
+                    return shot;
+            }
         }
 
         protected override async Task SaveAsync(SnapshotMetadata metadata, object snapshot)
@@ -76,19 +132,24 @@ namespace Akka.Persistence.Pulsar.Snapshot
 
         private async ValueTask<Producer<SnapshotEntry>> CreateSnapshotProducer(string topic, string persistenceid)
         {
-
-            return null;
+            var producerConfig = new ProducerConfigBuilder<SnapshotEntry>()
+                   .ProducerName($"snapshot-{persistenceid}")
+                   .Topic(topic)
+                   .Schema(_snapshotEntrySchema)
+                   .SendTimeout(TimeSpan.FromMilliseconds(10000));
+            var producer = await _client.NewProducerAsync(_snapshotEntrySchema, producerConfig);
+            _producers[persistenceid] = producer;
+            return producer;
         }
         private async ValueTask<Producer<SnapshotEntry>> GetProducer(string persistenceid)
         {
-            var topic = $"{_settings.TenantNamespace}{persistenceid}";
             if (_producers.TryGetValue(persistenceid, out var producer))
             {
                 return producer;
             }
             else
             {
-                return await CreateSnapshotProducer(topic, persistenceid);
+                return await CreateSnapshotProducer(_settings.Topic, persistenceid);
             }
         }
         protected override void PostStop()
@@ -96,27 +157,22 @@ namespace Akka.Persistence.Pulsar.Snapshot
             base.PostStop();
 
             // stop all operations executed in the background
-            _pendingRequestsCancellation?.Cancel();
-            _client?.Shutdown();
+            _pendingRequestsCancellation.Cancel();
+            _client.Shutdown();
+        }
+        
+        private object Deserialize(byte[] bytes)
+        {
+            return ((Serialization.Snapshot)_serializer.FromBinary(bytes, SnapshotType)).Data;
         }
 
-        private byte[] PersistentToBytes(SnapshotMetadata metadata, object snapshot)
+        private byte[] Serialize(object snapshotData)
         {
-            var message = new SelectedSnapshot(metadata, snapshot);
-            var serializer = _system.Serialization.FindSerializerForType(typeof(SelectedSnapshot));
-            return Akka.Serialization.Serialization.WithTransport(_system as ExtendedActorSystem,
-                () => serializer.ToBinary(message));
-            //return serializer.ToBinary(message);
-        }
-
-        private SelectedSnapshot PersistentFromBytes(byte[] bytes)
-        {
-            var serializer = _system.Serialization.FindSerializerForType(typeof(SelectedSnapshot));
-            return serializer.FromBinary<SelectedSnapshot>(bytes);
+            return _serializer.ToBinary(new Serialization.Snapshot(snapshotData));
         }
         private SnapshotEntry ToSnapshotEntry(SnapshotMetadata metadata, object snapshot)
         {
-            var binary = PersistentToBytes(metadata, snapshot);
+            var binary = Serialize(snapshot);
 
             return new SnapshotEntry
             {
@@ -130,7 +186,7 @@ namespace Akka.Persistence.Pulsar.Snapshot
 
         private SelectedSnapshot ToSelectedSnapshot(SnapshotEntry entry)
         {
-            var snapshot = PersistentFromBytes(Convert.FromBase64String(entry.Snapshot));
+            var snapshot = Deserialize(Convert.FromBase64String(entry.Snapshot));
             return new SelectedSnapshot(new SnapshotMetadata(entry.PersistenceId, entry.SequenceNr), snapshot);
 
         }

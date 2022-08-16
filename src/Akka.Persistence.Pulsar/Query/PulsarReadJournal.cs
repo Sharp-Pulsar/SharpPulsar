@@ -8,22 +8,10 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
-using Akka.Persistence.Pulsar.Journal;
 using Akka.Persistence.Query;
-using Akka.Serialization;
 using Akka.Streams.Dsl;
-using SharpPulsar;
-using SharpPulsar.Auth;
-using SharpPulsar.Builder;
-using SharpPulsar.Interfaces;
-using SharpPulsar.Schemas;
-using SharpPulsar.User;
-using SharpPulsar.Utils;
 
 namespace Akka.Persistence.Pulsar.Query
 {
@@ -37,190 +25,215 @@ namespace Akka.Persistence.Pulsar.Query
         IAllEventsQuery,
         ICurrentAllEventsQuery
     {
-        //TODO: it's possible that not all of these interfaces have sense in terms of Apache Pulsar - in that case
-        // we should remove what's unnecessary.
-
-        private readonly ActorSystem system;
-        private readonly PulsarSettings settings;
-        private readonly PulsarSystem pulsarSystem;
-        private readonly PulsarClientConfigBuilder builder;
-        private readonly AvroSchema<JournalEntry> _journalEntrySchema;
-        private readonly Serializer _serializer;
-        private static readonly Type PersistentRepresentationType = typeof(IPersistentRepresentation);
+        /// <summary>
+        /// HOCON identifier
+        /// </summary>
+        public const string Identifier = "akka.persistence.query.journal.pulsar";
 
         private readonly TimeSpan _refreshInterval;
         private readonly string _writeJournalPluginId;
         private readonly int _maxBufferSize;
 
+        /// <inheritdoc />
         public PulsarReadJournal(ExtendedActorSystem system, Config config)
         {
             _refreshInterval = config.GetTimeSpan("refresh-interval");
             _writeJournalPluginId = config.GetString("write-plugin");
             _maxBufferSize = config.GetInt("max-buffer-size");
-            _serializer = system.Settings.System.Serialization.FindSerializerForType(PersistentRepresentationType);
-            _journalEntrySchema = AvroSchema<JournalEntry>.Of(typeof(JournalEntry), new Dictionary<string, string>());
-            settings = new PulsarSettings(config);
-            builder = new PulsarClientConfigBuilder()
-                .ServiceUrl(settings.ServiceUrl)
-                .ConnectionsPerBroker(1)
-                .OperationTimeout(settings.OperationTimeOut)
-                .Authentication(AuthenticationFactory.Create(settings.AuthClass, settings.AuthParam));
+        }
 
-            if (!(settings.TrustedCertificateAuthority is null))
+        /// <summary>
+        /// <para>
+        /// <see cref="PersistenceIds"/> is used for retrieving all `persistenceIds` of all
+        /// persistent actors.
+        /// </para>
+        /// The returned event stream is unordered and you can expect different order for multiple
+        /// executions of the query.
+        /// <para>
+        /// The stream is not completed when it reaches the end of the currently used `persistenceIds`,
+        /// but it continues to push new `persistenceIds` when new persistent actors are created.
+        /// Corresponding query that is completed when it reaches the end of the currently
+        /// currently used `persistenceIds` is provided by <see cref="CurrentPersistenceIds"/>.
+        /// </para>
+        /// The SQL write journal is notifying the query side as soon as new `persistenceIds` are
+        /// created and there is no periodic polling or batching involved in this query.
+        /// <para>
+        /// The stream is completed with failure if there is a failure in executing the query in the
+        /// backend journal.
+        /// </para>
+        /// </summary>
+        public Source<string, NotUsed> PersistenceIds() =>
+            Source.ActorPublisher<string>(AllPersistenceIdsPublisher.Props(true, _writeJournalPluginId))
+            .MapMaterializedValue(_ => NotUsed.Instance)
+            .Named("AllPersistenceIds") as Source<string, NotUsed>;
+
+        /// <summary>
+        /// Same type of query as <see cref="PersistenceIds"/> but the stream
+        /// is completed immediately when it reaches the end of the "result set". Persistent
+        /// actors that are created after the query is completed are not included in the stream.
+        /// </summary>
+        public Source<string, NotUsed> CurrentPersistenceIds() =>
+            Source.ActorPublisher<string>(AllPersistenceIdsPublisher.Props(false, _writeJournalPluginId))
+            .MapMaterializedValue(_ => NotUsed.Instance)
+            .Named("CurrentPersistenceIds") as Source<string, NotUsed>;
+
+        /// <summary>
+        /// <see cref="EventsByPersistenceId"/> is used for retrieving events for a specific
+        /// <see cref="PersistentActor"/> identified by <see cref="Eventsourced.PersistenceId"/>.
+        /// <para>
+        /// You can retrieve a subset of all events by specifying <paramref name="fromSequenceNr"/> and <paramref name="toSequenceNr"/>
+        /// or use `0L` and <see cref="long.MaxValue"/> respectively to retrieve all events. Note that
+        /// the corresponding sequence number of each event is provided in the
+        /// <see cref="EventEnvelope"/>, which makes it possible to resume the
+        /// stream at a later point from a given sequence number.
+        /// </para>
+        /// The returned event stream is ordered by sequence number, i.e. the same order as the
+        /// <see cref="PersistentActor"/> persisted the events. The same prefix of stream elements (in same order)
+        ///  are returned for multiple executions of the query, except for when events have been deleted.
+        /// <para>
+        /// The stream is not completed when it reaches the end of the currently stored events,
+        /// but it continues to push new events when new events are persisted.
+        /// Corresponding query that is completed when it reaches the end of the currently
+        /// stored events is provided by <see cref="CurrentEventsByPersistenceId"/>.
+        /// </para>
+        /// The SQLite write journal is notifying the query side as soon as events are persisted, but for
+        /// efficiency reasons the query side retrieves the events in batches that sometimes can
+        /// be delayed up to the configured `refresh-interval`.
+        /// <para></para>
+        /// The stream is completed with failure if there is a failure in executing the query in the
+        /// backend journal.
+        /// </summary>
+        public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) =>
+                Source.ActorPublisher<EventEnvelope>(EventsByPersistenceIdPublisher.Props(persistenceId, fromSequenceNr, toSequenceNr, _refreshInterval, _maxBufferSize, _writeJournalPluginId))
+                    .MapMaterializedValue(_ => NotUsed.Instance)
+                    .Named("EventsByPersistenceId-" + persistenceId) as Source<EventEnvelope, NotUsed>;
+
+        /// <summary>
+        /// Same type of query as <see cref="EventsByPersistenceId"/> but the event stream
+        /// is completed immediately when it reaches the end of the "result set". Events that are
+        /// stored after the query is completed are not included in the event stream.
+        /// </summary>
+        public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) =>
+                Source.ActorPublisher<EventEnvelope>(EventsByPersistenceIdPublisher.Props(persistenceId, fromSequenceNr, toSequenceNr, null, _maxBufferSize, _writeJournalPluginId))
+                    .MapMaterializedValue(_ => NotUsed.Instance)
+                    .Named("CurrentEventsByPersistenceId-" + persistenceId) as Source<EventEnvelope, NotUsed>;
+
+        /// <summary>
+        /// <see cref="EventsByTag"/> is used for retrieving events that were marked with
+        /// a given tag, e.g. all events of an Aggregate Root type.
+        /// <para></para>
+        /// To tag events you create an <see cref="IEventAdapter"/> that wraps the events
+        /// in a <see cref="Tagged"/> with the given `tags`.
+        /// <para></para>
+        /// You can use <see cref="NoOffset"/> to retrieve all events with a given tag or retrieve a subset of all
+        /// events by specifying a <see cref="Sequence"/>. The `offset` corresponds to an ordered sequence number for
+        /// the specific tag. Note that the corresponding offset of each event is provided in the
+        /// <see cref="EventEnvelope"/>, which makes it possible to resume the
+        /// stream at a later point from a given offset.
+        /// <para></para>
+        /// The `offset` is exclusive, i.e. the event with the exact same sequence number will not be included
+        /// in the returned stream.This means that you can use the offset that is returned in <see cref="EventEnvelope"/>
+        /// as the `offset` parameter in a subsequent query.
+        /// <para></para>
+        /// In addition to the <paramref name="offset"/> the <see cref="EventEnvelope"/> also provides `persistenceId` and `sequenceNr`
+        /// for each event. The `sequenceNr` is the sequence number for the persistent actor with the
+        /// `persistenceId` that persisted the event. The `persistenceId` + `sequenceNr` is an unique
+        /// identifier for the event.
+        /// <para></para>
+        /// The returned event stream is ordered by the offset (tag sequence number), which corresponds
+        /// to the same order as the write journal stored the events. The same stream elements (in same order)
+        /// are returned for multiple executions of the query. Deleted events are not deleted from the
+        /// tagged event stream.
+        /// <para></para>
+        /// The stream is not completed when it reaches the end of the currently stored events,
+        /// but it continues to push new events when new events are persisted.
+        /// Corresponding query that is completed when it reaches the end of the currently
+        /// stored events is provided by <see cref="CurrentEventsByTag"/>.
+        /// <para></para>
+        /// The SQL write journal is notifying the query side as soon as tagged events are persisted, but for
+        /// efficiency reasons the query side retrieves the events in batches that sometimes can
+        /// be delayed up to the configured `refresh-interval`.
+        /// <para></para>
+        /// The stream is completed with failure if there is a failure in executing the query in the
+        /// backend journal.
+        /// </summary>
+        public Source<EventEnvelope, NotUsed> EventsByTag(string tag, Offset offset = null)
+        {
+            offset = offset ?? new Sequence(0L);
+            switch (offset)
             {
-                builder = builder.AddTrustedAuthCert(this.settings.TrustedCertificateAuthority);
+                case Sequence seq:
+                    return Source.ActorPublisher<EventEnvelope>(EventsByTagPublisher.Props(tag, seq.Value, long.MaxValue, _refreshInterval, _maxBufferSize, _writeJournalPluginId))
+                        .MapMaterializedValue(_ => NotUsed.Instance)
+                        .Named($"EventsByTag-{tag}");
+                case NoOffset _:
+                    return EventsByTag(tag, new Sequence(0L));
+                default:
+                    throw new ArgumentException($"PulsarReadJournal does not support {offset.GetType().Name} offsets");
+            }
+        }
+
+        /// <summary>
+        /// Same type of query as <see cref="EventsByTag"/> but the event stream
+        /// is completed immediately when it reaches the end of the "result set". Events that are
+        /// stored after the query is completed are not included in the event stream.
+        /// </summary>
+        public Source<EventEnvelope, NotUsed> CurrentEventsByTag(string tag, Offset offset = null)
+        {
+            offset ??= new Sequence(1L);
+            switch (offset)
+            {
+                case Sequence seq:
+                    return Source.ActorPublisher<EventEnvelope>(EventsByTagPublisher.Props(tag, seq.Value, long.MaxValue, null, _maxBufferSize, _writeJournalPluginId))
+                        .MapMaterializedValue(_ => NotUsed.Instance)
+                        .Named($"CurrentEventsByTag-{tag}");
+                case NoOffset _:
+                    return CurrentEventsByTag(tag, new Sequence(1L));
+                default:
+                    throw new ArgumentException($"PulsarReadJournal does not support {offset.GetType().Name} offsets");
+            }
+        }
+
+        public Source<EventEnvelope, NotUsed> AllEvents(Offset offset = null)
+        {
+            Sequence seq;
+            switch (offset)
+            {
+                case null:
+                case NoOffset _:
+                    seq = new Sequence(0L);
+                    break;
+                case Sequence s:
+                    seq = s;
+                    break;
+                default:
+                    throw new ArgumentException($"SqlReadJournal does not support {offset.GetType().Name} offsets");
             }
 
-            if (!(settings.ClientCertificate is null))
-            {
-                builder = builder.AddTlsCerts(new X509Certificate2Collection { settings.ClientCertificate });
-            }
-            this.system = system;
-            pulsarSystem = PulsarStatic.System ?? PulsarSystem.GetInstance(system);
-        }
-
-        public const string Identifier = "akka.persistence.query.journal.pulsar";
-
-        /// <summary>
-        /// Streams all events stored for a given <paramref name="persistenceId"/> (pulsar virtual topic?). This is a
-        /// windowing method - we don't necessarily want to read the entire stream, so it's possible to read only a
-        /// range of events [<paramref name="fromSequenceNr"/>, <paramref name="toSequenceNr"/>).
-        ///
-        /// This stream complete when it reaches <paramref name="toSequenceNr"/>, but it DOESN'T stop when we read all
-        /// events currently stored. If you want to read only events currently stored use <see cref="CurrentEventsByPersistenceId"/>.
-        /// </summary>
-        public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
-        {
-            var topic = $"{settings.TenantNamespace}{persistenceId}";
-            var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
-
-            var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
-
-            if (PulsarStatic.Client == null)
-                PulsarStatic.Client = pulsarSystem.NewClient(builder).AsTask().Result;
-
-            var client = PulsarStatic.Client;
-
-            var startMessageId = new ReaderConfigBuilder<JournalEntry>()
-            .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
-            .Schema(_journalEntrySchema)
-            .Topic(topic);
-
-            var reader = client.NewReader(_journalEntrySchema, startMessageId);
-
-            return Source.FromGraph(new AsyncEnumerableSource<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
-               .Select(message =>
-               {
-                   var sequenceId = (long)message.BrokerEntryMetadata.Index;
-                   return new EventEnvelope(offset: new Sequence(sequenceId), persistenceId, sequenceId, message.Value.Payload, message.PublishTime);
-               })
-               .MapMaterializedValue(_ => NotUsed.Instance)
-               .Named("EventsByPersistenceId-" + persistenceId);
-        }
-
-        /// <summary>
-        /// Streams all events stored for a given <paramref name="persistenceId"/> (pulsar virtual topic?). This is a
-        /// windowing method - we don't necessarily want to read the entire stream, so it's possible to read only a
-        /// range of events [<paramref name="fromSequenceNr"/>, <paramref name="toSequenceNr"/>).
-        ///
-        /// This stream complete when it reaches <paramref name="toSequenceNr"/> or when we read all
-        /// events currently stored. If you want to read all events (even future ones), use <see cref="EventsByPersistenceId"/>.
-        /// </summary>
-        public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
-        {
-            var topic = $"{settings.TenantNamespace}{persistenceId}";
-
-            var from = (MessageId)MessageIdUtils.GetMessageId(fromSequenceNr);
-
-            var to = (MessageId)MessageIdUtils.GetMessageId(toSequenceNr);
-
-            if(PulsarStatic.Client== null)
-                PulsarStatic.Client = pulsarSystem.NewClient(builder).AsTask().Result;
-
-            var client = PulsarStatic.Client;
-
-            var startMessageId = new ReaderConfigBuilder<JournalEntry>()
-            .StartMessageId(from.LedgerId, from.EntryId, from.PartitionIndex, 0)
-            .Schema(_journalEntrySchema)
-            .Topic(topic);
-
-            var reader = client.NewReader(_journalEntrySchema, startMessageId);
-
-            return Source.FromGraph(new AsyncEnumerableSource<Message<JournalEntry>>(Message(reader, fromSequenceNr, toSequenceNr)))
-                .Select(message =>
-                {
-                    var sequenceId = (long)message.BrokerEntryMetadata.Index;
-                    return new EventEnvelope(offset: new Sequence(sequenceId), persistenceId, sequenceId, message.Value.Payload, message.PublishTime);
-                })
-               .MapMaterializedValue(_ => NotUsed.Instance)
-               .Named("CurrentEventsByPersistenceId-" + persistenceId);
-        }
-
-        private async IAsyncEnumerable<Message<JournalEntry>> Message(Reader<JournalEntry> r, long fromSequenceNr, long toSequenceNr)
-        {
-            var msg = await r.ReadNextAsync();
-            while (fromSequenceNr < toSequenceNr)
-            {
-                if(msg != null)
-                    yield return (Message<JournalEntry>)msg;
-
-                msg = await r.ReadNextAsync();
-            }
-        }
-        /// <summary>
-        /// Streams all events stored for a given <paramref name="tag"/> (think of it as a secondary index, one event
-        /// can have multiple supporting tags). All tagged events are ordered according to some offset (which can be any
-        /// incrementing number, possibly non continuously like 1, 2, 5, 13), which can be used to define a starting
-        /// point for a stream.
-        /// 
-        /// This stream DOESN'T stop when we read all events currently stored. If you want to read only events
-        /// currently stored use <see cref="CurrentEventsByTag"/>.
-        /// </summary>
-        public Source<EventEnvelope, NotUsed> EventsByTag(string tag, Offset offset)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Streams currently stored events for a given <paramref name="tag"/> (think of it as a secondary index, one event
-        /// can have multiple supporting tags). All tagged events are ordered according to some offset (which can be any
-        /// incrementing number, possibly non continuously like 1, 2, 5, 13), which can be used to define a starting
-        /// point for a stream.
-        /// 
-        /// This stream stops when we read all events currently stored. If you want to read all events (also future ones)
-        /// use <see cref="CurrentEventsByTag"/>.
-        /// </summary>
-        public Source<EventEnvelope, NotUsed> CurrentEventsByTag(string tag, Offset offset)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Returns a stream of all known persistence IDs. This stream is not supposed to send duplicates.
-        /// </summary>
-        public Source<string, NotUsed> CurrentPersistenceIds()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Source<string, NotUsed> PersistenceIds()
-        {
-            throw new NotImplementedException();
+            return Source.ActorPublisher<EventEnvelope>(AllEventsPublisher.Props(seq.Value, _refreshInterval, _maxBufferSize, _writeJournalPluginId))
+                .MapMaterializedValue(_ => NotUsed.Instance)
+                .Named("AllEvents");
         }
 
         public Source<EventEnvelope, NotUsed> CurrentAllEvents(Offset offset)
         {
-            throw new NotImplementedException();
-        }
+            Sequence seq;
+            switch (offset)
+            {
+                case null:
+                case NoOffset _:
+                    seq = new Sequence(0L);
+                    break;
+                case Sequence s:
+                    seq = s;
+                    break;
+                default:
+                    throw new ArgumentException($"SqlReadJournal does not support {offset.GetType().Name} offsets");
+            }
 
-        public Source<EventEnvelope, NotUsed> AllEvents(Offset offset)
-        {
-            throw new NotImplementedException();
-        }
-        internal IPersistentRepresentation Deserialize(byte[] bytes)
-        {
-            return (IPersistentRepresentation)_serializer.FromBinary(bytes, PersistentRepresentationType);
+            return Source.ActorPublisher<EventEnvelope>(AllEventsPublisher.Props(seq.Value, null, _maxBufferSize, _writeJournalPluginId))
+                .MapMaterializedValue(_ => NotUsed.Instance)
+                .Named("CurrentAllEvents");
         }
     }
-
 }

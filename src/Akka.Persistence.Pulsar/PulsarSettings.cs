@@ -30,7 +30,7 @@ namespace Akka.Persistence.Pulsar
             AuthParam = config.HasPath("auth-param") ? config.GetString("auth-param") : "";
             TrinoServer = config.GetString("trino-server");
             AdminUrl = config.GetString("admin-url");
-            TenantNamespace = config.GetString("pulsar-tenant-namespace");
+            Topic = config.GetString("pulsar-topic");
             TrustedCertificateAuthority = config.HasPath("trusted-certificate-authority-file") 
                 ? new X509Certificate2(config.GetString("trusted-certificate-authority-file") )
                 : null;
@@ -41,7 +41,7 @@ namespace Akka.Persistence.Pulsar
         }
         public Config Config { get; set; }
         public string ServiceUrl { get; set; }
-        public string TenantNamespace { get; set; }
+        public string Topic { get; set; }
         public string TrinoServer { get; set; }
         public string AuthClass { get; set; }
         public string AuthParam { get; set; }
