@@ -22,7 +22,7 @@ namespace Sourcerer
             var actorSystem = ActorSystem.Create("SampleSystem", ConfigurationFactory.ParseString(config));
             _mat = ActorMaterializer.Create(actorSystem);
             _readJournal = PersistenceQuery.Get(actorSystem).ReadJournalFor<PulsarReadJournal>("akka.persistence.query.journal.pulsar");
-            PersistenceIds();
+            //PersistenceIds();
             //CurrentPersistenceIds();
             //EventsByPersistenceId();
             CurrentEventsByPersistenceId();

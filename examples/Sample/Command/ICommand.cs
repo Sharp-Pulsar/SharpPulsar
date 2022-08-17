@@ -1,4 +1,4 @@
-﻿namespace Sample.Command
+﻿namespace examples.Sample.Command
 {
     public interface ICommand
     {

@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\examples\Sample\Sample.csproj" />
       <ProjectReference Include="..\Akka.Persistence.Pulsar\Akka.Persistence.Pulsar.csproj" />
     </ItemGroup>
 

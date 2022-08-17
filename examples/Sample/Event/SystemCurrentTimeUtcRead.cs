@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Sample.Event
+namespace examples.Sample.Event
 {
     public class SystemCurrentTimeUtcRead : IEvent
     {

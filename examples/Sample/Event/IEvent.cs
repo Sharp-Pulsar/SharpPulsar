@@ -1,4 +1,4 @@
-﻿namespace Sample.Event
+﻿namespace examples.Sample.Event
 {
     public interface IEvent
     {

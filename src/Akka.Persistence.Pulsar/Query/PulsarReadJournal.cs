@@ -8,10 +8,24 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using Akka.Actor;
 using Akka.Configuration;
+using Akka.Event;
+using Akka.Persistence.Pulsar.Journal;
 using Akka.Persistence.Query;
+using Akka.Serialization;
 using Akka.Streams.Dsl;
+using SharpPulsar;
+using SharpPulsar.Auth;
+using SharpPulsar.Builder;
+using SharpPulsar.Common.Naming;
+using SharpPulsar.Schemas;
+using SharpPulsar.Sql.Client;
+using SharpPulsar.Sql.Message;
+using SharpPulsar.Sql.Public;
 
 namespace Akka.Persistence.Pulsar.Query
 {
@@ -30,16 +44,35 @@ namespace Akka.Persistence.Pulsar.Query
         /// </summary>
         public const string Identifier = "akka.persistence.query.journal.pulsar";
 
+        private readonly SqlInstance _sql;
+        private readonly LiveSqlInstance _liveSql;
+        private readonly ClientOptions _sqlClientOptions;
+        private readonly ILoggingAdapter _log;
+        private readonly SerializationHelper _serializer;
+        private readonly TopicName _topicName;
         private readonly TimeSpan _refreshInterval;
         private readonly string _writeJournalPluginId;
         private readonly int _maxBufferSize;
+        private readonly PulsarSettings _settings;
 
         /// <inheritdoc />
         public PulsarReadJournal(ExtendedActorSystem system, Config config)
         {
+            _settings = new PulsarSettings(config);
             _refreshInterval = config.GetTimeSpan("refresh-interval");
             _writeJournalPluginId = config.GetString("write-plugin");
             _maxBufferSize = config.GetInt("max-buffer-size");
+            _log = system.Log;
+            _serializer = new SerializationHelper(system);
+            _topicName = TopicName.Get($"{_settings.Topic}");
+            _sqlClientOptions = new ClientOptions
+            {
+                Server = _settings.TrinoServer,
+                Catalog = "pulsar",
+                Schema = $"{_topicName.Tenant}/{_topicName.NamespaceObject.LocalName}"
+            };
+            _sql = PulsarSystem.Sql(system, _sqlClientOptions);
+            _liveSql = new LiveSqlInstance(system, _sqlClientOptions, _settings.Topic, _refreshInterval, DateTime.Parse("1970-01-18 20:27:56.387"));
         }
 
         /// <summary>
@@ -103,16 +136,74 @@ namespace Akka.Persistence.Pulsar.Query
         /// The stream is completed with failure if there is a failure in executing the query in the
         /// backend journal.
         /// </summary>
-        public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) =>
-                Source.ActorPublisher<EventEnvelope>(EventsByPersistenceIdPublisher.Props(persistenceId, fromSequenceNr, toSequenceNr, _refreshInterval, _maxBufferSize, _writeJournalPluginId))
-                    .MapMaterializedValue(_ => NotUsed.Instance)
-                    .Named("EventsByPersistenceId-" + persistenceId) as Source<EventEnvelope, NotUsed>;
+        public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) 
+        {
+
+            return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(Messages(persistenceId, fromSequenceNr, toSequenceNr)))
+                .Select(message =>
+                {
+                    var payload = message.Payload;
+                    var der = _serializer.PersistentFromBytes(payload);
+                    return new EventEnvelope(offset: new Sequence(message.SequenceNr), persistenceId, message.SequenceNr, der, message.PublishTime);
+                })
+               .MapMaterializedValue(_ => NotUsed.Instance)
+               .Named("EventsByPersistenceId-" + persistenceId);
+        }
 
         /// <summary>
         /// Same type of query as <see cref="EventsByPersistenceId"/> but the event stream
         /// is completed immediately when it reaches the end of the "result set". Events that are
         /// stored after the query is completed are not included in the event stream.
         /// </summary>
+        /// 
+        private async IAsyncEnumerable<Message<JournalEntry>> Message(long fromSequenceNr, long toSequenceNr)
+        {
+            var msg = await r.ReadNextAsync();
+            while (fromSequenceNr < toSequenceNr)
+            {
+                if (msg != null)
+                    yield return (Message<JournalEntry>)msg;
+
+                msg = await r.ReadNextAsync();
+            }
+        }
+        public async IAsyncEnumerable<JournalEntry> Messages(string persistenceId, long fromSequenceNr, long toSequenceNr)
+        {
+            //RETENTION POLICY MUST BE SENT AT THE NAMESPACE ELSE TOPIC IS DELETED
+            var topic = _topicName.EncodedLocalName;
+            if (fromSequenceNr > 0)
+                fromSequenceNr = fromSequenceNr - 1;
+
+            var take = Math.Min(toSequenceNr, fromSequenceNr);
+            _sqlClientOptions.Execute = $"select Id, PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags from {topic} WHERE PersistenceId = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
+            var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
+            switch (data.Response)
+            {
+                case DataResponse dr:
+                    {
+                        var records = dr.Data;
+                        for (var i = 0; i < records.Count; i++)
+                        {
+                            var journal = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(records[i]));
+                            
+                            yield return journal;
+                        }
+                        if (_log.IsDebugEnabled)
+                            _log.Info(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
+                    }
+                    break;
+                case StatsResponse sr:
+                    if (_log.IsDebugEnabled)
+                        _log.Info(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                    break;
+                case ErrorResponse er:
+                    _log.Error(er?.Error.FailureInfo.Message);
+                    break;
+                default:
+                    break;
+            }
+        }
+
         public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) =>
                 Source.ActorPublisher<EventEnvelope>(EventsByPersistenceIdPublisher.Props(persistenceId, fromSequenceNr, toSequenceNr, null, _maxBufferSize, _writeJournalPluginId))
                     .MapMaterializedValue(_ => NotUsed.Instance)

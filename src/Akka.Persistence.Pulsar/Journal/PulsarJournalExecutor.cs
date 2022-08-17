@@ -77,7 +77,7 @@ namespace Akka.Persistence.Pulsar.Journal
                     break;
             }
         }
-
+       
         public async ValueTask<long> SelectAllEvents(
             long fromOffset,
             long toOffset,

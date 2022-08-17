@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Persistence;
-using Sample.Command;
-using Sample.Event;
+using examples.Sample.Command;
+using examples.Sample.Event;
 
 namespace Producer.Actors
 {

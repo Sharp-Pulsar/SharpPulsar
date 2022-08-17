@@ -7,7 +7,7 @@ using System.Threading;
 using Akka.Actor;
 using Akka.Configuration;
 using Producer.Actors;
-using Sample.Command;
+using examples.Sample.Command;
 
 namespace Producer
 {

@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Akka.Persistence.Pulsar\Akka.Persistence.Pulsar.csproj" />
+    <ProjectReference Include="..\..\src\Akka.Persistence.Pulsar\Akka.Persistence.Pulsar.csproj" />
     <ProjectReference Include="..\Sample\Sample.csproj" />
   </ItemGroup>
 

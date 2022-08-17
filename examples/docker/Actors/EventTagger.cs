@@ -1,7 +1,8 @@
 ﻿using System.Collections.Immutable;
 using Akka.Persistence.Journal;
+using examples.Sample.Event;
 
-namespace Sample.Event
+namespace Producer.Actors
 {
     public sealed class EventTagger: IWriteEventAdapter
     {
@@ -12,7 +13,12 @@ namespace Sample.Event
 
         public object ToJournal(object evt)
         {
-            return new Tagged(evt, ImmutableHashSet<string>.Empty.Add("utc"));
+            switch (evt)
+            {
+                case SystemCurrentTimeUtcRead utc:
+                    return new Tagged(evt, ImmutableHashSet<string>.Empty.Add("utc"));
+                default: return evt;
+            }
         }
     }
 }
