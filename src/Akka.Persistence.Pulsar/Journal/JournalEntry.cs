@@ -15,9 +15,7 @@ namespace Akka.Persistence.Pulsar.Journal
     public class JournalEntry
     {
         public string Id { get; set; }
-
         public string PersistenceId { get; set; }
-
         public long SequenceNr { get; set; }
 
         public bool IsDeleted { get; set; }
@@ -25,6 +23,13 @@ namespace Akka.Persistence.Pulsar.Journal
         public byte[] Payload { get; set; }
 
         public long Ordering { get; set; }
+        public long PublishTime { get; set; }
+        public long EventTime { get; set; }
+        public int Partition { get; set; }
         public string Tags { get; set; }
+        public string MessageId { get; set; }
+        public string ProducerName { get; set; }
+        public string Key { get; set; }
+        public string Properties { get; set; }
     }
 }

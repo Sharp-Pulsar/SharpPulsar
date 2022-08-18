@@ -48,7 +48,7 @@ namespace Akka.Persistence.Pulsar.Journal
                 fromSequenceNr = fromSequenceNr - 1;
 
             var take = Math.Min(toSequenceNr - fromSequenceNr, max);
-            _sqlClientOptions.Execute = $"select Id, PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags from {topic} WHERE PersistenceId = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
+            _sqlClientOptions.Execute = $"select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags, __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
             var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
             switch (data.Response)
             {
@@ -88,7 +88,7 @@ namespace Akka.Persistence.Pulsar.Journal
             var take = Math.Min(toOffset - fromOffset, max);
             //RETENTION POLICY MUST BE SENT AT THE NAMESPACE ELSE TOPIC IS DELETED
             var topic = _topicName.EncodedLocalName;
-            _sqlClientOptions.Execute = $"select Id, PersistenceId, SequenceNr, IsDeleted, Payload, Ordering from {topic} WHERE Ordering > {fromOffset} ORDER BY  Ordering ASC LIMIT {take}";
+            _sqlClientOptions.Execute = $"select Id,  __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering from {topic} WHERE Ordering > {fromOffset} ORDER BY  Ordering ASC LIMIT {take}";
             var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
             switch (data.Response)
             {
@@ -125,7 +125,7 @@ namespace Akka.Persistence.Pulsar.Journal
             try
             {
                 var topic = _topicName.EncodedLocalName;
-                _sqlClientOptions.Execute = $"select __sequence_id__ as Id from {topic} WHERE PersistenceId = '{persistenceId}'  ORDER BY __sequence_id__ DESC LIMIT 1";
+                _sqlClientOptions.Execute = $"select __sequence_id__ as Id from {topic} WHERE __producer_name__ = '{persistenceId}'  ORDER BY __sequence_id__ DESC LIMIT 1";
                 var response = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
                 
                 var data = response.Response;
@@ -201,7 +201,7 @@ namespace Akka.Persistence.Pulsar.Journal
         {
             var topic = _topicName.EncodedLocalName;
             var take = Math.Min(replay.ToOffset - replay.FromOffset, replay.Max);
-            _sqlClientOptions.Execute = $"select Id, PersistenceId, SequenceNr, IsDeleted, Payload, Ordering, Tags from {topic} WHERE SequenceNr BETWEEN {replay.FromOffset} AND {replay.ToOffset} AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{replay.Tag.Trim().ToLower()}') = '{replay.Tag.Trim().ToLower()}' ORDER BY SequenceNr DESC, __publish_time__ DESC LIMIT {take}";
+            _sqlClientOptions.Execute = $"select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags, __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from {topic} WHERE __sequence_id__ BETWEEN {replay.FromOffset} AND {replay.ToOffset} AND element_at(cast(json_parse(__properties__) as map(varchar, varchar)), '{replay.Tag.Trim().ToLower()}') = '{replay.Tag.Trim().ToLower()}' ORDER BY __sequence_id__ DESC, __publish_time__ DESC LIMIT {take}";
             var sql = new LiveSqlInstance(_actorSystem, _sqlClientOptions, topic, TimeSpan.FromMilliseconds(5000), DateTime.Parse("1970-01-18 20:27:56.387"));
             await Task.Delay(TimeSpan.FromSeconds(10));
             
@@ -228,7 +228,7 @@ namespace Akka.Persistence.Pulsar.Journal
         public async ValueTask<IEnumerable<string>> SelectAllPersistenceIds(long offset)
         {
             var topic = _topicName.EncodedLocalName;
-            _sqlClientOptions.Execute = $"select DISTINCT(PersistenceId) AS PersistenceId from {topic} WHERE Ordering > {offset}";
+            _sqlClientOptions.Execute = $"select DISTINCT(__producer_name__) AS PersistenceId from {topic} WHERE Ordering > {offset}";
             var ids = new List<string>();
             var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
             switch (data.Response)

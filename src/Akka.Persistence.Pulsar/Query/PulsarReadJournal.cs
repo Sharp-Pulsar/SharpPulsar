@@ -156,17 +156,6 @@ namespace Akka.Persistence.Pulsar.Query
         /// stored after the query is completed are not included in the event stream.
         /// </summary>
         /// 
-        private async IAsyncEnumerable<Message<JournalEntry>> Message(long fromSequenceNr, long toSequenceNr)
-        {
-            var msg = await r.ReadNextAsync();
-            while (fromSequenceNr < toSequenceNr)
-            {
-                if (msg != null)
-                    yield return (Message<JournalEntry>)msg;
-
-                msg = await r.ReadNextAsync();
-            }
-        }
         public async IAsyncEnumerable<JournalEntry> Messages(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
             //RETENTION POLICY MUST BE SENT AT THE NAMESPACE ELSE TOPIC IS DELETED
@@ -174,8 +163,9 @@ namespace Akka.Persistence.Pulsar.Query
             if (fromSequenceNr > 0)
                 fromSequenceNr = fromSequenceNr - 1;
 
+            //__partition__ | __event_time__ | __publish_time__ | __message_id__ | __sequence_id__ | __producer_name__ | __key__ | __properties__
             var take = Math.Min(toSequenceNr, fromSequenceNr);
-            _sqlClientOptions.Execute = $"select Id, PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags from {topic} WHERE PersistenceId = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
+            _sqlClientOptions.Execute = $"select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags, __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
             var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
             switch (data.Response)
             {
