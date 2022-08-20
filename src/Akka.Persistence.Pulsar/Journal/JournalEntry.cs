@@ -28,7 +28,6 @@ namespace Akka.Persistence.Pulsar.Journal
         public int Partition { get; set; }
         public string Tags { get; set; }
         public string MessageId { get; set; }
-        public string ProducerName { get; set; }
         public string Key { get; set; }
         public string Properties { get; set; }
     }

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
 using Akka.Event;
@@ -72,7 +73,7 @@ namespace Akka.Persistence.Pulsar.Query
                 Schema = $"{_topicName.Tenant}/{_topicName.NamespaceObject.LocalName}"
             };
             _sql = PulsarSystem.Sql(system, _sqlClientOptions);
-            _liveSql = new LiveSqlInstance(system, _sqlClientOptions, _settings.Topic, _refreshInterval, DateTime.Parse("1970-01-18 20:27:56.387"));
+            _liveSql = PulsarSystem.LiveSql(system, _sqlClientOptions, _settings.Topic, _refreshInterval, DateTime.Parse("1970-01-18 20:27:56.387"));
         }
 
         /// <summary>
@@ -136,10 +137,10 @@ namespace Akka.Persistence.Pulsar.Query
         /// The stream is completed with failure if there is a failure in executing the query in the
         /// backend journal.
         /// </summary>
-        public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) 
+        public Source<EventEnvelope, NotUsed> EventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
 
-            return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(Messages(persistenceId, fromSequenceNr, toSequenceNr)))
+            return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(SQLMessages(persistenceId, fromSequenceNr, toSequenceNr)))
                 .Select(message =>
                 {
                     var payload = message.Payload;
@@ -156,7 +157,8 @@ namespace Akka.Persistence.Pulsar.Query
         /// stored after the query is completed are not included in the event stream.
         /// </summary>
         /// 
-        public async IAsyncEnumerable<JournalEntry> Messages(string persistenceId, long fromSequenceNr, long toSequenceNr)
+       
+        private async IAsyncEnumerable<JournalEntry> SQLMessages(string persistenceId, long fromSequenceNr, long toSequenceNr)
         {
             //RETENTION POLICY MUST BE SENT AT THE NAMESPACE ELSE TOPIC IS DELETED
             var topic = _topicName.EncodedLocalName;
@@ -167,37 +169,87 @@ namespace Akka.Persistence.Pulsar.Query
             var take = Math.Min(toSequenceNr, fromSequenceNr);
             _sqlClientOptions.Execute = $"select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags, __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
             var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
-            switch (data.Response)
+            var loopContinue = true;
+            while (loopContinue)
             {
-                case DataResponse dr:
-                    {
-                        var records = dr.Data;
-                        for (var i = 0; i < records.Count; i++)
+                switch (data.Response)
+                {
+                    case DataResponse dr:
                         {
-                            var journal = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(records[i]));
-                            
-                            yield return journal;
+                            var records = dr.Data;
+                            for (var i = 0; i < records.Count; i++)
+                            {
+                                var journal = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(records[i]));
+
+                                yield return journal;
+                            }
+                            if (_log.IsDebugEnabled)
+                                _log.Info(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
+
+
+                            data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
                         }
+                        break;
+                    case StatsResponse sr:
                         if (_log.IsDebugEnabled)
-                            _log.Info(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
-                    }
-                    break;
-                case StatsResponse sr:
-                    if (_log.IsDebugEnabled)
-                        _log.Info(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
-                    break;
-                case ErrorResponse er:
-                    _log.Error(er?.Error.FailureInfo.Message);
-                    break;
-                default:
-                    break;
+                            _log.Info(JsonSerializer.Serialize(sr.Stats, new JsonSerializerOptions { WriteIndented = true }));
+                       break;
+                    case ErrorResponse er:
+                        _log.Error(er?.Error.FailureInfo.Message);
+                        break;
+                    default:
+                        break;
+                }
             }
+           
         }
 
-        public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr) =>
-                Source.ActorPublisher<EventEnvelope>(EventsByPersistenceIdPublisher.Props(persistenceId, fromSequenceNr, toSequenceNr, null, _maxBufferSize, _writeJournalPluginId))
-                    .MapMaterializedValue(_ => NotUsed.Instance)
-                    .Named("CurrentEventsByPersistenceId-" + persistenceId) as Source<EventEnvelope, NotUsed>;
+        private async IAsyncEnumerable<JournalEntry> LiveSQLMessages(string persistenceId, long fromSequenceNr, long toSequenceNr)
+        {
+            //RETENTION POLICY MUST BE SENT AT THE NAMESPACE ELSE TOPIC IS DELETED
+            var topic = _topicName.EncodedLocalName;
+            if (fromSequenceNr > 0)
+                fromSequenceNr = fromSequenceNr - 1;
+
+            //__partition__ | __event_time__ | __publish_time__ | __message_id__ | __sequence_id__ | __producer_name__ | __key__ | __properties__
+            var take = Math.Min(toSequenceNr, fromSequenceNr);
+            _sqlClientOptions.Execute = $"select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags, __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
+            //var data = await _liveSql.ExecuteAsync(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            await foreach (var data in _liveSql.ExecuteAsync())
+            {
+                switch (data.Response)
+                {
+                    case DataResponse dr:
+                        var entry = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(dr.Data));
+                        yield return entry;
+                        break;
+                    case StatsResponse sr:
+                        if (_log.IsDebugEnabled)
+                            _log.Info(JsonSerializer.Serialize(sr, new JsonSerializerOptions { WriteIndented = true }));
+                        break;
+                    case ErrorResponse er:
+                        _log.Error(er.Error.FailureInfo.Message);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        public Source<EventEnvelope, NotUsed> CurrentEventsByPersistenceId(string persistenceId, long fromSequenceNr, long toSequenceNr)
+        {
+
+            return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(SQLMessages(persistenceId, fromSequenceNr, toSequenceNr)))
+                .Select(message =>
+                {
+                    var payload = message.Payload;
+                    var der = _serializer.PersistentFromBytes(payload);
+                    return new EventEnvelope(offset: new Sequence(message.SequenceNr), persistenceId, message.SequenceNr, der, message.PublishTime);
+                })
+               .MapMaterializedValue(_ => NotUsed.Instance)
+               .Named("CurrentEventsByPersistenceId--" + persistenceId);
+        }
 
         /// <summary>
         /// <see cref="EventsByTag"/> is used for retrieving events that were marked with

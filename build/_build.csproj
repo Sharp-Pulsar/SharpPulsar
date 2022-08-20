@@ -16,7 +16,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Azure.Management.AppService.Fluent" Version="1.38.1" />
-    <PackageReference Include="Nuke.Common" Version="6.2.0" />
+    <PackageReference Include="Nuke.Common" Version="6.2.1" />
     <PackageReference Include="docfx.console" Version="2.59.3" ExcludeAssets="build" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
     <PackageReference Include="xunit.runner.console" Version="2.4.2">

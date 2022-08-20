@@ -265,7 +265,7 @@ namespace SharpPulsar.Sql.Presto
 				{
 					// back-off on retry
 					try
-					{
+					{ 
 						Thread.Sleep(TimeSpan.FromMilliseconds(attempts * 100));
 					}
 					catch (Exception)
