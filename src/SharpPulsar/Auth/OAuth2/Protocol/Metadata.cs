@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Policy;
 using System.Text.Json.Serialization;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -22,10 +21,10 @@ using System.Text.Json.Serialization;
 namespace SharpPulsar.Auth.OAuth2.Protocol
 {
 
-	/// <summary>
-	/// Represents OAuth 2.0 Server Metadata.
-	/// </summary>
-	public class Metadata
+    /// <summary>
+    /// Represents OAuth 2.0 Server Metadata.
+    /// </summary>
+    public class Metadata
 	{
 
         [JsonPropertyName("issuer")]

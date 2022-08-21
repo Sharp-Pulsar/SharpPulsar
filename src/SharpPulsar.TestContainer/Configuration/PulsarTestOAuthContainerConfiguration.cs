@@ -1,9 +1,6 @@
-﻿using System.Reflection;
-using DotNet.Testcontainers.Builders;
+﻿using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
-
-using System.Text.Json;
 
 namespace SharpPulsar.TestContainer.Configuration
 {

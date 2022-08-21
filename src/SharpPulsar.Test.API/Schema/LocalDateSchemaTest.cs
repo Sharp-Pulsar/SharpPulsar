@@ -1,5 +1,4 @@
-﻿using System;
-using NodaTime;
+﻿using NodaTime;
 using SharpPulsar.Schemas;
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +20,7 @@ using SharpPulsar.Schemas;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     public class LocalDateSchemaTest
     {
         [Fact]

@@ -1,11 +1,10 @@
 ﻿using System;
-using Akka;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 
 namespace Akka.Persistence.Pulsar.Tests.Observer
 {
-    
+
     public class SourceObservable<T> : IObservable<T>
     {
         private readonly Source<T, NotUsed> _source;

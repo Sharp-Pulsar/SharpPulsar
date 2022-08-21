@@ -11,7 +11,7 @@ using Akka.Configuration;
 using Akka.Persistence.TCK.Journal;
 using Xunit;
 using Xunit.Abstractions;
-
+//docker run --name pulsar_local -it --env PULSAR_PREFIX_acknowledgmentAtBatchIndexLevelEnabled=true --env PULSAR_PREFIX_nettyMaxFrameSizeBytes=5253120 --env PULSAR_PREFIX_brokerDeleteInactiveTopicsEnabled=false -p 6650:6650 -p 8080:8080 -p 8081:8081 apachepulsar/pulsar-all:2.10.1 bash -c "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss && bin/pulsar-admin namespaces set-retention public/default --time 365000 --size -1 "
 namespace Akka.Persistence.Pulsar.Tests
 {
     [Collection("PlusarJournalSpec")]

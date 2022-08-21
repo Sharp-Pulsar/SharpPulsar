@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Akka.Actor;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Live;
@@ -15,6 +14,7 @@ namespace SharpPulsar.Sql.Public
     public class LiveSqlInstance
     {
         private readonly IActorRef _queryActor;
+        public readonly ClientOptions ClientOptions;
         public LiveSqlInstance(ActorSystem system, ClientOptions clientOptions, string topic, TimeSpan queryInterval, DateTime startAtPublishTime)
         {
             if (string.IsNullOrWhiteSpace(clientOptions.Server))
@@ -45,8 +45,9 @@ namespace SharpPulsar.Sql.Public
                 throw new ArgumentException($"Topic '{topic}' failed validation");
 
             var q = new LiveSqlSession(clientOptions.ToClientSession(), clientOptions, queryInterval, startAtPublishTime, TopicName.Get(topic).ToString());
-
-            _queryActor = system.ActorOf(LiveQuery.Prop(q));
+            ClientOptions = clientOptions;
+            var actorRef = system.ActorOf(LiveQuery.Prop(q));
+            _queryActor = actorRef;
         }
         public async IAsyncEnumerable<LiveSqlData> ExecuteAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {

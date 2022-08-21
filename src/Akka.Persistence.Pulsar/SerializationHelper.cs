@@ -1,8 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Serialization;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Akka.Persistence.Pulsar
 {

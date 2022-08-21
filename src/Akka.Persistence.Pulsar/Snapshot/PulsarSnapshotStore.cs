@@ -9,18 +9,14 @@ using System.Threading.Tasks;
 using Akka.Configuration;
 using IdentityModel;
 using SharpPulsar.Schemas;
-using SharpPulsar.Configuration;
 using SharpPulsar;
 using SharpPulsar.User;
-using SharpPulsar.Sql;
-using SharpPulsar.Messages;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.Builder;
 using SharpPulsar.Common.Naming;
 using SharpPulsar.Auth;
 using System.Security.Cryptography.X509Certificates;
-using Akka.Actor;
 using SharpPulsar.Sql.Public;
 
 namespace Akka.Persistence.Pulsar.Snapshot
@@ -29,7 +25,7 @@ namespace Akka.Persistence.Pulsar.Snapshot
     ///     Pulsar-backed snapshot store for Akka.Persistence.
     /// </summary>
     /// 
-    
+
     public class PulsarSnapshotStore : SnapshotStore
     {
         private readonly CancellationTokenSource _pendingRequestsCancellation;

@@ -1,5 +1,4 @@
-﻿using System;
-using NodaTime;
+﻿using NodaTime;
 using SharpPulsar.Schemas;
 using Xunit.Abstractions;
 /// <summary>

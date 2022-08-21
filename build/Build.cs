@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text.Json;
 using Nuke.Common;
 using Nuke.Common.ChangeLog;
 using Nuke.Common.CI;

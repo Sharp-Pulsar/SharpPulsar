@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
 using Akka.Persistence.Pulsar.Query;
@@ -81,7 +82,7 @@ namespace Akka.Persistence.Pulsar.Tests
             });
         }
         [Fact]
-        public void CurrentEventsByPersistenceId()
+        public async Task CurrentEventsByPersistenceId()
         {
             var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("utcreader-2", 1L, 320);
             var persistenceStream1 = new SourceObservable<EventEnvelope>(persistenceIdsSource1, _mat);
@@ -106,6 +107,7 @@ namespace Akka.Persistence.Pulsar.Tests
 
                     completed = true;
                 });
+            await Task.Delay(30000);
             Assert.True(completed);
         }
 

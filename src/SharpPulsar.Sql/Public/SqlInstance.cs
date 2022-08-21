@@ -10,11 +10,11 @@ namespace SharpPulsar.Sql.Public
     public class SqlInstance
     {
         private readonly IActorRef _queryActor;
-        private readonly ClientOptions _clientOptions;
+        public readonly ClientOptions ClientOptions;
         public SqlInstance(ActorSystem system, ClientOptions clientOptions)
         {
             _queryActor = system.ActorOf(SqlWorker.Prop());
-            _clientOptions = clientOptions;
+            ClientOptions = clientOptions;
         }
         
         public SqlData Execute(TimeSpan? timeout = null, string query = "")
@@ -24,28 +24,28 @@ namespace SharpPulsar.Sql.Public
         
         public async ValueTask<SqlData> ExecuteAsync(TimeSpan? timeout = null, string query = "")
         {
-            if (string.IsNullOrWhiteSpace(_clientOptions.Server))
+            if (string.IsNullOrWhiteSpace(ClientOptions.Server))
                 throw new ArgumentException("Trino Server cannot be empty");
 
-            var hasQuery = !string.IsNullOrWhiteSpace(_clientOptions.Execute) || (!string.IsNullOrWhiteSpace(query) || !string.IsNullOrWhiteSpace(_clientOptions.File));
+            var hasQuery = !string.IsNullOrWhiteSpace(ClientOptions.Execute) || (!string.IsNullOrWhiteSpace(query) || !string.IsNullOrWhiteSpace(ClientOptions.File));
 
             if (!hasQuery)
                 throw new ArgumentException("Query cannot be empty");
 
-            if (!string.IsNullOrWhiteSpace(_clientOptions.Execute))
+            if (!string.IsNullOrWhiteSpace(ClientOptions.Execute))
             {
-                _clientOptions.Execute.TrimEnd(';');
+                ClientOptions.Execute.TrimEnd(';');
             }
             else if(!string.IsNullOrWhiteSpace(query))
             {
-                _clientOptions.Execute = query.TrimEnd(';');
+                ClientOptions.Execute = query.TrimEnd(';');
             }
             else
             {
-                _clientOptions.Execute =  await File.ReadAllTextAsync(_clientOptions.File);
-                _clientOptions.Execute.TrimEnd(';');
+                ClientOptions.Execute =  await File.ReadAllTextAsync(ClientOptions.File);
+                ClientOptions.Execute.TrimEnd(';');
             }
-            var q = new SqlSession(_clientOptions.ToClientSession(), _clientOptions);
+            var q = new SqlSession(ClientOptions.ToClientSession(), ClientOptions);
 
             var ask = timeout.HasValue
                 ? await _queryActor.Ask<AskResponse>(q, timeout.Value)

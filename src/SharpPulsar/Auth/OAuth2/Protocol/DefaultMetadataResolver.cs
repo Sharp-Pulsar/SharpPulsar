@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Policy;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -27,10 +26,10 @@ using System.Threading.Tasks;
 namespace SharpPulsar.Auth.OAuth2.Protocol
 {
 
-	/// <summary>
-	/// Resolves OAuth 2.0 authorization server metadata as described in RFC 8414.
-	/// </summary>
-	public class DefaultMetadataResolver : MetadataResolver
+    /// <summary>
+    /// Resolves OAuth 2.0 authorization server metadata as described in RFC 8414.
+    /// </summary>
+    public class DefaultMetadataResolver : MetadataResolver
 	{
 
 		protected internal const int DefaultConnectTimeoutInSeconds = 10;

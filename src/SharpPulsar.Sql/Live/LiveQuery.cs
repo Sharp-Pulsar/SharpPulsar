@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -76,7 +75,9 @@ namespace SharpPulsar.Sql.Live
 
         public static Props Prop(LiveSqlSession sql)
         {
-            return Props.Create(() => new LiveQuery(sql));
+            var s = sql;
+            var q = new LiveQuery(s);
+            return Props.Create(() => q);
         }
     }
     public sealed class ExecuteQuery

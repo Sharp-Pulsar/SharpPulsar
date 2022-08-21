@@ -1,5 +1,4 @@
-﻿using System;
-using SharpPulsar.Sql.Client;
+﻿using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Presto;
 
 namespace SharpPulsar.Sql.Message

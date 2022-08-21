@@ -23,13 +23,10 @@ using Akka.Actor;
 using Akka.Configuration;
 using Akka.Event;
 using Akka.Persistence.Journal;
-using Akka.Persistence.Pulsar.Query;
-using Akka.Serialization;
 using SharpPulsar;
 using SharpPulsar.Admin.Public;
 using SharpPulsar.Auth;
 using SharpPulsar.Builder;
-using SharpPulsar.Configuration;
 using SharpPulsar.Schemas;
 using SharpPulsar.User;
 

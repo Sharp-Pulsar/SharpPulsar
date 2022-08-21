@@ -1,5 +1,4 @@
-﻿using System;
-using NodaTime;
+﻿using NodaTime;
 using SharpPulsar.Schemas;
 
 /// <summary>
@@ -22,7 +21,7 @@ using SharpPulsar.Schemas;
 /// </summary>
 namespace SharpPulsar.Test.API.Schema
 {
-    
+
     public class LocalDateTimeSchemaTest
     {
         [Fact]

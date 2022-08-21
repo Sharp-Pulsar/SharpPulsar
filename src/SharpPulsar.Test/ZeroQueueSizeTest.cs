@@ -1,7 +1,6 @@
 ﻿using Akka.Actor;
 using Akka.Util;
 using App.Metrics.Concurrency;
-using SharpPulsar.Configuration;
 using SharpPulsar.Messages.Consumer;
 
 
@@ -11,7 +10,6 @@ using System.Collections.Generic;
 using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
-using SharpPulsar.Extension;
 using System.Text;
 using static SharpPulsar.Protocol.Proto.CommandSubscribe;
 
@@ -40,7 +38,7 @@ using SharpPulsar.TestContainer;
 /// </summary>
 namespace SharpPulsar.Test
 {
-	[Collection(nameof(PulsarCollection))]
+    [Collection(nameof(PulsarCollection))]
 	public class ZeroQueueSizeTest
 	{		
 		private readonly int _totalMessages = 10;

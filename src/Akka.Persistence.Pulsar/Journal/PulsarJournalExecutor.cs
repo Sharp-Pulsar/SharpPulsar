@@ -5,16 +5,11 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
-using Akka.Persistence.Pulsar.Query;
-using Akka.Serialization;
 using SharpPulsar;
 using SharpPulsar.Common.Naming;
-using SharpPulsar.Messages;
-using SharpPulsar.Sql;
 using SharpPulsar.Sql.Client;
 using SharpPulsar.Sql.Message;
 using SharpPulsar.Sql.Public;
-using SharpPulsar.User;
 
 namespace Akka.Persistence.Pulsar.Journal
 {

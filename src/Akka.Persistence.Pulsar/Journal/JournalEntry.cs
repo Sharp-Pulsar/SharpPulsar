@@ -5,8 +5,6 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace Akka.Persistence.Pulsar.Journal
 {
     /// <summary>
