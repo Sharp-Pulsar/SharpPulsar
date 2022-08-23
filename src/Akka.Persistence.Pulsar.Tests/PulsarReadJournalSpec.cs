@@ -84,7 +84,7 @@ namespace Akka.Persistence.Pulsar.Tests
         [Fact]
         public async Task CurrentEventsByPersistenceId()
         {
-            var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("utcreader-2", 1L, 320);
+            var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("p-1", 1L, 320);
             var persistenceStream1 = new SourceObservable<EventEnvelope>(persistenceIdsSource1, _mat);
             var completed = false;
             persistenceStream1.Subscribe(

@@ -22,11 +22,11 @@ namespace Akka.Persistence.Pulsar.Journal
 
         public long Ordering { get; set; }
         public long PublishTime { get; set; }
-        public long EventTime { get; set; }
+        public long? EventTime { get; set; } = 0;    
         public int Partition { get; set; }
         public string Tags { get; set; }
         public string MessageId { get; set; }
-        public string Key { get; set; }
+        public string? Key { get; set; } = string.Empty; 
         public string Properties { get; set; }
     }
 }

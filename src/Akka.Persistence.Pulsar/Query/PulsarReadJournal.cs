@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
@@ -189,9 +190,9 @@ namespace Akka.Persistence.Pulsar.Query
             if (fromSequenceNr > 0)
                 fromSequenceNr = fromSequenceNr - 1;
 
-            var take = Math.Min(toSequenceNr, fromSequenceNr);
+            var take = Math.Max(toSequenceNr, fromSequenceNr);
 
-            if (_refreshInterval.HasValue)
+            if (!_refreshInterval.HasValue)
             {
                 _sqlClientOptions.Execute = "select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags,"
                     +" __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from"
@@ -218,7 +219,7 @@ namespace Akka.Persistence.Pulsar.Query
                 .Select(message =>
                 {
                     var payload = message.Payload;
-                    var der = _serializer.PersistentFromBytes(payload);
+                    var der = _serializer.PersistentFromBytes(payload); 
                     return new EventEnvelope(offset: new Sequence(message.SequenceNr), persistenceId, message.SequenceNr, der, message.PublishTime);
                 })
                .MapMaterializedValue(_ => NotUsed.Instance)
@@ -377,6 +378,10 @@ namespace Akka.Persistence.Pulsar.Query
         {
             var data = await sql.ExecuteAsync(TimeSpan.FromSeconds(5));
             var loopContinue = true;
+            var options = new JsonSerializerOptions()
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString
+            };
             while (loopContinue)
             {
                 switch (data.Response)
@@ -386,15 +391,16 @@ namespace Akka.Persistence.Pulsar.Query
                             var records = dr.Data;
                             for (var i = 0; i < records.Count; i++)
                             {
-                                var journal = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(records[i]));
-
+                                var record = JsonSerializer.Serialize(records[i], options);
+                                var journal = JsonSerializer.Deserialize<JournalEntry>(record, options);
+                                //var or = JsonSerializer.Deserialize<object>(journal.Payload, options);
                                 yield return journal;
                             }
                             if (_log.IsDebugEnabled)
                                 _log.Info(JsonSerializer.Serialize(dr.StatementStats, new JsonSerializerOptions { WriteIndented = true }));
 
 
-                            data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
+                            data = await sql.ExecuteAsync(TimeSpan.FromSeconds(5));
                         }
                         break;
                     case StatsResponse sr:
