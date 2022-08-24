@@ -317,7 +317,7 @@ namespace SharpPulsar
         {
             if (actorSystem == null)
                 throw new Exception("ActorSystem can not be null");
-            return new LiveSqlInstance(_actorSystem, options, topic, interval, startAtPublishTime);
+            return new LiveSqlInstance(actorSystem, options, topic, interval, startAtPublishTime);
         }
 
         public ActorSystem System => _actorSystem;

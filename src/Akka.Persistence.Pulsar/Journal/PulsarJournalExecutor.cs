@@ -42,7 +42,7 @@ namespace Akka.Persistence.Pulsar.Journal
             if (fromSequenceNr > 0)
                 fromSequenceNr = fromSequenceNr - 1;
 
-            var take = Math.Min(toSequenceNr - fromSequenceNr, max);
+            var take = toSequenceNr - max;
             _sqlClientOptions.Execute = $"select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags, __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} ORDER BY __sequence_id__ ASC LIMIT {take}";
             var data = await _sql.ExecuteAsync(TimeSpan.FromSeconds(5));
             switch (data.Response)

@@ -148,6 +148,8 @@ namespace Akka.Persistence.Pulsar.Journal
                         .SequenceId(sequenceId)
                         .Value(journalEntry)
                         .SendAsync();
+                    var v = Deserialize(journalEntry.Payload);
+                    var vv = v;
                 }
 
                 exceptions.Add(null);

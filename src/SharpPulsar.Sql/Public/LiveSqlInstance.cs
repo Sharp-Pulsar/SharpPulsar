@@ -47,6 +47,7 @@ namespace SharpPulsar.Sql.Public
             var q = new LiveSqlSession(clientOptions.ToClientSession(), clientOptions, queryInterval, startAtPublishTime, TopicName.Get(topic).ToString());
             ClientOptions = clientOptions;
             var actorRef = system.ActorOf(LiveQuery.Prop(q));
+
             _queryActor = actorRef;
         }
         public async IAsyncEnumerable<LiveSqlData> ExecuteAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)

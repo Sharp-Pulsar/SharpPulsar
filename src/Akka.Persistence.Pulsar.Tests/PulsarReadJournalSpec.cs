@@ -8,6 +8,7 @@ using Akka.Configuration;
 using Akka.Persistence.Pulsar.Query;
 using Akka.Persistence.Pulsar.Tests.Observer;
 using Akka.Persistence.Query;
+using Akka.Serialization;
 using Akka.Streams;
 using Xunit;
 using Xunit.Abstractions;
@@ -33,6 +34,7 @@ namespace Akka.Persistence.Pulsar.Tests
         {
             _output = output;
             var actorSystem = ActorSystem.Create("PulsarSystem", Config);
+            var serializer = (NewtonSoftJsonSerializer)actorSystem.Serialization.FindSerializerForType(typeof(object));
             _mat = ActorMaterializer.Create(actorSystem);
             _readJournal = PersistenceQuery.Get(actorSystem).ReadJournalFor<PulsarReadJournal>("akka.persistence.query.journal.pulsar");
 
@@ -84,7 +86,8 @@ namespace Akka.Persistence.Pulsar.Tests
         [Fact]
         public async Task CurrentEventsByPersistenceId()
         {
-            var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("p-1", 1L, 320);
+            //var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("p-1", 1L, 320);
+            var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("2fd419d8-50c9-454d-8132-94b208372bf1", 1L, 320);
             var persistenceStream1 = new SourceObservable<EventEnvelope>(persistenceIdsSource1, _mat);
             var completed = false;
             persistenceStream1.Subscribe(

@@ -148,7 +148,7 @@ namespace Akka.Persistence.Pulsar.Query
                 _sqlClientOptions.Execute = "select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags,"
                     + " __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from"
                     + $" {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} AND"
-                    + " __publish_time__ > {time} ORDER BY __sequence_id__ ASC LIMIT {take}";
+                    + " __publish_time__ > {time} ORDER BY __sequence_id__ ASC LIMIT " + $"{take}";
 
                 var sql = PulsarSystem.LiveSql(_system, _sqlClientOptions, _settings.Topic, _refreshInterval.Value, DateTime.Parse("1970-01-18 20:27:56.387"));
                 return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(LiveSQLMessages(persistenceId, fromSequenceNr, toSequenceNr, sql)))
@@ -197,7 +197,7 @@ namespace Akka.Persistence.Pulsar.Query
                 _sqlClientOptions.Execute = "select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags,"
                     +" __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from"
                     +$" {topic} WHERE __producer_name__ = '{persistenceId}' AND __sequence_id__ BETWEEN {fromSequenceNr} AND {toSequenceNr} AND" 
-                    + " __publish_time__ > {time} ORDER BY __sequence_id__ ASC LIMIT {take}";
+                    + " __publish_time__ > {time} ORDER BY __sequence_id__ ASC LIMIT "+ $"{take}";
 
                 var sql = PulsarSystem.LiveSql(_system, _sqlClientOptions, _settings.Topic, _refreshInterval.Value, DateTime.Parse("1970-01-18 20:27:56.387"));
                 return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(LiveSQLMessages(persistenceId, fromSequenceNr, toSequenceNr, sql)))
@@ -391,8 +391,7 @@ namespace Akka.Persistence.Pulsar.Query
                             var records = dr.Data;
                             for (var i = 0; i < records.Count; i++)
                             {
-                                var record = JsonSerializer.Serialize(records[i], options);
-                                var journal = JsonSerializer.Deserialize<JournalEntry>(record, options);
+                                var journal = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(records[i]));
                                 //var or = JsonSerializer.Deserialize<object>(journal.Payload, options);
                                 yield return journal;
                             }

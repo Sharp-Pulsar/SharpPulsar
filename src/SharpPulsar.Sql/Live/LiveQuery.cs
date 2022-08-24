@@ -30,7 +30,7 @@ namespace SharpPulsar.Sql.Live
             _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
             _executeCancelable = Context.System.Scheduler.ScheduleTellRepeatedlyCancelable(_sql.Frequency, _sql.Frequency, Self, ExecuteQuery.Instance, Self);
             _context = Context;
-
+            
             Receive<IQueryResponse>(q =>
             {
                 if(q is DataResponse dr && dr.Data.Count > 0)
@@ -75,9 +75,7 @@ namespace SharpPulsar.Sql.Live
 
         public static Props Prop(LiveSqlSession sql)
         {
-            var s = sql;
-            var q = new LiveQuery(s);
-            return Props.Create(() => q);
+            return Props.Create(() => new LiveQuery(sql));
         }
     }
     public sealed class ExecuteQuery
