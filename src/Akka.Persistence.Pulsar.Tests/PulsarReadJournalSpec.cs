@@ -25,16 +25,25 @@ namespace Akka.Persistence.Pulsar.Tests
         private static readonly Config Config = ConfigurationFactory.ParseString(@"
             akka.persistence.journal.plugin = ""akka.persistence.journal.pulsar""
             akka.test.single-expect-default = 180s
-        ").WithFallback(PulsarPersistence.DefaultConfiguration());
-
+        ").WithFallback(PulsarPersistence.DefaultConfiguration()).WithFallback(Configs);
+        protected static readonly Config Configs =
+           ConfigurationFactory.ParseString(@"akka.persistence.publish-plugin-commands = on
+            akka.actor{
+                serializers{
+                    persistence-tck-test=""Akka.Persistence.TCK.Serialization.TestSerializer,Akka.Persistence.TCK""
+                }
+                serialization-bindings {
+                    ""Akka.Persistence.TCK.Serialization.TestPayload,Akka.Persistence.TCK"" = persistence-tck-test
+                }
+            }");
         private long _timeout = 30_000;
         private readonly ITestOutputHelper _output;
-
+        private readonly SerializationHelper _serializer;
         public PulsarReadJournalSpec(ITestOutputHelper output) 
         {
             _output = output;
             var actorSystem = ActorSystem.Create("PulsarSystem", Config);
-            var serializer = (NewtonSoftJsonSerializer)actorSystem.Serialization.FindSerializerForType(typeof(object));
+            _serializer = new SerializationHelper(actorSystem);
             _mat = ActorMaterializer.Create(actorSystem);
             _readJournal = PersistenceQuery.Get(actorSystem).ReadJournalFor<PulsarReadJournal>("akka.persistence.query.journal.pulsar");
 
@@ -87,7 +96,7 @@ namespace Akka.Persistence.Pulsar.Tests
         public async Task CurrentEventsByPersistenceId()
         {
             //var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("p-1", 1L, 320);
-            var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("2fd419d8-50c9-454d-8132-94b208372bf1", 1L, 320);
+            var persistenceIdsSource1 = _readJournal.CurrentEventsByPersistenceId("be74539f-6762-4c6e-97c4-110ecb77241e", 1L, 320);
             var persistenceStream1 = new SourceObservable<EventEnvelope>(persistenceIdsSource1, _mat);
             var completed = false;
             persistenceStream1.Subscribe(
@@ -96,8 +105,13 @@ namespace Akka.Persistence.Pulsar.Tests
                     _output.WriteLine($"onNext: {value}");
                     _output.WriteLine($"PersistenceId '{value}' added");
                     Assert.False(completed);
+                    var a = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
 
-                    _output.WriteLine($"{JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true })}");
+                    _output.WriteLine($"{a}");
+                    var b = _serializer.PersistentFromBytes((byte[])value.Event);
+                    a = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+                    _output.WriteLine($"{a}");
+
                 },
                 exception =>
                 {

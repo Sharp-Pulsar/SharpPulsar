@@ -35,7 +35,7 @@ namespace SharpPulsar.Sql.Live
             {
                 if(q is DataResponse dr && dr.Data.Count > 0)
                 {
-                    var p = dr.Data.Max(x => DateTime.Parse(x["__publish_time__"].ToString()));
+                    var p = dr.Data.Max(x => DateTime.Parse(x["PublicTime"].ToString()));
                     _lastPublishTime = $"{p.Year}-{p.Month}-{p.Day} {p.Hour}:{p.Minute}:{p.Second}.{p.Millisecond}";
                 }    
 

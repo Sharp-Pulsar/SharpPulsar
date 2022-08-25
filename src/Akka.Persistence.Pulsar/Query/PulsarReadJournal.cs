@@ -192,7 +192,7 @@ namespace Akka.Persistence.Pulsar.Query
 
             var take = Math.Max(toSequenceNr, fromSequenceNr);
 
-            if (!_refreshInterval.HasValue)
+            if (_refreshInterval.HasValue)
             {
                 _sqlClientOptions.Execute = "select Id, __producer_name__ as PersistenceId, __sequence_id__ as SequenceNr, IsDeleted, Payload, Ordering, Tags,"
                     +" __partition__ as Partition, __event_time__ as EventTime, __publish_time__ as PublicTime, __message_id__ as MessageId, __key__ as Key, __properties__ as Properties from"
@@ -218,9 +218,9 @@ namespace Akka.Persistence.Pulsar.Query
                 return Source.FromGraph(new AsyncEnumerableSource<JournalEntry>(SQLMessages(persistenceId, fromSequenceNr, toSequenceNr, sql)))
                 .Select(message =>
                 {
-                    var payload = message.Payload;
-                    var der = _serializer.PersistentFromBytes(payload); 
-                    return new EventEnvelope(offset: new Sequence(message.SequenceNr), persistenceId, message.SequenceNr, der, message.PublishTime);
+                   var payload = message.Payload;
+                   // var der = _serializer.PersistentFromBytes(payload); 
+                    return new EventEnvelope(offset: new Sequence(message.SequenceNr), persistenceId, message.SequenceNr, payload, message.PublishTime);
                 })
                .MapMaterializedValue(_ => NotUsed.Instance)
                .Named("CurrentEventsByPersistenceId-" + persistenceId);
@@ -425,8 +425,13 @@ namespace Akka.Persistence.Pulsar.Query
                 switch (data.Response)
                 {
                     case DataResponse dr:
-                        var entry = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(dr.Data));
-                        yield return entry;
+                        var records = dr.Data;
+                        for (var i = 0; i < records.Count; i++)
+                        {
+                            var journal = JsonSerializer.Deserialize<JournalEntry>(JsonSerializer.Serialize(records[i]));
+                            //var or = JsonSerializer.Deserialize<object>(journal.Payload, options);
+                            yield return journal;
+                        }
                         break;
                     case StatsResponse sr:
                         if (_log.IsDebugEnabled)

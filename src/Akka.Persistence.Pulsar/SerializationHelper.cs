@@ -1,13 +1,14 @@
 ﻿using Akka.Actor;
 using Akka.Serialization;
 using System;
+using System.IO;
 
 namespace Akka.Persistence.Pulsar
 {
     /// <summary>
     ///     INTERNAL API
     /// </summary>
-    internal sealed class SerializationHelper
+    public sealed class SerializationHelper
     {
         private readonly ActorSystem _actorSystem;
 

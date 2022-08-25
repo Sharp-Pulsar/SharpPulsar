@@ -185,7 +185,7 @@ namespace Akka.Persistence.Pulsar.Journal
                 message = message.WithPayload(payload); // need to update the internal payload when working with tags
             }
 
-            var binary = Serialize(message);
+            var binary =  Serialize(message);
 
 
             return new JournalEntry
