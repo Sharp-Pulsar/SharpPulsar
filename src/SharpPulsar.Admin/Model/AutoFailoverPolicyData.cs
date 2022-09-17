@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,23 +21,19 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	public interface AutoFailoverPolicyData
+	public class AutoFailoverPolicyData
 	{
-		AutoFailoverPolicyType PolicyType {get;}
+        /// <summary>
+        /// Gets or sets possible values include: 'min_available'
+        /// </summary>
+        [JsonPropertyName("policyType")]
+        public string PolicyType { get; set; }
 
-		IDictionary<string, string> Parameters {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("parameters")]
+        public IDictionary<string, string> Parameters { get; set; }
 
-		void Validate();
-
-	}
-
-	public interface AutoFailoverPolicyDataBuilder
-	{
-		AutoFailoverPolicyDataBuilder PolicyType(AutoFailoverPolicyType policyType);
-
-		AutoFailoverPolicyDataBuilder Parameters(IDictionary<string, string> parameters);
-
-		AutoFailoverPolicyData Build();
-	}
+    }
 
 }

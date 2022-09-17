@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,15 +21,31 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	public interface BrokerNamespaceIsolationData
+	public class BrokerNamespaceIsolationData
 	{
-		string BrokerName {get;}
+        /// <summary>
+        /// Gets or sets the broker name
+        /// </summary>
+        [JsonPropertyName("brokerName")]
+        public string BrokerName { get; set; }
 
-		string PolicyName {get;}
+        /// <summary>
+        /// Gets or sets policy name
+        /// </summary>
+        [JsonPropertyName("policyName")]
+        public string PolicyName { get; set; }
 
-		bool Primary {get;}
+        /// <summary>
+        /// Gets or sets the namespace-isolation policies attached to this
+        /// broker
+        /// </summary>
+        [JsonPropertyName("namespaceRegex")]
+        public IList<string> NamespaceRegex { get; set; }
 
-		IList<string> NamespaceRegex {get;}
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("primary")]
+        public bool? Primary { get; set; }
+    }
 
 }

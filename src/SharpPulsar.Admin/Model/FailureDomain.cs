@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,9 +21,10 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	public interface FailureDomain
+	public class FailureDomain
 	{
-		ISet<string> Brokers {get;}
+        [JsonPropertyName("brokers")]
+        public IList<string> Brokers { get; set; }
 	}
 
 

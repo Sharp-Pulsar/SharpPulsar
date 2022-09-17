@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -20,18 +21,34 @@
 /// </summary>
 namespace SharpPulsar.Admin.Model
 {
-	public interface NamespaceIsolationData
+	public class NamespaceIsolationData
 	{
+        /// <summary>
+        /// Gets or sets the list of namespaces to apply this namespace
+        /// isolation data
+        /// </summary>
+        [JsonPropertyName("namespaces")]
+        public IList<string> Namespaces { get; set; }
 
-		IList<string> Namespaces {get;}
+        /// <summary>
+        /// Gets or sets the list of secondary brokers for serving the list of
+        /// namespaces in this isolation policy
+        /// </summary>
+        [JsonPropertyName("primary")]
+        public IList<string> Primary { get; set; }
 
-		IList<string> Primary {get;}
+        /// <summary>
+        /// Gets or sets the list of secondary brokers for serving the list of
+        /// namespaces in this isolation policy
+        /// </summary>
+        [JsonPropertyName("secondary")]
+        public IList<string> Secondary { get; set; }
 
-		IList<string> Secondary {get;}
-
-		AutoFailoverPolicyData AutoFailoverPolicy {get;}
-
-		void Validate();
-	}
+        /// <summary>
+        /// Gets or sets the data of auto-failover policy configuration
+        /// </summary>
+        [JsonPropertyName("auto_failover_policy")]
+        public AutoFailoverPolicyData AutoFailoverPolicy { get; set; }
+    }
 
 }
