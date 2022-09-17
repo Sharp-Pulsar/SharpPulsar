@@ -14,7 +14,7 @@ namespace SharpPulsar.Test.Admin
     {
         private readonly ITestOutputHelper _output;
         private readonly SharpPulsar.Admin.BrokerStats _brokerStats;
-        private System.Text.Json.JsonSerializerOptions _jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions
+        private JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
