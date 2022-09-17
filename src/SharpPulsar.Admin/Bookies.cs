@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Admin.interfaces;
+using SharpPulsar.Admin.Model;
+using BookieInfo = SharpPulsar.Admin.Model.BookieInfo;
+using BookiesClusterInfo = SharpPulsar.Admin.Model.BookiesClusterInfo;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace SharpPulsar.Admin
 {
@@ -14,8 +19,9 @@ namespace SharpPulsar.Admin
     {
         private Uri _uri;
         private HttpClient _httpClient;
-        private System.Text.Json.JsonSerializerOptions _jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions
+        private JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
         public Bookies(string brokerwebserviceurl, HttpClient httpClient)
@@ -344,7 +350,7 @@ namespace SharpPulsar.Admin
             List<string> queryParameters = new List<string>();
             if (group != null)
             {
-                queryParameters.Add(string.Format("group={0}", Uri.EscapeDataString(group)));
+                queryParameters.Add(string.Format("group={0}", Uri.EscapeDataString(JsonSerializer.Serialize(group, _jsonSerializerOptions))));
             }
             if (queryParameters.Count > 0)
             {

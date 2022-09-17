@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.Admin.Models;
+using SharpPulsar.Admin.Model;
+using BookieInfo = SharpPulsar.Admin.Model.BookieInfo;
+using BookiesClusterInfo = SharpPulsar.Admin.Model.BookiesClusterInfo;
 
 namespace SharpPulsar.Admin.interfaces
 {

@@ -24,6 +24,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.Admin.Models;
+using SharpPulsar.Admin.Model;
 
 namespace SharpPulsar.Admin.interfaces
 {
@@ -82,6 +83,23 @@ namespace SharpPulsar.Admin.interfaces
         /// @return
         /// </summary>
         ValueTask<object> GetTopicsAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Returns JSON string topics stats.
+        /// <p/>
+        /// Notes: since we don't plan to introspect the response we avoid converting the response into POJO.
+        /// 
+        /// @return </summary>
+        object GetTopics2(Dictionary<string, List<string>> customHeaders = null);
+
+        /// <summary>
+        /// Returns JSON string topics stats asynchronously.
+        /// <p/>
+        /// Notes: since we don't plan to introspect the response we avoid converting the response into POJO.
+        /// 
+        /// @return
+        /// </summary>
+        ValueTask<object> GetTopics2Async(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
 
         /// <summary>

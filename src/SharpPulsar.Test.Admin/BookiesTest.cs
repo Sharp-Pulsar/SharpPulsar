@@ -1,5 +1,6 @@
 ﻿
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -12,6 +13,7 @@ namespace SharpPulsar.Test.Admin
         private readonly SharpPulsar.Admin.Bookies _bookies;
         private System.Text.Json.JsonSerializerOptions _jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions
         {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
         public BookiesTest(ITestOutputHelper output)
@@ -23,21 +25,21 @@ namespace SharpPulsar.Test.Admin
         public async Task GetBookies()
         {
             var bookie = await _bookies.GetBookiesAsync();
-            _output.WriteLine(System.Text.Json.JsonSerializer.Serialize(bookie, _jsonSerializerOptions));
+            _output.WriteLine(JsonSerializer.Serialize(bookie, _jsonSerializerOptions));
             Assert.True(bookie != null);
         }
         [Fact]
         public async Task GetBookiesRackInfo()
         {
             var bookie = await _bookies.GetBookiesRackInfoAsync();
-            _output.WriteLine(System.Text.Json.JsonSerializer.Serialize(bookie, _jsonSerializerOptions));
+            _output.WriteLine(JsonSerializer.Serialize(bookie, _jsonSerializerOptions));
             Assert.True(bookie != null);
         }
         [Fact]
         public async Task GetBookieRackInfo()
         {
             var bookie = await _bookies.GetBookieRackInfoAsync("127.0.0.1");
-            _output.WriteLine(System.Text.Json.JsonSerializer.Serialize(bookie, _jsonSerializerOptions));
+            _output.WriteLine(JsonSerializer.Serialize(bookie, _jsonSerializerOptions));
             Assert.True(bookie != null);
         }
 

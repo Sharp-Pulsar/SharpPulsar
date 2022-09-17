@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.Admin.Models;
 using SharpPulsar.Admin.interfaces;
+using SharpPulsar.Admin.Model;
 
 namespace SharpPulsar.Admin
 {
@@ -14,8 +16,9 @@ namespace SharpPulsar.Admin
     {
         private Uri _uri;
         private HttpClient _httpClient;
-        private System.Text.Json.JsonSerializerOptions _jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions
+        private JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
         };
         public BrokerStats(string brokerwebserviceurl, HttpClient httpClient)
@@ -103,7 +106,7 @@ namespace SharpPulsar.Admin
                 {
                     result = System.Text.Json.JsonSerializer.Deserialize<object>(responseContent);
                 }
-                catch (System.Text.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     httpRequest.Dispose();
                     if (httpResponse != null)
@@ -115,6 +118,96 @@ namespace SharpPulsar.Admin
             }
             return result;
         }
+
+        public object GetTopics2(Dictionary<string, List<string>> customHeaders = null)
+        {
+            return GetTopics2Async(customHeaders).GetAwaiter().GetResult();
+        }
+        /// <summary>
+        /// Get all the topic stats by namespace
+        /// </summary>
+        /// <param name='customHeaders'>
+        /// Headers that will be added to request.
+        /// </param>
+        /// <param name='cancellationToken'>
+        /// The cancellation token.
+        /// </param>
+        /// <return>
+        /// A response object containing the response body and response headers.
+        /// </return>
+        public async ValueTask<object> GetTopics2Async(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var baseUrl = _uri.AbsoluteUri;
+            var url = new Uri(new Uri(baseUrl + (baseUrl.EndsWith("/") ? "" : "/")), "broker-stats/destinations").ToString();
+            // Create HTTP transport objects
+            var httpRequest = new HttpRequestMessage();
+            HttpResponseMessage httpResponse = null;
+            httpRequest.Method = new HttpMethod("GET");
+            httpRequest.RequestUri = new Uri(url);
+            // Set Headers
+
+
+            if (customHeaders != null)
+            {
+                foreach (var header in customHeaders)
+                {
+                    if (httpRequest.Headers.Contains(header.Key))
+                    {
+                        httpRequest.Headers.Remove(header.Key);
+                    }
+                    httpRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            httpResponse = await _httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
+
+            System.Net.HttpStatusCode statusCode = httpResponse.StatusCode;
+            cancellationToken.ThrowIfCancellationRequested();
+            string responseContent = null;
+            if ((int)statusCode != 200 && (int)statusCode != 403)
+            {
+                if (httpResponse.Content != null)
+                {
+                    responseContent = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    responseContent = string.Empty;
+                }
+
+                var ex = new Exception(string.Format("Operation returned an invalid status code '{0}': Content {1}", statusCode, responseContent));
+
+                httpRequest.Dispose();
+                if (httpResponse != null)
+                {
+                    httpResponse.Dispose();
+                }
+                throw ex;
+            }
+            // Create Result
+            object result = null;
+            // Deserialize Response
+            if ((int)statusCode == 200)
+            {
+                responseContent = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+                try
+                {
+                    result = System.Text.Json.JsonSerializer.Deserialize<object>(responseContent);
+                }
+                catch (JsonException ex)
+                {
+                    httpRequest.Dispose();
+                    if (httpResponse != null)
+                    {
+                        httpResponse.Dispose();
+                    }
+                    throw new Exception($"Unable to deserialize the response. {responseContent} {ex}");
+                }
+            }
+            return result;
+        }
+
         public IDictionary<string, ResourceUnit> GetBrokerResourceAvailability(string tenant, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
             return GetBrokerResourceAvailabilityAsync(tenant, namespaceParameter, customHeaders).GetAwaiter().GetResult();
@@ -675,7 +768,7 @@ namespace SharpPulsar.Admin
                     _result = System.Text.Json.JsonSerializer.Deserialize<IDictionary<string, PendingBookieOpsStats>>(_responseContent);
                 }
 
-                catch (System.Text.Json.JsonException ex)
+                catch (JsonException ex)
                 {
                     _httpRequest.Dispose();
                     if (_httpResponse != null)
