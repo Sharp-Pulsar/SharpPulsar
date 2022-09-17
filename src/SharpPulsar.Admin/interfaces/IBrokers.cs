@@ -67,8 +67,8 @@ namespace SharpPulsar.Admin.interfaces
         /// <returns> a list of (host:port) </returns>
         ValueTask<IList<string>> GetActiveBrokersAsync(string cluster, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
-        void IsReady(Dictionary<string, List<string>> customHeaders = null);
-        ValueTask IsReadyAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        string IsReady(Dictionary<string, List<string>> customHeaders = null);
+        ValueTask<string> IsReadyAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
         /// <summary>
         /// Get the information of the leader broker.
         /// <p/>
@@ -140,7 +140,7 @@ namespace SharpPulsar.Admin.interfaces
         /// </summary>
         /// <param name="configName"> </param>
         /// <param name="configValue"> </param>
-        void UpdateDynamicConfiguration(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null);
+        string UpdateDynamicConfiguration(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null);
 
         /// <summary>
         /// Update a dynamic configuration value into ZooKeeper asynchronously.
@@ -151,7 +151,7 @@ namespace SharpPulsar.Admin.interfaces
         /// </summary>
         /// <param name="configName"> </param>
         /// <param name="configValue"> </param>
-        ValueTask UpdateDynamicConfigurationAsync(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        ValueTask<string> UpdateDynamicConfigurationAsync(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// It deletes dynamic configuration value into ZooKeeper.
@@ -160,7 +160,7 @@ namespace SharpPulsar.Admin.interfaces
         /// broker restarts, it applies value from configuration file only.
         /// </summary>
         /// <param name="configName"> </param>
-        void DeleteDynamicConfiguration(string configName, Dictionary<string, List<string>> customHeaders = null);
+        string DeleteDynamicConfiguration(string configName, Dictionary<string, List<string>> customHeaders = null);
 
         /// <summary>
         /// It deletes dynamic configuration value into ZooKeeper asynchronously.
@@ -169,7 +169,7 @@ namespace SharpPulsar.Admin.interfaces
         /// broker restarts, it applies value from configuration file only.
         /// </summary>
         /// <param name="configName"> </param>
-        ValueTask DeleteDynamicConfigurationAsync(string configName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        ValueTask<string> DeleteDynamicConfigurationAsync(string configName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get list of updatable configuration name.
@@ -225,38 +225,38 @@ namespace SharpPulsar.Admin.interfaces
         /// <summary>
         /// Manually trigger backlogQuotaCheck.
         /// </summary>
-        void BacklogQuotaCheck(Dictionary<string, List<string>> customHeaders = null);
+        string BacklogQuotaCheck(Dictionary<string, List<string>> customHeaders = null);
 
         /// <summary>
         /// Manually trigger backlogQuotaCheck asynchronously.
         /// @return
         /// </summary>
-        ValueTask BacklogQuotaCheckAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        ValueTask<string> BacklogQuotaCheckAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
        
         /// <summary>
         /// Run a healthcheck on the broker.
         /// </summary>
-        void Healthcheck(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null);
+        string Healthcheck(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null);
 
         /// <summary>
         /// Run a healthcheck on the broker asynchronously.
         /// </summary>
-        ValueTask HealthcheckAsync(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        ValueTask<string> HealthcheckAsync(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Shutdown current broker gracefully. </summary>
         /// <param name="maxConcurrentUnloadPerSec"> </param>
         /// <param name="forcedTerminateTopic">
         /// @return </param>
-        void ShutDownBrokerGracefully(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null);
+        string ShutDownBrokerGracefully(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null);
 
         /// <summary>
         /// Shutdown current broker gracefully. </summary>
         /// <param name="maxConcurrentUnloadPerSec"> </param>
         /// <param name="forcedTerminateTopic">
         /// @return </param>
-        ValueTask ShutDownBrokerGracefullyAsync(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
+        ValueTask<string> ShutDownBrokerGracefullyAsync(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Get version of broker. </summary>

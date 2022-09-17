@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using SharpPulsar.Admin.Model;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,20 +24,6 @@ namespace SharpPulsar.Test.Admin
         {
             _output = output;
             _brokers = new SharpPulsar.Admin.Brokers("http://localhost:8080/", new HttpClient());
-        }
-        [Fact]
-        public async Task BacklogQuotaCheck()
-        {
-            try
-            {
-
-                await _brokers.BacklogQuotaCheckAsync();
-                Assert.True(true);
-            }
-            catch(Exception ex)
-            {
-                _output.WriteLine(JsonSerializer.Serialize(ex.ToString(), _jsonSerializerOptions));
-            }
         }
         [Fact]
         public async Task GetActiveBrokers()
@@ -73,6 +60,49 @@ namespace SharpPulsar.Test.Admin
         public async Task GetLeaderBroker()
         {
             var broker = await _brokers.GetLeaderBrokerAsync();
+            _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
+            Assert.True(broker != null);
+        }
+
+        [Fact]
+        public async Task BacklogQuotaCheck()
+        {
+            var broker = await _brokers.BacklogQuotaCheckAsync();
+            _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
+            Assert.True(broker != null);
+        }
+        [Fact]
+        public async Task DeleteDynamicConfiguration()
+        {
+            var broker = await _brokers.DeleteDynamicConfigurationAsync("");
+            _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
+            Assert.True(broker != null);
+        }
+        [Fact]
+        public async Task Healthcheck()
+        {
+            var broker = await _brokers.HealthcheckAsync(TopicVersion.V2);
+            _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
+            Assert.True(broker != null);
+        }
+        [Fact]
+        public async Task IsReady()
+        {
+            var broker = await _brokers.IsReadyAsync();
+            _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
+            Assert.True(broker != null);
+        }
+        [Fact]
+        public async Task ShutDownBrokerGracefully()
+        {
+            var broker = await _brokers.ShutDownBrokerGracefullyAsync(1);
+            _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
+            Assert.True(broker != null);
+        }
+        [Fact]
+        public async Task UpdateDynamicConfiguration()
+        {
+            var broker = await _brokers.UpdateDynamicConfigurationAsync("", "");
             _output.WriteLine(JsonSerializer.Serialize(broker, _jsonSerializerOptions));
             Assert.True(broker != null);
         }

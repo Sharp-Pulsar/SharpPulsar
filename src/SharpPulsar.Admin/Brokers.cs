@@ -27,11 +27,11 @@ namespace SharpPulsar.Admin
                 throw new ArgumentNullException("baseUri");
             }
         }
-        public void BacklogQuotaCheck(Dictionary<string, List<string>> customHeaders = null)
+        public string BacklogQuotaCheck(Dictionary<string, List<string>> customHeaders = null)
         {
-            BacklogQuotaCheckAsync(customHeaders).GetAwaiter().GetResult();
+            return BacklogQuotaCheckAsync(customHeaders).GetAwaiter().GetResult();
         }
-        public async ValueTask BacklogQuotaCheckAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async ValueTask<string> BacklogQuotaCheckAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "brokers/backlog-quota-check").ToString();
@@ -81,7 +81,7 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            return;
+            return _httpResponse.ReasonPhrase;
         }
 
         public IList<string> GetDynamicConfigurationNames(Dictionary<string, List<string>> customHeaders = null)
@@ -355,9 +355,9 @@ namespace SharpPulsar.Admin
             return _result;
         }
 
-        public void DeleteDynamicConfiguration(string configName, Dictionary<string, List<string>> customHeaders = null)
+        public string DeleteDynamicConfiguration(string configName, Dictionary<string, List<string>> customHeaders = null)
         {
-            DeleteDynamicConfigurationAsync(configName, customHeaders).GetAwaiter().GetResult();    
+           return DeleteDynamicConfigurationAsync(configName, customHeaders).GetAwaiter().GetResult();    
         }
         /// <summary>
         /// Delete dynamic serviceconfiguration into zk only. This operation requires
@@ -374,7 +374,7 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async ValueTask DeleteDynamicConfigurationAsync(string configName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async ValueTask<string> DeleteDynamicConfigurationAsync(string configName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (configName == null)
             {
@@ -429,11 +429,11 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            return;
+            return _httpResponse.ReasonPhrase;
         }
-        public void UpdateDynamicConfiguration(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null)
+        public string UpdateDynamicConfiguration(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null)
         {
-            UpdateDynamicConfigurationAsync(configName, configValue, customHeaders).GetAwaiter().GetResult();
+           return UpdateDynamicConfigurationAsync(configName, configValue, customHeaders).GetAwaiter().GetResult();
         }
         /// <summary>
         /// Update dynamic serviceconfiguration into zk only. This operation requires
@@ -452,7 +452,7 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async ValueTask UpdateDynamicConfigurationAsync(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async ValueTask<string> UpdateDynamicConfigurationAsync(string configName, string configValue, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (configName == null)
             {
@@ -513,11 +513,11 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            return;
+            return _httpResponse.ReasonPhrase;
         }
-        public void Healthcheck(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null)
+        public string Healthcheck(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null)
         {
-            HealthcheckAsync(topicVersion, customHeaders).GetAwaiter().GetResult();
+           return HealthcheckAsync(topicVersion, customHeaders).GetAwaiter().GetResult();
         }
         /// <summary>
         /// Run a healthcheck against the broker
@@ -531,7 +531,7 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async ValueTask HealthcheckAsync(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async ValueTask<string> HealthcheckAsync(TopicVersion? topicVersion, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "brokers/health").ToString();
@@ -591,7 +591,7 @@ namespace SharpPulsar.Admin
                 throw ex;
             }
             
-            return;
+            return _httpResponse.ReasonPhrase;
         }
         public InternalConfigurationData GetInternalConfigurationData(Dictionary<string, List<string>> customHeaders = null)
         {
@@ -770,9 +770,9 @@ namespace SharpPulsar.Admin
             }
             return _result;
         }
-        public void IsReady(Dictionary<string, List<string>> customHeaders = null)
+        public string IsReady(Dictionary<string, List<string>> customHeaders = null)
         {
-            IsReadyAsync(customHeaders).GetAwaiter().GetResult();
+            return IsReadyAsync(customHeaders).GetAwaiter().GetResult();
         }
         /// <summary>
         /// Check if the broker is fully initialized
@@ -786,7 +786,7 @@ namespace SharpPulsar.Admin
         /// <return>
         /// A response object containing the response body and response headers.
         /// </return>
-        public async ValueTask IsReadyAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async ValueTask<string> IsReadyAsync(Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "brokers/ready").ToString();
@@ -836,8 +836,9 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            
-            return;
+
+            return _httpResponse.ReasonPhrase;
+
         }
         public string Version(Dictionary<string, List<string>> customHeaders = null)
         {
@@ -1126,11 +1127,11 @@ namespace SharpPulsar.Admin
             }
             return _result;
         }
-        public void ShutDownBrokerGracefully(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null)
+        public string ShutDownBrokerGracefully(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null)
         {
-            ShutDownBrokerGracefullyAsync(maxConcurrentUnloadPerSec, forcedTerminateTopic, customHeaders).GetAwaiter().GetResult();
+           return ShutDownBrokerGracefullyAsync(maxConcurrentUnloadPerSec, forcedTerminateTopic, customHeaders).GetAwaiter().GetResult();
         }
-        public async ValueTask ShutDownBrokerGracefullyAsync(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
+        public async ValueTask<string> ShutDownBrokerGracefullyAsync(int? maxConcurrentUnloadPerSec, bool? forcedTerminateTopic = true, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             var _baseUrl = _uri.AbsoluteUri;
             var _url = new Uri(new Uri(_baseUrl + (_baseUrl.EndsWith("/") ? "" : "/")), "brokers/shutdown").ToString();
@@ -1172,7 +1173,7 @@ namespace SharpPulsar.Admin
             System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 204 && (int)_statusCode != 403 && (int)_statusCode != 500)
             {
                 if (_httpResponse.Content != null)
                 {
@@ -1192,7 +1193,7 @@ namespace SharpPulsar.Admin
                 }
                 throw ex;
             }
-            return;
+            return _httpResponse.ReasonPhrase;
         }
 
     }
