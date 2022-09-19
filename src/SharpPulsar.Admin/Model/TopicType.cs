@@ -19,7 +19,7 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	/// <summary>
 	/// Topic types -- partitioned or non-partitioned.

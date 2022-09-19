@@ -19,10 +19,10 @@ using System.Collections.Generic;
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	using ToString = lombok.ToString;
-	using DispatchRateImpl = Org.Apache.Pulsar.Common.Policies.Data.Impl.DispatchRateImpl;
+	using DispatchRateImpl = SharpPulsar.Admin.Model.Impl.DispatchRateImpl;
 
 	/// <summary>
 	/// Definition of Pulsar policies.

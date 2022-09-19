@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,10 +24,17 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Holder for bundles.
 	/// </summary>
-	public interface BundlesData
+	public class BundlesData
 	{
-		IList<string> Boundaries {get;}
-		int NumBundles {get;}
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("boundaries")]
+        public IList<string> Boundaries { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("numBundles")]
+        public int? NumBundles { get; set; }
+    }
 
 }

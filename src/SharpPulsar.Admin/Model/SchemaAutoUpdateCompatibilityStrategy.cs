@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	/// <summary>
 	/// Strategy to use when checking an auto-updated schema for compatibility to the current schema.

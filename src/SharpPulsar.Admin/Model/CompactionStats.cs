@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,24 +22,28 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Statistics about compaction.
 	/// </summary>
-	public interface CompactionStats
+	public class CompactionStats
 	{
 
-		/// <summary>
-		/// The removed event count of last compaction. </summary>
-		long LastCompactionRemovedEventCount {get;}
+        /// <summary>
+        /// The removed event count of last compaction. </summary>
+        [JsonPropertyName("lastCompactionRemovedEventCount")]
+        public long LastCompactionRemovedEventCount { get; set; }
 
-		/// <summary>
-		/// The timestamp of last succeed compaction. </summary>
-		long LastCompactionSucceedTimestamp {get;}
+        /// <summary>
+        /// The timestamp of last succeed compaction. </summary>
+        [JsonPropertyName("lastCompactionSucceedTimestamp")]
+        public long LastCompactionSucceedTimestamp { get; set; }
 
-		/// <summary>
-		/// The timestamp of last failed compaction. </summary>
-		long LastCompactionFailedTimestamp {get;}
+        /// <summary>
+        /// The timestamp of last failed compaction. </summary>
+        [JsonPropertyName("lastCompactionFailedTimestamp")]
+        public long LastCompactionFailedTimestamp { get; set; }
 
-		/// <summary>
-		/// The duration time of last compaction. </summary>
-		long LastCompactionDurationTimeInMills {get;}
+        /// <summary>
+        /// The duration time of last compaction. </summary>
+        [JsonPropertyName("lastCompactionDurationTimeInMills")]
+        public long LastCompactionDurationTimeInMills { get; set; }
 	}
 
 }

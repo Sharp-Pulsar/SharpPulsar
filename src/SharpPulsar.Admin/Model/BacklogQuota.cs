@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -27,71 +28,25 @@ namespace SharpPulsar.Admin.Model
 	/// <code>limit</code> representing a quota limit in bytes and <code>policy</code> for backlog retention policy.
 	/// </para>
 	/// </summary>
-	public interface BacklogQuota
+	public class BacklogQuota
 	{
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("limitSize")]
+        public long? LimitSize { get; set; }
 
-		/// <summary>
-		/// Gets quota limit in size.
-		/// Remains for compatible
-		/// </summary>
-		/// <returns> quota limit in bytes </returns>
-		[Obsolete]
-		long Limit {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("limitTime")]
+        public int? LimitTime { get; set; }
 
-		/// <summary>
-		/// Gets quota limit in size.
-		/// </summary>
-		/// <returns> quota limit in bytes </returns>
-		long LimitSize {get;}
+        /// <summary>
+        /// Gets or sets possible values include: 'producer_request_hold',
+        /// 'producer_exception', 'consumer_backlog_eviction'
+        /// </summary>
+        [JsonPropertyName("policy")]
+        public string Policy { get; set; }
+    }
 
-		/// <summary>
-		/// Gets quota limit in time.
-		/// </summary>
-		/// <returns> quota limit in second </returns>
-		int LimitTime {get;}
-
-		BacklogQuotaRetentionPolicy Policy {get;}
-
-
-		/// <summary>
-		/// Identifier to a backlog quota configuration (an instance of <seealso cref="BacklogQuota"/>).
-		/// </summary>
-
-		/// <summary>
-		/// Enumeration type determines how to retain backlog against the resource shortages.
-		/// </summary>
-	}
-
-	public interface BacklogQuotaBuilder
-	{
-		BacklogQuotaBuilder LimitSize(long limitSize);
-
-		BacklogQuotaBuilder LimitTime(int limitTime);
-
-		BacklogQuotaBuilder RetentionPolicy(BacklogQuotaRetentionPolicy retentionPolicy);
-
-		BacklogQuota Build();
-	}
-
-	public enum BacklogQuotaBacklogQuotaType
-	{
-		DestinationStorage,
-		MessageAge,
-	}
-
-	public enum BacklogQuotaRetentionPolicy
-	{
-		/// <summary>
-		/// Policy which holds producer's send request until the resource becomes available (or holding times out). </summary>
-		ProducerRequestHold,
-
-		/// <summary>
-		/// Policy which throws javax.jms.ResourceAllocationException to the producer. </summary>
-		ProducerException,
-
-		/// <summary>
-		/// Policy which evicts the oldest message from the slowest consumer's backlog. </summary>
-		ConsumerBacklogEviction,
-	}
 
 }

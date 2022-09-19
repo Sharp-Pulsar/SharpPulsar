@@ -46,7 +46,7 @@ namespace SharpPulsar.Admin.Model
         /// <summary>
         /// The transaction coordinator log stats </summary>
 
-        [Newtonsoft.Json.JsonProperty(PropertyName = "pendingAckLogStats")]
+        [JsonPropertyName("pendingAckLogStats")]
         public TransactionLogStats PendingAckLogStats { get; set; }
     }
     public partial class TransactionCoordinatorInternalStats
@@ -75,7 +75,7 @@ namespace SharpPulsar.Admin.Model
         /// <summary>
         /// The transaction coordinator log stats </summary>
 
-        [Newtonsoft.Json.JsonProperty(PropertyName = "transactionLogStats")]
+        [JsonPropertyName("transactionLogStats")]
         public TransactionLogStats TransactionLogStats { get; set; }
     }
     public partial class TransactionLogStats
@@ -105,12 +105,12 @@ namespace SharpPulsar.Admin.Model
         /// <summary>
         /// The managed ledger name </summary>
         
-        [Newtonsoft.Json.JsonProperty(PropertyName = "managedLedgerName")]
+        [JsonPropertyName("managedLedgerName")]
         public string ManagedLedgerName { get; set; }
 
         /// <summary>
         /// The manage ledger internal stats </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "managedLedgerInternalStats")]
+        [JsonPropertyName("managedLedgerInternalStats")]
         public ManagedLedgerInternalStats ManagedLedgerInternalStats { get; set; }
     }
     
@@ -139,7 +139,7 @@ namespace SharpPulsar.Admin.Model
 
         /// <summary>
         /// The position of this transaction cumulative ack.</summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "cumulativeAckPosition")]
+        [JsonPropertyName("cumulativeAckPosition")]
         public string CumulativeAckPosition { get; set; }
     }
     public partial class TransactionPendingAckStats
@@ -167,7 +167,7 @@ namespace SharpPulsar.Admin.Model
 
         /// <summary>
         /// The position of this transaction cumulative ack.</summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
     }
     public partial class TransactionInBufferStats
@@ -196,12 +196,12 @@ namespace SharpPulsar.Admin.Model
 
         /// <summary>
         /// The start position of this transaction in transaction buffer. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "startPosition")]
+        [JsonPropertyName("startPosition")]
         public string StartPosition { get; set; }
 
         /// <summary>
         /// The flag of this transaction have been aborted. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "aborted")]
+        [JsonPropertyName("aborted")]
         public bool? Aborted { get; set; }
     }
     public partial class TransactionCoordinatorStats
@@ -232,17 +232,17 @@ namespace SharpPulsar.Admin.Model
 
         /// <summary>
         /// The state of this transaction metadataStore. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
         /// <summary>
         /// The sequenceId of transaction metadataStore. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "leastSigBits")]
+        [JsonPropertyName("leastSigBits")]
         public long? LeastSigBits { get; set; }
 
         /// <summary>
         /// The low water mark of transaction metadataStore. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "lowWaterMark")]
+        [JsonPropertyName("lowWaterMark")]
         public long? LowWaterMark { get; set; }
     }
     public partial class TransactionBufferStats
@@ -273,17 +273,17 @@ namespace SharpPulsar.Admin.Model
 
         /// <summary>
         /// The state of this transaction metadataStore. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
         /// <summary>
         /// The max read position of this transaction buffer. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "maxReadPosition")]
+        [JsonPropertyName("maxReadPosition")]
         public string MaxReadPosition { get; set; }
 
         /// <summary>
         /// The last snapshot timestamps of this transaction buffer. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "lastSnapshotTimestamps")]
+        [JsonPropertyName("lastSnapshotTimestamps")]
         public long? LastSnapshotTimestamps { get; set; }
     }
     public partial class TransactionMetadata
@@ -316,32 +316,32 @@ namespace SharpPulsar.Admin.Model
         partial void CustomInit();
         /// <summary>
         /// The txnId of this transaction. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "txnId")]
+        [JsonPropertyName("txnId")]
         public string TxnId { get; set; }
 
         /// <summary>
         /// The status of this transaction. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "status")]
+        [JsonPropertyName("status")]
         public string Status { get; set; }
 
         /// <summary>
         /// The open time of this transaction. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "openTimestamp")]
+        [JsonPropertyName("openTimestamp")]
         public long? OpenTimestamp { get; set; }
 
         /// <summary>
         /// The timeout of this transaction. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "timeoutAt")]
+        [JsonPropertyName("timeoutAt")]
         public long? TimeoutAt { get; set; }
 
         /// <summary>
         /// The producedPartitions of this transaction. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "producedPartitions")]
+        [JsonPropertyName("producedPartitions")]
         public IDictionary<string, TransactionInBufferStats> ProducedPartitions { get; set; }
 
         /// <summary>
         /// The ackedPartitions of this transaction. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "ackedPartitions")]
+        [JsonPropertyName("ackedPartitions")]
         public IDictionary<string, IDictionary<string, TransactionInPendingAckStats>> AckedPartitions { get; set; }
 
     }
@@ -353,71 +353,71 @@ namespace SharpPulsar.Admin.Model
 
         /// <summary>
         /// Messages published since this broker loaded this managedLedger. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "entriesAddedCounter")]
+        [JsonPropertyName("entriesAddedCounter")]
         public long EntriesAddedCounter { get; set; }
 
         /// <summary>
         /// The total number of entries being tracked. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "numberOfEntries")]
+        [JsonPropertyName("numberOfEntries")]
         public long NumberOfEntries { get; set; }
 
         /// <summary>
         /// The total storage size of all messages (in bytes). </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "totalSize")]
+        [JsonPropertyName("totalSize")]
         public long TotalSize { get; set; }
 
         /// <summary>
         /// The count of messages written to the ledger that is currently open for writing. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "currentLedgerEntries")]
+        [JsonPropertyName("currentLedgerEntries")]
         public long CurrentLedgerEntries { get; set; }
 
         /// <summary>
         /// The size of messages written to the ledger that is currently open for writing (in bytes). </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "currentLedgerSize")]
+        [JsonPropertyName("currentLedgerSize")]
         public long CurrentLedgerSize { get; set; }
 
         /// <summary>
         /// The time when the last ledger is created. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "lastLedgerCreatedTimestamp")]
+        [JsonPropertyName("lastLedgerCreatedTimestamp")]
         public string LastLedgerCreatedTimestamp { get; set; }
 
         /// <summary>
         /// The time when the last ledger failed. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "lastLedgerCreationFailureTimestamp")]
+        [JsonPropertyName("lastLedgerCreationFailureTimestamp")]
         public string LastLedgerCreationFailureTimestamp { get; set; }
 
         /// <summary>
         /// The number of cursors that are "caught up" and waiting for a new message to be published. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "waitingCursorsCount")]
+        [JsonPropertyName("waitingCursorsCount")]
         public int WaitingCursorsCount { get; set; }
 
         /// <summary>
         /// The number of messages that complete (asynchronous) write requests. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "pendingAddEntriesCount")]
+        [JsonPropertyName("pendingAddEntriesCount")]
         public int PendingAddEntriesCount { get; set; }
 
         /// <summary>
         /// The ledgerid: entryid of the last message that is written successfully.
         /// If the entryid is -1, then the ledger is open, yet no entries are written. 
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "lastConfirmedEntry")]
+        [JsonPropertyName("lastConfirmedEntry")]
         public string LastConfirmedEntry { get; set; }
 
         /// <summary>
         /// The state of this ledger for writing.
         /// The state LedgerOpened means that a ledger is open for saving published messages. 
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
         /// <summary>
         /// The ordered list of all ledgers for this topic holding messages. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "ledgers")]
+        [JsonPropertyName("ledgers")]
         public IList<LedgerInfo> Ledgers { get; set; }
 
         /// <summary>
         /// The list of all cursors on this topic. Each subscription in the topic stats has a cursor. </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "cursors")]
+        [JsonPropertyName("cursors")]
         public IDictionary<string, CursorStats> Cursors { get; set; }
 
         /// <summary>
@@ -425,22 +425,22 @@ namespace SharpPulsar.Admin.Model
         /// </summary>
         public class LedgerInfo
         {
-            [Newtonsoft.Json.JsonProperty(PropertyName = "ledgerId")]
+            [JsonPropertyName("ledgerId")]
             public long LedgerId { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "entries")]
+            [JsonPropertyName("entries")]
             public long Entries { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "size")]
+            [JsonPropertyName("size")]
             public long Size { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "offloaded")]
+            [JsonPropertyName("offloaded")]
             public bool Offloaded { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "metadata")]
+            [JsonPropertyName("metadata")]
             public string Metadata { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "underReplicated")]
+            [JsonPropertyName("underReplicated")]
             public bool UnderReplicated { get; set; }
         }
 
@@ -449,49 +449,49 @@ namespace SharpPulsar.Admin.Model
         /// </summary>
         public class CursorStats
         {
-            [Newtonsoft.Json.JsonProperty(PropertyName = "markDeletePosition")]
+            [JsonPropertyName("markDeletePosition")]
             public string MarkDeletePosition { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "readPosition")]
+            [JsonPropertyName("readPosition")]
             public string ReadPosition { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "waitingReadOp")]
+            [JsonPropertyName("waitingReadOp")]
             public bool WaitingReadOp { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "pendingReadOps")]
+            [JsonPropertyName("pendingReadOps")]
             public int PendingReadOps { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "messagesConsumedCounter")]
+            [JsonPropertyName("messagesConsumedCounter")]
             public long MessagesConsumedCounter { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "cursorLedger")]
+            [JsonPropertyName("cursorLedger")]
             public long CursorLedger { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "cursorLedgerLastEntry")]
+            [JsonPropertyName("cursorLedgerLastEntry")]
             public long CursorLedgerLastEntry { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "individuallyDeletedMessages")]
+            [JsonPropertyName("individuallyDeletedMessages")]
             public string IndividuallyDeletedMessages { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "lastLedgerSwitchTimestamp")]
+            [JsonPropertyName("lastLedgerSwitchTimestamp")]
             public string LastLedgerSwitchTimestamp { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "state")]
+            [JsonPropertyName("state")]
             public string State { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "numberOfEntriesSinceFirstNotAckedMessage")]
+            [JsonPropertyName("numberOfEntriesSinceFirstNotAckedMessage")]
             public long NumberOfEntriesSinceFirstNotAckedMessage { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "totalNonContiguousDeletedMessagesRange")]
+            [JsonPropertyName("totalNonContiguousDeletedMessagesRange")]
             public int TotalNonContiguousDeletedMessagesRange { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "openTimestamp")]
+            [JsonPropertyName("openTimestamp")]
             public bool SubscriptionHavePendingRead { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "subscriptionHavePendingReplayRead")]
+            [JsonPropertyName("subscriptionHavePendingReplayRead")]
             public bool SubscriptionHavePendingReplayRead { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "properties")]
+            [JsonPropertyName("properties")]
             public IDictionary<string, long> Properties { get; set; }
         }
     }

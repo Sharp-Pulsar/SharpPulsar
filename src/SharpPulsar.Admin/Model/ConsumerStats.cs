@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -24,89 +25,110 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Consumer statistics.
 	/// </summary>
-	public interface ConsumerStats
+	public class ConsumerStats
 	{
-		/// <summary>
-		/// Total rate of messages delivered to the consumer (msg/s). </summary>
-		double MsgRateOut {get;}
+        /// <summary>
+        /// Total rate of message ack(msg/s).
+        /// </summary>
+        [JsonPropertyName("messageAckRate")]
+        public double MessageAckRate { get; set; }
 
-		/// <summary>
-		/// Total throughput delivered to the consumer (bytes/s). </summary>
-		double MsgThroughputOut {get;}
 
-		/// <summary>
-		/// Total bytes delivered to consumer (bytes). </summary>
-		long BytesOutCounter {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("msgOutCounter")]
+        public long? MsgOutCounter { get; set; }
 
-		/// <summary>
-		/// Total messages delivered to consumer (msg). </summary>
-		long MsgOutCounter {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("bytesOutCounter")]
+        public long? BytesOutCounter { get; set; }
 
-		/// <summary>
-		/// Total rate of messages redelivered by this consumer (msg/s). </summary>
-		double MsgRateRedeliver {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("msgRateOut")]
+        public double? MsgRateOut { get; set; }
 
-		/// <summary>
-		/// Total rate of message ack(msg/s).
-		/// </summary>
-		double MessageAckRate {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("msgThroughputOut")]
+        public double? MsgThroughputOut { get; set; }
 
-		/// <summary>
-		/// The total rate of chunked messages delivered to this consumer. </summary>
-		double ChunkedMessageRate {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("connectedSince")]
+        public string ConnectedSince { get; set; }
 
-		/// <summary>
-		/// Name of the consumer. </summary>
-		string ConsumerName {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("chunkedMessageRate")]
+        public double? ChunkedMessageRate { get; set; }
 
-		/// <summary>
-		/// Number of available message permits for the consumer. </summary>
-		int AvailablePermits {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("msgRateRedeliver")]
+        public double? MsgRateRedeliver { get; set; }
 
-		/// <summary>
-		/// Number of unacknowledged messages for the consumer, where an unacknowledged message is one that has been
-		/// sent to the consumer but not yet acknowledged. This field is only meaningful when using a
-		/// <seealso cref="org.apache.pulsar.client.api.SubscriptionType"/> that tracks individual message acknowledgement, like
-		/// <seealso cref="org.apache.pulsar.client.api.SubscriptionType.Shared"/> or
-		/// <seealso cref="org.apache.pulsar.client.api.SubscriptionType.Key_Shared"/>.
-		/// </summary>
-		int UnackedMessages {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("clientVersion")]
+        public string ClientVersion { get; set; }
 
-		/// <summary>
-		/// Number of average messages per entry for the consumer consumed. </summary>
-		int AvgMessagesPerEntry {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("unackedMessages")]
+        public int? UnackedMessages { get; set; }
 
-		/// <summary>
-		/// Flag to verify if consumer is blocked due to reaching threshold of unacked messages. </summary>
-		bool BlockedConsumerOnUnackedMsgs {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("lastConsumedTimestamp")]
+        public long? LastConsumedTimestamp { get; set; }
 
-		/// <summary>
-		/// The read position of the cursor when the consumer joining. </summary>
-		string ReadPositionWhenJoining {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("lastAckedTimestamp")]
+        public long? LastAckedTimestamp { get; set; }
 
-		/// <summary>
-		/// Address of this consumer. </summary>
-		string Address {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("consumerName")]
+        public string ConsumerName { get; set; }
 
-		/// <summary>
-		/// Timestamp of connection. </summary>
-		string ConnectedSince {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("avgMessagesPerEntry")]
+        public int? AvgMessagesPerEntry { get; set; }
 
-		/// <summary>
-		/// Client library version. </summary>
-		string ClientVersion {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("blockedConsumerOnUnackedMsgs")]
+        public bool? BlockedConsumerOnUnackedMsgs { get; set; }
 
-		long LastAckedTimestamp {get;}
-		long LastConsumedTimestamp {get;}
-		long LastConsumedFlowTimestamp {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("readPositionWhenJoining")]
+        public string ReadPositionWhenJoining { get; set; }
 
-		/// <summary>
-		/// Hash ranges assigned to this consumer if is Key_Shared sub mode. * </summary>
-		IList<string> KeyHashRanges {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("keyHashRanges")]
+        public IList<string> KeyHashRanges { get; set; }
 
-		/// <summary>
-		/// Metadata (key/value strings) associated with this consumer. </summary>
-		IDictionary<string, string> Metadata {get;}
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("availablePermits")]
+        public int? AvailablePermits { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("metadata")]
+        public IDictionary<string, string> Metadata { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("address")]
+        public string Address { get; set; }
+
+    }
 
 }

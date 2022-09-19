@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -22,24 +23,22 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Override of autoTopicCreation settings on a namespace level.
 	/// </summary>
-	public interface AutoTopicCreationOverride
+	public class AutoTopicCreationOverride
 	{
-		bool AllowAutoTopicCreation {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("defaultNumPartitions")]
+        public int? DefaultNumPartitions { get; set; }
 
-		string TopicType {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("allowAutoTopicCreation")]
+        public bool? AllowAutoTopicCreation { get; set; }
 
-		int? DefaultNumPartitions {get;}
-	}
-
-	public interface AutoTopicCreationOverrideBuilder
-	{
-		AutoTopicCreationOverrideBuilder AllowAutoTopicCreation(bool allowTopicCreation);
-
-		AutoTopicCreationOverrideBuilder TopicType(string topicType);
-
-		AutoTopicCreationOverrideBuilder DefaultNumPartitions(int? defaultNumPartition);
-
-		AutoTopicCreationOverride Build();
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("topicType")]
+        public string TopicType { get; set; }
+    }
 
 }

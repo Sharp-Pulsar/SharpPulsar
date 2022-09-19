@@ -7,12 +7,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpPulsar.Admin.Admin.Models;
-using SharpPulsar.Admin.interfaces;
 using SharpPulsar.Admin.Model;
 
 namespace SharpPulsar.Admin
 {
-    public class BrokerStats: IBrokerStats
+    public class BrokerStats
     {
         private Uri _uri;
         private HttpClient _httpClient;

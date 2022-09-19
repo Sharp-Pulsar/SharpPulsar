@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,20 +24,24 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Authentication policies.
 	/// </summary>
-	public interface AuthPolicies
+	public class AuthPolicies
 	{
-		IDictionary<string, ISet<AuthAction>> NamespaceAuthentication {get;}
-		IDictionary<string, IDictionary<string, ISet<AuthAction>>> TopicAuthentication {get;}
-		IDictionary<string, ISet<string>> SubscriptionAuthentication {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("namespaceAuthentication")]
+        public IDictionary<string, IList<string>> NamespaceAuthentication { get; set; }
 
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("topicAuthentication")]
+        public IDictionary<string, IDictionary<string, IList<string>>> TopicAuthentication { get; set; }
 
-	public interface AuthPoliciesBuilder
-	{
-		AuthPolicies Build();
-		AuthPoliciesBuilder NamespaceAuthentication(IDictionary<string, ISet<AuthAction>> namespaceAuthentication);
-		AuthPoliciesBuilder TopicAuthentication(IDictionary<string, IDictionary<string, ISet<AuthAction>>> topicAuthentication);
-		AuthPoliciesBuilder SubscriptionAuthentication(IDictionary<string, ISet<string>> subscriptionAuthentication);
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("subscriptionAuthentication")]
+        public IDictionary<string, IList<string>> SubscriptionAuthentication { get; set; }
+
+
+    }
 
 }

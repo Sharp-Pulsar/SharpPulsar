@@ -16,7 +16,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	using ReflectionUtils = org.apache.pulsar.client.admin.utils.ReflectionUtils;
 
@@ -80,7 +80,7 @@ namespace Org.Apache.Pulsar.Common.Policies.Data
 
 		static OffloadPoliciesBuilder Builder()
 		{
-			return ReflectionUtils.newBuilder("org.apache.pulsar.common.policies.data.OffloadPoliciesImpl");
+			return ReflectionUtils.newBuilder("SharpPulsar.Admin.Model.OffloadPoliciesImpl");
 		}
 	}
 

@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -16,21 +17,17 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
-	using AllArgsConstructor = lombok.AllArgsConstructor;
-	using Data = lombok.Data;
-	using NoArgsConstructor = lombok.NoArgsConstructor;
-
-// JAVA TO C# CONVERTER TODO TASK: Most Java annotations will not have direct .NET equivalent attributes:
-// ORIGINAL LINE: @Data @AllArgsConstructor @NoArgsConstructor public class EntryFilters
 	public class EntryFilters
 	{
 
-		/// <summary>
-		/// The class name for the entry filter.
-		/// </summary>
-		private string entryFilterNames;
+        /// <summary>
+        /// The class name for the entry filter.
+        /// </summary>
+        /// 
+        [JsonPropertyName("entryFilterNames")]
+        public string EntryFilterNames;
 
 	}
 

@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,21 +22,17 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Description of a BookKeeper's affinity group.
 	/// </summary>
-	public interface BookieAffinityGroupData
+	public class BookieAffinityGroupData
 	{
+        /// </summary>
+        [JsonPropertyName("bookkeeperAffinityGroupSecondary")]
+        public string BookkeeperAffinityGroupSecondary { get; set; }
 
-		string BookkeeperAffinityGroupPrimary {get;}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("bookkeeperAffinityGroupPrimary")]
+        public string BookkeeperAffinityGroupPrimary { get; set; }
 
-		string BookkeeperAffinityGroupSecondary {get;}
-	}
-
-	public interface BookieAffinityGroupDataBuilder
-	{
-		BookieAffinityGroupDataBuilder BookkeeperAffinityGroupPrimary(string bookkeeperAffinityGroupPrimary);
-
-		BookieAffinityGroupDataBuilder BookkeeperAffinityGroupSecondary(string bookkeeperAffinityGroupSecondary);
-
-		BookieAffinityGroupData Build();
 	}
 
 }

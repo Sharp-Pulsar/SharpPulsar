@@ -11,62 +11,62 @@ namespace SharpPulsar.Admin.Admin.Models
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "codec")]
+        [JsonPropertyName("codec")]
         public ObjectCodec Codec { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "currentValue")]
+        [JsonPropertyName("currentValue")]
         public object CurrentValue { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "featureMask")]
+        [JsonPropertyName("featureMask")]
         public int? FeatureMask { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "formatFeatures")]
+        [JsonPropertyName("formatFeatures")]
         public int? FormatFeatures { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "outputContext")]
+        [JsonPropertyName("outputContext")]
         public JsonStreamContext OutputContext { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "outputTarget")]
+        [JsonPropertyName("outputTarget")]
         public object OutputTarget { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "highestEscapedChar")]
+        [JsonPropertyName("highestEscapedChar")]
         public int? HighestEscapedChar { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "outputBuffered")]
+        [JsonPropertyName("outputBuffered")]
         public int? OutputBuffered { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "closed")]
+        [JsonPropertyName("closed")]
         public bool? Closed { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "prettyPrinter")]
+        [JsonPropertyName("prettyPrinter")]
         public object PrettyPrinter { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "characterEscapes")]
+        [JsonPropertyName("characterEscapes")]
         public CharacterEscapes CharacterEscapes { get; set; }
 
         /// <summary>
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(PropertyName = "schema")]
+        [JsonPropertyName("schema")]
         public FormatSchema Schema { get; set; }
 
     }

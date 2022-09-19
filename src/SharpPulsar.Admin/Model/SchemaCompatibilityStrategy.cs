@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	/// <summary>
 	/// Pulsar Schema compatibility strategy.
@@ -127,21 +127,21 @@ namespace Org.Apache.Pulsar.Common.Policies.Data
 			}
 			switch (Strategy)
 			{
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.Backward:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.Backward:
 					return BACKWARD;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.Forward:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.Forward:
 					return FORWARD;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.Full:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.Full:
 					return FULL;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.AlwaysCompatible:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.AlwaysCompatible:
 					return AlwaysCompatible;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.ForwardTransitive:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.ForwardTransitive:
 					return ForwardTransitive;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.BackwardTransitive:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.BackwardTransitive:
 					return BackwardTransitive;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.FullTransitive:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.FullTransitive:
 					return FullTransitive;
-				case Org.Apache.Pulsar.Common.Policies.Data.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled:
+				case SharpPulsar.Admin.Model.SchemaAutoUpdateCompatibilityStrategy.AutoUpdateDisabled:
 				default:
 					return AlwaysIncompatible;
 			}

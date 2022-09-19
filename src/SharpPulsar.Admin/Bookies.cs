@@ -6,16 +6,13 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using SharpPulsar.Admin.Admin.Models;
-using SharpPulsar.Admin.interfaces;
-using SharpPulsar.Admin.Model;
 using BookieInfo = SharpPulsar.Admin.Model.BookieInfo;
 using BookiesClusterInfo = SharpPulsar.Admin.Model.BookiesClusterInfo;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace SharpPulsar.Admin
 {
-    public class Bookies:IBookies
+    public class Bookies
     {
         private Uri _uri;
         private HttpClient _httpClient;

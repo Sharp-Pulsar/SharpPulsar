@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,10 +22,18 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Definition of the delayed delivery policy.
 	/// </summary>
-	public interface DelayedDeliveryPolicies
+	public class DelayedDeliveryPolicies
 	{
-		long TickTime {get;}
-		bool Active {get;}
-	}
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("tickTime")]
+        public long? TickTime { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("active")]
+        public bool? Active { get; set; }
+    }
 
 }

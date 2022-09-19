@@ -6,12 +6,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using SharpPulsar.Admin.interfaces;
 using SharpPulsar.Admin.Model;
 
 namespace SharpPulsar.Admin
 {
-    public class Clusters : IClusters
+    public class Clusters 
     {
         private Uri _uri;
         private HttpClient _httpClient;

@@ -17,7 +17,7 @@
 /// under the License.
 /// </summary>
 
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	/// <summary>
 	/// Subscription authorization for Pulsar policies.

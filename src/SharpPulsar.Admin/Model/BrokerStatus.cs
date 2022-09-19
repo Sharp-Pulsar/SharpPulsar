@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
@@ -23,13 +24,17 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Information about the broker status.
 	/// </summary>
-	public interface BrokerStatus 
+	public class BrokerStatus 
 	{
-		string BrokerAddress {get;}
-
-		bool Active {get;}
-
-		int LoadFactor {get;}
+        /// </summary>
+        [JsonPropertyName("brokerAddress")]
+        public string? BrokerAddress { get; set; }
+        /// </summary>
+        [JsonPropertyName("active")]
+        public bool? Active { get; set; }
+        /// </summary>
+        [JsonPropertyName("loadFactor")]
+        public int? LoadFactor { get; set; }
 	}
 
 

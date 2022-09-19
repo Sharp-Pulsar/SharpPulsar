@@ -18,7 +18,7 @@
 /// specific language governing permissions and limitations
 /// under the License.
 /// </summary>
-namespace Org.Apache.Pulsar.Common.Policies.Data
+namespace SharpPulsar.Admin.Model
 {
 	using InterfaceAudience = org.apache.pulsar.common.classification.InterfaceAudience;
 	using InterfaceStability = org.apache.pulsar.common.classification.InterfaceStability;

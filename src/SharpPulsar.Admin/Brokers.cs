@@ -4,12 +4,11 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using SharpPulsar.Admin.interfaces;
 using SharpPulsar.Admin.Model;
 
 namespace SharpPulsar.Admin
 {
-    public class Brokers: IBrokers
+    public class Brokers
     {
         private Uri _uri;
         private HttpClient _httpClient;
@@ -1085,7 +1084,7 @@ namespace SharpPulsar.Admin
             System.Net.HttpStatusCode _statusCode = _httpResponse.StatusCode;
             cancellationToken.ThrowIfCancellationRequested();
             string _responseContent = null;
-            if ((int)_statusCode != 200 && (int)_statusCode != 307 && (int)_statusCode != 401 && (int)_statusCode != 403 && (int)_statusCode != 404)
+            if ((int)_statusCode != 200 && (int)_statusCode != 204 && (int)_statusCode != 403 && (int)_statusCode != 500)
             {
                 if (_httpResponse.Content != null)
                 {

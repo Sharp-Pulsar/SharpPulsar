@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Text.Json.Serialization;
+/// <summary>
 /// Licensed to the Apache Software Foundation (ASF) under one
 /// or more contributor license agreements.  See the NOTICE file
 /// distributed with this work for additional information
@@ -21,14 +22,28 @@ namespace SharpPulsar.Admin.Model
 	/// <summary>
 	/// Dispatch rate.
 	/// </summary>
-	public interface DispatchRate
+	public class DispatchRate
 	{
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("dispatchThrottlingRateInMsg")]
+        public int? DispatchThrottlingRateInMsg { get; set; }
 
-		int DispatchThrottlingRateInMsg {get;}
-		long DispatchThrottlingRateInByte {get;}
-		bool RelativeToPublishRate {get;}
-		int RatePeriodInSecond {get;}
-	}
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("dispatchThrottlingRateInByte")]
+        public long? DispatchThrottlingRateInByte { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("relativeToPublishRate")]
+        public bool? RelativeToPublishRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [JsonPropertyName("ratePeriodInSecond")]
+        public int? RatePeriodInSecond { get; set; }
+    }
 
 
 }
