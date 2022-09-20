@@ -3636,7 +3636,7 @@ namespace SharpPulsar.Admin
 
         public string RemovePublishRate(string property, string namespaceParameter, Dictionary<string, List<string>> customHeaders = null)
         {
-           return RemovePublishRateAsync(property, namespaceParameter, customHeaders).GetAwaiter().GetResult();`
+           return RemovePublishRateAsync(property, namespaceParameter, customHeaders).GetAwaiter().GetResult();
         }
         /// <summary>
         /// Remove message publish rate configuration for specified topic.
